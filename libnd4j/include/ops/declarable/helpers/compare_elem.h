@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void compare_elem(sd::LaunchContext* context, NDArray* input, bool isStrictlyIncreasing, bool& output);
+SD_LIB_HIDDEN void compare_elem(LaunchContext* context, NDArray* input, bool isStrictlyIncreasing, bool& output);
 }
 }  // namespace ops
 }  // namespace sd

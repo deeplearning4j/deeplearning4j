@@ -25,7 +25,6 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -75,21 +74,15 @@ public class ResizeArea extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
-        val attrC = attributesForNode.get("align_corners");
-        this.alignCorners = attrC != null ? attrC.getB() : false;
-
-        addArgs();
     }
 
     protected void addArgs() {
         iArguments.clear();
-        if(height != null && width != null){
+        if(height != null && width != null) {
             INDArray size = Nd4j.createFromArray(new int[]{height,width});
             addInputArgument(size);
-            //iArguments.add(Long.valueOf(height));
-            //iArguments.add(Long.valueOf(width));
         }
         addBArgument(alignCorners);
     }

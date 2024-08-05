@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(print_variable, 1, 1, true, 0, 0) {
   bool printSpecial = false;
   if (block.numB() > 0) printSpecial = B_ARG(0);
 
-  if (printSpecial && !sd::Environment::getInstance().isCPU()) {
+  if (printSpecial && !Environment::getInstance().isCPU()) {
     // only specific backends support special printout. for cpu-based backends it's the same as regular print
 
     if (block.width() == 2)
@@ -59,14 +59,14 @@ CUSTOM_OP_IMPL(print_variable, 1, 1, true, 0, 0) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(print_variable) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_STRINGS})
-      ->setAllowedOutputTypes(0, sd::DataType::INT32);
+      ->setAllowedOutputTypes(0, INT32);
 }
 
 DECLARE_SHAPE_FN(print_variable) {

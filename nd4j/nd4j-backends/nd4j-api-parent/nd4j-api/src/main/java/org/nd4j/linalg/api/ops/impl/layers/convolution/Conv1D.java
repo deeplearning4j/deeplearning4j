@@ -88,7 +88,7 @@ public class Conv1D extends DynamicCustomOp {
                 config.getP(),
                 config.getD(),
                 config.getPaddingMode().ordinal(),
-                ArrayUtil.fromBoolean(config.isNWC()));
+                ArrayUtil.fromBoolean(!config.isNCW()));
     }
 
     @Override

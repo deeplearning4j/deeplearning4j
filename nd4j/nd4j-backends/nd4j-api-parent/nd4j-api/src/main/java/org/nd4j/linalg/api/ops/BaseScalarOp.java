@@ -131,7 +131,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         val aT = arg().dataType();
         val sT = scalarValue.dataType();
 
-        ret.add(LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT)));
+        LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.fromShape(x.shape(),Shape.pickPairwiseDataType(aT, sT)) :
+                LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT));
+        ret.add(desc);
         return ret;
     }
 

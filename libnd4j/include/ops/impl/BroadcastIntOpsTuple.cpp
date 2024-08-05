@@ -22,8 +22,8 @@
 #include <ops/BroadcastIntOpsTuple.h>
 
 namespace sd {
-BroadcastIntOpsTuple BroadcastIntOpsTuple::custom(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise,
-                                                  sd::broadcast::IntOps broadcast) {
+BroadcastIntOpsTuple BroadcastIntOpsTuple::custom(scalar::IntOps scalar, pairwise::IntOps pairwise,
+                                                  broadcast::IntOps broadcast) {
   BroadcastIntOpsTuple t(scalar, pairwise, broadcast);
   return t;
 }

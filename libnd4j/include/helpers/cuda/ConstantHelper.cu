@@ -37,7 +37,7 @@ __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
 static void *getConstantSpace() {
-  sd::Pointer dConstAddr;
+  Pointer dConstAddr;
   auto dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
 
   if (dZ != 0) throw cuda_exception::build("cudaGetSymbolAddress(...) failed", dZ);
@@ -94,8 +94,8 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
   std::lock_guard<std::mutex> lock(_mutex);
 
   auto deviceId = getCurrentDevice();
-  sd::Pointer constantPtr = nullptr;
-  sd::LongType constantOffset = 0L;
+  Pointer constantPtr = nullptr;
+  LongType constantOffset = 0L;
   if (_devicePointers[deviceId] == 0) {
     auto constant = getConstantSpace();
 
@@ -130,7 +130,7 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
   }
 }
 
-ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, sd::DataType dataType) {
+ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, DataType dataType) {
   const auto deviceId = getCurrentDevice();
 
   // all cache modifications are synchronous
@@ -183,7 +183,7 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
   return result;
 }
 
-sd::LongType ConstantHelper::getCachedAmount(int deviceId) {
+LongType ConstantHelper::getCachedAmount(int deviceId) {
   int numDevices = getNumberOfDevices();
   if (deviceId > numDevices || deviceId < 0)
     return 0L;

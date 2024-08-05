@@ -23,14 +23,12 @@
 #define __RANDOM_CROP_HELPERS__
 #include <array/NDArray.h>
 #include <graph/Context.h>
-#include <helpers/helper_random.h>
-#include <system/op_boilerplate.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,
+SD_LIB_HIDDEN Status randomCropFunctor(sd::graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,
                                            int seed);
 
 }

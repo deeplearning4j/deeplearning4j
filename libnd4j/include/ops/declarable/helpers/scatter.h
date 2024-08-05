@@ -27,16 +27,16 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates,
+SD_LIB_HIDDEN void scatter(LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates,
                            NDArray& output, const bool lock);
 
-SD_LIB_HIDDEN void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices,
+SD_LIB_HIDDEN void scatterND(LaunchContext* context, pairwise::Ops op, const NDArray& indices,
                              const NDArray& updates, NDArray& output, const bool lock);
 
-SD_LIB_HIDDEN void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output,
+SD_LIB_HIDDEN void scatterForLoss(LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output,
                                   const bool calcGrad);
 
-SD_LIB_HIDDEN sd::LongType checkIndices(sd::LaunchContext* context, const NDArray& indices, const NDArray& output,
+SD_LIB_HIDDEN LongType checkIndices(LaunchContext* context, const NDArray& indices, const NDArray& output,
                                         const int axis = -1);
 }  // namespace helpers
 }  // namespace ops

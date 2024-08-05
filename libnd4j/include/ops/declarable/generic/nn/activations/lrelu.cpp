@@ -33,14 +33,14 @@ CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, -2, 0) {
 
   float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-  input->applyScalar(sd::scalar::LeakyRELU, alpha, *output);
+  input->applyScalar(scalar::LeakyRELU, alpha, *output);
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lrelu) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
@@ -53,14 +53,14 @@ CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
 
   // input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
   helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lrelu_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd

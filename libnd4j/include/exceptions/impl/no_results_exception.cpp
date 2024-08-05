@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 
 namespace sd {
-no_results_exception::no_results_exception(sd::LongType graphId)
+no_results_exception::no_results_exception(LongType graphId)
     : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
   _graphId = graphId;
 }

@@ -213,8 +213,7 @@ class SequenceContainer {
     if (current_ == seq) {
       current_ = previous;
     }
-    // std::cout << "remove " << (long long)seq << " " << std::endl;
-    // print_seq1(seq);
+
     delete seq;
     count_--;
   }
@@ -248,7 +247,6 @@ class SequenceContainer {
       del = temp;
     }
     current_ = nullptr;
-    // assert(count_==i);
   }
 
   ~SequenceContainer() { clear(); }
@@ -354,8 +352,8 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
       Type blank_prob, non_blank_prob;
       // log_p[seq->value]
       non_blank_prob = seq->value != -1
-                           ? (element<HasElementStride>(log_p, seq->value, element_stride) + cur_prob.non_blank)
-                           : negative_infinity<Type>();
+                       ? (element<HasElementStride>(log_p, seq->value, element_stride) + cur_prob.non_blank)
+                       : negative_infinity<Type>();
       blank_prob = log_p_blank + cur_prob.total;
 
       if (normalize_logits) {
@@ -599,9 +597,9 @@ void beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& 
   const auto batch_stride_res_prob = result_probs.stridesOf()[0];
   const auto batch_stride_res_seq_length = result_sequences_length.stridesOf()[0];
   auto func = [max_len_t, len_c, batch_stride, inc_p, element_stride, element_stride_t, logits_ptr, len_t_ptr,
-               blank_index, beam_width, normalize_logits, nbest_len, result_seq_ptr, result_seq_length_ptr,
-               result_probs_ptr, batch_stride_res, inc_res, batch_stride_res_prob, batch_stride_res_seq_length](
-                  uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
+      blank_index, beam_width, normalize_logits, nbest_len, result_seq_ptr, result_seq_length_ptr,
+      result_probs_ptr, batch_stride_res, inc_res, batch_stride_res_prob, batch_stride_res_seq_length](
+      uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
     auto ptr = logits_ptr + start * batch_stride;
 
     if (element_stride == 1) {
@@ -644,14 +642,14 @@ void beamSearch(const NDArray& logit, const NDArray& sequence_length, NDArray& r
                 bool normalize_logits = true) {
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
                         (logit, sequence_length, result_sequences, result_probs, result_sequences_length, blank_index,
-                         beam_width, nbest_len, normalize_logits),
+                            beam_width, nbest_len, normalize_logits),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
 BUILD_DOUBLE_TEMPLATE(template void beamSearch_,
                       (const NDArray& logit, const NDArray& sequence_length, NDArray& result_sequences,
-                       NDArray& result_probs, NDArray& result_sequences_length, int blank_index, int beam_width,
-                       int nbest_len, bool normalize_logits),
+                          NDArray& result_probs, NDArray& result_sequences_length, int blank_index, int beam_width,
+                          int nbest_len, bool normalize_logits),
                       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 
 }  // namespace helpers

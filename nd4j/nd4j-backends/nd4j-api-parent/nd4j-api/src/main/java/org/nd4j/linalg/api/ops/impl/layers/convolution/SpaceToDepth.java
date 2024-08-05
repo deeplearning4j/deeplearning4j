@@ -25,7 +25,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.enums.DataFormat;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -76,9 +75,8 @@ public class SpaceToDepth extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        boolean isNHWC = dataFormat == null ? true : dataFormat.equals(DataFormat.NHWC);
-        addIArgument(blockSize, isNHWC ? 1 : 0);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
+
     }
 
     @Override

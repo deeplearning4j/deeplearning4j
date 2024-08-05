@@ -31,40 +31,40 @@ CUSTOM_OP_IMPL(sequence_mask, 1, 1, false, 0, 0) {
   const int inRank = input->rankOf();
 
   // REQUIRE_TRUE(inRank >= 1, 0, "sequence_mask: input array must have rank >= 1, but %i given!", inRank);
-  sd::LongType maxInd = input->argMax();
+  LongType maxInd = input->argMax();
   float max = input->e<float>(maxInd);
   if (block.getIArguments()->size() > 0) {
     maxInd = INT_ARG(0);
-    if (maxInd < max) maxInd = static_cast<sd::LongType>(max);
+    if (maxInd < max) maxInd = static_cast<LongType>(max);
   } else if (block.width() > 1) {
     auto maxlen = INPUT_VARIABLE(1);
     // REQUIRE_TRUE(maxlen->lengthOf() == 1, "sequence_mask: 2nd input (max length) should be a scalar array.");
     float tmaxlen = maxlen->e<float>(0);
-    if (tmaxlen > max) maxInd = static_cast<sd::LongType>(tmaxlen);
+    if (tmaxlen > max) maxInd = static_cast<LongType>(tmaxlen);
   } else
-    maxInd = static_cast<sd::LongType>(max);
+    maxInd = static_cast<LongType>(max);
 
   helpers::sequenceMask(block.launchContext(), input, output, maxInd);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(sequence_mask) {
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   auto in = inputShape->at(0);
   int outRank = shape::rank(in) + 1;
   auto input = INPUT_VARIABLE(0);
-  auto dtype = DataType::BOOL;
+  auto dtype = BOOL;
   auto argMaxInd = input->argMax();
-  sd::LongType max = input->e<sd::LongType>(argMaxInd);
-  sd::LongType maxInd = max;
+  LongType max = input->e<LongType>(argMaxInd);
+  LongType maxInd = max;
 
   if (block.numD() > 0) dtype = D_ARG(0);
 
   if (block.width() > 1) {
     auto maxlen = INPUT_VARIABLE(1);
-    sd::LongType tmaxlen = maxlen->e<sd::LongType>(0);
-    if (tmaxlen > max) maxInd = static_cast<sd::LongType>(tmaxlen);
+    LongType tmaxlen = maxlen->e<LongType>(0);
+    if (tmaxlen > max) maxInd = static_cast<LongType>(tmaxlen);
     if (block.numI() > 0) {
       dtype = (DataType)INT_ARG(0);
     }
@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(sequence_mask) {
   int lastDimension = maxInd;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
   outShapeInfo[0] = outRank;
-  for (sd::LongType i = 0; i < outRank - 1; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
+  for (LongType i = 0; i < outRank - 1; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
   outShapeInfo[outRank] = lastDimension;
 
   ShapeUtils::updateStridesAndType(outShapeInfo, dtype, shape::order(in));
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(sequence_mask) {
 }
 
 DECLARE_TYPES(sequence_mask) {
-  getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

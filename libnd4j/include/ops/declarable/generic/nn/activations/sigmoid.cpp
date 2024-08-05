@@ -31,15 +31,15 @@ CONFIGURABLE_OP_IMPL(sigmoid, 1, 1, true, 0, 0) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(sd::transform::Sigmoid, *z);
+  first->applyTransform(transform::Sigmoid, *z);
 
   STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sigmoid) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(sigmoid_bp, 2, 1, true, 0, 0) {
@@ -48,16 +48,15 @@ CONFIGURABLE_OP_IMPL(sigmoid_bp, 2, 1, true, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::SigmoidDerivativeE, epsilon, z, nullptr);
   helpers::sigmoidDerivative(block.launchContext(), input, epsilon, z);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sigmoid_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd

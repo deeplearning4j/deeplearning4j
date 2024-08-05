@@ -42,7 +42,7 @@ class SD_LIB_EXPORT LegacyOp : public DeclarableOp {
   int _numInputs = 0;
 
   // All Op classes provide own specific implementation for this method
-  sd::Status validateAndExecute(Context& block) override = 0;
+  Status validateAndExecute(sd::graph::Context& block) override = 0;
 
  public:
   LegacyOp(int numInputs);
@@ -50,7 +50,7 @@ class SD_LIB_EXPORT LegacyOp : public DeclarableOp {
   ~LegacyOp() = default;
 
   // All Op classes provide own specific implementation for this method
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override = 0;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override = 0;
   virtual LegacyOp* clone() = 0;
 };
 }  // namespace ops

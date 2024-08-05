@@ -106,9 +106,10 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
-
+        LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType()) :
+                LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL);
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
-        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), DataType.BOOL));
+        return Collections.singletonList(desc);
     }
 
     @Override

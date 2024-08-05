@@ -28,9 +28,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void minimumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
+SD_LIB_HIDDEN void minimumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
                                     NDArray* gradX, NDArray* gradY);
-SD_LIB_HIDDEN void maximumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
+SD_LIB_HIDDEN void maximumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext,
                                     NDArray* gradX, NDArray* gradY);
 
 }  // namespace helpers

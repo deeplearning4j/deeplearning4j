@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 // be careful: outVector must have c-order and ews = 1 !!!
-SD_LIB_HIDDEN void range(sd::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector);
+SD_LIB_HIDDEN void range(LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector);
 
 }  // namespace helpers
 }  // namespace ops

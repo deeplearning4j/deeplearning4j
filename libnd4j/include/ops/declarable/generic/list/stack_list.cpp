@@ -37,7 +37,7 @@ LIST_OP_IMPL(stack_list, 1, 1, 0, 0) {
 
   // OVERWRITE_RESULT(result);
   setupResult(result, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArrayConcatV3, stack_list);
 DECLARE_SYN(tensorarrayconcatv3, stack_list);

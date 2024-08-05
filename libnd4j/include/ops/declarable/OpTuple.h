@@ -32,20 +32,20 @@ namespace ops {
 class SD_LIB_EXPORT OpTuple {
  public:
   std::string _opName;
-  std::vector<sd::NDArray*> _inputs;
-  std::vector<sd::NDArray*> _outputs;
+  std::vector<NDArray*> _inputs;
+  std::vector<NDArray*> _outputs;
   std::vector<double> _tArgs;
-  std::vector<sd::LongType> _iArgs;
+  std::vector<LongType> _iArgs;
 
   OpTuple(const char* opName);
-  OpTuple(const char* opName, std::initializer_list<sd::NDArray*>&& inputs, std::initializer_list<double>&& tArgs,
-          std::initializer_list<sd::LongType>&& iArgs);
+  OpTuple(const char* opName, std::initializer_list<NDArray*>&& inputs, std::initializer_list<double>&& tArgs,
+          std::initializer_list<LongType>&& iArgs);
   ~OpTuple();
 
-  OpTuple* addInput(sd::NDArray* array);
-  OpTuple* addOutput(sd::NDArray* array);
+  OpTuple* addInput(NDArray* array);
+  OpTuple* addOutput(NDArray* array);
   OpTuple* setTArgs(std::initializer_list<double> tArgs);
-  OpTuple* setIArgs(std::initializer_list<sd::LongType> iArgs);
+  OpTuple* setIArgs(std::initializer_list<LongType> iArgs);
 };
 }  // namespace ops
 }  // namespace sd

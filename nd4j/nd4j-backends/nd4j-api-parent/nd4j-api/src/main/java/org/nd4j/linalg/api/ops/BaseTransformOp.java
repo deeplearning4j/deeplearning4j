@@ -87,12 +87,17 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
 
     public BaseTransformOp(SameDiff sameDiff,SDVariable i_v,boolean inPlace) {
-        this(sameDiff,i_v,i_v.getShape(),inPlace,null);
-    }
+        super(sameDiff,inPlace,null);
+        if (i_v != null) {
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+            this.xVertexId = i_v.name();
+            sameDiff.addArgsFor(new SDVariable[]{i_v},this);
+        } else {
+            throw new IllegalArgumentException("Input must not null variable.");
+        }    }
 
     public BaseTransformOp(SameDiff sameDiff,
                            SDVariable i_v,
-                           long[] shape,
                            boolean inPlace,
                            Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
@@ -111,7 +116,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     public BaseTransformOp(SameDiff sameDiff,
                            SDVariable i_v,
                            Object[] extraArgs) {
-        this(sameDiff,i_v,i_v.getShape(),false,extraArgs);
+        this(sameDiff,i_v,false,extraArgs);
     }
 
 

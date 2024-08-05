@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-ContextPrototype::ContextPrototype(sd::ops::OpDescriptor* opDescriptor, int nodeId, bool inPlace) {
+ContextPrototype::ContextPrototype(ops::OpDescriptor* opDescriptor, int nodeId, bool inPlace) {
   _nodeId = nodeId;
   _isInplace = inPlace;
   _opDescriptor = opDescriptor;
@@ -59,11 +59,11 @@ bool ContextPrototype::isInplace() { return this->_isInplace; }
 
 std::vector<double>* ContextPrototype::getTArguments() { return &(this->_tArgs); }
 
-std::vector<sd::LongType>* ContextPrototype::getIArguments() { return &(this->_iArgs); }
+std::vector<LongType>* ContextPrototype::getIArguments() { return &(this->_iArgs); }
 
 std::vector<bool>* ContextPrototype::getBArguments() { return &(this->_bArgs); }
 
-std::vector<sd::LongType>* ContextPrototype::getAxis() { return &(this->_axis); }
+std::vector<LongType>* ContextPrototype::getAxis() { return &(this->_axis); }
 
 std::vector<std::string> * ContextPrototype::getSArguments() {return &(this->_sArgs);}
 void ContextPrototype::pickInput(int input) {
@@ -81,11 +81,11 @@ void ContextPrototype::fillInputs(std::initializer_list<int> inputs) {
 
 int ContextPrototype::nodeId() { return getNodeId(); }
 
-sd::DataType ContextPrototype::dataType() { return dataType(0); }
+DataType ContextPrototype::dataType() { return dataType(0); }
 
-sd::DataType ContextPrototype::dataType(int index) { return _dataType; }
+DataType ContextPrototype::dataType(int index) { return _dataType; }
 
-void ContextPrototype::setDataType(int index, sd::DataType type) {
+void ContextPrototype::setDataType(int index, DataType type) {
   // if (_outputs->size() == 0)
   _dataType = type;
 }
@@ -113,7 +113,7 @@ ContextPrototype* ContextPrototype::asT() {
   return clone;
 }
 
-void ContextPrototype::setOpDescriptor(sd::ops::OpDescriptor* opDescriptor) { _opDescriptor = opDescriptor; }
+void ContextPrototype::setOpDescriptor(ops::OpDescriptor* opDescriptor) { _opDescriptor = opDescriptor; }
 
 ContextPrototype* ContextPrototype::clone() {
   auto clone = new ContextPrototype(_opDescriptor, _nodeId, _isInplace);
@@ -128,7 +128,7 @@ ContextPrototype* ContextPrototype::clone() {
   return clone;
 }
 
-std::vector<sd::DataType>* ContextPrototype::getDArguments() { return &_dArgs; }
+std::vector<DataType>* ContextPrototype::getDArguments() { return &_dArgs; }
 
 size_t ContextPrototype::numD() { return _dArgs.size(); }
 }  // namespace graph

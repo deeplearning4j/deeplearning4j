@@ -35,39 +35,39 @@ class SD_LIB_EXPORT NodeProfile {
   int _id;
   std::string _name;
 
-  sd::LongType _merges = 1L;
+  LongType _merges = 1L;
 
   // time spent during deserialization
-  sd::LongType _buildTime = 0L;
+  LongType _buildTime = 0L;
 
   // time spent before op execution
-  sd::LongType _preparationTime = 0L;
+  LongType _preparationTime = 0L;
 
   // time spent for op execution
-  sd::LongType _executionTime = 0L;
+  LongType _executionTime = 0L;
 
   // total time spent during node execution
-  sd::LongType _totalTime = 0L;
+  LongType _totalTime = 0L;
 
   // time spent for output shape creation
-  sd::LongType _shapeTime = 0L;
+  LongType _shapeTime = 0L;
 
   // time spent for output arrays creation
-  sd::LongType _arrayTime = 0L;
+  LongType _arrayTime = 0L;
 
-  sd::LongType _inputTime = 0L;
+  LongType _inputTime = 0L;
 
   // amount of memory used for outputs
-  sd::LongType _memoryActivations = 0L;
+  LongType _memoryActivations = 0L;
 
   // amount of memory used internally for temporary arrays
-  sd::LongType _memoryTemporary = 0L;
+  LongType _memoryTemporary = 0L;
 
   // amount of memory used internally for objects
-  sd::LongType _memoryObjects = 0L;
+  LongType _memoryObjects = 0L;
 
   // total amount of memory used during execution
-  sd::LongType _memoryTotal = 0L;
+  LongType _memoryTotal = 0L;
 
   std::vector<std::string> _inputShapes;
   std::vector<std::string> _outputShapes;
@@ -78,28 +78,28 @@ class SD_LIB_EXPORT NodeProfile {
 
   explicit NodeProfile(int id, const char* name);
 
-  void setBuildTime(sd::LongType time);
-  void setPreparationTime(sd::LongType time);
-  void setExecutionTime(sd::LongType time);
-  void setTotalTime(sd::LongType time);
-  void setShapeFunctionTime(sd::LongType time);
-  void setArrayTime(sd::LongType time);
-  void setInputTime(sd::LongType time);
+  void setBuildTime(LongType time);
+  void setPreparationTime(LongType time);
+  void setExecutionTime(LongType time);
+  void setTotalTime(LongType time);
+  void setShapeFunctionTime(LongType time);
+  void setArrayTime(LongType time);
+  void setInputTime(LongType time);
 
-  void setActivationsSize(sd::LongType bytes);
-  void setTemporarySize(sd::LongType bytes);
-  void setObjectsSize(sd::LongType bytes);
-  void setTotalSize(sd::LongType bytes);
+  void setActivationsSize(LongType bytes);
+  void setTemporarySize(LongType bytes);
+  void setObjectsSize(LongType bytes);
+  void setTotalSize(LongType bytes);
 
-  void addInputShape(sd::LongType const* shapeInfo);
-  void addOutputShape(sd::LongType const* shapeInfo);
+  void addInputShape(LongType const* shapeInfo);
+  void addOutputShape(LongType const* shapeInfo);
 
-  sd::LongType getActivationsSize() const;
-  sd::LongType getTemporarySize() const;
-  sd::LongType getObjectsSize() const;
-  sd::LongType getTotalSize() const;
+  LongType getActivationsSize() const;
+  LongType getTemporarySize() const;
+  LongType getObjectsSize() const;
+  LongType getTotalSize() const;
 
-  sd::LongType getExecutionTime() const;
+  LongType getExecutionTime() const;
 
   std::string& name();
 

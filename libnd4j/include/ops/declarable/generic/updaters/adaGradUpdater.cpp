@@ -38,7 +38,7 @@ CONFIGURABLE_OP_IMPL(ada_grad_updater, 2, 2, true, 0, 0) {
   auto update = OUTPUT_VARIABLE(0);
   auto stateH = OUTPUT_VARIABLE(1);
 
-  if (gradient->isEmpty() || initState->isEmpty()) return sd::Status::OK;
+  if (gradient->isEmpty() || initState->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initState), 0,
                "ADA_GRAD UPDATER OP: input state must have the same shape as gradient,"
@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(ada_grad_updater, 2, 2, true, 0, 0) {
   }
 
   helpers::updaterAdaGrad(block.launchContext(), *gradient, *initState, *update, *stateH, dLr, dEpsilon);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(ada_grad_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

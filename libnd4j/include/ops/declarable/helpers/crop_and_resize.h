@@ -32,7 +32,7 @@ template <typename T, typename F, typename I>
 SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray const* images, NDArray const* boxes, NDArray const* indices,
                                          NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 
-SD_LIB_HIDDEN void cropAndResizeFunctor(sd::LaunchContext* context, NDArray const* images, NDArray const* boxes,
+SD_LIB_HIDDEN void cropAndResizeFunctor(LaunchContext* context, NDArray const* images, NDArray const* boxes,
                                         NDArray const* indices, NDArray const* cropSize, int method,
                                         double extrapolationVal, NDArray* crops);
 }  // namespace helpers

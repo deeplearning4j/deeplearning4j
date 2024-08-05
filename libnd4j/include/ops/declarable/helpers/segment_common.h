@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void fillUpSegments(NDArray* indices, sd::LongType numClasses, NDArray& classesRangesBegs,
+SD_LIB_HIDDEN void fillUpSegments(NDArray* indices, LongType numClasses, NDArray& classesRangesBegs,
                                   NDArray& classesRangesLens);
 
 }

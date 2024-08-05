@@ -32,15 +32,15 @@ CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(sd::transform::SoftSign, *z);
+  first->applyTransform(transform::SoftSign, *z);
 
   STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(softsign) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
@@ -52,15 +52,15 @@ CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
   // input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
   helpers::softSignDerivative(block.launchContext(), input, epsilon, z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(SoftsignGrad, softsign_bp);
 
 DECLARE_TYPES(softsign_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd

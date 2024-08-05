@@ -37,12 +37,12 @@ BROADCASTABLE_OP_IMPL(igammac, 0, 0) {
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::IGammac(), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(igammac) {

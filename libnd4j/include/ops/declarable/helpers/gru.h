@@ -28,27 +28,27 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* Wru,
+SD_LIB_HIDDEN void gruCell(LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* Wru,
                            const NDArray* Wc, const NDArray* bru, const NDArray* bc, NDArray* r, NDArray* u, NDArray* c,
                            NDArray* h);
 
-SD_LIB_HIDDEN void gruCell(const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
-                           const NDArray* b, NDArray* gates, NDArray* h, bool linearBeforeReset);
+SD_LIB_HIDDEN void gruCell(NDArray* x, NDArray* hLast, NDArray* Wru, NDArray* Wc,
+                           NDArray* b, NDArray* gates, NDArray* h, bool linearBeforeReset);
 
-SD_LIB_HIDDEN void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* Wx,
-                               const NDArray* Wh, const NDArray* b, NDArray* h, bool linearBeforeReset);
+SD_LIB_HIDDEN void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* h0, NDArray* Wx,
+                               NDArray* Wh, NDArray* b, NDArray* h, bool linearBeforeReset);
 
-SD_LIB_HIDDEN void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W,
+SD_LIB_HIDDEN void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W,
                              const NDArray* Wc, const NDArray* b, const NDArray* bc, const NDArray* dLdr,
                              const NDArray* dLdu, const NDArray* dLdc, const NDArray* dLdh, NDArray* dLdx,
                              NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb, NDArray* dLdbc);
 
-SD_LIB_HIDDEN void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx,
+SD_LIB_HIDDEN void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx,
                              const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* gates,
                              NDArray* dLdx, NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
 
-SD_LIB_HIDDEN void gruTimeLoopBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx,
-                                 const NDArray* Wh, const NDArray* b, const NDArray* dLdh, NDArray* dLdx,
+SD_LIB_HIDDEN void gruTimeLoopBp(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
+                                 NDArray* Wh, NDArray* b, NDArray* dLdh, NDArray* dLdx,
                                  NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
 }  // namespace helpers
 }  // namespace ops

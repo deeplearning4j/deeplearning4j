@@ -48,6 +48,7 @@ enum DataType {
   UTF32 = 52,
   ANY = 100,
   AUTO = 200,
+  UNKNOWN = 255
 };
 }
 

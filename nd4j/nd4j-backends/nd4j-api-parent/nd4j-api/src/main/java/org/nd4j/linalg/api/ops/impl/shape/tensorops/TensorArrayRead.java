@@ -24,7 +24,6 @@ import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -68,9 +67,8 @@ public class TensorArrayRead extends BaseTensorOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
-        this.importDataType = TFGraphMapper.convertType(attributesForNode.get("dtype").getType());
     }
 
     @Override

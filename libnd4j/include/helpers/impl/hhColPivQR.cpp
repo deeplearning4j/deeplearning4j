@@ -28,7 +28,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
-  _qr = matrix.dup();
+  _qr = matrix.dup(false);
   _diagSize = math::sd_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));
   _coeffs = NDArray(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getContext());
 

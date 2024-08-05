@@ -30,8 +30,8 @@
 namespace sd {
 class SD_LIB_EXPORT NDIndex {
  protected:
-  std::vector<sd::LongType> _indices;
-  sd::LongType _stride = 1;
+  std::vector<LongType> _indices;
+  LongType _stride = 1;
 
  public:
   NDIndex() = default;
@@ -41,12 +41,12 @@ class SD_LIB_EXPORT NDIndex {
   bool isPoint();
   virtual bool isInterval();
 
-  std::vector<sd::LongType>& getIndices();
-  sd::LongType stride();
+  std::vector<LongType>& getIndices();
+  LongType stride();
 
   static NDIndex* all();
-  static NDIndex* point(sd::LongType pt);
-  static NDIndex* interval(sd::LongType start, sd::LongType end, sd::LongType stride = 1);
+  static NDIndex* point(LongType pt);
+  static NDIndex* interval(LongType start, LongType end, LongType stride = 1);
 };
 
 class SD_LIB_EXPORT NDIndexAll : public NDIndex {
@@ -58,14 +58,14 @@ class SD_LIB_EXPORT NDIndexAll : public NDIndex {
 
 class SD_LIB_EXPORT NDIndexPoint : public NDIndex {
  public:
-  NDIndexPoint(sd::LongType point);
+  NDIndexPoint(LongType point);
   virtual bool isInterval();
   ~NDIndexPoint() = default;
 };
 
 class SD_LIB_EXPORT NDIndexInterval : public NDIndex {
  public:
-  NDIndexInterval(sd::LongType start, sd::LongType end, sd::LongType stride = 1);
+  NDIndexInterval(LongType start, LongType end, LongType stride = 1);
   virtual bool isInterval();
   ~NDIndexInterval() = default;
 };

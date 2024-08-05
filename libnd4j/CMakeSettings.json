@@ -9,7 +9,7 @@
       ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
+      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=86 -DBUILD_TESTS=true",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     },
@@ -22,7 +22,7 @@
       ],
       "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
       "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
+      "cmakeCommandArgs": " -DSD_CUDA=true -DSD_LIBRARY_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=86 -DBUILD_TESTS=true",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
     },

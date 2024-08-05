@@ -74,13 +74,13 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(ClipByValue, clipbyvalue);
 
 DECLARE_TYPES(clipbyvalue) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

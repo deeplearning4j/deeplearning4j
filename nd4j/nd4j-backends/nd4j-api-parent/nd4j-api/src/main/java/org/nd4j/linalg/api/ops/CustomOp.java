@@ -29,7 +29,10 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-public interface CustomOp {
+public interface CustomOp  {
+
+ String getOwnName();
+
  /**
   * This allows a custom op to configure relevant fields from its arguments.
   * This is needed when ops are created via reflection for things like model import.
@@ -164,9 +167,10 @@ public interface CustomOp {
     if (list.isEmpty())
      throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-    for (LongShapeDescriptor shape : list)
-     addOutputArgument(Nd4j.create(shape, false));
-
+    for (LongShapeDescriptor shape : list) {
+     INDArray newOut = Nd4j.create(shape, false);
+     addOutputArgument(newOut);
+    }
     shapeOverride = true;
    } catch (ND4JIllegalStateException e) {
     throw e;
