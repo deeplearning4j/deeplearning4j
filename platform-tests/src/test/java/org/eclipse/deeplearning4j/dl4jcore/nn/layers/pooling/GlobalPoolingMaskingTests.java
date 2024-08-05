@@ -85,14 +85,14 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         int nIn = 5;
         int layerSize = 4;
         int nOut = 2;
-        int[] minibatchSizes = new int[] {1, 3};
+        int[] minibatchSizes = {1, 3};
 
         for (int miniBatchSize : minibatchSizes) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
+                            .layer(0, new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
                                             .build())
                             .layer(1, new GlobalPoolingLayer.Builder()
                                             .poolingType(PoolingType.AVG).build())
@@ -150,7 +150,7 @@ public class GlobalPoolingMaskingTests extends BaseDL4JTest {
         int width = 6;
 
         PoolingType[] poolingTypes =
-                        new PoolingType[] {PoolingType.SUM, PoolingType.AVG, PoolingType.MAX, PoolingType.PNORM};
+                {PoolingType.SUM, PoolingType.AVG, PoolingType.MAX, PoolingType.PNORM};
 
         for (PoolingType pt : poolingTypes) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)

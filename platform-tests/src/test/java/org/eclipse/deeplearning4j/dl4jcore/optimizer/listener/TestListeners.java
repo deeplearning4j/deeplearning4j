@@ -43,8 +43,8 @@ import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.optimize.listeners.TimeIterationListener;
 import org.deeplearning4j.optimize.listeners.CheckpointListener;
-import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 
+import org.deeplearning4j.util.NetworkUtils;
 import org.junit.jupiter.api.Test;
 
 import org.junit.jupiter.api.io.TempDir;
@@ -298,32 +298,32 @@ public class TestListeners extends BaseDL4JTest {
 
         @Override
         public void onEpochStart(Model model) {
-            calls.add(new Triple<>(Call.EPOCH_START, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.EPOCH_START, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
 
         @Override
         public void onEpochEnd(Model model) {
-            calls.add(new Triple<>(Call.EPOCH_END, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.EPOCH_END, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
 
         @Override
         public void onForwardPass(Model model, List<INDArray> activations) {
-            calls.add(new Triple<>(Call.ON_FWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.ON_FWD, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
 
         @Override
         public void onForwardPass(Model model, Map<String, INDArray> activations) {
-            calls.add(new Triple<>(Call.ON_FWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.ON_FWD, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
 
         @Override
         public void onGradientCalculation(Model model) {
-            calls.add(new Triple<>(Call.ON_GRAD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.ON_GRAD, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
 
         @Override
         public void onBackwardPass(Model model) {
-            calls.add(new Triple<>(Call.ON_BWD, BaseOptimizer.getIterationCount(model), BaseOptimizer.getEpochCount(model)));
+            calls.add(new Triple<>(Call.ON_BWD, NetworkUtils.getIterationCount(model), NetworkUtils.getEpochCount(model)));
         }
     }
 }

@@ -25,6 +25,7 @@
 #include <system/common.h>
 #include <system/op_boilerplate.h>
 
+
 using namespace randomOps;
 
 template <typename T, typename OpClass>
@@ -48,7 +49,6 @@ static SD_INLINE SD_DEVICE void randomTripleGeneric(sd::Pointer state, void cons
                                                                             zShapeBuffer, extraArguments);
 }
 
-#ifndef __CLION_IDE__
 // here we generate kernels for target operations
 DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float,
                        INPUT(sd::Pointer state, void* z, sd::LongType const* zShapeBuffer, void* extraArguments),
@@ -105,7 +105,6 @@ DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16,
                        PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                        OPS_A(RANDOM_OPS))
 
-#endif
 
 namespace functions {
 namespace random {
@@ -282,7 +281,7 @@ SD_HOST void RandomFunction<float>::executeCudaSingle(dim3& launchDims, cudaStre
   // this macro builds bunch of IF/ELSE selectors for kernel launch
   DISPATCH_SIMPLE(randomSingle, float, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -295,7 +294,7 @@ SD_HOST void RandomFunction<float16>::executeCudaSingle(dim3& launchDims, cudaSt
   // this macro builds bunch of IF/ELSE selectors for kernel launch
   DISPATCH_SIMPLE(randomSingle, float16, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -308,7 +307,7 @@ SD_HOST void RandomFunction<bfloat16>::executeCudaSingle(dim3& launchDims, cudaS
   // this macro builds bunch of IF/ELSE selectors for kernel launch
   DISPATCH_SIMPLE(randomSingle, bfloat16, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -321,7 +320,7 @@ SD_HOST void RandomFunction<double>::executeCudaSingle(dim3& launchDims, cudaStr
   // this macro builds bunch of IF/ELSE selectors for kernel launch
   DISPATCH_SIMPLE(randomSingle, double, PARAMS(stateHost, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -337,7 +336,7 @@ SD_HOST void RandomFunction<float>::executeCudaDouble(dim3& launchDims, cudaStre
   DISPATCH_SIMPLE(randomDouble, float, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -353,7 +352,7 @@ SD_HOST void RandomFunction<float16>::executeCudaDouble(dim3& launchDims, cudaSt
   DISPATCH_SIMPLE(randomDouble, float16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -369,7 +368,7 @@ SD_HOST void RandomFunction<bfloat16>::executeCudaDouble(dim3& launchDims, cudaS
   DISPATCH_SIMPLE(randomDouble, bfloat16, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -385,7 +384,7 @@ SD_HOST void RandomFunction<double>::executeCudaDouble(dim3& launchDims, cudaStr
   DISPATCH_SIMPLE(randomDouble, double, PARAMS(stateHost, x, xShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -404,7 +403,7 @@ SD_HOST void RandomFunction<float>::executeCudaTriple(dim3& launchDims, cudaStre
                   PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -423,7 +422,7 @@ SD_HOST void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, cudaSt
                   PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -442,7 +441,7 @@ SD_HOST void RandomFunction<bfloat16>::executeCudaTriple(dim3& launchDims, cudaS
                   PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 template <>
@@ -461,7 +460,7 @@ SD_HOST void RandomFunction<double>::executeCudaTriple(dim3& launchDims, cudaStr
                   PARAMS(stateHost, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments),
                   OPS_A(RANDOM_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "RandomFunction executeCudaSingle(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template class RandomFunction, , SD_FLOAT_TYPES);

@@ -45,7 +45,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Upsampling1D extends BaseUpsamplingLayer {
 
-    protected int[] size;
+    protected long[] size;
 
     protected Upsampling1D(UpsamplingBuilder builder) {
         super(builder);
@@ -126,9 +126,9 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          *
          * @param size upsampling size in single spatial dimension of this 1D layer
          */
-        public Builder size(int size) {
+        public Builder size(long size) {
 
-            this.setSize(new int[] {size});
+            this.setSize(new long[] {size});
             return this;
         }
 
@@ -137,7 +137,7 @@ public class Upsampling1D extends BaseUpsamplingLayer {
          *
          * @param size upsampling size in single spatial dimension of this 1D layer
          */
-        public Builder size(int[] size) {
+        public Builder size(long[] size) {
             this.setSize(size);
             return this;
         }
@@ -149,11 +149,11 @@ public class Upsampling1D extends BaseUpsamplingLayer {
         }
 
         @Override
-        public void setSize(int... size) {
+        public void setSize(long... size) {
 
-            if(size.length == 2){
+            if(size.length == 2) {
                 if(size[0] == size[1]) {
-                    setSize(new int[]{size[0]});
+                    setSize(size[0]);
                     return;
                 } else {
                     Preconditions.checkArgument(false,
@@ -162,8 +162,8 @@ public class Upsampling1D extends BaseUpsamplingLayer {
                 }
             }
 
-            int[] temp = ValidationUtils.validate1NonNegative(size, "size");
-            this.size = new int[]{temp[0], temp[0]};
+            long[] temp = ValidationUtils.validate1NonNegativeLong(size, "size");
+            this.size = new long[]{temp[0], temp[0]};
         }
     }
 

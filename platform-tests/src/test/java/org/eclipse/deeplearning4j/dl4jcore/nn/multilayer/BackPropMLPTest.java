@@ -22,6 +22,7 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.multilayer;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -59,6 +60,9 @@ class BackPropMLPTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test MLP Trivial")
     void testMLPTrivial() {
+      Nd4j.getEnvironment().setDeleteShapeInfo(false);
+      Nd4j.getEnvironment().setDeletePrimary(false);
+      Nd4j.getEnvironment().setDeleteSpecial(false);
         // Simplest possible case: 1 hidden layer, 1 hidden neuron, batch size of 1.
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMLPSimpleConfig(new int[] { 1 }, Activation.SIGMOID));
         network.setListeners(new ScoreIterationListener(1));
@@ -297,7 +301,7 @@ class BackPropMLPTest extends BaseDL4JTest {
      * No regularization, no Adagrad, no momentum etc. One iteration.
      */
     private static MultiLayerConfiguration getIrisMLPSimpleConfig(int[] hiddenLayerSizes, Activation activationFunction) {
-        NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).seed(12345L).list();
+        ListBuilder lb = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1)).seed(12345L).list();
         for (int i = 0; i < hiddenLayerSizes.length; i++) {
             int nIn = (i == 0 ? 4 : hiddenLayerSizes[i - 1]);
             lb.layer(i, new DenseLayer.Builder().nIn(nIn).nOut(hiddenLayerSizes[i]).weightInit(WeightInit.XAVIER).activation(activationFunction).build());

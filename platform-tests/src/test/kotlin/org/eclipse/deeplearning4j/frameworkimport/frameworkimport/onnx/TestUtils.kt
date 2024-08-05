@@ -21,7 +21,14 @@ fun runAssertion(graph: Onnx.GraphProto,input: Map<String,INDArray>,outputs: Lis
     val assertion = onnxGraphRunner.run(input)
     val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
 
-    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+    val importedGraph = importGraph.importGraph(
+        onnxIRGraph,
+        null,
+        null,
+        convertToOnnxTensors(input),
+        onnxOpRegistry,
+        false
+    )
     val result = importedGraph.output(input,outputs)
     Assertions.assertEquals(assertion, result)
 }

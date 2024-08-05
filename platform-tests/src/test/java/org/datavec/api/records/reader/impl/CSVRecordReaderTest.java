@@ -223,9 +223,7 @@ class CSVRecordReaderTest extends BaseND4JTest {
         System.out.println("\n\n\n--------------------------------");
         List<Record> contents = rr.loadFromMetaData(metaList);
         assertEquals(150, contents.size());
-        // for(Record r : contents ){
-        // System.out.println(r);
-        // }
+
         List<RecordMetaData> meta2 = new ArrayList<>();
         meta2.add(metaList.get(100));
         meta2.add(metaList.get(90));

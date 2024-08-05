@@ -73,7 +73,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
      * @return number of parameters of the channels-wise convolution operation
      */
     private long numDepthWiseParams(SeparableConvolution2D layerConf) {
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
 
@@ -99,7 +99,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
     public List<String> paramKeys(Layer layer) {
         SeparableConvolution2D layerConf =
                 (SeparableConvolution2D) layer;
-        if(layerConf.hasBias()){
+        if(layerConf.hasBias()) {
             return Arrays.asList(DEPTH_WISE_WEIGHT_KEY, POINT_WISE_WEIGHT_KEY, BIAS_KEY);
         } else {
             return weightKeys(layer);
@@ -170,7 +170,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         SeparableConvolution2D layerConf =
                         (SeparableConvolution2D) conf.getLayer();
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val depthMultiplier = layerConf.getDepthMultiplier();
         val nOut = layerConf.getNOut();
@@ -216,8 +216,8 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
         int depthMultiplier = layerConf.getDepthMultiplier();
 
         if (initializeParams) {
-            int[] kernel = layerConf.getKernelSize();
-            int[] stride = layerConf.getStride();
+            long[] kernel = layerConf.getKernelSize();
+            long[] stride = layerConf.getStride();
 
             val inputDepth = layerConf.getNIn();
 
@@ -229,7 +229,7 @@ public class SeparableConvolutionParamInitializer implements ParamInitializer {
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                             weightView);
         } else {
-            int[] kernel = layerConf.getKernelSize();
+            long[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
                             new long[] {depthMultiplier, layerConf.getNIn(), kernel[0], kernel[1]}, weightView, 'c');
         }

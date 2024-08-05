@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @Tag(TagNames.DL4J_OLD_API)
 @Tag(TagNames.LONG_TEST)
 @Tag(TagNames.LARGE_RESOURCES)
-@Disabled("C++ error on gpu with bacprop")
 class BatchNormalizationTest extends BaseDL4JTest {
 
     static {
@@ -115,7 +114,6 @@ class BatchNormalizationTest extends BaseDL4JTest {
         INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
         INDArray mean = output.mean(0);
         INDArray stdev = output.std(false, 0);
-        // System.out.println(Arrays.toString(mean.data().asFloat()));
         assertArrayEquals(new float[nOut], mean.data().asFloat(), 1e-6f);
         assertEquals(Nd4j.ones(nOut), stdev);
         // If we fix gamma/beta: expect different mean and variance...
@@ -167,8 +165,6 @@ class BatchNormalizationTest extends BaseDL4JTest {
         INDArray xHat = input.subRowVector(mean).divRowVector(Transforms.sqrt(var.add(eps), true));
         INDArray outExpected = xHat.mulRowVector(gamma).addRowVector(beta);
         INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
-        // System.out.println(Arrays.toString(outExpected.data().asDouble()));
-        // System.out.println(Arrays.toString(out.data().asDouble()));
         assertEquals(outExpected, out);
         // -------------------------------------------------------------
         // Check backprop
@@ -185,9 +181,6 @@ class BatchNormalizationTest extends BaseDL4JTest {
         INDArray dldbeta = p.getFirst().getGradientFor("beta");
         assertEquals(dldgammaExp, dldgamma);
         assertEquals(dldbetaExp, dldbeta);
-        // System.out.println("EPSILONS");
-        // System.out.println(Arrays.toString(dldinExp.data().asDouble()));
-        // System.out.println(Arrays.toString(p.getSecond().dup().data().asDouble()));
         assertEquals(dldinExp, p.getSecond());
     }
 
@@ -280,8 +273,7 @@ class BatchNormalizationTest extends BaseDL4JTest {
         INDArray outExpected = Nd4j.getExecutioner().exec(new BroadcastMulOp(xHat, gamma, xHat.dup(), 1));
         Nd4j.getExecutioner().exec(new BroadcastAddOp(outExpected, beta, outExpected, 1));
         INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
-        // System.out.println(Arrays.toString(outExpected.data().asDouble()));
-        // System.out.println(Arrays.toString(out.data().asDouble()));
+
         assertEquals(outExpected, out);
         // -------------------------------------------------------------
         // Check backprop

@@ -20,14 +20,11 @@
 package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -86,11 +83,9 @@ class BNGradientCheckTest extends BaseDL4JTest {
         INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
         for (boolean useLogStd : new boolean[] { true, false }) {
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 1)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).nOut(3).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
+            ListBuilder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 1)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).nOut(3).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
-            // for (int j = 0; j < mln.getnLayers(); j++)
-            // System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             // Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
@@ -116,7 +111,7 @@ class BNGradientCheckTest extends BaseDL4JTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
         for (boolean useLogStd : new boolean[] { true, false }) {
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration
+           ListBuilder builder = new NeuralNetConfiguration
                     .Builder().dataType(DataType.DOUBLE)
                     .trainingWorkspaceMode(WorkspaceMode.NONE)
                     .updater(new NoOp()).seed(12345L)
@@ -132,8 +127,6 @@ class BNGradientCheckTest extends BaseDL4JTest {
                     .setInputType(InputType.convolutional(hw, hw, depth));
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
-            // for (int j = 0; j < mln.getnLayers(); j++)
-            // System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             // Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
@@ -159,11 +152,9 @@ class BNGradientCheckTest extends BaseDL4JTest {
         INDArray input = ds.getFeatures();
         INDArray labels = ds.getLabels();
         for (boolean useLogStd : new boolean[] { true, false }) {
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 1)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
+            ListBuilder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 1)).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(3).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).nOut(3).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build());
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
-            // for (int j = 0; j < mln.getnLayers(); j++)
-            // System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             // Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
@@ -189,11 +180,9 @@ class BNGradientCheckTest extends BaseDL4JTest {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
         for (boolean useLogStd : new boolean[] { true, false }) {
-            MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 2)).list().layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(hw, hw, depth));
+            ListBuilder builder = new NeuralNetConfiguration.Builder().updater(new NoOp()).dataType(DataType.DOUBLE).seed(12345L).dist(new NormalDistribution(0, 2)).list().layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2).activation(Activation.IDENTITY).build()).layer(1, new BatchNormalization.Builder().useLogStd(useLogStd).lockGammaBeta(true).gamma(2.0).beta(0.5).build()).layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build()).layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(nOut).build()).setInputType(InputType.convolutional(hw, hw, depth));
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
-            // for (int j = 0; j < mln.getnLayers(); j++)
-            // System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             // Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             // i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             // However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"

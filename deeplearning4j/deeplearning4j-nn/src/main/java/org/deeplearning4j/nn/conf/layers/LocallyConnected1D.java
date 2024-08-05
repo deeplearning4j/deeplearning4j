@@ -93,7 +93,7 @@ public class LocallyConnected1D extends SameDiffLayer {
         if (inputSize == 0) {
             throw new IllegalArgumentException("Input size has to be set for Locally connected layers");
         }
-        int[] inputShape = new int[] {1, nIn, inputSize};
+        int[] inputShape = {1, nIn, inputSize};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
         if (cm == ConvolutionMode.Same) {
@@ -128,7 +128,7 @@ public class LocallyConnected1D extends SameDiffLayer {
             InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
             this.nIn = c.getSize();
         }
-        if(featureDim <= 0 || override){
+        if(featureDim <= 0 || override) {
             InputType.InputTypeRecurrent c = (InputType.InputTypeRecurrent) inputType;
             this.featureDim = kernel * (int) c.getSize();
         }
@@ -175,15 +175,17 @@ public class LocallyConnected1D extends SameDiffLayer {
         int sH = stride;
         int kH = kernel;
 
-        if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)){
+        if(padding > 0 || (cm == ConvolutionMode.Same && paddingR > 0)) {
             //Note: for same mode, bottom/right padding can be 1 more than top/left padding
             //NCW format.
             if(cm == ConvolutionMode.Same) {
                 layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, paddingR}})), PadMode.CONSTANT, 0);
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, paddingR}})),
+                        PadMode.CONSTANT, 0);
             } else {
                 layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, padding}})), PadMode.CONSTANT, 0);
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, padding}})),
+                        PadMode.CONSTANT, 0);
             }
         }
 

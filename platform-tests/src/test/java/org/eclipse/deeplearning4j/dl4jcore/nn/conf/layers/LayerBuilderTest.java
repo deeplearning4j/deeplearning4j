@@ -61,11 +61,11 @@ class LayerBuilderTest extends BaseDL4JTest {
 
     PoolingType poolType = PoolingType.MAX;
 
-    int[] kernelSize = new int[] { 2, 2 };
+    long[] kernelSize = { 2, 2 };
 
-    int[] stride = new int[] { 2, 2 };
+    long[] stride = { 2, 2 };
 
-    int[] padding = new int[] { 1, 1 };
+    long[] padding = { 1, 1 };
 
     int k = 1;
 
@@ -116,7 +116,6 @@ class LayerBuilderTest extends BaseDL4JTest {
     void testConvolutionLayer() throws Exception {
         ConvolutionLayer conv = new ConvolutionLayer.Builder(kernelSize, stride, padding).build();
         checkSerialization(conv);
-        // assertEquals(convType, conv.getConvolutionType());
         assertArrayEquals(kernelSize, conv.getKernelSize());
         assertArrayEquals(stride, conv.getStride());
         assertArrayEquals(padding, conv.getPadding());
@@ -158,8 +157,8 @@ class LayerBuilderTest extends BaseDL4JTest {
 
     @Test
     @DisplayName("Test Graves LSTM")
-    void testGravesLSTM() throws Exception {
-        GravesLSTM glstm = new GravesLSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
+    void testLSTM() throws Exception {
+        LSTM glstm = new LSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
         checkSerialization(glstm);
         assertEquals(glstm.getForgetGateBiasInit(), 1.5, 0.0);
         assertEquals(glstm.getNIn(), numIn);
@@ -167,16 +166,6 @@ class LayerBuilderTest extends BaseDL4JTest {
         assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
     }
 
-    @Test
-    @DisplayName("Test Graves Bidirectional LSTM")
-    void testGravesBidirectionalLSTM() throws Exception {
-        final GravesBidirectionalLSTM glstm = new GravesBidirectionalLSTM.Builder().forgetGateBiasInit(1.5).activation(Activation.TANH).nIn(numIn).nOut(numOut).build();
-        checkSerialization(glstm);
-        assertEquals(1.5, glstm.getForgetGateBiasInit(), 0.0);
-        assertEquals(glstm.getNIn(), numIn);
-        assertEquals(glstm.getNOut(), numOut);
-        assertTrue(glstm.getActivationFn() instanceof ActivationTanH);
-    }
 
     @Test
     @DisplayName("Test Embedding Layer")

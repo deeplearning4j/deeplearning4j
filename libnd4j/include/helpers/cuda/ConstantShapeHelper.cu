@@ -37,7 +37,7 @@ ConstantShapeHelper::ConstantShapeHelper() {
 
   _cache.resize(numDevices);
   for (int e = 0; e < numDevices; e++) {
-    SD_MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer *> cache;
+    SD_MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer*> cache;
     _cache[e] = cache;
   }
 }
@@ -47,132 +47,201 @@ ConstantShapeHelper& ConstantShapeHelper::getInstance() {
   return instance;
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(sd::DataType dataType, char order,
-                                                             const std::vector<sd::LongType>& shape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape);
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const DataType dataType, const char order, const int rank,
+                                                             const LongType* shape) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(dataType, order, shape, rank);
   auto ret = bufferForShapeInfo(descriptor);
-  delete descriptor;
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
   return ret;
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::DataType dataType, const char order,
-                                                             const int rank, const sd::LongType* shape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape, rank);
-  auto ret = bufferForShapeInfo(descriptor);
-  delete descriptor;
-  return ret;
-}
-
-ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *descriptor) {
+ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(LongType* buffer, ShapeDescriptor* descriptor) {
   int deviceId = AffinityManager::currentDeviceId();
 
   std::lock_guard<std::mutex> lock(_mutex);
 
+  if (descriptor == nullptr) descriptor = new ShapeDescriptor(buffer);
+
+  if (descriptor->dataType() == UNKNOWN) {
+    THROW_EXCEPTION("Unable to create array with unknown data type.");
+  }
+
+  if (buffer == nullptr) {
+    THROW_EXCEPTION("Unable to create and store a shape buffer with null buffer.");
+  }
+
+  if (ArrayOptions::dataType(buffer) == UNKNOWN) {
+    THROW_EXCEPTION("Unable to create and store a shape buffer with unknown data type.");
+  }
+
   if (_cache[deviceId].count(*descriptor) == 0) {
-    auto hPtr =
-        std::make_shared<PointerWrapper>(descriptor->toShapeInfo(), std::make_shared<PrimaryPointerDeallocator>());
-    auto dPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(hPtr->pointer(),
-                                                       shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>())),
-        std::make_shared<CudaPointerDeallocator>());
-    ConstantShapeBuffer *buffer = new ConstantShapeBuffer(hPtr, dPtr);
+    auto hPtr = std::make_shared<PointerWrapper>(buffer, std::make_shared<PrimaryPointerDeallocator>());
+
+    auto hPtrPointer = hPtr->pointer();
+    auto byteLength = shape::shapeInfoByteLength(hPtr->pointerAsT<LongType>());
+    auto dealloc = std::make_shared<CudaPointerDeallocator>();
+    auto replicated = ConstantHelper::getInstance().replicatePointer(hPtrPointer, byteLength);
+    auto dPtr = std::make_shared<PointerWrapper>(replicated, dealloc);
+
+    ConstantShapeBuffer* buffer = new ConstantShapeBuffer(hPtr, dPtr);
     _cache[deviceId][*descriptor] = buffer;
-    return _cache[deviceId][*descriptor];
+    return buffer;
   } else {
     return _cache[deviceId].at(*descriptor);
   }
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+ShapeDescriptor*  ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *descriptor) {
+  std::lock_guard<std::mutex> lock(_mutex);
+
+  for (const auto& cache : _cache) {
+    auto it = cache.find(*descriptor);
+    if (it != cache.end()) {
+      // Key found in the map
+      return it->second;
+    }
+  }
+
+  // Key not found in any map
+  return nullptr;
+}
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor* descriptor) {
+  return storeAndWrapBuffer(descriptor->toShapeInfo(), descriptor);
+}
+
+ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const LongType* shapeInfo) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
   auto ret = bufferForShapeInfo(descriptor);
-  delete descriptor;
   return ret;
 }
 
-bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor) {
+bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor* descriptor) {
   auto deviceId = AffinityManager::currentDeviceId();
   std::lock_guard<std::mutex> lock(_mutex);
 
   return _cache[deviceId].count(*descriptor) != 0;
 }
 
-const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order, const int rank,
-                                                    const sd::LongType* shape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape, rank);
+const LongType* ConstantShapeHelper::createShapeInfo(const DataType dataType, const char order, const int rank,
+                                                     const LongType* shape, LongType extraProperties = -1) {
+  if (extraProperties < 0) {
+    extraProperties = ArrayOptions::flagForDataType(dataType);
+  }
+
+  ShapeDescriptor* descriptor = new ShapeDescriptor(dataType, order, shape, (LongType*)nullptr, rank, extraProperties);
   auto ret = bufferForShapeInfo(descriptor)->primary();
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(ret));
+
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
   return ret;
 }
 
-const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const sd::LongType* shapeInfo) {
-  return ConstantShapeHelper::createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
-                                              shape::shapeOf(const_cast<sd::LongType*>(shapeInfo)));
+const LongType* ConstantShapeHelper::createShapeInfo(const DataType dataType, const LongType* shapeInfo) {
+  return createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo),
+                         shape::shapeOf(const_cast<LongType*>(shapeInfo)), -1);
 }
 
-const sd::LongType * ConstantShapeHelper::emptyShapeInfo(const sd::DataType dataType) {
-  auto descriptor = ShapeDescriptor::emptyDescriptor(dataType);
+const LongType* ConstantShapeHelper::emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape) {
+  auto descriptor = ShapeBuilders::createShapeInfo(dataType, 'c', shape, nullptr);
+  ArrayOptions::setPropertyBit(descriptor, ARRAY_EMPTY);
+  auto existing = createFromExisting(descriptor);
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
+  return existing;
+}
+
+const LongType* ConstantShapeHelper::emptyShapeInfo(const DataType dataType) {
+  auto descriptor = ShapeBuilders::emptyShapeInfo(dataType, nullptr);
+  auto existing = createFromExisting(descriptor);
+  if (ArrayOptions::dataType(descriptor) != dataType) {
+    std::string errorMessage;
+    errorMessage += "ConstantShapeHelper::emptyShapeInfo: DataType mismatch. Expected ";
+    errorMessage += DataTypeUtils::asString(dataType);
+    errorMessage += " but got ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(descriptor));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
+  return existing;
+}
+
+const LongType* ConstantShapeHelper::scalarShapeInfo(const DataType dataType) {
+  auto descriptor = ShapeBuilders::createScalarShapeInfo(dataType);
+  auto ret = createFromExisting(descriptor);
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
+  return ret;
+}
+
+const LongType* ConstantShapeHelper::vectorShapeInfo(const LongType length, const DataType dataType) {
+  auto descriptor = ShapeBuilders::createVectorShapeInfo(dataType, length);
+  auto ret = createFromExisting(descriptor);
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
+  return ret;
+}
+
+const LongType* ConstantShapeHelper::createShapeInfo(const DataType dataType, const char order,
+                                                     const std::vector<LongType>& shape) {
+  auto ret = ShapeBuilders::createShapeInfo(dataType, order, shape, nullptr);
+  auto existing = createFromExisting(ret);
+  return existing;
+}
+
+const LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descriptor) {
   return bufferForShapeInfo(descriptor)->primary();
 }
 
-const sd::LongType * ConstantShapeHelper::scalarShapeInfo(const sd::DataType dataType) {
-  auto descriptor = ShapeDescriptor::scalarDescriptor(dataType);
-  auto ret =  bufferForShapeInfo(descriptor)->primary();
-  delete descriptor;
-  return ret;
-}
-
-const sd::LongType * ConstantShapeHelper::vectorShapeInfo(const sd::LongType length, const sd::DataType dataType) {
-  auto descriptor = ShapeDescriptor::vectorDescriptor(length, dataType);
-  auto ret = bufferForShapeInfo(descriptor)->primary();
-  delete descriptor;
-  return ret;
-}
-
-const sd::LongType * ConstantShapeHelper::createShapeInfo(const sd::DataType dataType, const char order,
-                                                    const std::vector<sd::LongType>& shape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(dataType, order, shape);
-  auto ret = bufferForShapeInfo(descriptor)->primary();
-  delete descriptor;
-  return ret;
-}
-
-const sd::LongType * ConstantShapeHelper::createShapeInfo(ShapeDescriptor *descriptor) {
-  return bufferForShapeInfo(descriptor)->primary();
-}
-
-const sd::LongType * ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+const LongType* ConstantShapeHelper::createFromExisting(const LongType* shapeInfo, bool destroyOriginal) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-  delete descriptor;
-  if (destroyOriginal) RELEASE(shapeInfo, nullptr);
+  // note we used to delete descriptors here. Some end up being keys in the
+  // constant shape helper. We should avoid deleting these.
+  return result;
+}
+
+const LongType* ConstantShapeHelper::createFromExisting(const LongType* shapeInfo, memory::Workspace* workspace) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
+  return result;
+}
+
+const LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, bool destroyOriginal) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
+  auto result = createShapeInfo(descriptor);
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
+  //if (destroyOriginal) RELEASE(shapeInfo, nullptr);
 
   return result;
 }
 
-const sd::LongType * ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+const LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, memory::Workspace* workspace) {
+  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo())
   RELEASE(shapeInfo, workspace);
   return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const sd::LongType* maxShapeInfo,
-                                                                                 const sd::LongType* minShapeInfo,
-                                                                                 sd::memory::Workspace* workspace,
-                                                                                 const std::vector<sd::LongType>& dimensions) {
-  sd::LongType* newShapeInfo = nullptr;
+ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(
+    const LongType* maxShapeInfo, const LongType* minShapeInfo, memory::Workspace* workspace,
+    const std::vector<LongType>& dimensions) {
+  LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), sd::LongType);
 
   newShapeInfo[0] = shape::rank(maxShapeInfo);
   newShapeInfo[2 * shape::rank(maxShapeInfo) + 1] = 0;
-  sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                      // type
+  ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                          // type
   newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo);  // ews
   newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);              // order
 
   if (!dimensions.empty()) {
-    for (sd::LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
+    for (LongType k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
       if (j < dimensions.size() && dimensions[j] == i) {
         shape::shapeOf(newShapeInfo)[i] = shape::shapeOf(minShapeInfo)[k];
         shape::stride(newShapeInfo)[i] = shape::stride(minShapeInfo)[k++];
@@ -196,52 +265,52 @@ ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
     }
   }
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
-
-  RELEASE(newShapeInfo, workspace);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo);
+  //RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
-  delete descriptor;
+  if (Environment::getInstance().isDeleteShapeInfo())
+    RELEASE(descriptor, workspace);
   return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer * ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const sd::LongType* inShapeInfo, const std::vector<LongType> *dimsWithUnities,
-                                                                                sd::memory::Workspace* workspace) {
-  sd::LongType* newShapeInfo = nullptr;
+ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
+    const LongType* inShapeInfo, const std::vector<LongType>* dimsWithUnities, memory::Workspace* workspace) {
+  LongType* newShapeInfo = nullptr;
   ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities->size()),
            sd::LongType);
 
-  sd::LongType temp;
+  LongType temp;
   if (dimsWithUnities->size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities->at(0)) {
-    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), 1,&temp);
+    auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), 1, &temp);
     shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims->data(), dims->size(), newShapeInfo);
     delete dims;
   } else {
     shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities->data(), dimsWithUnities->size(), newShapeInfo);
   }
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo);
 
   RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
-  delete descriptor;
-
+ //note we used to delete descriptors here. Some end up being used
+  // in the constant shape helper and should not be deleted.
   return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
-ConstantShapeBuffer *ConstantShapeHelper::createSubArrShapeInfo(const sd::LongType* inShapeInfo, const LongType* dims,
-                                                                const LongType dimsSize, sd::memory::Workspace* workspace) {
-  sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
+ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const LongType* inShapeInfo, const LongType* dims,
+                                                                const LongType dimsSize, memory::Workspace* workspace) {
+  LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo);
 
   RELEASE(newShapeInfo, workspace);
 
-  auto ret =  bufferForShapeInfo(descriptor);
-  delete descriptor;
+  auto ret = bufferForShapeInfo(descriptor);
+  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 

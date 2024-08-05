@@ -38,7 +38,7 @@ public class ExecPrintListener extends BaseListener {
     @Override
     public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         System.out.println("------ Op: " + op.getName() + " - opName = " + op.getOp().opName() + ", class = " + op.getOp().getClass().getName() + " ------");
-        for(INDArray arr : outputs){
+        for(INDArray arr : outputs) {
             System.out.println(arr);
         }
     }

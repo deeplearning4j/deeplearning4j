@@ -69,11 +69,11 @@ class KerasDepthwiseConvolution2DTest extends BaseDL4JTest {
 
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
 
-    private final int[] KERNEL_SIZE = new int[] { 1, 2 };
+    private final long[] KERNEL_SIZE = { 1, 2 };
 
-    private final int[] DILATION = new int[] { 2, 2 };
+    private final long[] DILATION = { 2, 2 };
 
-    private final int[] STRIDE = new int[] { 3, 4 };
+    private final long[] STRIDE = { 3, 4 };
 
     private final int DEPTH_MULTIPLIER = 4;
 
@@ -81,7 +81,7 @@ class KerasDepthwiseConvolution2DTest extends BaseDL4JTest {
 
     private final String BORDER_MODE_VALID = "valid";
 
-    private final int[] VALID_PADDING = new int[] { 0, 0 };
+    private final long[] VALID_PADDING = { 0, 0 };
 
     private Integer keras2 = 2;
 
@@ -115,23 +115,23 @@ class KerasDepthwiseConvolution2DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_DEPTH_WISE_REGULARIZER(), W_reg);
         config.put(conf.getLAYER_FIELD_DROPOUT(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DEPTH_MULTIPLIER(), DEPTH_MULTIPLIER);
-        ArrayList kernel = new ArrayList<Integer>() {
+        List<Long> kernel = new ArrayList<>() {
 
             {
-                for (int i : KERNEL_SIZE) add(i);
+                for (long i : KERNEL_SIZE) add(i);
             }
         };
         config.put(conf.getLAYER_FIELD_KERNEL_SIZE(), kernel);
         if (withDilation) {
-            ArrayList dilation = new ArrayList<Integer>() {
+            List<Long> dilation = new ArrayList<>() {
 
                 {
-                    for (int i : DILATION) add(i);
+                    for (long i : DILATION) add(i);
                 }
             };
             config.put(conf.getLAYER_FIELD_DILATION_RATE(), dilation);
         }
-        List<Integer> subsampleList = new ArrayList<>();
+        List<Long> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
         config.put(conf.getLAYER_FIELD_CONVOLUTION_STRIDES(), subsampleList);

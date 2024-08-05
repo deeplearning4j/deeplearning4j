@@ -99,14 +99,14 @@ SD_HOST void Broadcast<X,Y,Z>::execBroadcast(dim3 launchDims, cudaStream_t *stre
                                                sd::LongType* dimension, sd::LongType  dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   DISPATCH_BY_OPNUM_TTT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execBroadcast(...) failed");
 }
 
 template<typename X, typename Y, typename Z>
 SD_HOST void Broadcast<X,Y,Z>::execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y, const sd::LongType *yShapeInfo, void *z, const sd::LongType const* zShapeInfo) {
   DISPATCH_BY_OPNUM_TTT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo), OPS_A(BROADCAST_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcast(...) failed");
 }
 
 template<typename X, typename Y, typename Z>
@@ -121,7 +121,7 @@ SD_HOST void Broadcast<X,Y,Z>::execInverseBroadcast(dim3 launchDims, cudaStream_
                                                     sd::LongType* dimension, sd::LongType  dimensionLength, sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets, sd::LongType const* tadOnlyShapeInfoZ, sd::LongType const* tadOffsetsZ) {
   DISPATCH_BY_OPNUM_TTT(intermediateInverseBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "execInverseBroadcast(...) failed");
 }
 
 template<typename X, typename Y, typename Z>

@@ -61,13 +61,13 @@ class Convolution3DTest extends BaseDL4JTest {
 
     private int inputHeight = 28 / 2;
 
-    private int[] kernelSize = new int[] { 2, 2, 2 };
+    private long[] kernelSize = new long[] { 2, 2, 2 };
 
-    private int outputDepth = inputDepth - kernelSize[0] + 1;
+    private long outputDepth = inputDepth - kernelSize[0] + 1;
 
-    private int outputHeight = inputHeight - kernelSize[1] + 1;
+    private long outputHeight = inputHeight - kernelSize[1] + 1;
 
-    private int outputWidth = inputWidth - kernelSize[2] + 1;
+    private long outputWidth = inputWidth - kernelSize[2] + 1;
 
     private INDArray epsilon = Nd4j.ones(nExamples, nChannelsOut, outputDepth, outputHeight, outputWidth);
 
@@ -92,7 +92,9 @@ class Convolution3DTest extends BaseDL4JTest {
     }
 
     private Layer getConvolution3DLayer(ConvolutionMode mode) {
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123).layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut).dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false).build()).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
+                .seed(123).layer(new Convolution3D.Builder()
+                        .kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut).dataFormat(Convolution3D.DataFormat.NCDHW).convolutionMode(mode).hasBias(false).build()).build();
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.ones(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());

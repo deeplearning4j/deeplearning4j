@@ -25,10 +25,10 @@
 
 #include <array/ArrayOptions.h>
 #include <execution/LaunchContext.h>
-#include <helpers/shape.h>
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>
 #include <types/types.h>
+#include <helpers/shape.h>
 
 /**
  * Native op executioner:

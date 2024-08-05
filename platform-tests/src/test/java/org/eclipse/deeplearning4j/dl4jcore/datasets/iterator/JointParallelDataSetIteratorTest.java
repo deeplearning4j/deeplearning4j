@@ -39,6 +39,7 @@ import org.junit.jupiter.api.DisplayName;
 @DisplayName("Joint Parallel Data Set Iterator Test")
 @NativeTag
 @Tag(TagNames.FILE_IO)
+@Tag(TagNames.LONG_TEST)
 class JointParallelDataSetIteratorTest extends BaseDL4JTest {
 
     /**

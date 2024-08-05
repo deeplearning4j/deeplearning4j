@@ -22,6 +22,7 @@
 //
 #include <loops/special_kernels.h>
 
+
 namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
@@ -35,7 +36,7 @@ namespace sd {
  * @param length
  */
 template <typename T>
-SD_DEVICE void accumulateKernel(void **vx, void *vz, int n, const sd::LongType length) {
+SD_DEVICE void accumulateKernel(void **vx, void *vz, int n, const LongType length) {
   auto x = reinterpret_cast<T **>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
@@ -50,7 +51,7 @@ SD_DEVICE void accumulateKernel(void **vx, void *vz, int n, const sd::LongType l
   for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
     shmem[threadIdx.x] = 0.0f;
 
-    sd::LongType baseIdx = r;
+    LongType baseIdx = r;
 
     // aggregation step, we roll over all arrays
     for (int ar = 0; ar < n; ar++) {
@@ -69,16 +70,16 @@ SD_DEVICE void accumulateKernel(void **vx, void *vz, int n, const sd::LongType l
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execAccumulateKernel(void **vx, void *vz, int n, const sd::LongType length) {
+SD_KERNEL void execAccumulateKernel(void **vx, void *vz, int n, const LongType length) {
   accumulateKernel<T>(vx, vz, n, length);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void accumulateKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vx, void *vz, int n,
-                                     const sd::LongType length) {
+                                     const LongType length) {
   execAccumulateKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, n, length);
-  sd::DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
+  DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void accumulateKernelGeneric,

@@ -69,7 +69,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
     public List<Regularization> getRegularizationByParam(String paramName) {
         if(layerParams.isWeightParam(paramName)){
             return regularization;
-        } else if(layerParams.isBiasParam(paramName)){
+        } else if(layerParams.isBiasParam(paramName)) {
             return regularizationBias;
         }
         return null;
@@ -215,15 +215,15 @@ public abstract class AbstractSameDiffLayer extends Layer {
      * @param input Input to the layer
      * @return A mask array - should be same datatype as the input (usually)
      */
-    public INDArray onesMaskForInput(INDArray input){
-        if(input.rank() == 2){
+    public INDArray onesMaskForInput(INDArray input) {
+        if(input.rank() == 2) {
             return Nd4j.ones(input.dataType(), input.size(0), 1);
-        } else if(input.rank() == 3){
+        } else if(input.rank() == 3) {
             return Nd4j.ones(input.dataType(), input.size(0), input.size(2)); //mask: [mb, length] vs. input [mb, nIn, length]
-        } else if(input.rank() == 4){
+        } else if(input.rank() == 4) {
             //CNN style - return [mb, 1, 1, 1] for broadcast...
             return Nd4j.ones(input.dataType(), input.size(0), 1, 1, 1);
-        } else if(input.rank() == 5){
+        } else if(input.rank() == 5) {
             //CNN3D style - return [mb, 1, 1, 1, 1] for broadcast...
             return Nd4j.ones(input.dataType(), input.size(0), 1, 1, 1, 1);
         } else {

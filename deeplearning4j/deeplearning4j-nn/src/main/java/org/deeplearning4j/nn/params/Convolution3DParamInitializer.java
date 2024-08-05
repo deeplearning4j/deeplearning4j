@@ -54,7 +54,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf =
                 (Convolution3D) l;
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         return nIn * nOut * kernel[0] * kernel[1] * kernel[2] + (layerConf.hasBias() ? nOut : 0);
@@ -93,7 +93,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
 
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
-        int[] kernel = layerConf.getKernelSize();
+        long[] kernel = layerConf.getKernelSize();
         val nIn = layerConf.getNIn();
         val nOut = layerConf.getNOut();
         INDArray gradientViewReshape = gradientView.reshape(gradientView.length());
@@ -124,8 +124,8 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
         if (initializeParams) {
-            int[] kernel = layerConf.getKernelSize();
-            int[] stride = layerConf.getStride();
+            long[] kernel = layerConf.getKernelSize();
+            long[] stride = layerConf.getStride();
 
             val inputDepth = layerConf.getNIn();
             val outputDepth = layerConf.getNOut();
@@ -139,7 +139,7 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
             return layerConf.getWeightInitFn().init(fanIn, fanOut, weightsShape, 'c',
                     weightView);
         } else {
-            int[] kernel = layerConf.getKernelSize();
+            long[] kernel = layerConf.getKernelSize();
             return WeightInitUtil.reshapeWeights(
                     new long[]{layerConf.getNOut(), layerConf.getNIn(), kernel[0], kernel[1], kernel[2]},
                     weightView, 'c');
