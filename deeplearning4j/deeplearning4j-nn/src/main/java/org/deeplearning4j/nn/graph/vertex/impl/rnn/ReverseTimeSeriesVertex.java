@@ -45,7 +45,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
 
         if (inputName == null) {
             // Don't use masks
-            this.inputIdx = -1;
+            this.inputIdx = - 1;
         } else {
             // Find the given input
             this.inputIdx = graph.getConfiguration().getNetworkInputs().indexOf(inputName);
@@ -79,7 +79,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         final INDArray input = inputs[0];
 
         // Compute the output
-        return revertTimeSeries(input, mask, workspaceMgr, ArrayType.ACTIVATIONS);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,revertTimeSeries(input, mask, workspaceMgr, ArrayType.INPUT));
     }
 
     @Override
@@ -160,7 +160,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
                 );
 
                 // Put the feature vector to the given destination in the output
-                out.put(new INDArrayIndex[]{
+                out.put(new INDArrayIndex[] {
                                 NDArrayIndex.point(s),
                                 NDArrayIndex.all(),
                                 NDArrayIndex.point(t2)
