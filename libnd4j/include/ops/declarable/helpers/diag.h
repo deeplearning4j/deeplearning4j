@@ -28,8 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void diagFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output);
-SD_LIB_HIDDEN void diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output);
+SD_LIB_HIDDEN void diagFunctor(LaunchContext* context, NDArray const* input, NDArray* output);
+SD_LIB_HIDDEN void diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* output);
 
 }  // namespace helpers
 }  // namespace ops

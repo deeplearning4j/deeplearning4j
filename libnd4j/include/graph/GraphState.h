@@ -41,7 +41,7 @@ namespace graph {
 class SD_LIB_EXPORT GraphState {
  protected:
   // id of this GraphState instance
-  sd::LongType _id = 0;
+  LongType _id = 0;
 
   // map of scopes. Scope id is used as key, since it's referred in calls later anyway
   SD_MAP_IMPL<int, Scope*> _scopes;
@@ -52,14 +52,14 @@ class SD_LIB_EXPORT GraphState {
   Graph* _graph;
 
  public:
-  explicit GraphState(sd::LongType id);
+  explicit GraphState(LongType id);
   ~GraphState();
 
   /**
    *
    * @return
    */
-  sd::LongType id();
+  LongType id();
 
   /**
    * This method adds scope to this state tracker
@@ -67,7 +67,7 @@ class SD_LIB_EXPORT GraphState {
    * @param scopeId
    * @return
    */
-  sd::Status registerScope(int scopeId);
+  Status registerScope(int scopeId);
 
   /**
    * This method cheks if scope with given ID exists
@@ -83,7 +83,7 @@ class SD_LIB_EXPORT GraphState {
    * @param scopeId
    * @return
    */
-  sd::Status forgetScope(int scopeId);
+  Status forgetScope(int scopeId);
 
 #ifndef __JAVACPP_HACK__
   /**
@@ -94,7 +94,7 @@ class SD_LIB_EXPORT GraphState {
    * @param op
    * @return
    */
-  sd::Status attachOpToScope(int scopeId, int nodeId, sd::ops::DeclarableOp* op, ArgumentsList inputs);
+  Status attachOpToScope(int scopeId, int nodeId, ops::DeclarableOp* op, ArgumentsList inputs);
 
   /**
    * This method returns pointer to the scope with given id
@@ -113,7 +113,7 @@ class SD_LIB_EXPORT GraphState {
    * @param type
    * @return
    */
-  sd::Status attachOpToScope(int scopeId, sd::LongType opNum, int type, ArgumentsList inputs);
+  Status attachOpToScope(int scopeId, LongType opNum, int type, ArgumentsList inputs);
 
   /**
    * This method adds return statement to specified scope
@@ -125,7 +125,7 @@ class SD_LIB_EXPORT GraphState {
    * @param args
    * @return
    */
-  sd::Status defineReturn(int scopeId, int nodeId, ArgumentsList args);
+  Status defineReturn(int scopeId, int nodeId, ArgumentsList args);
 
   /**
    * This method returns current variable space of this state holder

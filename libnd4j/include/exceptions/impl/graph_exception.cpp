@@ -23,26 +23,26 @@
 #include <helpers/StringUtils.h>
 
 namespace sd {
-graph_exception::graph_exception(std::string message, sd::LongType graphId) : std::runtime_error(message) {
+graph_exception::graph_exception(std::string message, LongType graphId) : std::runtime_error(message) {
   this->_message = message;
   this->_graphId = graphId;
 }
 
-graph_exception::graph_exception(std::string message, std::string description, sd::LongType graphId)
+graph_exception::graph_exception(std::string message, std::string description, LongType graphId)
     : std::runtime_error(message) {
   this->_message = message;
   this->_description = description;
   this->_graphId = graphId;
 }
 
-graph_exception::graph_exception(std::string message, const char* description, sd::LongType graphId)
+graph_exception::graph_exception(std::string message, const char* description, LongType graphId)
     : std::runtime_error(message) {
   this->_message = message;
   this->_description = description;
   this->_graphId = graphId;
 }
 
-sd::LongType graph_exception::graphId() { return _graphId; }
+LongType graph_exception::graphId() { return _graphId; }
 
 const char* graph_exception::message() { return _message.c_str(); }
 

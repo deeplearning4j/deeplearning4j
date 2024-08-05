@@ -41,7 +41,7 @@ namespace graph {
  */
 class LogicConditional {
  public:
-  static sd::Status processNode(Graph* graph, Node* node);
+  static Status processNode(Graph* graph, Node* node);
 };
 }  // namespace graph
 }  // namespace sd

@@ -29,14 +29,12 @@ GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations) {
   auto varSpace = graph->getVariableSpace()->clone();
 
   // printing out graph structure
-  // graph->printOut();
 
   // warm up
   for (int e = 0; e < iterations; e++) {
     FlowPath fp;
 
     auto _vs = varSpace->clone();
-    //_vs->workspace()->expandTo(100000);
     _vs->setFlowPath(&fp);
     GraphExecutioner::execute(graph, _vs);
 

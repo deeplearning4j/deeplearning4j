@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
   NDArray* h0BW = nullptr;  // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
   NDArray* maxTimeStep =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
-                // per each input in batch, this means there are no calculations for time >= maxTimeStep
+  // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
   switch (block.width()) {
     case 8:
@@ -76,16 +76,16 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
                "rank = 2, but got %i instead !",
                WxBW->rankOf());
 
-  const sd::LongType inRank = x->rankOf();
-  const sd::LongType time = x->sizeAt(0);
-  const sd::LongType bS = x->sizeAt(1);
-  const sd::LongType numUnitsFW = WxFW->sizeAt(1);
-  const sd::LongType numUnitsBW = WxBW->sizeAt(1);
+  const LongType inRank = x->rankOf();
+  const LongType time = x->sizeAt(0);
+  const LongType bS = x->sizeAt(1);
+  const LongType numUnitsFW = WxFW->sizeAt(1);
+  const LongType numUnitsBW = WxBW->sizeAt(1);
 
-  const std::vector<sd::LongType> expectedWhFWshape = {numUnitsFW, numUnitsFW};
-  const std::vector<sd::LongType> expectedWhBWshape = {numUnitsBW, numUnitsBW};
-  const std::vector<sd::LongType> expectedbFWshape = {2 * numUnitsFW};
-  const std::vector<sd::LongType> expectedbBWshape = {2 * numUnitsBW};
+  const std::vector<LongType> expectedWhFWshape = {numUnitsFW, numUnitsFW};
+  const std::vector<LongType> expectedWhBWshape = {numUnitsBW, numUnitsBW};
+  const std::vector<LongType> expectedbFWshape = {2 * numUnitsFW};
+  const std::vector<LongType> expectedbBWshape = {2 * numUnitsBW};
 
   REQUIRE_TRUE(WhFW->isSameShape(expectedWhFWshape), 0,
                "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward  "
@@ -104,24 +104,24 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
                "%s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedbBWshape).c_str(), ShapeUtils::shapeAsString(bBW).c_str());
   if (h0FW) {
-    const std::vector<sd::LongType> expectedh0FWshape = {bS, numUnitsFW};
+    const std::vector<LongType> expectedh0FWshape = {bS, numUnitsFW};
     REQUIRE_TRUE(h0FW->isSameShape(expectedh0FWshape), 0,
                  "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for forward  "
                  "RNN), expected is %s but got %s instead !",
                  ShapeUtils::shapeAsString(expectedh0FWshape).c_str(), ShapeUtils::shapeAsString(h0FW).c_str());
   }
   if (h0BW) {
-    const std::vector<sd::LongType> expectedh0BWshape = {bS, numUnitsBW};
+    const std::vector<LongType> expectedh0BWshape = {bS, numUnitsBW};
     REQUIRE_TRUE(h0BW->isSameShape(expectedh0BWshape), 0,
                  "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for backward "
                  "RNN), expected is %s but got %s instead !",
                  ShapeUtils::shapeAsString(expectedh0BWshape).c_str(), ShapeUtils::shapeAsString(h0BW).c_str());
   }
   if (maxTimeStep)
-    REQUIRE_TRUE(maxTimeStep->isSameShape({bS}), 0,
-                 "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
-                 "got %s instead !",
-                 bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
+  REQUIRE_TRUE(maxTimeStep->isSameShape({bS}), 0,
+               "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
+               "got %s instead !",
+               bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
   // forward steps
   auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.launchContext());
@@ -130,7 +130,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
   auto seqLen = maxTimeStep;
   if (seqLen == nullptr) {
     //        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.launchContext());      // [bS]
-    seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, sd::DataType::INT64, block.launchContext());  // [bS]
+    seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, INT64, block.launchContext());  // [bS]
     *seqLen = x->sizeAt(0);  // set each element of seqLen to be equal to time
   }
 
@@ -158,11 +158,11 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
   if (seqLen != maxTimeStep) delete seqLen;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(static_bidirectional_rnn) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(static_bidirectional_rnn) {
@@ -174,13 +174,13 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
   auto WhBWShapeInfo = inputShape->at(5);  // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
   auto bBWShapeInfo = inputShape->at(6);   // biases for backward RNN, [2*numUnitsBW]
 
-  sd::LongType const* h0FWShapeInfo =
+  LongType const* h0FWShapeInfo =
       nullptr;  // initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
-  sd::LongType const* h0BWShapeInfo =
+  LongType const* h0BWShapeInfo =
       nullptr;  // initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
-  sd::LongType const* maxTimeStepShapeInfo =
+  LongType const* maxTimeStepShapeInfo =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
-                // per each input in batch, this means there are no calculations for time >= maxTimeStep
+  // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
   switch (block.width()) {
     case 8:
@@ -215,10 +215,10 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
   const int numUnitsFW = WxFWShapeInfo[2];
   const int numUnitsBW = WxBWShapeInfo[2];
 
-  const std::vector<sd::LongType> expectedWhFWshape = {numUnitsFW, numUnitsFW};
-  const std::vector<sd::LongType> expectedWhBWshape = {numUnitsBW, numUnitsBW};
-  const std::vector<sd::LongType> expectedbFWshape = {2 * numUnitsFW};
-  const std::vector<sd::LongType> expectedbBWshape = {2 * numUnitsBW};
+  const std::vector<LongType> expectedWhFWshape = {numUnitsFW, numUnitsFW};
+  const std::vector<LongType> expectedWhBWshape = {numUnitsBW, numUnitsBW};
+  const std::vector<LongType> expectedbFWshape = {2 * numUnitsFW};
+  const std::vector<LongType> expectedbBWshape = {2 * numUnitsBW};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhFWShapeInfo, expectedWhFWshape), 0,
                "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward  "
@@ -237,7 +237,7 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
                "%s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedbBWshape).c_str(), ShapeUtils::shapeAsString(bBWShapeInfo).c_str());
   if (h0FWShapeInfo) {
-    const std::vector<sd::LongType> expectedh0FWshape = {bS, numUnitsFW};
+    const std::vector<LongType> expectedh0FWshape = {bS, numUnitsFW};
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0FWShapeInfo, expectedh0FWshape), 0,
                  "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for forward  "
                  "RNN), expected is %s but got %s instead !",
@@ -245,7 +245,7 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
                  ShapeUtils::shapeAsString(h0FWShapeInfo).c_str());
   }
   if (h0BWShapeInfo) {
-    const std::vector<sd::LongType> expectedh0BWshape = {bS, numUnitsBW};
+    const std::vector<LongType> expectedh0BWshape = {bS, numUnitsBW};
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0BWShapeInfo, expectedh0BWshape), 0,
                  "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for backward "
                  "RNN), expected is %s but got %s instead !",
@@ -253,13 +253,13 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
                  ShapeUtils::shapeAsString(h0BWShapeInfo).c_str());
   }
   if (maxTimeStepShapeInfo)
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, {bS}), 0,
-                 "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
-                 "got %s instead !",
-                 bS, ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
+  REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, {bS}), 0,
+               "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but "
+               "got %s instead !",
+               bS, ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
 
   // evaluate output shapeInfos
-  sd::LongType *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
+  LongType *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
   ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank), sd::LongType);
   ALLOCATE(hFWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank - 1), sd::LongType);
   ALLOCATE(hBWFinalPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank - 1), sd::LongType);

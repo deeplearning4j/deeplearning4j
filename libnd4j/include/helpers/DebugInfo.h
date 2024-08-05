@@ -43,18 +43,18 @@ struct DebugInfo {
   double _maxValue;
   double _meanValue;
   double _stdDevValue;
-  sd::LongType _zeroCount;
-  sd::LongType _positiveCount;
-  sd::LongType _negativeCount;
-  sd::LongType _infCount;
-  sd::LongType _nanCount;
+  LongType _zeroCount;
+  LongType _positiveCount;
+  LongType _negativeCount;
+  LongType _infCount;
+  LongType _nanCount;
 };
 
 SD_INLINE bool operator==(DebugInfo const& first, DebugInfo const& second) {
-  return sd::math::sd_abs(first._minValue - second._minValue) < 0.000001 &&
-         sd::math::sd_abs(first._maxValue - second._maxValue) < 0.000001 &&
-         sd::math::sd_abs(first._meanValue - second._meanValue) < 0.000001 &&
-         sd::math::sd_abs(first._stdDevValue - second._stdDevValue) < 0.000001 &&
+  return math::sd_abs(first._minValue - second._minValue) < 0.000001 &&
+         math::sd_abs(first._maxValue - second._maxValue) < 0.000001 &&
+         math::sd_abs(first._meanValue - second._meanValue) < 0.000001 &&
+         math::sd_abs(first._stdDevValue - second._stdDevValue) < 0.000001 &&
          first._zeroCount == second._zeroCount && first._positiveCount == second._positiveCount &&
          first._negativeCount == second._negativeCount && first._infCount == second._infCount &&
          first._nanCount == second._nanCount;

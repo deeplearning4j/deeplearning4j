@@ -32,12 +32,12 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static sd::LongType uniqueCount_(NDArray* input) {
-  sd::LongType count = 0;
+static LongType uniqueCount_(NDArray* input) {
+  LongType count = 0;
 
   std::vector<T> values;
 
-  for (sd::LongType e = 0; e < input->lengthOf(); e++) {
+  for (LongType e = 0; e < input->lengthOf(); e++) {
     T v = input->e<T>(e);
     if (std::find(values.begin(), values.end(), v) == values.end()) {
       values.push_back(v);
@@ -47,19 +47,19 @@ static sd::LongType uniqueCount_(NDArray* input) {
   return count;
 }
 
-sd::LongType uniqueCount(sd::LaunchContext* context, NDArray* input) {
+LongType uniqueCount(LaunchContext* context, NDArray* input) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::LongType uniqueCount_, (NDArray * input), SD_COMMON_TYPES);
 
 template <typename T>
-static sd::Status uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+static Status uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
   std::vector<T> valuesVector;
   SD_MAP_IMPL<T, int> indicesMap;
   SD_MAP_IMPL<T, int> countsMap;
 
-  for (sd::LongType e = 0; e < input->lengthOf(); e++) {
+  for (LongType e = 0; e < input->lengthOf(); e++) {
     T v = input->e<T>(e);
     if (std::find(valuesVector.begin(), valuesVector.end(), v) == valuesVector.end()) {
       valuesVector.push_back(v);
@@ -78,16 +78,16 @@ static sd::Status uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indic
   };
   samediff::Threads::parallel_for(func, 0, values->lengthOf());
 
-  for (sd::LongType e = 0; e < indices->lengthOf(); e++) {
+  for (LongType e = 0; e < indices->lengthOf(); e++) {
     auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));
     auto dist = std::distance(valuesVector.begin(), posI);
-    indices->p(e, sd::LongType(dist));  // indicesMap[(*input)(e)];
+    indices->p(e, LongType(dist));  // indicesMap[(*input)(e)];
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status uniqueFunctor(sd::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
+Status uniqueFunctor(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                          NDArray* counts) {
   input->syncToHost();
   values->syncToHost();

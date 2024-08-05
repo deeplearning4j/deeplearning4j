@@ -55,7 +55,7 @@ LIST_OP_IMPL(read_list, 1, 1, 0, 0) {
 
   //            OVERWRITE_RESULT(result);
   setupResult(result, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArrayReadV3, read_list);
 DECLARE_SYN(tensorarrayreadv3, read_list);

@@ -59,15 +59,15 @@ typedef union {
 class SD_LIB_HIDDEN TypeCast {
  public:
   template <typename S, typename T>
-  static SD_HOST void convertGeneric(sd::Pointer *extras, void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertGeneric(Pointer *extras, void *dx, LongType N, void *dz);
 
   template <typename T>
-  static SD_HOST void convertToThreshold(sd::Pointer *extras, void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertToThreshold(Pointer *extras, void *dx, LongType N, void *dz);
 
   template <typename T>
-  static SD_HOST void convertFromThreshold(sd::Pointer *extras, const void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertFromThreshold(Pointer *extras, const void *dx, LongType N, void *dz);
 
-  SD_INLINE static SD_HOST sd::LongType estimateQuantizedSize(sd::LongType rawSize) {
+  SD_INLINE static SD_HOST LongType estimateQuantizedSize(LongType rawSize) {
     if (rawSize <= 0) THROW_EXCEPTION("Input size for quantization can't be <= 0");
 
     // 2 fp32 values for max/min, and rawSize number of BYTES
@@ -75,14 +75,14 @@ class SD_LIB_HIDDEN TypeCast {
   }
 
   template <typename T>
-  static SD_HOST void convertToQuantized(sd::Pointer *extras, void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertToQuantized(Pointer *extras, void *dx, LongType N, void *dz);
 
   template <typename T>
-  static SD_HOST void convertFromQuantized(sd::Pointer *extras, void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertFromQuantized(Pointer *extras, void *dx, LongType N, void *dz);
 
 #ifdef __CUDACC__
   template <typename S, typename T>
-  static SD_HOST void convertGenericCuda(sd::Pointer *extras, void *dx, sd::LongType N, void *dz);
+  static SD_HOST void convertGenericCuda(Pointer *extras, void *dx, LongType N, void *dz);
 #endif
 };
 
@@ -106,22 +106,22 @@ SD_INLINE SD_HOST_DEVICE int floorPow2(int n) {
 SD_DEVICE __inline__ int pow2i(int e) { return 1 << e; }
 
 template <typename T>
-SD_HOST void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz,
+SD_HOST void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, const void *dx, LongType N, void *dz,
                                     float threshold);
 
 template <typename T>
-SD_HOST void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, sd::LongType N,
+SD_HOST void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, LongType N,
                                     void *dz);
 
 template <typename T>
-SD_HOST void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *dz);
+SD_HOST void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, LongType N, void *dz);
 
 template <typename T>
-SD_HOST void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, sd::LongType N, int *dz,
+SD_HOST void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, LongType N, int *dz,
                                      int *scalar, int *reductionBuffer, float threshold);
 
 template <typename T>
-SD_HOST void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, sd::LongType N, void *vdz);
+SD_HOST void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, LongType N, void *vdz);
 
 SD_KERNEL void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex);
 
@@ -133,7 +133,7 @@ SD_HOST void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_
                              const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex);
 
 template <typename S, typename T>
-SD_KERNEL void convertKernel(void *dx, sd::LongType N, void *dz);
+SD_KERNEL void convertKernel(void *dx, LongType N, void *dz);
 #endif
 
 }  // namespace sd

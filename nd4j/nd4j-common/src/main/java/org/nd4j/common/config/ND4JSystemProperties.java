@@ -245,12 +245,47 @@ public class ND4JSystemProperties {
      */
     public final static String UDF_NAME_SPACES = "org.nd4j.linalg.api.ops.udf.packages";
 
+
+    /**
+     * Set the  classes to be used in fully qualified format (org.nd4j.ClassName something for example..)
+     * Note this will be checked BEFORE UDF_NAME_SPACES. Pick only 1  to use.
+     * The value should be a comma separated list.
+     */
+    public final static String UDF_CLASSES = "org.nd4j.linalg.api.ops.udf.classes";
+
     /**
      * Sets the number of threads to be used with the deallocator service.
      */
 
     public final static String DEALLOCATOR_SERVICE_GC_THREADS = "org.nd4j.deallocator.threads";
 
+
+    /**
+     * Set the priority for the cpu backend.
+     */
+    public final static String BACKEND_PRIORITY_CPU = "org.nd4j.cpu.priority";
+
+    /**
+     * Set the priority for the cuda backend.
+     */
+    public final static String BACKEND_PRIORITY_GPU = "org.nd4j.gpu.priority";
+
+
+    /**
+     * Set the priority for the aurora backend.
+     */
+    public final static String BACKEND_PRIORITY_AURORA = "org.nd4j.aurora.priority";
+
+
+    /**
+     * Related to nd4j array events.
+     * When determining the point of invocation or point of origin:
+     * aka the points where the ndarray event was triggered
+     * or the originating call site that kicked off the event
+     * These properties represent patterns of regexes to exclude
+     * from scanning when detrermining where the ndarray event was triggered.
+     */
+    public final static String ND4J_EVENT_LOG_POINT_OF_ORIGIN_PATTERNS = "org.nd4j.linalg.profiler.pointoforigin.patterns";
 
     private ND4JSystemProperties() {
     }

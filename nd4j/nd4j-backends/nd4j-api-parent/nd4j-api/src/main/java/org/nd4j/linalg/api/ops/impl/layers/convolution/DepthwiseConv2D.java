@@ -37,12 +37,10 @@ import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueInt
 import org.nd4j.imports.descriptors.properties.adapters.NDArrayShapeAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.SizeThresholdIntArrayIntIndexAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -150,18 +148,8 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addArgs();
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
-        /*
-        // we must permute weights once during import
-        val weightsName = nodeDef.getInput(1);
-        val variable = initWith.getVariable(weightsName);
-        val tmp = initWith.getArrForVarName(weightsName);
-        val array = tmp.permute(3, 2, 0, 1).dup('c');
-
-        initWith.associateArrayWithVariable(array, variable);
-        */
     }
 
     @Override

@@ -214,7 +214,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Override
     public INDArray noOp() {
         if (z != null && x != z)
-            return z().assign(x);
+            return z().assign(x.reshape(z.shape()));
         else {
             //Need to take into account shapes: for example, [1,3].sum(0) -> [3]
             //Or [1,1,1,1].sum(0,2,3) -> [1]

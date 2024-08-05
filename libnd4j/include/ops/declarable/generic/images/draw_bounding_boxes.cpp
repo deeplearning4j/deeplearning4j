@@ -58,7 +58,7 @@ OP_IMPL(draw_bounding_boxes, 3, 1, true) {
                "should be the same, but %lld and %lld occured.",
                images->sizeAt(0), boxes->sizeAt(0));
   helpers::drawBoundingBoxesFunctor(block.launchContext(), images, boxes, colors, output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(draw_bounding_boxes) {

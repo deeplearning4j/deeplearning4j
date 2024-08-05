@@ -25,17 +25,17 @@
 
 namespace sd {
 namespace ops {
-LegacyTransformStrictOp::LegacyTransformStrictOp() : LegacyOp::LegacyOp(1) {
+LegacyTransformStrictOp::LegacyTransformStrictOp() : LegacyOp(1) {
   this->getOpDescriptor()->allowInplace(true);
 }
 
-LegacyTransformStrictOp::LegacyTransformStrictOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+LegacyTransformStrictOp::LegacyTransformStrictOp(int opNum) : LegacyOp(1, opNum) {
   this->getOpDescriptor()->allowInplace(true);
 }
 
 LegacyOp *LegacyTransformStrictOp::clone() { return new LegacyTransformStrictOp(this->_opNum); }
 
-sd::Status LegacyTransformStrictOp::validateAndExecute(Context &block) {
+Status LegacyTransformStrictOp::validateAndExecute(Context &block) {
   auto input = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -55,7 +55,7 @@ sd::Status LegacyTransformStrictOp::validateAndExecute(Context &block) {
   STORE_RESULT(*z);
   traceExecIfNeeded(block);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
@@ -63,10 +63,10 @@ sd::Status LegacyTransformStrictOp::validateAndExecute(Context &block) {
  * col2im. But these ops already have CustomOp implementations.
  *
  */
-ShapeList *LegacyTransformStrictOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyTransformStrictOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  sd::LongType *newShape;
+  LongType *newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));

@@ -62,8 +62,8 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
   const int inSize = x->sizeAt(2);
   const int numUnits = Wx->sizeAt(1);
 
-  const std::vector<sd::LongType> expectedWhShape = {numUnits, numUnits};
-  const std::vector<sd::LongType> expectedbShape = {2 * numUnits};
+  const std::vector<LongType> expectedWhShape = {numUnits, numUnits};
+  const std::vector<LongType> expectedbShape = {2 * numUnits};
 
   REQUIRE_TRUE(Wh->isSameShape(expectedWhShape), 0,
                "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s "
@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
                "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedbShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
   if (h0) {
-    const std::vector<sd::LongType> expectedh0Shape = {bS, numUnits};
+    const std::vector<LongType> expectedh0Shape = {bS, numUnits};
     REQUIRE_TRUE(
         h0->isSameShape(expectedh0Shape), 0,
         "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !",
@@ -86,11 +86,11 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 
   helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep, h, hFinal);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(static_rnn) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(static_rnn) {
@@ -99,8 +99,8 @@ DECLARE_SHAPE_FN(static_rnn) {
   auto WhShapeInfo = inputShape->at(2);  // hidden-to-hidden weights, [numUnits x numUnits]
   auto bShapeInfo = inputShape->at(3);   // biases for, [2*numUnits]
 
-  const sd::LongType* h0ShapeInfo = nullptr;  // initial cell output (at time step = 0) [bS x numUnits]
-  const sd::LongType* maxTimeStepShapeInfo =
+  const LongType* h0ShapeInfo = nullptr;  // initial cell output (at time step = 0) [bS x numUnits]
+  const LongType* maxTimeStepShapeInfo =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
                 // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
@@ -125,8 +125,8 @@ DECLARE_SHAPE_FN(static_rnn) {
   const int bS = xShapeInfo[2];
   const int numUnits = WxShapeInfo[2];
 
-  const std::vector<sd::LongType> expectedWhShape = {numUnits, numUnits};
-  const std::vector<sd::LongType> expectedbShape = {2 * numUnits};
+  const std::vector<LongType> expectedWhShape = {numUnits, numUnits};
+  const std::vector<LongType> expectedbShape = {2 * numUnits};
 
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhShapeInfo, expectedWhShape), 0,
                "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s "
@@ -136,7 +136,7 @@ DECLARE_SHAPE_FN(static_rnn) {
                "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedbShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
   if (h0ShapeInfo) {
-    const std::vector<sd::LongType> expectedh0Shape = {bS, numUnits};
+    const std::vector<LongType> expectedh0Shape = {bS, numUnits};
     REQUIRE_TRUE(
         ShapeUtils::areShapesEqual(h0ShapeInfo, expectedh0Shape), 0,
         "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !",
@@ -148,7 +148,7 @@ DECLARE_SHAPE_FN(static_rnn) {
                  ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
 
   // evaluate output shapeInfos
-  sd::LongType *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
+  LongType *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
   ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank), sd::LongType);
   ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank - 1), sd::LongType);
 

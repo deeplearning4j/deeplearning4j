@@ -41,11 +41,11 @@ OP_IMPL(testop2i2o, 2, 2, true) {
 
   STORE_2_RESULTS(*xO, *yO);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TestOp2i2o, testop2i2o);
 
-DECLARE_TYPES(testop2i2o) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(testop2i2o) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

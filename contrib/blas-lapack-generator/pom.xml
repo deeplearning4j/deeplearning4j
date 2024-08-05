@@ -14,8 +14,8 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <javapoet.version>1.13.0</javapoet.version>
-    <openblas.version>0.3.21</openblas.version>
-    <javacpp.version>1.5.8</javacpp.version>
+    <openblas.version>0.3.26</openblas.version>
+    <javacpp.version>1.5.10</javacpp.version>
     <openblas.javacpp.version>${openblas.version}-${javacpp.version}</openblas.javacpp.version>
   </properties>
 

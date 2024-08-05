@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
 
   std::vector<LongType> axis = *block.getIArguments();
   const bool keepDims = block.getBArguments()->size() > 0 ? (bool)B_ARG(0) : false;
-  sd::ops::reduce_variance varianceOp;
+  reduce_variance varianceOp;
 
   // axis might be dynamic (i.e. tf mode)
   if (block.width() > 1) {
@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
     varianceOp.execute({input, axisVector}, {variances}, {}, {}, {keepDims}, {}, false);
   } else {
     std::vector<LongType>& dims = axis;
-    std::vector<sd::LongType> axes;
+    std::vector<LongType> axes;
     for (int i = 0; i < dims.size(); i++) {
       axes.push_back(dims[i]);
     }
@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
 
   input->reduceAlongDimension(reduce::Mean, *means, &axis, keepDims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(moments) {
@@ -80,7 +80,7 @@ DECLARE_SHAPE_FN(moments) {
 }
 
 DECLARE_TYPES(moments) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 

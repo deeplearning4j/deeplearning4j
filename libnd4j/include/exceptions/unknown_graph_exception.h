@@ -31,7 +31,7 @@
 namespace sd {
 class SD_LIB_EXPORT unknown_graph_exception : public graph_exception {
  public:
-  explicit unknown_graph_exception(sd::LongType graphId);
+  explicit unknown_graph_exception(LongType graphId);
 };
 }  // namespace sd
 

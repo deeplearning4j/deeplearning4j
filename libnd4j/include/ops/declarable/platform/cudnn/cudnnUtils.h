@@ -78,7 +78,7 @@ inline void throwIfCudnnFailed(cudnnStatus_t result_status,
     std::string err_message;
     if (prefix) err_message = std::string(prefix) + ": ";
     err_message += std::string(message);
-    throw ::sd::cuda_exception::build(err_message, result_status);
+    throw cuda_exception::build(err_message, result_status);
   }
 }
 
@@ -301,17 +301,17 @@ struct ConvolutionDesc {
 };
 
 //////////////////////////////////////////////////////////////////////////
-SD_INLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
+SD_INLINE cudnnDataType_t cudnnDataType(DataType dataType) {
   switch (dataType) {
-    case sd::DataType::FLOAT32:
+    case FLOAT32:
       return CUDNN_DATA_FLOAT;
-    case sd::DataType::DOUBLE:
+    case DOUBLE:
       return CUDNN_DATA_DOUBLE;
-    case sd::DataType::HALF:
+    case HALF:
       return CUDNN_DATA_HALF;
-    case sd::DataType::INT32:
+    case INT32:
       return CUDNN_DATA_INT32;
-    case sd::DataType::INT8:
+    case INT8:
       return CUDNN_DATA_INT8;
     default:
       throw datatype_exception::build("Unsupported data type", dataType);

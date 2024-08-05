@@ -28,15 +28,15 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::LongType N,
+SD_LIB_HIDDEN LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, LongType N,
                                             NDArray& rowCounts);
-SD_LIB_HIDDEN void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+SD_LIB_HIDDEN void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, LongType N,
                                      NDArray* outputRows, NDArray* outputCols, NDArray* outputVals,
                                      NDArray* rowCounts = nullptr);
 SD_LIB_HIDDEN void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N,
                                       NDArray* output, NDArray const& data);
 SD_LIB_HIDDEN void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output);
-SD_LIB_HIDDEN bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, sd::LongType dimension);
+SD_LIB_HIDDEN bool cell_contains(NDArray* corner, NDArray* width, NDArray* point, LongType dimension);
 
 }  // namespace helpers
 }  // namespace ops

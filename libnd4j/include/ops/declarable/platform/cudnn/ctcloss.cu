@@ -118,7 +118,7 @@ PLATFORM_IMPL(ctc_loss, ENGINE_CUDA) {
   const int32_t *ldata = labels.data();
   auto emptyGrads = NDArrayFactory::empty<float>();
   cudnnCtcLoss(*context, *logitInput, ldata, *logitInputLengths, *targetLabelLengths, *outputLosses, emptyGrads);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 template <typename T>
@@ -142,8 +142,8 @@ PLATFORM_CHECK(ctc_loss, ENGINE_CUDA) {
 
   Requirements req("CUDNN CTC_LOSS OP");
   req.expectEq(makeInfoVariable(blankIndex, "Blank Index"), 0) &&
-      req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), DataType::INT32) &&
+      req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), FLOAT32) &&
+      req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), INT32) &&
       req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
       req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
       req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&
@@ -176,7 +176,7 @@ PLATFORM_IMPL(ctc_loss_grad, ENGINE_CUDA) {
   // restore grads shape from {T, BATCH, C} -> {BATCHS, T, C}
   outputGradients->permutei({1, 0, 2});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 PLATFORM_CHECK(ctc_loss_grad, ENGINE_CUDA) {
@@ -189,8 +189,8 @@ PLATFORM_CHECK(ctc_loss_grad, ENGINE_CUDA) {
 
   Requirements req("CUDNN CTC_LOSS_GRAD OP");
   req.expectEq(makeInfoVariable(blankIndex, "Blank Index"), 0) &&
-      req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), DataType::FLOAT32) &&
-      req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), DataType::INT32) &&
+      req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), FLOAT32) &&
+      req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), INT32) &&
       req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
       req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
       req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&

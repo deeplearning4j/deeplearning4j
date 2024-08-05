@@ -27,15 +27,15 @@ allocation_exception::allocation_exception(std::string message) : std::runtime_e
   //
 }
 
-allocation_exception allocation_exception::build(std::string message, sd::LongType numBytes) {
-  auto bytes = StringUtils::valueToString<sd::LongType>(numBytes);
+allocation_exception allocation_exception::build(std::string message, LongType numBytes) {
+  auto bytes = StringUtils::valueToString<LongType>(numBytes);
   message += "; Requested bytes: [" + bytes + "]";
   return allocation_exception(message);
 }
 
-allocation_exception allocation_exception::build(std::string message, sd::LongType limit, sd::LongType numBytes) {
-  auto bytes = StringUtils::valueToString<sd::LongType>(numBytes);
-  auto lim = StringUtils::valueToString<sd::LongType>(limit);
+allocation_exception allocation_exception::build(std::string message, LongType limit, LongType numBytes) {
+  auto bytes = StringUtils::valueToString<LongType>(numBytes);
+  auto lim = StringUtils::valueToString<LongType>(limit);
   message += "; Limit bytes: [" + lim + "]; Requested bytes: [" + bytes + "]";
   return allocation_exception(message);
 }

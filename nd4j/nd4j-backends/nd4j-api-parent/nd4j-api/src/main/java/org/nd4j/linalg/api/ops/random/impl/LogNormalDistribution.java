@@ -147,7 +147,7 @@ public class LogNormalDistribution extends BaseRandomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(dataType);
     }

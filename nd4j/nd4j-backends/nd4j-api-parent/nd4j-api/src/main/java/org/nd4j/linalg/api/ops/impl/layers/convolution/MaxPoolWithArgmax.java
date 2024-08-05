@@ -29,7 +29,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -145,74 +144,8 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
 
-        val aKernels = nodeDef.getAttrOrThrow("ksize");
-        val tfKernels = aKernels.getList().getIList();
-
-        int sH = 0;
-        int sW = 0;
-
-        int pH = 0;
-        int pW = 0;
-
-        int kH = 0;
-        int kW = 0;
-
-        val aPadding = nodeDef.getAttrOrThrow("padding");
-        val padding = aPadding.getList().getIList();
-
-        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
-
-        boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
-
-        String data_format = "nhwc";
-        if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
-
-            data_format = attr.getS().toStringUtf8().toLowerCase();
-        }
-
-        if (data_format.equalsIgnoreCase("nhwc")) {
-            sH = tfStrides.get(1).intValue();
-            sW = tfStrides.get(2).intValue();
-
-            kH = tfKernels.get(1).intValue();
-            kW = tfKernels.get(2).intValue();
-
-            pH = padding.size() > 0 ? padding.get(1).intValue() : 0;
-            pW = padding.size() > 0 ? padding.get(2).intValue() : 0;
-        } else {
-            sH = tfStrides.get(2).intValue();
-            sW = tfStrides.get(3).intValue();
-
-            kH = tfKernels.get(2).intValue();
-            kW = tfKernels.get(3).intValue();
-
-            pH = padding.size() > 0 ? padding.get(2).intValue() : 0;
-            pW = padding.size() > 0 ? padding.get(3).intValue() : 0;
-        }
-
-        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sH(sH)
-                .sW(sW)
-                .type(Pooling2D.Pooling2DType.MAX)
-                .paddingMode(isSameMode ? PaddingMode.SAME : PaddingMode.VALID)
-                .kH(kH)
-                .kW(kW)
-                .pH(pH)
-                .pW(pW)
-                .isNHWC(data_format.equalsIgnoreCase("nhwc"))
-                .extra(1.0) // averaging only for non-padded values
-                .build();
-        this.config = pooling2DConfig;
-        addArgs();
-        if(attributesForNode.containsKey("argmax")) {
-            outputType = TFGraphMapper.convertType(attributesForNode.get("argmax").getType());
-        } else {
-            outputType = DataType.LONG;
-        }
     }
 
     @Override

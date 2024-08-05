@@ -33,18 +33,18 @@ class SD_LIB_EXPORT OmpLaunchHelper {
  public:
   OmpLaunchHelper() = delete;
 
-  OmpLaunchHelper(const sd::LongType N, float desiredNumThreads = -1);
+  OmpLaunchHelper(const LongType N, float desiredNumThreads = -1);
 
-  SD_INLINE sd::LongType getThreadOffset(const int threadNum);
-  SD_INLINE sd::LongType getItersPerThread(const int threadNum);
+  SD_INLINE LongType getThreadOffset(const int threadNum);
+  SD_INLINE LongType getItersPerThread(const int threadNum);
 
-  static sd::LongType betterSpan(sd::LongType N);
-  static sd::LongType betterSpan(sd::LongType N, sd::LongType numThreads);
+  static LongType betterSpan(LongType N);
+  static LongType betterSpan(LongType N, LongType numThreads);
 
-  static int betterThreads(sd::LongType N);
-  static int betterThreads(sd::LongType N, int maxThreads);
+  static int betterThreads(LongType N);
+  static int betterThreads(LongType N, int maxThreads);
 
-  static int tadThreads(sd::LongType tadLength, sd::LongType numTads);
+  static int tadThreads(LongType tadLength, LongType numTads);
 
   int _numThreads;
   unsigned int _itersPerThread;
@@ -52,10 +52,10 @@ class SD_LIB_EXPORT OmpLaunchHelper {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-SD_INLINE sd::LongType OmpLaunchHelper::getThreadOffset(const int threadNum) { return threadNum * _itersPerThread; }
+SD_INLINE LongType OmpLaunchHelper::getThreadOffset(const int threadNum) { return threadNum * _itersPerThread; }
 
 ////////////////////////////////////////////////////////////////////////////////
-SD_INLINE sd::LongType OmpLaunchHelper::getItersPerThread(const int threadNum) {
+SD_INLINE LongType OmpLaunchHelper::getItersPerThread(const int threadNum) {
   return (threadNum == _numThreads - 1) ? _itersPerThread + _remainder
                                         : _itersPerThread;  // last thread may contain bigger number of iterations
 }

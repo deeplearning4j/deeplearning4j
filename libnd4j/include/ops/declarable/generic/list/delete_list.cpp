@@ -49,7 +49,7 @@ LIST_OP_IMPL(delete_list, -2, 1, 0, -2) {
   list->remove(idx);
   auto result = list->remove(idx);
   output->assign(result);
-  return sd::Status::OK;
+  return Status::OK;
 
 
 }

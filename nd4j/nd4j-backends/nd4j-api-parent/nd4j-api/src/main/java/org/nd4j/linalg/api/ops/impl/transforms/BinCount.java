@@ -23,7 +23,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -73,9 +72,8 @@ public class BinCount extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(attributesForNode.containsKey("T")) {
-            outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
-        }
+        throw new UnsupportedOperationException("Use the new Tensorflow Importer instead. This method is now removed.");
+
     }
 
     @Override

@@ -102,7 +102,7 @@ SD_INLINE uint32_t surrogateU32(const T& high, const T& low) {
 }
 
 template <typename T>
-sd::LongType symbolLength(const T* it) {
+LongType symbolLength(const T* it) {
   uint8_t lead = castToU8(*it);
   if (lead < 0x80)
     return 1;
@@ -117,7 +117,7 @@ sd::LongType symbolLength(const T* it) {
 }
 
 template <typename T>
-sd::LongType symbolLength32(const T* it) {
+LongType symbolLength32(const T* it) {
   auto lead = castToU32(*it);
   if (lead < ONEBYTEBOUND)
     return 1;
@@ -132,7 +132,7 @@ sd::LongType symbolLength32(const T* it) {
 }
 
 template <typename T>
-sd::LongType symbolLength16(const T* it) {
+LongType symbolLength16(const T* it) {
   uint32_t lead = castToU16(*it);
   if (!isLeadSurrogate(lead)) {
     if (lead < ONEBYTEBOUND)
@@ -148,59 +148,59 @@ sd::LongType symbolLength16(const T* it) {
   }
 }
 
-sd::LongType offsetUtf8StringInUtf32(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf8StringInUtf32(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const int8_t*>(start); it != end; it++) {
     auto length = symbolLength(it);
     it += (length > 0) ? (length - 1) : 0;
     count += 1;
   }
-  return static_cast<sd::LongType>(count * sizeof(char32_t));
+  return static_cast<LongType>(count * sizeof(char32_t));
 }
 
-sd::LongType offsetUtf16StringInUtf32(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf16StringInUtf32(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const uint16_t*>(start); it != end;) {
     auto length = symbolLength16(it);
     it += (4 == length) ? 2 : 1;
     count += 1;
   }
-  return static_cast<sd::LongType>(count * sizeof(char32_t));
+  return static_cast<LongType>(count * sizeof(char32_t));
 }
 
-sd::LongType offsetUtf8StringInUtf16(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf8StringInUtf16(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const int8_t*>(start); it != end; it++) {
     auto length = symbolLength(it);
     auto step = ((length > 0) ? (length - 1) : 0);
     it += step;
     count += (4 == length) ? 2 : 1;
   }
-  return static_cast<sd::LongType>(count * sizeof(char16_t));
+  return static_cast<LongType>(count * sizeof(char16_t));
 }
 
-sd::LongType offsetUtf16StringInUtf8(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf16StringInUtf8(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const uint16_t*>(start); it != end;) {
     auto length = symbolLength16(it);
     it += (4 == length) ? 2 : 1;
     count += length;
   }
-  return static_cast<sd::LongType>(count);
+  return static_cast<LongType>(count);
 }
 
-sd::LongType offsetUtf32StringInUtf16(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf32StringInUtf16(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const uint32_t*>(start); it != end; it++) {
     auto length = symbolLength32(it);
     count += (4 == length) ? 2 : 1;
     ;
   }
-  return static_cast<sd::LongType>(count * sizeof(char16_t));
+  return static_cast<LongType>(count * sizeof(char16_t));
 }
 
-sd::LongType offsetUtf32StringInUtf8(const void* start, const void* end) {
-  sd::LongType count = 0;
+LongType offsetUtf32StringInUtf8(const void* start, const void* end) {
+  LongType count = 0;
   for (auto it = static_cast<const uint32_t*>(start); it != end; it++) {
     count += symbolLength32(it);
   }
@@ -372,27 +372,27 @@ void* utf32to16Ptr(const void* start, const void* end, void* res) {
   return result;
 }
 
-sd::LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize) {
+LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize) {
   return offsetUtf8StringInUtf32(input, static_cast<const int8_t*>(input) + nInputSize);
 }
 
-sd::LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize) {
+LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize) {
   return offsetUtf16StringInUtf32(input, static_cast<const uint16_t*>(input) + nInputSize);
 }
 
-sd::LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize) {
+LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize) {
   return offsetUtf8StringInUtf16(input, static_cast<const int8_t*>(input) + nInputSize);
 }
 
-sd::LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize) {
+LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize) {
   return offsetUtf16StringInUtf8(input, static_cast<const uint16_t*>(input) + nInputSize);
 }
 
-sd::LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize) {
+LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize) {
   return offsetUtf32StringInUtf8(input, static_cast<const uint32_t*>(input) + nInputSize);
 }
 
-sd::LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize) {
+LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize) {
   return offsetUtf32StringInUtf16(input, static_cast<const uint32_t*>(input) + nInputSize);
 }
 
@@ -416,7 +416,7 @@ bool utf32to16(const void* input, void* output, uint32_t nInputSize) {
   return utf32to16Ptr(input, static_cast<const uint32_t*>(input) + nInputSize, output);
 }
 
-bool utf32to8(const void* input, void* output, const sd::LongType nInputSize) {
+bool utf32to8(const void* input, void* output, const LongType nInputSize) {
   return utf32to8Ptr(input, static_cast<const uint32_t*>(input) + nInputSize, output);
 }
 

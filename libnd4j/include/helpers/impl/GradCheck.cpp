@@ -60,16 +60,16 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
   // back prop pass
   ResultSet outArrsBP = opBP.execute(argsHolderBP);  // number of output arrays in back prop = numInArrsFF;
 
-  NDArray tmpScalar(sd::DataType::DOUBLE, inArrsFF[0]->getContext());  // scalar = 0
+  NDArray tmpScalar(DOUBLE, inArrsFF[0]->getContext());  // scalar = 0
 
   for (int i = 0; i < numInArrsFF; ++i) {  // loop through input array
 
     if (!whatArrsToCheck.empty() && static_cast<bool>(whatArrsToCheck[i]) == false) continue;
 
-    const sd::LongType idxStart = static_cast<sd::LongType>(idxRange[0] * inArrsFF[i]->lengthOf());
-    const sd::LongType idxEnd = static_cast<sd::LongType>(idxRange[1] * inArrsFF[i]->lengthOf());
+    const LongType idxStart = static_cast<LongType>(idxRange[0] * inArrsFF[i]->lengthOf());
+    const LongType idxEnd = static_cast<LongType>(idxRange[1] * inArrsFF[i]->lengthOf());
 
-    for (sd::LongType j = idxStart; j < idxEnd; ++j) {  // loop through all elements for current array
+    for (LongType j = idxStart; j < idxEnd; ++j) {  // loop through all elements for current array
 
       const double orig = inArrsFF[i]->e<double>(j);
 

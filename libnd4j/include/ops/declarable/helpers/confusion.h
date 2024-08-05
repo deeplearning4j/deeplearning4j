@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void confusionFunctor(sd::LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
+SD_LIB_HIDDEN void confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
                                     NDArray* output);
 
 }
