@@ -257,6 +257,10 @@ class OnnxIRGraph(graphDef: Onnx.GraphProto,opMappingRegistry: OpMappingRegistry
         return opName == "Placeholder"
     }
 
+    override fun variableNames(): List<String> {
+        return inputsOutputs.toList()
+    }
+
     override fun shapeOfInput(varName: String): LongArray? {
         val firstOrNull = graphDef.initializerList.firstOrNull { inputNode -> inputNode.name == varName }
         if(firstOrNull != null)

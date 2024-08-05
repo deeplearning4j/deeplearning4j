@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void adjustWeights(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output,
+SD_LIB_HIDDEN void adjustWeights(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output,
                                  int minLength, int maxLength);
 
 }

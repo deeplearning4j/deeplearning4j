@@ -37,18 +37,18 @@ BROADCASTABLE_OP_IMPL(boolean_or, 0, 0) {
   auto tZ = BroadcastHelper::broadcastApply(
       BroadcastOpsTuple::custom(scalar::LogicalOr, pairwise::LogicalOr, broadcast::LogicalOr), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z)
     THROW_EXCEPTION("boolean_and: result was overwritten");
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(boolean_or) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, INHERIT);
 }
 }  // namespace ops
 }  // namespace sd

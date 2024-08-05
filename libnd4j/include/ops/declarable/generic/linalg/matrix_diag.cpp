@@ -37,11 +37,11 @@ CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
 
   helpers::matrixSetDiag(block.launchContext(), *output, *diagonal, *output, true);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(matrix_diag) {
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   auto in = inputShape->at(0);
   int inRank = shape::rank(in);
 
@@ -51,15 +51,15 @@ DECLARE_SHAPE_FN(matrix_diag) {
 
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
   outShapeInfo[0] = outRank;
-  for (sd::LongType i = 0; i < inRank; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
-  outShapeInfo[outRank] = shape::sizeAt(in, static_cast<sd::LongType>(-1));
+  for (LongType i = 0; i < inRank; ++i) outShapeInfo[i + 1] = shape::sizeAt(in, i);
+  outShapeInfo[outRank] = shape::sizeAt(in, static_cast<LongType>(-1));
 
   ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 
   return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
-DECLARE_TYPES(matrix_diag) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

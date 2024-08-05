@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 0) {
   }
 
   auto segmentedOutput = OUTPUT_NULLIFIED(0);
-  sd::LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<sd::LongType>(0) : INT_ARG(0);
+  LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
   REQUIRE_TRUE(reshapedSegments.isVector(), 0,
                "unsorted_segment_prod: segment indexes array should be a vector, but it rank is %i.",
                idxSegments->rankOf());
@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 0) {
                "%ld != %ld.",
                reshapedSegments.lengthOf(), input->sizeAt(0));
 
-  sd::LongType wrong;
+  LongType wrong;
 
   REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), &reshapedSegments, numOfClasses, wrong),
                0, "unsorted_segment_pod: segment indices should be in range [0, %ld), but %ld != %ld", numOfClasses,
@@ -56,20 +56,20 @@ CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 0) {
   helpers::unsortedSegmentProdFunctor(block.launchContext(), &reshapedInput, &reshapedSegments, numOfClasses,
                                       segmentedOutput);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(unsorted_segment_prod) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
-  sd::LongType* outputShape = nullptr;
-  sd::LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<sd::LongType>(0) : INT_ARG(0);
+  LongType* outputShape = nullptr;
+  LongType numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<LongType>(0) : INT_ARG(0);
 
   if (INPUT_VARIABLE(0)->rankOf() >= 2) {
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     outputShape[0] = outRank;
     outputShape[1] = numOfClasses;
-    for (sd::LongType  i = 1; i < outRank; i++) outputShape[i + 1] = shape::sizeAt(in, i);
+    for (LongType i = 1; i < outRank; i++) outputShape[i + 1] = shape::sizeAt(in, i);
 
     ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
@@ -97,7 +97,7 @@ CUSTOM_OP_IMPL(unsorted_segment_prod_bp, 3, 2, false, 0, 1) {
   //            auto numOfClasses = INT_ARG(0);
   auto output = OUTPUT_NULLIFIED(0);
 
-  sd::LongType numOfClasses = block.width() == 4 ? INPUT_VARIABLE(3)->e<sd::LongType>(0) : INT_ARG(0);
+  LongType numOfClasses = block.width() == 4 ? INPUT_VARIABLE(3)->e<LongType>(0) : INT_ARG(0);
   REQUIRE_TRUE(indices->isVector(), 0,
                "unsorted_segment_prod_bp: segment indexes array should be a vector, but it rank is %i.",
                indices->rankOf());
@@ -106,7 +106,7 @@ CUSTOM_OP_IMPL(unsorted_segment_prod_bp, 3, 2, false, 0, 1) {
                "but %lld != %lld.",
                indices->lengthOf(), input->sizeAt(0));
 
-  sd::LongType wrong = numOfClasses;
+  LongType wrong = numOfClasses;
 
   REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), indices, numOfClasses, wrong), 0,
                "unsorted_segment_prod_bp: segment indices should be in range [0, %lld), but %lld > %lld", numOfClasses,
@@ -128,8 +128,8 @@ DECLARE_SHAPE_FN(unsorted_segment_prod_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
 
-  sd::LongType* outShape;
-  sd::LongType* outIndex;
+  LongType* outShape;
+  LongType* outIndex;
   COPY_SHAPE(in, outShape);
   COPY_SHAPE(inIdx, outIndex);
   return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));

@@ -110,11 +110,18 @@ namespace sd {
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_floor(T val);
 
+
+
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_log(X val);
 
+
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_pow(X val, Y val2);
+
+        template <typename X, typename Y, typename Z>
+        SD_HOST_DEVICE inline Z sd_floordiv(X val,Y val2);
+
 
         template <typename T, typename Z>
         SD_HOST_DEVICE inline Z sd_round(T val);
@@ -450,7 +457,6 @@ namespace sd {
 #else
             return std::isinf(value);
 #endif
-            // return value < -FLOAT_MAX_VALUE || value > FLOAT_MAX_VALUE;
         }
 
         template <>
@@ -653,6 +659,8 @@ namespace sd {
             return p_exp<X>(val);
         }
 
+
+
         template <typename X, typename Z>
         SD_HOST_DEVICE inline Z sd_floor(X val) {
             return static_cast<Z>(p_floor<X>(val));
@@ -685,6 +693,11 @@ namespace sd {
         template <typename X, typename Y, typename Z>
         SD_HOST_DEVICE inline Z sd_pow(X val, Y val2) {
             return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
+        }
+
+        template <typename X, typename Y, typename Z>
+        SD_HOST_DEVICE inline Z sd_floordiv(X val, Y val2) {
+          return static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
         }
 
 /**
@@ -915,7 +928,7 @@ namespace sd {
         }
 
 #ifdef __CUDACC__
-        namespace atomics {
+namespace atomics {
 template <typename T>
 inline SD_DEVICE T sd_atomicAdd(T* address, T val);
 
@@ -931,7 +944,22 @@ inline SD_DEVICE T sd_atomicMin(T* address, T val);
 template <typename T>
 inline SD_DEVICE T sd_atomicMax(T* address, T val);
 
+template <typename T>
+inline SD_DEVICE T sd_atomicCAS(T* address, T compare, T val);
+
 template <>
+inline SD_DEVICE int32_t sd_atomicCAS<int32_t>(int32_t* address,int32_t compare, int32_t val) {
+  return atomicCAS((int *) address, (int )compare,(int) val);
+}
+
+template <>
+inline SD_DEVICE uint32_t sd_atomicCAS<uint32_t>(uint32_t* address, uint32_t compare,uint32_t val) {
+  return atomicCAS((int *)address, (int) compare,(int) val);
+}
+
+
+
+    template <>
 inline SD_DEVICE int32_t sd_atomicMin<int32_t>(int32_t* address, int32_t val) {
   return atomicMin(address, val);
 }
@@ -940,6 +968,207 @@ template <>
 inline SD_DEVICE uint32_t sd_atomicMin<uint32_t>(uint32_t* address, uint32_t val) {
   return atomicMin(address, val);
 }
+
+
+
+// Generic wrapper for atomicCAS
+template <typename T>
+inline SD_DEVICE T sd_atomicCAS(T* address, T compare, T val) {
+  // Default implementation using atomicCAS directly
+  return atomicCAS(address, compare, val);
+}
+
+template <>
+inline SD_DEVICE uint8_t sd_atomicCAS<uint8_t>(uint8_t* address, uint8_t compare, uint8_t val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
+  unsigned int old, assumed, fresh;
+  int shift = (reinterpret_cast<size_t>(address) & 3) * 8;
+
+  old = *address_as_uint;
+  do {
+    fresh = old;
+    if ((static_cast<unsigned int>(compare) == ((old >> shift) & 0xFF))) {
+      fresh = (old & ~(0xFF << shift)) | (static_cast<unsigned int>(val) << shift);
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (old >> shift) & 0xFF;
+}
+
+
+
+
+// Specialization for float
+template <>
+inline SD_DEVICE float sd_atomicCAS<float>(float* address, float compare, float val) {
+  int* address_as_int = reinterpret_cast<int*>(address);
+  int old = *address_as_int, assumed;
+  int compare_as_int = __float_as_int(compare);
+  int val_as_int = __float_as_int(val);
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed, (assumed == compare_as_int) ? val_as_int : assumed);
+  } while (assumed != old);
+
+  return __int_as_float(old);
+}
+
+template <>
+inline SD_DEVICE uint64_t sd_atomicCAS<uint64_t>(uint64_t* address, uint64_t compare, uint64_t val) {
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  return atomicCAS(address_as_ull, static_cast<unsigned long long int>(compare), static_cast<unsigned long long int>(val));
+}
+
+template <>
+inline SD_DEVICE uint16_t sd_atomicCAS<uint16_t>(uint16_t* address, uint16_t compare, uint16_t val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
+  unsigned int old, assumed, fresh;
+
+  old = *address_as_uint;
+  do {
+    if (reinterpret_cast<size_t>(address) & 2) {
+      fresh = (old & 0xFFFF) | ((static_cast<unsigned int>(compare) == (old >> 16)) ? (static_cast<unsigned int>(val) << 16) : (old & 0xFFFF0000));
+    } else {
+      fresh = (old & 0xFFFF0000) | ((static_cast<unsigned int>(compare) == (old & 0xFFFF)) ? static_cast<unsigned int>(val) : (old & 0xFFFF));
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
+}
+
+template <>
+inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare, int16_t val) {
+  int* address_as_uint = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
+  int old, assumed, fresh;
+
+  old = *address_as_uint;
+  do {
+    if (reinterpret_cast<size_t>(address) & 2) {
+      fresh = (old & 0xFFFF) | ((static_cast<unsigned int>(compare) == (old >> 16)) ? (static_cast<unsigned int>(val) << 16) : (old & 0xFFFF0000));
+    } else {
+      fresh = (old & 0xFFFF0000) | ((static_cast<unsigned int>(compare) == (old & 0xFFFF)) ? static_cast<unsigned int>(val) : (old & 0xFFFF));
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
+}
+
+template <>
+inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, sd::LongType compare, sd::LongType val) {
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned long long int compare_as_ull = static_cast<unsigned long long int>(compare);
+  unsigned long long int val_as_ull = static_cast<unsigned long long int>(val);
+
+  unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
+
+  return static_cast<sd::LongType>(old_as_ull);
+}
+
+
+template <>
+inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int compare_as_ull = __double_as_longlong(compare);
+  unsigned long long int val_as_ull = __double_as_longlong(val);
+
+  unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
+
+  return __longlong_as_double(old_as_ull);
+}
+
+template <>
+inline SD_DEVICE int8_t sd_atomicCAS<int8_t>(int8_t* address, int8_t compare, int8_t val) {
+  int* address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
+  int old, assumed, fresh;
+  int shift = (reinterpret_cast<size_t>(address) & 3) * 8;
+
+  old = *address_as_int;
+  do {
+    fresh = old;
+    if ((static_cast<int>(compare) == ((old >> shift) & 0xFF))) {
+      fresh = (old & ~(0xFF << shift)) | (static_cast<int>(val) << shift);
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed, fresh);
+  } while (assumed != old);
+
+  return (old >> shift) & 0xFF;
+}
+
+// Specialization for int32_t
+
+
+template <>
+inline __device__ float16 sd_atomicCAS<float16>(float16* address, float16 compare, float16 val) {
+  auto address_as_ushort = reinterpret_cast<unsigned short*>(address);
+
+  auto addr = reinterpret_cast<long>(address);
+  bool misaligned = addr & 0x1;
+
+  if (misaligned) address_as_ushort = reinterpret_cast<unsigned short*>(address - 1);
+
+  unsigned short old, assumed, fresh;
+
+  old = *address_as_ushort;
+  do {
+    fresh = (old == compare.data.getX()) ? val.data.getX() : old;
+
+    assumed = old;
+    old = atomicCAS(address_as_ushort, assumed, fresh);
+  } while (assumed != old);
+
+  float16 result;
+  result.data.getXP()[0] = old;
+  return result;
+}
+
+// Specialization for bfloat16
+template <>
+inline SD_DEVICE bfloat16 sd_atomicCAS<bfloat16>(bfloat16* address, bfloat16 compare, bfloat16 val) {
+  auto address_as_int = reinterpret_cast<int*>(address);
+
+  auto addr = reinterpret_cast<long>(address);
+  bool misaligned = addr & 0x3;
+
+  if (misaligned) address_as_int = reinterpret_cast<int*>(address - 1);
+
+  BPAIR old, assumed, fresh;
+
+  old.W = *address_as_int;
+  do {
+    if (!misaligned) {
+      fresh.B.H = (old.B.H == compare) ? val : old.B.H;
+      fresh.B.L = old.B.L;
+    } else {
+      fresh.B.L = (old.B.L == compare) ? val : old.B.L;
+      fresh.B.H = old.B.H;
+    }
+
+    assumed.W = old.W;
+    old.W = atomicCAS(address_as_int, assumed.W, fresh.W);
+  } while (assumed.W != old.W);
+
+  if (!misaligned)
+    return old.B.H;
+  else
+    return old.B.L;
+}
+
+
+
+
+
 template <>
 inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
   int* address_as_ull = (int*)address;
@@ -956,7 +1185,8 @@ inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(math::sd_min(val, __longlong_as_double(assumed))));
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(math::sd_min(val, __longlong_as_double(assumed))));
   } while (assumed != old);
   return __longlong_as_double(old);
 }
@@ -1018,7 +1248,8 @@ inline SD_DEVICE double sd_atomicMax<double>(double* address, double val) {
   unsigned long long int old = __double_as_longlong(val), assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(math::sd_max(val, __longlong_as_double(assumed))));
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(math::sd_max(val, __longlong_as_double(assumed))));
   } while (assumed != old);
   return __longlong_as_double(old);
 }
@@ -1166,7 +1397,6 @@ template <>
 inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
 
-  // return (sd::LongType) atomicAdd(address_as_ull, (unsigned long long int) val);
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
@@ -1190,7 +1420,6 @@ template <>
 inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
 
-  // return (sd::LongType) atomicAdd(address_as_ull, (unsigned long long int) val);
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
@@ -1219,15 +1448,6 @@ inline SD_DEVICE uint32_t sd_atomicAdd<uint32_t>(uint32_t* address, uint32_t val
 
 template <>
 inline SD_DEVICE uint64_t sd_atomicAdd<uint64_t>(uint64_t* address, uint64_t val) {
-  //    unsigned long long* address_as_ull = (unsigned long long int *) address;
-  //
-  ////    return atomicAdd(address, val);
-  //    unsigned long int old = *address_as_ull, assumed;
-  //    do {
-  //        assumed = old;
-  //        old = atomicCAS(address_as_ull, assumed, val + assumed);
-  //    } while (assumed != old);
-  //    return old;
   return (uint64_t)atomicAdd((unsigned long long*)address, (unsigned long long)val);
 }
 
@@ -1404,10 +1624,7 @@ template <>
 inline SD_DEVICE float sd_atomicAdd<float>(float* address, float val) {
   return atomicAdd(address, val);
 }
-// template <>
-// inline SD_DEVICE int sd_atomicAdd<int>(int* address, int val)  {
-//    return atomicAdd(address, val);
-//}
+
 template <>
 inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
   return (int32_t)atomicAdd((int*)address, (int)val);
@@ -1617,6 +1834,9 @@ template <>
 inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
   return internal_16bit_atomicMul<bfloat16>(address, (bfloat16)1 / val);
 }
+
+
+
 }  // namespace atomics
 #endif
     }  // namespace math

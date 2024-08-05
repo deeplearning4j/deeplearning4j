@@ -34,8 +34,8 @@ OpDescriptor::OpDescriptor(int numInputs, const char* opName, bool isScalar) {
   _numOutputs = 1;
 
   _opName = opName;
-  _hash = sd::ops::HashHelper::getInstance().getLongHash(_opName);
-  _opClass = sd::graph::OpClass_CONDITIONAL;
+  _hash = HashHelper::getInstance().getLongHash(_opName);
+  _opClass = graph::OpClass_CONDITIONAL;
 
   _scalar = isScalar;
 }
@@ -45,8 +45,8 @@ OpDescriptor::OpDescriptor(int numInputs, std::string opName, bool isScalar) {
   _numOutputs = 1;
 
   _opName = opName;
-  _hash = sd::ops::HashHelper::getInstance().getLongHash(_opName);
-  _opClass = sd::graph::OpClass_CONDITIONAL;
+  _hash = HashHelper::getInstance().getLongHash(_opName);
+  _opClass = graph::OpClass_CONDITIONAL;
 
   _scalar = isScalar;
 }
@@ -61,11 +61,11 @@ bool OpDescriptor::operator==(const OpDescriptor& other) const {
 }
 
 OpDescriptor::OpDescriptor(int numInputs, int numOutputs, std::string opName, bool allowsInplace)
-    : OpDescriptor::OpDescriptor(numInputs, numOutputs, opName.c_str(), allowsInplace) {
+    : OpDescriptor(numInputs, numOutputs, opName.c_str(), allowsInplace) {
   //
 }
 
-void OpDescriptor::setHash(sd::LongType hash) { _hash = hash; }
+void OpDescriptor::setHash(LongType hash) { _hash = hash; }
 
 // default constructor
 OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bool allowsInplace) {
@@ -75,27 +75,27 @@ OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bo
   std::string tmp(opName);
   _opName = tmp;
   _allowsInplace = allowsInplace;
-  _hash = sd::ops::HashHelper::getInstance().getLongHash(tmp);
+  _hash = HashHelper::getInstance().getLongHash(tmp);
   _divergent = false;
 
   // just default value
-  _opClass = sd::graph::OpClass_TRANSFORM;
+  _opClass = graph::OpClass_TRANSFORM;
 }
 
 // constructor for configurable op
 OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bool allowsInplace, int tArgs, int iArgs)
-    : OpDescriptor::OpDescriptor(numInputs, numOutputs, opName, allowsInplace) {
+    : OpDescriptor(numInputs, numOutputs, opName, allowsInplace) {
   _tArgs = tArgs;
   _iArgs = iArgs;
 }
 
 // constructor for non-configurable divergent op
 OpDescriptor::OpDescriptor(int numInputs, int numOutputs, std::string opName, bool allowsInplace, bool divergent)
-    : OpDescriptor::OpDescriptor(numInputs, numOutputs, opName.c_str(), allowsInplace, divergent) {}
+    : OpDescriptor(numInputs, numOutputs, opName.c_str(), allowsInplace, divergent) {}
 
 // constructor for non-configurable divergent op
 OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bool allowsInplace, bool divergent)
-    : OpDescriptor::OpDescriptor(numInputs, numOutputs, opName, allowsInplace) {
+    : OpDescriptor(numInputs, numOutputs, opName, allowsInplace) {
   _divergent = divergent;
 }
 
@@ -106,10 +106,6 @@ OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bo
   _divergent = divergent;
 }
 
-// default destructor
-OpDescriptor::~OpDescriptor() {
-  //
-}
 
 int OpDescriptor::getNumberOfTArgs() { return _tArgs; }
 
@@ -117,7 +113,7 @@ int OpDescriptor::getNumberOfIArgs() { return _iArgs; }
 
 int OpDescriptor::getNumberOfInputs() { return _numInputs; }
 
-sd::LongType OpDescriptor::getHash() { return _hash; }
+LongType OpDescriptor::getHash() { return _hash; }
 
 int OpDescriptor::getNumberOfOutputs() { return _numOutputs; }
 
@@ -138,12 +134,12 @@ OpDescriptor* OpDescriptor::setInputType(const InputType type) {
 
 InputType OpDescriptor::inputType() { return _inputType; }
 
-OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<sd::DataType>& dtypes) {
+OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<DataType>& dtypes) {
   _allowedIns = dtypes;
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<sd::DataType>& dtypes) {
+OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<DataType>& dtypes) {
   _allowedOuts = dtypes;
   return this;
 }
@@ -153,24 +149,24 @@ OpDescriptor* OpDescriptor::allowOverride(bool allowOverride) {
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedInputTypes(const sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setAllowedInputTypes(const DataType dtype) {
   _allowedIns.clear();
   _allowedIns.emplace_back(dtype);
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedOutputTypes(const sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setAllowedOutputTypes(const DataType dtype) {
   _allowedOuts.clear();
   _allowedOuts.emplace_back(dtype);
   return this;
 }
 
-OpDescriptor* OpDescriptor::setInputType(const int idx, const sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setInputType(const int idx, const DataType dtype) {
   _inputTypes[idx] = {dtype};
   return this;
 }
 
-OpDescriptor* OpDescriptor::setOutputType(const int idx, const sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setOutputType(const int idx, const DataType dtype) {
   _outputTypes[idx] = {dtype};
   return this;
 }
@@ -180,17 +176,17 @@ OpDescriptor* OpDescriptor::setSameMode(const bool reallySame) {
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<sd::DataType>& dtype) {
+OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<DataType>& dtype) {
   _inputTypes[index] = dtype;
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<sd::DataType>& dtype) {
+OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<DataType>& dtype) {
   _outputTypes[index] = dtype;
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, DataType dtype) {
   if (_inputTypes.count(index) == 0)
     _inputTypes[index] = {dtype};
   else
@@ -199,7 +195,7 @@ OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, sd::DataType dtype) 
   return this;
 }
 
-OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, sd::DataType dtype) {
+OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, DataType dtype) {
   if (_outputTypes.count(index) == 0)
     _outputTypes[index] = {dtype};
   else
@@ -208,14 +204,14 @@ OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, sd::DataType dtype)
   return this;
 }
 
-bool OpDescriptor::checkDataTypesMatch(sd::DataType needle, std::vector<sd::DataType>& haystack) const {
+bool OpDescriptor::checkDataTypesMatch(DataType needle, std::vector<DataType>& haystack) const {
   // if haystack is empty - INHERIT is occurs - any type is perfect?
   if (haystack.empty()) return true;
 
   // first we're checking for direct input type match
   if (std::find(haystack.begin(), haystack.end(), needle) == haystack.end()) {
     // if direct input match failed - we're checking for ANY as allowed input
-    if (std::find(haystack.begin(), haystack.end(), sd::DataType::ANY) == haystack.end())
+    if (std::find(haystack.begin(), haystack.end(), ANY) == haystack.end())
       return false;
     else
       return true;
@@ -224,7 +220,7 @@ bool OpDescriptor::checkDataTypesMatch(sd::DataType needle, std::vector<sd::Data
   }
 }
 
-bool OpDescriptor::checkInputMatch(int index, sd::DataType dataType) {
+bool OpDescriptor::checkInputMatch(int index, DataType dataType) {
   // we check for per-input types first
   if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
     // checking global input types
@@ -237,7 +233,7 @@ bool OpDescriptor::checkInputMatch(int index, sd::DataType dataType) {
   return true;
 }
 
-bool OpDescriptor::checkOutputMatch(int index, sd::DataType dataType) {
+bool OpDescriptor::checkOutputMatch(int index, DataType dataType) {
   // we check for per-output types first
   if (_outputTypes.empty() || _outputTypes.count(index) == 0) {
     // checking global output types
@@ -253,28 +249,28 @@ bool OpDescriptor::checkOutputMatch(int index, sd::DataType dataType) {
 bool OpDescriptor::isSameMode() { return _sameMode; }
 
 bool OpDescriptor::isInherit(int index) {
-  if (std::find(_allowedOuts.begin(), _allowedOuts.end(), sd::DataType::INHERIT) != _allowedOuts.end()) return true;
+  if (std::find(_allowedOuts.begin(), _allowedOuts.end(), INHERIT) != _allowedOuts.end()) return true;
   if (_outputTypes.count(index) > 0) {
     auto vec = _outputTypes[index];
 
-    if (std::find(vec.begin(), vec.end(), sd::DataType::INHERIT) != vec.end()) return true;
+    if (std::find(vec.begin(), vec.end(), INHERIT) != vec.end()) return true;
   }
 
   return false;
 }
 
-std::vector<sd::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
+std::vector<DataType> OpDescriptor::getOutputTypesForOutput(int index) {
   if (_outputTypes.count(index) > 0)
     return _outputTypes.at(index);
   else
-    return std::vector<sd::DataType>();
+    return std::vector<DataType>();
 }
 
-std::vector<sd::DataType> OpDescriptor::getInputTypesForInput(int index) {
+std::vector<DataType> OpDescriptor::getInputTypesForInput(int index) {
   if (_inputTypes.count(index) > 0)
     return _inputTypes.at(index);
   else
-    return std::vector<sd::DataType>();
+    return std::vector<DataType>();
 }
 }  // namespace ops
 }  // namespace sd

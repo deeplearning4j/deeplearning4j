@@ -23,14 +23,14 @@
 #include <math/templatemath.h>
 
 namespace sd {
-Triple CudaLaunchHelper::getFlatLaunchParams(sd::LongType length, int SM, int CORES, int SHARED_MEMORY) {
+Triple CudaLaunchHelper::getFlatLaunchParams(LongType length, int SM, int CORES, int SHARED_MEMORY) {
   // TODO: to be implemented
   Triple triple(1, 2, 3);
 
   return triple;
 }
 
-int CudaLaunchHelper::getReductionBlocks(sd::LongType xLength, int blockSize) {
+int CudaLaunchHelper::getReductionBlocks(LongType xLength, int blockSize) {
   int div = xLength / blockSize;
   int can = sd::math::sd_max<int>(div, 1);
   if (xLength % blockSize != 0 && xLength > blockSize) can++;

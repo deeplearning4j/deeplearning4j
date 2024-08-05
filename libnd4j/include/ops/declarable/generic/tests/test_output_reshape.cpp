@@ -35,10 +35,10 @@ OP_IMPL(test_output_reshape, 1, 1, true) {
 
   output->reshapei({-1});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(test_output_reshape) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(test_output_reshape) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

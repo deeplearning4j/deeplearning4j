@@ -45,7 +45,12 @@ interface FrameworkImporter {
      * which will handle automatically creating the dynamic variables that maybe needed by the graph
      * for import.
      */
-    fun runImport(fileName: String, dynamicVariables: Map<String, INDArray> = emptyMap(),suggestDynamicVariables: Boolean = false): SameDiff
+    fun runImport(
+        fileName: String,
+        dynamicVariables: Map<String, INDArray> = emptyMap(),
+        suggestDynamicVariables: Boolean = false,
+        trackVariableChanges: Boolean = false
+    ): SameDiff
 
     /**
      * Parses the model and looks for inputs or placeholders that maybe needed in the graph.

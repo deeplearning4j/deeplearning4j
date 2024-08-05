@@ -46,7 +46,7 @@ struct PlatformHelperLegacyEntry {
 
 struct PlatformHelperLegacyEntryHasher {
   std::size_t operator()(PlatformHelperLegacyEntry const &p) const noexcept {
-    auto res = std::hash<sd::LongType>()(reinterpret_cast<sd::LongType>(p.prefix));
+    auto res = std::hash<LongType>()(reinterpret_cast<LongType>(p.prefix));
     res ^= std::hash<int>()(p.opNum) + 0x9e3779b9 + (res << 6) + (res >> 2);
     res ^= std::hash<int>()(p.engine) + 0x9e3779b9 + (res << 6) + (res >> 2);
     return res;
@@ -72,8 +72,8 @@ class SD_LIB_EXPORT PlatformHelperLegacy {
    * @param context
    * @return
    */
-  virtual bool isUsable(void *extraParams, const sd::LongType *outShapeInfo, const sd::LongType *inArg0ShapeInfo,
-                        const sd::LongType *inArg1ShapeInfo) = 0;
+  virtual bool isUsable(void *extraParams, const LongType *outShapeInfo, const LongType *inArg0ShapeInfo,
+                        const LongType *inArg1ShapeInfo) = 0;
 
   /**
    * This method invokes helper
@@ -81,10 +81,9 @@ class SD_LIB_EXPORT PlatformHelperLegacy {
    * @param context
    * @return
    */
-  virtual sd::Status invokeHelper(void *extraParams, const sd::LongType *outShapeInfo,
-                                  sd::InteropDataBuffer *outputBuffer, const sd::LongType *inArg0ShapeInfo,
-                                  const sd::InteropDataBuffer *inArg0Buffer, const sd::LongType *inArg1ShapeInfo,
-                                  const sd::InteropDataBuffer *inArg1Buffer) = 0;
+  virtual Status invokeHelper(void *extraParams, const LongType *outShapeInfo, InteropDataBuffer *outputBuffer, const LongType *inArg0ShapeInfo,
+                                  const InteropDataBuffer *inArg0Buffer, const LongType *inArg1ShapeInfo,
+                                  const InteropDataBuffer *inArg1Buffer) = 0;
 };
 }  // namespace platforms
 }  // namespace ops

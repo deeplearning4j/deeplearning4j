@@ -33,11 +33,11 @@ OP_IMPL(boolean_not, 1, 1, true) {
 
   x->applyTransform(transform::Not, *z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(boolean_not) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::BOOL)->setAllowedOutputTypes(0, DataType::BOOL);
+  getOpDescriptor()->setAllowedInputTypes(0, BOOL)->setAllowedOutputTypes(0, BOOL);
 }
 }  // namespace ops
 }  // namespace sd

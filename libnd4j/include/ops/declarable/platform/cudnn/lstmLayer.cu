@@ -33,7 +33,7 @@ constexpr int numLayers = 1;
 
 // we will copy without using cudnnGetRNNLinLayerMatrixParams : 1 pseudo layer , isBidirectional : 2 pseudo layer
 void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weightsSpace, size_t weightsSize,
-                 uint8_t *inputWeightsData, uint8_t *recurrentWeightsData, uint8_t *biasesData, sd::LongType inputSize,
+                 uint8_t *inputWeightsData, uint8_t *recurrentWeightsData, uint8_t *biasesData, LongType inputSize,
                  int hiddenSize, int dataTypeSize) {
   int pseudo_layer_count = isBidirectional ? 2 : 1;
   uint8_t *wptr = weightsSpace;
@@ -43,7 +43,7 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
   // in bidirectional 1 layer consist of 2 pseduo layers
   auto input_pseudo_size = 4 * inputSize * hiddenSize * dataTypeSize;
   auto hidden_pseudo_size = 4 * hiddenSize * hiddenSize * dataTypeSize;
-  for (sd::LongType i = 0; i < pseudo_layer_count; i++) {
+  for (LongType i = 0; i < pseudo_layer_count; i++) {
     if (wptr + input_pseudo_size + hidden_pseudo_size > wEnd) return;
     // copy input weights
     if (inputWeightsData) {
@@ -81,7 +81,7 @@ void copyWeights(const cudaStream_t &stream, bool isBidirectional, uint8_t *weig
 void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDArray *inputWeights,
                    NDArray *recurrentWeights, NDArray *biases, NDArray *prevAct, NDArray *prevMemCell,
                    NDArray *outputActivations, NDArray *finalTimeStepActivations, NDArray *finalMemCellState,
-                   sd::LongType maxSeqLength, sd::LongType batchSize, sd::LongType inputSize, sd::LongType hiddenSize, double cellClip,
+                   LongType maxSeqLength, LongType batchSize, LongType inputSize, LongType hiddenSize, double cellClip,
                    bool isBidirectional) {
   sd_debug("cudnn rnn api %s \n", "v6");
 
@@ -221,7 +221,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   NDArray permutedX, outputH;
 
   if (outputActivations != nullptr && (dataFormat != 0 || outputActivations->ordering() != 'c')) {
-    outputH = NDArray('c', std::vector<sd::LongType>{maxSeqLength, batchSize, (numDirections * hiddenSize)},
+    outputH = NDArray('c', std::vector<LongType>{maxSeqLength, batchSize, (numDirections * hiddenSize)},
                       outputActivations->dataType(), contextPtr);
     argOutput = &outputH;
   }
@@ -275,11 +275,11 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
   NDArray *argSeqNdArray = nullptr;
   NDArray seqArrIntData;
   if (seqLengthArray) {
-    if (seqLengthArray->ews() == 1 && seqLengthArray->dataType() == DataType::INT32) {
+    if (seqLengthArray->ews() == 1 && seqLengthArray->dataType() == INT32) {
       argSeqNdArray = seqLengthArray;
     } else {
-      if (seqLengthArray->dataType() != DataType::INT32) {
-        seqArrIntData = seqLengthArray->cast(DataType::INT32);
+      if (seqLengthArray->dataType() != INT32) {
+        seqArrIntData = seqLengthArray->cast(INT32);
         if (seqArrIntData.ews() != 1) seqArrIntData = seqArrIntData.dup('c');
       } else {
         seqArrIntData = seqLengthArray->dup('c');
@@ -287,7 +287,7 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
       argSeqNdArray = &seqArrIntData;
     }
   } else {
-    seqArrIntData = NDArray('c', std::vector<sd::LongType>{batchSize}, DataType::INT32, contextPtr);
+    seqArrIntData = NDArray('c', std::vector<LongType>{batchSize}, INT32, contextPtr);
     seqArrIntData.assign(maxSeqLength);
     argSeqNdArray = &seqArrIntData;
   }
@@ -439,7 +439,7 @@ void cudnn_rnn_v8(LaunchContext *contextPtr, int dataFormat, NDArray *input, NDA
 PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
   const auto dataFormat = INT_ARG(0);  // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL],
                                        // for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
-  const sd::LongType directionMode =
+  const LongType directionMode =
       INT_ARG(1);  // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional
                    // extra output dim (in conjunction with format dataFormat = 3)
 
@@ -476,11 +476,11 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
   REQUIRE_TRUE(retFullSeq || retLastH || retLastC, 0,
                "LSTM_LAYER operation: please specify what output arrays to produce !");
   // evaluate dimensions
-  const sd::LongType seqLength = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
-  const sd::LongType hiddenSize = nOut;
+  const LongType seqLength = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
+  const LongType nOut = Wx->sizeAt(-1) / 4;
+  const LongType hiddenSize = nOut;
 
   auto contextPtr = block.launchContext();
   bool isBidirectional = directionMode >= 2;
@@ -548,7 +548,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CUDA) {
   }
 #endif
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 // Cudnn Lstm:

@@ -43,7 +43,7 @@ class SD_LIB_EXPORT BitwiseUtils {
    *
    *  PLEASE NOTE: Result is ALWAYS left-to-right
    */
-  static std::vector<sd::LongType> valueBits(int holder);
+  static std::vector<LongType> valueBits(int holder);
 
   /**
    *  This method returns TRUE if it's called on Big-Endian system, and false otherwise
@@ -54,7 +54,7 @@ class SD_LIB_EXPORT BitwiseUtils {
    * This method returns enum
    * @return
    */
-  static sd::ByteOrder asByteOrder();
+  static ByteOrder asByteOrder();
 
   /**
    * This method swaps bytes: LE vs BE
@@ -101,7 +101,7 @@ class SD_LIB_EXPORT BitwiseUtils {
 
   static uint64_t SD_INLINE flip_bits(uint64_t v) { return ~v; }
 
-  static sd::LongType SD_INLINE flip_bits(sd::LongType v) { return ~v; }
+  static LongType SD_INLINE flip_bits(LongType v) { return ~v; }
 };
 }  // namespace sd
 

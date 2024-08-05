@@ -40,12 +40,12 @@ BROADCASTABLE_OP_IMPL(Pow, 0, 0) {
 
   auto tZ = BroadcastHelper::broadcastApply({scalar::Pow, pairwise::Pow, broadcast::Pow}, x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(Pow) {
@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   auto dLdx = OUTPUT_VARIABLE(0);
   auto dLdy = OUTPUT_VARIABLE(1);
 
-  const sd::LongType* dLdzShapeInfo = nullptr;
+  const LongType* dLdzShapeInfo = nullptr;
   const bool areShapesBroadcastable =
       ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
   REQUIRE_TRUE(areShapesBroadcastable, 0,
@@ -78,13 +78,13 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   // dL/dy = x^y * log(x) * dL/dz
   auto temp = x->applyTrueBroadcast(BroadcastOpsTuple::Pow(), *y);  // a = x^y
   x->applyTransform(transform::Log, *dLdx);                         // b = log(x)
-  dLdx->applyScalar(sd::scalar::ReplaceNans, 0, *dLdx);
+  dLdx->applyScalar(scalar::ReplaceNans, 0, *dLdx);
   temp *= *dLdx;  // c = b*a
   temp *= *dLdz;  // dL/dy = c * dL/dz
   if (dLdy->isSameShape(*dLdz)) {
     dLdy->assign(temp);
   } else {
-    std::vector<sd::LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
+    std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
     dLdy->assign(temp.reduceAlongDimension(reduce::Sum, &axesForY));  // dL/dy = sum(c * dL/dz)
   }
 
@@ -95,19 +95,19 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   if (dLdx->isSameShape(*dLdz)) {
     dLdx->assign(temp);  // dLdx = a*dL/dz
   } else {
-    std::vector<sd::LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
+    std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
     dLdx->assign(temp.reduceAlongDimension(reduce::Sum, &axesForX));  // dLdx = a*dL/dz
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(Pow_bp) {
   auto xShapeInfo = inputShape->at(0);
   auto yShapeInfo = inputShape->at(1);
 
-  sd::LongType* dLdxShapeInfo = nullptr;
-  sd::LongType* dLdyShapeInfo = nullptr;
+  LongType* dLdxShapeInfo = nullptr;
+  LongType* dLdyShapeInfo = nullptr;
 
   COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
   COPY_SHAPE(yShapeInfo, dLdyShapeInfo);

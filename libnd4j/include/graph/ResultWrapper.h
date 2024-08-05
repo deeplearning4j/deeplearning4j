@@ -29,16 +29,16 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT ResultWrapper {
  private:
-  sd::LongType _size = 0L;
-  sd::Pointer _pointer = nullptr;
+  LongType _size = 0L;
+  Pointer _pointer = nullptr;
 
  public:
-  ResultWrapper(sd::LongType size, sd::Pointer ptr);
+  ResultWrapper(LongType size, Pointer ptr);
   ~ResultWrapper();
 
-  sd::LongType size();
+  LongType size();
 
-  sd::Pointer pointer();
+  Pointer pointer();
 };
 }  // namespace graph
 }  // namespace sd

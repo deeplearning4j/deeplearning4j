@@ -31,17 +31,17 @@
 namespace sd {
 class SD_LIB_EXPORT graph_exception : public std::runtime_error {
  protected:
-  sd::LongType _graphId;
+  LongType _graphId;
   std::string _message;
   std::string _description;
 
  public:
-  graph_exception(std::string message, sd::LongType graphId);
-  graph_exception(std::string message, std::string description, sd::LongType graphId);
-  graph_exception(std::string message, const char *description, sd::LongType graphId);
+  graph_exception(std::string message, LongType graphId);
+  graph_exception(std::string message, std::string description, LongType graphId);
+  graph_exception(std::string message, const char *description, LongType graphId);
   ~graph_exception() = default;
 
-  sd::LongType graphId();
+  LongType graphId();
 
   const char *message();
   const char *description();

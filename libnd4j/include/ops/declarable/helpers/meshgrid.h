@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void meshgrid(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs,
+SD_LIB_HIDDEN void meshgrid(LaunchContext* context, const std::vector<NDArray*>& inArrs,
                             const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims);
 
 }

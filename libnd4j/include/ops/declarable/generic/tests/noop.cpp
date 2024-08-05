@@ -29,10 +29,10 @@ namespace sd {
 namespace ops {
 OP_IMPL(noop, -2, -2, true) {
   // Fastest op ever.
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(noop) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(noop) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

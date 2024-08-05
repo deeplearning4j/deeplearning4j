@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -36,6 +37,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQuery;
+import org.nd4j.linalg.profiler.data.stacktrace.StackTraceQueryFilters;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -85,16 +89,27 @@ public abstract class DifferentialFunction {
     @JsonIgnore
     @Getter
     @Setter
+    @Builder.Default
     protected boolean ownNameSetWithDefault = false;
 
+    @Getter
+    protected StackTraceElement creationLocation,creationPointofOrigin;
+    @Getter
+    protected StackTraceElement[] sameDiffCalls;
+    @Getter
+    protected  StackTraceElement[] creationCallStack;
     public DifferentialFunction() {
         this(false);
     }
 
     public DifferentialFunction(boolean sameDiff) {
         //Only need instance ID if using function in context of SameDiff, not standard ND4J with INDArray args
-        if(sameDiff)
+        if(sameDiff) {
             setInstanceId();
+        }
+
+        recordCreation();
+
     }
 
     /**
@@ -106,6 +121,7 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromTensorFlow(nodeDef, sameDiff,attributesForNode ,graph);
+        recordCreation();
     }
 
     /**
@@ -117,8 +133,54 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
+        recordCreation();
     }
 
+
+    public String debugInfo() {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("Op type: " + opName());
+        if(getOwnName() != null) {
+            stringBuilder.append("Own name: " + getOwnName());
+        }
+
+        if(sameDiff != null) {
+            String[] inputsForOp = sameDiff.getInputsForOp(this);
+            if(inputsForOp != null) {
+                stringBuilder.append("Input names: " + Arrays.toString(inputsForOp) + "\n");
+                for(String variable : inputsForOp) {
+                    SDVariable var = sameDiff.getVariable(variable);
+                    stringBuilder.append(var.toString() + "\n");
+                }
+            }
+
+            String[] outputsForOp = sameDiff.getOutputsForOp(this);
+            if(outputsForOp != null) {
+                stringBuilder.append("Output names: " + Arrays.toString(outputsForOp) + "\n");
+                for(String output : outputsForOp) {
+                    SDVariable outVar = sameDiff.getVariable(output);
+                    stringBuilder.append(outVar.toString() + "\n");
+                }
+            }
+        }
+
+
+        return stringBuilder.toString();
+
+
+    }
+
+
+
+    protected void recordCreation() {
+        if(Nd4j.getEnvironment().isDebug() || Nd4j.getEnvironment().isVerbose()) {
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            this.creationLocation = StackTraceUtils.pointOfInvocation(stackTrace);
+            this.creationPointofOrigin = StackTraceUtils.pointOfOrigin(stackTrace);
+            this.sameDiffCalls = StackTraceUtils.callsFromClass(stackTrace, SameDiff.class.getName());
+            creationCallStack = stackTrace;
+        }
+    }
 
     /**
      * Returns the {@link AttributeAdapter} s for each of the
@@ -283,11 +345,11 @@ public abstract class DifferentialFunction {
             } catch (NoSuchFieldException e){
                 //OK, try superclass
             }
-            while(f == null && currClass.getSuperclass() != null){
+            while(f == null && currClass.getSuperclass() != null) {
                 currClass = currClass.getSuperclass();
                 try{
                     f = currClass.getDeclaredField(propertyName);
-                } catch (NoSuchFieldException e){
+                } catch (NoSuchFieldException e) {
                     //OK, try superclass
                 }
             }
@@ -563,6 +625,8 @@ public abstract class DifferentialFunction {
         if(sameDiff != null && args != null) {
             sameDiff.addArgsFor(args, this);
         }
+
+        recordCreation();
     }
 
     /**
@@ -881,9 +945,6 @@ public abstract class DifferentialFunction {
     @Override
     public int hashCode() {
         int result = 31;
-        result = 31 * result + (inPlace ? 1 : 0);
-        result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(dimensions);
         result = 31 * result + (ownName != null ? ownName.hashCode() : 0);
         return result;
     }

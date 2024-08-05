@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicExit::processNode(Graph *graph, Node *node) {
+Status LogicExit::processNode(Graph *graph, Node *node) {
   // this op is basically no-op
   // we just know it exists
 
@@ -41,7 +41,7 @@ sd::Status LogicExit::processNode(Graph *graph, Node *node) {
   __variableSpace->getVariable(pair0)->setNDArray(input);
   __variableSpace->getVariable(pair0)->markRemovable(false);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

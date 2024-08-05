@@ -28,7 +28,7 @@
 
 namespace sd {
 namespace ops {
-sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
+ sd::Status LegacyBroadcastOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
 

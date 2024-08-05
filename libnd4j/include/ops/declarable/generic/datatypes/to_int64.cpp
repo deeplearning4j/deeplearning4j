@@ -35,14 +35,14 @@ CUSTOM_OP_IMPL(to_int64, 1, 1, true, 0, 0) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(to_int64) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::INT64);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(INT64);
 }
 DECLARE_SHAPE_FN(to_int64) {
-  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::INT64, true, block.workspace());
+  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), INT64, true, block.workspace());
   return SHAPELIST(CONSTANT(outShape));
 }
 

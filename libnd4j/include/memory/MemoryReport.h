@@ -29,8 +29,8 @@ namespace sd {
 namespace memory {
 class SD_LIB_EXPORT MemoryReport {
  private:
-  sd::LongType _vm = 0;
-  sd::LongType _rss = 0;
+  LongType _vm = 0;
+  LongType _rss = 0;
 
  public:
   MemoryReport() = default;
@@ -43,11 +43,11 @@ class SD_LIB_EXPORT MemoryReport {
   bool operator==(const MemoryReport& other) const;
   bool operator!=(const MemoryReport& other) const;
 
-  sd::LongType getVM() const;
-  void setVM(sd::LongType vm);
+  LongType getVM() const;
+  void setVM(LongType vm);
 
-  sd::LongType getRSS() const;
-  void setRSS(sd::LongType rss);
+  LongType getRSS() const;
+  void setRSS(LongType rss);
 };
 }  // namespace memory
 }  // namespace sd

@@ -62,8 +62,8 @@ LaunchContext::LaunchContext() {
   _isAllocated = true;
 }
 
-LaunchContext::LaunchContext(sd::Pointer cudaStream, sd::Pointer reductionPointer, sd::Pointer scalarPointer,
-                             sd::Pointer allocationPointer) {
+LaunchContext::LaunchContext(Pointer cudaStream, Pointer reductionPointer, Pointer scalarPointer,
+                             Pointer allocationPointer) {
   _isAllocated = false;
 
 }
@@ -80,7 +80,7 @@ LaunchContext* LaunchContext::defaultContext() {
   {
     // we need this block synchronous, to avoid double initialization etc
     std::lock_guard<std::mutex> lock(_mutex);
-    if (LaunchContext::_contexts.empty()) {
+    if (_contexts.empty()) {
       // create one context per device
       auto numDevices = AffinityManager::numberOfDevices();
 
@@ -90,7 +90,7 @@ LaunchContext* LaunchContext::defaultContext() {
 
         AffinityManager::setCurrentNativeDevice(e);
 
-        LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
+        _contexts[e] = std::make_shared<LaunchContext>();
       }
 
       // don't forget to restore device back again
@@ -99,14 +99,14 @@ LaunchContext* LaunchContext::defaultContext() {
   }
 
   // return context for current device
-  return LaunchContext::_contexts[deviceId].get();
+  return _contexts[deviceId].get();
 }
 
 void* LaunchContext::getReductionPointer() const { return contextBuffers.reductionBuffer(); };
 
 void* LaunchContext::getScalarPointer() const { return contextBuffers.scalarBuffer(); };
 
-LongType* LaunchContext::getAllocationPointer() const { return reinterpret_cast<sd::LongType *>(contextBuffers.allocationBuffer()); };
+LongType* LaunchContext::getAllocationPointer() const { return reinterpret_cast<LongType*>(contextBuffers.allocationBuffer()); };
 
 void* LaunchContext::getCublasHandle() const { return CublasHelper::getInstance().handle(); };
 
@@ -149,7 +149,7 @@ bool LaunchContext::isInitialized() { return contextBuffers.isInitialized(); }
 
 void* LaunchContext::getCuDnnHandle() const { return CublasHelper::getInstance().cudnn(); }
 
-sd::ErrorReference* LaunchContext::errorReference() { return contextBuffers.errorReference(); }
+ErrorReference* LaunchContext::errorReference() { return contextBuffers.errorReference(); }
 
 void* LaunchContext::engine() { return _engine; }
 }  // namespace sd

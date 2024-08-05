@@ -29,7 +29,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 HHsequence::HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type)
     : _vectors(vectors), _coeffs(coeffs) {
-  _diagSize = sd::math::sd_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
+  _diagSize = math::sd_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
   _shift = 0;
   _type = type;
 }

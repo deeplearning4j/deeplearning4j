@@ -44,7 +44,7 @@
 
 namespace sd {
 
-sd::Environment::Environment() {
+Environment::Environment() {
   _tadThreshold.store(1);
   _elementThreshold.store(1024);
   _verbose.store(false);
@@ -52,10 +52,11 @@ sd::Environment::Environment() {
   _profile.store(false);
   _precBoost.store(false);
   _leaks.store(false);
-  _dataType.store(sd::DataType::FLOAT32);
+  _dataType.store(FLOAT32);
   _maxThreads = std::thread::hardware_concurrency();
   _maxMasterThreads = _maxThreads.load();
-
+  deleteShapeInfo = deleteShapeInfo.load();
+  _logNDArrayEvenuts.store(false);
 #ifndef ANDROID
   const char *omp_threads = std::getenv("OMP_NUM_THREADS");
   if (omp_threads != nullptr) {
@@ -178,7 +179,6 @@ sd::Environment::Environment() {
     cudaSetDevice(i);
     cudaGetDeviceProperties(&devProperties[i], i);
 
-    // cudaDeviceSetLimit(cudaLimitStackSize, 4096);
     Pair p(devProperties[i].major, devProperties[i].minor);
     _capabilities.emplace_back(p);
   }
@@ -195,9 +195,36 @@ sd::Environment::Environment() {
 #endif
 }
 
-bool sd::Environment::blasFallback() { return _blasFallback; }
 
-sd::Environment::~Environment() {
+bool Environment::isCheckOutputChange() {
+  return _checkOutputChange.load();
+}
+
+void Environment::setCheckOutputChange(bool reallyCheck) {
+  _checkOutputChange.store(reallyCheck);
+}
+
+void Environment::setLogNativeNDArrayCreation(bool reallyLog) { _logNativeNDArrayCreation.store(reallyLog); }
+bool Environment::isLogNativeNDArrayCreation() { return _logNativeNDArrayCreation.load(); }
+
+/**
+ * When log ndarray events is set,
+ * more logging will happen around ndarrays such as what constructors are being called.
+ * @return
+ */
+bool Environment::isLogNDArrayEvents() { return _logNDArrayEvenuts.load(); }
+void Environment::setLogNDArrayEvents(bool logNDArrayEvents) { _logNDArrayEvenuts.store(logNDArrayEvents); }
+
+bool Environment::isCheckInputChange() { return _checkInputChange.load(); }
+void Environment::setCheckInputChange(bool reallyCheck) { _checkInputChange.store(reallyCheck); }
+
+bool Environment::isDeleteShapeInfo() { return deleteShapeInfo; }
+void Environment::setDeleteShapeInfo(bool reallyDelete) { deleteShapeInfo = reallyDelete; }
+
+
+bool Environment::blasFallback() { return _blasFallback; }
+
+Environment::~Environment() {
   //
 }
 
@@ -216,17 +243,27 @@ bool Environment::isVerbose() { return _verbose.load(); }
 
 bool Environment::isExperimentalBuild() { return _experimental; }
 
-sd::DataType Environment::defaultFloatDataType() { return _dataType.load(); }
+DataType Environment::defaultFloatDataType() { return _dataType.load(); }
 
 std::vector<Pair> &Environment::capabilities() { return _capabilities; }
 
-void Environment::setDefaultFloatDataType(sd::DataType dtype) {
-  if (dtype != sd::DataType::FLOAT32 && dtype != sd::DataType::DOUBLE && dtype != sd::DataType::FLOAT8 &&
-      dtype != sd::DataType::HALF)
+void Environment::setDefaultFloatDataType(DataType dtype) {
+  if (dtype != FLOAT32 && dtype != DOUBLE && dtype != FLOAT8 &&
+      dtype != HALF)
     THROW_EXCEPTION("Default Float data type must be one of [FLOAT8, FLOAT16, FLOAT32, DOUBLE]");
 
   _dataType.store(dtype);
 }
+
+void Environment::setDeletePrimary(bool reallyDelete) { deletePrimary = reallyDelete; }
+
+bool Environment::isDeletePrimary() { return deletePrimary; }
+
+void Environment::setDeleteSpecial(bool reallyDelete) { deleteSpecial = reallyDelete; }
+
+bool Environment::isDeleteSpecial() { return deleteSpecial; }
+
+
 
 void Environment::setVerbose(bool reallyVerbose) { _verbose = reallyVerbose; }
 
@@ -293,49 +330,50 @@ bool Environment::helpersAllowed() { return _allowHelpers.load(); }
 
 void Environment::allowHelpers(bool reallyAllow) { _allowHelpers.store(reallyAllow); }
 
-void Environment::setGroupLimit(int group, sd::LongType numBytes) {
-  sd::memory::MemoryCounter::getInstance().setGroupLimit((sd::memory::MemoryType)group, numBytes);
+void Environment::setGroupLimit(int group, LongType numBytes) {
+  memory::MemoryCounter::getInstance().setGroupLimit((memory::MemoryType)group, numBytes);
 }
 
-void Environment::setDeviceLimit(int deviceId, sd::LongType numBytes) {
-  sd::memory::MemoryCounter::getInstance().setDeviceLimit(deviceId, numBytes);
+void Environment::setDeviceLimit(int deviceId, LongType numBytes) {
+  memory::MemoryCounter::getInstance().setDeviceLimit(deviceId, numBytes);
 }
 
-sd::LongType Environment::getGroupLimit(int group) {
-  return sd::memory::MemoryCounter::getInstance().groupLimit((sd::memory::MemoryType)group);
+LongType Environment::getGroupLimit(int group) {
+  return memory::MemoryCounter::getInstance().groupLimit((memory::MemoryType)group);
 }
 
-sd::LongType Environment::getDeviceLimit(int deviceId) {
-  return sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId);
+LongType Environment::getDeviceLimit(int deviceId) {
+  return memory::MemoryCounter::getInstance().deviceLimit(deviceId);
 }
 
-sd::LongType Environment::getGroupCounter(int group) {
-  return sd::memory::MemoryCounter::getInstance().allocatedGroup((sd::memory::MemoryType)group);
+LongType Environment::getGroupCounter(int group) {
+  return memory::MemoryCounter::getInstance().allocatedGroup((memory::MemoryType)group);
 }
 
-sd::LongType Environment::getDeviceCounter(int deviceId) {
-  return sd::memory::MemoryCounter::getInstance().allocatedDevice(deviceId);
+LongType Environment::getDeviceCounter(int deviceId) {
+  return memory::MemoryCounter::getInstance().allocatedDevice(deviceId);
 }
 
 uint64_t Environment::maxPrimaryMemory() { return _maxTotalPrimaryMemory.load(); }
 
 uint64_t Environment::maxSpecialMemory() { return _maxTotalSpecialMemory.load(); }
 
-const char* Environment::getVedaDeviceDir(){
-#if !defined(HAVE_VEDA)
-    return nullptr;
-#else
-    const std::lock_guard<std::mutex> lock(path_mutex);
-    if (veda_device_dir.empty()) return nullptr;
-    return veda_device_dir.c_str();
-#endif
-  }
+bool Environment::isFuncTracePrintAllocate() {
+  return this->funcTracePrintAllocate;
+}
 
-  void Environment::setVedaDeviceDir(const std::string &dir){
-#if defined(HAVE_VEDA)
-    const std::lock_guard<std::mutex> lock(path_mutex);
-    if (!dir.empty()) veda_device_dir=dir;
-#endif
-  }
+bool Environment::isFuncTracePrintDeallocate() {
+  return this->funcTracePrintDeallocate;
+}
+
+void Environment::setFuncTracePrintAllocate(bool reallyPrint) {
+  this->funcTracePrintAllocate = reallyPrint;
+}
+
+void Environment::setFuncTracePrintDeallocate(bool reallyPrint) {
+  this->funcTracePrintDeallocate = reallyPrint;
+}
+
+
 
 }  // namespace sd

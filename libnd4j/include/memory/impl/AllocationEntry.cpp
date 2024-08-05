@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace memory {
-AllocationEntry::AllocationEntry(MemoryType type, sd::LongType ptr, sd::LongType numBytes, std::string &stack) {
+AllocationEntry::AllocationEntry(MemoryType type, LongType ptr, LongType numBytes, std::string &stack) {
   _pointer = ptr;
   _numBytes = numBytes;
   _stack = stack;
@@ -32,7 +32,7 @@ AllocationEntry::AllocationEntry(MemoryType type, sd::LongType ptr, sd::LongType
 
 std::string AllocationEntry::stackTrace() { return _stack; }
 
-sd::LongType AllocationEntry::numBytes() { return _numBytes; }
+LongType AllocationEntry::numBytes() { return _numBytes; }
 
 MemoryType AllocationEntry::memoryType() { return _memoryType; }
 }  // namespace memory

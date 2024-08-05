@@ -23,8 +23,8 @@
 
 sd::ops::OpTuple::OpTuple(const char *opName) { _opName = opName; }
 
-sd::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<sd::NDArray *> &&inputs,
-                          std::initializer_list<double> &&tArgs, std::initializer_list<sd::LongType> &&iArgs) {
+sd::ops::OpTuple::OpTuple(const char *opName, std::initializer_list<NDArray *> &&inputs,
+                          std::initializer_list<double> &&tArgs, std::initializer_list<LongType> &&iArgs) {
   _opName = opName;
   _inputs = inputs;
   _iArgs = iArgs;
@@ -35,12 +35,12 @@ sd::ops::OpTuple::~OpTuple() {
   for (auto v : _inputs) delete v;
 }
 
-sd::ops::OpTuple *sd::ops::OpTuple::addInput(sd::NDArray *array) {
+sd::ops::OpTuple *sd::ops::OpTuple::addInput(NDArray *array) {
   _inputs.emplace_back(array);
   return this;
 }
 
-sd::ops::OpTuple *sd::ops::OpTuple::addOutput(sd::NDArray *array) {
+sd::ops::OpTuple *sd::ops::OpTuple::addOutput(NDArray *array) {
   _outputs.emplace_back(array);
   return this;
 }
@@ -50,7 +50,7 @@ sd::ops::OpTuple *sd::ops::OpTuple::setTArgs(std::initializer_list<double> tArgs
   return this;
 }
 
-sd::ops::OpTuple *sd::ops::OpTuple::setIArgs(std::initializer_list<sd::LongType> iArgs) {
+sd::ops::OpTuple *sd::ops::OpTuple::setIArgs(std::initializer_list<LongType> iArgs) {
   _iArgs = iArgs;
   return this;
 }

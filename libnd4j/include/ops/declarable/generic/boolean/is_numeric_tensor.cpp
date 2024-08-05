@@ -31,11 +31,11 @@ namespace ops {
 BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
   auto input = INPUT_VARIABLE(0);
 
-  return input->isR() || input->isZ() ? sd::Status::EQ_TRUE : sd::Status::EQ_FALSE;
+  return input->isR() || input->isZ() ? Status::EQ_TRUE : Status::EQ_FALSE;
 }
 
 DECLARE_TYPES(is_numeric_tensor) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, BOOL);
 }
 }  // namespace ops
 }  // namespace sd

@@ -34,28 +34,28 @@ namespace graph {
 class SD_LIB_EXPORT GraphProfile {
  private:
   // this variable
-  sd::LongType _merges = 1L;
+  LongType _merges = 1L;
 
   /**
    * This is global memory values
    */
-  sd::LongType _memoryTotal = 0L;
-  sd::LongType _memoryActivations = 0L;
-  sd::LongType _memoryTemporary = 0L;
-  sd::LongType _memoryObjects = 0L;
+  LongType _memoryTotal = 0L;
+  LongType _memoryActivations = 0L;
+  LongType _memoryTemporary = 0L;
+  LongType _memoryObjects = 0L;
 
   // time spent for graph construction
-  sd::LongType _buildTime = 0L;
+  LongType _buildTime = 0L;
 
   // time spent for graph execution
-  sd::LongType _executionTime = 0L;
+  LongType _executionTime = 0L;
 
   // collection of pointers to profile results
   std::vector<NodeProfile *> _profiles;
   std::map<int, NodeProfile *> _profilesById;
 
   // collection of various timing reports
-  std::map<std::string, sd::LongType> _timings;
+  std::map<std::string, LongType> _timings;
   std::chrono::time_point<std::chrono::system_clock> _last;
 
   std::map<std::string, std::chrono::time_point<std::chrono::system_clock>> _timers;
@@ -69,20 +69,20 @@ class SD_LIB_EXPORT GraphProfile {
   /**
    * These methods just adding amount of bytes to various counters
    */
-  void addToTotal(sd::LongType bytes);
-  void addToActivations(sd::LongType bytes);
-  void addToTemporary(sd::LongType bytes);
-  void addToObjects(sd::LongType bytes);
+  void addToTotal(LongType bytes);
+  void addToActivations(LongType bytes);
+  void addToTemporary(LongType bytes);
+  void addToObjects(LongType bytes);
 
   /**
    * This method allows to set graph construction (i.e. deserialization) time in nanoseconds
    */
-  void setBuildTime(sd::LongType nanos);
+  void setBuildTime(LongType nanos);
 
   /**
    * This method sets graph execution time in nanoseconds.
    */
-  void setExecutionTime(sd::LongType nanos);
+  void setExecutionTime(LongType nanos);
 
   void startEvent(const char *name);
   void recordEvent(const char *name);
@@ -110,8 +110,8 @@ class SD_LIB_EXPORT GraphProfile {
   /**
    * These methods are just utility methods for time
    */
-  static sd::LongType currentTime();
-  static sd::LongType relativeTime(sd::LongType time);
+  static LongType currentTime();
+  static LongType relativeTime(LongType time);
 
   void printOut();
 };
