@@ -26,17 +26,17 @@
 
 namespace sd {
 namespace ops {
-class SD_LIB_EXPORT DeclarableReductionOp : public sd::ops::DeclarableOp {
+class SD_LIB_EXPORT DeclarableReductionOp : public DeclarableOp {
  protected:
   /**
    * This method executes this Op
    */
-  sd::Status validateAndExecute(Context& block) override = 0;
+  Status validateAndExecute(sd::graph::Context& block) override = 0;
 
  public:
   DeclarableReductionOp(int numInputs, int numOutputs, const char* opName, bool allowsInplace, int tArgs, int iArgs);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
 }  // namespace ops
 }  // namespace sd

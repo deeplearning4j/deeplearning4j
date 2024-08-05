@@ -53,7 +53,7 @@ namespace scalar {
 template <typename X, typename Y, typename Z>
 class ScalarTransform {
  public:
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 
   template <typename OpType>
   SD_HOST static void intermediateShaped(dim3 &launchDims, cudaStream_t *stream, const void *vx,

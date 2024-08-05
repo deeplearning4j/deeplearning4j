@@ -52,10 +52,10 @@ class SD_LIB_EXPORT Graph {
 
   // vector holds ID's of top nodes only
   std::vector<int> *_nodes;
-  SD_MAP_IMPL<int, sd::graph::Node *> *_mapped;
+  SD_MAP_IMPL<int, Node *> *_mapped;
 
-  SD_MAP_IMPL<int, std::vector<sd::graph::Node *> *> *_onion;
-  SD_MAP_IMPL<int, sd::graph::Node *> _unmapped;
+  SD_MAP_IMPL<int, std::vector<Node *> *> *_onion;
+  SD_MAP_IMPL<int, Node *> _unmapped;
   std::vector<int> _unmappedMap;  // macOS?
 
   std::mutex _mutexPreprocessing;
@@ -68,11 +68,11 @@ class SD_LIB_EXPORT Graph {
   std::vector<Scope *> _scopes;
 
   ////////////////////////////////////////
-  sd::Status validateNode(sd::graph::Node *node);
+  Status validateNode(Node *node);
 
   void expandOnion(int newLayer);
 
-  void injectNode(sd::graph::Node *node);
+  void injectNode(Node *node);
 
   void pushToOutputOnce(int id);
 
@@ -89,13 +89,13 @@ class SD_LIB_EXPORT Graph {
   void toposortNodes();
 
   // method that'll print out graph
-  sd::Status validate();
+  Status validate();
 
   // this method will build structured representation of graph
-  sd::Status buildGraph();
+  Status buildGraph();
 
   // this method will return estimated memory size (in bytes) required for 1 full graph execution round
-  sd::LongType estimateRequiredMemory();
+  LongType estimateRequiredMemory();
 
   // this method returns number of root nodes in this graph
   int rootNodes();
@@ -105,39 +105,39 @@ class SD_LIB_EXPORT Graph {
 
   int numberOfPlaceholders();
 
-  std::vector<sd::graph::Variable *> *getPlaceholders();
+  std::vector<Variable *> *getPlaceholders();
 
   /**
    * This method returns pointer to thread_local VariableSpace
    * @return
    */
-  sd::graph::VariableSpace *getVariableSpace();
+  VariableSpace *getVariableSpace();
 
   /**
    * This method adds given node to the graph
    *
    * @param node
    */
-  void addNode(sd::graph::Node *node);
+  void addNode(Node *node);
 
   /**
    * This method returns layered representation of the graph
    *
    * @return
    */
-  SD_MAP_IMPL<int, std::vector<sd::graph::Node *> *> *getOnion();
+  SD_MAP_IMPL<int, std::vector<Node *> *> *getOnion();
 
   /**
    * This method returns map of all nodes of the graph
    * @return
    */
-  SD_MAP_IMPL<int, sd::graph::Node *> *getMapped();
+  SD_MAP_IMPL<int, Node *> *getMapped();
 
   /**
    * This method returns outputs of this graph
    * @return
    */
-  std::vector<sd::graph::Variable *> *fetchOutputs();
+  std::vector<Variable *> *fetchOutputs();
 
   /**
    * This method returns pointer to ExecutorConfiguration
@@ -156,7 +156,7 @@ class SD_LIB_EXPORT Graph {
    * This method returns all nodes at once (order is NOT guaranteed)
    * @return
    */
-  std::vector<sd::graph::Node *> *getAllNodes();
+  std::vector<Node *> *getAllNodes();
 
   /**
    * This method prints out Graph op-by-op, and respective inputs
@@ -166,7 +166,7 @@ class SD_LIB_EXPORT Graph {
   /**
    * This method collect all ops from the graph into ops vector
    */
-  std::vector<sd::ops::OpDescriptor> getOperations();
+  std::vector<ops::OpDescriptor> getOperations();
 
   /**
    * This method returns Scope ptr specified with id
@@ -213,7 +213,7 @@ class SD_LIB_EXPORT Graph {
   /**
    * This method returns hash of given Graph instance
    */
-  sd::LongType hashCode();
+  LongType hashCode();
 
   /**
    * PLEASE NOTE: This method will be moved to private section

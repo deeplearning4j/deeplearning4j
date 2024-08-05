@@ -46,11 +46,11 @@ OP_IMPL(weighted_cross_entropy_with_logits, 3, 1, true) {
 
   helpers::weightedCrossEntropyWithLogitsFunctor(block.launchContext(), targets, input, weights, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(weighted_cross_entropy_with_logits) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

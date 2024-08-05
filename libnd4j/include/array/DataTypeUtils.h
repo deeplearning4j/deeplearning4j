@@ -40,7 +40,7 @@ class SD_LIB_EXPORT DataTypeUtils {
  public:
   static int asInt(DataType type);
   static DataType fromInt(int dtype);
-  static DataType fromFlatDataType(sd::graph::DType dtype);
+  static DataType fromFlatDataType(graph::DType dtype);
   SD_INLINE static std::string asString(DataType dataType);
 
   template <typename T>
@@ -72,29 +72,29 @@ class SD_LIB_EXPORT DataTypeUtils {
   SD_INLINE static T eps();
 
   SD_INLINE static SD_HOST_DEVICE size_t sizeOf(DataType type);
-  SD_INLINE static SD_HOST_DEVICE size_t sizeOf(const sd::LongType *shapeInfo);
+  SD_INLINE static SD_HOST_DEVICE size_t sizeOf(const LongType *shapeInfo);
 
-  SD_INLINE static SD_HOST_DEVICE bool isR(sd::DataType dataType);
+  SD_INLINE static SD_HOST_DEVICE bool isR(DataType dataType);
 
-  SD_INLINE static SD_HOST_DEVICE bool isZ(sd::DataType dataType);
+  SD_INLINE static SD_HOST_DEVICE bool isZ(DataType dataType);
 
-  SD_INLINE static SD_HOST_DEVICE bool isB(sd::DataType dataType);
+  SD_INLINE static SD_HOST_DEVICE bool isB(DataType dataType);
 
-  SD_INLINE static SD_HOST_DEVICE bool isU(sd::DataType dataType);
+  SD_INLINE static SD_HOST_DEVICE bool isU(DataType dataType);
 
-  SD_INLINE static SD_HOST_DEVICE bool isS(sd::DataType dataType);
+  SD_INLINE static SD_HOST_DEVICE bool isS(DataType dataType);
 
-  SD_INLINE static sd::DataType pickPairwiseResultType(sd::DataType typeX, sd::DataType typeY);
+  SD_INLINE static DataType pickPairwiseResultType(DataType typeX, DataType typeY);
 
-  SD_INLINE static sd::DataType pickPairwiseResultType(const sd::LongType *shapeInfo1, const sd::LongType *shapeInfo2);
+  SD_INLINE static DataType pickPairwiseResultType(const LongType *shapeInfo1, const LongType *shapeInfo2);
 
-  SD_INLINE static sd::DataType pickFloatingType(sd::DataType typeX);
+  SD_INLINE static DataType pickFloatingType(DataType typeX);
 
   template <typename T1, typename T2>
   SD_INLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
 
   template <typename T>
-  SD_INLINE static bool castShapeInfo(const sd::LongType *originalShapeInfo, T *newShapeInfo);
+  SD_INLINE static bool castShapeInfo(const LongType *originalShapeInfo, T *newShapeInfo);
 
   template <typename T>
   struct scalarTypesForNDarray {
@@ -110,43 +110,44 @@ class SD_LIB_EXPORT DataTypeUtils {
   template <typename T>
   struct scalarTypesForExecution {
     static bool const value = std::is_same<double, T>::value || std::is_same<float, T>::value ||
-                              std::is_same<sd::LongType, T>::value || std::is_same<int, T>::value ||
+                              std::is_same<LongType, T>::value || std::is_same<int, T>::value ||
                               std::is_same<bool, T>::value;
   };
+  static bool validDataType(DataType dataType);
 };
 
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
-SD_INLINE sd::DataType DataTypeUtils::pickFloatingType(sd::DataType typeX) {
+SD_INLINE DataType DataTypeUtils::pickFloatingType(DataType typeX) {
   // if proposed dataType is already floating point - return it
   if (isR(typeX)) return typeX;
   return Environment::getInstance().defaultFloatDataType();
 }
 
-SD_INLINE bool DataTypeUtils::isR(sd::DataType dataType) {
-  return dataType == sd::DataType::FLOAT32 || dataType == sd::DataType::BFLOAT16 || dataType == sd::DataType::HALF ||
-         dataType == sd::DataType::DOUBLE;
+SD_INLINE bool DataTypeUtils::isR(DataType dataType) {
+  return dataType == FLOAT32 || dataType == BFLOAT16 || dataType == HALF ||
+         dataType == DOUBLE;
 }
 
-SD_INLINE bool DataTypeUtils::isB(sd::DataType dataType) { return dataType == sd::DataType::BOOL; }
+SD_INLINE bool DataTypeUtils::isB(DataType dataType) { return dataType == BOOL; }
 
-SD_INLINE bool DataTypeUtils::isS(sd::DataType dataType) {
-  return dataType == sd::DataType::UTF8 || dataType == sd::DataType::UTF16 || dataType == sd::DataType::UTF32;
+SD_INLINE bool DataTypeUtils::isS(DataType dataType) {
+  return dataType == UTF8 || dataType == UTF16 || dataType == UTF32;
 }
 
-SD_INLINE bool DataTypeUtils::isZ(sd::DataType dataType) { return !isR(dataType) && !isB(dataType) && !isS(dataType); }
+SD_INLINE bool DataTypeUtils::isZ(DataType dataType) { return !isR(dataType) && !isB(dataType) && !isS(dataType); }
 
-SD_INLINE bool DataTypeUtils::isU(sd::DataType dataType) {
-  return dataType == sd::DataType::UINT8 || dataType == sd::DataType::UINT16 || dataType == sd::DataType::UINT32 ||
-         dataType == sd::DataType::UINT64;
+SD_INLINE bool DataTypeUtils::isU(DataType dataType) {
+  return dataType == UINT8 || dataType == UINT16 || dataType == UINT32 ||
+         dataType == UINT64;
 }
 
-SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(sd::DataType typeX, sd::DataType typeY) {
+SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(DataType typeX, DataType typeY) {
   // if both dtypes are the same - just return it
   if (typeX == typeY) return typeX;
-  auto sd_max = [](sd::DataType typeX, sd::DataType typeY) { return typeX > typeY ? typeX : typeY; };
+  auto sd_max = [](DataType typeX, DataType typeY) { return typeX > typeY ? typeX : typeY; };
   auto rX = isR(typeX);
   auto rY = isR(typeY);
 
@@ -159,7 +160,7 @@ SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(sd::DataType typeX,
   // if both data types are float - return biggest one
   if (rX && rY) {
     // if we allow precision boost, then we pick bigger data type
-    if (sd::Environment::getInstance().precisionBoostAllowed()) {
+    if (Environment::getInstance().precisionBoostAllowed()) {
       return sd_max(typeX, typeY);
     } else {
       // and we return first operand otherwise
@@ -169,7 +170,7 @@ SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(sd::DataType typeX,
 
   // if that's not real type, we apply same rules
   if (!rX && !rY) {
-    if (sd::Environment::getInstance().precisionBoostAllowed()) {
+    if (Environment::getInstance().precisionBoostAllowed()) {
       return sd_max(typeX, typeY);
     } else {
       // and we return first operand otherwise
@@ -181,8 +182,8 @@ SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(sd::DataType typeX,
 }
 
 ///////////////////////////////////////////////////////////////////
-SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(const sd::LongType *shapeInfo1,
-                                                             const sd::LongType *shapeInfo2) {
+SD_INLINE DataType DataTypeUtils::pickPairwiseResultType(const LongType *shapeInfo1,
+                                                             const LongType *shapeInfo2) {
   return pickPairwiseResultType(ArrayOptions::dataType(shapeInfo1), ArrayOptions::dataType(shapeInfo2));
 }
 
@@ -190,7 +191,7 @@ SD_INLINE sd::DataType DataTypeUtils::pickPairwiseResultType(const sd::LongType 
 SD_INLINE size_t DataTypeUtils::sizeOf(DataType type) { return sizeOfElement(type); }
 
 ///////////////////////////////////////////////////////////////////
-SD_INLINE size_t DataTypeUtils::sizeOf(const sd::LongType *shapeInfo) {
+SD_INLINE size_t DataTypeUtils::sizeOf(const LongType *shapeInfo) {
   return sizeOfElement(ArrayOptions::dataType(shapeInfo));
 }
 
@@ -241,13 +242,13 @@ SD_INLINE SD_HOST_DEVICE bool DataTypeUtils::min_positive<bool>() {
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType DataTypeUtils::min<sd::LongType>() {
-  return (sd::LongType)1L;
+SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min<LongType>() {
+  return (LongType)1L;
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType DataTypeUtils::min_positive<sd::LongType>() {
-  return (sd::LongType)0;
+SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::min_positive<LongType>() {
+  return (LongType)0;
 }
 
 template <>
@@ -363,7 +364,7 @@ SD_INLINE SD_HOST_DEVICE uint16_t DataTypeUtils::max<uint16_t>() {
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::LongType DataTypeUtils::max<sd::LongType>() {
+SD_INLINE SD_HOST_DEVICE LongType DataTypeUtils::max<LongType>() {
   return 9223372036854775807LL;
 }
 
@@ -373,7 +374,7 @@ SD_INLINE SD_HOST_DEVICE uint32_t DataTypeUtils::max<uint32_t>() {
 }
 
 template <>
-SD_INLINE SD_HOST_DEVICE sd::UnsignedLong DataTypeUtils::max<sd::UnsignedLong>() {
+SD_INLINE SD_HOST_DEVICE UnsignedLong DataTypeUtils::max<UnsignedLong>() {
   return 18446744073709551615LLU;
 }
 
@@ -427,6 +428,32 @@ SD_INLINE SD_HOST_DEVICE T DataTypeUtils::nanOrZero() {
   return static_cast<T>(0);
 }
 
+
+SD_INLINE  bool DataTypeUtils::validDataType(DataType dataType) {
+  switch (dataType) {
+    case INT8:
+    case INT16:
+    case INT32:
+    case INT64:
+    case BFLOAT16:
+    case FLOAT32:
+    case DOUBLE:
+    case HALF:
+    case BOOL:
+    case UINT8:
+    case UINT16:
+    case UINT32:
+    case UINT64:
+    case UTF8:
+    case UTF16:
+    case UTF32:
+      return true;
+    case UNKNOWN:
+    default:
+      return false;
+  }
+}
+
 SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
   switch (dataType) {
     case INT8:
@@ -461,16 +488,17 @@ SD_INLINE std::string DataTypeUtils::asString(DataType dataType) {
       return std::string("UTF16");
     case UTF32:
       return std::string("UTF32");
+    case UNKNOWN:
     default:
-      THROW_EXCEPTION("Unknown data type used");
+      return std::string("UNKNOWN");
   }
 }
 
 template <typename T>
-SD_INLINE bool DataTypeUtils::castShapeInfo(const sd::LongType *originalShapeInfo, T *newShapeInfo) {
+SD_INLINE bool DataTypeUtils::castShapeInfo(const LongType *originalShapeInfo, T *newShapeInfo) {
   auto shapeInfoLength = *originalShapeInfo * 2 + 4;
   for (auto e = 0; e < shapeInfoLength; e++) {
-    if (originalShapeInfo[e] < static_cast<sd::LongType>(DataTypeUtils::max<T>())) {
+    if (originalShapeInfo[e] < static_cast<LongType>(DataTypeUtils::max<T>())) {
       newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
     } else
       return false;
@@ -498,87 +526,91 @@ SD_INLINE SD_HOST_DEVICE T DataTypeUtils::eps() {
 template <typename T1, typename T2>
 SD_INLINE std::vector<T2> DataTypeUtils::convertVector(const std::vector<T1> &vector) {
   std::vector<T2> result(vector.size());
-  sd::LongType vecSize = vector.size();
-  for (sd::LongType e = 0; e < vecSize; e++) result[e] = static_cast<T2>(vector[e]);
+  LongType vecSize = vector.size();
+  for (LongType e = 0; e < vecSize; e++) result[e] = static_cast<T2>(vector[e]);
 
   return result;
 }
 
-SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(sd::DataType type) {
+SD_INLINE SD_HOST_DEVICE size_t DataTypeUtils::sizeOfElement(DataType type) {
   switch (type) {
-    case sd::DataType::UINT8:
-    case sd::DataType::INT8:
-    case sd::DataType::FLOAT8:
-    case sd::DataType::QINT8:
-    case sd::DataType::BOOL:
+    case UINT8:
+    case INT8:
+    case FLOAT8:
+    case QINT8:
+    case BOOL:
       return (size_t)1;
 
-    case sd::DataType::BFLOAT16:
-    case sd::DataType::HALF:
-    case sd::DataType::INT16:
-    case sd::DataType::QINT16:
-    case sd::DataType::UINT16:
+    case BFLOAT16:
+    case HALF:
+    case INT16:
+    case QINT16:
+    case UINT16:
       return (size_t)2;
 
-    case sd::DataType::UTF8:
-    case sd::DataType::UTF16:
-    case sd::DataType::UTF32:
-    case sd::DataType::INT32:
-    case sd::DataType::UINT32:
-    case sd::DataType::HALF2:
-    case sd::DataType::FLOAT32:
+    case UTF8:
+    case UTF16:
+    case UTF32:
+    case INT32:
+    case UINT32:
+    case HALF2:
+    case FLOAT32:
       return (size_t)4;
 
-    case sd::DataType::UINT64:
-    case sd::DataType::INT64:
-    case sd::DataType::DOUBLE:
+    case UINT64:
+    case INT64:
+    case DOUBLE:
       return (size_t)8;
 
     default: {
       sd_printf("Unknown DataType used: [%i]\n", asInt(type));
 #ifndef __CUDA_ARCH__
-      THROW_EXCEPTION("Unknown DataType requested");
+      std::string errorMessage;
+      errorMessage += "Unknown data type requested DataTypeUtils:";
+      errorMessage += asString(type);
+      THROW_EXCEPTION(errorMessage.c_str());
+      return -1;
 #endif
     }
   }
 }
 
 template <typename T>
-SD_INLINE SD_HOST_DEVICE sd::DataType sd::DataTypeUtils::fromT() {
+SD_INLINE SD_HOST_DEVICE DataType DataTypeUtils::fromT() {
   if (std::is_same<T, bool>::value) {
-    return sd::DataType::BOOL;
+    return BOOL;
   } else if (std::is_same<T, std::string>::value) {
-    return sd::DataType::UTF8;
+    return UTF8;
   } else if (std::is_same<T, std::u16string>::value) {
-    return sd::DataType::UTF16;
+    return UTF16;
   } else if (std::is_same<T, std::u32string>::value) {
-    return sd::DataType::UTF32;
+    return UTF32;
   } else if (std::is_same<T, float>::value) {
-    return sd::DataType::FLOAT32;
+    return FLOAT32;
   } else if (std::is_same<T, float16>::value) {
-    return sd::DataType::HALF;
+    return HALF;
   } else if (std::is_same<T, bfloat16>::value) {
-    return sd::DataType::BFLOAT16;
+    return BFLOAT16;
   } else if (std::is_same<T, double>::value) {
-    return sd::DataType::DOUBLE;
+    return DOUBLE;
   } else if (std::is_same<T, int8_t>::value) {
-    return sd::DataType::INT8;
+    return INT8;
   } else if (std::is_same<T, int16_t>::value) {
-    return sd::DataType::INT16;
+    return INT16;
   } else if (std::is_same<T, int>::value) {
-    return sd::DataType::INT32;
-  } else if (std::is_same<T, sd::LongType>::value) {
-    return sd::DataType::INT64;
+    return INT32;
+  } else if (std::is_same<T, LongType>::value) {
+    return INT64;
   } else if (std::is_same<T, uint8_t>::value) {
-    return sd::DataType::UINT8;
+    return UINT8;
   } else if (std::is_same<T, uint16_t>::value) {
-    return sd::DataType::UINT16;
+    return UINT16;
   } else if (std::is_same<T, uint32_t>::value) {
-    return sd::DataType::UINT32;
-  } else if (std::is_same<T, sd::UnsignedLong>::value) {
-    return sd::DataType::UINT64;
+    return UINT32;
+  } else if (std::is_same<T, UnsignedLong>::value) {
+    return UINT64;
   } else {
-    return sd::DataType::INHERIT;
+    return INHERIT;
   }
 }
 }  // namespace sd

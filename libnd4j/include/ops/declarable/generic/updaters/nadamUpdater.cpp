@@ -41,7 +41,7 @@ CONFIGURABLE_OP_IMPL(nadam_updater, 3, 3, true, 0, 0) {
   auto stateM = OUTPUT_VARIABLE(2);
 
   // todo maybe we need an error like on Java side
-  if (gradient->isEmpty() || initStateV->isEmpty() || initStateM->isEmpty()) return sd::Status::OK;
+  if (gradient->isEmpty() || initStateV->isEmpty() || initStateM->isEmpty()) return Status::OK;
 
   REQUIRE_TRUE(gradient->isSameShape(initStateM), 0,
                "NADAM UPDATER OP: input state M must have the same shape as gradient,"
@@ -90,7 +90,7 @@ CONFIGURABLE_OP_IMPL(nadam_updater, 3, 3, true, 0, 0) {
 
   helpers::updaterNadam(block.launchContext(), *gradient, *initStateV, *initStateM, *update, *stateV, *stateM, dLr,
                         dBeta1, dBeta2, dEpsilon, nIteration);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(nadam_updater) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }

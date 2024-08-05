@@ -273,7 +273,6 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     auto n = shape::length(xShapeInfo);
     auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
     if (xElementWiseStride >= 1 && order == 'c') {
-    //  printf("xEleStride > 1 && order == c\n");
       for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
         IndexValue<X> comp{dx[i * xElementWiseStride], i};
         reduction = OpType::update(reduction, comp, extraParams);

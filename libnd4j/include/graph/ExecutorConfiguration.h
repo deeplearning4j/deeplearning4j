@@ -29,15 +29,15 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT ExecutorConfiguration {
  public:
-  sd::graph::ProfilingMode _profilingMode;
-  sd::graph::ExecutionMode _executionMode;
-  sd::graph::OutputMode _outputMode;
+  ProfilingMode _profilingMode;
+  ExecutionMode _executionMode;
+  OutputMode _outputMode;
   bool _timestats;
-  sd::LongType _footprintForward = 0L;
-  sd::LongType _footprintBackward = 0L;
+  LongType _footprintForward = 0L;
+  LongType _footprintBackward = 0L;
   Direction _direction = Direction_FORWARD_ONLY;
 
-  explicit ExecutorConfiguration(const sd::graph::FlatConfiguration *conf = nullptr);
+  explicit ExecutorConfiguration(const FlatConfiguration *conf = nullptr);
   ~ExecutorConfiguration() = default;
 
   ExecutorConfiguration *clone();

@@ -33,15 +33,15 @@
 namespace sd {
 class SD_LIB_EXPORT ConstantDescriptor {
  private:
-  std::vector<sd::LongType> _integerValues;
+  std::vector<LongType> _integerValues;
   std::vector<double> _floatValues;
 
  public:
   ConstantDescriptor(double *values, int length);
-  ConstantDescriptor(sd::LongType const *values, int length);
+  ConstantDescriptor(LongType const *values, int length);
   ConstantDescriptor(std::initializer_list<double> values);
 
-  explicit ConstantDescriptor(std::vector<sd::LongType> &values);
+  explicit ConstantDescriptor(std::vector<LongType> &values);
   explicit ConstantDescriptor(std::vector<double> &values);
 
   ~ConstantDescriptor() = default;
@@ -55,9 +55,9 @@ class SD_LIB_EXPORT ConstantDescriptor {
   bool isInteger() const;
   bool isFloat() const;
 
-  sd::LongType length() const;
+  LongType length() const;
 
-  const std::vector<sd::LongType> &integerValues() const;
+  const std::vector<LongType> &integerValues() const;
   const std::vector<double> &floatValues() const;
 };
 }  // namespace sd

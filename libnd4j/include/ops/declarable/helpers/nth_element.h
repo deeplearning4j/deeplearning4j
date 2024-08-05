@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void nthElementFunctor(sd::LaunchContext* context, NDArray* input, sd::LongType n, NDArray* output,
+SD_LIB_HIDDEN void nthElementFunctor(LaunchContext* context, NDArray* input, LongType n, NDArray* output,
                                      bool reverse);
 
 }

@@ -41,7 +41,7 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   if (A.sizeAt(1) != x.sizeAt(0))
     THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
-  NDArray LU = A.dup();
+  NDArray LU = A.dup(false);
 
   const int rows = LU.sizeAt(0);
   const int cols = LU.sizeAt(1);
@@ -57,7 +57,7 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   for (int k = 0; k < diagLen; ++k) {
     NDArray bottomRightCorner = LU({k, rows, k, cols}, true);
     const int indPivot =
-        static_cast<int>(bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax).t<sd::LongType>(0));
+        static_cast<int>(bottomRightCorner.indexReduceNumber(indexreduce::IndexAbsoluteMax).t<LongType>(0));
 
     int colPivot = indPivot % (cols - k);
     int rowPivot = indPivot / (cols - k);
@@ -139,13 +139,13 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
 
   NDArray cTopRows1 = c({0, diagLen, 0, 0}, true);
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
-  ops::helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
+  helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
 
   if (rows > cols) c({cols, -1, 0, 0}, true) -= mmul(LU({cols, -1, 0, 0}, true), c({0, cols, 0, 0}, true));
 
   NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
   // TriangularSolver<T>::solve(LU({0,nonZeroPivots2, 0,nonZeroPivots2}, true), cTopRows2, false, false, cTopRows2);
-  ops::helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
+  helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
                                      cTopRows2);
 
   for (int i = 0; i < nonZeroPivots2; ++i)

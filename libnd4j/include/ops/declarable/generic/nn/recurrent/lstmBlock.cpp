@@ -72,11 +72,11 @@ CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 2) {
   helpers::lstmBlockTimeLoop(maxTSLength, x, cLast, yLast, W, Wci, Wcf, Wco, b, i, c, f, o, z, h, y,
                              {(double)peephole, forgetBias, clippingCellValue}, dataFormat);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lstmBlock) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(lstmBlock) {
@@ -99,7 +99,7 @@ DECLARE_SHAPE_FN(lstmBlock) {
   int t;
   int nOut = cLast[2];  // rank, bs, nOut, ...]
 
-  sd::LongType *s(nullptr);
+  LongType *s(nullptr);
   ALLOCATE(s, block.getWorkspace(), shape::shapeInfoLength(3), sd::LongType);  // [time, bS, nOut]
   s[0] = 3;
   if (dataFormat == 0) {

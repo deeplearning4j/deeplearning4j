@@ -103,14 +103,6 @@
       const sd::LongType *tadOffsets) {}
 
 #else
-// hacky fix for isnan/being being out of scope
-//#ifdef IOS
-//#define isinf(x) 0 // this isn't right. But std::isinf fails
-//#define isnan(x) 0
-//#else
-//#define isnan std::isnan
-//#define isinf std::isinf
-//#endif
 
 #define no_op_exec_special_cuda
 #define no_op_exec_special_accumulation_cuda
@@ -146,7 +138,7 @@ namespace simdOps {
 template <typename X, typename Y, typename Z>
 class Add {
  public:
-  SD_OP_DEF static Z op(X d1, Y d2) { return static_cast<Z>(d1 + d2); }
+  SD_OP_DEF static Z op(X d1, Y d2) { return d1 + d2; }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) { return static_cast<Z>(d1 + d2); }
 
@@ -368,14 +360,29 @@ class SafeDivide {
 template <typename X, typename Y, typename Z>
 class FloorDiv {
  public:
-  SD_OP_DEF static Z op(X d1, Y d2) { return sd::math::sd_floor<Z, Z>(static_cast<Z>(d1 / d2)); }
+  //TODO: fix odd precision issue with rounding. Current static cast here is a workaround for int like types.
+  //This is not a guaranteed fix and need to verify. The test case is -1 / 3 is -.333 which floor rounds down to -1.
+  //We are currently reutrning
+  SD_OP_DEF static Z op(X d1, Y d2) {
+    auto divResult = static_cast<double>(d1) / static_cast<double>(d2);
+    //note: we do this because floor cast to an int can provide incorrect results
+    //the test case that caused this change was -1 / 3 = -0.33 = -1 but it was zero instead.
+    return static_cast<Z>(sd::math::sd_floor<double, double>(divResult));
+  }
 
-  SD_OP_DEF static Z op(X d1, Y d2, Z *params) { return sd::math::sd_floor<Z, Z>(static_cast<Z>(d1 / d2)); }
+  SD_OP_DEF static Z op(X d1, Y d2, Z *params) {
+    auto divResult = static_cast<double>(d1) / static_cast<double>(d2);
+    //note: we do this because floor cast to an int can provide incorrect results
+    //the test case that caused this change was -1 / 3 = -0.33 = -1 but it was zero instead.
+    return static_cast<Z>(sd::math::sd_floor<double, double>(divResult));
+  }
 
   SD_OP_DEF static Z op(X d1) { return sd::math::sd_floor<Z, Z>(static_cast<Z>(d1)); }
 
   // op for MetaOps
-  SD_OP_DEF static Z op(X d1, Y *params) { return sd::math::sd_floor<Z, Z>(static_cast<Z>(d1 / params[0])); }
+  SD_OP_DEF static Z op(X d1, Y *params) {
+    return sd::math::sd_floor<Z, Z>(static_cast<Z>(static_cast<double>(d1) / static_cast<double>(params[0])));
+  }
 };
 
 template <typename X, typename Y, typename Z>
@@ -1668,7 +1675,7 @@ class RSqrt {
 
   SD_OP_DEF static Z
   op(X d1, Z *params) {
-    return static_cast<Z>(1) / sd::math::sd_sqrt<X, Z>(d1);
+    return static_cast<Z>(1.0) / sd::math::sd_sqrt<X, Z>(d1);
   }
 };
 
@@ -2134,7 +2141,7 @@ class RELU6 {
 
   SD_OP_DEF static Z
   op(X d1, Y d2, Z *params) {
-    auto relu = simdOps::RELU<X, Y, Z>::op(d1, d2, params);
+    auto relu = RELU<X, Y, Z>::op(d1, d2, params);
     return relu < static_cast<Z>(6) ? relu : static_cast<Z>(6);
   }
 };
@@ -2400,7 +2407,7 @@ class ShannonEntropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda
 
-      const static functions::ReduceType reduceType = functions::ReduceType::SUM;
+  const static functions::ReduceType reduceType = functions::ReduceType::SUM;
   using InterType = typename AggregateType<Z>::type;
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
 
@@ -2421,7 +2428,7 @@ template <typename X, typename Z>
 class LogEntropy {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-  typename AggregateType<Z>::type;
+      typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
@@ -2510,7 +2517,7 @@ template <typename X, typename Z>
 class CountZero {
  public:
   no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda using InterType =
-  typename AggregateType<Z>::type;
+      typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static Z startingValue(const X *input) { return static_cast<Z>(0.0f); }
@@ -2569,7 +2576,6 @@ template <typename X, typename Z>
 class All {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType = Z;
-  const static functions::ReduceType reduceType = functions::ReduceType::PRODUCT;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(1); }
 
@@ -2830,7 +2836,7 @@ template <typename X, typename Z>
 class Norm2 {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-  typename AggregateType<Z>::type;
+      typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
@@ -2966,7 +2972,7 @@ template <typename X, typename Z>
 class StandardDeviation {
  public:
   no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda using InterType =
-  typename AggregateType<Z>::type;
+      typename AggregateType<Z>::type;
   const static functions::ReduceType reduceType = functions::ReduceType::SUM;
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0.0f); }
@@ -3298,7 +3304,7 @@ class IndexAbsoluteMax {
     old.value = sd::math::sd_abs<X>(old.value);
     if (opOutput.value > old.value) return opOutput;
 #ifdef __CUDACC__
-    // workaround for cuda race condition at merge phase
+      // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3350,7 +3356,7 @@ class FirstIndex {
     if (opOutput.index < 0) return old;
 #endif
 
-    auto res = simdOps::MatchCondition<X, X>::op(opOutput.value, extraParams);
+    auto res = MatchCondition<X, X>::op(opOutput.value, extraParams);
 
     if (res == static_cast<X>(0)) return old;
 
@@ -3404,7 +3410,7 @@ class LastIndex {
     if (opOutput.index < 0) return old;
 #endif
 
-    auto res = simdOps::MatchCondition<X, X>::op(opOutput.value, extraParams);
+    auto res = MatchCondition<X, X>::op(opOutput.value, extraParams);
 
     if (res == static_cast<X>(0)) return old;
 
@@ -3458,7 +3464,7 @@ class IndexMax {
       return opOutput;
     }
 #ifdef __CUDACC__
-    // workaround for cuda race condition at merge phase
+      // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3519,7 +3525,7 @@ class IndexAbsoluteMin {
     if (opOutput.value < old.value) return opOutput;
 
 #ifdef __CUDACC__
-    // workaround for cuda race condition at merge phase
+      // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3569,7 +3575,7 @@ class IndexMin {
     if (opOutput.value < old.value) return opOutput;
 
 #ifdef __CUDACC__
-    // workaround for cuda race condition at merge phase
+      // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3831,7 +3837,7 @@ class CompareAndSet {
         return d2;
       else
         return d1;
-    //equivalent case to NOT_FINITE
+      //equivalent case to NOT_FINITE
     else if (mode == 8 || mode == 15)  // is inf
       if (sd::math::sd_isinf(d2))
         return d2;

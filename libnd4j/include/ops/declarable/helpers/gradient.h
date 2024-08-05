@@ -31,7 +31,7 @@ namespace helpers {
 /*
  * applyGradientDescent: calculate z = x - y * w.
  * */
-SD_LIB_HIDDEN void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight,
+SD_LIB_HIDDEN void applyGradientDescent(LaunchContext* context, NDArray* input, NDArray* step, double weight,
                                         NDArray* output);
 
 }  // namespace helpers

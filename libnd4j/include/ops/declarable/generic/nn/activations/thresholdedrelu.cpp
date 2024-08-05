@@ -38,10 +38,10 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
   helpers::thresholdRelu(block.launchContext(), *input, scalar, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(thresholdedrelu) { getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(thresholdedrelu) { getOpDescriptor()->setAllowedInputTypes(0, ANY)->setSameMode(true); }
 
 ////////////////////////////////////////////////////////////////////////
 CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
@@ -53,14 +53,14 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu_bp, 2, 1, true, 0, 0) {
 
   helpers::thresholdReluDerivative(block.launchContext(), input, threshold, dLdO, dLdI);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(thresholdedrelu_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 
 }  // namespace ops

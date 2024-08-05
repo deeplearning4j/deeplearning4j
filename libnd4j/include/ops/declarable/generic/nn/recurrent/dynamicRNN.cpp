@@ -66,8 +66,8 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
   const int bS = timeMajor ? x->sizeAt(1) : x->sizeAt(0);
   const int numUnits = Wx->sizeAt(1);
 
-  std::vector<sd::LongType> expectedWhShape = {numUnits, numUnits};
-  std::vector<sd::LongType> expectedBShape = {2 * numUnits};
+  std::vector<LongType> expectedWhShape = {numUnits, numUnits};
+  std::vector<LongType> expectedBShape = {2 * numUnits};
   REQUIRE_TRUE(Wh->isSameShape(expectedWhShape), 0,
                "DYNAMIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got "
                "%s instead !",
@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
                "DYNAMIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedBShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
   if (h0) {
-    std::vector<sd::LongType> expectedh0Shape = {bS, numUnits};
+    std::vector<LongType> expectedh0Shape = {bS, numUnits};
     REQUIRE_TRUE(
         h0->isSameShape(expectedh0Shape), 0,
         "DYNAMIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !",
         ShapeUtils::shapeAsString(expectedh0Shape).c_str(), ShapeUtils::shapeAsString(h0).c_str());
   }
   if (maxTimeStep) {
-    std::vector<sd::LongType> expectedmaxTimeStepShape = {bS};
+    std::vector<LongType> expectedmaxTimeStepShape = {bS};
     REQUIRE_TRUE(maxTimeStep->isSameShape(expectedmaxTimeStepShape), 0,
                  "DYNAMIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedmaxTimeStepShape).c_str(),
@@ -91,8 +91,8 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
   }
 
   if (timeMajor == false) {
-    x = new NDArray(x->permute({1, 0, 2}));  // [bS x time x inSize]   -> [time x bS x inSize]
-    h = new NDArray(h->permute({1, 0, 2}));  // [bS x time x numUnits] -> [time x bS x numUnits]
+    x = new NDArray(x->permute({1, 0, 2}, false));  // [bS x time x inSize]   -> [time x bS x inSize]
+    h = new NDArray(h->permute({1, 0, 2}, false));  // [bS x time x numUnits] -> [time x bS x numUnits]
   }
 
   helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep, h, hFinal);
@@ -102,12 +102,12 @@ CUSTOM_OP_IMPL(dynamic_rnn, 4, 2, false, 0, 0) {
     delete h;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(dynamic_rnn) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, sd::DataType::ANY)
+      ->setAllowedInputTypes(0, ANY)
       ->setAllowedInputTypes(1, {ALL_FLOATS})
       ->setAllowedInputTypes(2, {ALL_FLOATS})
       ->setAllowedInputTypes(3, {ALL_FLOATS})
@@ -124,8 +124,8 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
   auto WhShapeInfo = inputShape->at(2);  // hidden-to-hidden weights, [numUnits x numUnits]
   auto bShapeInfo = inputShape->at(3);   // biases for, [2*numUnits]
 
-  sd::LongType const* h0ShapeInfo = nullptr;  // initial cell output (at time step = 0) [bS x numUnits]
-  sd::LongType const* maxTimeStepShapeInfo =
+  LongType const* h0ShapeInfo = nullptr;  // initial cell output (at time step = 0) [bS x numUnits]
+  LongType const* maxTimeStepShapeInfo =
       nullptr;  // vector [bS] containing integer values within [0,time), each element of this vector set max time step
                 // per each input in batch, this means there are no calculations for time >= maxTimeStep
 
@@ -153,8 +153,8 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
   const int bS = timeMajor ? xShapeInfo[2] : xShapeInfo[1];
   const int numUnits = WxShapeInfo[2];
 
-  std::vector<sd::LongType> expectedWhShape = {numUnits, numUnits};
-  std::vector<sd::LongType> expectedBShape = {2 * numUnits};
+  std::vector<LongType> expectedWhShape = {numUnits, numUnits};
+  std::vector<LongType> expectedBShape = {2 * numUnits};
   REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhShapeInfo, expectedWhShape), 0,
                "DYNAMIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got "
                "%s instead !",
@@ -163,14 +163,14 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
                "DYNAMIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedBShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
   if (h0ShapeInfo) {
-    std::vector<sd::LongType> expectedh0Shape = {bS, numUnits};
+    std::vector<LongType> expectedh0Shape = {bS, numUnits};
     REQUIRE_TRUE(
         ShapeUtils::areShapesEqual(h0ShapeInfo, expectedh0Shape), 0,
         "DYNAMIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !",
         ShapeUtils::shapeAsString(expectedh0Shape).c_str(), ShapeUtils::shapeAsString(h0ShapeInfo).c_str());
   }
   if (maxTimeStepShapeInfo) {
-    std::vector<sd::LongType> expectedmaxTimeStepShape = {bS};
+    std::vector<LongType> expectedmaxTimeStepShape = {bS};
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, expectedmaxTimeStepShape), 0,
                  "DYNAMIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !",
                  ShapeUtils::shapeAsString(expectedmaxTimeStepShape).c_str(),
@@ -178,7 +178,7 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
   }
 
   // evaluate output shapeInfos
-  sd::LongType *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
+  LongType *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
   ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank), sd::LongType);
   ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank - 1), sd::LongType);
 

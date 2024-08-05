@@ -54,7 +54,7 @@ OP_IMPL(cross, 2, 1, false) {
     helpers::crossBatched(block.launchContext(), a, b, o);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace ops
 }  // namespace sd

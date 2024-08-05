@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 
 namespace sd {
-graph_exists_exception::graph_exists_exception(sd::LongType graphId)
+graph_exists_exception::graph_exists_exception(LongType graphId)
     : graph_exception(StringUtils::buildGraphErrorMessage("Graph with given ID already exists", graphId), graphId) {
   _graphId = graphId;
 }

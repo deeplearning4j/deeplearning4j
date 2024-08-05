@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 
 namespace sd {
-graph_execution_exception::graph_execution_exception(sd::LongType graphId)
+graph_execution_exception::graph_execution_exception(LongType graphId)
     : graph_exception(StringUtils::buildGraphErrorMessage("Caught exception during graph execution", graphId),
                       graphId) {
   _graphId = graphId;

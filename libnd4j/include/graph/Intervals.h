@@ -32,18 +32,18 @@ namespace sd {
 
 class SD_LIB_EXPORT Intervals {
  private:
-  std::vector<std::vector<sd::LongType>> _content;
+  std::vector<std::vector<LongType>> _content;
 
  public:
   // default constructor
   Intervals();
 
   // constructor
-  Intervals(const std::initializer_list<std::vector<sd::LongType>>& content);
-  Intervals(const std::vector<std::vector<sd::LongType>>& content);
+  Intervals(const std::initializer_list<std::vector<LongType>>& content);
+  Intervals(const std::vector<std::vector<LongType>>& content);
 
   // accessing operator
-  std::vector<sd::LongType> operator[](const sd::LongType i) const;
+  std::vector<LongType> operator[](const LongType i) const;
 
   // returns size of _content
   int size() const;

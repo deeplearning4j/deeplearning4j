@@ -52,43 +52,43 @@ void NodeProfile::printOut() {
   sd_printf("      Outputs: %s\n", outputs.c_str());
 };
 
-sd::LongType NodeProfile::getActivationsSize() const { return _memoryActivations; }
+LongType NodeProfile::getActivationsSize() const { return _memoryActivations; }
 
-void NodeProfile::setShapeFunctionTime(sd::LongType time) { _shapeTime = time; }
+void NodeProfile::setShapeFunctionTime(LongType time) { _shapeTime = time; }
 
-void NodeProfile::setArrayTime(sd::LongType time) { _arrayTime = time; }
+void NodeProfile::setArrayTime(LongType time) { _arrayTime = time; }
 
-void NodeProfile::setInputTime(sd::LongType time) { _inputTime = time; }
+void NodeProfile::setInputTime(LongType time) { _inputTime = time; }
 
-sd::LongType NodeProfile::getTemporarySize() const { return _memoryTemporary; }
+LongType NodeProfile::getTemporarySize() const { return _memoryTemporary; }
 
-sd::LongType NodeProfile::getObjectsSize() const { return _memoryObjects; }
+LongType NodeProfile::getObjectsSize() const { return _memoryObjects; }
 
-sd::LongType NodeProfile::getTotalSize() const { return _memoryTotal; }
+LongType NodeProfile::getTotalSize() const { return _memoryTotal; }
 
-void NodeProfile::setBuildTime(sd::LongType time) { _buildTime = time; }
+void NodeProfile::setBuildTime(LongType time) { _buildTime = time; }
 
-void NodeProfile::setPreparationTime(sd::LongType time) { _preparationTime = time; }
+void NodeProfile::setPreparationTime(LongType time) { _preparationTime = time; }
 
-void NodeProfile::setExecutionTime(sd::LongType time) { _executionTime = time; }
+void NodeProfile::setExecutionTime(LongType time) { _executionTime = time; }
 
-void NodeProfile::setTotalTime(sd::LongType time) { _totalTime = time; }
+void NodeProfile::setTotalTime(LongType time) { _totalTime = time; }
 
-void NodeProfile::setActivationsSize(sd::LongType bytes) { _memoryActivations = bytes; }
+void NodeProfile::setActivationsSize(LongType bytes) { _memoryActivations = bytes; }
 
-void NodeProfile::setTemporarySize(sd::LongType bytes) { _memoryTemporary = bytes; }
+void NodeProfile::setTemporarySize(LongType bytes) { _memoryTemporary = bytes; }
 
-void NodeProfile::setObjectsSize(sd::LongType bytes) { _memoryObjects = bytes; }
+void NodeProfile::setObjectsSize(LongType bytes) { _memoryObjects = bytes; }
 
-void NodeProfile::setTotalSize(sd::LongType bytes) { _memoryTotal = bytes; }
+void NodeProfile::setTotalSize(LongType bytes) { _memoryTotal = bytes; }
 
-sd::LongType NodeProfile::getExecutionTime() const { return _executionTime; }
+LongType NodeProfile::getExecutionTime() const { return _executionTime; }
 
-void NodeProfile::addInputShape(sd::LongType const *shapeInfo) {
+void NodeProfile::addInputShape(LongType const *shapeInfo) {
   _inputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
 }
 
-void NodeProfile::addOutputShape(sd::LongType const *shapeInfo) {
+void NodeProfile::addOutputShape(LongType const *shapeInfo) {
   _outputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
 }
 

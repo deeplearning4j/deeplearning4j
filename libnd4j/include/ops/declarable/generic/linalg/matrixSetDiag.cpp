@@ -53,12 +53,12 @@ CONFIGURABLE_OP_IMPL(matrix_set_diag, 2, 1, false, 0, 0) {
 
   helpers::matrixSetDiag(block.launchContext(), *input, *diagonal, *output, false);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(MatrixSetDiag, matrix_set_diag);
 
-DECLARE_TYPES(matrix_set_diag) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_set_diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

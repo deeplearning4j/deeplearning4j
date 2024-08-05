@@ -31,7 +31,7 @@
 namespace sd {
 class SD_LIB_EXPORT graph_execution_exception : public graph_exception {
  public:
-  explicit graph_execution_exception(sd::LongType graphId);
+  explicit graph_execution_exception(LongType graphId);
 };
 }  // namespace sd
 

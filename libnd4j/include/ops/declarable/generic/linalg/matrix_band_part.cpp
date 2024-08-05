@@ -32,8 +32,8 @@ CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  sd::LongType minLower(0LL);
-  sd::LongType maxUpper(0LL);
+  LongType minLower(0LL);
+  LongType maxUpper(0LL);
   if (block.width() == 1) {
     REQUIRE_TRUE(block.numI() == 2, 0, "matrix_band_part: min and max band numbers should be given before.");
     minLower = INT_ARG(0);
@@ -46,19 +46,19 @@ CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
     REQUIRE_TRUE(minLowerT->isScalar() && maxUpperT->isScalar(), 0,
                  "matrix_band_part: min and max should be scalars, but %i and %i ranks given", minLowerT->rankOf(),
                  maxUpperT->rankOf());
-    minLower = minLowerT->e<sd::LongType>(0);
-    maxUpper = maxUpperT->e<sd::LongType>(0);
+    minLower = minLowerT->e<LongType>(0);
+    maxUpper = maxUpperT->e<LongType>(0);
   }
   REQUIRE_TRUE(input->rankOf() >= 2, 0, "matrix_band_part: Input rank should be 2 or greater.");
-  sd::LongType N = input->sizeAt(-2);
-  sd::LongType M = input->sizeAt(-1);
+  LongType N = input->sizeAt(-2);
+  LongType M = input->sizeAt(-1);
   REQUIRE_TRUE(minLower > -N && minLower < N, 0, "matrix_band_part: lower diagonal count %i should be less than %i.",
                minLower, N);
   REQUIRE_TRUE(maxUpper > -M && maxUpper < M, 0, "matrix_band_part: upper diagonal count %i should be less than %i.",
                maxUpper, M);
 
   helpers::matrixBandPart(block.launchContext(), input, output, minLower, maxUpper);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(band_part, matrix_band_part);
 }  // namespace ops

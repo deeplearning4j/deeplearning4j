@@ -155,7 +155,6 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -320,7 +319,6 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////

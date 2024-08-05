@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range,
+SD_LIB_HIDDEN void histogramFixedWidth(LaunchContext* context, const NDArray& input, const NDArray& range,
                                        NDArray& output);
 
 }

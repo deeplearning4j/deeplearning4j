@@ -39,22 +39,22 @@ CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(matrix_diag_part) {
-  sd::LongType const* outShapeInfo = nullptr;
+  LongType const* outShapeInfo = nullptr;
   auto in = inputShape->at(0);
-  sd::LongType inRank = shape::rank(in);
+  LongType inRank = shape::rank(in);
 
   REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
-  sd::LongType outRank = inRank - 1;
-  sd::LongType lastDimension = sd::math::sd_min<sd::LongType>(shape::sizeAt(in, static_cast<sd::LongType>(-1)), shape::sizeAt(in, static_cast<sd::LongType>(-2)));
+  LongType outRank = inRank - 1;
+  LongType lastDimension = sd::math::sd_min<LongType>(shape::sizeAt(in, static_cast<LongType>(-1)), shape::sizeAt(in, static_cast<LongType>(-2)));
   if (outRank == 1) {
     // output shape is a vector with size min(sizeAt(0), sizeAt(1))
     outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
   } else {
-    sd::LongType* anShapeInfo;
+    LongType* anShapeInfo;
     ALLOCATE(anShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
     anShapeInfo[0] = outRank;
-    for (sd::LongType i = 0; i < outRank - 1; ++i) anShapeInfo[i + 1] = shape::sizeAt(in, i);
+    for (LongType i = 0; i < outRank - 1; ++i) anShapeInfo[i + 1] = shape::sizeAt(in, i);
     anShapeInfo[outRank] = lastDimension;
 
     ShapeUtils::updateStridesAndType(anShapeInfo, in, shape::order(in));
@@ -63,7 +63,7 @@ DECLARE_SHAPE_FN(matrix_diag_part) {
   return SHAPELIST(outShapeInfo);
 }
 
-DECLARE_TYPES(matrix_diag_part) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_diag_part) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 #endif

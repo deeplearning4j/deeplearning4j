@@ -39,7 +39,7 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
   // just skip op if input is empty
   if (x->isEmpty()) {
     *x = DataTypeUtils::nanOrZero<float>();
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   auto output = OUTPUT_VARIABLE(0);
@@ -50,10 +50,10 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
                ShapeUtils::shapeAsString(a).c_str(), ShapeUtils::shapeAsString(b).c_str(),
                ShapeUtils::shapeAsString(x).c_str());
 
-  sd::LongType arrLen = a->lengthOf();
+  LongType arrLen = a->lengthOf();
 
   // FIXME: this stuff should be single op call. No sense rolling over couple of arrays twice
-  for (sd::LongType i = 0; i < arrLen; ++i) {
+  for (LongType i = 0; i < arrLen; ++i) {
     REQUIRE_TRUE(a->e<float>(i) > 0.f, 0, "BETAINC op: arrays a array must contain only elements > 0 !");
     REQUIRE_TRUE(b->e<float>(i) > 0.f, 0, "BETAINC op: arrays b array must contain only elements > 0 !");
     REQUIRE_TRUE(0.f <= x->e<float>(i) && x->e<float>(i) <= 1.f, 0,
@@ -62,7 +62,7 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
   helpers::betaInc(block.launchContext(), *a, *b, *x, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(BetaInc, betainc);

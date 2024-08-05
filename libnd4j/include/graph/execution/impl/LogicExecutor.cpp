@@ -34,29 +34,29 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicExecutor::processNode(Graph *graph, Node *node) {
+Status LogicExecutor::processNode(Graph *graph, Node *node) {
   switch (node->opNum()) {
-    case sd::logic::While:
+    case logic::While:
       return LogicWhile::processNode(graph, node);
-    case sd::logic::Scope:
+    case logic::Scope:
       return LogicScope::processNode(graph, node);
-    case sd::logic::Conditional:
+    case logic::Conditional:
       return LogicConditional::processNode(graph, node);
-    case sd::logic::Switch:
+    case logic::Switch:
       return LogicSwitch::processNode(graph, node);
-    case sd::logic::Return:
+    case logic::Return:
       return LogicReturn::processNode(graph, node);
-    case sd::logic::Expose:
+    case logic::Expose:
       return LogicExpose::processNode(graph, node);
-    case sd::logic::Merge:
+    case logic::Merge:
       return LogicMerge::processNode(graph, node);
-    case sd::logic::LoopCond:
+    case logic::LoopCond:
       return LogicLoopCond::processNode(graph, node);
-    case sd::logic::NextIteration:
+    case logic::NextIteration:
       return LogicNextIeration::processNode(graph, node);
-    case sd::logic::Exit:
+    case logic::Exit:
       return LogicExit::processNode(graph, node);
-    case sd::logic::Enter:
+    case logic::Enter:
       return LogicEnter::processNode(graph, node);
   }
 
@@ -65,7 +65,7 @@ sd::Status LogicExecutor::processNode(Graph *graph, Node *node) {
   } else {
     sd_printf("Unknown LogicOp used at node [%i:<%s>]: [%i]\n", node->id(), node->getName()->c_str(), node->opNum());
   }
-  return sd::Status::BAD_INPUT;
+  return Status::BAD_INPUT;
 }
 }  // namespace graph
 }  // namespace sd

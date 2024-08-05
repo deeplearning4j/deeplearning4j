@@ -23,9 +23,9 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicExpose::processNode(Graph *graph, Node *node) {
+Status LogicExpose::processNode(Graph *graph, Node *node) {
   // do we really want this?
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd
