@@ -298,10 +298,10 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
             else -> {
                 var hasDimensions = false
                 if(df.opType() == Op.Type.REDUCE_LONG ||
-                        df.opType() == Op.Type.REDUCE_BOOL ||
-                         df.opType() == Op.Type.REDUCE_FLOAT ||
-                        df.opType() == Op.Type.REDUCE_SAME ||
-                        df.opType() == Op.Type.INDEXREDUCE && df.args().size > 1) {
+                    df.opType() == Op.Type.REDUCE_BOOL ||
+                    df.opType() == Op.Type.REDUCE_FLOAT ||
+                    df.opType() == Op.Type.REDUCE_SAME ||
+                    df.opType() == Op.Type.INDEXREDUCE && df.args().size > 1) {
                     hasDimensions = true
 
                 }
@@ -325,22 +325,25 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
 
                 if (hasDimensions) {
                     //dimensions sorted by index
-                    val dimArgs: IntArray = when {
+                    val dimArgs: LongArray = when {
                         df.args().size > 1 && df.arg(1).arr != null -> {
-                            df.arg(1).arr.toIntVector()
+                            df.arg(1).arr.toLongVector()
                         }
                         else -> {
                             applied.second.argDescriptorList.filter { argDescriptor -> argDescriptor.name.contains("dimensions") }
                                 .sortedBy { argDescriptor -> argDescriptor.argIndex }
-                                .map { argDescriptor -> argDescriptor.int64Value.toInt() }.toIntArray()
+                                .map { argDescriptor -> argDescriptor.int64Value.toLong() }.toLongArray()
                         }
                     }
                     val dimensionsField = ReflectionUtils.findField(df.javaClass, "dimensions")
                     val dimensionzField = ReflectionUtils.findField(df.javaClass, "dimensionz")
                     val isEmptyReduce = ReflectionUtils.findField(df.javaClass,"isEmptyReduce")
+                    val dimensionVar = ReflectionUtils.findField(df.javaClass,"dimensionVariable")
+                    val dimensionVarName = ReflectionUtils.findField(df.javaClass,"dimensionVariableName")
+
                     if (dimensionsField != null) {
                         dimensionsField.isAccessible = true
-                        if (intArrayOf(0).javaClass.isAssignableFrom(dimensionsField.type)) {
+                        if (longArrayOf(0).javaClass.isAssignableFrom(dimensionsField.type)) {
                             ReflectionUtils.setField(dimensionsField, df, dimArgs)
                         }
                     }
@@ -351,8 +354,23 @@ class DefaultImportRunner<GRAPH_TYPE: GeneratedMessageV3,
                             val buffer = Nd4j.createBuffer(dimArgs)
                             val createdArr = Nd4j.create(buffer)
                             ReflectionUtils.setField(dimensionzField, df, createdArr)
+                            if(dimensionVar != null) {
+                                dimensionVar.isAccessible = true
+                                val varConst = sd.constant(createdArr)
+                                ReflectionUtils.setField(dimensionVar,df,varConst)
+                                if(dimensionVarName != null) {
+                                    dimensionVarName.isAccessible = true
+                                    ReflectionUtils.setField(dimensionVarName,df,varConst.name())
+                                }
+                            }
+
+                            if (dimensionsField != null) {
+                                dimensionsField.isAccessible = true
+                                ReflectionUtils.setField(dimensionsField, df, createdArr.toLongVector())
+                            }
                         }
                     }
+
 
                     if(isEmptyReduce != null) {
                         isEmptyReduce.isAccessible = true

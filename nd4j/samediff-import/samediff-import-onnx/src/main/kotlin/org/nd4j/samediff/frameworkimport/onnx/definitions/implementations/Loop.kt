@@ -132,7 +132,9 @@ class Loop : PreImportHook  {
             importedBody,
             null,
             null, dynamicVariables as MutableMap<String,Onnx.TensorProto>,
-            registryCast)
+            registryCast,
+            false
+        )
         body.isEagerMode = false
         sd.putSubFunction(funcName,body)
         sd.isEagerMode = false
