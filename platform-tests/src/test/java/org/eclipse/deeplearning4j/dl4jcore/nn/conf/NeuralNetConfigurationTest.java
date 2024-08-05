@@ -116,14 +116,18 @@ class NeuralNetConfigurationTest extends BaseDL4JTest {
     @Test
     @DisplayName("Test RNG")
     void testRNG() {
-        DenseLayer layer = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes()).weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer).build();
+        DenseLayer layer = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
+                .weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).layer(layer).build();
         long numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer model = conf.getLayer().instantiate(conf, null, 0, params, true, params.dataType());
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        DenseLayer layer2 = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes()).weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
-        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123).optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer2).build();
+        DenseLayer layer2 = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
+                .weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
+        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).layer(layer2).build();
         long numParams2 = conf2.getLayer().initializer().numParams(conf);
         INDArray params2 = Nd4j.create(1, numParams);
         Layer model2 = conf2.getLayer().instantiate(conf2, null, 0, params2, true, params.dataType());
@@ -181,7 +185,7 @@ class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     private static NeuralNetConfiguration getConfig(int nIn, int nOut, IWeightInit weightInit, boolean pretrain) {
         DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).activation(Activation.TANH).build();
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).layer(layer).build();
         return conf;
     }
 

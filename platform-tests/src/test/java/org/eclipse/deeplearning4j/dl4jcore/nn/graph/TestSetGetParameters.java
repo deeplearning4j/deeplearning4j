@@ -24,6 +24,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -49,8 +50,8 @@ public class TestSetGetParameters extends BaseDL4JTest {
         //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
                         .addInputs("in").addLayer("0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in")
-                        .addLayer("2", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "in")
+                        .addLayer("2", new Bidirectional(new LSTM.Builder().nIn(10).nOut(10).build()), "in")
                         .addLayer("3", new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
                                         .padding(2, 2).build(), "in")
                         .addLayer("4", new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build(), "3")

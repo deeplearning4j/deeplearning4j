@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.samediff.testlayers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,6 +34,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -55,11 +57,11 @@ public class SameDiffConv extends SameDiffLayer {
     private long nIn;
     private long nOut;
     private Activation activation;
-    private int[] kernel;
-    private int[] stride;
-    private int[] padding;
+    private long[] kernel;
+    private long[] stride;
+    private long[] padding;
     private ConvolutionMode cm;
-    private int[] dilation;
+    private long[] dilation;
     private boolean hasBias;
 
     protected SameDiffConv(Builder b) {
@@ -75,15 +77,15 @@ public class SameDiffConv extends SameDiffLayer {
         this.hasBias = b.hasBias;
     }
 
-    private SameDiffConv(){
+    private SameDiffConv() {
         //No arg constructor for Jackson/JSON serialization
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[]{1, 1},
-                cm, nOut, layerIndex, getLayerName(), SameDiffConv.class);
+        return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernel, stride, padding, new long[]{1, 1},
+                cm, nOut, (long) layerIndex, getLayerName(), CNN2DFormat.NCHW, SameDiffConv.class);
     }
 
     @Override
@@ -168,11 +170,11 @@ public class SameDiffConv extends SameDiffLayer {
         private int nIn;
         private int nOut;
         private Activation activation = Activation.TANH;
-        private int[] kernel = new int[]{2, 2};
+        private long[] kernel = {2, 2};
 
-        private int[] stride = new int[]{1, 1};
-        private int[] padding = new int[]{0, 0};
-        private int[] dilation = new int[]{1, 1};
+        private long[] stride = {1, 1};
+        private long[] padding = {0, 0};
+        private long[] dilation = {1, 1};
         private ConvolutionMode cm = ConvolutionMode.Same;
         private boolean hasBias = true;
 
@@ -191,18 +193,35 @@ public class SameDiffConv extends SameDiffLayer {
             return this;
         }
 
-        public Builder kernelSize(int... k) {
+
+        public Builder kernelSize(long... k) {
             this.kernel = k;
             return this;
         }
 
-        public Builder stride(int... s) {
+        public Builder stride(long... s) {
             this.stride = s;
             return this;
         }
 
-        public Builder padding(int... p) {
+        public Builder padding(long... p) {
             this.padding = p;
+            return this;
+        }
+
+
+        public Builder kernelSize(int... k) {
+            this.kernel = ArrayUtil.toLongArray(k);
+            return this;
+        }
+
+        public Builder stride(int... s) {
+            this.stride = ArrayUtil.toLongArray(s);
+            return this;
+        }
+
+        public Builder padding(int... p) {
+            this.padding = ArrayUtil.toLongArray(p);
             return this;
         }
 
@@ -212,11 +231,17 @@ public class SameDiffConv extends SameDiffLayer {
         }
 
         public Builder dilation(int... d) {
+            this.dilation = ArrayUtil.toLongArray(d);
+            return this;
+        }
+
+
+        public Builder dilation(long... d) {
             this.dilation = d;
             return this;
         }
 
-        public Builder hasBias(boolean hasBias){
+        public Builder hasBias(boolean hasBias) {
             this.hasBias = hasBias;
             return this;
         }

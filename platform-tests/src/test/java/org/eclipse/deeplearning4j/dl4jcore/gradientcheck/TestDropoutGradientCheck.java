@@ -22,12 +22,9 @@ package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -105,7 +102,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
                     continue;
                 }
 
-                NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+                ListBuilder builder = new NeuralNetConfiguration.Builder()
                         .dataType(DataType.DOUBLE)
                         .dist(new NormalDistribution(0,1))
                         .convolutionMode(ConvolutionMode.Same)
@@ -157,7 +154,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
 
 
     @Test
-    public void testCompGraphMultiInput(){
+    public void testCompGraphMultiInput() {
         //Validate nets where the one output array is used as the input to multiple layers...
         Nd4j.getRandom().setSeed(12345);
         int mb = 3;
@@ -186,6 +183,7 @@ public class TestDropoutGradientCheck extends BaseDL4JTest {
         INDArray[] in = new INDArray[]{Nd4j.rand(mb, 5)};
         INDArray[] l = new INDArray[]{TestUtils.randomOneHot(mb, 5)};
 
+        Nd4j.getEnvironment().setLogNDArrayEvents(true);
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(in)
                 .labels(l).callEachIter(new Consumer<ComputationGraph>() {
                     @Override

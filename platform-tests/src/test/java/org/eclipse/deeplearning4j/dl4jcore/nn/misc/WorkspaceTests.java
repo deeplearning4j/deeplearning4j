@@ -161,9 +161,8 @@ public class WorkspaceTests extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wm)
                     .graphBuilder()
                     .addInputs("in")
-                    .addLayer("e", new GravesLSTM.Builder().nIn(10).nOut(5).build(), new DupPreProcessor(), "in")
-//                .addLayer("e", new GravesLSTM.Builder().nIn(10).nOut(5).build(), "in")    //Note that no preprocessor is OK
-                    .addLayer("rnn", new GravesLSTM.Builder().nIn(5).nOut(8).build(), "e")
+                    .addLayer("e", new LSTM.Builder().nIn(10).nOut(5).build(), new DupPreProcessor(), "in")
+                    .addLayer("rnn", new LSTM.Builder().nIn(5).nOut(8).build(), "e")
                     .addLayer("out", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                             .activation(Activation.SIGMOID).nOut(3).build(), "rnn")
                     .setInputTypes(InputType.recurrent(10))
@@ -195,8 +194,8 @@ public class WorkspaceTests extends BaseDL4JTest {
                     .trainingWorkspaceMode(wm)
                     .inferenceWorkspaceMode(wm)
                     .list()
-                    .layer(new GravesLSTM.Builder().nIn(10).nOut(5).build())
-                    .layer(new GravesLSTM.Builder().nIn(5).nOut(8).build())
+                    .layer(new LSTM.Builder().nIn(10).nOut(5).build())
+                    .layer(new LSTM.Builder().nIn(5).nOut(8).build())
                     .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nOut(3).build())
                     .inputPreProcessor(0, new DupPreProcessor())
                     .setInputType(InputType.recurrent(10))
@@ -254,7 +253,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
                 System.out.println("Starting test: " + ws + " - " + i);
 
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH)
                         .inferenceWorkspaceMode(ws)
@@ -285,11 +284,11 @@ public class WorkspaceTests extends BaseDL4JTest {
                         gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
                         break;
                     case 2:
-                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
-                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
 
-                        gb.addLayer("0", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in");
-                        gb.addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        gb.addLayer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
                         break;
                     default:
                         throw new RuntimeException();
@@ -327,7 +326,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
                 System.out.println("Starting test: " + ws + " - " + i);
 
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH)
                         .inferenceWorkspaceMode(ws)
@@ -358,11 +357,11 @@ public class WorkspaceTests extends BaseDL4JTest {
                         gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
                         break;
                     case 2:
-                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
-                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+                        b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
 
-                        gb.addLayer("0", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "in");
-                        gb.addLayer("1", new GravesLSTM.Builder().nIn(10).nOut(10).build(), "0");
+                        gb.addLayer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in");
+                        gb.addLayer("1", new LSTM.Builder().nIn(10).nOut(10).build(), "0");
                         break;
                     default:
                         throw new RuntimeException();
@@ -473,7 +472,7 @@ public class WorkspaceTests extends BaseDL4JTest {
                     .addInputs("in")
                     .setInputTypes(InputType.recurrent(200))
                     .addLayer("embeddings", new EmbeddingLayer.Builder().nIn(200).nOut(50).build(), "in")
-                    .addLayer("a", new GravesLSTM.Builder().nOut(300).activation(Activation.HARDTANH).build(), "embeddings")
+                    .addLayer("a", new LSTM.Builder().nOut(300).activation(Activation.HARDTANH).build(), "embeddings")
                     .addVertex("b", new LastTimeStepVertex("in"), "a")
                     .addLayer("c", new DenseLayer.Builder().nOut(300).activation(Activation.HARDTANH).build(), "b")
                     .addLayer("output", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY).build(), "c")

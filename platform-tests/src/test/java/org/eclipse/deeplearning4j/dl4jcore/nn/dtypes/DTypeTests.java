@@ -79,8 +79,6 @@ import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.LearnedSelfAttentionLayer;
@@ -134,7 +132,6 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnn3DPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.util.IdentityLayer;
-import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
 import org.deeplearning4j.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.preprocessors.ReshapePreprocessor;
@@ -213,7 +210,7 @@ public class DTypeTests extends BaseDL4JTest {
         for (ClassPath.ClassInfo ci : info) {
             Class<?> clazz = DL4JClassLoading.loadClassByName(ci.getName());
 
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || TFOpLayer.class == clazz) {
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface()) {
                 // Skip TFOpLayer here - dtype depends on imported model dtype
                 continue;
             }
@@ -912,9 +909,8 @@ public class DTypeTests extends BaseDL4JTest {
                             .updater(new Adam(1e-2))
                             .list()
                             .layer(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
-                            .layer(new GravesLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
+                            .layer(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new DenseLayer.Builder().nOut(5).build())
-                            .layer(new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new Bidirectional(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build()))
                             .layer(new TimeDistributed(new DenseLayer.Builder().nIn(10).nOut(5).activation(Activation.TANH).build()))
                             .layer(new SimpleRnn.Builder().nIn(5).nOut(5).build())

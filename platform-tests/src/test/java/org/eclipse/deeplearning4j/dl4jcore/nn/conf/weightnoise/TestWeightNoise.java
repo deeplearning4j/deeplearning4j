@@ -61,6 +61,8 @@ public class TestWeightNoise extends BaseDL4JTest {
 
     @Test
     public void testWeightNoiseConfigJson() {
+        Nd4j.getEnvironment().setDeletePrimary(false);
+        Nd4j.getEnvironment().setDeleteSpecial(false);
         IWeightNoise[] weightNoises = new IWeightNoise[]{
                 new DropConnect(0.5),
                 new DropConnect(new SigmoidSchedule(ScheduleType.ITERATION, 0.5, 0.5, 100)),

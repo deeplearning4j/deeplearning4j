@@ -265,9 +265,9 @@ public class NoBiasGradientCheckTests extends BaseDL4JTest {
         int height = 5;
         int inputDepth = 1;
 
-        int[] kernel = {2, 2};
-        int[] stride = {1, 1};
-        int[] padding = {0, 0};
+        long[] kernel = {2, 2};
+        long[] stride = {1, 1};
+        long[] padding = {0, 0};
         int pNorm = 3;
 
         for (int minibatchSize : minibatchSizes) {

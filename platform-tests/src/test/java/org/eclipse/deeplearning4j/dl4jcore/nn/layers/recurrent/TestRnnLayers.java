@@ -21,12 +21,12 @@
 package org.eclipse.deeplearning4j.dl4jcore.nn.layers.recurrent;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.eclipse.deeplearning4j.dl4jcore.nn.conf.dropout.TestDropout;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
@@ -132,21 +132,16 @@ public class TestRnnLayers extends BaseDL4JTest {
     public void testDropoutRecurrentLayers(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         Nd4j.getRandom().setSeed(12345);
 
-        String[] layerTypes = new String[]{"graves", "lstm", "simple"};
+        String[] layerTypes = {"lstm", "simple"};
 
-        for(String s : layerTypes){
+        for(String s : layerTypes) {
 
             Layer layer;
             Layer layerD;
             Layer layerD2;
             TestDropout.CustomDropout cd = new TestDropout.CustomDropout();
             switch (s){
-                case "graves":
-                    layer = new GravesLSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
-                    layerD = new GravesLSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
-                    layerD2 = new GravesLSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
-                    break;
-                case "lstm":
+                     case "lstm":
                     layer = new LSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
                     layerD = new LSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
                     layerD2 = new LSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
@@ -232,7 +227,7 @@ public class TestRnnLayers extends BaseDL4JTest {
 
         for( int i = 0; i < 2; i++) {
 
-            NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
+            ListBuilder lb = new NeuralNetConfiguration.Builder()
 
                     .list()
                     .layer(new SimpleRnn.Builder().nIn(5).nOut(5).dataFormat(rnnDataFormat).build());

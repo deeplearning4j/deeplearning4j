@@ -233,8 +233,8 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
     public static Stream<Arguments> data() throws IOException {
         classTestDir.toFile().mkdir();
-        File baseDir = classTestDir.toFile();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir);
+        File baseDir = classTestDir.toFile();
+        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir, 0, -1);
         return params.stream().map(Arguments::of);
     }
 
