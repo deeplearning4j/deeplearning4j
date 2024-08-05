@@ -32,6 +32,7 @@
 #include <types/float16.h>
 #include <types/types.h>
 
+
 using namespace simdOps;
 
 namespace functions {
@@ -43,7 +44,7 @@ void SD_KERNEL summaryStatsReduceT(int op, void const* dx, sd::LongType const* x
                                    sd::LongType* dimension, long long int dimensionLength, int postProcessOrNot, bool biasCorrected, sd::LongType* allocationBuffer,
                                    void* reductionBuffer, sd::LongType const* tadOnlyShapeInfo,
                                    sd::LongType const* tadOffsets) {
-  functions::summarystats::SummaryStatsReduce<X, Z>::transform(
+  SummaryStatsReduce<X, Z>::transform(
       op, dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, biasCorrected, allocationBuffer,
       reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
@@ -381,7 +382,7 @@ SD_HOST void SummaryStatsReduce<X, Z>::execSummaryStatsReduce(
       opNum, x, xShapeInfo, shape::rank(hxShapeInfo), extraParams, z, zShapeInfo, shape::rank(hzShapeInfo), dimension,
       dimensionLength, 1, biasCorrected, nullptr, reinterpret_cast<Z*>(reductionBuffer), tadShapeInfo, tadOffsets);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "SummaryStatsReduce execSummaryStatsReduce(...) failed");
 }
 
 BUILD_DOUBLE_TEMPLATE(template class SummaryStatsReduce, , SD_COMMON_TYPES, SD_FLOAT_TYPES);

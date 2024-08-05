@@ -231,8 +231,8 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
                                                    void *extraParams, void *vreductionBuffer, void *z,
                                                    const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
                                                    const sd::LongType *dims) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<X>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -244,7 +244,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
     // scalar assign
-    functions::scalar::ScalarTransform<X, X, X>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
+    scalar::ScalarTransform<X, X, X>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
                                                                    z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
   } else {
     const sd::LongType zRank = shape::rank(hZShapeInfo);
@@ -255,8 +255,12 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
                                                                                   dims + zRank,
                                                                                   tadRank);
     simpleReduce<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-        x, reinterpret_cast<sd::LongType const *>(outerPack->special()),
-        reinterpret_cast<sd::LongType const *>(innerPack->special()), extraParams, vreductionBuffer, z, dZShapeInfo);
+        x, outerPack->special(),
+        innerPack->special(), extraParams, vreductionBuffer, z, dZShapeInfo);
+
+
+    sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateXD(...) failed");
+
   }
 }
 
@@ -269,8 +273,8 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStre
                                                        sd::LongType const *hZShapeInfo, long long int *dimension,
                                                        sd::LongType dimensionLength, void *reductionBuffer,
                                                        sd::LongType const *tadOnlyShapeInfo) {
-  if (shape::isEmpty(hXShapeInfo)) {
-    if (shape::isEmpty(hZShapeInfo)) return;
+  if (shape::isEmptyConst(hXShapeInfo)) {
+    if (shape::isEmptyConst(hZShapeInfo)) return;
 
     const auto startingVal = static_cast<X>(OpType::startingValue(reinterpret_cast<const X *>(x)));
 
@@ -282,6 +286,10 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStre
     simpleScalar<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
   }
+
+
+  sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateScalar(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -307,7 +315,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceXD(dim3 launchDims, cudaStream_t *
                                                  const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
                                                  const sd::LongType *dims) {
   if (shape::length(hZShapeInfo) == 1) {
-    ReduceSameFunction<X>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
+    execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
                                             dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_T(intermediateXD,

@@ -29,7 +29,11 @@
 #include <system/common.h>
 
 #include <memory>
-
+#ifndef  __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+#include <exceptions/backward.hpp>
+#endif
+#endif
 namespace sd {
 
 class SD_LIB_EXPORT ConstantShapeBuffer {
@@ -37,15 +41,19 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   std::shared_ptr<PointerWrapper> _primaryShapeInfo;
   std::shared_ptr<PointerWrapper> _specialShapeInfo;
 
+
  public:
   ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary);
   ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary, const std::shared_ptr<PointerWrapper> &special);
   ConstantShapeBuffer() = default;
-  ~ConstantShapeBuffer() = default;
-
-  const sd::LongType *primary() const;
-  const sd::LongType *special() const;
-  const sd::LongType *platform() const;
+#ifndef  __JAVACPP_HACK__
+#if defined(SD_GCC_FUNCTRACE)
+  backward::StackTrace st;
+#endif
+#endif
+  const LongType *primary() const;
+  const LongType *special() const;
+  const LongType *platform() const;
 };
 
 }  // namespace sd

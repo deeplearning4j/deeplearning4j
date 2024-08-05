@@ -22,6 +22,7 @@
 //
 #include <ops/specials_cuda.h>
 
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_KERNEL void bitonicSortStepKernelKey(void *vx, sd::LongType const *xShapeInfo, void *vy,
@@ -123,6 +124,8 @@ SD_HOST void bitonicSortStepGeneric(dim3 &launchDims, cudaStream_t *stream, void
                                     int j, int k, int length, bool descending) {
   bitonicSortStepKernel<T>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, j, k, length, descending);
+  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGeneric  failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,6 +135,8 @@ SD_HOST void bitonicSortStepGenericKey(dim3 &launchDims, cudaStream_t *stream, v
                                        bool descending) {
   bitonicSortStepKernelKey<X, Y>
       <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, j, k, length, descending);
+  sd::DebugHelper::checkErrorCode(stream, "bitonicSortStepGenericKey  failed");
+
 }
 
 BUILD_SINGLE_TEMPLATE(template void bitonicSortStepGeneric,

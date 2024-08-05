@@ -21,6 +21,7 @@
 //
 #include <system/BlasVersionHelper.h>
 
+
 namespace sd {
 BlasVersionHelper::BlasVersionHelper() {
   _blasMajorVersion = __CUDACC_VER_MAJOR__;
