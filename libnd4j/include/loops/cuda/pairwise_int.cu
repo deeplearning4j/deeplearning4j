@@ -24,6 +24,7 @@
 
 #include "../pairwise_int.h"
 
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,6 +92,8 @@ void SD_HOST PairWiseIntTransform<X>::intermediateShaped(dim3& launchDims, cudaS
                                                          sd::LongType const* zShapeInfo, void* vextraParams) {
   pairwiseSimpleShaped<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo,
                                                                                          vz, zShapeInfo, vextraParams);
+  sd::DebugHelper::checkErrorCode(stream, "PairWiseIntTransform intermediateShaped(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -104,6 +107,8 @@ void PairWiseIntTransform<X>::executeCudaShaped(dim3& launchDims, cudaStream_t* 
   DISPATCH_BY_OPNUM_T(intermediateShaped,
                       PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams),
                       PAIRWISE_INT_OPS);
+  sd::DebugHelper::checkErrorCode(stream, "PairWiseIntTransform intermediateShaped(...) failed");
+
 }
 
 BUILD_SINGLE_TEMPLATE(template class PairWiseIntTransform, , SD_INTEGER_TYPES);

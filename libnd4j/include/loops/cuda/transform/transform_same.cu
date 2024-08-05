@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
+
 using namespace simdOps;
 
 template <typename X, typename OpType>
@@ -53,7 +54,7 @@ SD_HOST void TransformSame<X>::executeTransformShaped(dim3 launchDims, cudaStrea
                              reductionPointer, tadShapeInfo, tadOffsets),
                       TRANSFORM_SAME_OPS);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "transformAny(...) failed");
 }
 
 template <typename X>

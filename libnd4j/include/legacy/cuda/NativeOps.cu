@@ -37,6 +37,7 @@
 #include <ops/specials_cuda.h>
 #include <system/buffer.h>
 
+
 #include <curand.h>
 #include <helpers/DebugHelper.h>
 
@@ -83,7 +84,7 @@ extern "C" {
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
   if(instrumentFile == nullptr) {
-        return;
+    return;
   }
   Dl_info info;
   if (dladdr(this_fn, &info)) {
@@ -112,15 +113,15 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
                                                                                     void *call_site) {
-  //writeLog(true,this_fn, call_site);
+  writeLog(true,this_fn, call_site);
 }
 
 
 //we need to tell -finstrument-functions not to include the logger otherwise it will recursively
 // stack overflow and segfault.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                   void *call_site) {
-  //writeLog(false,this_fn, call_site);
+                                                                                     void *call_site) {
+  writeLog(false,this_fn, call_site);
 
 }
 
@@ -129,26 +130,6 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 //note this is outside extern C. This is fine.
 
-
-//sets the file to be written to.
-SD_LIB_EXPORT void setInstrumentOut(char *instrumentOutPath) {
-  if (instrumentOutPath != nullptr) {
-    if(instrumentFile != nullptr)
-      fclose(instrumentFile);
-    instrumentFile = fopen(instrumentOutPath, "w");
-    if (instrumentFile == nullptr) {
-      perror("Failed to open profiler output file");
-      exit(EXIT_FAILURE);
-    }
-  }
-}
-
-//clears the file.
-
-SD_LIB_EXPORT void closeInstrumentOut() {
-  if(instrumentFile != nullptr)
-    fclose(instrumentFile);
-}
 
 #endif
 
@@ -161,17 +142,15 @@ int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
-void toggleOpTrace(bool opTrace) {
-  sd::ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
+void toggleOpTrace(bool opTrace) { ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
 }
 
-void purgeOpTrace() {
-  sd::ops::OpRegistrator::getInstance().purgeOpExecs();
+void purgeOpTrace() { ops::OpRegistrator::getInstance().purgeOpExecs();
 }
 
 
 void printOpTrace() {
-  auto execTrace = *sd::ops::OpRegistrator::getInstance().execTrace();
+  auto execTrace = *ops::OpRegistrator::getInstance().execTrace();
   for(int i = 0; i < execTrace.size(); i++) {
     auto curr = execTrace[i];
     if(curr->opName != nullptr) {
@@ -208,7 +187,7 @@ void printOpTrace() {
 }
 
 std::vector<ExecTrace*> * listOpTraces() {
-  return sd::ops::OpRegistrator::getInstance().execTrace();
+  return ops::OpRegistrator::getInstance().execTrace();
 }
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
@@ -221,12 +200,12 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
 
 
 int contextNumInputs(void *contextPointer) {
-  sd::graph::Context *context = (sd::graph::Context *) contextPointer;
+  Context *context = (Context *) contextPointer;
   return context->width();
 }
 
 int contextNumOutputs(void *contextPointer) {
-  sd::graph::Context *context = (sd::graph::Context *) contextPointer;
+  Context *context = (Context *) contextPointer;
   return context->outputWidth();
 }
 
@@ -257,17 +236,17 @@ std::vector<double> * tArgs(void *execTrace) {
 
 }
 
-std::vector<sd::LongType> * iArgs(void *execTrace) {
+std::vector<LongType> * iArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return &(trace->iArgs);
 }
 
-std::vector<const sd::LongType *> *inputShapeBuffers(void *execTrace) {
+std::vector<const LongType *> *inputShapeBuffers(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->inputShapeBuffers;
 }
 
-std::vector<const sd::LongType *> *outputShapeBuffers(void *execTrace) {
+std::vector<const LongType *> *outputShapeBuffers(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers;
 }
@@ -278,7 +257,7 @@ char *opName(void *execTrace) {
 }
 
 // this method just does type conversion in fancy way
-int getDeviceId(sd::Pointer ptrToDeviceId) { return (int)(sd::LongType)ptrToDeviceId; }
+int getDeviceId(Pointer ptrToDeviceId) { return (int)(LongType)ptrToDeviceId; }
 
 /*
  * Basic CUDA constants here: number of blocks per MP
@@ -325,44 +304,44 @@ int getDeviceSharedThreshold(int deviceId) {
   return shmemThreshold / 0.3;
 }
 
-sd::buffer::Buffer<sd::LongType> *createScalarBuffer(cudaStream_t stream) {
+buffer::Buffer<LongType> *createScalarBuffer(cudaStream_t stream) {
   auto scalarShapeInfo = shape::createScalarShapeInfo();
-  auto buff = sd::buffer::createBuffer(scalarShapeInfo, shape::shapeInfoLength(2), stream);
-  sd::buffer::copyDataToGpu(&buff, stream);
+  auto buff = buffer::createBuffer(scalarShapeInfo, shape::shapeInfoLength(2), stream);
+  copyDataToGpu(&buff, stream);
   return buff;
 }
 
 class ScalarShapeInformation {
  private:
-  sd::buffer::Buffer<sd::LongType> *scalarDimension;
-  sd::buffer::Buffer<sd::LongType> *scalarShapeInfo;
+  buffer::Buffer<LongType> *scalarDimension;
+  buffer::Buffer<LongType> *scalarShapeInfo;
 
  public:
   ScalarShapeInformation(cudaStream_t stream) {
-    auto scalarDimensionBuff = reinterpret_cast<sd::LongType *>(malloc(sizeof(sd::LongType)));
+    auto scalarDimensionBuff = reinterpret_cast<LongType *>(malloc(sizeof(LongType)));
 
     CHECK_ALLOC(scalarDimensionBuff, "Failed to allocate ShapeInfoBuffer", sizeof(sd::LongType));
 
     scalarDimensionBuff[0] = SD_MAX_DIMENSION;
-    scalarDimension = sd::buffer::createBuffer(scalarDimensionBuff, 1, stream);
+    scalarDimension = buffer::createBuffer(scalarDimensionBuff, 1, stream);
     scalarShapeInfo = createScalarBuffer(stream);
   }
   ~ScalarShapeInformation() {
-    sd::buffer::freeBuffer(&scalarShapeInfo);
-    sd::buffer::freeBuffer(&scalarDimension);
+    freeBuffer(&scalarShapeInfo);
+    freeBuffer(&scalarDimension);
   }
 
-  sd::LongType *getShapeInfoHostPointer() { return scalarShapeInfo->data; }
+  LongType *getShapeInfoHostPointer() { return scalarShapeInfo->data; }
 
-  sd::LongType *getShapeInfoGpuPointer() { return scalarShapeInfo->gData; }
+  LongType *getShapeInfoGpuPointer() { return scalarShapeInfo->gData; }
 
-  sd::LongType *getDimensionHostPointer() { return scalarDimension->data; }
+  LongType *getDimensionHostPointer() { return scalarDimension->data; }
 
-  sd::LongType *getDimensionGpuPointer() { return scalarDimension->gData; }
+  LongType *getDimensionGpuPointer() { return scalarDimension->gData; }
 };
 
 template <typename T>
-SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
+SD_KERNEL  void _printBuffers(void* buffer, LongType bufferLength) {
   T * inputBuffer = reinterpret_cast<T *>(buffer);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   if(tid == 0) {
@@ -386,7 +365,7 @@ SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
 template <typename T>
 void _printHostBuffer(InteropDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
-  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  LongType len = buffer->dataBuffer()->getNumElements();
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
   sd_printf("Host buffer: ",0);
   for(int i = 0; i < len; i++) {
@@ -399,14 +378,17 @@ void _printHostBuffer(InteropDataBuffer *buffer) {
 template <typename T>
 void _printDeviceBuffer(InteropDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
-  sd::LongType len = buffer->dataBuffer()->getNumElements();
+  LongType len = buffer->dataBuffer()->getNumElements();
   _printBuffers<T><<<256, 512, 1024>>>(buffer->special(),len);
   cudaDeviceSynchronize();
+  DebugHelper::checkGlobalErrorCode("print device buffer(...) failed");
+
 
 }
 
 void printDeviceBuffer(InteropDataBuffer *buffer) {
   auto xType = buffer->dataBuffer()->getDataType();
+  sd_printf("Data type %s: ", DataTypeUtils::asString(xType).c_str());
 
   if(buffer->special() != nullptr) {
     sd_printf("Device pointer address: %d\n", reinterpret_cast<sd::LongType>(buffer->special()));
@@ -427,56 +409,11 @@ void printDeviceBuffer(InteropDataBuffer *buffer) {
 }
 
 
-template <typename T>
-class ScalarInfo {
-  sd::buffer::Buffer<T> *scalarData;
-  ScalarShapeInformation *shapeInfo;
-  T finalResult;
-  cudaStream_t streamRef;
 
- public:
-  ScalarInfo(cudaStream_t stream) {
-    T *scalarResult = reinterpret_cast<T *>(malloc(sizeof(T)));
-
-    CHECK_ALLOC(scalarResult, "Failed to allocate new scalar buffer", sizeof(T));
-
-    shapeInfo = new ScalarShapeInformation(stream);
-    scalarData = sd::buffer::createBuffer(scalarResult, 1, stream);
-    streamRef = stream;
-    sd::buffer::copyDataToGpu(&scalarData, stream);
-  }
-
-  T getFinalResultFromDevice() {
-    sd::buffer::copyDataFromGpu(&scalarData, streamRef);
-    return scalarData->data[0];
-  }
-
-  /**
-   * Get the device shape information
-   * representing a scalar
-   */
-  sd::LongType *getDeviceShapeInfo() { return shapeInfo->getShapeInfoGpuPointer(); }
-
-  /**
-   * Get the dZ pointers
-   */
-  T *getDevicePointer() { return scalarData->gData; }
-
-  /**
-   * Get the infinite dimension device pointer
-   */
-  sd::LongType *getDimensionDevicePointer() { return shapeInfo->getDimensionGpuPointer(); }
-
-  ~ScalarInfo() {
-    sd::buffer::freeBuffer(&scalarData);
-    delete shapeInfo;
-  }
-};
-
-void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
-                           sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY,
-                           sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                           sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, void *extraParams) {
+void execPairwiseTransform(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                           LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                           LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                           LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
@@ -490,16 +427,16 @@ void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueDataBuff
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
-                               sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY,
-                               sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                               sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, void *extraParams) {
+void execPairwiseTransformBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                               LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                               LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                               LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
@@ -513,15 +450,16 @@ void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueData
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
-                            sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, void *extraParams,
-                            OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo,
+void execSummaryStatsScalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                            LongType const *dXShapeInfo, void *extraParams,
+                            OpaqueDataBuffer *dbZ,
+                            LongType const *hZShapeInfo, LongType const *dZShapeInfo,
                             bool biasCorrected) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
@@ -535,29 +473,29 @@ void execSummaryStatsScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuf
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                       sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, sd::LongType const *hYShapeInfo,
-                       sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                       sd::LongType const *dZShapeInfo, void *extraParams, OpaqueDataBuffer *dbDimension,
-                       sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execBroadcastBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                       LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                       LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                       LongType const *dZShapeInfo, void *extraParams, OpaqueDataBuffer *dbDimension,
+                       LongType const *hDimensionShape, LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers[11]);
-    auto tadOnlyShapeInfoZ = reinterpret_cast<sd::LongType *>(extraPointers[12]);
-    auto tadOffsetsZ = reinterpret_cast<sd::LongType *>(extraPointers[13]);
+    auto hTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[9]);
+    auto tadOnlyShapeInfo = reinterpret_cast<LongType *>(extraPointers[10]);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers[11]);
+    auto tadOnlyShapeInfoZ = reinterpret_cast<LongType *>(extraPointers[12]);
+    auto tadOffsetsZ = reinterpret_cast<LongType *>(extraPointers[13]);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcastBool(
@@ -569,8 +507,8 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -586,29 +524,29 @@ void execBroadcastBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *
  * @param dimension
  * @param dimensionLength
  */
-void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                   sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, sd::LongType const *hYShapeInfo,
-                   sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                   sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, sd::LongType const *hDimensionShape,
-                   sd::LongType const *dDimensionShape) {
+void execBroadcast(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                   LongType const *dXShapeInfo, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                   LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                   LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                   LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers[11]);
-    auto tadOnlyShapeInfoZ = reinterpret_cast<sd::LongType *>(extraPointers[12]);
-    auto tadOffsetsZ = reinterpret_cast<sd::LongType *>(extraPointers[13]);
+    auto hTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[9]);
+    auto tadOnlyShapeInfo = reinterpret_cast<LongType *>(extraPointers[10]);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers[11]);
+    auto tadOnlyShapeInfoZ = reinterpret_cast<LongType *>(extraPointers[12]);
+    auto tadOffsetsZ = reinterpret_cast<LongType *>(extraPointers[13]);
 
-    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto yType = ArrayOptions::dataType(hYShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execBroadcast(
@@ -620,8 +558,8 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -635,74 +573,91 @@ void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
  * @param dZShapeInfo
  */
 ////////////////////////////////////////////////////////////////////////
-void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                     sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                     sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduceFloat(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                     LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                     LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceFloatScalar(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                    sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduceSame(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                    LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduceSameScalar(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr: dbX->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo)  ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                     sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                     sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                     sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execReduceSame2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                     LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                     LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                     LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<LongType> dimensions(dimension, dimension + dimensionLength);
 
-    const sd::LongType *zShapeInfoH = hZShapeInfo;
+    const LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoH = reinterpret_cast<LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> *dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
+    std::vector<LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<LongType>();
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceSame(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduceSame(&lc,
+                                        opNum,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        hXShapeInfo,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                        extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
+                                        extraParams,
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        zShapeInfoH,
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -710,41 +665,46 @@ void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     delete dims;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                     sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                     sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                     sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execReduceLong2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                     LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                     LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                     LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<LongType> dimensions(dimension, dimension + dimensionLength);
 
-    const sd::LongType *zShapeInfoH = hZShapeInfo;
+    const LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoH = reinterpret_cast<LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> *dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
+    std::vector<LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceLong(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduceLong(&lc, opNum,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        hXShapeInfo,
+                                        shape::isEmptyConst(hXShapeInfo) ?  nullptr : dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                        extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
+                                        extraParams, dbZ->primary(),
+                                        zShapeInfoH,
+                                        shape::isEmptyConst(zShapeInfoH) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -752,29 +712,29 @@ void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     delete dims;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                    sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduceLong(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                    LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto dTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
+    auto hTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[9]);
+    auto dTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[10]);
 
     auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (zType != sd::DataType::INT64)
-      throw datatype_exception::build("execReduceLong wrong Z data type", sd::DataType::INT64, zType);
+    if (zType != INT64)
+      throw datatype_exception::build("execReduceLong wrong Z data type", INT64, zType);
 
     //TODO hello
     auto xLength = shape::length(hXShapeInfo);
@@ -782,52 +742,64 @@ void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
 
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::reduce::ReduceLongFunction,
-        ::execReduceScalar(launchDims, stream, opNum, dbX != nullptr ? dbX->special() : nullptr,
+        ::execReduceScalar(launchDims,
+                           stream, opNum,
+                           shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), hXShapeInfo,
-                           extraParams, dbZ != nullptr ? dbZ->special() : nullptr,
+                           extraParams,
+                           shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), hXShapeInfo,
-                           nullptr, 0, reductionPointer, dTADShapeInfo),
+                           nullptr,
+                           0,
+                           reductionPointer,
+                           dTADShapeInfo),
         SD_COMMON_TYPES, SD_LONG_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
+    DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                     sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                     sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                     sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execReduceBool2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                     LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                     LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                     LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
     const std::vector<LongType> dimensions(dimension, dimension + dimensionLength);
 
-    const sd::LongType *zShapeInfoH = hZShapeInfo;
+    const LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, &dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoH = reinterpret_cast<LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> *dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
+    std::vector<LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceBool(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduceBool(&lc,
+                                        opNum,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                        extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
+                                        extraParams,
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        zShapeInfoH,
+                                        shape::isEmptyConst(zShapeInfoH) ? nullptr :  dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                         dims->data(), dims->size());
 
@@ -835,28 +807,28 @@ void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
 
     delete dims;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                    sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduceBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                    LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto hTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[9]);
-    auto dTADShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers[10]);
+    auto hTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[9]);
+    auto dTADShapeInfo = reinterpret_cast<LongType *>(extraPointers[10]);
 
     auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (zType != sd::DataType::BOOL) THROW_EXCEPTION("execReduceBool requires Z operand to have BOOL type");
+    if (zType != BOOL) THROW_EXCEPTION("execReduceBool requires Z operand to have BOOL type");
 
     auto xLength = shape::length(hXShapeInfo);
     dim3 launchDims = getReduceDims(xLength);
@@ -864,19 +836,27 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
 
     BUILD_DOUBLE_SELECTOR(
         xType, zType, functions::reduce::ReduceBoolFunction,
-        ::execReduceScalar(launchDims, stream, opNum, dbX != nullptr ? dbX->special() : nullptr,
+        ::execReduceScalar(launchDims,
+                           stream,
+                           opNum,
+                           shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), hXShapeInfo,
-                           extraParams, dbZ != nullptr ? dbZ->special() : nullptr,
-                           dZShapeInfo, hZShapeInfo,
-                           nullptr, 0, reductionPointer, dTADShapeInfo),
+                           extraParams,
+                           shape::isEmptyConst(hZShapeInfo) ? nullptr :dbZ->special(),
+                           dZShapeInfo,
+                           hZShapeInfo,
+                           nullptr,
+                           0,
+                           reductionPointer,
+                           dTADShapeInfo),
         SD_COMMON_TYPES, SD_BOOL_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
+    DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -892,31 +872,38 @@ void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
  * @param dimensionLength
  */
 ////////////////////////////////////////////////////////////////////////
-void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                     sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                     sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                     sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execIndexReduce(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                     LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                     LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                     LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     auto tadPack =
-        sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
+        ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduce(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        (sd::LongType *)dbDimension->special(), dimensionLength, tadPack->specialShapeInfo(), tadPack->specialOffsets());
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        extraParams,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+        (LongType *)dbDimension->special(), dimensionLength, tadPack->specialShapeInfo(), tadPack->specialOffsets());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -930,44 +917,51 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *db
  * @param dZShapeInfo
  */
 ////////////////////////////////////////////////////////////////////////
-void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                      sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                      sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                      sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape) {
+void execReduceFloat2(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                      LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
+                      LongType const *hZShapeInfo, LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
+                      LongType const *hDimensionShape, LongType const *dDimensionShape) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     const auto zLen = shape::length(hZShapeInfo);
 
-    std::vector<sd::LongType> dimensions(dimension, dimension + dimensionLength);
+    std::vector<LongType> dimensions(dimension, dimension + dimensionLength);
 
-    const sd::LongType *zShapeInfoH = hZShapeInfo;
+    const LongType *zShapeInfoH = hZShapeInfo;
 
     if (shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
       auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo,
                                                                                             &dimensions);
-      zShapeInfoH = reinterpret_cast<sd::LongType const *>(zPack->primary());
+      zShapeInfoH = reinterpret_cast<LongType const *>(zPack->primary());
     }
 
-    std::vector<sd::LongType> *dims =
-        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<sd::LongType>();
+    std::vector<LongType> *dims =
+        (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), &dimensions) : new std::vector<LongType>();
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceFloat(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduceFloat(&lc,
+                                         opNum,
+                                         shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                         hXShapeInfo,
+                                         shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                         extraParams, dbZ->primary(), zShapeInfoH, dbZ != nullptr ? dbZ->special() : nullptr,
+                                         extraParams,
+                                         dbZ->primary(),
+                                         zShapeInfoH,
+                                         shape::isEmptyConst(zShapeInfoH) ? nullptr :  dbZ->special(),
                                          ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH)->special(),
                                          dims->data(), dims->size());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     delete dims;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -979,143 +973,183 @@ void execReduceFloat2(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *d
  * @param extraParams
  */
 ////////////////////////////////////////////////////////////////////////
-void execIndexReduceScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
-                           sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, void *extraParams,
-                           OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execIndexReduceScalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                           LongType const *dXShapeInfo, void *extraParams,
+                           OpaqueDataBuffer *dbZ,
+                           LongType const *hZShapeInfo, LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduceScalar(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        extraParams,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execTransformSame(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                       sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                       sd::LongType const *dZShapeInfo, void *extraParams) {
+void execTransformSame(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                       LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                       LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
-    auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
+    auto tadShapeInfo = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformSame(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execTransformSame(&lc, opNum,
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr :dbX->primary(),
+                                           hXShapeInfo,
+                                           shape::isEmptyConst(hXShapeInfo) ?  nullptr : dbX->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                           dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                           hZShapeInfo,
+                                           shape::isEmptyConst(hZShapeInfo)  ? nullptr : dbZ->special() ,
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                            extraParams, tadShapeInfo, tadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                       sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                       sd::LongType const *dZShapeInfo, void *extraParams) {
+void execTransformBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                       LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                       LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
-    auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
+    auto tadShapeInfo = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformBool(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execTransformBool(&lc,
+                                           opNum,
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                           hXShapeInfo,
+                                           shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                           dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                           hZShapeInfo,
+                                           shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-                                           extraParams, tadShapeInfo, tadOffsets);
+                                           extraParams,
+                                           tadShapeInfo,
+                                           tadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execTransformAny(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                      sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                      sd::LongType const *dZShapeInfo, void *extraParams) {
+void execTransformAny(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                      LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                      LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
-
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto streamSpecial = reinterpret_cast<cudaStream_t &>(extraPointers[4]);
     LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3],
                      reinterpret_cast<int *>(extraPointers[6]));
-
-    NativeOpExecutioner::execTransformAny(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execTransformAny(&lc,
+                                          opNum,
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr :dbX->primary(),
+                                          hXShapeInfo,
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                          dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                          hZShapeInfo,
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special() ,
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                           extraParams, nullptr, nullptr);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execTransformStrict(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                         sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                         sd::LongType const *dZShapeInfo, void *extraParams) {
+void execTransformStrict(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                         LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                         LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
-    auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
+    auto tadShapeInfo = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformStrict(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ->primary(), hZShapeInfo,
-        dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
         tadShapeInfo, tadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execTransformFloat(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                        sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                        sd::LongType const *dZShapeInfo, void *extraParams) {
+void execTransformFloat(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                        LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                        LongType const *dZShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
-    auto tadShapeInfo = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
-    auto tadOffsets = reinterpret_cast<sd::LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
+    auto tadShapeInfo = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
+    auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+    LaunchContext lc(extraPointers[1],
+                     extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformFloat(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ->primary(), hZShapeInfo,
-        dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
-        tadShapeInfo, tadOffsets);
+        &lc,
+        opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special() ,
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraParams,
+        tadShapeInfo,
+        tadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -1186,7 +1220,7 @@ void enableP2P(bool enable) {
             cudaDeviceDisablePeerAccess(dY);
           }
         } else {
-          if (sd::Environment::getInstance().isVerbose()) printf("Peer access [%i] -> [%i] isn't possible\n", dX, dY);
+          if (Environment::getInstance().isVerbose()) printf("Peer access [%i] -> [%i] isn't possible\n", dX, dY);
         }
       }
     }
@@ -1220,13 +1254,12 @@ void initializeDevicesAndFunctions() {
     // enabling p2p gpu access if it's supported
     if (supportedP2P && devCnt > 1) enableP2P(allowedP2P);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void initializeFunctions(sd::Pointer *functions) {
-  sd::BlasHelper::getInstance().initializeDeviceFunctions(functions);
+void initializeFunctions(Pointer *functions) { BlasHelper::getInstance().initializeDeviceFunctions(functions);
 }
 
 
@@ -1237,13 +1270,13 @@ void initializeFunctions(sd::Pointer *functions) {
  * @param memorySize memory size, in bytes
  * @param flags optional parameter
  */
-sd::Pointer mallocHost(sd::LongType memorySize, int flags) {
-  sd::Pointer pointer;
+Pointer mallocHost(LongType memorySize, int flags) {
+  Pointer pointer;
   // cudaHostAllocMapped |cudaHostAllocPortable
   auto res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize + 8, cudaHostAllocDefault);
   if (res != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaHostAlloc failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaHostAlloc failed");
   }
 
   return reinterpret_cast<int8_t *>(pointer);
@@ -1257,12 +1290,12 @@ sd::Pointer mallocHost(sd::LongType memorySize, int flags) {
  * @param ptrToDeviceId pointer to deviceId. For cuda that's just and int, for OpenCL that's pointer to device_id, etc
  * @param flags optional parameter
  */
-sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) {
-  sd::Pointer pointer;
+Pointer mallocDevice(LongType memorySize, int deviceId, int flags) {
+  Pointer pointer;
   auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize + 8);
   if (res != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMalloc failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMalloc failed");
   }
 
   return reinterpret_cast<int8_t *>(pointer);
@@ -1273,11 +1306,11 @@ sd::Pointer mallocDevice(sd::LongType memorySize, int deviceId, int flags) {
  *
  * @param pointer pointer that'll be freed
  */
-int freeHost(sd::Pointer pointer) {
+int freeHost(Pointer pointer) {
   auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
   if (res != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFreeHost failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFreeHost failed");
   }
 
   return 1L;
@@ -1289,53 +1322,53 @@ int freeHost(sd::Pointer pointer) {
  * @param pointer pointer that'll be freed
  * @param ptrToDeviceId pointer to deviceId.
  */
-int freeDevice(sd::Pointer pointer, int deviceId) {
+int freeDevice(Pointer pointer, int deviceId) {
   auto res = cudaFree(reinterpret_cast<void *>(pointer));
 
   // we're intentionally skipping
   if (res != 0 && res != 1) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFree failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFree failed");
   }
 
   return res == 0 ? 1L : 0L;
 }
 
-sd::Pointer createContext() { return 0L; }
+Pointer createContext() { return 0L; }
 
-sd::Pointer createStream() {
+Pointer createStream() {
   auto stream = new cudaStream_t();
   auto dZ = cudaStreamCreate(stream);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamCreate failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamCreate failed");
   }
 
   return stream;
 }
 
-sd::Pointer createEvent() {
-  sd::Pointer nativeEvent = (sd::Pointer)malloc(sizeof(cudaEvent_t));
+Pointer createEvent() {
+  Pointer nativeEvent = (Pointer)malloc(sizeof(cudaEvent_t));
 
   CHECK_ALLOC(nativeEvent, "Failed to allocate new CUDA event buffer", sizeof(cudaEvent_t));
 
   auto dZ = cudaEventCreateWithFlags(reinterpret_cast<cudaEvent_t *>(&nativeEvent), cudaEventDisableTiming);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventCreateWithFlags failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventCreateWithFlags failed");
   }
 
   return nativeEvent;
 }
 
-int registerEvent(sd::Pointer event, sd::Pointer stream) {
+int registerEvent(Pointer event, Pointer stream) {
   auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
   auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
   auto dZ = cudaEventRecord(*pEvent, *pStream);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventRecord failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventRecord failed");
   }
 
   return 1;
@@ -1346,16 +1379,16 @@ int setDevice(int deviceId) {
   return 1;
 }
 
-sd::LongType getDeviceFreeMemoryDefault() {
+LongType getDeviceFreeMemoryDefault() {
   size_t memFree = 0;
   size_t memTotal = 0;
 
   cudaMemGetInfo(&memFree, &memTotal);
 
-  return (sd::LongType)memFree;
+  return (LongType)memFree;
 }
 
-sd::LongType getDeviceFreeMemory(int device) {
+LongType getDeviceFreeMemory(int device) {
   int orig = -1;
 
   cudaGetDevice(&orig);
@@ -1373,10 +1406,10 @@ sd::LongType getDeviceFreeMemory(int device) {
     cudaSetDevice(orig);
   }
 
-  return (sd::LongType)memFree;
+  return (LongType)memFree;
 }
 
-sd::LongType getDeviceTotalMemory(int device) {
+LongType getDeviceTotalMemory(int device) {
   int orig = -1;
 
   cudaGetDevice(&orig);
@@ -1393,10 +1426,10 @@ sd::LongType getDeviceTotalMemory(int device) {
     cudaSetDevice(orig);
   }
 
-  return (sd::LongType)memTotal;
+  return (LongType)memTotal;
 }
 
-int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) {
+int memcpySync(Pointer dst, Pointer src, LongType size, int flags, Pointer reserved) {
   cudaMemcpyKind kind;
 
   switch (flags) {
@@ -1413,8 +1446,8 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
       kind = cudaMemcpyDeviceToDevice;
     } break;
     default: {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFNED MEMCPY");
+      LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFNED MEMCPY");
       return 0;
     }
   }
@@ -1426,15 +1459,15 @@ int memcpySync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, s
            static_cast<int>(dZ));
     fflush(stdout);
     fflush(stderr);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpy failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpy failed");
     return 0;
   }
 
   return 1;
 }
 
-int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) {
+int memcpyAsync(Pointer dst, Pointer src, LongType size, int flags, Pointer reserved) {
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
   cudaMemcpyKind kind;
@@ -1454,8 +1487,8 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
       kind = cudaMemcpyDeviceToDevice;
     } break;
     default: {
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-      sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFINED MEMCPY");
+      LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+      LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFINED MEMCPY");
       return 0;
     }
   }
@@ -1469,8 +1502,8 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
 
     fflush(stdout);
     fflush(stderr);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyAsync failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyAsync failed");
     return 0;
   }
 
@@ -1478,58 +1511,58 @@ int memcpyAsync(sd::Pointer dst, sd::Pointer src, sd::LongType size, int flags, 
   return 1;
 }
 
-int memsetSync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Pointer reserved) {
+int memsetSync(Pointer dst, int value, LongType size, int flags, Pointer reserved) {
   auto dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemset failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemset failed");
   }
 
   return 1;
 }
 
-int memsetAsync(sd::Pointer dst, int value, sd::LongType size, int flags, sd::Pointer reserved) {
+int memsetAsync(Pointer dst, int value, LongType size, int flags, Pointer reserved) {
   auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
   auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemsetAsync failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemsetAsync failed");
   }
 
   return 1;
 }
 
-int destroyEvent(sd::Pointer event) {
+int destroyEvent(Pointer event) {
   auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
   auto dZ = cudaEventDestroy(*pEvent);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventDestroy failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventDestroy failed");
   }
 
   return 1;
 }
 
-int streamSynchronize(sd::Pointer stream) {
+int streamSynchronize(Pointer stream) {
   auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
   auto dZ = cudaStreamSynchronize(*pStream);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamSynchronize failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamSynchronize failed");
   }
 
   return 1L;
 }
 
-int eventSynchronize(sd::Pointer event) {
+int eventSynchronize(Pointer event) {
   auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 
   auto dZ = cudaEventSynchronize(*pEvent);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventSynchronize failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventSynchronize failed");
   }
 
   return 1L;
@@ -1541,7 +1574,7 @@ int getAvailableDevices() {
   return devCnt;
 }
 
-void enableDebugMode(bool reallyEnable) { sd::Environment::getInstance().setDebug(reallyEnable); }
+void enableDebugMode(bool reallyEnable) { Environment::getInstance().setDebug(reallyEnable); }
 
 void setGridLimit(int gridSize) {
   if (gridSize > 8192) gridSize = 8192;
@@ -1559,7 +1592,7 @@ void setOmpNumThreads(int threads) {
   maxThreads = threads;
 }
 
-void enableVerboseMode(bool reallyEnable) { sd::Environment::getInstance().setVerbose(reallyEnable); }
+void enableVerboseMode(bool reallyEnable) { Environment::getInstance().setVerbose(reallyEnable); }
 
 int getDeviceMajor(int device) { return deviceProperties[device].major; }
 
@@ -1567,16 +1600,14 @@ int getDeviceMinor(int device) { return deviceProperties[device].minor; }
 
 const char *getDeviceName(int device) { return deviceProperties[device].name; }
 
-void specialConcat(sd::Pointer *extraPointers, int dimension, int numArrays, sd::Pointer *data,
-                   sd::Pointer *inputShapeInfo, void *dZ, sd::LongType const *dZShapeInfo, sd::Pointer *tadPointers,
-                   sd::Pointer *offsetPointers) {
+void specialConcat(Pointer *extraPointers, int dimension, int numArrays, Pointer *data, Pointer *inputShapeInfo, void *dZ, LongType const *dZShapeInfo, Pointer *tadPointers, Pointer *offsetPointers) {
   try {
     BUILD_SINGLE_SELECTOR(ArrayOptions::dataType(dZShapeInfo), sd::SpecialMethods,
                           ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, dZ, dZShapeInfo),
                           SD_COMMON_TYPES);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -1590,25 +1621,25 @@ void saveNpy(std::string fname, const InteropDataBuffer *data, const unsigned in
 /**
  * This method saves
  */
-sd::TadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType*dimension, sd::LongType dimensionLength) {
+TadPack *tadOnlyShapeInfo(const LongType *hXShapeInfo, LongType *dimension, LongType dimensionLength) {
   try {
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto pack = ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType const *getPrimaryShapeInfo(sd::TadPack *pack) { return pack->primaryShapeInfo(); }
-sd::LongType const *getPrimaryOffsets(sd::TadPack *pack) { return pack->primaryOffsets(); }
-sd::LongType const *getSpecialShapeInfo(sd::TadPack *pack) { return pack->specialShapeInfo(); }
-sd::LongType const *getSpecialOffsets(sd::TadPack *pack) { return pack->specialOffsets(); }
-sd::LongType getNumberOfTads(sd::TadPack *pack) { return pack->numberOfTads(); }
-int getShapeInfoLength(sd::TadPack *pack) { return pack->shapeInfoLength(); }
+LongType const *getPrimaryShapeInfo(TadPack *pack) { return pack->primaryShapeInfo(); }
+LongType const *getPrimaryOffsets(TadPack *pack) { return pack->primaryOffsets(); }
+LongType const *getSpecialShapeInfo(TadPack *pack) { return pack->specialShapeInfo(); }
+LongType const *getSpecialOffsets(TadPack *pack) { return pack->specialOffsets(); }
+LongType getNumberOfTads(TadPack *pack) { return pack->numberOfTads(); }
+int getShapeInfoLength(TadPack *pack) { return pack->shapeInfoLength(); }
 
-int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) {
+int memcpyConstantAsync(LongType dst, Pointer src, LongType size, int flags, Pointer reserved) {
   cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
   cudaMemcpyKind kind;
@@ -1631,37 +1662,40 @@ int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, in
   }
   auto dZ = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), size, dst, kind, *pStream);
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyToSymbolAsync failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyToSymbolAsync failed");
   }
 
   return 1;
 }
 
-sd::Pointer getConstantSpace() {
-  sd::Pointer dConstAddr;
+Pointer getConstantSpace() {
+  Pointer dConstAddr;
   cudaError_t dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
 
   if (dZ != 0) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaGetSymbolAddress failed");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaGetSymbolAddress failed");
   }
 
   return dConstAddr;
 }
 
-void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType const *xShapeInfo,
-              sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *zShapeInfo,
-              sd::LongType const *dZShapeInfo, sd::LongType n, sd::LongType *indexes, sd::LongType const *tadShapeInfo,
-              sd::LongType const *tadOffsets, sd::LongType const *zTadShapeInfo, sd::LongType const *zTadOffsets) {
+void pullRows(Pointer *extraPointers, OpaqueDataBuffer *dbX, LongType const *xShapeInfo, LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *zShapeInfo, LongType const *dZShapeInfo, LongType n,
+              LongType *indexes, LongType const *tadShapeInfo, LongType const *tadOffsets,
+              LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     dim3 launchDims = getLaunchDims("pullRows");
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
-                          (launchDims, stream, dbX != nullptr ? dbX->special() : nullptr, dbZ != nullptr ? dbZ->special() : nullptr, n, indexes, tadShapeInfo, tadOffsets,
+                          (launchDims,
+                              stream,
+                              shape::isEmptyConst(xShapeInfo) ? nullptr : dbX->special(),
+                              shape::isEmptyConst(zShapeInfo) ? nullptr :  dbZ->special() ,
+                              n, indexes, tadShapeInfo, tadOffsets,
                               zTadShapeInfo, zTadOffsets),
                           SD_COMMON_TYPES);
 
@@ -1669,102 +1703,99 @@ void pullRows(sd::Pointer *extraPointers, OpaqueDataBuffer *dbX, sd::LongType co
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void average(sd::Pointer *extras, sd::Pointer *x, sd::LongType const *xShapeInfo, sd::Pointer *dx,
-             sd::LongType const *dXShapeInfo, void *z, sd::LongType const *zShapeInfo, void *dz,
-             sd::LongType const *dzShapeInfo, int n, sd::LongType length, bool propagate) {
+void average(Pointer *extras, Pointer *x, LongType const *xShapeInfo, Pointer *dx, LongType const *dXShapeInfo, void *z,
+             LongType const *zShapeInfo, void *dz, LongType const *dzShapeInfo, int n, LongType length, bool propagate) {
   try {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
     int mode = getDeviceId(extras[3]);
 
     auto dX = reinterpret_cast<void **>(dx);
 
-    if (sd::Environment::getInstance().isDebugAndVerbose()) printf("averageFloat called\n");
+    if (Environment::getInstance().isDebugAndVerbose()) printf("averageFloat called\n");
 
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
     // launching on gpu
     if (mode == 0) {
       dim3 launchDims = getLaunchDims("average");
       BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate),
                             SD_COMMON_TYPES);
-      sd::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
+      DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
     } else {
       // launching on host memory
       BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::averageGeneric(x, z, zShapeInfo, n, length, propagate),
                             SD_COMMON_TYPES);
     }
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void accumulate(sd::Pointer *extras, sd::Pointer *x, sd::LongType const *xShapeInfo, sd::Pointer *dx,
-                sd::LongType const *dXShapeInfo, void *z, sd::LongType const *zShapeInfo, void *dz,
-                sd::LongType const *dzShapeInfo, int n, sd::LongType length) {
+void accumulate(Pointer *extras, Pointer *x, LongType const *xShapeInfo, Pointer *dx, LongType const *dXShapeInfo, void *z, LongType const *zShapeInfo, void *dz, LongType const *dzShapeInfo, int n, LongType length) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
     int mode = getDeviceId(extras[3]);
 
     auto dX = reinterpret_cast<void **>(dx);
 
-    if (sd::Environment::getInstance().isDebugAndVerbose()) printf("accumulateFloat called\n");
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    if (Environment::getInstance().isDebugAndVerbose()) printf("accumulateFloat called\n");
+    auto xType = ArrayOptions::dataType(xShapeInfo);
 
     // launching on gpu
     if (mode == 0) {
       dim3 launchDims = getAccumDims(n);
       BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n, length), SD_COMMON_TYPES);
-      sd::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
+      DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
     } else {
       // launching on host memory
       BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(x, z, zShapeInfo, n, length),
                             SD_COMMON_TYPES);
     }
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void shuffle(sd::Pointer *extras, sd::Pointer *x, sd::Pointer *xShapeInfo, sd::Pointer *dx, sd::Pointer *dXShapeInfo,
-             sd::Pointer *z, sd::Pointer *zShapeInfo, sd::Pointer *dz, sd::Pointer *dZShapeInfo, int N, int *shuffleMap,
-             sd::Pointer *tadShapeInfo, sd::Pointer *tadOffsets) {
+void shuffle(Pointer *extras, Pointer *x, Pointer *xShapeInfo, Pointer *dx, Pointer *dXShapeInfo, Pointer *z,
+             Pointer *zShapeInfo, Pointer *dz, Pointer *dZShapeInfo, int N, int *shuffleMap, Pointer *tadShapeInfo,
+             Pointer *tadOffsets) {
   try {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
 
     auto dX = reinterpret_cast<void **>(dx);
     auto dZ = reinterpret_cast<void **>(dz);
-    auto xShape = reinterpret_cast<sd::LongType **>(xShapeInfo);
-    auto dxShape = reinterpret_cast<sd::LongType **>(dXShapeInfo);
-    auto tadOnlyShapeInfo = reinterpret_cast<sd::LongType **>(tadShapeInfo);
-    auto tadOffset = reinterpret_cast<sd::LongType **>(tadOffsets);
+    auto xShape = reinterpret_cast<LongType **>(xShapeInfo);
+    auto dxShape = reinterpret_cast<LongType **>(dXShapeInfo);
+    auto tadOnlyShapeInfo = reinterpret_cast<LongType **>(tadShapeInfo);
+    auto tadOffset = reinterpret_cast<LongType **>(tadOffsets);
 
-    auto xType = sd::ArrayOptions::dataType(xShape[0]);
+    auto xType = ArrayOptions::dataType(xShape[0]);
     dim3 launchDims = getLaunchDims("shuffle");
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric,
                           (launchDims, stream, dX, dxShape, dZ, N, shuffleMap, tadOnlyShapeInfo, tadOffset),
                           SD_COMMON_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
+    DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
+bool isExperimentalEnabled() { return Environment::getInstance().isExperimentalBuild(); }
 
 void setOmpMinThreads(int threads) {
   minThreads = sd::math::sd_max<int>(32, threads);
   minThreads = sd::math::sd_min<int>(maxThreads, minThreads);
 }
 
-int getDevice() { return sd::AffinityManager::currentDeviceId(); }
+int getDevice() { return AffinityManager::currentDeviceId(); }
 
 void setElementThreshold(int num) {
   // this is no-op for CUDA
@@ -1775,94 +1806,116 @@ void setTADThreshold(int num) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execSummaryStats(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                      sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                      sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, bool biasCorrected) {
+void execSummaryStats(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                      LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
+                      LongType const *hZShapeInfo, LongType const *dZShapeInfo, bool biasCorrected) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execSummaryStats(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execSummaryStats(&lc,
+                                          opNum,
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                          hXShapeInfo,
+                                          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                          extraParams, dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                          extraParams,
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                          hZShapeInfo,
+                                          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
                                           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                           biasCorrected);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                         sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
-                         sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo,
-                         OpaqueDataBuffer *dbDimension, sd::LongType const *hDimensionShape,
-                         sd::LongType const *dDimensionShape, bool biasCorrected, sd::LongType const *tadShapeInfo,
-                         sd::LongType const *tadOffsets) {
+void execSummaryStatsTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                         LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbZ,
+                         LongType const *hZShapeInfo, LongType const *dZShapeInfo,
+                         OpaqueDataBuffer *dbDimension,
+                         LongType const *hDimensionShape, LongType const *dDimensionShape, bool biasCorrected,
+                         LongType const *tadShapeInfo, LongType const *tadOffsets) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbDimension});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
     int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execSummaryStats(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        reinterpret_cast<sd::LongType *>(dbDimension->special()), dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        extraParams,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+        reinterpret_cast<LongType *>(dbDimension->special()), dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbDimension});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                 sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY,
-                 sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                 sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduce3(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                 LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                 LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                 LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduce3(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduce3(&lc,
+                                     opNum,
+                                     shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                     hXShapeInfo,
+                                     shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                     extraParams, dbY->primary(), hYShapeInfo, dbY->special(),
+                                     extraParams,
+                                     shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
+                                     hYShapeInfo,
+                                     shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-                                     dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                     shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                     hZShapeInfo,
+                                     shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                      ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY,
-                    sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                    sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                    sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape,
-                    sd::LongType const *tadOnlyShapeInfo, sd::LongType const *tadOffsets,
-                    sd::LongType const *yTadOnlyShapeInfo, sd::LongType const *yTadOffsets) {
+void execReduce3Tad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY, LongType const *hYShapeInfo,
+                    LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                    LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension, LongType const *hDimensionShape,
+                    LongType const *dDimensionShape, LongType const *tadOnlyShapeInfo, LongType const *tadOffsets,
+                    LongType const *yTadOnlyShapeInfo, LongType const *yTadOffsets) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     auto tadPack =
-        sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
+        ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, shape::length(hDimensionShape));
     auto tadLength = shape::length(tadPack->primaryShapeInfo());
     auto yLength = shape::length(hYShapeInfo);
     auto xLength = shape::length(hXShapeInfo);
@@ -1871,152 +1924,200 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX
 
     if (tadLength == yLength || tadLength == xLength) {
       NativeOpExecutioner::execReduce3(
-          &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+          &lc, opNum,
+          shape::isEmptyConst(hXShapeInfo) ? nullptr: dbX->primary(),
+          hXShapeInfo,
+          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbY->primary(),
-          hYShapeInfo, dbY->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-          dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
-          ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), dimension, dimensionLength,
+          hYShapeInfo,
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
+          ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+          hZShapeInfo,
+          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
+          ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+          dimension, dimensionLength,
           tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
     } else
       NativeOpExecutioner::execReduce3TAD(
-          &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-          ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbY->primary(),
-          hYShapeInfo, dbY->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-          dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+          &lc, opNum,
+          shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+          hXShapeInfo,
+          shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+          ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+          extraParams,
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
+          hYShapeInfo,
+          shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
+          ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
+          shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+          hZShapeInfo,
+          shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
           ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), dimension, dimensionLength,
           tadOnlyShapeInfo, yTadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                       sd::LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY,
-                       sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                       sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo) {
+void execReduce3Scalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                       LongType const *dXShapeInfo, void *extraParams, OpaqueDataBuffer *dbY,
+                       LongType const *hYShapeInfo, LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
+                       LongType const *hZShapeInfo, LongType const *dZShapeInfo) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3Scalar(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special() ,
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbY->primary(),
-        hYShapeInfo, dbY->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-        dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+        hYShapeInfo,
+        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special());
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execScalarBool(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                    sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalar, sd::LongType const *hScalarShapeInfo,
-                    sd::LongType const *dScalarShapeInfo, void *extraParams) {
+void execScalarBool(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                    LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalar, LongType const *hScalarShapeInfo,
+                    LongType const *dScalarShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalar});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ->primary(), hZShapeInfo,
-        dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        dbScalar->primary(), hScalarShapeInfo, dbScalar->special(),
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
+        hScalarShapeInfo,
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(), extraParams);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalar});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                       sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                       sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalars,
-                       sd::LongType const *hScalarShapeInfo, sd::LongType const *dScalarShapeInfo, void *extraParams,
-                       OpaqueDataBuffer *dbDimension, sd::LongType const *hDimensionShape,
-                       sd::LongType const *dDimensionShape, sd::LongType const *tadShapeInfo,
-                       sd::LongType const *tadOffsets, sd::LongType const *tadShapeInfoZ,
-                       sd::LongType const *tadOffsetsZ) {
+void execScalarBoolTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                       LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                       LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalars, LongType const *hScalarShapeInfo,
+                       LongType const *dScalarShapeInfo, void *extraParams,
+                       OpaqueDataBuffer *dbDimension,
+                       LongType const *hDimensionShape, LongType const *dDimensionShape, LongType const *tadShapeInfo,
+                       LongType const *tadOffsets, LongType const *tadShapeInfoZ, LongType const *tadOffsetsZ) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalars});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), extraParams, dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        dbScalars->primary(), hScalarShapeInfo, dbScalars->special(),
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(), dimension, dimensionLength,
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        extraParams,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->primary(),
+        hScalarShapeInfo,
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(),
+        dimension, dimensionLength,
         tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalars});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalar, sd::LongType const *hScalarShapeInfo,
-                sd::LongType const *dScalarShapeInfo, void *extraParams) {
+void execScalar(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalar, LongType const *hScalarShapeInfo,
+                LongType const *dScalarShapeInfo, void *extraParams) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalar});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalar(
-        &lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ->primary(), hZShapeInfo,
-        dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        dbScalar->primary(), hScalarShapeInfo, dbScalar->special(),
+        &lc, opNum,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->primary(),
+        hScalarShapeInfo,
+        shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalar->special(),
         ConstantShapeHelper::getInstance().bufferForShapeInfo(hScalarShapeInfo)->special(), extraParams);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalar});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                   sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, sd::LongType const *hZShapeInfo,
-                   sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalars, sd::LongType const *hScalarShapeInfo,
-                   sd::LongType const *dScalarShapeInfo, void *extraParams, OpaqueDataBuffer *dbDimension,
-                   sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape,
-                   sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, sd::LongType const *tadShapeInfoZ,
-                   sd::LongType const *tadOffsetsZ) {
+void execScalarTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                   LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ, LongType const *hZShapeInfo,
+                   LongType const *dZShapeInfo, OpaqueDataBuffer *dbScalars, LongType const *hScalarShapeInfo,
+                   LongType const *dScalarShapeInfo, void *extraParams, OpaqueDataBuffer *dbDimension,
+                   LongType const *hDimensionShape, LongType const *dDimensionShape, LongType const *tadShapeInfo,
+                   LongType const *tadOffsets, LongType const *tadShapeInfoZ, LongType const *tadOffsetsZ) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbScalars});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto yType = ArrayOptions::dataType(hScalarShapeInfo);
+    auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (yType != xType && yType != sd::DataType::BOOL && !isExperimentalEnabled())
-      throw sd::datatype_exception::build("execScalar both operands must have same data type", xType, yType);
+    if (yType != xType && yType != BOOL && !isExperimentalEnabled())
+      throw datatype_exception::build("execScalar both operands must have same data type", xType, yType);
 
     dim3 launchDims = getLaunchDims("scalarTad");
 
@@ -2030,9 +2131,12 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
         ::executeCudaAlongDimension(
-            launchDims, stream, opNum, dbX != nullptr ? dbX->special() : nullptr,
-            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ != nullptr ? dbZ->special() : nullptr,
-            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), dbScalars->special(),
+            launchDims, stream, opNum,
+            shape::isEmptyConst(hXShapeInfo) ? nullptr :  dbX->special(),
+            ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+            shape::isEmptyConst(hZShapeInfo) ? nullptr :  dbZ->special(),
+            ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+            shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->special(),
             extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES);
 #endif
@@ -2041,110 +2145,121 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX,
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbScalars});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void execAggregate(sd::Pointer *extraPointers, int opNum, void **arguments, int numArguments, sd::LongType **shapes,
+void execAggregate(Pointer *extraPointers, int opNum, void **arguments, int numArguments, LongType **shapes,
                    int numShapes, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
-                   void *realArguments, int numRealArguments, sd::DataType dtype) {}
+                   void *realArguments, int numRealArguments, DataType dtype) {}
 
-void batchExecutor(sd::Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
-                   int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments,
-                   sd::DataType dtype) {}
+void batchExecutor(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
+                   int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments, DataType dtype) {}
 
-void execAggregateBatch(sd::Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
+void execAggregateBatch(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
                         int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments,
-                        sd::DataType dtype) {}
+                        DataType dtype) {}
 
 ////////////////////////////////////////////////////////////////////////
-void execRandom(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost, OpaqueDataBuffer *dbZ,
-                sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, void *extraArguments) {
+void execRandom(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueDataBuffer *dbZ,
+                LongType const *hZShapeInfo, LongType const *dZShapeInfo, void *extraArguments) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost,
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr :dbZ->special(),
                                     ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
                                     extraArguments);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execRandom2(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost, OpaqueDataBuffer *dbX,
-                 sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ,
-                 sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, void *extraArguments) {
+void execRandom2(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueDataBuffer *dbX,
+                 LongType const *hXShapeInfo, LongType const *dXShapeInfo, OpaqueDataBuffer *dbZ,
+                 LongType const *hZShapeInfo, LongType const *dZShapeInfo, void *extraArguments) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execRandom(
-        &lc, opNum, stateHost, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbZ->primary(), hZShapeInfo,
-        dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraArguments);
+        &lc, opNum, stateHost,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+        hXShapeInfo,
+        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+        hZShapeInfo,
+        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+        ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(), extraArguments);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointer stateHost, OpaqueDataBuffer *dbX,
-                 sd::LongType const *hXShapeInfo, sd::LongType const *dXShapeInfo, OpaqueDataBuffer *dbY,
-                 sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                 sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, void *extraArguments) {
+void execRandom3(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueDataBuffer *dbX,
+                 LongType const *hXShapeInfo, LongType const *dXShapeInfo, OpaqueDataBuffer *dbY,
+                 LongType const *hYShapeInfo, LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
+                 LongType const *hZShapeInfo, LongType const *dZShapeInfo, void *extraArguments) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY});
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(
-        &lc, opNum, stateHost, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
-        ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(), dbY->primary(), hYShapeInfo,
-        dbY->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(), dbZ->primary(),
-        hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr, ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-        extraArguments);
+    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                    hXShapeInfo, shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
+                                    ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
+                                    shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(), hYShapeInfo,
+                                    shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
+                                    ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(), hZShapeInfo,
+                                    shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
+                                    ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
+                                    extraArguments);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, sd::Pointer ptrToBuffer) {
+Pointer initRandom(Pointer *extraPointers, long seed, long bufferSize, Pointer ptrToBuffer) {
   unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
   cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
   // we don't synchronize at random initialization, it's safe to go async here
 
   auto ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
-  auto buffer = new sd::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrHost),
+  auto buffer = new random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrHost),
                                              reinterpret_cast<uint64_t *>(ptrDev));
   buffer->propagateToDevice(buffer, *stream);
 
-  sd::DebugHelper::checkErrorCode(stream, "initRandom(...) failed A");
+  DebugHelper::checkErrorCode(stream, "initRandom(...) failed A");
 
   // we generate sequence in the host memory
-  sd::random::Xoroshiro128 generator(buffer);
+  random::Xoroshiro128 generator(buffer);
   generator.refreshBuffer();
 
   // and copy it to gpu
   cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
-  sd::DebugHelper::checkErrorCode(stream, "initRandom(...) failed B");
+  DebugHelper::checkErrorCode(stream, "initRandom(...) failed B");
 
   return buffer;
 }
 
-void destroyRandom(sd::Pointer ptrBuffer) {
-  sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *>(ptrBuffer);
+void destroyRandom(Pointer ptrBuffer) {
+  random::RandomBuffer *buffer = reinterpret_cast<random::RandomBuffer *>(ptrBuffer);
 
   // FIXME: it's bad thing, but we can't know in advance, which stream(s) where using this generator in practice
   cudaDeviceSynchronize();
@@ -2152,8 +2267,8 @@ void destroyRandom(sd::Pointer ptrBuffer) {
   delete buffer;
 }
 
-void refreshBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom) {
-  sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *>(ptrRandom);
+void refreshBuffer(Pointer *extraPointers, long seed, Pointer ptrRandom) {
+  random::RandomBuffer *buffer = reinterpret_cast<random::RandomBuffer *>(ptrRandom);
 
   unsigned long long *ptrHost = reinterpret_cast<unsigned long long *>(extraPointers[0]);
   cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
@@ -2167,15 +2282,15 @@ void refreshBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom)
   buffer->propagateToDevice(buffer, *stream);
 
   // refresh buffer on host size
-  sd::random::Xoroshiro128 generator(buffer);
+  random::Xoroshiro128 generator(buffer);
   generator.refreshBuffer();
 
   // copy back to gpu
   cudaMemcpyAsync(ptrDev, ptrHost, buffer->getSize() * 8, cudaMemcpyHostToDevice, *stream);
 }
 
-void reSeedBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom) {
-  sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *>(ptrRandom);
+void reSeedBuffer(Pointer *extraPointers, long seed, Pointer ptrRandom) {
+  random::RandomBuffer *buffer = reinterpret_cast<random::RandomBuffer *>(ptrRandom);
 
   cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
   cudaStreamSynchronize(*stream);
@@ -2192,8 +2307,8 @@ void reSeedBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom) 
  * @param buffer  the buffer pointer to check
  * @return
  */
-int lengthForShapeBufferPointer(sd::Pointer buffer) {
-  auto shapeBuffer = reinterpret_cast<sd::LongType *>(buffer);
+int lengthForShapeBufferPointer(Pointer buffer) {
+  auto shapeBuffer = reinterpret_cast<LongType *>(buffer);
   return shape::shapeInfoLength(shape::rank(shapeBuffer));
 }
 
@@ -2204,32 +2319,37 @@ int lengthForShapeBufferPointer(sd::Pointer buffer) {
  * @return the pointer for the given address
  */
 
-sd::Pointer pointerForAddress(sd::LongType address) { return reinterpret_cast<sd::Pointer>(address); }
+Pointer pointerForAddress(LongType address) { return reinterpret_cast<Pointer>(address); }
 
-void tear(sd::Pointer *extras, OpaqueDataBuffer *dbX, sd::LongType const *xShapeInfo, sd::LongType const *dXShapeInfo,
-          sd::Pointer *targets, sd::LongType const *zShapeInfo, sd::LongType const *tadShapeInfo,
-          sd::LongType const *tadOffsets) {
+void tear(Pointer *extras, OpaqueDataBuffer *dbX, LongType const *xShapeInfo, LongType const *dXShapeInfo,
+          Pointer *targets, LongType const *zShapeInfo, LongType const *tadShapeInfo, LongType const *tadOffsets) {
   try {
     InteropDataBuffer::prepareSpecialUse({}, {dbX});
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
     dim3 launchDims = getLaunchDims("tear");
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(
         xType, tearKernelGeneric,
-        (launchDims, stream, dbX != nullptr ? dbX->special() : nullptr, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets),
+        (launchDims, stream,
+            shape::isEmptyConst(xShapeInfo) ? nullptr :  dbX->special(),
+            dXShapeInfo,
+            targets,
+            zShapeInfo,
+            tadShapeInfo,
+            tadOffsets),
         SD_COMMON_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");
+    DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");
 
     InteropDataBuffer::registerSpecialUse({}, {dbX});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElements, int level) {
+void prescanArrayRecursive(Pointer *extras, int *dZ, int *dX, int numElements, int level) {
   auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
   auto g_scanBlockSums = reinterpret_cast<int **>(extras[2]);
 
@@ -2239,10 +2359,10 @@ void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElement
 
   if (numBlocks > 1)
     numThreads = blockSize;
-  else if (sd::isPowerOfTwo(numElements))
+  else if (isPowerOfTwo(numElements))
     numThreads = numElements / 2;
   else
-    numThreads = sd::floorPow2(numElements);
+    numThreads = floorPow2(numElements);
 
   int numEltsPerBlock = numThreads * 2;
 
@@ -2293,62 +2413,72 @@ void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElement
     // recursive (CPU) call
     prescanArrayRecursive(extras, g_scanBlockSums[level], g_scanBlockSums[level], numBlocks, level + 1);
 
-    sd::uniformAdd<<<grid, threads, 1024, *stream>>>(dZ, g_scanBlockSums[level], numElements - numEltsLastBlock, 0, 0);
+    uniformAdd<<<grid, threads, 1024, *stream>>>(dZ, g_scanBlockSums[level], numElements - numEltsLastBlock, 0, 0);
+    DebugHelper::checkGlobalErrorCode("uniform addfailed(...) failed");
 
     if (np2LastBlock) {
-      sd::uniformAdd<<<1, numThreadsLastBlock, 1024, *stream>>>(dZ, g_scanBlockSums[level], numEltsLastBlock,
-          numBlocks - 1, numElements - numEltsLastBlock);
+      uniformAdd<<<1, numThreadsLastBlock, 1024, *stream>>>(dZ, g_scanBlockSums[level], numEltsLastBlock, numBlocks - 1,
+                                                            numElements - numEltsLastBlock);
+      DebugHelper::checkGlobalErrorCode("concat general case failed(...) failed");
+
     }
   } else if (isPowerOfTwo(numElements)) {
-    sd::prescanLauncher<false, false>(grid, threads, sharedMemSize, stream, dZ,
-                                      dX, 0, numThreads * 2, 0, 0);
+    sd::prescanLauncher<false, false>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numThreads * 2, 0, 0);
+
   } else {
     sd::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numElements, 0, 0);
   }
 
-  sd::DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
+  DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, sd::LongType const *hXShapeInfo,
-                    sd::LongType const *dXShapeInfo, void *extraParamsVals, OpaqueDataBuffer *dbY,
-                    sd::LongType const *hYShapeInfo, sd::LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
-                    sd::LongType const *hZShapeInfo, sd::LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
-                    sd::LongType const *hDimensionShape, sd::LongType const *dDimensionShape,
-                    sd::LongType const *xTadShapeInfo, sd::LongType const *xOffsets, sd::LongType const *yTadShapeInfo,
-                    sd::LongType const *yOffsets) {
+void execReduce3All(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, LongType const *hXShapeInfo,
+                    LongType const *dXShapeInfo, void *extraParamsVals, OpaqueDataBuffer *dbY,
+                    LongType const *hYShapeInfo, LongType const *dYShapeInfo, OpaqueDataBuffer *dbZ,
+                    LongType const *hZShapeInfo, LongType const *dZShapeInfo, OpaqueDataBuffer *dbDimension,
+                    LongType const *hDimensionShape, LongType const *dDimensionShape, LongType const *xTadShapeInfo,
+                    LongType const *xOffsets, LongType const *yTadShapeInfo, LongType const *yOffsets) {
   try {
     InteropDataBuffer::prepareSpecialUse({dbZ}, {dbX, dbY, dbDimension});
     InteropDataBuffer::preparePrimaryUse({}, {dbDimension});
 
-    auto dimension = dbDimension != nullptr ? reinterpret_cast<sd::LongType *>(dbDimension->primary()) : nullptr;
-    sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(hDimensionShape));
+    auto dimension = dbDimension != nullptr ? reinterpret_cast<LongType *>(dbDimension->primary()) : nullptr;
+    LongType dimensionLength = static_cast<LongType>(shape::length(hDimensionShape));
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduce3All(&lc, opNum, dbX->primary(), hXShapeInfo, dbX != nullptr ? dbX->special() : nullptr,
+    NativeOpExecutioner::execReduce3All(&lc, opNum,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->primary(),
+                                        hXShapeInfo,
+                                        shape::isEmptyConst(hXShapeInfo) ? nullptr : dbX->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo)->special(),
-                                        extraParamsVals, dbY->primary(), hYShapeInfo, dbY->special(),
+                                        extraParamsVals,
+                                        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->primary(),
+                                        hYShapeInfo,
+                                        shape::isEmptyConst(hYShapeInfo) ? nullptr : dbY->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hYShapeInfo)->special(),
-                                        dbZ->primary(), hZShapeInfo, dbZ != nullptr ? dbZ->special() : nullptr,
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->primary(),
+                                        hZShapeInfo,
+                                        shape::isEmptyConst(hZShapeInfo) ? nullptr : dbZ->special(),
                                         ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo)->special(),
-                                        reinterpret_cast<sd::LongType *>(dbDimension->special()), dimensionLength, xTadShapeInfo,
+                                        reinterpret_cast<LongType *>(dbDimension->special()),
+                                        dimensionLength, xTadShapeInfo,
                                         xOffsets, yTadShapeInfo, yOffsets);
 
     InteropDataBuffer::registerSpecialUse({dbZ}, {dbX, dbY});
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sort(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-          sd::LongType const *dXShapeInfo, bool descending) {
+void sort(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dX, LongType const *dXShapeInfo, bool descending) {
   try {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
     auto xLength = shape::length(xShapeInfo);
     auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
     if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
@@ -2383,26 +2513,24 @@ void sort(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, v
       }
     }
 
-    sd::DebugHelper::checkErrorCode(stream, "sort(...) failed");
+    DebugHelper::checkErrorCode(stream, "sort(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-               sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-               sd::LongType const *dyShapeInfo, bool descending) {
+void sortByKey(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dX, LongType const *dXShapeInfo, void *y, LongType const *yShapeInfo, void *dy, LongType const *dyShapeInfo, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
     auto xLength = shape::length(xShapeInfo);
     auto yLength = shape::length(yShapeInfo);
     auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(yShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
+    if (shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) return;
 
     if (xLength != yLength) THROW_EXCEPTION("sortByKey: keys and values must have the same size");
 
@@ -2447,24 +2575,22 @@ void sortByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeIn
     }
 
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-                 sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                 sd::LongType const *dyShapeInfo, bool descending) {
+void sortByValue(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dX, LongType const *dXShapeInfo, void *y, LongType const *yShapeInfo, void *dy, LongType const *dyShapeInfo, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
     auto xLength = shape::length(xShapeInfo);
     auto yLength = shape::length(yShapeInfo);
     auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = sd::ArrayOptions::dataType(yShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(yShapeInfo);
+    auto yType = ArrayOptions::dataType(xShapeInfo);
 
-    if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo)) return;
+    if (shape::isEmptyConst(xShapeInfo) || shape::isEmptyConst(yShapeInfo)) return;
 
     if (xLength != yLength) THROW_EXCEPTION("sortByValue: keys and values must have the same size");
 
@@ -2503,123 +2629,117 @@ void sortByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShape
       }
     }
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortTadByKey(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-                  sd::LongType const *dXShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                  sd::LongType const *dyShapeInfo, sd::LongType *dimension, LongType dimensionLength, bool descending) {
+void sortTadByKey(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dX, LongType const *dXShapeInfo, void *y, LongType const *yShapeInfo, void *dy, LongType const *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
     dim3 launchDims = getSortTadDims(tadPack->numberOfTads());
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(yShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
+    auto yType = ArrayOptions::dataType(yShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, dimension, dimensionLength,
                               tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
+    DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortTadByValue(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dx,
-                    sd::LongType const *dxShapeInfo, void *y, sd::LongType const *yShapeInfo, void *dy,
-                    sd::LongType const *dyShapeInfo, sd::LongType *dimension, LongType dimensionLength, bool descending) {
+void sortTadByValue(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dx, LongType const *dxShapeInfo, void *y, LongType const *yShapeInfo, void *dy, LongType const *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
     dim3 launchDims = getSortTadDims(tadPack->numberOfTads());
-    auto xType = sd::ArrayOptions::dataType(yShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(yShapeInfo);
+    auto yType = ArrayOptions::dataType(xShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, dy, dyShapeInfo, dx, dxShapeInfo, dimension, dimensionLength,
                               tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
+    DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortTad(sd::Pointer *extraPointers, void *x, sd::LongType const *xShapeInfo, void *dX,
-             sd::LongType const *dXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType const *tadShapeInfo,
-             sd::LongType const *tadOffsets, bool descending) {
+void sortTad(Pointer *extraPointers, void *x, LongType const *xShapeInfo, void *dX, LongType const *dXShapeInfo,
+             LongType *dimension, LongType dimensionLength, LongType const *tadShapeInfo, LongType const *tadOffsets, bool descending) {
   try {
     // to be implemented
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     auto context =
         extraPointers[0] == 0 ? LaunchContext::defaultContext() : reinterpret_cast<LaunchContext *>(extraPointers[0]);
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
     dim3 launchDims = getSortTadLarge(tadPack->numberOfTads());
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = ArrayOptions::dataType(xShapeInfo);
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,
         (launchDims, stream, dX, dXShapeInfo, nullptr, dimensionLength, tadShapeInfo, tadOffsets, descending),
         SD_COMMON_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "sortTad(...) failed");
+    DebugHelper::checkErrorCode(stream, "sortTad(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void sortCooIndices(sd::Pointer *extraPointers, sd::LongType *indices, void *values, sd::LongType length,
-                    const sd::LongType *xShapeInfo) {
+void sortCooIndices(Pointer *extraPointers, LongType *indices, void *values, LongType length,
+                    const LongType *xShapeInfo) {
   THROW_EXCEPTION("sortCooIndices:: Not implemented yet");
 }
 
-void ravelMultiIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                     sd::LongType *shapeInfo, int mode) {
+void ravelMultiIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
+                     LongType *shapeInfo, int mode) {
   THROW_EXCEPTION("ravelMultiIndex:: Not implemented yet");
 }
 
-void unravelIndex(sd::Pointer *extraPointers, sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                  sd::LongType *shapeInfo) {
+void unravelIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
+                  LongType *shapeInfo) {
   THROW_EXCEPTION("unravelIndex:: Not implemented yet");
 }
 
-sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::LongType length) { return nullptr; }
+LongType *mmapFile(Pointer *extraPointers, const char *fileName, LongType length) { return nullptr; }
 
-void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) {}
+void munmapFile(Pointer *extraPointers, LongType *ptrMap, LongType length) {}
 
-sd::graph::ResultWrapper *executeFlatGraph(sd::Pointer *extraPointers, sd::Pointer flatBufferPointer) {
+ResultWrapper *executeFlatGraph(Pointer *extraPointers, Pointer flatBufferPointer) {
   try {
-    return sd::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
+    return GraphExecutioner::executeFlatBuffer(flatBufferPointer);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType getResultWrapperSize(sd::graph::ResultWrapper *ptr) { return ptr->size(); }
-sd::Pointer getResultWrapperPointer(sd::graph::ResultWrapper *ptr) { return ptr->pointer(); }
+LongType getResultWrapperSize(ResultWrapper *ptr) { return ptr->size(); }
+Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer(); }
 
-const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().getAllCustomOperations(); }
+const char *getAllCustomOps() { return ops::OpRegistrator::getInstance().getAllCustomOperations(); }
 
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
-  sd::graph::VariableSpace varSpace;
+ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputBuffers,
+                                  Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
+                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs, int numDArgs) {
+  VariableSpace varSpace;
   Context block(2, &varSpace);
-  sd::ShapeList inShapes;
+  ShapeList inShapes;
 
   for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
 
@@ -2627,18 +2747,26 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
 
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
+  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((DataType)dArgs[e]);
 
   for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    if (inputShapes[e] == nullptr) {
+      std::string errorMessage;
+      errorMessage += "Input shape at index ";
+      errorMessage += std::to_string(e);
+      errorMessage += " was null!";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    auto shape_ = reinterpret_cast<LongType *>(inputShapes[e]);
 
+    /*
+     * Doesn't seem to be a null pointer but an out of bounds? Is it empty then?
+     */
     // we shouldn't copy buffer if that's empty array
-    void *buffer_ = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    void *bufferD_ =
-        sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputShapes];
+    void *buffer_ = ArrayOptions::arrayType(shape_) == EMPTY ? nullptr : inputBuffers[e];
+    void *bufferD_ = ArrayOptions::arrayType(shape_) == EMPTY ? nullptr : inputBuffers[e + numInputShapes];
 
-    auto array = new sd::NDArray(buffer_, bufferD_, shape_);
-
+    auto array = new NDArray(buffer_, bufferD_, shape_);
     // block should contain references to proper variable
     varSpace.putVariable(1, e, array);
     block.pickInput(1, e);
@@ -2647,152 +2775,78 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
   }
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
-
   if (varSpace.launchContext()->getWorkspace() != nullptr) shapeList->detach();
-
   return shapeList;
 }
 
-
-sd::ShapeList *_calculateOutputShapesBuffer(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueDataBuffer **inputBuffers,
-                                            sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                            sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                            int numDArgs) {
-
-  sd::graph::VariableSpace varSpace;
-  Context block(2, &varSpace);
-  sd::ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
-
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back((sd::DataType)dArgs[e]);
-
-  for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-    if(shape_ == nullptr) {
-      THROW_EXCEPTION("Input shape was null!");
-    }
-
-    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
-    }
-
-    // we shouldn't copy buffer if that's empty array
-    InteropDataBuffer *opaqueBuff = sd::ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    auto buff = opaqueBuff != nullptr ? std::make_shared<DataBuffer>(*opaqueBuff->dataBuffer()) : nullptr;
-    auto array = new sd::NDArray(buff->primary(), shape_, varSpace.launchContext(),false);
-
-    // block should contain references to proper variable
-    varSpace.putVariable(1, e, array);
-    block.pickInput(1, e);
-
-    inShapes.push_back(shape_);
-  }
-
-  auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  if (varSpace.launchContext() != nullptr) shapeList->detach();
-
-  return shapeList;
-}
-sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                      int numDArgs) {
+ShapeList *calculateOutputShapes2(Pointer *extraPointers, LongType hash, Pointer *inputBuffers, Pointer *inputShapes,
+                                  int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs,
+                                  bool *bArgs, int numBArgs, int *dArgs, int numDArgs) {
   try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-
+    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
                                   numIArgs, bArgs, numBArgs, dArgs, numDArgs);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-
-OpaqueShapeList *calculateOutputShapes3(sd::Pointer *extraPointers, sd::LongType hash, OpaqueDataBuffer **inputBuffers,
-                                        sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                        sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs,
-                                        int numDArgs) {
-  try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-
-    return _calculateOutputShapesBuffer(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                        numIArgs, bArgs, numBArgs, dArgs, numDArgs);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    THROW_EXCEPTION(e.what());
-  }
-}
-
-
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputShapes,
-                                      int numInputShapes, double *tArgs, int numTArgs, sd::LongType *iArgs,
-                                      int numIArgs) {
+ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputShapes,
+                                  int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs) {
   Context block(1);
-  sd::ShapeList inShapes;
+  ShapeList inShapes;
 
   for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
 
   for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
 
-  for (int e = 0; e < numInputShapes; e++) inShapes.push_back(reinterpret_cast<sd::LongType *>(inputShapes[e]));
+  for (int e = 0; e < numInputShapes; e++) inShapes.push_back(reinterpret_cast<LongType *>(inputShapes[e]));
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
 
   return shapeList;
 }
 
-sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputShapes,
-                                     int numInputShapes, double *tArgs, int numTArgs, sd::LongType *iArgs,
-                                     int numIArgs) {
+ShapeList *calculateOutputShapes(Pointer *extraPointers, LongType hash, Pointer *inputShapes, int numInputShapes,
+                                 double *tArgs, int numTArgs, LongType *iArgs, int numIArgs) {
   try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
 
     return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType getShapeListSize(sd::ShapeList *list) { return list->size(); }
+LongType getShapeListSize(ShapeList *list) { return list->size(); }
 
-sd::LongType const *getShape(sd::ShapeList *list, sd::LongType i) { return list->at(i); }
+LongType const *getShape(ShapeList *list, LongType i) { return list->at(i); }
 
-static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::LongType hash,
-                                     sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs,
-                                     sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs,
-                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs,
+static SD_INLINE Status realExec(ops::DeclarableOp *op, Pointer *extraPointers, LongType hash, Pointer *inputBuffers,
+                                 Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes, int numOutputs,
+                                     double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
                                      int numBArgs, bool isInplace) {
   if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
 // we're using the same fake nodeId everywhere here
 
-  std::vector<sd::NDArray *> inputs(numInputs);
-  std::vector<sd::NDArray *> outputs(numOutputs);
+  std::vector<NDArray *> inputs(numInputs);
+  std::vector<NDArray *> outputs(numOutputs);
   std::vector<double> ttArgs(numTArgs);
   std::vector<bool> bbArgs(numBArgs);
-  std::vector<sd::LongType> iiArgs(numIArgs);
+  std::vector<LongType> iiArgs(numIArgs);
 
 // filling block now with inputs
   for (int e = 0; e < numInputs; e++) {
-    auto shape = reinterpret_cast<sd::LongType *>(inputShapes[e]);
-    void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-    void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e + numInputs];
+    auto shape = reinterpret_cast<LongType *>(inputShapes[e]);
+    void *buffer = ArrayOptions::arrayType(shape) == EMPTY ? nullptr : inputBuffers[e];
+    void *bufferD = ArrayOptions::arrayType(shape) == EMPTY ? nullptr : inputBuffers[e + numInputs];
 
-    inputs[e] = new sd::NDArray(buffer, bufferD, shape);
+    inputs[e] = new NDArray(buffer, bufferD, shape);
   }
 
 // if not inplace - transferring output arrays
@@ -2800,14 +2854,14 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
   if (!isInplace)
     for (int e = 0; e < numOutputs; e++) {
 // we want to keep original output shape intact
-      auto shape = shape::copyShape(reinterpret_cast<sd::LongType *>(outputShapes[e]));
-      void *buffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-      void *bufferD = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e + numOutputs];
+      auto shape = shape::copyShape(reinterpret_cast<LongType *>(outputShapes[e]));
+      void *buffer = ArrayOptions::arrayType(shape) == EMPTY ? nullptr : outputBuffers[e];
+      void *bufferD = ArrayOptions::arrayType(shape) == EMPTY ? nullptr : outputBuffers[e + numOutputs];
 
 // FIXME: revisit this.
       bool canNullify = true;
       for (int i = 0; i < numInputs; i++) {
-        void *ibuffer = sd::ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
+        void *ibuffer = ArrayOptions::arrayType(shape) == EMPTY ? nullptr : inputBuffers[i];
         if (ibuffer == buffer) {
           canNullify = false;
           break;
@@ -2818,7 +2872,7 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
         memset((uint8_t *)buffer, '\0',
                shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
 
-      auto array = new sd::NDArray(buffer, bufferD, shape);
+      auto array = new NDArray(buffer, bufferD, shape);
       outputs[e] = array;
     }
 
@@ -2829,45 +2883,47 @@ static SD_INLINE sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *ext
   for (int e = 0; e < numBArgs; e++) bbArgs[e] = bArgs[e];
 
 // hypothetically at this point we have everything filled
-  auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<sd::DataType>(), isInplace);
+  auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<DataType>(), isInplace);
 
   if (!isInplace)
     for (int e = 0; e < numOutputs; e++) {
-      if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])))
-        outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType *>(outputShapes[e])));
+      if (outputs[e]->ordering() != shape::order(reinterpret_cast<LongType *>(outputShapes[e])))
+        outputs[e]->streamline(shape::order(reinterpret_cast<LongType *>(outputShapes[e])));
     }
 
- // for (auto v : inputs) delete v;
+  for (auto v : inputs) delete v;
 
- // for (auto v : outputs) delete v;
+  for (auto v : outputs) delete v;
 
   return Status::OK;
 }
 
-Status execCustomOp(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
-                    int numInputs, sd::Pointer *outputBuffers, sd::Pointer *outputShapes, int numOutputs, double *tArgs,
-                    int numTArgs, sd::LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, bool isInplace) {
+Status execCustomOp(Pointer *extraPointers, LongType hash, Pointer *inputBuffers, Pointer *inputShapes,
+                    int numInputs,
+                    Pointer *outputBuffers, Pointer *outputShapes, int numOutputs, double *tArgs,
+                    int numTArgs,
+                    LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, bool isInplace) {
   try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
 
     return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
                     numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return Status::BAD_INPUT;
   }
 }
 
-Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer opContext) {
+Status execCustomOp2(Pointer *extraPointers, LongType hash, Pointer opContext) {
   try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
     auto context = reinterpret_cast<Context *>(opContext);
 
     auto result = op->execute(context);
 
     auto res = cudaStreamSynchronize(*context->launchContext()->getCudaStream());
-    if (res != 0) throw sd::cuda_exception::build("customOp execution failed", res);
+    if (res != 0) throw cuda_exception::build("customOp execution failed", res);
 
     for (auto v : context->fastpath_in()) {
       if (!v->isEmpty()) v->syncToDevice();
@@ -2880,38 +2936,38 @@ Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer 
 
     return result;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return Status::BAD_INPUT;
   }
 }
 
-Status registerGraph(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer) {
+Status registerGraph(Pointer *extraPointers, LongType graphId, Pointer flatBufferPointer) {
   try {
-    auto graph = sd::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
+    auto graph = GraphExecutioner::importFromFlatPointer(flatBufferPointer);
 
-    sd::graph::GraphHolder::getInstance().registerGraph(graphId, graph);
+    GraphHolder::getInstance().registerGraph(graphId, graph);
 
     return Status::OK;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return Status::BAD_INPUT;
   }
 }
 
-static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer *inputBuffers,
-                                         sd::Pointer *inputShapes, int *inputIndices, int numInputs) {
-  auto graph = sd::graph::GraphHolder::getInstance().pullGraph(graphId);
+static VariablesSet *executeStoredGraphT(Pointer *extraPointers, LongType graphId, Pointer *inputBuffers,
+                                         Pointer *inputShapes, int *inputIndices, int numInputs) {
+  auto graph = GraphHolder::getInstance().pullGraph(graphId);
   auto varSpace = graph->getVariableSpace()->clone();
 
-  std::vector<sd::NDArray *> handles;
+  std::vector<NDArray *> handles;
 
   for (int e = 0; e < numInputs; e++) {
     auto idx = inputIndices[e];
 
     // we'll delete this array later, together with cloned VariableSpace
-    auto array = new sd::NDArray(inputBuffers[e], reinterpret_cast<sd::LongType *>(inputShapes[e]));
+    auto array = new NDArray(inputBuffers[e], reinterpret_cast<LongType *>(inputShapes[e]));
     handles.emplace_back(array);
 
     if (varSpace->hasVariable(idx)) {
@@ -2923,8 +2979,8 @@ static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongTyp
       varSpace->putVariable(idx, array);
   }
 
-  auto dZ = sd::graph::GraphExecutioner::execute(graph, varSpace);
-  auto varSet = new sd::graph::VariablesSet(dZ);
+  auto dZ = GraphExecutioner::execute(graph, varSpace);
+  auto varSet = new VariablesSet(dZ);
 
   if (dZ == Status::OK) {
     // pull back results, and provide them
@@ -2946,85 +3002,86 @@ static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongTyp
   return varSet;
 }
 
-VariablesSet *executeStoredGraph(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer *inputBuffers,
-                                 sd::Pointer *inputShapes, int *inputIndices, int numInputs) {
+VariablesSet *executeStoredGraph(Pointer *extraPointers, LongType graphId, Pointer *inputBuffers, Pointer *inputShapes,
+                                 int *inputIndices, int numInputs) {
   try {
     return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType getVariablesSetSize(sd::graph::VariablesSet *set) { return set->size(); }
+LongType getVariablesSetSize(VariablesSet *set) { return set->size(); }
 
-sd::Status getVariablesSetStatus(sd::graph::VariablesSet *set) { return set->status(); }
+Status getVariablesSetStatus(VariablesSet *set) { return set->status(); }
 
-sd::graph::Variable *getVariable(sd::graph::VariablesSet *set, sd::LongType i) { return set->at(i); }
+Variable *getVariable(VariablesSet *set, LongType i) { return set->at(i); }
 
-int getVariableId(sd::graph::Variable *variable) { return variable->id(); }
+int getVariableId(Variable *variable) { return variable->id(); }
 
-int getVariableIndex(sd::graph::Variable *variable) { return variable->index(); }
+int getVariableIndex(Variable *variable) { return variable->index(); }
 
-const char *getVariableName(sd::graph::Variable *variable) { return variable->getName()->c_str(); }
+const char *getVariableName(Variable *variable) { return variable->getName()->c_str(); }
 
-sd::LongType const *getVariableShape(sd::graph::Variable *variable) { return variable->getNDArray()->shapeInfo(); }
+LongType const *getVariableShape(Variable *variable) { return variable->getNDArray()->shapeInfo(); }
 
-void *getVariableBuffer(sd::graph::Variable *variable) { return variable->getNDArray()->buffer(); }
+void *getVariableBuffer(Variable *variable) { return variable->getNDArray()->buffer(); }
 
-sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType graphId) {
+Status unregisterGraph(Pointer *extraPointers, LongType graphId) {
   try {
-    sd::graph::GraphHolder::getInstance().dropGraphAny(graphId);
+    GraphHolder::getInstance().dropGraphAny(graphId);
 
     return Status::OK;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return Status::BAD_INPUT;
   }
 }
 
-void deletePointerArray(sd::Pointer pointer) {
-  sd::Pointer *ptr = reinterpret_cast<sd::Pointer *>(pointer);
+void deletePointerArray(Pointer pointer) {
+  Pointer *ptr = reinterpret_cast<Pointer *>(pointer);
   delete[] ptr;
 }
 
-void deleteCharArray(sd::Pointer pointer) {
+void deleteCharArray(Pointer pointer) {
   auto ptr = reinterpret_cast<char *>(pointer);
   delete[] ptr;
 }
 
-void deleteIntArray(sd::Pointer pointer) {
+void deleteIntArray(Pointer pointer) {
   auto ptr = reinterpret_cast<int *>(pointer);
   delete[] ptr;
 }
 
-void deleteLongArray(sd::Pointer pointer) {
-  auto ptr = reinterpret_cast<sd::LongType *>(pointer);
+void deleteLongArray(Pointer pointer) {
+  auto ptr = reinterpret_cast<LongType *>(pointer);
   delete[] ptr;
 }
 
-void deleteVariablesSet(sd::graph::VariablesSet *pointer) { delete pointer; }
+void deleteVariablesSet(VariablesSet *pointer) {
+  delete pointer;
+}
 
-void deleteShapeList(sd::Pointer shapeList) {
-  sd::ShapeList *list = reinterpret_cast<sd::ShapeList *>(shapeList);
+void deleteShapeList(Pointer shapeList) {
+  ShapeList *list = reinterpret_cast<ShapeList *>(shapeList);
   delete list;
 }
 
-const char *getAllOperations() { return sd::OpTracker::getInstance().exportOperations(); }
+const char *getAllOperations() { return OpTracker::getInstance().exportOperations(); }
 
-sd::Pointer getGraphState(sd::LongType id) { return (sd::Pointer) new sd::graph::GraphState(id); }
+Pointer getGraphState(LongType id) { return (Pointer) new GraphState(id); }
 
-void deleteGraphState(sd::Pointer state) {
-  auto stateP = reinterpret_cast<sd::graph::GraphState *>(state);
+void deleteGraphState(Pointer state) {
+  auto stateP = reinterpret_cast<GraphState *>(state);
   delete stateP;
 }
 
-sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::graph::GraphState *state, sd::LongType opHash,
-                                 sd::LongType *scopes, int numScopes, sd::Pointer *inputBuffers,
-                                 sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers,
-                                 sd::Pointer *outputShapes, int numOutputs) {
+Status execCustomOpWithScope(Pointer *extraPointers, GraphState *state, LongType opHash, LongType *scopes,
+                             int numScopes, Pointer *inputBuffers, Pointer *inputShapes, int numInputs,
+                             Pointer *outputBuffers, Pointer *outputShapes, int numOutputs) {
   /**
    * That's basically exec, with VariableSpace provided in GraphState:
    * depending on operation (i.e. while of if), different logic executors could be used
@@ -3040,9 +3097,9 @@ sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::graph::GraphSta
   // mapping inputs
   for (int e = 0; e < numInputs; e++) {
     auto buffer = inputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType *>(inputShapes[e]);
+    auto shapeInfo = reinterpret_cast<LongType *>(inputShapes[e]);
 
-    auto array = new sd::NDArray(buffer, shapeInfo, varSpace->launchContext());
+    auto array = new NDArray(buffer, shapeInfo, varSpace->launchContext());
 
     // now we just put array to VarSpace
     varSpace->putVariable(0, e, array);
@@ -3066,7 +3123,7 @@ sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::graph::GraphSta
 
   for (int e = 0; e < numOutputs; e++) {
     auto buffer = outputBuffers[e];
-    auto shapeInfo = reinterpret_cast<sd::LongType *>(outputShapes[e]);
+    auto shapeInfo = reinterpret_cast<LongType *>(outputShapes[e]);
 
     NDArray array(buffer, shapeInfo, varSpace->launchContext());
 
@@ -3086,28 +3143,27 @@ sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::graph::GraphSta
   return Status::OK;
 }
 
-sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::Pointer state, sd::LongType opHash,
-                                 sd::LongType *scopes, int numScopes, sd::Pointer *inputBuffers,
-                                 sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers,
-                                 sd::Pointer *outputShapes, int numOutputs) {
+Status execCustomOpWithScope(Pointer *extraPointers, Pointer state, LongType opHash, LongType *scopes, int numScopes,
+                             Pointer *inputBuffers, Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
+                             Pointer *outputShapes, int numOutputs) {
   try {
-    return execCustomOpWithScope(extraPointers, reinterpret_cast<sd::graph::GraphState *>(state), opHash, scopes,
+    return execCustomOpWithScope(extraPointers, reinterpret_cast<GraphState *>(state), opHash, scopes,
                                  numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
                                  numOutputs);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return sd::Status::BAD_INPUT;
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return Status::BAD_INPUT;
   }
 }
 
-void deleteResultWrapper(sd::Pointer ptr) {
+void deleteResultWrapper(Pointer ptr) {
   // just 0 room for compiler s@!t
-  auto p = reinterpret_cast<sd::graph::ResultWrapper *>(ptr);
+  auto p = reinterpret_cast<ResultWrapper *>(ptr);
   delete p;
 }
 
-int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer dX, sd::LongType const *dXShapeInfo, int N,
+int estimateThreshold(Pointer *extraPointers, Pointer dX, LongType const *dXShapeInfo, int N,
                       float threshold) {
   THROW_EXCEPTION("estimateThreshold: Not implemented yet");
 }
@@ -3116,7 +3172,7 @@ int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer dX, sd::LongType c
  * TypeDef:
  *     void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, long N, int dstType, sd::Pointer dZ);
  */
-void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType N, int dstType, sd::Pointer dZ) {
+void convertTypes(Pointer *extras, int srcType, Pointer dX, LongType N, int dstType, Pointer dZ) {
   try {
     auto dx = reinterpret_cast<void *>(dX);
     auto dz = reinterpret_cast<void *>(dZ);
@@ -3148,19 +3204,19 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       } else if (dstType == ND4J_INT8) {
         // convertKernel<sd::int8, sd::int8>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<int8_t, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<int8_t, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<int8_t, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<int8_t, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
         // TODO: eventually we might want to add it
       } else if (dstType == ND4J_FLOAT32) {
-        sd::TypeCast::convertGenericCuda<int8_t, float>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, float>(extras, dx, N, dz);
       } else if (dstType == ND4J_DOUBLE) {
-        sd::TypeCast::convertGenericCuda<int8_t, double>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int8_t, double>(extras, dx, N, dz);
       } else {
         sd_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
       }
@@ -3168,21 +3224,21 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       if (dstType == ND4J_FLOAT8) {
         // sd::TypeCast::convertGenericCuda<uint8_t, sd::float8>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT8) {
-        sd::TypeCast::convertGenericCuda<uint8_t, int8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, int8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<uint8_t, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<uint8_t, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<uint8_t, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<uint8_t, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
         // TODO: still might want to add
       } else if (dstType == ND4J_FLOAT32) {
-        sd::TypeCast::convertGenericCuda<uint8_t, float>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, float>(extras, dx, N, dz);
       } else if (dstType == ND4J_DOUBLE) {
-        sd::TypeCast::convertGenericCuda<uint8_t, double>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<uint8_t, double>(extras, dx, N, dz);
       } else {
         sd_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
       }
@@ -3190,21 +3246,21 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       if (dstType == ND4J_FLOAT8) {
         // sd::TypeCast::convertGenericCuda<float16, sd::float8>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT8) {
-        sd::TypeCast::convertGenericCuda<float16, int8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, int8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<float16, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<float16, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<float16, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<float16, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
         // TODO: .... ^^^
       } else if (dstType == ND4J_FLOAT32) {
-        sd::TypeCast::convertGenericCuda<float16, float>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, float>(extras, dx, N, dz);
       } else if (dstType == ND4J_DOUBLE) {
-        sd::TypeCast::convertGenericCuda<float16, double>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float16, double>(extras, dx, N, dz);
       } else if (dstType == ND4J_THRESHOLD) {
         // sd::convertToThreshold<float16>(nullptr, dx, N, dz);
       } else {
@@ -3214,21 +3270,21 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       if (dstType == ND4J_FLOAT8) {
         // sd::TypeCast::convertGenericCuda<int16_t, sd::float8>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT8) {
-        sd::TypeCast::convertGenericCuda<int16_t, int8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, int8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<int16_t, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<int16_t, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<int16_t, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<int16_t, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
         // TODO...
       } else if (dstType == ND4J_FLOAT32) {
-        sd::TypeCast::convertGenericCuda<int16_t, float>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, float>(extras, dx, N, dz);
       } else if (dstType == ND4J_DOUBLE) {
-        sd::TypeCast::convertGenericCuda<int16_t, double>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<int16_t, double>(extras, dx, N, dz);
       } else {
         printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
       }
@@ -3237,18 +3293,18 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       if (dstType == ND4J_FLOAT8) {
         // sd::TypeCast::convertGenericCuda<float, sd::float8>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT8) {
-        sd::TypeCast::convertGenericCuda<float, int8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, int8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<float, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<float, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<float, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<float, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
       } else if (dstType == ND4J_DOUBLE) {
-        sd::TypeCast::convertGenericCuda<float, double>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<float, double>(extras, dx, N, dz);
       } else if (dstType == ND4J_THRESHOLD) {
         // sd::convertToThreshold<float>(nullptr, dx, N, dz);
       } else {
@@ -3258,18 +3314,18 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       if (dstType == ND4J_FLOAT8) {
         // sd::TypeCast::convertGenericCuda<double, sd::float8>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT8) {
-        sd::TypeCast::convertGenericCuda<double, int8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, int8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT8) {
-        sd::TypeCast::convertGenericCuda<double, uint8_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, uint8_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT16) {
-        sd::TypeCast::convertGenericCuda<double, float16>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, float16>(extras, dx, N, dz);
       } else if (dstType == ND4J_INT16) {
-        sd::TypeCast::convertGenericCuda<double, int16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, int16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_UINT16) {
-        sd::TypeCast::convertGenericCuda<double, uint16_t>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, uint16_t>(extras, dx, N, dz);
       } else if (dstType == ND4J_FLOAT24) {
       } else if (dstType == ND4J_FLOAT32) {
-        sd::TypeCast::convertGenericCuda<double, float>(extras, dx, N, dz);
+        TypeCast::convertGenericCuda<double, float>(extras, dx, N, dz);
       } else if (dstType == ND4J_DOUBLE) {
         //
       } else if (dstType == ND4J_THRESHOLD) {
@@ -3291,33 +3347,33 @@ void convertTypes(sd::Pointer *extras, int srcType, sd::Pointer dX, sd::LongType
       sd_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
     }
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-sd::Pointer createUtf8String(sd::Pointer *extraPointers, const char *string, int length) {
-  auto u = new sd::utf8string(string, length);
-  return reinterpret_cast<sd::Pointer>(u);
+Pointer createUtf8String(Pointer *extraPointers, const char *string, int length) {
+  auto u = new utf8string(string, length);
+  return reinterpret_cast<Pointer>(u);
 }
 
-sd::LongType getUtf8StringLength(sd::Pointer *extraPointers, sd::Pointer ptr) {
-  return reinterpret_cast<sd::utf8string *>(ptr)->_length;
+LongType getUtf8StringLength(Pointer *extraPointers, Pointer ptr) {
+  return reinterpret_cast<utf8string *>(ptr)->_length;
 }
-char *getUtf8StringBuffer(sd::Pointer *extraPointers, sd::Pointer ptr) {
-  return reinterpret_cast<sd::utf8string *>(ptr)->_buffer;
+char *getUtf8StringBuffer(Pointer *extraPointers, Pointer ptr) {
+  return reinterpret_cast<utf8string *>(ptr)->_buffer;
 }
 
-void deleteUtf8String(sd::Pointer *extraPointers, sd::Pointer ptr) { delete (reinterpret_cast<sd::utf8string *>(ptr)); }
+void deleteUtf8String(Pointer *extraPointers, Pointer ptr) { delete (reinterpret_cast<utf8string *>(ptr)); }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T, typename I>
 SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs, void *vx,
-                                        const sd::LongType *xShapeInfo, const sd::LongType *xOffsets, void *vy,
-                                        const sd::LongType *yShapeInfo, const sd::LongType *yOffsets,
+                                        const LongType *xShapeInfo, const LongType *xOffsets, void *vy,
+                                        const LongType *yShapeInfo, const LongType *yOffsets,
                                         const void *vindexes) {
   __shared__ T *x, *y;
-  __shared__ sd::LongType arrLenX, arrLenY;
+  __shared__ LongType arrLenX, arrLenY;
   auto indexes = reinterpret_cast<const I *>(vindexes);
 
   for (int e = 0; e < numOfSubArrs; e++) {
@@ -3336,7 +3392,7 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs
 
     if (arrLenX != arrLenY) return;
 
-    for (sd::LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+    for (LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
       const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
       const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
@@ -3372,20 +3428,19 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs
 
 template <typename T, typename I>
 SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t *stream, const int opCode, const int numOfSubArrs,
-                                              void *vx, const sd::LongType const *xShapeInfo,
-                                              const sd::LongType *xOffsets, void *vy, const sd::LongType *yShapeInfo,
-                                              const sd::LongType *yOffsets, const void *indexes) {
+                                              void *vx, const LongType const *xShapeInfo,
+                                              const LongType *xOffsets, void *vy, const LongType *yShapeInfo,
+                                              const LongType *yOffsets, const void *indexes) {
   scatterUpdateCuda<T, I><<<512, 256, SD_MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy,
                                                                      yShapeInfo, yOffsets, indexes);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::Pointer *extraPointers, int opCode, int numOfSubArrs, void *hX, sd::LongType const *hXShapeInfo,
-                   sd::LongType const *hXOffsets, void *dX, sd::LongType const *dXShapeInfo,
-                   sd::LongType const *dXOffsets, void *hY, sd::LongType const *hYShapeInfo,
-                   sd::LongType const *hYOffsets, void *dY, sd::LongType const *dYShapeInfo,
-                   sd::LongType const *dYOffsets, void *hIindexes, sd::LongType const *hIndicesShapeInfo,
-                   void *dIindexes, sd::LongType const *dIndicesShapeInfo) {
+void scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs, void *hX, LongType const *hXShapeInfo,
+                   LongType const *hXOffsets, void *dX, LongType const *dXShapeInfo, LongType const *dXOffsets, void *hY, LongType const *hYShapeInfo, LongType const *hYOffsets, void *dY,
+                   LongType const *dYShapeInfo, LongType const *dYOffsets, void *hIindexes,
+                   LongType const *hIndicesShapeInfo,
+                   void *dIindexes, LongType const *dIndicesShapeInfo) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
@@ -3397,23 +3452,23 @@ void scatterUpdate(sd::Pointer *extraPointers, int opCode, int numOfSubArrs, voi
         (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIindexes),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
-    sd::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
+    DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
-                  sd::LongType *specialShapeInfo, sd::Pointer debugInfo) {
+void inspectArray(Pointer *extraPointers, Pointer buffer, LongType *shapeInfo, Pointer specialBuffer,
+                  LongType *specialShapeInfo, Pointer debugInfo) {
   try {
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    auto p = reinterpret_cast<sd::DebugInfo *>(debugInfo);
+    auto p = reinterpret_cast<DebugInfo *>(debugInfo);
     NDArray array(buffer, specialBuffer, shapeInfo, &lc);
-    sd::DebugHelper::retrieveDebugStatistics(p, &array);
+    DebugHelper::retrieveDebugStatistics(p, &array);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
@@ -3425,43 +3480,46 @@ void SD_KERNEL tryPointerKernel(void *p, int len) {
 
   __syncthreads();
 
-  if (threadIdx.x == 0 && blockIdx.x == 0) printf("Pointer check complete: %i\n", b);
 }
 
-void tryPointer(sd::Pointer extra, sd::Pointer p, int len) {
+void tryPointer(Pointer extra, Pointer p, int len) {
   try {
     cudaStream_t stream;
     cudaStreamCreate(&stream);
 
     tryPointerKernel<<<256, 512, len + 64, stream>>>(p, len);
+    DebugHelper::checkGlobalErrorCode("try pointer failed(...) failed");
+
     auto e = cudaStreamSynchronize(stream);
 
-    if (e != 0) throw sd::cuda_exception::build("tryPointer failed", e);
+    if (e != 0) throw cuda_exception::build("tryPointer failed", e);
 
     cudaStreamDestroy(stream);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
 int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header)); }
 
-OpaqueConstantShapeBuffer *shapeBuffer(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
-                                       char order, sd::LongType ews, bool empty) {
+OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
+                                       char order,
+                                       LongType ews, bool empty) {
   return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
 }
 
-OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
-                                         char order, sd::LongType ews, sd::LongType extras) {
+OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
+                                         char order,
+                                         LongType ews, LongType extras) {
   try {
-    auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras);
-    auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-    delete desc;
+
+    auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, extras);
+    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
@@ -3469,10 +3527,11 @@ OpaqueConstantShapeBuffer *shapeBufferEx(int rank, sd::LongType *shape, sd::Long
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
 
 void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {
-  //delete ptr;
+  delete ptr;
 }
 
-void deleteTadPack(sd::TadPack *ptr) { //delete ptr;
+void deleteTadPack(TadPack *ptr) {
+  delete ptr;
 }
 
 bool isBlasVersionMatches(int major, int minor, int build) {
@@ -3484,127 +3543,119 @@ bool isBlasVersionMatches(int major, int minor, int build) {
     sd_printf("CUDA/cuBLAS version mismatch. Expected: %i.%i.%i but got %i.%i.%i instead\n",
               Environment::getInstance()._blasMajorVersion, Environment::getInstance()._blasMinorVersion,
               Environment::getInstance()._blasPatchVersion, major, minor, build);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(152);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage("CUDA/cuBLAS version mismatch");
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(152);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage("CUDA/cuBLAS version mismatch");
   }
 
   return result;
 }
 
-sd::ConstantDataBuffer *constantBufferLong(sd::DataType dtype, sd::LongType const *data, int length) {
-  return sd::ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
+ConstantDataBuffer *constantBufferLong(DataType dtype, LongType const *data, int length) {
+  return ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
 }
 
-sd::ConstantDataBuffer *constantBufferDouble(sd::DataType dtype, double *data, int length) {
-  return sd::ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
+ConstantDataBuffer *constantBufferDouble(DataType dtype, double *data, int length) {
+  return ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
 }
 
-sd::ConstantDataBuffer *constantBuffer(sd::DataType dtype, sd::ConstantDescriptor *descriptor) {
-  return sd::ConstantHelper::getInstance().constantBuffer(*descriptor, dtype);
+ConstantDataBuffer *constantBuffer(DataType dtype, ConstantDescriptor *descriptor) {
+  return ConstantHelper::getInstance().constantBuffer(*descriptor, dtype);
 }
 
-sd::Pointer getConstantDataBufferPrimary(sd::ConstantDataBuffer *dbf) { return dbf->primary(); }
-sd::Pointer getConstantDataBufferSpecial(sd::ConstantDataBuffer *dbf) { return dbf->special(); }
-sd::LongType getConstantDataBufferLength(sd::ConstantDataBuffer *dbf) { return dbf->length(); }
-sd::LongType getConstantDataBufferSizeOf(sd::ConstantDataBuffer *dbf) { return dbf->sizeOf(); }
+Pointer getConstantDataBufferPrimary(ConstantDataBuffer *dbf) { return dbf->primary(); }
+Pointer getConstantDataBufferSpecial(ConstantDataBuffer *dbf) { return dbf->special(); }
+LongType getConstantDataBufferLength(ConstantDataBuffer *dbf) { return dbf->length(); }
+LongType getConstantDataBufferSizeOf(ConstantDataBuffer *dbf) { return dbf->sizeOf(); }
 
-sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer *dbf) {
-  return const_cast<sd::LongType *>(dbf->primary());
-}
+Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer *dbf) { return const_cast<LongType *>(dbf->primary()); }
 
-sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer *dbf) {
-  return const_cast<sd::LongType *>(dbf->special());
-}
+Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer *dbf) { return const_cast<LongType *>(dbf->special()); }
 
-sd::graph::Context *createGraphContext(int nodeId) { return new sd::graph::Context(nodeId); }
+Context *createGraphContext(int nodeId) { return new Context(nodeId); }
 
-sd::graph::RandomGenerator *getGraphContextRandomGenerator(sd::graph::Context *ptr) { return &ptr->randomGenerator(); }
+RandomGenerator *getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
 
-void markGraphContextInplace(sd::graph::Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
+void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
-void setGraphContextCudaContext(sd::graph::Context *ptr, void *stream, void *reductionPointer,
+void setGraphContextCudaContext(Context *ptr, void *stream, void *reductionPointer,
                                 void *allocationPointer) {
   ptr->setCudaContext(stream, reductionPointer, allocationPointer);
 }
 
-void setGraphContextInputArray(sd::graph::Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
+void setGraphContextInputArray(Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
                                void *specialShapeInfo) {
   ptr->setInputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
 }
 
-void setGraphContextOutputArray(sd::graph::Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
+void setGraphContextOutputArray(Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
                                 void *specialShapeInfo) {
   ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
 }
 
-void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer,
-                                sd::InteropDataBuffer *shapeInfo, sd::InteropDataBuffer *specialShapeInfo) {
+void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, InteropDataBuffer *shapeInfo,
+                                InteropDataBuffer *specialShapeInfo) {
   ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
-void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer,
-                                 sd::InteropDataBuffer *shapeInfo, sd::InteropDataBuffer *specialShapeInfo) {
+void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, InteropDataBuffer *shapeInfo,
+                                 InteropDataBuffer *specialShapeInfo) {
   ptr->setOutputArray(index, buffer, shapeInfo, specialShapeInfo);
 }
 
-void setGraphContextTArguments(sd::graph::Context *ptr, double *arguments, int numberOfArguments) {
+void setGraphContextTArguments(Context *ptr, double *arguments, int numberOfArguments) {
   ptr->setTArguments(arguments, numberOfArguments);
 }
 
-void setGraphContextIArguments(sd::graph::Context *ptr, sd::LongType *arguments, int numberOfArguments) {
+void setGraphContextIArguments(Context *ptr, LongType *arguments, int numberOfArguments) {
   ptr->setIArguments(arguments, numberOfArguments);
 }
 
-void setGraphContextBArguments(sd::graph::Context *ptr, bool *arguments, int numberOfArguments) {
+void setGraphContextBArguments(Context *ptr, bool *arguments, int numberOfArguments) {
   ptr->setBArguments(arguments, numberOfArguments);
 }
 
 void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) {
-  std::vector<sd::DataType> dtypes(numberOfArguments);
-  for (int e = 0; e < numberOfArguments; e++) dtypes[e] = (sd::DataType)arguments[e];
+  std::vector<DataType> dtypes(numberOfArguments);
+  for (int e = 0; e < numberOfArguments; e++) dtypes[e] = (DataType)arguments[e];
 
   ptr->setDArguments(dtypes);
 }
 
-void deleteGraphContext(sd::graph::Context *ptr) {
-  //delete ptr;
-}
+void deleteGraphContext(Context *ptr) {}
 
-sd::graph::RandomGenerator *createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed) {
+RandomGenerator *createRandomGenerator(LongType rootSeed, LongType nodeSeed) {
   try {
-    return new sd::graph::RandomGenerator(rootSeed, nodeSeed);
+    return new RandomGenerator(rootSeed, nodeSeed);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType getRandomGeneratorRootState(sd::graph::RandomGenerator *ptr) { return ptr->rootState(); }
+LongType getRandomGeneratorRootState(RandomGenerator *ptr) { return ptr->rootState(); }
 
-sd::LongType getRandomGeneratorNodeState(sd::graph::RandomGenerator *ptr) { return ptr->nodeState(); }
+LongType getRandomGeneratorNodeState(RandomGenerator *ptr) { return ptr->nodeState(); }
 
-void setRandomGeneratorStates(sd::graph::RandomGenerator *ptr, sd::LongType rootSeed, sd::LongType nodeSeed) {
+void setRandomGeneratorStates(RandomGenerator *ptr, LongType rootSeed, LongType nodeSeed) {
   ptr->setStates(rootSeed, nodeSeed);
 }
 
-float getRandomGeneratorRelativeFloat(sd::graph::RandomGenerator *ptr, sd::LongType index) {
+float getRandomGeneratorRelativeFloat(RandomGenerator *ptr, LongType index) {
   return ptr->relativeT<float>(index);
 }
 
-double getRandomGeneratorRelativeDouble(sd::graph::RandomGenerator *ptr, sd::LongType index) {
+double getRandomGeneratorRelativeDouble(RandomGenerator *ptr, LongType index) {
   return ptr->relativeT<double>(index);
 }
 
-int getRandomGeneratorRelativeInt(sd::graph::RandomGenerator *ptr, sd::LongType index) {
-  return ptr->relativeInt(index);
-}
+int getRandomGeneratorRelativeInt(RandomGenerator *ptr, LongType index) { return ptr->relativeInt(index); }
 
-sd::LongType getRandomGeneratorRelativeLong(sd::graph::RandomGenerator *ptr, sd::LongType index) {
+LongType getRandomGeneratorRelativeLong(RandomGenerator *ptr, LongType index) {
   return ptr->relativeLong(index);
 }
 
-int getRandomGeneratorNextInt(sd::graph::RandomGenerator *ptr) {
+int getRandomGeneratorNextInt(RandomGenerator *ptr) {
   // to nullify  _nodeState._long ^= (steps ^ 0xdeadbeef);
   // we will use step = 0xdeadbeef
   auto result = ptr->relativeInt(1);
@@ -3612,31 +3663,31 @@ int getRandomGeneratorNextInt(sd::graph::RandomGenerator *ptr) {
   return result;
 }
 
-sd::LongType getRandomGeneratorNextLong(sd::graph::RandomGenerator *ptr) {
+LongType getRandomGeneratorNextLong(RandomGenerator *ptr) {
   auto result = ptr->relativeLong(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-float getRandomGeneratorNextFloat(sd::graph::RandomGenerator *ptr) {
+float getRandomGeneratorNextFloat(RandomGenerator *ptr) {
   auto result = ptr->relativeT<float>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-double getRandomGeneratorNextDouble(sd::graph::RandomGenerator *ptr) {
+double getRandomGeneratorNextDouble(RandomGenerator *ptr) {
   auto result = ptr->relativeT<double>(1);
   ptr->rewindH(0xdeadbeef);
   return result;
 }
 
-void deleteRandomGenerator(sd::graph::RandomGenerator *ptr) { delete ptr; }
+void deleteRandomGenerator(RandomGenerator *ptr) { delete ptr; }
 
-sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
+Pointer shapeBufferForNumpy(Pointer npyArray) {
   try {
     cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
     unsigned int shapeSize = arr.shape.size();
-    std::vector<sd::LongType> shape(shapeSize);
+    std::vector<LongType> shape(shapeSize);
     bool _empty = false;
     for (unsigned int i = 0; i < shapeSize; i++) {
       shape[i] = arr.shape[i];
@@ -3646,48 +3697,48 @@ sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
 
     auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
 
-    sd::LongType *shapeBuffer;
+    LongType *shapeBuffer;
     if (shape.size() == 1 && shape[0] == 0) {
       // scalar case
-      shapeBuffer = sd::ShapeBuilders::createScalarShapeInfo(dtype);
+      shapeBuffer = ShapeBuilders::createScalarShapeInfo(dtype);
     } else if (_empty) {
       if (shapeSize > 0)
-        shapeBuffer = sd::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+        shapeBuffer = ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
       else
-        shapeBuffer = sd::ShapeBuilders::emptyShapeInfo(dtype);
+        shapeBuffer = ShapeBuilders::emptyShapeInfo(dtype);
     } else {
-      shapeBuffer = sd::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+      shapeBuffer = ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
     }
-    return (sd::Pointer)(sd::ConstantShapeHelper::getInstance().createFromExisting(
+    return (Pointer)(ConstantShapeHelper::getInstance().createFromExisting(
         shapeBuffer, true));  // TO DO: this can lead to unpleasant crash sometimes
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::LongType getCachedMemory(int deviceId) { return sd::ConstantHelper::getInstance().getCachedAmount(deviceId); }
+LongType getCachedMemory(int deviceId) { return ConstantHelper::getInstance().getCachedAmount(deviceId); }
 
-sd::LaunchContext *defaultLaunchContext() { return LaunchContext::defaultContext(); }
+LaunchContext *defaultLaunchContext() { return LaunchContext::defaultContext(); }
 
-sd::Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return lc->getScalarPointer(); }
+Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return lc->getScalarPointer(); }
 
-sd::Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return lc->getReductionPointer(); }
+Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return lc->getReductionPointer(); }
 
-sd::Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return lc->getAllocationPointer(); }
+Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return lc->getAllocationPointer(); }
 
-sd::Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return lc->getCudaStream(); }
+Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return lc->getCudaStream(); }
 
-sd::Pointer lcCopyStream(OpaqueLaunchContext *lc) { return lc->getCudaSpecialStream(); }
+Pointer lcCopyStream(OpaqueLaunchContext *lc) { return lc->getCudaSpecialStream(); }
 
-sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return lc->getCublasHandle(); }
+Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return lc->getCublasHandle(); }
 
-sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return lc->getCusolverHandle(); }
+Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return lc->getCusolverHandle(); }
 
-int lastErrorCode() { return sd::LaunchContext::defaultContext()->errorReference()->errorCode(); }
+int lastErrorCode() { return LaunchContext::defaultContext()->errorReference()->errorCode(); }
 
-const char *lastErrorMessage() { return sd::LaunchContext::defaultContext()->errorReference()->errorMessage(); }
+const char *lastErrorMessage() { return LaunchContext::defaultContext()->errorReference()->errorMessage(); }
 
 void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) {
   ptr->setShapeFunctionOverride(reallyOverride);
@@ -3711,9 +3762,9 @@ void ctxSetExecutionMode(OpaqueContext *ptr, int execMode) {
   ptr->setExecutionMode((samediff::ExecutionMode)execMode);
 }
 
-OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary,
-                                             sd::Pointer special) {
+OpaqueDataBuffer *dbCreateExternalDataBuffer(LongType elements, int dataType, Pointer primary, Pointer special) {
   auto buffer = dbAllocateDataBuffer(0, dataType, false);
+  buffer->markOwner(false);
 
   if (primary != nullptr) buffer->setPrimary(primary, elements);
 
@@ -3722,51 +3773,77 @@ OpaqueDataBuffer *dbCreateExternalDataBuffer(sd::LongType elements, int dataType
   return buffer;
 }
 
-OpaqueDataBuffer *dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
+OpaqueDataBuffer *dbAllocateDataBuffer(LongType elements, int dataType, bool allocateBoth) {
   return allocateDataBuffer(elements, dataType, allocateBoth);
 }
 
-OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) {
+OpaqueDataBuffer *allocateDataBuffer(LongType elements, int dataType, bool allocateBoth) {
   try {
     auto dtype = DataTypeUtils::fromInt(dataType);
-    return new sd::InteropDataBuffer(elements * DataTypeUtils::sizeOf(dtype), dtype, allocateBoth);
+    LongType totalElementSize = elements == 0 ? DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
+    return new InteropDataBuffer(totalElementSize, dtype, allocateBoth);
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return nullptr;
   }
 }
 
-sd::Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->primary(); }
+Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  if (dataBuffer == nullptr) THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
+  return dataBuffer->primary();
+}
 
-sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) { return dataBuffer->special(); }
+Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSpecialBuffer: dataBuffer is null");
+  return dataBuffer->special();
+}
 
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
   delete dataBuffer;
 }
 
-void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {
+void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, Pointer primaryBuffer, LongType numBytes) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetPrimaryBuffer: dataBuffer is null");
   dataBuffer->setPrimary(primaryBuffer, numBytes);
 }
 
-void dbSetSpecialBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer specialBuffer, sd::LongType numBytes) {
+void dbSetSpecialBuffer(OpaqueDataBuffer *dataBuffer, Pointer specialBuffer, LongType numBytes) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetSpecialBuffer: dataBuffer is null");
   dataBuffer->setSpecial(specialBuffer, numBytes);
 }
 
-void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocatePrimary(); }
+void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbAllocatePrimaryBuffer: dataBuffer is null");
+  dataBuffer->dataBuffer()->allocatePrimary();
+}
 
-void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->allocateSpecial(); }
+void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbAllocateSpecialBuffer: dataBuffer is null");
+  dataBuffer->dataBuffer()->allocateSpecial();
+}
 
-void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, sd::LongType elements) {
+void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, LongType elements) {
   try {
+    if(dataBuffer == nullptr)
+      THROW_EXCEPTION("dbExpandBuffer: dataBuffer is null");
     dataBuffer->dataBuffer()->expand(elements * DataTypeUtils::sizeOf(dataBuffer->dataBuffer()->getDataType()));
   } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
 
-OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, sd::LongType length, sd::LongType offset) {
+OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, LongType length, LongType offset) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbCreateView: dataBuffer is null");
   return new InteropDataBuffer(*dataBuffer, length, offset);
 }
 
@@ -3775,27 +3852,76 @@ int dbUseCount(OpaqueDataBuffer* dataBuffer){
   return 0;
 }
 
-void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToSpecial(); }
+void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSyncToSpecial: dataBuffer is null");
+  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToSpecial();
+}
 
-void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->syncToPrimary(nullptr); }
+void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
+  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+    dataBuffer->dataBuffer()->syncToPrimary(LaunchContext::defaultContext(),false);
 
-void dbTickHostRead(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->readPrimary(); }
+}
 
-void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->writePrimary(); }
+void dbTickHostRead(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickHostRead: dataBuffer is null");
+  dataBuffer->dataBuffer()->readPrimary();
+}
 
-void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->readSpecial(); }
+void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickHostWrite: dataBuffer is null");
+  dataBuffer->dataBuffer()->writePrimary();
+}
 
-void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) { dataBuffer->dataBuffer()->writeSpecial(); }
+void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickDeviceRead: dataBuffer is null");
+  dataBuffer->dataBuffer()->readSpecial();
+}
 
-void dbExpand(OpaqueDataBuffer *dataBuffer, sd::LongType elements) { dataBuffer->expand(elements); }
+void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbTickDeviceWrite: dataBuffer is null");
+  dataBuffer->dataBuffer()->writeSpecial();
 
-void dbClose(OpaqueDataBuffer *dataBuffer) { dataBuffer->getDataBuffer()->close(); }
+}
 
-int dbDeviceId(OpaqueDataBuffer *dataBuffer) { return dataBuffer->deviceId(); }
+void dbExpand(OpaqueDataBuffer *dataBuffer, LongType elements) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbExpand: dataBuffer is null");
+  dataBuffer->expand(elements);
+}
 
-void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) { dataBuffer->setDeviceId(deviceId); }
+void dbClose(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbClose: dataBuffer is null");
+
+  auto ret = dataBuffer->getDataBuffer();
+  if(ret != nullptr)
+    dataBuffer->getDataBuffer()->close();
+}
+
+int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
+  return dataBuffer->deviceId();
+}
+
+void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbSetDeviceId: dataBuffer is null");
+  dataBuffer->setDeviceId(deviceId);
+}
 
 int dbLocality(OpaqueDataBuffer *dataBuffer) {
+  if(dataBuffer == nullptr)
+    THROW_EXCEPTION("dbLocality: dataBuffer is null");
   auto p = dataBuffer->dataBuffer()->isPrimaryActual();
   auto d = dataBuffer->dataBuffer()->isSpecialActual();
 
@@ -3807,19 +3933,22 @@ int dbLocality(OpaqueDataBuffer *dataBuffer) {
     return 1;
 }
 
-void setVedaDeviceLibFolder(std::string path){
-
-}
 
 
-void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty) {
-  sd::LongType  rank = inputShapeData[0];
+
+void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) {
+  if(inputShapeData == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: inputShapeData is null");
+
+  if(bufferToSet == nullptr)
+    THROW_EXCEPTION("setShapeBuffer: bufferToSet is null");
+  LongType  rank = inputShapeData[0];
   if(rank > SD_MAX_RANK || rank < 0)
     THROW_EXCEPTION("Invalid rank for shape buffer.");
-  std::vector<sd::LongType> shape;
-  std::vector<sd::LongType> strides;
+  std::vector<LongType> shape;
+  std::vector<LongType> strides;
   //shape, stride, data type
-  for(sd::LongType i = 1; i < rank * 2 + 1; i++) {
+  for(LongType i = 1; i < rank * 2 + 1; i++) {
     if(i <= rank) {
       shape.push_back(inputShapeData[i]);
     } else if(shape.size() == rank) {
@@ -3829,28 +3958,39 @@ void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *b
 
 
   auto len = shape::shapeInfoLength(rank);
-  auto descriptor = ShapeDescriptor(dt ,order,shape,strides,elementWiseStride);
-  if(isEmpty) {
-    descriptor._extraProperties = ARRAY_EMPTY;
-    sd_printf("Setting empty for shape buffer \n",0);
+  for(int i = 0; i < len; i++) {
+    bufferToSet[i] = inputShapeData[i];
   }
 
-  auto buffer = descriptor.toShapeInfo();
-  for(sd::LongType i = 0; i < len; i++) {
-    bufferToSet[i] = buffer[i];
+  ArrayOptions::setDataType(bufferToSet,dt);
+  if(isView) {
+    ArrayOptions::toggleIsView(bufferToSet);
+  }
+  if(!ArrayOptions::isEmpty(inputShapeData) && isEmpty) {
+    ArrayOptions::toggleIsEmpty(bufferToSet);
   }
 
-  sd_printf("Shape buffer is empty: %d\n",shape::isEmpty(buffer));
 
+  if(rank == 0) {
+    //detect when the shape buffer values are unset.
+    auto len = shape::shapeInfoLength(rank);
+    //min number of values in a shape info buffer
+    bool allZero = true;
+    for(int i = 0; i < len; i++) {
+      if(bufferToSet[i] != 0) {
+        allZero = false;
+        break;
+      }
+    }
 
+    if(allZero) {
+      THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+    }
+  }
 
-  delete[] buffer;
 }
-
-
-
-void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer * buffer, sd::Pointer * shapeInfo,
-                                sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, Pointer * buffer, Pointer * shapeInfo,
+                                Pointer * specialBuffer, Pointer * specialShapeInfo) {
 
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
@@ -3859,8 +3999,8 @@ void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, sd::Pointer *
   }
 
 }
-void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, sd::Pointer * shapeInfo,
-                                 sd::Pointer * specialBuffer, sd::Pointer * specialShapeInfo) {
+void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffer, Pointer * shapeInfo,
+                                 Pointer * specialBuffer, Pointer * specialShapeInfo) {
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
@@ -3882,8 +4022,7 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
     if(shapeInfo[i] == nullptr)
       THROW_EXCEPTION("Input shape at index was null!");
 
-
-    sd::LongType *primary = (sd::LongType *) shapeBuffers[i]->primary();
+    LongType *primary = (LongType *) shapeBuffers[i]->primary();
     if(buffer != nullptr && buffer[i] != nullptr) {
       setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
     }
