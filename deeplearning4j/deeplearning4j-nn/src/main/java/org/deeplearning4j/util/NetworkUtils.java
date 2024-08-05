@@ -35,6 +35,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.api.ConvexOptimizer;
+import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
+import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
+import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -510,4 +515,49 @@ public class NetworkUtils {
         }
     }
 
+    public static int getIterationCount(Model model) {
+        if (model instanceof MultiLayerNetwork) {
+            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getIterationCount();
+        } else if (model instanceof ComputationGraph) {
+            return ((ComputationGraph) model).getConfiguration().getIterationCount();
+        } else {
+            return model.conf().getIterationCount();
+        }
+    }
+
+    public static void incrementIterationCount(Model model, int incrementBy) {
+        if (model instanceof MultiLayerNetwork) {
+            MultiLayerConfiguration conf = ((MultiLayerNetwork) model).getLayerWiseConfigurations();
+            conf.setIterationCount(conf.getIterationCount() + incrementBy);
+        } else if (model instanceof ComputationGraph) {
+            ComputationGraphConfiguration conf = ((ComputationGraph) model).getConfiguration();
+            conf.setIterationCount(conf.getIterationCount() + incrementBy);
+        } else {
+            model.conf().setIterationCount(model.conf().getIterationCount() + incrementBy);
+        }
+    }
+
+    public static int getEpochCount(Model model) {
+        if (model instanceof MultiLayerNetwork) {
+            return ((MultiLayerNetwork) model).getLayerWiseConfigurations().getEpochCount();
+        } else if (model instanceof ComputationGraph) {
+            return ((ComputationGraph) model).getConfiguration().getEpochCount();
+        } else {
+            return model.conf().getEpochCount();
+        }
+    }
+
+    public static StepFunction getDefaultStepFunctionForOptimizer(Class<? extends ConvexOptimizer> optimizerClass) {
+        if (optimizerClass == StochasticGradientDescent.class) {
+            return new NegativeGradientStepFunction();
+        } else {
+            return new NegativeDefaultStepFunction();
+        }
+    }
+
+    public static void applyConstraints(Model model) {
+        int iter = getIterationCount(model);
+        int epoch = getEpochCount(model);
+        model.applyConstraints(iter, epoch);
+    }
 }

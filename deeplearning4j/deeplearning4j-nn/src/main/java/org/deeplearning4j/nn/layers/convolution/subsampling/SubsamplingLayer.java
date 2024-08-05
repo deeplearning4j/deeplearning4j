@@ -29,8 +29,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.deeplearning4j.nn.layers.HelperUtils;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -38,7 +36,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -46,10 +43,8 @@ import java.util.Arrays;
 @Slf4j
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
-    protected SubsamplingHelper helper = null;
     protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
-    public final static String  CUDNN_SUBSAMPLING_HELPER_CLASS_NAME = "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper";
     public SubsamplingLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
         initializeHelper();
@@ -90,15 +85,15 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int inH = (int)input.size(hIdx);
         int inW = (int)input.size(wIdx);
 
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
-        int[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
+        long[] dilation = layerConf().getDilation();
 
-        int[] pad;
-        int[] outSizeFwd = new int[]{(int)epsilon.size(hIdx), (int)epsilon.size(wIdx)};    //NCHW
+        long[] pad;
+        long[] outSizeFwd = {(int)epsilon.size(hIdx), (int)epsilon.size(wIdx)};    //NCHW
         boolean same = convolutionMode == ConvolutionMode.Same;
         if (same) {
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSizeFwd, new int[] {inH, inW}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSizeFwd, new long[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
         }
@@ -111,7 +106,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray epsAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
         DynamicCustomOp.DynamicCustomOpsBuilder b;
-        int extra = 0;
+        long extra = 0;
         switch (layerConf().getPoolingType()) {
             case MAX:
                 b = DynamicCustomOp.builder("maxpool2d_bp");
@@ -164,13 +159,13 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray input = this.input.castTo(dataType);
         boolean same = convolutionMode == ConvolutionMode.Same;
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
-        int[] dilation = layerConf().getDilation();
-        int[] pad = layerConf().getPadding();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
+        long[] dilation = layerConf().getDilation();
+        long[] pad = layerConf().getPadding();
 
         DynamicCustomOp.DynamicCustomOpsBuilder b;
-        int extra = 0;
+        long extra = 0;
         switch (layerConf().getPoolingType()) {
             case MAX:
                 b = DynamicCustomOp.builder("maxpool2d");
@@ -219,10 +214,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //no op
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return helper;
-    }
 
     @Override
     public Gradient gradient() {

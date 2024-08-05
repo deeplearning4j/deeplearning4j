@@ -41,18 +41,21 @@ public class InputTypeUtil {
 
     private InputTypeUtil(){ }
 
-    public static InputType getOutputTypeDeconvLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
+
+
+
+    public static InputType getOutputTypeDeconvLayerLong(InputType inputType, long[] kernelSize, long[] stride, long[] padding,
+                                                     long[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
                                                      Class<?> layerClass) {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
 
         val hIn = i.getHeight();
         val wIn = i.getWidth();
 
-        int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
-        int padW = (padding == null ? 0 : padding[1]);
-        int kH = kernelSize[0];
-        int kW = kernelSize[1];
+        long padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
+        long padW = (padding == null ? 0 : padding[1]);
+        long kH = kernelSize[0];
+        long kW = kernelSize[1];
         if (dilation[0] != 1) {
             kH = kH + (kH - 1) * (dilation[0] - 1);
         }
@@ -60,8 +63,8 @@ public class InputTypeUtil {
             kW = kW + (kW - 1) * (dilation[1] - 1);
         }
 
-        int sH = stride[0];
-        int sW = stride[1];
+        long sH = stride[0];
+        long sW = stride[1];
 
         if (sH <= 0 || sW <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
@@ -81,9 +84,17 @@ public class InputTypeUtil {
 
         return InputType.convolutional(hOut, wOut, outputDepth, i.getFormat());
     }
+    public static InputType getOutputTypeDeconvLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
+                                                     Class<?> layerClass) {
+      return getOutputTypeDeconvLayerLong(inputType, toLongArray(kernelSize), toLongArray(stride), toLongArray(padding),
+              toLongArray(dilation), convolutionMode, outputDepth, layerIdx, layerName, layerClass);
+    }
 
-    public static InputType getOutputTypeDeconv3dLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                       int[] dilation, ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat,
+
+
+    public static InputType getOutputTypeDeconv3dLayerLong(InputType inputType, long[] kernelSize, long[] stride, long[] padding,
+                                                           long[] dilation, ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat,
                                                        long outputDepth, long layerIdx, String layerName, Class<?> layerClass) {
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
 
@@ -92,12 +103,12 @@ public class InputTypeUtil {
         long dIn = i.getDepth();
 
 
-        int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
-        int padW = (padding == null ? 0 : padding[1]);
-        int padD = (padding == null ? 0 : padding[2]);
-        int kH = kernelSize[0];
-        int kW = kernelSize[1];
-        int kD = kernelSize[2];
+        long padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
+        long padW = (padding == null ? 0 : padding[1]);
+        long padD = (padding == null ? 0 : padding[2]);
+        long kH = kernelSize[0];
+        long kW = kernelSize[1];
+        long kD = kernelSize[2];
         if (dilation[0] != 1) {
             kH = kH + (kH - 1) * (dilation[0] - 1);
         }
@@ -108,9 +119,9 @@ public class InputTypeUtil {
             kD = kD + (kD - 1) * (dilation[2] - 1);
         }
 
-        int sH = stride[0];
-        int sW = stride[1];
-        int sD = stride[2];
+        long sH = stride[0];
+        long sW = stride[1];
+        long sD = stride[2];
 
         if (sH <= 0 || sW <= 0 || sD <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
@@ -133,9 +144,38 @@ public class InputTypeUtil {
         return InputType.convolutional3D(dataFormat, dOut, hOut, wOut, outputDepth);
     }
 
+    public static InputType getOutputTypeDeconv3dLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                       int[] dilation, ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat,
+                                                       long outputDepth, long layerIdx, String layerName, Class<?> layerClass) {
+        return getOutputTypeDeconv3dLayerLong(inputType, toLongArray(kernelSize), toLongArray(stride), toLongArray(padding),
+                toLongArray(dilation), convolutionMode, dataFormat, outputDepth, layerIdx, layerName, layerClass);
+    }
+
+
+
+    /**
+     * Helper method to convert an int array to a long array.
+     * @param intArray The int array to convert.
+     * @return The converted long array.
+     */
+    private static long[] toLongArray(int[] intArray) {
+        if (intArray == null) {
+            return null;
+        }
+        return Arrays.stream(intArray).asLongStream().toArray();
+    }
+
     public static InputType getOutputTypeCnn3DLayers(InputType inputType, Convolution3D.DataFormat dataFormat, int[] kernelSize, int[] stride, int[] padding,
                                                      int[] dilation, ConvolutionMode convolutionMode, long outputChannels, long layerIdx,
                                                      String layerName, Class<?> layerClass) {
+        return getOutputTypeCnn3DLayersLong(inputType, dataFormat, toLongArray(kernelSize), toLongArray(stride),
+                toLongArray(padding), toLongArray(dilation), convolutionMode, outputChannels, layerIdx,
+                layerName, layerClass);
+    }
+
+    public static InputType getOutputTypeCnn3DLayersLong(InputType inputType, Convolution3D.DataFormat dataFormat, long[] kernelSize, long[] stride, long[] padding,
+                                                         long[] dilation, ConvolutionMode convolutionMode, long outputChannels, long layerIdx,
+                                                         String layerName, Class<?> layerClass) {
         if (convolutionMode == null) {
             String name = layerName == null ? "(not named)" : layerName;
             throw new DL4JInvalidConfigException("Invalid configuration: convolution mode is null for layer (idx="
@@ -148,14 +188,13 @@ public class InputTypeUtil {
         long inHeight = i.getHeight();
         long inWidth = i.getWidth();
 
-        int padD = (padding == null ? 0 : padding[0]);
-        int padH = (padding == null ? 0 : padding[1]);
-        int padW = (padding == null ? 0 : padding[2]);
+        long padD = (padding == null ? 0 : padding[0]);
+        long padH = (padding == null ? 0 : padding[1]);
+        long padW = (padding == null ? 0 : padding[2]);
 
-        int kD = kernelSize[0];
-        int kH = kernelSize[1];
-        int kW = kernelSize[2];
-
+        long kD = kernelSize[0];
+        long kH = kernelSize[1];
+        long kW = kernelSize[2];
 
         if (dilation[0] != 1) {
             //Use *effective* kernel size, accounting for dilation
@@ -168,9 +207,9 @@ public class InputTypeUtil {
             kW = kW + (kW - 1) * (dilation[2] - 1);
         }
 
-        int sD = stride[0];
-        int sH = stride[1];
-        int sW = stride[2];
+        long sD = stride[0];
+        long sH = stride[1];
+        long sW = stride[2];
 
         if (sH <= 0 || sW <= 0 || sD <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
@@ -203,8 +242,8 @@ public class InputTypeUtil {
             if ((inHeight - kH + 2 * padH) % sH != 0) {
                 double d = (inHeight - kH + 2 * padH) / ((double) sH) + 1.0;
                 String str = String.format("%.2f", d);
-                int truncated = (int) d;
-                int sameSize = (int) Math.ceil(inHeight / ((double) stride[0]));
+                long truncated = (long) d;
+                long sameSize = (long) Math.ceil(inHeight / ((double) stride[0]));
                 throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                         + "\nCombination of kernel size, stride and padding are not valid for given input height, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output height = (input height - kernelSize + 2*padding)/stride + 1 in height dimension to be an integer. Got: ("
@@ -221,8 +260,8 @@ public class InputTypeUtil {
             if ((inWidth - kW + 2 * padW) % sW != 0) {
                 double d = (inWidth - kW + 2 * padW) / ((double) sW) + 1.0;
                 String str = String.format("%.2f", d);
-                int truncated = (int) d;
-                int sameSize = (int) Math.ceil(inWidth / ((double) stride[1]));
+                long truncated = (long) d;
+                long sameSize = (long) Math.ceil(inWidth / ((double) stride[1]));
                 throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                         + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output width = (input width - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
@@ -239,8 +278,8 @@ public class InputTypeUtil {
             if ((inDepth - kD + 2 * padD) % sD != 0) {
                 double d = (inDepth - kD + 2 * padD) / ((double) sD) + 1.0;
                 String str = String.format("%.2f", d);
-                int truncated = (int) d;
-                int sameSize = (int) Math.ceil(inDepth / ((double) stride[2]));
+                long truncated = (long) d;
+                long sameSize = (long) Math.ceil(inDepth / ((double) stride[2]));
                 throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                         + "\nCombination of kernel size, stride and padding are not valid for given input width, using ConvolutionMode.Strict\n"
                         + "ConvolutionMode.Strict requires: output channels = (input channels - kernelSize + 2*padding)/stride + 1 in width dimension to be an integer. Got: ("
@@ -255,9 +294,9 @@ public class InputTypeUtil {
             }
         } else if (convolutionMode == ConvolutionMode.Same) {
 
-            int outD = (int) Math.ceil(inDepth / ((double) sD));
-            int outH = (int) Math.ceil(inHeight / ((double) sH));
-            int outW = (int) Math.ceil(inWidth / ((double) sW));
+            long outD = (long) Math.ceil(inDepth / ((double) sD));
+            long outH = (long) Math.ceil(inHeight / ((double) sH));
+            long outW = (long) Math.ceil(inWidth / ((double) sW));
 
             return InputType.convolutional3D(dataFormat, outD, outH, outW, outputChannels);
         }
@@ -267,7 +306,6 @@ public class InputTypeUtil {
         long wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional3D(dOut, hOut, wOut, outputChannels);
     }
-
 
     public static InputType getOutputTypeCnn1DLayers(InputType inputType, int kH, int sH, int padH, int dilation,
                                                      ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
@@ -339,10 +377,87 @@ public class InputTypeUtil {
      */
     @Deprecated
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                                                   int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
+                                                   int[] dilation, ConvolutionMode convolutionMode, long outputDepth,
+                                                   long layerIdx, String layerName,
                                                    Class<?> layerClass) {
         return getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode, outputDepth,
                 layerIdx, layerName, CNN2DFormat.NCHW, layerClass);
+    }
+
+
+
+    public static InputType getOutputTypeCnnLayersLong(InputType inputType, long[] kernelSize, long[] stride, long[] padding,
+                                                       long[] dilation, ConvolutionMode convolutionMode, long outputDepth,
+                                                       long layerIdx, String layerName,
+                                                       CNN2DFormat format, Class<?> layerClass) {
+
+        if (convolutionMode == null) {
+            String name = layerName == null ? "(not named)" : layerName;
+            throw new DL4JInvalidConfigException("Invalid configuration: convolution mode is null for layer (idx="
+                    + layerIdx + ", name=" + name + ", type=" + layerClass.getName() + ")");
+        }
+
+        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+
+        long inHeight = i.getHeight();
+        long inWidth = i.getWidth();
+        //rearrange height/width for input calculations for new output type
+        if (format != i.getFormat()) {
+            //NCHW
+            //convert NWHC to NCHW
+            if (format == CNN2DFormat.NCHW) {
+                inWidth = i.getChannels();
+                outputDepth = i.getWidth();
+            }
+            //NHWC
+            //convert NWHC to NCHW
+            else if (format == CNN2DFormat.NHWC) {
+                inWidth = i.getChannels();
+                outputDepth = i.getWidth();
+            }
+        }
+        long padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
+        long padW = (padding == null ? 0 : padding[1]);
+        long kH = kernelSize[0];
+        long kW = kernelSize[1];
+
+        long sH = stride[0];
+        long sW = stride[1];
+
+        long dH = dilation[0];
+        long dW = dilation[1];
+
+        if (sH <= 0 || sW <= 0) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
+                    + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
+                    + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth,
+                    convolutionMode));
+        }
+
+        int paddingMode = convolutionMode == ConvolutionMode.Same ? 1 : 0;
+
+        long hOut = calcOutDimConv(inHeight, kH, sH, padH, dH, paddingMode);
+        long wOut = calcOutDimConv(inWidth, kW, sW, padW, dW, paddingMode);
+
+        return InputType.convolutional(hOut, wOut, outputDepth, format);
+    }
+
+    private static long calcOutDimConv(long inputDim, long kernelDim, long stride, long padding, long dilation, int paddingMode) {
+        long outputDim;
+        long dilatedKernelDim = (kernelDim - 1) * dilation + 1;
+
+        if (paddingMode == 0) {  // valid
+            outputDim = (inputDim + 2 * padding - dilatedKernelDim) / stride + 1;
+        } else if (paddingMode == 1) {  // same
+            outputDim = (inputDim + stride - 1) / stride;
+        } else if (paddingMode == 2) {  // causal
+            long causalPadding = (kernelDim - 1) * dilation;
+            outputDim = (inputDim + 2 * causalPadding - dilatedKernelDim) / stride + 1;
+        } else {
+            throw new IllegalArgumentException("Invalid padding mode: " + paddingMode);
+        }
+
+        return outputDim;
     }
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
@@ -474,6 +589,14 @@ public class InputTypeUtil {
         return "Input type = " + inputType + ", kernel = " + kernelSize + ", strides = " + stride + ", padding = "
                 + padding + ", layer size (output channels) = " + outputDepth + ", convolution mode = "
                 + convolutionMode;
+    }
+
+
+    private static String getConfigErrorCommonLastLine(InputType inputType, long[] kernelSize, long[] stride,
+                                                       long[] padding, long outputDepth, ConvolutionMode convolutionMode) {
+        return "Input type = " + inputType + ", kernel = " + Arrays.toString(kernelSize) + ", strides = "
+                + Arrays.toString(stride) + ", padding = " + Arrays.toString(padding)
+                + ", layer size (output channels) = " + outputDepth + ", convolution mode = " + convolutionMode;
     }
 
     private static String getConfigErrorCommonLastLine(InputType inputType, int[] kernelSize, int[] stride,

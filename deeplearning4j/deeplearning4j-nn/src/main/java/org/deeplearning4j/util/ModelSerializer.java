@@ -41,7 +41,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.common.primitives.Pair;
 
 import java.io.*;
@@ -189,7 +188,7 @@ public class ModelSerializer {
             // now, add our normalizer as additional entry
             ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
             zipfile.putNextEntry(nEntry);
-            NormalizerSerializer.getDefault().write(dataNormalization, CloseShieldOutputStream.wrap(zipfile));
+            NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
         }
 
         dos.close();
@@ -647,63 +646,6 @@ public class ModelSerializer {
     	return restoreComputationGraph(new FileInputStream(file), loadUpdater);
     }
 
-    /**
-     *
-     * @param model
-     * @return
-     */
-    public static Task taskByModel(Model model) {
-        Task task = new Task();
-        try {
-            task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-            if (model instanceof ComputationGraph) {
-                task.setNetworkType(Task.NetworkType.ComputationalGraph);
-                ComputationGraph network = (ComputationGraph) model;
-                try {
-                    if (network.getLayers() != null && network.getLayers().length > 0) {
-                        for (Layer layer : network.getLayers()) {
-                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
-                                break;
-                            } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
-                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-                                break;
-                            }
-                        }
-                    } else
-                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-                } catch (Exception e) {
-                    // do nothing here
-                }
-            } else if (model instanceof MultiLayerNetwork) {
-                task.setNetworkType(Task.NetworkType.MultilayerNetwork);
-                MultiLayerNetwork network = (MultiLayerNetwork) model;
-                try {
-                    if (network.getLayers() != null && network.getLayers().length > 0) {
-                        for (Layer layer : network.getLayers()) {
-                            if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
-                                task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
-                                break;
-                            } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
-                                task.setArchitectureType(Task.ArchitectureType.RECURRENT);
-                                break;
-                            }
-                        }
-                    } else
-                        task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-                } catch (Exception e) {
-                    // do nothing here
-                }
-            }
-            return task;
-        } catch (Exception e) {
-            task.setArchitectureType(Task.ArchitectureType.UNKNOWN);
-            task.setNetworkType(Task.NetworkType.DenseNetwork);
-            return task;
-        }
-    }
 
     /**
      * This method appends normalizer to a given persisted model.

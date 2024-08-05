@@ -36,14 +36,18 @@ import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -53,21 +57,21 @@ public class LocallyConnected2D extends SameDiffLayer {
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
     private static final List<String> PARAM_KEYS =
-                    Arrays.asList(ConvolutionParamInitializer.BIAS_KEY, ConvolutionParamInitializer.WEIGHT_KEY);
+            Arrays.asList(ConvolutionParamInitializer.BIAS_KEY, ConvolutionParamInitializer.WEIGHT_KEY);
 
     private long nIn;
     private long nOut;
     private Activation activation;
-    private int[] kernel;
-    private int[] stride;
-    private int[] padding;
-    private int[] paddingBr;
-    private ConvolutionMode cm;
-    private int[] dilation;
+    private long[] kernel;
+    private long[] stride;
+    private long[] padding;
+    private long[] paddingBr;
+    private ConvolutionMode cm = ConvolutionMode.Truncate;
+    private long[] dilation;
     private boolean hasBias;
-    private int[] inputSize;
-    private int[] outputSize;
-    private int featureDim;
+    private long[] inputSize;
+    private long[] outputSize;
+    private long featureDim;
     protected CNN2DFormat format = CNN2DFormat.NCHW;
 
     protected LocallyConnected2D(Builder builder) {
@@ -99,17 +103,17 @@ public class LocallyConnected2D extends SameDiffLayer {
 
         boolean nchw = format == CNN2DFormat.NCHW;
 
-        int[] inputShape = nchw ? new int[] {1, nIn, inputSize[0], inputSize[1]} : new int[] {1, inputSize[0], inputSize[1], nIn};
+        long[] inputShape = nchw ? new long[] {1, nIn, inputSize[0], inputSize[1]} : new long[] {1, inputSize[0], inputSize[1], nIn};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
         if (cm == ConvolutionMode.Same) {
-            this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, null, cm,
-                            dilation, format);
+            this.outputSize = ConvolutionUtils.getOutputSizeLong(dummyInputForShapeInference.shape(), kernel, stride, null, cm,
+                    dilation, format);
             this.padding = ConvolutionUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
             this.paddingBr = ConvolutionUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
-            this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
-                            dilation, format);
+            this.outputSize = ConvolutionUtils.getOutputSizeLong(dummyInputForShapeInference.shape(), kernel, stride, padding, cm,
+                    dilation, format);
         }
     }
 
@@ -117,15 +121,15 @@ public class LocallyConnected2D extends SameDiffLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalArgumentException("Provided input type for locally connected 2D layers has to be "
-                            + "of CNN type, got: " + inputType);
+                    + "of CNN type, got: " + inputType);
         }
         // dynamically compute input size from input type
         InputType.InputTypeConvolutional cnnType = (InputType.InputTypeConvolutional) inputType;
-        this.inputSize = new int[] {(int) cnnType.getHeight(), (int) cnnType.getWidth()};
+        this.inputSize = new long[] {(int) cnnType.getHeight(), (int) cnnType.getWidth()};
         computeOutputSize();
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[] {1, 1}, cm, nOut,
-                        layerIndex, getLayerName(), format, LocallyConnected2D.class);
+        return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernel, stride, padding, new long[] {1, 1}, cm, nOut,
+                layerIndex, getLayerName(), format, LocallyConnected2D.class);
     }
 
     @Override
@@ -146,6 +150,10 @@ public class LocallyConnected2D extends SameDiffLayer {
     @Override
     public void defineParameters(SDLayerParams params) {
         params.clear();
+
+        if(outputSize == null) {
+            computeOutputSize();
+        }
         val weightsShape = new long[] {outputSize[0] * outputSize[1], featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if (hasBias) {
@@ -164,70 +172,116 @@ public class LocallyConnected2D extends SameDiffLayer {
                     double fanIn = nIn * kernel[0] * kernel[1];
                     double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
                     WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c',
-                                    e.getValue());
+                            e.getValue());
                 }
             }
         }
     }
-
     @Override
     public SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable, SDVariable mask) {
-
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
+        boolean nchw = format == CNN2DFormat.NCHW;
 
         long[] inputShape = layerInput.getShape();
-        long miniBatch = inputShape[0];
-        int outH = outputSize[0];
-        int outW = outputSize[1];
-        int sH = stride[0];
-        int sW = stride[1];
-        int kH = kernel[0];
-        int kW = kernel[1];
+        long batchSize = inputShape[0];
+        long inHeight = nchw ? inputShape[2] : inputShape[1];
+        long inWidth = nchw ? inputShape[3] : inputShape[2];
+        long inChannels = this.nIn;
 
-        boolean nchw = format == CNN2DFormat.NCHW;
-        if(!nchw)
-            layerInput = layerInput.permute(0,3,1,2);       //NHWC to NCHW
+        long[] kernelShape = w.getShape();
+        long outHeight = this.outputSize[0];
+        long outWidth = this.outputSize[1];
+        long kernelHeight = this.kernel[0];
+        long kernelWidth = this.kernel[1];
+        long outChannels = this.nOut;
+        long ndims = kernel.length;
 
-        if(padding[0] > 0 || padding[1] > 0 || (cm == ConvolutionMode.Same && (paddingBr[0] > 0 || paddingBr[1] > 0))){
-            //Note: for same mode, bottom/right padding can be 1 more than top/left padding
-            //NCHW format
-            if(cm == ConvolutionMode.Same){
-                layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0,0},{0,0},{padding[0], paddingBr[0]}, {padding[1], paddingBr[1]}})), PadMode.CONSTANT, 0.0);
-            } else {
-                layerInput = sameDiff.nn().pad(layerInput,
-                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0,0},{0,0},{padding[0], padding[0]}, {padding[1], padding[1]}})), PadMode.CONSTANT, 0.0);
-            }
+
+        SDVariable[] xs = new SDVariable[(int)(outHeight * outWidth)];
+        int index = 0;
+
+        long[][] outputAxesTicks = new long[(int) ndims][];
+        for (int d = 0; d < ndims; d++) {
+            outputAxesTicks[d] = LongStream.range(0, outputSize[d]).toArray();
         }
 
-        SDVariable[] inputArray = new SDVariable[outH * outW];
-        for (int y = 0; y < outH; y++) {
-            for (int x = 0; x < outW; x++) {
-                SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
-                                SDIndex.all(), // nIn
-                                SDIndex.interval(y * sH, y * sH + kH), // kernel height
-                                SDIndex.interval(x * sW, x * sW + kW) // kernel width
-                );
-                inputArray[x * outH + y] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+        long[][] positions = product(outputAxesTicks);
+
+        for (long[] position : positions) {
+            List<SDIndex> slices = new ArrayList<>();
+            slices.add(SDIndex.all());
+
+            if (nchw) {
+                slices.add(SDIndex.all());
             }
+
+            for (int d = 0; d < ndims; d++) {
+                long start = position[d] * stride[d];
+                long end = start + kernel[d];
+                slices.add(SDIndex.interval(start, end));
+            }
+
+            if (!nchw) {
+                slices.add(SDIndex.all());
+            }
+
+             SDVariable slice = layerInput.get(slices.toArray(new SDIndex[0]));
+            SDVariable reshapedSlice = sameDiff.reshape(slice, 1, -1, inChannels * kernelHeight * kernelWidth);
+            xs[index++] = reshapedSlice;
         }
-        SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH * outW, miniBatch, featureDim)
 
-        SDVariable mmulResult = sameDiff.mmul(concatOutput, w); // (outH * outW, miniBatch, nOut)
+        SDVariable xAggregate = sameDiff.concat(0, xs);
+        SDVariable output = sameDiff.mmul(xAggregate, w);
 
-        SDVariable reshapeResult = sameDiff.reshape(mmulResult, outH, outW, miniBatch, nOut);
+        long[] newShape = new long[(int) (ndims + 2)];
+        System.arraycopy(outputSize, 0, newShape, 0, (int) ndims);
+        newShape[(int) ndims] = -1;
+        newShape[(int) (ndims + 1)] = outChannels;
+        output = sameDiff.reshape(output, newShape);
 
-        SDVariable permutedResult = nchw ? reshapeResult.permute(2, 3, 0, 1) : reshapeResult.permute(2, 0, 1, 3); // (mb, nOut, outH, outW) or (mb, outH, outW, nOut)
+        long[] permutation;
+        if (nchw) {
+            permutation = LongStream.concat(LongStream.of(ndims, ndims + 1), LongStream.range(0, ndims)).toArray();
+        } else {
+            permutation = LongStream.concat(LongStream.of(ndims), LongStream.concat(LongStream.range(0, ndims), LongStream.of(ndims + 1))).toArray();
+        }
+
+        output = sameDiff.permute(output, permutation);
 
         if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.nn().biasAdd(permutedResult, b, nchw);
-            return activation.asSameDiff("out", sameDiff, biasAddedResult);
-        } else {
-            return activation.asSameDiff("out", sameDiff, permutedResult);
+            output = sameDiff.nn().biasAdd(output, b, nchw);
         }
+
+        return activation.asSameDiff("out", sameDiff, output);
     }
 
+    private static long[][] product(long[]... arrays) {
+        if (arrays == null || arrays.length == 0)
+            return new long[0][];
+
+        long totalLength = 1;
+        for (long[] array : arrays)
+            totalLength *= array.length;
+
+        long[][] result = new long[(int) totalLength][];
+        long[] indices = new long[arrays.length];
+
+        for (int i = 0; i < totalLength; i++) {
+            result[i] = new long[arrays.length];
+            for (int j = 0; j < arrays.length; j++)
+                result[i][j] = arrays[j][(int) indices[j]];
+
+            for (int j = arrays.length - 1; j >= 0; j--) {
+                indices[j]++;
+                if (indices[j] < arrays[j].length)
+                    break;
+                indices[j] = 0;
+            }
+        }
+
+        return result;
+    }
     @Override
     public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
         if (activation == null) {
@@ -261,37 +315,37 @@ public class LocallyConnected2D extends SameDiffLayer {
          * Kernel size for the layer. Must be 2 values (height/width)
          */
         @Setter(AccessLevel.NONE)
-        private int[] kernel = new int[] {2, 2};
+        private long[] kernel = {2, 2};
 
         /**
          * Stride for the layer. Must be 2 values (height/width)
          */
         @Setter(AccessLevel.NONE)
-        private int[] stride = new int[] {1, 1};
+        private long[] stride = {1, 1};
 
         /**
          * Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
         @Setter(AccessLevel.NONE)
-        private int[] padding = new int[] {0, 0};
+        private long[] padding = {0, 0};
 
         /**
          * Dilation for the layer. Must be 2 values (height/width)
          */
         @Setter(AccessLevel.NONE)
-        private int[] dilation = new int[] {1, 1};
+        private long[] dilation = {1, 1};
 
         /**
          * Set input filter size (h,w) for this locally connected 2D layer
          *
          */
         @Setter(AccessLevel.NONE)
-        private int[] inputSize;
+        private long[] inputSize;
 
         /**
          * Convolution mode for the layer. See {@link ConvolutionMode} for details
          */
-        private ConvolutionMode cm = ConvolutionMode.Same;
+        private ConvolutionMode cm = ConvolutionMode.Truncate;
 
         /**
          * If true (default is false) the layer will have a bias
@@ -304,28 +358,28 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param kernel Kernel size for the layer. Must be 2 values (height/width)
          */
-        public void setKernel(int... kernel) {
+        public void setKernel(long... kernel) {
             this.kernel = ValidationUtils.validate2NonNegative(kernel, false, "kernel");
         }
 
         /**
          * @param stride Stride for the layer. Must be 2 values (height/width)
          */
-        public void setStride(int... stride) {
+        public void setStride(long... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
         /**
          * @param padding Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
-        public void setPadding(int... padding) {
+        public void setPadding(long... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
         /**
          * @param dilation Dilation for the layer. Must be 2 values (height/width)
          */
-        public void setDilation(int... dilation) {
+        public void setDilation(long... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
@@ -356,7 +410,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param k Kernel size for the layer. Must be 2 values (height/width)
          */
-        public Builder kernelSize(int... k) {
+        public Builder kernelSize(long... k) {
             this.setKernel(k);
             return this;
         }
@@ -364,7 +418,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param s Stride for the layer. Must be 2 values (height/width)
          */
-        public Builder stride(int... s) {
+        public Builder stride(long... s) {
             this.setStride(s);
             return this;
         }
@@ -372,8 +426,38 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param p Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
          */
-        public Builder padding(int... p) {
+        public Builder padding(long... p) {
             this.setPadding(p);
+            return this;
+        }
+
+
+
+
+
+
+
+        /**
+         * @param k Kernel size for the layer. Must be 2 values (height/width)
+         */
+        public Builder kernelSize(int... k) {
+            this.setKernel(ArrayUtil.toLongArray(k));
+            return this;
+        }
+
+        /**
+         * @param s Stride for the layer. Must be 2 values (height/width)
+         */
+        public Builder stride(int... s) {
+            this.setStride(ArrayUtil.toLongArray(s));
+            return this;
+        }
+
+        /**
+         * @param p Padding for the layer. Not used if {@link ConvolutionMode#Same} is set. Must be 2 values (height/width)
+         */
+        public Builder padding(int... p) {
+            this.setPadding(ArrayUtil.toLongArray(p));
             return this;
         }
 
@@ -388,7 +472,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         /**
          * @param d Dilation for the layer. Must be 2 values (height/width)
          */
-        public Builder dilation(int... d) {
+        public Builder dilation(long... d) {
             this.setDilation(d);
             return this;
         }
@@ -418,7 +502,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          * @param inputSize pair of height and width of the input filters to this layer
          * @return Builder
          */
-        public Builder setInputSize(int... inputSize) {
+        public Builder setInputSize(long... inputSize) {
             this.inputSize = ValidationUtils.validate2(inputSize, false, "inputSize");
             return this;
         }

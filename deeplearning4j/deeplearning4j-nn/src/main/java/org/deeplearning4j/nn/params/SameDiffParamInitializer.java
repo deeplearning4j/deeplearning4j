@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.util.ArrayUtil;
@@ -54,9 +55,10 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public long numParams(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        Map<String,long[]> m = sd.getLayerParams().getParamShapes();
+        SDLayerParams layerParams = sd.getLayerParams();
+        Map<String,long[]> m = layerParams.getParamShapes();
         int n = 0;
-        for(val arr : m.values()){
+        for(val arr : m.values()) {
             n += ArrayUtil.prod(arr);
         }
         return n;
