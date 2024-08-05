@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -312,10 +311,6 @@ public abstract class BaseWrapperLayer implements Layer {
         underlying.allowInputModification(allow);
     }
 
-    @Override
-    public LayerHelper getHelper() {
-        return underlying.getHelper();
-    }
 
     @Override
     public TrainingConfig getConfig() {

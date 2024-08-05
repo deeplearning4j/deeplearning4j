@@ -23,7 +23,7 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.updater.LayerUpdater;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,6 +41,10 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
 
     enum TrainingMode {
         TRAIN, TEST
+    }
+
+    default org.deeplearning4j.nn.api.Updater createUpdater() {
+        return new LayerUpdater(this);
     }
 
     /**
@@ -113,6 +117,7 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
      * replaced by this method
      */
     void setListeners(TrainingListener... listeners);
+
 
     /**
      * Set the {@link TrainingListener}s for this model. If any listeners have previously been set, they will be
@@ -218,8 +223,4 @@ public interface Layer extends Serializable, Cloneable, Model, Trainable {
      */
     Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize);
 
-    /**
-     * @return Get the layer helper, if any
-     */
-    LayerHelper getHelper();
 }
