@@ -62,6 +62,10 @@ public class LongShapeDescriptor {
 
     }
 
+    public long length() {
+        return isEmpty() ? 0 : ArrayUtil.prodLong(shape);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -137,7 +141,12 @@ public class LongShapeDescriptor {
         return fromShape(shape, Nd4j.getStrides(shape, Nd4j.order()), 1, Nd4j.order(), dataType, false);
     }
 
-    public static LongShapeDescriptor empty(@NonNull DataType dataType){
+    public static LongShapeDescriptor emptyWithShape(long[] shape,@NonNull DataType dataType) {
+        long[] l = new long[0];
+        return fromShape(l, l, 1, 'c', dataType, true);
+    }
+
+    public static LongShapeDescriptor empty(@NonNull DataType dataType) {
         long[] l = new long[0];
         return fromShape(l, l, 1, 'c', dataType, true);
     }
@@ -168,7 +177,13 @@ public class LongShapeDescriptor {
         return new LongShapeDescriptor(shape, stride, offset, ews, order, extras);
     }
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
     }
+
+
+    public boolean isScalar() {
+        return !isEmpty() && rank() < 1;
+    }
+
 }

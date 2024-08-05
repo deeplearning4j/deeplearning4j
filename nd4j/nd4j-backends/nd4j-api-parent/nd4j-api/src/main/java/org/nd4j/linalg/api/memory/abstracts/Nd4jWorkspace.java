@@ -38,6 +38,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.common.util.ND4JFileUtils;
+import org.nd4j.linalg.workspace.WorkspaceMgr;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -50,12 +51,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Basic Nd4j workspace implementation
+ */
 @Slf4j
+
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter
     protected int deviceId;
     @Getter
     protected Long threadId;
+
+    //mainly used with layerworkspace manager and for logging
+    //types
+    @Getter
+    @Setter
+    protected Enum associatedEnumType;
+
+    protected StackTraceElement[] lastEntered;
+    protected  StackTraceElement[] lastClosed;
+
+    protected StackTraceElement[] lastBorrowed;
+
 
     protected Type workspaceType = Type.SCOPED;
 
@@ -71,7 +88,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected PointersPair workspace = new PointersPair();
 
     protected MemoryManager memoryManager;
-
+    protected WorkspaceMgr workspaceMgr;
     protected AtomicBoolean isLearning = new AtomicBoolean(true);
     protected AtomicBoolean isUsed = new AtomicBoolean(true);
 
@@ -197,8 +214,28 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     @Override
+    public StackTraceElement[] lastEntered() {
+        return lastEntered;
+    }
+
+    @Override
+    public StackTraceElement[] lastClosed() {
+        return lastClosed;
+    }
+
+    @Override
+    public StackTraceElement[] lastBorrowed() {
+        return lastBorrowed;
+    }
+
+    @Override
     public Type getWorkspaceType() {
         return this.workspaceType;
+    }
+
+    @Override
+    public void setWorkspaceMgr(WorkspaceMgr mgr) {
+        this.workspaceMgr = mgr;
     }
 
     public static void fillFile(File file, long length) throws Exception {
@@ -584,7 +621,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         isBorrowed.set(true);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
-
+        this.lastBorrowed = Thread.currentThread().getStackTrace();
         return this;
     }
 
@@ -594,6 +631,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        if(workspaceMgr != null) {
+            workspaceMgr.recordWorkspaceClose(this, this.associatedEnumType);
+        }
         // first we check if this workspace was borrowed. if yes - just close without reset.
         if (isBorrowed.get()) {
             if (tagScope.get() > 0) {
@@ -653,8 +693,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         // checking, if we should reallocate this workspace to higher amount of memory
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE && maxCycle.get() > 0) {
-            //log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
-
             // if we're going to resize - we're probably safe to purge spilled allocations
             if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT
                     || resetPlanned.get())) {
@@ -711,7 +749,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
 
                 if (isDebug.get())
-                    log.info("Worskpace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}",
+                    log.info("Workspace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}",
                             id, initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(),
                             currentSize.get(), trimmedMode.get());
 
@@ -720,6 +758,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             }
         }
 
+        this.lastClosed = Thread.currentThread().getStackTrace();
         cycleAllocations.set(0);
     }
 
@@ -731,7 +770,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public MemoryWorkspace notifyScopeEntered() {
         // we should block stuff since we're going to invalidate spilled allocations
         // TODO: block on spilled allocations probably?
-
+        if(isOpen.get())
+            return this;
         MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         // if we're opening the same workspace - just increase counter, and skip everything else
@@ -762,7 +802,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         disabledCounter.set(0);
 
         generationId.incrementAndGet();
-
+        this.lastEntered = Thread.currentThread().getStackTrace();
         return this;
     }
 
@@ -772,7 +812,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
      * PLEASE NOTE: Never call this method unless you realize all consequences
      */
     public void reset() {
-        //log.info("Resetting at device: {}; host: {};", deviceOffset.get(), hostOffset.get());
         hostOffset.set(0);
         deviceOffset.set(0);
     }
@@ -791,7 +830,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     /**
-     * This method allows to temporary disable this workspace, and issue allocations directly.
+     * This method allows to temporarily disable this workspace, and issue allocations directly.
      * @param isEnabled
      */
     @Override
