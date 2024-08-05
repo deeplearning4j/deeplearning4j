@@ -387,7 +387,6 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
     // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
-      matrix.printIndexedBuffer("Wrong matrix");
       return sd::Status::VALIDATION;
     }
     lowerMatrix.setIdentity();     // set up U to identity matrix
@@ -439,7 +438,6 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
     // FIXME: and how this is going to work on float16?
     if (sd::math::sd_abs<T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
-      matrix.printIndexedBuffer("Wrong matrix");
       return sd::Status::VALIDATION;
     }
     lowerMatrix.nullify();

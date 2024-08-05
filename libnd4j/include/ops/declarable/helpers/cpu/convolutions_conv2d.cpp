@@ -67,8 +67,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
 
   //----- calculation of output -----//
   auto ctx = block.launchContext();
-  input->printIndexedBuffer("im2col INPUT BUFFER:");
-  input->printShapeInfo("im2col INPUT SHAPE INFO:");
+
 
   if (isNCHW) {
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,

@@ -175,9 +175,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   auto gradI = OUTPUT_NULLIFIED(0);                                // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
   auto gradW = OUTPUT_NULLIFIED(1);                                // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
   auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;  // [oC]
-  gradI->printIndexedBuffer("gradI");
-  gradW->printIndexedBuffer("gradW");
-  gradB->printIndexedBuffer("gradB");
   LongType kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(weights->sizeAt(0));  // filter(kernel) width
   LongType sW = INT_ARG(1);                                                          // strides width
   LongType pW = INT_ARG(2);                                                          // paddings width
@@ -294,7 +291,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     gradI->assign(gradIReshaped);
   }
 
-  gradW->printIndexedBuffer("GRAD W RESHAPED BEFORE:");
 
 
   if(gradWReshaped->buffer() != gradW->buffer()) {
@@ -307,7 +303,6 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     }
   }
 
-  gradW->printIndexedBuffer("GRAD W RESHAPED AFTER:");
 
 
   return ret;
