@@ -30,7 +30,7 @@ namespace sd {
 #if defined(SD_GCC_FUNCTRACE)
 cuda_exception::cuda_exception(std::string message) : std::runtime_error(message) {
   StackTrace st;
-  st.load_here(32);
+  st.load_here();
   Printer p;
   p.object = true;
   p.color_mode = ColorMode::always;
@@ -49,7 +49,7 @@ cuda_exception::cuda_exception(std::string message) : std::runtime_error(message
 
 cuda_exception cuda_exception::build(std::string message, int errorCode) {
   StackTrace st;
-  st.load_here(32);
+  st.load_here();
   Printer p;
   p.object = true;
   p.color_mode = ColorMode::always;

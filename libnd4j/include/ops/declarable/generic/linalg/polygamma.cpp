@@ -39,17 +39,15 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
                "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !",
                ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
-  sd::LongType arrLen = n->lengthOf();
-  // FIXME: this shit should be single op call, not a loop!
-  auto nNegative = n->reduceNumber(sd::reduce::IsNegative, nullptr);
-  auto xPositive = x->reduceNumber(sd::reduce::IsPositive, nullptr);
+  auto nNegative = n->reduceNumber(reduce::IsNegative, nullptr);
+  auto xPositive = x->reduceNumber(reduce::IsPositive, nullptr);
   bool nPositiveFlag = !nNegative.e<bool>(0);  // require all n >= 0
   bool xPositiveFlag = xPositive.e<bool>(0);   // require all x > 0
   REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be >= 0 !");
   REQUIRE_TRUE(xPositiveFlag, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
 
   helpers::polyGamma(block.launchContext(), *n, *x, *output);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(polyGamma, polygamma);

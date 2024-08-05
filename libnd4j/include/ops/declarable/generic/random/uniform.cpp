@@ -43,21 +43,20 @@ namespace ops {
 CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   // uniform distribution
   auto rng = block.randomGenerator();
-  auto dtype = DataType::FLOAT32;
+  auto dtype = FLOAT32;
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
 
   if (block.getIArguments()->size() > 1) {
     auto seed = INT_ARG(1);
     rng.setStates(seed, seed ^ 0xdeadbeef);
     sd_debug("randomuniform: Setting seed %d\n", seed);
-    // rng.setSeed(seed);
   }
 
   auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*)nullptr;
   auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*)nullptr;
   bool disposable = false;
 
-  if (min == nullptr && max == nullptr && block.numT() >= 2) {
+  if (min == nullptr && max == nullptr || block.numT() >= 2) {
     min = NDArrayFactory::create_(dtype, block.launchContext());
     max = NDArrayFactory::create_(dtype, block.launchContext());
     min->p(0, T_ARG(0));
@@ -69,24 +68,18 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
   REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
   helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
-
-  if (disposable) {
-    delete min;
-    delete max;
-  }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(randomuniform) {
   auto in = INPUT_VARIABLE(0);
-  // auto min = INPUT_VARIABLE(1);
-  auto shape = in->template asVectorT<sd::LongType>();
-  auto dtype = DataType::FLOAT32;  // ArrayOptions::dataType(inputShape->at(1)); // output type is by given min
+  auto shape = in->template asVectorT<LongType>();
+  auto dtype = block.getDArguments()->size() > 0 ? D_ARG(0) : FLOAT32;
 
   if (block.getIArguments()->size()) dtype = (DataType)INT_ARG(0);
   if (block.width() > 1)
-    REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
-                 "RandomUniform: data type of output and min/max args should be the same");
+  REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0,
+               "RandomUniform: data type of output and min/max args should be the same");
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
   return SHAPELIST(newShape);

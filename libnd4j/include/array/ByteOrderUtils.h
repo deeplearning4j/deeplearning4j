@@ -29,7 +29,7 @@
 namespace sd {
 class SD_LIB_EXPORT ByteOrderUtils {
  public:
-  static ByteOrder fromFlatByteOrder(sd::graph::ByteOrder order);
+  static ByteOrder fromFlatByteOrder(graph::ByteOrder order);
 };
 }  // namespace sd
 

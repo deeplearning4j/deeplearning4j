@@ -29,13 +29,13 @@ ConstantDescriptor::ConstantDescriptor(double *values, int length) {
   for (int e = 0; e < length; e++) _floatValues.emplace_back(values[e]);
 }
 
-ConstantDescriptor::ConstantDescriptor(sd::LongType const *values, int length) {
+ConstantDescriptor::ConstantDescriptor(LongType const *values, int length) {
   for (int e = 0; e < length; e++) _integerValues.emplace_back(values[e]);
 }
 
 ConstantDescriptor::ConstantDescriptor(std::initializer_list<double> values) { _floatValues = values; }
 
-ConstantDescriptor::ConstantDescriptor(std::vector<sd::LongType> &values) { _integerValues = values; }
+ConstantDescriptor::ConstantDescriptor(std::vector<LongType> &values) { _integerValues = values; }
 
 ConstantDescriptor::ConstantDescriptor(std::vector<double> &values) { _floatValues = values; }
 
@@ -53,11 +53,11 @@ bool ConstantDescriptor::isInteger() const { return !_integerValues.empty(); }
 
 bool ConstantDescriptor::isFloat() const { return !_floatValues.empty(); }
 
-const std::vector<sd::LongType> &ConstantDescriptor::integerValues() const { return _integerValues; }
+const std::vector<LongType> &ConstantDescriptor::integerValues() const { return _integerValues; }
 
 const std::vector<double> &ConstantDescriptor::floatValues() const { return _floatValues; }
 
-sd::LongType ConstantDescriptor::length() const {
+LongType ConstantDescriptor::length() const {
   return isInteger() ? _integerValues.size() : isFloat() ? _floatValues.size() : 0L;
 }
 }  // namespace sd

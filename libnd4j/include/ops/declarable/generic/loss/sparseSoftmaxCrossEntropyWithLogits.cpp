@@ -45,8 +45,8 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
                "logits_rank - 1), but got labels_rank = %i and logits_rank = %i instead !",
                labelsRank, logitsRank);
 
-  std::vector<sd::LongType> labelsShape = labels->getShapeAsVector();  // this is correct
-  std::vector<sd::LongType> logitsShape = logits->getShapeAsVector();
+  std::vector<LongType> labelsShape = labels->getShapeAsVector();  // this is correct
+  std::vector<LongType> logitsShape = logits->getShapeAsVector();
   logitsShape.pop_back();
   bool equalSoft = logitsShape == labelsShape;
 
@@ -65,7 +65,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0)
 
   helpers::scatterForLoss(block.launchContext(), *labels, logSoftMax, *output, false);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,8 +121,8 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
                "(labels_rank = logits_rank - 1), but got labels_rank = %i and logits_rank = %i instead !",
                labelsRank, logitsRank);
 
-  std::vector<sd::LongType> labelsShape = labels->getShapeAsVector();  // this is correct
-  std::vector<sd::LongType> logitsShape = logits->getShapeAsVector();
+  std::vector<LongType> labelsShape = labels->getShapeAsVector();  // this is correct
+  std::vector<LongType> logitsShape = logits->getShapeAsVector();
   logitsShape.pop_back();
   bool equalSoft = logitsShape == labelsShape;
 
@@ -144,7 +144,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
   helpers::scatterForLoss(block.launchContext(), *labels, *dLdp,
                           *labels /*actually third array is unnecessary for gradient calculation*/, true);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -180,7 +180,7 @@ DECLARE_SHAPE_FN(sparse_softmax_cross_entropy_loss_with_logits_grad) {
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-  sd::LongType *dLdpShapeInfo =
+  LongType *dLdpShapeInfo =
       ShapeBuilders::copyShapeInfoAndType(logitsShapeInfo, outType, false, block.getWorkspace());
 
   return SHAPELIST(CONSTANT(dLdpShapeInfo));

@@ -31,7 +31,7 @@ class SD_LIB_EXPORT OpArgsHolder {
  private:
   std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
   std::vector<double> _tArgs = std::vector<double>();
-  std::vector<sd::LongType> _iArgs = std::vector<sd::LongType>();
+  std::vector<LongType> _iArgs = std::vector<LongType>();
   std::vector<bool> _bArgs = std::vector<bool>();
 
   std::vector<bool> _isArrAlloc = std::vector<bool>();
@@ -50,7 +50,7 @@ class SD_LIB_EXPORT OpArgsHolder {
 
   // constructor
   OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(),
-               const std::vector<sd::LongType>& iArgs = std::vector<sd::LongType>(),
+               const std::vector<LongType>& iArgs = std::vector<LongType>(),
                const std::vector<bool>& bArgs = std::vector<bool>());
 
   // move constructor
@@ -66,7 +66,7 @@ class SD_LIB_EXPORT OpArgsHolder {
 
   const std::vector<double>& getTArgs() const { return _tArgs; }
 
-  const std::vector<sd::LongType>& getIArgs() const { return _iArgs; }
+  const std::vector<LongType>& getIArgs() const { return _iArgs; }
 
   const std::vector<bool>& getBArgs() const { return _bArgs; }
 

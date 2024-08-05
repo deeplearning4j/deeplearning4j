@@ -27,20 +27,20 @@
 
 namespace sd {
 namespace ops {
-sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
+Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
 
   auto z = OUTPUT_VARIABLE(0);
 
-  std::vector<sd::LongType> dims(*block.getIArguments());
+  std::vector<LongType> dims(*block.getIArguments());
   if (dims.size() > 0) std::sort(dims.begin(), dims.end());
 
   NDArray::prepareSpecialUse({z}, {x, y});
 
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
 
   PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
   auto pTadShape = Environment::getInstance().isCPU()
@@ -64,7 +64,7 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
     // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare
     // and pass separate TAD info
 
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
     auto zTadShape = Environment::getInstance().isCPU()
                      ? packZ->primaryShapeInfo()
@@ -84,14 +84,14 @@ sd::Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
   STORE_RESULT(*z);
   traceExecIfNeeded(block);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-LegacyBroadcastBoolOp::LegacyBroadcastBoolOp() : LegacyOp::LegacyOp(2) {
+LegacyBroadcastBoolOp::LegacyBroadcastBoolOp() : LegacyOp(2) {
   //
 }
 
-LegacyBroadcastBoolOp::LegacyBroadcastBoolOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
+LegacyBroadcastBoolOp::LegacyBroadcastBoolOp(int opNum) : LegacyOp(2, opNum) {
   //
 }
 
@@ -100,11 +100,11 @@ LegacyOp *LegacyBroadcastBoolOp::clone() { return new LegacyBroadcastBoolOp(this
 /**
  *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
  */
-ShapeList *LegacyBroadcastBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyBroadcastBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape, DataType::BOOL);
+  auto desc = new ShapeDescriptor(inShape, BOOL);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 }  // namespace ops

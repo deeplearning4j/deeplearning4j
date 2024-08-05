@@ -36,17 +36,17 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT SessionLocalStorage {
  protected:
-  std::atomic<sd::LongType> _sessionCounter;
-  SD_MAP_IMPL<sd::LongType, sd::LongType> _threadSession;
-  SD_MAP_IMPL<sd::LongType, VariableSpace*> _threadVariableSpace;
+  std::atomic<LongType> _sessionCounter;
+  SD_MAP_IMPL<LongType, LongType> _threadSession;
+  SD_MAP_IMPL<LongType, VariableSpace*> _threadVariableSpace;
 
   VariableSpace* _variableSpace;
   Stash* _stash;
 
   std::mutex _mutex;
 
-  sd::LongType getSessionId();
-  sd::LongType getThreadId();
+  LongType getSessionId();
+  LongType getThreadId();
 
  public:
   SessionLocalStorage(VariableSpace* variableSpace = nullptr, Stash* stash = nullptr);
@@ -54,10 +54,10 @@ class SD_LIB_EXPORT SessionLocalStorage {
   ~SessionLocalStorage();
 
   VariableSpace* localVariableSpace();
-  VariableSpace* localVariableSpace(sd::LongType sessionId);
+  VariableSpace* localVariableSpace(LongType sessionId);
 
-  sd::LongType startSession();
-  void endSession(sd::LongType sessionId);
+  LongType startSession();
+  void endSession(LongType sessionId);
   void endSession();
 
   int numberOfSessions();

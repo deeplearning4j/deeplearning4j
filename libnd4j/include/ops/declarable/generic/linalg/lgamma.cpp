@@ -36,7 +36,7 @@ OP_IMPL(lgamma, 1, 1, true) {
   auto z = OUTPUT_VARIABLE(0);
   helpers::lgamma(block.launchContext(), *x, *z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lgamma) {

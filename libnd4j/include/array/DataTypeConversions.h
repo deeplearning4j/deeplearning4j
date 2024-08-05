@@ -37,7 +37,7 @@ template <typename T>
 class SD_LIB_EXPORT DataTypeConversions {
  private:
   template <typename T2>
-  static SD_INLINE void rconv(bool isBe, bool canKeep, T *buffer, sd::LongType length, void *src) {
+  static SD_INLINE void rconv(bool isBe, bool canKeep, T *buffer, LongType length, void *src) {
     if (std::is_same<T, T2>::value && canKeep) {
       memcpy(buffer, src, length * sizeof(T));
     } else {
@@ -63,10 +63,10 @@ class SD_LIB_EXPORT DataTypeConversions {
   }
 
  public:
-  static SD_INLINE void convertType(void *vbuffer, void *src, DataType dataType, ByteOrder order, sd::LongType length) {
+  static SD_INLINE void convertType(void *vbuffer, void *src, DataType dataType, ByteOrder order, LongType length) {
     auto buffer = reinterpret_cast<T *>(vbuffer);
     bool isBe = BitwiseUtils::isBE();
-    bool canKeep = (isBe && order == ByteOrder::BE) || (!isBe && order == ByteOrder::LE);
+    bool canKeep = (isBe && order == BE) || (!isBe && order == LE);
 
     switch (dataType) {
       case BOOL: {
@@ -85,7 +85,7 @@ class SD_LIB_EXPORT DataTypeConversions {
         DataTypeConversions<T>::template rconv<int>(isBe, canKeep, buffer, length, src);
       } break;
       case INT64: {
-        DataTypeConversions<T>::template rconv<sd::LongType>(isBe, canKeep, buffer, length, src);
+        DataTypeConversions<T>::template rconv<LongType>(isBe, canKeep, buffer, length, src);
       } break;
       case FLOAT32: {
         if (std::is_same<T, float>::value && canKeep) {

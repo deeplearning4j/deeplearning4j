@@ -81,27 +81,18 @@ class SD_LIB_EXPORT OpRegistrator {
 #endif
   };
 
-  SD_MAP_IMPL<sd::LongType, std::string> _msvc;
+  SD_MAP_IMPL<LongType, std::string> _msvc;
 
   // pointers to our operations
-  SD_MAP_IMPL<sd::LongType, sd::ops::DeclarableOp*> _declarablesLD;
-  SD_MAP_IMPL<std::string, sd::ops::DeclarableOp*> _declarablesD;
-  std::vector<sd::ops::DeclarableOp*> _uniqueD;
+  SD_MAP_IMPL<LongType, DeclarableOp*> _declarablesLD;
+  SD_MAP_IMPL<std::string, DeclarableOp*> _declarablesD;
+  std::vector<DeclarableOp*> _uniqueD;
 
   // pointers to platform-specific helpers
-  SD_MAP_IMPL<std::pair<sd::LongType, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersLH;
-  SD_MAP_IMPL<std::pair<std::string, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersH;
-  std::vector<sd::ops::platforms::PlatformHelper*> _uniqueH;
+  SD_MAP_IMPL<std::pair<LongType, samediff::Engine>, platforms::PlatformHelper*> _helpersLH;
+  SD_MAP_IMPL<std::pair<std::string, samediff::Engine>, platforms::PlatformHelper*> _helpersH;
+  std::vector<platforms::PlatformHelper*> _uniqueH;
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-  // SD_MAP_IMPL should have custom hash as the third template argument
-  SD_MAP_IMPL<platforms::PlatformHelperLegacyEntry, platforms::PlatformHelperLegacy*,
-              platforms::PlatformHelperLegacyEntryHasher>
-      _helpersHLegacy;
-  std::vector<platforms::PlatformHelperLegacy*> _uniqueHLegacy;
-#endif
-#endif
 
   std::mutex _locker;
   std::string _opsList;
@@ -122,7 +113,7 @@ class SD_LIB_EXPORT OpRegistrator {
   static void sigIntHandler(int sig);
   static void sigSegVHandler(int sig);
 
-  void updateMSVC(sd::LongType newHash, std::string& oldName);
+  void updateMSVC(LongType newHash, std::string& oldName);
 
   template <typename T>
   std::string local_to_string(T value);
@@ -133,36 +124,22 @@ class SD_LIB_EXPORT OpRegistrator {
    *
    * @param op
    */
-  bool registerOperation(const char* name, sd::ops::DeclarableOp* op);
-  bool registerOperation(sd::ops::DeclarableOp* op);
+  bool registerOperation(const char* name, DeclarableOp* op);
+  bool registerOperation(DeclarableOp* op);
   bool traceOps();
   void toggleTraceOps(bool traceOps);
-  void registerHelper(sd::ops::platforms::PlatformHelper* op);
+  void registerHelper(platforms::PlatformHelper* op);
 
 
-  bool hasHelper(sd::LongType hash, samediff::Engine engine);
+  bool hasHelper(LongType hash, samediff::Engine engine);
 
-  sd::ops::DeclarableOp* getOperation(const char* name);
-  sd::ops::DeclarableOp* getOperation(sd::LongType hash);
-  sd::ops::DeclarableOp* getOperation(std::string& name);
+  DeclarableOp* getOperation(const char* name);
+  DeclarableOp* getOperation(LongType hash);
+  DeclarableOp* getOperation(std::string& name);
 
-  sd::ops::platforms::PlatformHelper* getPlatformHelper(sd::LongType hash, samediff::Engine engine);
+  platforms::PlatformHelper* getPlatformHelper(LongType hash, samediff::Engine engine);
 
-#ifndef __JAVACPP_HACK__
-#if defined(HAVE_VEDA)
-
-  void registerHelperLegacy(sd::ops::platforms::PlatformHelperLegacy* op);
-
-  /**
-   * @brief Get the Platform Helper Legacy object (Returns nullptr instead of throwing error)
-   *
-   * @param entry
-   * @return sd::ops::platforms::PlatformHelperLegacy*  nullptr if there is not any
-   */
-  sd::ops::platforms::PlatformHelperLegacy* getPlatformHelperLegacy(const platforms::PlatformHelperLegacyEntry& entry);
-#endif
-#endif
-  std::vector<sd::LongType> getAllHashes();
+  std::vector<LongType> getAllHashes();
 
   int numberOfOperations();
 };

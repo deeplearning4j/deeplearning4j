@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 
 namespace sd {
-unknown_graph_exception::unknown_graph_exception(sd::LongType graphId)
+unknown_graph_exception::unknown_graph_exception(LongType graphId)
     : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
   _graphId = graphId;
 }

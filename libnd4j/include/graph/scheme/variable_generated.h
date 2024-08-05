@@ -84,26 +84,22 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_CONTROLDEPFOROP = 20,
     VT_CONTROLDEPSFORVAR = 22
   };
-  const sd::graph::IntPair *id() const {
-    return GetPointer<const sd::graph::IntPair *>(VT_ID);
+  const IntPair *id() const {
+    return GetPointer<const IntPair *>(VT_ID);
   }
-  const flatbuffers::String *name() const {
-    return GetPointer<const flatbuffers::String *>(VT_NAME);
-  }
-  sd::graph::DType dtype() const {
-    return static_cast<sd::graph::DType>(GetField<int8_t>(VT_DTYPE, 0));
+  const flatbuffers::String *name() const { return GetPointer<const flatbuffers::String *>(VT_NAME); }
+  DType dtype() const {
+    return static_cast<DType>(GetField<int8_t>(VT_DTYPE, 0));
   }
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
   }
-  const sd::graph::FlatArray *ndarray() const {
-    return GetPointer<const sd::graph::FlatArray *>(VT_NDARRAY);
+  const FlatArray *ndarray() const {
+    return GetPointer<const FlatArray *>(VT_NDARRAY);
   }
-  int32_t device() const {
-    return GetField<int32_t>(VT_DEVICE, 0);
-  }
-  sd::graph::VarType variabletype() const {
-    return static_cast<sd::graph::VarType>(GetField<int8_t>(VT_VARIABLETYPE, 0));
+  int32_t device() const { return GetField<int32_t>(VT_DEVICE, 0); }
+  VarType variabletype() const {
+    return static_cast<VarType>(GetField<int8_t>(VT_VARIABLETYPE, 0));
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
@@ -144,25 +140,25 @@ struct FlatVariableBuilder {
   typedef FlatVariable Table;
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_id(flatbuffers::Offset<sd::graph::IntPair> id) {
+  void add_id(flatbuffers::Offset<IntPair> id) {
     fbb_.AddOffset(FlatVariable::VT_ID, id);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatVariable::VT_NAME, name);
   }
-  void add_dtype(sd::graph::DType dtype) {
+  void add_dtype(DType dtype) {
     fbb_.AddElement<int8_t>(FlatVariable::VT_DTYPE, static_cast<int8_t>(dtype), 0);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
     fbb_.AddOffset(FlatVariable::VT_SHAPE, shape);
   }
-  void add_ndarray(flatbuffers::Offset<sd::graph::FlatArray> ndarray) {
+  void add_ndarray(flatbuffers::Offset<FlatArray> ndarray) {
     fbb_.AddOffset(FlatVariable::VT_NDARRAY, ndarray);
   }
   void add_device(int32_t device) {
     fbb_.AddElement<int32_t>(FlatVariable::VT_DEVICE, device, 0);
   }
-  void add_variabletype(sd::graph::VarType variabletype) {
+  void add_variabletype(VarType variabletype) {
     fbb_.AddElement<int8_t>(FlatVariable::VT_VARIABLETYPE, static_cast<int8_t>(variabletype), 0);
   }
   void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
@@ -188,13 +184,11 @@ struct FlatVariableBuilder {
 
 inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<sd::graph::IntPair> id = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0,
-    sd::graph::DType dtype = sd::graph::DType_INHERIT,
+    flatbuffers::Offset<IntPair> id = 0,
+    flatbuffers::Offset<flatbuffers::String> name = 0, DType dtype = DType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
-    flatbuffers::Offset<sd::graph::FlatArray> ndarray = 0,
-    int32_t device = 0,
-    sd::graph::VarType variabletype = sd::graph::VarType_VARIABLE,
+    flatbuffers::Offset<FlatArray> ndarray = 0,
+    int32_t device = 0, VarType variabletype = VarType_VARIABLE,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepForOp = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForVar = 0) {
@@ -214,13 +208,12 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
 
 inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<sd::graph::IntPair> id = 0,
+    flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
-    sd::graph::DType dtype = sd::graph::DType_INHERIT,
+    DType dtype = DType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
-    flatbuffers::Offset<sd::graph::FlatArray> ndarray = 0,
-    int32_t device = 0,
-    sd::graph::VarType variabletype = sd::graph::VarType_VARIABLE,
+    flatbuffers::Offset<FlatArray> ndarray = 0,
+    int32_t device = 0, VarType variabletype = VarType_VARIABLE,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepForOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar = nullptr) {
@@ -229,7 +222,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
   auto controlDeps__ = controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0;
   auto controlDepForOp__ = controlDepForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepForOp) : 0;
   auto controlDepsForVar__ = controlDepsForVar ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForVar) : 0;
-  return sd::graph::CreateFlatVariable(
+  return CreateFlatVariable(
       _fbb,
       id,
       name__,
@@ -243,33 +236,33 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
       controlDepsForVar__);
 }
 
-inline const sd::graph::FlatVariable *GetFlatVariable(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatVariable>(buf);
+inline const FlatVariable *GetFlatVariable(const void *buf) {
+  return flatbuffers::GetRoot<FlatVariable>(buf);
 }
 
-inline const sd::graph::FlatVariable *GetSizePrefixedFlatVariable(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatVariable>(buf);
+inline const FlatVariable *GetSizePrefixedFlatVariable(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatVariable>(buf);
 }
 
 inline bool VerifyFlatVariableBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatVariable>(nullptr);
+  return verifier.VerifyBuffer<FlatVariable>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatVariableBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatVariable>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatVariable>(nullptr);
 }
 
 inline void FinishFlatVariableBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatVariable> root) {
+    flatbuffers::Offset<FlatVariable> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatVariableBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatVariable> root) {
+    flatbuffers::Offset<FlatVariable> root) {
   fbb.FinishSizePrefixed(root);
 }
 

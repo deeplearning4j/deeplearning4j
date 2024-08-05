@@ -33,7 +33,7 @@ namespace ops {
 namespace helpers {
 
 // calculate the digamma function for each element for array
-SD_LIB_HIDDEN void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z);
+SD_LIB_HIDDEN void lgamma(LaunchContext* context, NDArray& x, NDArray& z);
 
 }  // namespace helpers
 }  // namespace ops

@@ -35,15 +35,15 @@ CUSTOM_OP_IMPL(to_double, 1, 1, true, 0, 0) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(to_double) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes(sd::DataType::DOUBLE);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(DOUBLE);
 }
 
 DECLARE_SHAPE_FN(to_double) {
-  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::DOUBLE, true, block.workspace());
+  auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DOUBLE, true, block.workspace());
   return SHAPELIST(CONSTANT(outShape));
 }
 

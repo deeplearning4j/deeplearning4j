@@ -40,17 +40,17 @@ class SD_LIB_EXPORT MemoryCounter {
   std::mutex _locker;
 
   // per-device counters
-  std::map<int, sd::LongType> _deviceCounters;
+  std::map<int, LongType> _deviceCounters;
 
   // TODO: change this wrt heterogenous stuff on next iteration
   // per-group counters
-  std::map<sd::memory::MemoryType, sd::LongType> _groupCounters;
+  std::map<MemoryType, LongType> _groupCounters;
 
   // per-device limits
-  std::map<int, sd::LongType> _deviceLimits;
+  std::map<int, LongType> _deviceLimits;
 
   // per-group limits
-  std::map<sd::memory::MemoryType, sd::LongType> _groupLimits;
+  std::map<MemoryType, LongType> _groupLimits;
 
   MemoryCounter();
   ~MemoryCounter() = default;
@@ -63,7 +63,7 @@ class SD_LIB_EXPORT MemoryCounter {
    * @param numBytes
    * @return TRUE if allocated ammount will keep us below limit, FALSE otherwise
    */
-  bool validate(sd::LongType numBytes);
+  bool validate(LongType numBytes);
 
   /**
    * This method checks if allocation of numBytes won't break through  per-device limit
@@ -71,7 +71,7 @@ class SD_LIB_EXPORT MemoryCounter {
    * @param numBytes
    * @return TRUE if allocated ammount will keep us below limit, FALSE otherwise
    */
-  bool validateDevice(int deviceId, sd::LongType numBytes);
+  bool validateDevice(int deviceId, LongType numBytes);
 
   /**
    * This method checks if allocation of numBytes won't break through per-group limit
@@ -79,65 +79,65 @@ class SD_LIB_EXPORT MemoryCounter {
    * @param numBytes
    * @return TRUE if allocated ammount will keep us below limit, FALSE otherwise
    */
-  bool validateGroup(sd::memory::MemoryType group, sd::LongType numBytes);
+  bool validateGroup(MemoryType group, LongType numBytes);
 
   /**
    * This method adds specified number of bytes to specified counter
    * @param deviceId
    * @param numBytes
    */
-  void countIn(int deviceId, sd::LongType numBytes);
-  void countIn(sd::memory::MemoryType group, sd::LongType numBytes);
+  void countIn(int deviceId, LongType numBytes);
+  void countIn(MemoryType group, LongType numBytes);
 
   /**
    * This method subtracts specified number of bytes from specified counter
    * @param deviceId
    * @param numBytes
    */
-  void countOut(int deviceId, sd::LongType numBytes);
-  void countOut(sd::memory::MemoryType group, sd::LongType numBytes);
+  void countOut(int deviceId, LongType numBytes);
+  void countOut(MemoryType group, LongType numBytes);
 
   /**
    * This method returns amount of memory allocated on specified device
    * @param deviceId
    * @return
    */
-  sd::LongType allocatedDevice(int deviceId);
+  LongType allocatedDevice(int deviceId);
 
   /**
    * This method returns amount of memory allocated in specified group of devices
    * @param group
    * @return
    */
-  sd::LongType allocatedGroup(sd::memory::MemoryType group);
+  LongType allocatedGroup(MemoryType group);
 
   /**
    * This method allows to set per-device memory limits
    * @param deviceId
    * @param numBytes
    */
-  void setDeviceLimit(int deviceId, sd::LongType numBytes);
+  void setDeviceLimit(int deviceId, LongType numBytes);
 
   /**
    * This method returns current device limit in bytes
    * @param deviceId
    * @return
    */
-  sd::LongType deviceLimit(int deviceId);
+  LongType deviceLimit(int deviceId);
 
   /**
    * This method allows to set per-group memory limits
    * @param group
    * @param numBytes
    */
-  void setGroupLimit(sd::memory::MemoryType group, sd::LongType numBytes);
+  void setGroupLimit(MemoryType group, LongType numBytes);
 
   /**
    * This method returns current group limit in bytes
    * @param group
    * @return
    */
-  sd::LongType groupLimit(sd::memory::MemoryType group);
+  LongType groupLimit(MemoryType group);
 };
 }  // namespace memory
 }  // namespace sd

@@ -1,0 +1,63 @@
+# Implement ND4J Log Analyzer for Operation Execution Analysis
+
+## Status
+**Proposed**
+
+Proposed by: Adam Gibson(2024-08-02)
+
+## Context
+
+DeepLearning4J applications rely heavily on ND4J operations for neural network computations. As the library evolves, there's a need to identify regressions between different versions and analyze the execution patterns and performance metrics of ND4J operations. Currently, there's no standardized tool for recording, storing, and analyzing these operations in detail.
+
+## Proposal
+
+Implement an ND4J Log Analyzer as a Java agent with the following key features:
+
+1. Record ND4J operation executions in real-time and store them in an H2 database.
+2. Index the specified DeepLearning4J codebase for reference.
+3. Provide utilities for querying and analyzing recorded operations:
+   - StackTraceCodeFinder for locating source code lines
+   - JsonComparisonReport for comparing operation logs between different runs or versions
+   - JsonReport for exporting operation logs to JSON format
+4. Allow injection into running DeepLearning4J applications as a Java agent.
+
+The analyzer will use two main configuration options:
+- `sourceCodeIndexerPath`: Path to the DeepLearning4J codebase to index.
+- `javaagent`: Path to the compiled ND4J Log Analyzer JAR file.
+
+Data will be stored in two main tables:
+1. `OpLogEvent`: For storing ND4J operation executions.
+2. `SourceCodeLine`: For storing indexed source code information.
+
+## Consequences
+
+### Advantages
+
+* Enables detailed analysis of ND4J operations across different versions.
+* Provides a standardized method for recording and storing operation executions.
+* Allows for easy identification of regressions or unexpected changes in behavior.
+* Supports both real-time analysis and post-execution comparisons.
+* Integrates seamlessly with existing DeepLearning4J applications through Java agent injection.
+
+### Disadvantages
+
+* Adds computational overhead to the running application due to real-time logging.
+* Requires additional storage for the H2 database and generated reports.
+* May require updates to maintain compatibility with future versions of DeepLearning4J and ND4J.
+* Users need to learn how to use and interpret the new analysis tools.
+
+### Risks
+
+* Potential for performance impact on production systems if not used carefully.
+* Possibility of generating large amounts of data that need to be managed and stored securely.
+* Risk of false positives in regression detection due to non-deterministic behaviors in some ND4J operations.
+
+## Action Items
+
+1. Develop the core Java agent for ND4J operation interception and logging.
+2. Implement the H2 database schema and data storage mechanisms.
+3. Create utilities for source code indexing and stack trace analysis.
+4. Develop tools for JSON report generation and comparison.
+5. Write comprehensive documentation and usage guides.
+6. Conduct thorough testing with various DeepLearning4J applications and versions.
+7. Create a release plan and migration guide for existing DeepLearning4J users.

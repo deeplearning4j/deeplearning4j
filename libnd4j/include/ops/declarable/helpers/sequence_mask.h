@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void sequenceMask(sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex);
+SD_LIB_HIDDEN void sequenceMask(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex);
 
 }
 }  // namespace ops

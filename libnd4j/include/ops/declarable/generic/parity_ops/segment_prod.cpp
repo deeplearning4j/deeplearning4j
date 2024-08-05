@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(segment_prod, 2, 1, false, 0, 0) {
   segmentedOutput->nullify();
   helpers::segmentProdFunctor(block.launchContext(), input, idxSegments, segmentedOutput);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(segment_prod) {
@@ -53,7 +53,7 @@ DECLARE_SHAPE_FN(segment_prod) {
 
   auto in = inputShape->at(0);
   int outRank = shape::rank(in);
-  sd::LongType* outputShape = nullptr;
+  LongType* outputShape = nullptr;
   int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
 
   int numOfClasses = val + 1;
@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(segment_prod) {
 
   outputShape[0] = outRank;
   outputShape[1] = numOfClasses;
-  for (sd::LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
+  for (LongType i = 1; i < outRank; ++i) outputShape[i + 1] = shape::sizeAt(in, i);
 
   ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
   outIndices->assign(indices);
   helpers::segmentProdFunctorBP(block.launchContext(), input, indices, gradOut, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(segment_prod) {
@@ -93,8 +93,8 @@ DECLARE_SHAPE_FN(segment_prod_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
 
-  sd::LongType* outShape;
-  sd::LongType* outIndex;
+  LongType* outShape;
+  LongType* outIndex;
   COPY_SHAPE(in, outShape);
   COPY_SHAPE(inIdx, outIndex);
   return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
@@ -102,7 +102,7 @@ DECLARE_SHAPE_FN(segment_prod_bp) {
 
 DECLARE_TYPES(segment_prod_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes(0, {ALL_FLOATS})
       ->setAllowedOutputTypes(1, {ALL_INTS})
       ->setSameMode(false);

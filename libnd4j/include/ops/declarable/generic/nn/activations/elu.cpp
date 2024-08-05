@@ -33,13 +33,13 @@ CONFIGURABLE_OP_IMPL(elu, 1, 1, true, -2, 0) {
 
   const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
 
-  input->applyScalar(sd::scalar::ELU, alpha, *output);
+  input->applyScalar(scalar::ELU, alpha, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(elu) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, -2, 0) {
@@ -53,14 +53,14 @@ CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, -2, 0) {
   // input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, output);
   helpers::eluDerivative(block.launchContext(), input, epsilon, output, alpha);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(elu_bp) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-      ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, {FLOAT32, DOUBLE, HALF})
+      ->setAllowedOutputTypes(0, {FLOAT32, DOUBLE, HALF});
 }
 }  // namespace ops
 }  // namespace sd
