@@ -26,6 +26,7 @@
 #include "../legacy_ops.h"
 #include "../scalar_int.h"
 
+
 using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
@@ -174,6 +175,8 @@ SD_HOST void ScalarIntTransform<X>::intermediateAlongDimension(
   scalarAlongDimension<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets,
       tadShapeInfoZ, tadOffsetsZ);
+  sd::DebugHelper::checkErrorCode(stream, "ScalarIntTransform intermediateAlongDimension(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -185,6 +188,8 @@ void SD_HOST ScalarIntTransform<X>::intermediateShaped(dim3& launchDims, cudaStr
                                                        void* vextraParams, sd::LongType * allocPointer) {
   scalarSimpleShaped<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
+  sd::DebugHelper::checkGlobalErrorCode("scalar simple int(...) failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////

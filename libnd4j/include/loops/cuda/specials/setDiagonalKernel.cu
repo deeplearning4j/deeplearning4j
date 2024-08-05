@@ -22,6 +22,7 @@
 #include <array/NDArray.h>
 #include <loops/special_kernels.h>
 
+
 #include <execution/cuda/LaunchDims.h>
 namespace sd {
 
@@ -34,9 +35,9 @@ namespace sd {
 // row, cols - height and width of given matrix (MxN, rows = M, cols = N)
 //
 template <typename T>
-static SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, T value, int diagonal,
-                                              sd::LongType rows, sd::LongType cols) {
-  __shared__ sd::LongType rank;
+static SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, T value, int diagonal, LongType rows,
+                                              LongType cols) {
+  __shared__ LongType rank;
   __shared__ T* array;
 
   if (0 == threadIdx.x) {
@@ -45,10 +46,10 @@ static SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape,
   }
   __syncthreads();
 
-  for (sd::LongType i = blockIdx.x; i < rows; i += gridDim.x) {
+  for (LongType i = blockIdx.x; i < rows; i += gridDim.x) {
     for (int j = threadIdx.x; j < cols; j += blockDim.x) {
-      sd::LongType coords[2] = {i, j};
-      sd::LongType xOffset = shape::getOffset(shape, coords);
+      LongType coords[2] = {i, j};
+      LongType xOffset = shape::getOffset(shape, coords);
       if (i + diagonal <= j) array[xOffset] = value;
     }
   }
@@ -63,86 +64,61 @@ static SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape,
 //
 
 template <typename T>
-static SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, T value, int diagonal,
-                                              sd::LongType rows, sd::LongType cols) {
-  sd::LongType rank = shape::rank(shape);
+static SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, T value, int diagonal, LongType rows,
+                                              LongType cols) {
+  LongType rank = shape::rank(shape);
   int totalThreads = blockDim.x;
-  for (sd::LongType i = blockIdx.x; i < rows; i += gridDim.x) {
+  for (LongType i = blockIdx.x; i < rows; i += gridDim.x) {
     for (int j = threadIdx.x; j < cols; j += totalThreads) {
-      sd::LongType coords[2] = {i, j};
+      LongType coords[2] = {i, j};
       auto xOffset = shape::getOffset(shape, coords);
       if (i + diagonal >= j) *(reinterpret_cast<T*>(buffer) + xOffset) = value;
     }
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, double value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, double value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, float value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, float value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, int value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, int value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, float16 value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, float16 value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, bfloat16 value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, bfloat16 value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, sd::LongType value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, sd::LongType value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, int16_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, int16_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, uint8_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, uint8_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, int8_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, int8_t value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueLowerKernel(void* buffer, sd::LongType* shape, bool value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
-template SD_KERNEL void setDiagValueUpperKernel(void* buffer, sd::LongType* shape, bool value, int diagonal,
-                                                sd::LongType rows, sd::LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, double value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, double value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, float value, int diagonal, LongType rows,
+                                                LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, float value, int diagonal, LongType rows,
+                                                LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, int value, int diagonal, LongType rows,
+                                                LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, int value, int diagonal, LongType rows,
+                                                LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, float16 value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, float16 value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, bfloat16 value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, bfloat16 value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, LongType value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, LongType value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, int16_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, int16_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, uint8_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, uint8_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, int8_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, int8_t value, int diagonal,
+                                                LongType rows, LongType cols);
+template SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, bool value, int diagonal, LongType rows,
+                                                LongType cols);
+template SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, bool value, int diagonal, LongType rows,
+                                                LongType cols);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename T>
-static void setDiagonalValueUpper(void* buffer, sd::LongType* shape, NDArray const& value, int diagonal,
-                                  sd::LongType rows, sd::LongType cols, cudaStream_t& stream) {
-  dim3 launchDims = getLaunchDims("diag");
-  setDiagValueUpperKernel<T>
-      <<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
-}
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <typename T>
-static void setDiagonalValueLower(void* buffer, sd::LongType* shape, NDArray const& value, int diagonal,
-                                  sd::LongType rows, sd::LongType cols, cudaStream_t& stream) {
-  dim3 launchDims = getLaunchDims("diag");
-  setDiagValueLowerKernel<T>
-      <<<launchDims.x, launchDims.y, launchDims.z, stream>>>(buffer, shape, value.e<T>(0), diagonal, rows, cols);
-}
-
-BUILD_SINGLE_TEMPLATE(template void setDiagonalValueUpper,
-                      (void* buffer, sd::LongType* shape, NDArray const& value, int diagonal, sd::LongType rows,
-                       sd::LongType cols, cudaStream_t& stream),
-                      SD_COMMON_TYPES);
-BUILD_SINGLE_TEMPLATE(template void setDiagonalValueLower,
-                      (void* buffer, sd::LongType* shape, NDArray const& value, int diagonal, sd::LongType rows,
-                       sd::LongType cols, cudaStream_t& stream),
-                      SD_COMMON_TYPES);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }  // namespace sd
