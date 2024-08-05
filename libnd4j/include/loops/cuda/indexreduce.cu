@@ -8,7 +8,7 @@
  *  See the NOTICE file distributed with this work for additional
  *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT12
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations
  * under the License.
@@ -23,9 +23,12 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
+//note: keep this. It's required for proper linker work
+#include <array/ArrayOptions.hXX>
 
 #include "../indexreduce.h"
 #include "../legacy_ops.h"
+
 
 using namespace simdOps;
 
@@ -54,6 +57,8 @@ SD_HOST void IndexReduce<X, Z>::executeIndexReduceScalar(
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, 0, nullptr, 0, 1, allocationBuffer,
       reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+  sd::DebugHelper::checkErrorCode(stream, "executeIndexReduceScalar(...) failed");
+
 }
 
 template <typename X, typename Z>
@@ -77,6 +82,8 @@ SD_HOST void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims,
   simpleIndexReduceGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
       opNum, dx, xShapeInfo, xRank, extraParams, result, zShapeInfo, zRank, dimension, dimensionLength, postProcessOrNot,
       allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+  sd::DebugHelper::checkErrorCode(stream, "executeIndexReduce(...) failed");
+
 }
 
 // This is the un-specialized struct.  Note that we prevent instantiation of this
@@ -205,15 +212,11 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     xLength = shape::length(xShapeInfo);
   }
   __syncthreads();
-
-  if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-    if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
-
     for (sd::LongType i = blockIdxX * blockDim.x + threadIdxX; i < zLen; i += gridDimX * blockDimX) {
       z[i] = static_cast<Z>(reduction.index);
     }
     return;
-  }
+
 
   //ignore this code block
   if (!resultScalar) {

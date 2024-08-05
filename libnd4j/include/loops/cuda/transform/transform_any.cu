@@ -26,6 +26,8 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 #include <execution/cuda/DeviceValidator.h>
+
+
 using namespace simdOps;
 
 
@@ -57,7 +59,7 @@ SD_HOST void TransformAny<X, Y>::executeTransformShaped(dim3 launchDims, cudaStr
                               reductionPointer, tadShapeInfo, tadOffsets),
                        TRANSFORM_ANY_OPS);
 
-  DEBUG_KERNEL(stream, opNum);
+  sd::DebugHelper::checkErrorCode(stream, "transformAny executeTransformShaped(...) failed");
 }
 
 template <typename X, typename Z>
@@ -70,10 +72,10 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto params = reinterpret_cast<X *>(vparams);
-  auto reductionPointer = reinterpret_cast<Z *>(vreductionPointer);
 
-  if(x == nullptr || z == nullptr)
+  if(x == nullptr || z == nullptr) {
     return;
+  }
   __shared__ sd::LongType xEws;
   __shared__ sd::LongType zEws;
   __shared__ char xOrder;
@@ -88,6 +90,7 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
     length = shape::length(xShapeInfo);
   }
   __syncthreads();
+
 
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
@@ -119,6 +122,8 @@ SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_
                                                     void *reductionPointer, const sd::LongType *tadShapeInfo,
                                                     const sd::LongType *tadOffsets) {
 
+  if(stream == nullptr)
+    THROW_EXCEPTION("Found null stream when executing transformAny");
 
 
   transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

@@ -22,18 +22,18 @@
 //
 #include <loops/special_kernels.h>
 
+
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void tearKernel(void* vx, sd::LongType const* xShapeInfo, sd::Pointer* targets,
-                          sd::LongType const* zShapeInfo, sd::LongType const* tadShapeInfo,
-                          sd::LongType const* tadOffsets) {
-  __shared__ sd::LongType tadLength;
+SD_DEVICE void tearKernel(void* vx, LongType const* xShapeInfo, Pointer* targets, LongType const* zShapeInfo,
+                          LongType const* tadShapeInfo, LongType const* tadOffsets) {
+  __shared__ LongType tadLength;
   __shared__ int tadEWS;
   __shared__ int zEWS;
   //        __shared__ int tadRank;
-  __shared__ sd::LongType numTads;
+  __shared__ LongType numTads;
   //        __shared__ int zRank;
   //        __shared__        sd::LongType *tadShape;
   //        __shared__        sd::LongType *tadStride;
@@ -49,14 +49,14 @@ SD_DEVICE void tearKernel(void* vx, sd::LongType const* xShapeInfo, sd::Pointer*
   }
   __syncthreads();
 
-  for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
+  for (LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
     T* z = (T*)targets[r];
     T* s = x + tadOffsets[r];
 
     if (zEWS > 0 && tadEWS > 0) {
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) z[i * zEWS] = s[i * tadEWS];
+      for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) z[i * zEWS] = s[i * tadEWS];
     } else {
-      for (sd::LongType j = threadIdx.x; j < tadLength; j += blockDim.x) {
+      for (LongType j = threadIdx.x; j < tadLength; j += blockDim.x) {
         auto xOffset = shape::getIndexOffset(j, tadShapeInfo);
         auto zOffset = shape::getIndexOffset(j, zShapeInfo);
 
@@ -68,20 +68,19 @@ SD_DEVICE void tearKernel(void* vx, sd::LongType const* xShapeInfo, sd::Pointer*
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execTearKernel(void* vx, sd::LongType const* xShapeInfo, sd::Pointer* targets,
-                              sd::LongType const* zShapeInfo, sd::LongType const* tadShapeInfo,
-                              sd::LongType const* tadOffsets) {
+SD_KERNEL void execTearKernel(void* vx, LongType const* xShapeInfo, Pointer* targets, LongType const* zShapeInfo,
+                              LongType const* tadShapeInfo, LongType const* tadOffsets) {
   tearKernel<T>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void tearKernelGeneric(dim3& launchDims, cudaStream_t* stream, void* vx, sd::LongType const* xShapeInfo,
-                               sd::Pointer* targets, sd::LongType const* zShapeInfo, sd::LongType const* tadShapeInfo,
-                               sd::LongType const* tadOffsets) {
+SD_HOST void tearKernelGeneric(dim3& launchDims, cudaStream_t* stream, void* vx, LongType const* xShapeInfo,
+                               Pointer* targets, LongType const* zShapeInfo, LongType const* tadShapeInfo,
+                               LongType const* tadOffsets) {
   execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, targets, zShapeInfo,
                                                                            tadShapeInfo, tadOffsets);
-  sd::DebugHelper::checkErrorCode(stream, "tear(...) failed");
+  DebugHelper::checkErrorCode(stream, "tear(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void tearKernelGeneric,
