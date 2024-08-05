@@ -657,7 +657,6 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -875,7 +874,6 @@ TEST_F(ParityOpsTests, scatterMin_test4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
   ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -905,7 +903,6 @@ TEST_F(ParityOpsTests, scatterND_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -983,7 +980,6 @@ TEST_F(ParityOpsTests, scatterND_test5) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -1008,7 +1004,6 @@ TEST_F(ParityOpsTests, scatterND_test6) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -1035,7 +1030,6 @@ TEST_F(ParityOpsTests, scatterND_test7) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -1053,7 +1047,6 @@ TEST_F(ParityOpsTests, scatterND_test8) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -1432,7 +1425,6 @@ TEST_F(ParityOpsTests, scatterND_update_test3) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }

@@ -1348,7 +1348,6 @@ TEST_F(MultiDataTypeTests, ndarray_applyLambda_test1) {
   ASSERT_EQ(x3, exp3);
 
   x5.applyLambda<float>(func4, x5);
-  // x5.printBuffer();
   ASSERT_EQ(x5, exp4);
 
   x6.applyLambda<bool>(func5, x7);

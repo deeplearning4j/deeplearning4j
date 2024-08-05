@@ -40,9 +40,6 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
     THROW_EXCEPTION("ops::helpers::im2col: output array must have rank = 6");
   }
 
-  input.printBufferRaw("INPUT IM2COL BUFFER:");
-
-  input.printIndexedBuffer("IM2COL INPUT:");
 
 
   auto imBuff = static_cast<T const*>(input.buffer());
@@ -110,7 +107,6 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   };
 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
-  output.printBufferRaw("IM2COL OUTPUT BUFFER:");
 }
 
 void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW,

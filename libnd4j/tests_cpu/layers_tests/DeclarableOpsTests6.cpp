@@ -349,7 +349,6 @@ TEST_F(DeclarableOpsTests6, cumSum_4) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
   ASSERT_TRUE(exp.equalsTo(z));
 }

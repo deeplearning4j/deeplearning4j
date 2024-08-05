@@ -974,7 +974,6 @@ TEST_F(DeclarableOpsTests3, diagPart_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto *output = result.at(0);
-  // output->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));
@@ -1561,7 +1560,6 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto output = result.at(0);
-  // output->printBuffer();
 
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));

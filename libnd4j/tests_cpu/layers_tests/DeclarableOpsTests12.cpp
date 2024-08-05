@@ -2972,9 +2972,8 @@ TEST_F(DeclarableOpsTests12, ImageResize_Test7) {
 
   ASSERT_EQ(sd::Status::OK, results.status());
 
-  auto result = results[0];  ///.at(0);
-  //    result->printBuffer("Mitchell cubic Resized to 7x8");
-  //    expected.printBuffer("Mitchell cubic Expect for 7x8");
+  auto result = results[0];
+
   ASSERT_TRUE(expected.isSameShape(result));
   ASSERT_TRUE(expected.equalsTo(result));
 }

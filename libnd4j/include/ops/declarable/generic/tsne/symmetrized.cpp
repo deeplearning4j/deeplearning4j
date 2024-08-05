@@ -72,7 +72,6 @@ DECLARE_SHAPE_FN(barnes_symmetrized) {
   // srowCounts->assign(0);
   sd::LongType len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
   rowCounts->syncToHost();
-  //            rowCounts->printBuffer("Row Counts");
   if (len <= 0) THROW_EXCEPTION("barnes_symmetrized: Cannot allocate shape due non-positive len.");
   rowCountsPtr = rowCounts;
   // ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), sd::LongType);

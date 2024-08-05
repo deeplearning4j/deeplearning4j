@@ -261,7 +261,6 @@ TEST_F(NDArrayTest, TestRepeat1) {
   auto exp = new NDArray(eBuffer, eShape);
   for (int e = 0; e < array.lengthOf(); e++) array.p(e, e + 1);
 
-  // array.printBuffer();
 
   auto rep = array.repeat(0, {2});
 
@@ -307,7 +306,6 @@ TEST_F(NDArrayTest, TestIndexedPut1) {
 
   array->p(4, 1.0f);
   ASSERT_EQ(1.0f, array->e<float>(4));
-  // array->printBuffer();
 
   delete array;
 }
@@ -891,7 +889,6 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
 
   MmulHelper::mmul(x, y, z);
 
-  // z->printBuffer();
 
   ASSERT_TRUE(z->equalsTo(exp));
 
@@ -921,7 +918,6 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
 
   MmulHelper::mmul(x, y, z);
 
-  // z->printBuffer();
 
   ASSERT_TRUE(z->equalsTo(exp));
 
@@ -1044,7 +1040,6 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
 
   MmulHelper::mmul(y, x, z);
 
-  // z->printBuffer();
   ASSERT_TRUE(z->equalsTo(exp));
 
   delete[] expBuffer;

@@ -116,7 +116,6 @@ TEST_F(LegacyOpsTests, PWT_Tests_2) {
 
   auto z = result.at(0);
 
-  // z->printBuffer("Z");
   ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -160,7 +159,6 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
-  // z->printBuffer("ReduceTest1");
   ASSERT_TRUE(z->isScalar());
   ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 }
@@ -225,7 +223,6 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
   ASSERT_EQ(1, result.size());
 
   auto z = result.at(0);
-  // z->printBuffer("ReduceTest1");
   ASSERT_TRUE(z->isScalar());
   ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
 }

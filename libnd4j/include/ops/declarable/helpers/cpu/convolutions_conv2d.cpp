@@ -80,15 +80,12 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
                     NDArrayFactory::create(0.f, input->getContext()));
   }
 
-  col->printBufferRaw("col post permute forward pass: ");
-  colP->printBufferRaw("colP post permute forward pass: ");
+
 
   std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
   block.pushIntermediateResult(col);
 
   auto im2colReshape = col->reshape('c', {bS * oH * oW, kH * kW * iC}, true);
-  im2colReshape.printBufferRaw("im2col post reshape forward pass: ");
-  im2colReshape.printIndexedBuffer("IM2col after reshape:");
 
   auto weightsPermuted = weights->permute({3, 2, 1, 0});
   auto reshapedW = weightsPermuted.reshape('f', {iC * kH * kW, oC}, false);
