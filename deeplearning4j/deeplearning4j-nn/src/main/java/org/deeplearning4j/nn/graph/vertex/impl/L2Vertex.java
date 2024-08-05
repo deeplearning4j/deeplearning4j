@@ -73,10 +73,9 @@ public class L2Vertex extends BaseGraphVertex {
             dimensions[i - 1] = i;
         }
 
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            INDArray arr = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, dimensions));
-            return arr.reshape(arr.size(0), 1);
-        }
+
+        INDArray arr = Nd4j.getExecutioner().exec(new EuclideanDistance(a, b, dimensions));
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,arr.reshape(arr.size(0), 1));
     }
 
     @Override
@@ -94,9 +93,8 @@ public class L2Vertex extends BaseGraphVertex {
         INDArray sNegHalf = out.rdiv(1.0); //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
         INDArray diff;
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
-            diff = a.sub(b);
-        }
+        diff = a.sub(b);
+
 
         INDArray first = dLdlambda.mul(sNegHalf); //Column vector for all cases
 
@@ -105,18 +103,16 @@ public class L2Vertex extends BaseGraphVertex {
         if (a.rank() == 2) {
             //2d case (MLPs etc)
             dLda = diff.muliColumnVector(first);
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
-                dLdb = dLda.neg();
-            }
+            dLdb = dLda.neg();
+
         } else {
             //RNN and CNN case - Broadcast along dimension 0
             dLda = Nd4j.getExecutioner().exec(new BroadcastMulOp(diff, first, diff, 0));
-            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
-                dLdb = dLda.neg();
-            }
+            dLdb = dLda.neg();
+
         }
 
-        return new Pair<>(null, new INDArray[] {dLda, dLdb});
+        return new Pair<>(null, new INDArray[] {workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,dLda), workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD,dLdb)});
     }
 
     @Override
@@ -132,7 +128,7 @@ public class L2Vertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                           int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {
             return null;

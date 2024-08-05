@@ -21,129 +21,68 @@
 #
 
 set -exo pipefail
-TEST_FILTER="none"
 
+#JAVA_CALL="java -DsourceCodeIndexerPath=/home/agibsonccc/Documents/GitHub/deeplearning4j -javaagent:/home/agibsonccc/.m2/repository/org/nd4j/nd4j-log-analyzer/1.0-SNAPSHOT/nd4j-log-analyzer-1.0-SNAPSHOT.jar "
+JAVA_CALL="java "
 
-
-CHIP="${CHIP:-cpu}"
-
-if [[ "$TEST_FILTER" != "none" ]]; then
-   export BLOCK_SIZE_SCALAR_SCAN=1
-   export GRID_SIZE_SCALAR_SCAN=1
-   export GRID_SIZE_TRANSFORM_SCAN=1
-   export BLOCK_SIZE_TRANSFORM_SCAN=1
-   export SHARED_MEM_SIZE_TRANSFORM_SCAN=256
-   export GRID_SIZE_COL2IM=256
-   export BLOCK_SIZE_COL2IM=256
-   export SHARED_MEM_SIZE_COL2IM=16000
-   export GRID_SIZE_IM2COL=256
-   export BLOCK_SIZE_IM2COL=256
-   export SHARED_MEM_SIZE_IM2COL=16000
-   export BLOCK_SIZE_RANDOM=128
-   export GRID_SIZE_RANDOM=128
-   export GRID_SIZE_POOLING=256
-   export BLOCK_SIZE_POOLING=256
-   export GRID_SIZE_MERGE=256
-   export   BLOCK_SIZE_MERGE=256
-   export  SHARED_MEM_SIZE_MERGE=256
-   export GRID_SIZE_DIAG_PART=128
-   export BLOCK_SIZE_DIAG_PART=128
-   export GRID_SIZE_SEGMENT_MEAN=128
-   export BLOCK_SIZE_SEGMENT_MEAN=128
-   export GRID_SIZE_CLIP=128
-   export BLOCK_SIZE_CLIP=128
-   export GRID_SIZE_SWAP_UNSAFE=128
-   export  BLOCK_SIZE_SWAP_UNSAFE=256
-   export GRID_SIZE_SEGMENT=128
-   export BLOCK_SIZE_SEGMENT=128
-   export GRID_SIZE_SEGMENT_MEAN=128
-   export BLOCK_SIZE_SEGMENT_MEAN=128
-   export GRID_SIZE_GATHER=128
-   export BLOCK_SIZE_GATHER=128
-   export GRID_SIZE_PREFIX=128
-   export BLOCK_SIZE_PREFIX=128
-   export GRID_SIZE_ADJUST=128
-   export BLOCK_SIZE_ADJUST=128
-   export GRID_SIZE_SEGMENT_TAD=128
-   export BLOCK_SIZE_SEGMENT_TAD=128
-   export GRID_SIZE_MATRIX_DIAG=128
-   export BLOCK_SIZE_MATRIX_DIAG=128
-   export GRID_SIZE_SEGMENT_PROD_2_TAD=128
-   export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
-   export GRID_SIZE_ZETA=64
-   export BLOCK_SIZE_ZETA=64
-   export GRID_SIZE_SCATTER_SIMPLE=256
-   export BLOCK_SIZE_SCATTER_SIMPLE=128
-   export GRID_SIZE_MIRROR_PAD_LINEAR=128
-   export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
-   export GRID_SIZE_POLYGAMMA=64
-   export BLOCK_SIZE_POLYGAMMA=64
-   export GRID_SIZE_DIGAMMA=128
-   export BLOCK_SIZE_DIGAMMA=128
-   export GRID_SIZE_BETA_INC=128
-   export BLOCK_SIZE_BETA_INC=128
-   export GRID_SIZE_INVERT_PERMUTATION=128
-  export BLOCK_SIZE_INVERT_PERMUTATION=128
-   $TEST_RUNNER_PREFIX java "$@"
-
-
+# Find libjvm.so
+if [[ -n $LIBJVM_SO ]]; then
+    LIBJVM_PATH=$LIBJVM_SO
 else
-  export GRID_SIZE_TRANSFORM_SCAN=1
-  export BLOCK_SIZE_TRANSFORM_SCAN=1
-  export BLOCK_SIZE_SCALAR_SCAN=1
-  export GRID_SIZE_SCALAR_SCAN=1
-  export SHARED_MEM_SIZE_TRANSFORM_SCAN=1024
-  export GRID_SIZE_COL2IM=128
-  export BLOCK_SIZE_COL2IM=128
-  export SHARED_MEM_SIZE_COL2IM=16000
-  export GRID_SIZE_IM2COL=128
-  export BLOCK_SIZE_IM2COL=128
-  export SHARED_MEM_SIZE_IM2COL=16000
-  export BLOCK_SIZE_RANDOM=128
-  export GRID_SIZE_RANDOM=128
-  export GRID_SIZE_POOLING=256
-  export BLOCK_SIZE_POOLING=256
-  export GRID_SIZE_MERGE=256
-  export BLOCK_SIZE_MERGE=256
-  export SHARED_MEM_SIZE_MERGE=256
-  export GRID_SIZE_DIAG_PART=128
-  export BLOCK_SIZE_DIAG_PART=128
-  export GRID_SIZE_CLIP=128
-  export BLOCK_SIZE_CLIP=128
-  export GRID_SIZE_SWAP_UNSAFE=128
-  export  BLOCK_SIZE_SWAP_UNSAFE=256
-  export GRID_SIZE_SEGMENT_MEAN=128
-  export BLOCK_SIZE_SEGMENT_MEAN=128
-  export GRID_SIZE_SEGMENT=128
-  export BLOCK_SIZE_SEGMENT=128
-  export GRID_SIZE_GATHER=128
-  export BLOCK_SIZE_GATHER=128
-  export GRID_SIZE_PREFIX=128
-  export BLOCK_SIZE_PREFIX=128
-  export GRID_SIZE_ADJUST=128
-  export BLOCK_SIZE_ADJUST=128
-  export GRID_SIZE_SEGMENT_TAD=128
-  export BLOCK_SIZE_SEGMENT_TAD=128
-  export GRID_SIZE_MATRIX_DIAG=128
-  export BLOCK_SIZE_MATRIX_DIAG=128
-  export GRID_SIZE_SEGMENT_PROD_2_TAD=128
-  export BLOCK_SIZE_SEGMENT_PROD_2_TAD=128
-  export GRID_SIZE_ZETA=64
-  export BLOCK_SIZE_ZETA=64
-  export GRID_SIZE_SCATTER_SIMPLE=256
-  export BLOCK_SIZE_SCATTER_SIMPLE=128
-  export GRID_SIZE_MIRROR_PAD_LINEAR=128
-  export BLOCK_SIZE_MIRROR_PAD_LINEAR=128
-  export GRID_SIZE_DIGAMMA=128
-  export BLOCK_SIZE_DIGAMMA=128
-  export GRID_SIZE_POLYGAMMA=64
-  export BLOCK_SIZE_POLYGAMMA=64
-  export GRID_SIZE_ADJUST_WEIGHTS=128
-  export BLOCK_SIZE_ADJUST_WEIGHTS=128
-  export GRID_SIZE_BETA_INC=128
-  export BLOCK_SIZE_BETA_INC=128
-  export GRID_SIZE_INVERT_PERMUTATION=128
-  export BLOCK_SIZE_INVERT_PERMUTATION=128
-   $TEST_RUNNER_PREFIX  java "$@"
+    JAVA_REAL_PATH=$(readlink -f $(which java))
+    JAVA_HOME=$(dirname $(dirname $JAVA_REAL_PATH))
+    LIBJVM_PATH=$(find $JAVA_HOME -type f -name "libjvm.so" | grep "/server/" | head -n 1)
+fi
 
+# If libjvm.so not found, terminate
+if [[ -z $LIBJVM_PATH ]]; then
+    echo "libjvm.so not found"
+    exit 1
+fi
+
+# If TEST_RUNNER_PREFIX is not empty and contains "valgrind"
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
+    # Create a file to store the suppression information
+    SUPPRESSION_FILE="valgrind_suppressions.supp"
+
+    # If suppression file exists, delete it
+    if [[ -f $SUPPRESSION_FILE ]]; then
+        rm -f $SUPPRESSION_FILE
+    fi
+
+    # Generate the suppression file for all memcheck error types except Param
+    echo "Generating Valgrind suppression file at $SUPPRESSION_FILE..."
+    for error_type in Addr1 Addr2 Addr4 Addr8 Value1 Value2 Value4 Value8 Jump Cond
+    do
+        cat << EOF >> $SUPPRESSION_FILE
+{
+    SuppressLibJvm${error_type}
+    Memcheck:${error_type}
+    ...
+    obj:$LIBJVM_PATH
+}
+EOF
+    done
+
+    echo "Valgrind suppression file has been generated."
+
+    # Check if "--suppressions" already exists in TEST_RUNNER_PREFIX
+    if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
+        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+    fi
+
+    JAVA_CALL="${JAVA_CALL} -Djava.compiler=NONE"
+fi
+
+
+# Print the final command
+echo "$TEST_RUNNER_PREFIX $JAVA_CALL $@"
+export MALLOC_CHECK_=3
+# Execute the command
+
+$TEST_RUNNER_PREFIX $JAVA_CALL "$@"
+
+# If TEST_RUNNER_PREFIX is not empty and contains "valgrind", remove the suppression file
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
+    rm -f $SUPPRESSION_FILE
 fi

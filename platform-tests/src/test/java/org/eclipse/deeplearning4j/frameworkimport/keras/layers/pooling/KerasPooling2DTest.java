@@ -50,15 +50,15 @@ class KerasPooling2DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "test_layer";
 
-    private final int[] KERNEL_SIZE = new int[] { 1, 2 };
+    private final long[] KERNEL_SIZE = { 1, 2 };
 
-    private final int[] STRIDE = new int[] { 3, 4 };
+    private final long[] STRIDE = { 3, 4 };
 
     private final PoolingType POOLING_TYPE = PoolingType.MAX;
 
     private final String BORDER_MODE_VALID = "valid";
 
-    private final int[] VALID_PADDING = new int[] { 0, 0 };
+    private final long[] VALID_PADDING = { 0, 0 };
 
     private Integer keras1 = 1;
 
@@ -80,11 +80,11 @@ class KerasPooling2DTest extends BaseDL4JTest {
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_2D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        List<Integer> kernelSizeList = new ArrayList<>();
+        List<Long> kernelSizeList = new ArrayList<>();
         kernelSizeList.add(KERNEL_SIZE[0]);
         kernelSizeList.add(KERNEL_SIZE[1]);
         config.put(conf.getLAYER_FIELD_POOL_SIZE(), kernelSizeList);
-        List<Integer> subsampleList = new ArrayList<>();
+        List<Long> subsampleList = new ArrayList<>();
         subsampleList.add(STRIDE[0]);
         subsampleList.add(STRIDE[1]);
         config.put(conf.getLAYER_FIELD_POOL_STRIDES(), subsampleList);

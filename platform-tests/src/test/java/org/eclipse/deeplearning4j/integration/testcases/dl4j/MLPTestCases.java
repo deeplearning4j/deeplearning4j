@@ -67,7 +67,7 @@ public class MLPTestCases {
      * A simple MLP test case using MNIST iterator.
      * Also has LR schedule built-in
      */
-    public static TestCase getMLPMnist(){
+    public static TestCase getMLPMnist() {
         return new TestCase() {
             {
                 testName = "MLPMnist";

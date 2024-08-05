@@ -946,13 +946,10 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public void testParallelLoading(Nd4jBackend backend) throws Exception {
         int numThreads = 16;
         boolean isIntegration = isIntegrationTests();
-        //Nd4j.getProfiler().start();
-        //EventLogger.getInstance().setEventTypesToLog(Arrays.asList(EventType.DEALLOCATION));
         Executor executor = Executors.newFixedThreadPool(numThreads);
         File resource = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator sentencesIter = getIterator(isIntegration, resource);
 
-        //Nd4j.getProfiler().start();
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         File local_resource_mixed = testDir.toFile();
         resource_mixed.copyDirectory(local_resource_mixed);

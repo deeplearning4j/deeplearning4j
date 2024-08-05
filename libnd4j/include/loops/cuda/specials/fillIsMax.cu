@@ -22,24 +22,25 @@
 //
 #include <loops/special_kernels.h>
 
+
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execFillIsMax(void *vdZ, const sd::LongType *xShapeInfo, sd::LongType length, long idx) {
+SD_KERNEL void execFillIsMax(void *vdZ, const LongType *xShapeInfo, LongType length, long idx) {
   auto dz = reinterpret_cast<T *>(vdZ);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x)
+  for (LongType i = tid; i < length; i += blockDim.x * gridDim.x)
     dz[shape::getIndexOffset(i, xShapeInfo)] = (i == idx ? (T)1 : (T)0);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_HOST void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, const sd::LongType *xShapeInfo,
-                              sd::LongType length, long idx) {
+SD_HOST void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, const LongType *xShapeInfo,
+                              LongType length, long idx) {
   execFillIsMax<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, xShapeInfo, length, idx);
-  sd::DebugHelper::checkErrorCode(stream, "fillIsMax(...) failed");
+  DebugHelper::checkErrorCode(stream, "fillIsMax(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void fillIsMaxGeneric,

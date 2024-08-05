@@ -54,7 +54,7 @@ public class CNN1DTestCases {
      * A simple CNN 1d test case using most CNN 1d layers:
      * Subsampling, Upsampling, Convolution, Cropping, Zero padding
      */
-    public static TestCase getCnn1dTestCaseCharRNN(){
+    public static TestCase getCnn1dTestCaseCharRNN() {
         return new TestCase() {
             {
                 testName = "CNN1dCharacterTestCase";

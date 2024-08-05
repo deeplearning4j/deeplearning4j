@@ -25,6 +25,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.nd4j.autodiff.listeners.debugging.ArrayTracker;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -56,15 +57,16 @@ public class TestOnnxConverter {
 
     @Test
     public void testOnnxTraining() throws Exception {
+        Nd4j.getEnvironment().setDeletePrimary(false);
+        Nd4j.getEnvironment().setDeleteSpecial(false);
         ClassPathResource classPathResource = new ClassPathResource("onnx_graphs/output_cnn_mnist.onnx");
         OnnxFrameworkImporter onnxFrameworkImporter = new OnnxFrameworkImporter();
         Map<String, INDArray> arr = new HashMap<>();
         arr.put("label", Nd4j.ones(10));
         arr.put("input.1",Nd4j.ones(1,1,28,28));
-        SameDiff sameDiff = onnxFrameworkImporter.runImport(classPathResource.getFile().getAbsolutePath(),arr, true);
+        SameDiff sameDiff = onnxFrameworkImporter.runImport(classPathResource.getFile().getAbsolutePath(),arr, true, true);
         SDVariable labels = sameDiff.placeHolder("labels", DataType.FLOAT);
         sameDiff.setEagerMode(false);
-
         SDVariable sdVariable = sameDiff.loss().softmaxCrossEntropy(labels, sameDiff.getVariable("22"),sameDiff.constant(1.0f));
         sdVariable.markAsLoss();
         TrainingConfig trainingConfig = TrainingConfig.builder()

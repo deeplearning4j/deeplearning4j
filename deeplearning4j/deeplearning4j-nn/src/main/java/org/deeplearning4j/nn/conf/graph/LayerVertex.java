@@ -42,7 +42,7 @@ public class LayerVertex extends GraphVertex {
     private NeuralNetConfiguration layerConf;
     private InputPreProcessor preProcessor;
     //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
-    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
+    // For RL situations, this Layer isn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
     // passed in externally
     private boolean outputVertex;
 

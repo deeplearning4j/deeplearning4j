@@ -22,7 +22,8 @@ package org.eclipse.deeplearning4j.frameworkimport.tensorflow;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.jupiter.api.*;import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +42,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Stream;
-
+import static org.eclipse.deeplearning4j.frameworkimport.tensorflow.models.TestTFGraphAllSameDiffPartitionedBase.IGNORE_REGEXES;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 
@@ -123,10 +124,10 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         // if this variable isn't set - we're using dl4j-tests-resources
         if (localPath == null) {
             File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir).stream().map(Arguments::of);
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir, 0, -1).stream().map(Arguments::of);
         } else {
             File baseDir = new File(localPath);
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir).stream().map(Arguments::of);
+            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir, 0, -1).stream().map(Arguments::of);
         }
     }
 
@@ -136,7 +137,7 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         Nd4j.create(1);
         Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getExecutioner().enableDebugMode(true);
-        for(String s : TestTFGraphAllSameDiff.IGNORE_REGEXES) {
+        for(String s : IGNORE_REGEXES) {
             if(modelName.matches(s)){
                 log.info("\n\tIGNORE MODEL ON REGEX: {} - regex {}", modelName, s);
                 assumeFalse(true);

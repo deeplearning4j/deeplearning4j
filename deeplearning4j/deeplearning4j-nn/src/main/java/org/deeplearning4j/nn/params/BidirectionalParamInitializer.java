@@ -106,10 +106,10 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        val n = paramsView.length()/2;
+        val n = paramsView.length() / 2;
         INDArray paramsReshape = paramsView.reshape(paramsView.length());
         INDArray forwardView = paramsReshape.get(interval(0, n));
-        INDArray backwardView = paramsReshape.get(interval(n, 2*n));
+        INDArray backwardView = paramsReshape.get(interval(n, 2 *n ));
 
         conf.clearVariables();
 
@@ -123,7 +123,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
         conf.setVariables(variables);
 
         Map<String,INDArray> out = new LinkedHashMap<>();
-        for( Map.Entry<String, INDArray> e : origFwd.entrySet()){
+        for( Map.Entry<String, INDArray> e : origFwd.entrySet()) {
             out.put(FORWARD_PREFIX + e.getKey(), e.getValue());
         }
         for( Map.Entry<String, INDArray> e : origBwd.entrySet()){

@@ -25,13 +25,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
@@ -154,98 +153,10 @@ public class RnnDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @MethodSource("params")
-    @ParameterizedTest
-    @Tag(TagNames.LARGE_RESOURCES)
-    @Tag(TagNames.LONG_TEST)
-    public void testGraveLSTM(boolean helpers,
-                              boolean lastTimeStep,
-                              boolean maskZeros,Nd4jBackend backend) {
-        try {
-
-            Nd4j.getRandom().setSeed(12345);
-            Nd4j.getEnvironment().allowHelpers(helpers);
-            String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
-            System.out.println(" --- " + msg + " ---");
-
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
-
-            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
-
-            TestCase tc = TestCase.builder()
-                    .msg(msg)
-                    .net1(getGravesLstmNet(RNNFormat.NCW, true, lastTimeStep, maskZeros))
-                    .net2(getGravesLstmNet(RNNFormat.NCW, false, lastTimeStep, maskZeros))
-                    .net3(getGravesLstmNet(RNNFormat.NWC, true, lastTimeStep, maskZeros))
-                    .net4(getGravesLstmNet(RNNFormat.NWC, false, lastTimeStep, maskZeros))
-                    .inNCW(inNCW)
-                    .labelsNCW((lastTimeStep)? labelsNWC: labelsNWC.permute(0, 2, 1))
-                    .labelsNWC(labelsNWC)
-                    .testLayerIdx(1)
-                    .build();
-
-            TestCase.testHelper(tc);
 
 
-        } finally {
-            Nd4j.getEnvironment().allowHelpers(true);
-        }
-    }
 
 
-    @MethodSource("params")
-    @ParameterizedTest
-    public void testGraveBiLSTM(boolean helpers,
-                                boolean lastTimeStep,
-                                boolean maskZeros,Nd4jBackend backend) {
-        try {
-
-            Nd4j.getRandom().setSeed(12345);
-            Nd4j.getEnvironment().allowHelpers(helpers);
-            String msg = "Helpers: " + helpers + ", lastTimeStep: " + lastTimeStep + ", maskZeros: " + maskZeros;
-            System.out.println(" --- " + msg + " ---");
-
-            INDArray inNCW = Nd4j.rand(DataType.FLOAT, 2, 3, 12);
-
-            INDArray labelsNWC = (lastTimeStep) ?TestUtils.randomOneHot(2, 10): TestUtils.randomOneHot(2 * 12, 10).reshape(2, 12, 10);
-
-            TestCase tc = TestCase.builder()
-                    .msg(msg)
-                    .net1(getGravesBidirectionalLstmNet(RNNFormat.NCW, true, lastTimeStep, maskZeros))
-                    .net2(getGravesBidirectionalLstmNet(RNNFormat.NCW, false, lastTimeStep, maskZeros))
-                    .net3(getGravesBidirectionalLstmNet(RNNFormat.NWC, true, lastTimeStep, maskZeros))
-                    .net4(getGravesBidirectionalLstmNet(RNNFormat.NWC, false, lastTimeStep, maskZeros))
-                    .inNCW(inNCW)
-                    .labelsNCW((lastTimeStep)? labelsNWC: labelsNWC.permute(0, 2, 1))
-                    .labelsNWC(labelsNWC)
-                    .testLayerIdx(1)
-                    .build();
-
-            TestCase.testHelper(tc);
-
-
-        } finally {
-            Nd4j.getEnvironment().allowHelpers(true);
-        }
-    }
-
-
-    private MultiLayerNetwork getGravesBidirectionalLstmNet(RNNFormat format, boolean setOnLayerAlso, boolean lastTimeStep, boolean maskZeros) {
-        if (setOnLayerAlso) {
-            return getNetWithLayer(new GravesBidirectionalLSTM.Builder().nOut(3)
-                    .dataFormat(format).build(), format, lastTimeStep, maskZeros);
-        } else {
-            return getNetWithLayer(new  GravesBidirectionalLSTM.Builder().nOut(3).build(), format, lastTimeStep, maskZeros);
-        }
-    }
-    private MultiLayerNetwork getGravesLstmNet(RNNFormat format, boolean setOnLayerAlso, boolean lastTimeStep, boolean maskZeros) {
-        if (setOnLayerAlso) {
-            return getNetWithLayer(new GravesLSTM.Builder().nOut(3)
-                    .dataFormat(format).build(), format, lastTimeStep, maskZeros);
-        } else {
-            return getNetWithLayer(new GravesLSTM.Builder().nOut(3).build(), format, lastTimeStep, maskZeros);
-        }
-    }
 
     private MultiLayerNetwork getLstmNet(RNNFormat format, boolean setOnLayerAlso, boolean lastTimeStep, boolean maskZeros) {
         if (setOnLayerAlso) {
@@ -271,7 +182,7 @@ public class RnnDataFormatTests extends BaseDL4JTest {
         if(lastTimeStep){
             layer = new LastTimeStep(layer);
         }
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .list()
                 .layer(new LSTM.Builder()

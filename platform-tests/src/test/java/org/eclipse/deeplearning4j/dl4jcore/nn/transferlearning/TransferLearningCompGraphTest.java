@@ -64,9 +64,22 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
         long rng = 12345L;
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
         // original conf
-        ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS).updater(new Nesterovs(0.01, 0.99)).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4)).addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In").addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0").setOutputs("layer1").build();
+        ComputationGraphConfiguration confToChange = new NeuralNetConfiguration.Builder().seed(rng)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Nesterovs(0.01, 0.99))
+                .graphBuilder().addInputs("layer0In")
+                .setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                .addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0")
+                .setOutputs("layer1").build();
         // conf with learning parameters changed
-        ComputationGraphConfiguration expectedConf = new NeuralNetConfiguration.Builder().seed(rng).updater(new RmsProp(0.2)).graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4)).addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In").addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0").setOutputs("layer1").build();
+        ComputationGraphConfiguration expectedConf = new NeuralNetConfiguration.Builder().seed(rng).updater(new RmsProp(0.2))
+                .graphBuilder().addInputs("layer0In").setInputTypes(InputType.feedForward(4))
+                .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")
+                .addLayer("layer1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(3).nOut(3).build(), "layer0")
+                .setOutputs("layer1").build();
         ComputationGraph expectedModel = new ComputationGraph(expectedConf);
         expectedModel.init();
         ComputationGraph modelToFineTune = new ComputationGraph(expectedConf);
@@ -164,20 +177,6 @@ class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertEquals(modelExpectedArch.params(), modelNow.params());
     }
 
-    @Test
-    @DisplayName("Test Transfer Global Pool")
-    void testTransferGlobalPool() {
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new Adam(0.1)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in").addLayer("blstm1", new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).activation(Activation.TANH).build(), "in").addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1").addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool").addLayer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.IDENTITY).lossFunction(LossFunctions.LossFunction.MSE).build(), "dense").setOutputs("out").build();
-        ComputationGraph g = new ComputationGraph(conf);
-        g.init();
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).build();
-        ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration).removeVertexKeepConnections("out").setFeatureExtractor("dense").addLayer("out", new OutputLayer.Builder().updater(new Adam(0.1)).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(10).nOut(5).build(), "dense").build();
-        ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder().seed(12345).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in").addLayer("blstm1", new FrozenLayer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).activation(Activation.TANH).build()), "in").addLayer("pool", new FrozenLayer(new GlobalPoolingLayer.Builder().build()), "blstm1").addLayer("dense", new FrozenLayer(new DenseLayer.Builder().nIn(10).nOut(10).build()), "pool").addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX).updater(new Adam(0.1)).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "dense").setOutputs("out").build();
-        ComputationGraph modelExpected = new ComputationGraph(confExpected);
-        modelExpected.init();
-        // assertEquals(confExpected, graph.getConfiguration());
-        assertEquals(confExpected.toJson(), graph.getConfiguration().toJson());
-    }
 
     @Test
     @DisplayName("Test Object Overrides")

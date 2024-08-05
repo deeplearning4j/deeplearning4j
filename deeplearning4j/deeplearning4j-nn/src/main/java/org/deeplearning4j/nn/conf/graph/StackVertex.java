@@ -82,7 +82,7 @@ public class StackVertex extends GraphVertex {
         InputType first = vertexInputs[0];
 
         //Check that types are all the same...
-        for( int i=1; i<vertexInputs.length; i++ ){
+        for( int i = 1; i < vertexInputs.length; i++) {
             Preconditions.checkState(vertexInputs[i].getType() == first.getType(), "Different input types found:" +
                     " input types must be the same. First type: %s, type %s: %s", first, i, vertexInputs[i]);
 

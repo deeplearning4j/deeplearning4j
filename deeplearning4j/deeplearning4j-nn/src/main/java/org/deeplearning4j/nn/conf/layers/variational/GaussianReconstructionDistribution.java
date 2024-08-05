@@ -97,7 +97,7 @@ public class GaussianReconstructionDistribution implements ReconstructionDistrib
         INDArray output = preOutDistributionParams.dup();
         activationFn.getActivation(output, false);
 
-        val size = output.size(1) / 2;
+        long size = output.size(1) / 2;
         INDArray mean = output.get(NDArrayIndex.all(), NDArrayIndex.interval(0, size));
         INDArray logStdevSquared = output.get(NDArrayIndex.all(), NDArrayIndex.interval(size, 2 * size));
 

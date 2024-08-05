@@ -75,21 +75,21 @@ class MaskZeroLayerTest extends BaseDL4JTest {
     @MethodSource("params")
     void activate(RNNFormat rnnDataFormat,Nd4jBackend backend) {
         // GIVEN two examples where some of the timesteps are zero.
-        INDArray ex1 = Nd4j.create(new double[][] { new double[] { 0, 3, 5 }, new double[] { 0, 0, 2 } });
-        INDArray ex2 = Nd4j.create(new double[][] { new double[] { 0, 0, 2 }, new double[] { 0, 0, 2 } });
+        INDArray ex1 = Nd4j.create(new double[][] { new double[] { 0.1, 0.3, 5 }, new double[] { 0.1, 0.2, 2 } });
+        INDArray ex2 = Nd4j.create(new double[][] { new double[] { 0.1, 0.2, 2 }, new double[] { 0.1, 0.2, 2 } });
         // A LSTM which adds one for every non-zero timestep
         LSTM underlying = new LSTM.Builder().activation(Activation.IDENTITY).gateActivationFunction(Activation.IDENTITY).nIn(2).nOut(1).dataFormat(rnnDataFormat).build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration();
         conf.setLayer(underlying);
-        INDArray params = Nd4j.zeros(new int[] { 1, 16 });
+        INDArray params = Nd4j.zeros(1, 16);
         // Set the biases to 1.
         for (int i = 12; i < 16; i++) {
             params.putScalar(i, 1.0);
         }
-        Layer lstm = underlying.instantiate(conf, Collections.<TrainingListener>emptyList(), 0, params, false, params.dataType());
+        Layer lstm = underlying.instantiate(conf, Collections.emptyList(), 0, params, false, params.dataType());
         double maskingValue = 0.0;
         MaskZeroLayer l = new MaskZeroLayer(lstm, maskingValue);
-        INDArray input = Nd4j.create(Arrays.asList(ex1, ex2), new int[] { 2, 2, 3 });
+        INDArray input = Nd4j.create(Arrays.asList(ex1, ex2), 2, 2, 3);
         if (rnnDataFormat == RNNFormat.NWC) {
             input = input.permute(0, 2, 1);
         }
@@ -102,11 +102,11 @@ class MaskZeroLayerTest extends BaseDL4JTest {
         INDArray firstExampleOutput = out.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
         INDArray secondExampleOutput = out.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all());
         assertEquals(0.0, firstExampleOutput.getDouble(0), 1e-6);
-        assertEquals(1.0, firstExampleOutput.getDouble(1), 1e-6);
-        assertEquals(2.0, firstExampleOutput.getDouble(2), 1e-6);
+        assertEquals(2.0, firstExampleOutput.getDouble(1), 1e-6);
+        assertEquals(9.0, firstExampleOutput.getDouble(2), 1e-6);
         assertEquals(0.0, secondExampleOutput.getDouble(0), 1e-6);
-        assertEquals(0.0, secondExampleOutput.getDouble(1), 1e-6);
-        assertEquals(1.0, secondExampleOutput.getDouble(2), 1e-6);
+        assertEquals(1.0, secondExampleOutput.getDouble(1), 1e-6);
+        assertEquals(3.0, secondExampleOutput.getDouble(2), 1e-6);
     }
 
 

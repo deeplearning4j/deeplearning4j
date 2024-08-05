@@ -24,6 +24,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -184,12 +185,12 @@ class DropoutLayerTest extends BaseDL4JTest {
         // i.e., dropout on 4d activations in latter, and dropout on 2d activations in former
         Map<Integer, InputPreProcessor> preProcessorMap = new HashMap<>();
         preProcessorMap.put(1, new CnnToFeedForwardPreProcessor(13, 13, 20));
-        MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(1, new DropoutLayer.Builder(0.5).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build()).inputPreProcessors(preProcessorMap).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+        ListBuilder confSeparate = new NeuralNetConfiguration.Builder().seed(123).list().layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build()).layer(1, new DropoutLayer.Builder(0.5).build()).layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build()).inputPreProcessors(preProcessorMap).setInputType(InputType.convolutionalFlat(28, 28, 1));
         Nd4j.getRandom().setSeed(12345);
         MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
         netIntegrated.init();
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
+        MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate.build());
         netSeparate.init();
         assertEquals(netIntegrated.params(), netSeparate.params());
         Nd4j.getRandom().setSeed(12345);

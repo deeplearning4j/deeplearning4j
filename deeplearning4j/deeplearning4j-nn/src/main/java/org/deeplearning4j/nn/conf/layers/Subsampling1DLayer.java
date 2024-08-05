@@ -87,7 +87,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             //Probably: user did InputType.recurrent(x) without specifying sequence length
             outLength = -1;
         } else {
-            outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
+            outLength = Convolution1DUtils.getOutputSizeLong(inputTsLength, kernelSize[0], stride[0], padding[0],
                             convolutionMode, dilation[0]);
         }
         return InputType.recurrent(r.getSize(), outLength, r.getFormat());
@@ -250,8 +250,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int... kernelSize) {
-            this.kernelSize[0] = ValidationUtils.validate1NonNegative(kernelSize, "kernelSize")[0];
+        public void setKernelSize(long... kernelSize) {
+            this.kernelSize[0] = ValidationUtils.validate1NonNegativeLong(kernelSize, "kernelSize")[0];
         }
 
         /**
@@ -260,8 +260,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param stride stride value
          */
         @Override
-        public void setStride(int... stride) {
-            this.stride = ConvolutionUtils.getIntConfig(stride,1);
+        public void setStride(long... stride) {
+            this.stride = ConvolutionUtils.getLongConfig(stride,1);
         }
 
         /**
@@ -270,8 +270,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          * @param padding padding value
          */
         @Override
-        public void setPadding(int... padding) {
-            this.padding = ConvolutionUtils.getIntConfig(padding,1);
+        public void setPadding(long... padding) {
+            this.padding = ConvolutionUtils.getLongConfig(padding,1);
         }
     }
 }

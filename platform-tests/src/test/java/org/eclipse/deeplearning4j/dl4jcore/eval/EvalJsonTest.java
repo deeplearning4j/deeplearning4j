@@ -140,7 +140,6 @@ class EvalJsonTest extends BaseDL4JTest {
             } else if (e instanceof ROCBinary) {
                 org.nd4j.evaluation.classification.ROC[] rocs = ((ROCBinary) fromJson).getUnderlying();
                 org.nd4j.evaluation.classification.ROC[] origRocs = ((ROCBinary) e).getUnderlying();
-                // for(ROC r : rocs ){
                 for (int i = 0; i < origRocs.length; i++) {
                     org.nd4j.evaluation.classification.ROC r = rocs[i];
                     org.nd4j.evaluation.classification.ROC origR = origRocs[i];

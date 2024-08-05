@@ -130,7 +130,7 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
     @Test
     public void testLSTM() throws Exception {
 
-        File f = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_100b6.bin");
+        File f = Resources.asFile("regression_testing/100b6/LSTMCharModelingExample_100b6.bin");
         MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
 
         LSTM l0 = (LSTM) net.getLayer(0).conf().getLayer();
@@ -159,13 +159,13 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
         assertEquals(50, net.getLayerWiseConfigurations().getTbpttFwdLength());
 
         INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_Output_100b6.bin");
+        File f2 = Resources.asFile("regression_testing/100b6/LSTMCharModelingExample_Output_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f2))) {
             outExp = Nd4j.read(dis);
         }
 
         INDArray in;
-        File f3 = Resources.asFile("regression_testing/100b6/GravesLSTMCharModelingExample_Input_100b6.bin");
+        File f3 = Resources.asFile("regression_testing/100b6/LSTMCharModelingExample_Input_100b6.bin");
         try (DataInputStream dis = new DataInputStream(new FileInputStream(f3))) {
             in = Nd4j.read(dis);
         }
@@ -223,7 +223,7 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
         assertEquals(new ActivationIdentity(), cl.getActivationFn());
         assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
         assertEquals(new WeightInitXavier(), cl.getWeightInitFn());
-        assertArrayEquals(new int[]{1, 1}, cl.getKernelSize());
+        assertArrayEquals(new long[]{1, 1}, cl.getKernelSize());
 
         INDArray outExp;
         File f2 = Resources.asFile("regression_testing/100b6/HouseNumberDetection_Output_100b6.bin");
@@ -255,10 +255,10 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
         assertEquals(new WeightInitXavier(), l0.getWeightInitFn());
         assertEquals(new L2Regularization(0.0001), TestUtils.getL2Reg(l0));
         assertEquals(new Adam(0.005), l0.getIUpdater());
-        assertArrayEquals(new int[]{3, 3}, l0.getKernelSize());
-        assertArrayEquals(new int[]{2, 1}, l0.getStride());
-        assertArrayEquals(new int[]{1, 1}, l0.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l0.getPadding());
+        assertArrayEquals(new long[]{3, 3}, l0.getKernelSize());
+        assertArrayEquals(new long[]{2, 1}, l0.getStride());
+        assertArrayEquals(new long[]{1, 1}, l0.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l0.getPadding());
 
         SeparableConvolution2D l1 = (SeparableConvolution2D) net.getLayer(1).conf().getLayer();
         assertEquals(new ActivationReLU(), l1.getActivationFn());
@@ -266,25 +266,25 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
         assertEquals(new WeightInitXavier(), l1.getWeightInitFn());
         assertEquals(new L2Regularization(0.0001), TestUtils.getL2Reg(l1));
         assertEquals(new Adam(0.005), l1.getIUpdater());
-        assertArrayEquals(new int[]{3, 3}, l1.getKernelSize());
-        assertArrayEquals(new int[]{1, 1}, l1.getStride());
-        assertArrayEquals(new int[]{1, 1}, l1.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l1.getPadding());
+        assertArrayEquals(new long[]{3, 3}, l1.getKernelSize());
+        assertArrayEquals(new long[]{1, 1}, l1.getStride());
+        assertArrayEquals(new long[]{1, 1}, l1.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l1.getPadding());
         assertEquals(ConvolutionMode.Same, l1.getConvolutionMode());
         assertEquals(1, l1.getDepthMultiplier());
 
         SubsamplingLayer l2 = (SubsamplingLayer) net.getLayer(2).conf().getLayer();
-        assertArrayEquals(new int[]{3, 3}, l2.getKernelSize());
-        assertArrayEquals(new int[]{2, 2}, l2.getStride());
-        assertArrayEquals(new int[]{1, 1}, l2.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l2.getPadding());
+        assertArrayEquals(new long[]{3, 3}, l2.getKernelSize());
+        assertArrayEquals(new long[]{2, 2}, l2.getStride());
+        assertArrayEquals(new long[]{1, 1}, l2.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l2.getPadding());
         assertEquals(PoolingType.MAX, l2.getPoolingType());
 
         ZeroPaddingLayer l3 = (ZeroPaddingLayer) net.getLayer(3).conf().getLayer();
-        assertArrayEquals(new int[]{4, 4, 4, 4}, l3.getPadding());
+        assertArrayEquals(new long[]{4, 4, 4, 4}, l3.getPadding());
 
         Upsampling2D l4 = (Upsampling2D) net.getLayer(4).conf().getLayer();
-        assertArrayEquals(new int[]{3, 3}, l4.getSize());
+        assertArrayEquals(new long[]{3, 3}, l4.getSize());
 
         DepthwiseConvolution2D l5 = (DepthwiseConvolution2D) net.getLayer(5).conf().getLayer();
         assertEquals(new ActivationReLU(), l5.getActivationFn());
@@ -292,31 +292,31 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
         assertEquals(new WeightInitXavier(), l5.getWeightInitFn());
         assertEquals(new L2Regularization(0.0001), TestUtils.getL2Reg(l5));
         assertEquals(new Adam(0.005), l5.getIUpdater());
-        assertArrayEquals(new int[]{3, 3}, l5.getKernelSize());
-        assertArrayEquals(new int[]{1, 1}, l5.getStride());
-        assertArrayEquals(new int[]{1, 1}, l5.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l5.getPadding());
+        assertArrayEquals(new long[]{3, 3}, l5.getKernelSize());
+        assertArrayEquals(new long[]{1, 1}, l5.getStride());
+        assertArrayEquals(new long[]{1, 1}, l5.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l5.getPadding());
         assertEquals(2, l5.getDepthMultiplier());
 
         SubsamplingLayer l6 = (SubsamplingLayer) net.getLayer(6).conf().getLayer();
-        assertArrayEquals(new int[]{2, 2}, l6.getKernelSize());
-        assertArrayEquals(new int[]{2, 2}, l6.getStride());
-        assertArrayEquals(new int[]{1, 1}, l6.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l6.getPadding());
+        assertArrayEquals(new long[]{2, 2}, l6.getKernelSize());
+        assertArrayEquals(new long[]{2, 2}, l6.getStride());
+        assertArrayEquals(new long[]{1, 1}, l6.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l6.getPadding());
         assertEquals(PoolingType.MAX, l6.getPoolingType());
 
         Cropping2D l7 = (Cropping2D) net.getLayer(7).conf().getLayer();
-        assertArrayEquals(new int[]{3, 3, 2, 2}, l7.getCropping());
+        assertArrayEquals(new long[]{3, 3, 2, 2}, l7.getCropping());
 
         ConvolutionLayer l8 = (ConvolutionLayer) net.getLayer(8).conf().getLayer();
         assertEquals(4, l8.getNOut());
         assertEquals(new WeightInitXavier(), l8.getWeightInitFn());
         assertEquals(new L2Regularization(0.0001), TestUtils.getL2Reg(l8));
         assertEquals(new Adam(0.005), l8.getIUpdater());
-        assertArrayEquals(new int[]{4, 4}, l8.getKernelSize());
-        assertArrayEquals(new int[]{1, 1}, l8.getStride());
-        assertArrayEquals(new int[]{1, 1}, l8.getDilation());
-        assertArrayEquals(new int[]{0, 0}, l8.getPadding());
+        assertArrayEquals(new long[]{4, 4}, l8.getKernelSize());
+        assertArrayEquals(new long[]{1, 1}, l8.getStride());
+        assertArrayEquals(new long[]{1, 1}, l8.getDilation());
+        assertArrayEquals(new long[]{0, 0}, l8.getPadding());
 
         CnnLossLayer l9 = (CnnLossLayer) net.getLayer(9).conf().getLayer();
         assertEquals(new WeightInitXavier(), l9.getWeightInitFn());
@@ -381,7 +381,7 @@ public class TestRegressionTest100b6 extends BaseDL4JTest {
 
         GlobalPoolingLayer gpl = (GlobalPoolingLayer) net.getLayer("pooling").conf().getLayer();
         assertEquals(PoolingType.MAX, gpl.getPoolingType());
-        assertArrayEquals(new int[]{2}, gpl.getPoolingDimensions());
+        assertArrayEquals(new long[]{2}, gpl.getPoolingDimensions());
         assertTrue(gpl.isCollapseDimensions());
 
         OutputLayer outl = (OutputLayer) net.getLayer("out").conf().getLayer();

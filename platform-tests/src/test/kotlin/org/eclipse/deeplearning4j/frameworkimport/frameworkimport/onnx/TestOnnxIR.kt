@@ -78,7 +78,14 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),
+            onnxOpRegistry,
+            false
+        )
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w))
         val assertion = onnxGraphRunner.runSequence(inputs2)
@@ -142,8 +149,15 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W","index","indexTwo","insert"),listOf("sequenceAt"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
-            "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf(
+                "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),
+            onnxOpRegistry,
+            false
+        )
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index),"indexTwo" to arrayOf(indexTwo),"insert" to arrayOf(insert))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor)
@@ -211,8 +225,15 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W","index","indexTwo","insert"),listOf("sequenceAt"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
-            "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf(
+                "W" to w,"x" to inputTensor,"index" to index,"indexTwo" to indexTwo,"insert" to insert)),
+            onnxOpRegistry,
+            false
+        )
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index),"indexTwo" to arrayOf(indexTwo),"insert" to arrayOf(insert))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to
@@ -262,8 +283,10 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceLength"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf(
-            "W" to w,"x" to inputTensor)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph, null, null, convertToOnnxTensors(mutableMapOf(
+                "W" to w,"x" to inputTensor)), onnxOpRegistry, false
+        )
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w))
@@ -313,7 +336,14 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceAt"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),
+            onnxOpRegistry,
+            false
+        )
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w),"index" to SDValue.create(index))
@@ -363,7 +393,14 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("sequenceRemove"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor,"index" to index)),
+            onnxOpRegistry,
+            false
+        )
         println(importedGraph.summary())
         val inputs = mapOf("x" to arrayOf(inputTensor),"W" to arrayOf(w),"index" to arrayOf(index))
         val inputs2 = mapOf("x" to SDValue.create(inputTensor),"W" to SDValue.create(w),"index" to SDValue.create(index))
@@ -426,7 +463,14 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf("W" to w,"x" to inputTensor)),
+            onnxOpRegistry,
+            false
+        )
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -699,7 +743,7 @@ class TestOnnxIR {
         val inputsOnnx = convertToOnnxTensors(inputs)
 
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,inputsOnnx,onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(onnxIRGraph, null, null, inputsOnnx, onnxOpRegistry, false)
         val assertion = onnxGraphRunner.runSequence(sequenceInputValues)
 
 
@@ -775,7 +819,7 @@ class TestOnnxIR {
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val inputsOnnx = mutableMapOf("x" to convertToOnnxTensor(inputTensor,"x"),"W" to convertToOnnxTensor(w,"W"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,inputsOnnx,onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(onnxIRGraph, null, null, inputsOnnx, onnxOpRegistry, false)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
         assertEquals(assertion,result)
@@ -834,7 +878,14 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)),
+            onnxOpRegistry,
+            false
+        )
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -892,8 +943,10 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-            convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph, null, null,
+            convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)), onnxOpRegistry, false
+        )
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -951,8 +1004,10 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-            convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph, null, null,
+            convertToOnnxTensors(mutableMapOf("x" to inputTensor,"W" to w)), onnxOpRegistry, false
+        )
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -1011,7 +1066,7 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","W"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(onnxIRGraph, null, null, HashMap(), onnxOpRegistry, false)
         val inputs = mapOf("x" to inputTensor,"W" to w)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -1044,8 +1099,10 @@ class TestOnnxIR {
 
         val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x"),listOf("y"))
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-            convertToOnnxTensors(mutableMapOf("x" to inputTensor)),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph, null, null,
+            convertToOnnxTensors(mutableMapOf("x" to inputTensor)), onnxOpRegistry, false
+        )
         val inputs = mapOf("x" to inputTensor)
         val assertion = onnxGraphRunner.run(inputs)
         val result = importedGraph.output(inputs,"y")
@@ -1123,7 +1180,14 @@ class TestOnnxIR {
         val createdGraph = createSingleNodeGraph(inputs,"NonZero",emptyMap(),output,inputs.keys.toList(),templateTensor = Nd4j.ones(DataType.INT64))
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
         val onnxIRGraph = OnnxIRGraph(createdGraph,onnxOpRegistry)
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(inputs),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(inputs),
+            onnxOpRegistry,
+            false
+        )
         val result = importedGraph.output(inputs,output)
 
         //runAssertion(createdGraph,inputs,output)
@@ -1369,7 +1433,14 @@ class TestOnnxIR {
         val assertion = onnxGraphRunner.run(input)
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
 
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(input),
+            onnxOpRegistry,
+            false
+        )
         val result = importedGraph.output(input,outputs)
         //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
         assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
@@ -1423,7 +1494,14 @@ class TestOnnxIR {
         val assertion = onnxGraphRunner.run(input)
         val importGraph = ImportGraph<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.AttributeProto,Onnx.AttributeProto,Onnx.TensorProto.DataType>()
 
-        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null, convertToOnnxTensors(input),onnxOpRegistry)
+        val importedGraph = importGraph.importGraph(
+            onnxIRGraph,
+            null,
+            null,
+            convertToOnnxTensors(input),
+            onnxOpRegistry,
+            false
+        )
         val result = importedGraph.output(input,outputs)
         //TODO: add coefficients for better eps comparison, see: https://github.com/eclipse/deeplearning4j/issues/9467
         assertTrue(assertion["y"]!!.equalsWithEps(result["y"],1e-1))
@@ -1561,7 +1639,14 @@ class TestOnnxIR {
                     val onnxInputs = convertToOnnxTensors(inputs)
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("input"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,onnxInputs,onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        onnxInputs,
+                        onnxOpRegistry,
+                        false
+                    )
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
                     assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
@@ -1589,7 +1674,14 @@ class TestOnnxIR {
                     val dynamicVariables = convertToOnnxTensors(inputs)
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("input"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,dynamicVariables,onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        dynamicVariables,
+                        onnxOpRegistry,
+                        false
+                    )
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
                     assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
@@ -1621,7 +1713,14 @@ class TestOnnxIR {
                     val convertedTensors = convertToOnnxTensors(inputs)
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("input"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,convertedTensors,onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        convertedTensors,
+                        onnxOpRegistry,
+                        false
+                    )
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
                     assertEquals(assertion["output"]!!.reshape(1,1),result["output"]!!.reshape(1,1),"Function ${nd4jOpDef.name} failed with input $input")
@@ -1654,8 +1753,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","y"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),
+                        onnxOpRegistry,
+                        false
+                    )
                     val inputs = mapOf("x" to x,"y" to y)
                     val result = importedGraph.output(inputs,"output")
                     val assertion = onnxGraphRunner.run(inputs)
@@ -1685,8 +1790,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","y"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),
+                        onnxOpRegistry,
+                        false
+                    )
                     val inputs = mapOf("x" to x,"y" to y)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
@@ -1718,8 +1829,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","y"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"y" to convertToOnnxTensor(y,"y")),
+                        onnxOpRegistry,
+                        false
+                    )
                     val inputs = mapOf("x" to x,"y" to y)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
@@ -1750,7 +1867,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,hashMapOf("x" to convertToOnnxTensor(x,"x")),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        hashMapOf("x" to convertToOnnxTensor(x,"x")),
+                        onnxOpRegistry,
+                        false
+                    )
                     val inputs = mapOf("x" to x)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")
@@ -1790,8 +1914,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val inputs = mapOf("x" to x,"axes" to axes)
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,
-                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"axes" to convertToOnnxTensor(axes,"axes")),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        hashMapOf("x" to convertToOnnxTensor(x,"x"),"axes" to convertToOnnxTensor(axes,"axes")),
+                        onnxOpRegistry,
+                        false
+                    )
                     val result = importedGraph.output(inputs,"output")
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("x","axes"),listOf("output"))
                     val assertion = onnxGraphRunner.run(inputs)
@@ -1807,7 +1937,14 @@ class TestOnnxIR {
                         graph.inputArrays.forEach { name, arr ->
                             convertedArrays[name] = convertToOnnxTensor(arr,name)
                         }
-                        val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,convertedArrays,onnxOpRegistry)
+                        val importedGraph = importGraph.importGraph(
+                            onnxIRGraph,
+                            null,
+                            null,
+                            convertedArrays,
+                            onnxOpRegistry,
+                            false
+                        )
                         val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,graph.inputNames,graph.outputNames)
                         val assertion = onnxGraphRunner.run(inputs)
                         val result = importedGraph.output(inputs,graph.outputNames)
@@ -1847,7 +1984,14 @@ class TestOnnxIR {
 
                     val onnxIRGraph = OnnxIRGraph(graphToRun,onnxOpRegistry)
                     val onnxGraphRunner = OnnxIRGraphRunner(onnxIRGraph,listOf("input"),listOf("output"))
-                    val importedGraph = importGraph.importGraph(onnxIRGraph,null,null,HashMap(),onnxOpRegistry)
+                    val importedGraph = importGraph.importGraph(
+                        onnxIRGraph,
+                        null,
+                        null,
+                        HashMap(),
+                        onnxOpRegistry,
+                        false
+                    )
                     val inputs = mapOf("input" to input)
                     val assertion = onnxGraphRunner.run(inputs)
                     val result = importedGraph.output(inputs,"output")

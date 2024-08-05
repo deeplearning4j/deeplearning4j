@@ -17,12 +17,18 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-package org.nd4j.linalg.api.ops;
+package org.nd4j.testops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.UserDefinedCustomOp;
+import org.nd4j.linalg.api.ops.UserDefinedOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.AddBpOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -31,13 +37,17 @@ import java.util.List;
 import java.util.Map;
 
 @UserDefinedOp
-public class TestUdf extends UserDefinedCustomOp {
-    public TestUdf() {
+public class TestAddUdf extends UserDefinedCustomOp {
+    public TestAddUdf() {
         super();
     }
 
-    public TestUdf(SameDiff sameDiff, SDVariable arg) {
+    public TestAddUdf(SameDiff sameDiff, SDVariable arg) {
         super(sameDiff, arg);
+    }
+
+    public TestAddUdf(SameDiff sameDiff, SDVariable[] args) {
+        super(sameDiff, args);
     }
 
     @Override
@@ -72,7 +82,7 @@ public class TestUdf extends UserDefinedCustomOp {
 
     @Override
     public String opName() {
-        return "test_udf";
+        return "test_add_udf";
     }
 
     @Override
@@ -102,16 +112,19 @@ public class TestUdf extends UserDefinedCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(sameDiff.onesLike(f1.get(0)));
+        return new AddBpOp(sameDiff, larg(), rarg(), f1.get(0)).outputs();
     }
 
     @Override
     public void exec() {
-
+        AddOp addOp = new AddOp();
+        addOp.addInputArgument(inputArguments.get(0),inputArguments.get(1));
+        Nd4j.getExecutioner().exec(addOp);
+        this.outputArguments.addAll(addOp.outputArguments());
     }
 
     @Override
     public void exec(OpContext opContext) {
-
+        Nd4j.getExecutioner().exec(new AddOp(),opContext);
     }
 }

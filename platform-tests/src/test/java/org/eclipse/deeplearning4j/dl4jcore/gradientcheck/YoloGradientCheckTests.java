@@ -201,8 +201,10 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     @ParameterizedTest
     @MethodSource("params")
     public void yoloGradientCheckRealData(CNN2DFormat format,Nd4jBackend backend) throws Exception {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
         Nd4j.getRandom().setSeed(12345);
-        InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
+       InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
         InputStream is2 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2007_009346.xml").getInputStream();
         InputStream is3 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2008_003344.jpg").getInputStream();
         InputStream is4 = new ClassPathResource("yolo/VOC_TwoImage/Annotations/2008_003344.xml").getInputStream();
@@ -256,7 +258,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(rr,2,1,1,true);
         iter.setPreProcessor(new ImagePreProcessingScaler());
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+       MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dataType(DataType.DOUBLE)
                 .convolutionMode(ConvolutionMode.Same)
                 .updater(new NoOp())
@@ -271,14 +273,14 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                         .build())
                 .setInputType(InputType.convolutional(h,w,c))
                 .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+       MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DataSet ds = iter.next();
+          DataSet ds = iter.next();
         INDArray f = ds.getFeatures();
         INDArray l = ds.getLabels();
 
+        System.out.println("Checking gradients");
         boolean ok = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
                 .labels(l).inputMask(null).subset(true).maxPerParam(64));
 

@@ -23,6 +23,7 @@ package org.eclipse.deeplearning4j.dl4jcore.earlystopping;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.util.NetworkUtils;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
@@ -52,7 +53,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -845,13 +845,13 @@ public class TestEarlyStopping extends BaseDL4JTest {
         @Override
         public void onEpochStart(Model model){
             countEpochStart++;
-            maxEpochStart = Math.max(maxEpochStart, BaseOptimizer.getEpochCount(model));
+            maxEpochStart = Math.max(maxEpochStart, NetworkUtils.getEpochCount(model));
         }
 
         @Override
         public void onEpochEnd(Model model){
             countEpochEnd++;
-            maxEpochEnd = Math.max(maxEpochEnd, BaseOptimizer.getEpochCount(model));
+            maxEpochEnd = Math.max(maxEpochEnd, NetworkUtils.getEpochCount(model));
         }
 
         @Override
