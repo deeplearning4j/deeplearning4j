@@ -109,7 +109,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
             }
         }
 
-        return out;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
     }
 
     @Override

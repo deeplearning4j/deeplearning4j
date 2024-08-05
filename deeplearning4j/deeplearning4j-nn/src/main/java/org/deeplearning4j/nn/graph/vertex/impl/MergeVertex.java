@@ -51,7 +51,7 @@ public class MergeVertex extends BaseGraphVertex {
     }
 
     public MergeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, DataType dataType, int mergeAxis) {
+                       VertexIndices[] outputVertices, DataType dataType, int mergeAxis) {
         super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.mergeAxis = mergeAxis;
     }
@@ -95,23 +95,22 @@ public class MergeVertex extends BaseGraphVertex {
             val currShape = in[i].shape();
             if (fwdPassRank != currShape.length) {
                 throw new IllegalStateException(
-                                "Cannot merge activations with different ranks: first activations have rank "
-                                                + fwdPassRank + ", activations[" + i + "] have rank " + currShape.length
-                                                + " (shape=" + Arrays.toString(currShape) + ")");
+                        "Cannot merge activations with different ranks: first activations have rank "
+                                + fwdPassRank + ", activations[" + i + "] have rank " + currShape.length
+                                + " (shape=" + Arrays.toString(currShape) + ")");
             }
             forwardPassShapes[i] = Arrays.copyOf(currShape, currShape.length);
             if (currShape[0] != nExamples) {
                 throw new IllegalStateException(
-                                "Cannot merge activations with different number of examples (activations[0] shape: "
-                                                + Arrays.toString(in[0].shape()) + ", activations[" + i
-                                                + "] shape: " + Arrays.toString(in[i].shape()));
+                        "Cannot merge activations with different number of examples (activations[0] shape: "
+                                + Arrays.toString(in[0].shape()) + ", activations[" + i
+                                + "] shape: " + Arrays.toString(in[i].shape()));
             }
         }
 
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            INDArray out = Nd4j.concat(mergeAxis, in);
-            return out;
-        }
+        INDArray out = Nd4j.concat(mergeAxis, in);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,out);
+
     }
 
     @Override
@@ -135,7 +134,7 @@ public class MergeVertex extends BaseGraphVertex {
                 //Standard
                 for (int i = 0; i < forwardPassShapes.length; i++) {
                     out[i].assign(epsilon.get(NDArrayIndex.all(), //All rows
-                                    NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]))); //subset of columns
+                            NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]))); //subset of columns
                     cumulative += forwardPassShapes[i][1];
                 }
                 break;
@@ -181,7 +180,7 @@ public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                           int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
         }

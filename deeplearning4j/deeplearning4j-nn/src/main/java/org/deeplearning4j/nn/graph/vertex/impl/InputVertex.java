@@ -60,12 +60,12 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        throw new UnsupportedOperationException("Cannot do forward pass for InputVertex");
+        return null;
     }
 
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
-        throw new UnsupportedOperationException("Cannot do backward pass for InputVertex");
+        return Pair.of(null,new INDArray[0]);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class InputVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                           int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {
             return null;
