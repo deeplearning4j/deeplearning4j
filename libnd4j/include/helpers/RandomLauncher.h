@@ -27,31 +27,31 @@
 namespace sd {
 class SD_LIB_EXPORT RandomLauncher {
  public:
-  static void applyDropOut(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array,
+  static void applyDropOut(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                            double retainProb, NDArray* z = nullptr);
-  static void applyInvertedDropOut(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array,
+  static void applyInvertedDropOut(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                                    double retainProb, NDArray* z = nullptr);
-  static void applyAlphaDropOut(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array,
+  static void applyAlphaDropOut(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                                 double retainProb, double alpha, double beta, double alphaPrime, NDArray* z = nullptr);
 
-  static void fillUniform(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array, double from,
+  static void fillUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double from,
                           double to);
 
-  static void fillGaussian(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array, double mean,
+  static void fillGaussian(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double mean,
                            double stdev);
 
-  static void fillExponential(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array,
+  static void fillExponential(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                               double lambda);
 
-  static void fillLogNormal(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array, double mean,
+  static void fillLogNormal(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double mean,
                             double stdev);
 
-  static void fillTruncatedNormal(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array,
+  static void fillTruncatedNormal(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                                   double mean, double stdev);
 
-  static void fillBinomial(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array, int trials,
+  static void fillBinomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, int trials,
                            double prob);
 
-  static void fillBernoulli(sd::LaunchContext* context, sd::graph::RandomGenerator& rng, NDArray* array, double prob);
+  static void fillBernoulli(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array, double prob);
 };
 }  // namespace sd

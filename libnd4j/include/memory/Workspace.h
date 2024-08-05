@@ -46,14 +46,14 @@ class SD_LIB_EXPORT Workspace {
   bool _allocatedHost = false;
   bool _allocatedDevice = false;
 
-  std::atomic<sd::LongType> _offset;
-  std::atomic<sd::LongType> _offsetSecondary;
+  std::atomic<LongType> _offset;
+  std::atomic<LongType> _offsetSecondary;
 
-  sd::LongType _initialSize = 0L;
-  sd::LongType _initialSizeSecondary = 0L;
+  LongType _initialSize = 0L;
+  LongType _initialSizeSecondary = 0L;
 
-  sd::LongType _currentSize = 0L;
-  sd::LongType _currentSizeSecondary = 0L;
+  LongType _currentSize = 0L;
+  LongType _currentSizeSecondary = 0L;
 
   std::mutex _mutexAllocation;
   std::mutex _mutexSpills;
@@ -63,39 +63,39 @@ class SD_LIB_EXPORT Workspace {
   std::vector<void*> _spills;
   std::vector<void*> _spillsSecondary;
 
-  std::atomic<sd::LongType> _spillsSize;
-  std::atomic<sd::LongType> _cycleAllocations;
+  std::atomic<LongType> _spillsSize;
+  std::atomic<LongType> _cycleAllocations;
 
-  std::atomic<sd::LongType> _spillsSizeSecondary;
-  std::atomic<sd::LongType> _cycleAllocationsSecondary;
+  std::atomic<LongType> _spillsSizeSecondary;
+  std::atomic<LongType> _cycleAllocationsSecondary;
 
-  void init(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
+  void init(LongType primaryBytes, LongType secondaryBytes = 0L);
   void freeSpills();
 
  public:
   explicit Workspace(ExternalWorkspace* external);
-  Workspace(sd::LongType initialSize = 0L, sd::LongType secondaryBytes = 0L);
+  Workspace(LongType initialSize = 0L, LongType secondaryBytes = 0L);
   ~Workspace();
 
-  sd::LongType getAllocatedSize();
-  sd::LongType getCurrentSize();
-  sd::LongType getCurrentOffset();
-  sd::LongType getSpilledSize();
-  sd::LongType getUsedSize();
+  LongType getAllocatedSize();
+  LongType getCurrentSize();
+  LongType getCurrentOffset();
+  LongType getSpilledSize();
+  LongType getUsedSize();
 
-  sd::LongType getAllocatedSecondarySize();
-  sd::LongType getCurrentSecondarySize();
-  sd::LongType getCurrentSecondaryOffset();
-  sd::LongType getSpilledSecondarySize();
-  sd::LongType getUsedSecondarySize();
+  LongType getAllocatedSecondarySize();
+  LongType getCurrentSecondarySize();
+  LongType getCurrentSecondaryOffset();
+  LongType getSpilledSecondarySize();
+  LongType getUsedSecondarySize();
 
-  void expandBy(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
-  void expandTo(sd::LongType primaryBytes, sd::LongType secondaryBytes = 0L);
+  void expandBy(LongType primaryBytes, LongType secondaryBytes = 0L);
+  void expandTo(LongType primaryBytes, LongType secondaryBytes = 0L);
 
   //            bool resizeSupported();
 
-  void* allocateBytes(sd::LongType numBytes);
-  void* allocateBytes(MemoryType type, sd::LongType numBytes);
+  void* allocateBytes(LongType numBytes);
+  void* allocateBytes(MemoryType type, LongType numBytes);
 
   void scopeIn();
   void scopeOut();

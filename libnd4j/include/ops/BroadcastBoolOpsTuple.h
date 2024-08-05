@@ -29,21 +29,20 @@ namespace sd {
 class SD_LIB_EXPORT BroadcastBoolOpsTuple {
  private:
  public:
-  sd::scalar::BoolOps s;
-  sd::pairwise::BoolOps p;
-  sd::broadcast::BoolOps b;
+  scalar::BoolOps s;
+  pairwise::BoolOps p;
+  broadcast::BoolOps b;
 
   BroadcastBoolOpsTuple() = default;
   ~BroadcastBoolOpsTuple() = default;
 
-  BroadcastBoolOpsTuple(sd::scalar::BoolOps scalar, sd::pairwise::BoolOps pairwise, sd::broadcast::BoolOps broadcast) {
+  BroadcastBoolOpsTuple(scalar::BoolOps scalar, pairwise::BoolOps pairwise, broadcast::BoolOps broadcast) {
     s = scalar;
     p = pairwise;
     b = broadcast;
   }
 
-  static BroadcastBoolOpsTuple custom(sd::scalar::BoolOps scalar, sd::pairwise::BoolOps pairwise,
-                                      sd::broadcast::BoolOps broadcast);
+  static BroadcastBoolOpsTuple custom(scalar::BoolOps scalar, pairwise::BoolOps pairwise, broadcast::BoolOps broadcast);
 };
 }  // namespace sd
 

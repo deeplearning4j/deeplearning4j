@@ -39,19 +39,19 @@ class Graph;
 class SD_LIB_EXPORT Node {
  protected:
   // TODO: this field must be removed
-  sd::DataType _dataType;
+  DataType _dataType;
 
   OpType _opType;
   ContextPrototype *_protoContext = nullptr;
-  sd::LongType _opNum;
+  LongType _opNum;
   int _id;
   std::vector<std::pair<int, int>> _input;
   std::vector<std::pair<int, int>> _output;
-  std::vector<sd::LongType> _dimensions;
+  std::vector<LongType> _dimensions;
 
   std::vector<int> _referencedBy;
 
-  sd::LongType *_dim = nullptr;
+  LongType *_dim = nullptr;
   std::string _name;
 
   // this variable points to onion layer within graph
@@ -78,8 +78,8 @@ class SD_LIB_EXPORT Node {
   OpClass _opClass;
 
   // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
-  sd::graph::Graph *_graph = nullptr;
-  sd::ops::DeclarableOp *_customOp = nullptr;
+  Graph *_graph = nullptr;
+  ops::DeclarableOp *_customOp = nullptr;
 
   // each node can be active or inactive, if used with divergents, like IF statements
   bool _active = true;
@@ -91,30 +91,30 @@ class SD_LIB_EXPORT Node {
   // TODO: these 3 fields should be removed
   int _rewindNode = -1;
   std::pair<int, int> _rewindLayer = {-1, -1};
-  sd::LongType _frameId = -1;
+  LongType _frameId = -1;
 
  public:
-  explicit Node(sd::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {},
+  explicit Node(ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {},
                 std::initializer_list<int> output = {}, std::initializer_list<int> dimensions = {}, float scalar = 0.0f,
                 std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
   explicit Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {},
                 std::initializer_list<int> output = {}, std::initializer_list<int> dimensions = {}, float scalar = 0.0f,
                 std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-  explicit Node(const sd::graph::FlatNode *node);
+  explicit Node(const FlatNode *node);
   ~Node();
 
   bool equals(Node *other);
 
-  sd::DataType dataType();
+  DataType dataType();
   ContextPrototype *protoContext();
   OpType opType();
-  sd::LongType opNum();
+  LongType opNum();
   int id();
   std::vector<std::pair<int, int>> *input();
   std::vector<std::pair<int, int>> *output();
 
-  sd::LongType getFrameId();
-  void setFrameId(sd::LongType frameId);
+  LongType getFrameId();
+  void setFrameId(LongType frameId);
 
   int getRewindNode();
   void setRewindNode(int nodeId);
@@ -143,8 +143,8 @@ class SD_LIB_EXPORT Node {
 
   double scalar();
 
-  std::vector<sd::LongType> *getDimensions();
-  sd::LongType *getDimensionsPtr();
+  std::vector<LongType> *getDimensions();
+  LongType *getDimensionsPtr();
 
   void pickOutputOnce(int outputId);
   void pickOutput(int outputId);
@@ -169,12 +169,12 @@ class SD_LIB_EXPORT Node {
   ContextPrototype *getContextPrototype();
   bool hasBlockAttached();
 
-  void setCustomOp(sd::ops::DeclarableOp *customOp = nullptr);
-  sd::ops::DeclarableOp *getCustomOp();
+  void setCustomOp(ops::DeclarableOp *customOp = nullptr);
+  ops::DeclarableOp *getCustomOp();
   bool hasCustomOp();
 
-  void setGraph(sd::graph::Graph *graph = nullptr);
-  sd::graph::Graph *getGraph();
+  void setGraph(Graph *graph = nullptr);
+  Graph *getGraph();
   bool hasGraphEmbedded();
 
   bool isInplace();
@@ -183,8 +183,8 @@ class SD_LIB_EXPORT Node {
   OpClass getOpClass();
 
   // these methods are used for internal profiling
-  void setOuterTime(sd::LongType time);
-  void setInnerTime(sd::LongType time);
+  void setOuterTime(LongType time);
+  void setInnerTime(LongType time);
 
   // methods related to scopes
   bool isScoped();
@@ -201,7 +201,7 @@ class SD_LIB_EXPORT Node {
   Node *asT();
 
   SD_INLINE void pullValues(Node *other) {
-    if (this->_protoContext != nullptr) delete _protoContext;
+     if (this->_protoContext != nullptr) delete _protoContext;
 
     this->_dataType = other->dataType();
     this->_protoContext = other->protoContext()->clone();
@@ -226,7 +226,7 @@ class SD_LIB_EXPORT Node {
     for (auto v : *other->getDimensions()) this->_dimensions.emplace_back(v);
   }
 
-  static sd::ops::DeclarableOp *buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum,
+  static ops::DeclarableOp *buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum,
                                               NDArray *scalar);
   static void deleteOpByType(OpType opType, void *op);
 };

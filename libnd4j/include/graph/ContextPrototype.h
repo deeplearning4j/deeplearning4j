@@ -44,15 +44,15 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<std::pair<int, int>> _inputs;
   int _nodeId;
   std::vector<double> _tArgs;
-  std::vector<sd::LongType> _iArgs;
+  std::vector<LongType> _iArgs;
   std::vector<bool> _bArgs;
-  std::vector<sd::LongType> _axis;
-  std::vector<sd::DataType> _dArgs;
+  std::vector<LongType> _axis;
+  std::vector<DataType> _dArgs;
 #ifndef __JAVACPP_HACK__
   std::vector<std::string> _sArgs;
 #endif
   // TODO: remove this field
-  sd::DataType _dataType = sd::DataType::FLOAT32;
+  DataType _dataType = FLOAT32;
   bool _isInplace;
 
   // opNum for legacy XYZ ops
@@ -60,10 +60,10 @@ class SD_LIB_EXPORT ContextPrototype {
   uint64_t _rootSeed;
   RandomGenerator _randomGenerator;
 
-  std::vector<sd::DataType> _dataTypes;
+  std::vector<DataType> _dataTypes;
 
-  sd::ops::OpDescriptor* _opDescriptor;
-  bool _useONEDNN = sd::Environment::getInstance().isUseONEDNN();
+  ops::OpDescriptor* _opDescriptor;
+  bool _useONEDNN = Environment::getInstance().isUseONEDNN();
 
   // target engine for execution
   samediff::Engine _engine = DEFAULT_ENGINE;
@@ -71,7 +71,7 @@ class SD_LIB_EXPORT ContextPrototype {
   samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
 
  public:
-  explicit ContextPrototype(sd::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
+  explicit ContextPrototype(ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
   ~ContextPrototype() = default;
 
   int getNodeId();
@@ -80,11 +80,11 @@ class SD_LIB_EXPORT ContextPrototype {
   // this method returns true, if inputs are defined
   bool hasVariablesFilled();
 
-  void setOpDescriptor(sd::ops::OpDescriptor* opDescriptor);
+  void setOpDescriptor(ops::OpDescriptor* opDescriptor);
 
-  virtual sd::DataType dataType();
-  virtual sd::DataType dataType(int index);
-  virtual void setDataType(int index, sd::DataType type);
+  virtual DataType dataType();
+  virtual DataType dataType(int index);
+  virtual void setDataType(int index, DataType type);
 
   bool isInplace();
   void markInplace(bool reallyInplace);
@@ -97,13 +97,13 @@ class SD_LIB_EXPORT ContextPrototype {
   std::vector<std::pair<int, int>>* inputs();
 
   std::vector<double>* getTArguments();
-  std::vector<sd::LongType>* getIArguments();
+  std::vector<LongType>* getIArguments();
   std::vector<bool>* getBArguments();
-  std::vector<sd::DataType>* getDArguments();
+  std::vector<DataType>* getDArguments();
 #ifndef __JAVACPP_HACK__
   std::vector<std::string>* getSArguments();
 #endif
-  std::vector<sd::LongType>* getAxis();
+  std::vector<LongType>* getAxis();
 
   samediff::Engine engine();
 

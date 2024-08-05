@@ -34,7 +34,7 @@ LIST_OP_IMPL(clone_list, 1, 1, 0, 0) {
 
   // OVERWRITE_RESULT(newList);
   setupResultList(newList, block);
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArrayIdentityV3, clone_list);
 DECLARE_SYN(tensorarrayidentityv3, clone_list);

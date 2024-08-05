@@ -145,7 +145,6 @@ static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
     dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
   stream.wait();
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -291,7 +290,6 @@ static void conv2dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
 
   stream.wait();
 
-  // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 

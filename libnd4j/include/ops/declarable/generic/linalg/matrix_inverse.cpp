@@ -34,13 +34,13 @@ OP_IMPL(matrix_inverse, 1, 1, true) {
   REQUIRE_TRUE(input->rankOf() >= 2, 0,
                "matrix_inverse: The rank of input array should not less than 2, but %i is given", input->rankOf());
   REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0,
-               "matrix_inverse: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1),
+               "matrix_inverse: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1),
                input->sizeAt(-2));
 
   return helpers::inverse(block.launchContext(), input, output);
 }
 
-DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(matrix_inverse) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

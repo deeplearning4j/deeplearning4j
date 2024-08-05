@@ -31,13 +31,13 @@ namespace ops {
 CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
   auto rng = block.getRng();  //.getRNG();
 
-  sd::LongType seed = 0;
+  LongType seed = 0;
   if (block.getIArguments()->size() > 0) {
     seed = INT_ARG(0);
   } else if (block.width() > 0) {
     auto input = INPUT_VARIABLE(0);
     REQUIRE_TRUE(input->isScalar(), 0, "SetSeed: Seed operand should be scalar");
-    seed = input->e<sd::LongType>(0);
+    seed = input->e<LongType>(0);
   } else {
     REQUIRE_TRUE(false, 0, "SetSeed: either IArg or scalr input should be provided");
   }
@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
   // FIXME: this approach isn't really good for cuda, since it'll assume that CUDA might get nullptr instead of stream
   // refreshBuffer(nullptr, seed, (sd::Pointer) rng);
   rng.setSeed((int)seed);
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(set_seed) {

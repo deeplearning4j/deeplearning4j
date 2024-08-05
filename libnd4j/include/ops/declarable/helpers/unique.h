@@ -29,9 +29,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN sd::LongType uniqueCount(sd::LaunchContext* context, NDArray* input);
+SD_LIB_HIDDEN LongType uniqueCount(LaunchContext* context, NDArray* input);
 
-SD_LIB_HIDDEN sd::Status uniqueFunctor(sd::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
+SD_LIB_HIDDEN Status uniqueFunctor(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                                        NDArray* counts);
 
 }  // namespace helpers

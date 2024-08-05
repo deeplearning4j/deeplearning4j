@@ -184,17 +184,11 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_FOOTPRINTBACKWARD = 16,
     VT_DIRECTION = 18
   };
-  int64_t id() const {
-    return GetField<int64_t>(VT_ID, 0);
-  }
-  sd::graph::ExecutionMode executionMode() const {
-    return static_cast<sd::graph::ExecutionMode>(GetField<int8_t>(VT_EXECUTIONMODE, 0));
-  }
-  sd::graph::ProfilingMode profilingMode() const {
-    return static_cast<sd::graph::ProfilingMode>(GetField<int8_t>(VT_PROFILINGMODE, 0));
-  }
-  sd::graph::OutputMode outputMode() const {
-    return static_cast<sd::graph::OutputMode>(GetField<int8_t>(VT_OUTPUTMODE, 0));
+  int64_t id() const { return GetField<int64_t>(VT_ID, 0); }
+  ExecutionMode executionMode() const { return static_cast<ExecutionMode>(GetField<int8_t>(VT_EXECUTIONMODE, 0)); }
+  ProfilingMode profilingMode() const { return static_cast<ProfilingMode>(GetField<int8_t>(VT_PROFILINGMODE, 0)); }
+  OutputMode outputMode() const {
+    return static_cast<OutputMode>(GetField<int8_t>(VT_OUTPUTMODE, 0));
   }
   bool timestats() const {
     return GetField<uint8_t>(VT_TIMESTATS, 0) != 0;
@@ -202,11 +196,9 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t footprintForward() const {
     return GetField<int64_t>(VT_FOOTPRINTFORWARD, 0);
   }
-  int64_t footprintBackward() const {
-    return GetField<int64_t>(VT_FOOTPRINTBACKWARD, 0);
-  }
-  sd::graph::Direction direction() const {
-    return static_cast<sd::graph::Direction>(GetField<int8_t>(VT_DIRECTION, 0));
+  int64_t footprintBackward() const { return GetField<int64_t>(VT_FOOTPRINTBACKWARD, 0); }
+  Direction direction() const {
+    return static_cast<Direction>(GetField<int8_t>(VT_DIRECTION, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -229,13 +221,13 @@ struct FlatConfigurationBuilder {
   void add_id(int64_t id) {
     fbb_.AddElement<int64_t>(FlatConfiguration::VT_ID, id, 0);
   }
-  void add_executionMode(sd::graph::ExecutionMode executionMode) {
+  void add_executionMode(ExecutionMode executionMode) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_EXECUTIONMODE, static_cast<int8_t>(executionMode), 0);
   }
-  void add_profilingMode(sd::graph::ProfilingMode profilingMode) {
+  void add_profilingMode(ProfilingMode profilingMode) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_PROFILINGMODE, static_cast<int8_t>(profilingMode), 0);
   }
-  void add_outputMode(sd::graph::OutputMode outputMode) {
+  void add_outputMode(OutputMode outputMode) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_OUTPUTMODE, static_cast<int8_t>(outputMode), 0);
   }
   void add_timestats(bool timestats) {
@@ -247,7 +239,7 @@ struct FlatConfigurationBuilder {
   void add_footprintBackward(int64_t footprintBackward) {
     fbb_.AddElement<int64_t>(FlatConfiguration::VT_FOOTPRINTBACKWARD, footprintBackward, 0);
   }
-  void add_direction(sd::graph::Direction direction) {
+  void add_direction(Direction direction) {
     fbb_.AddElement<int8_t>(FlatConfiguration::VT_DIRECTION, static_cast<int8_t>(direction), 0);
   }
   explicit FlatConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -264,14 +256,12 @@ struct FlatConfigurationBuilder {
 
 inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
     flatbuffers::FlatBufferBuilder &_fbb,
-    int64_t id = 0,
-    sd::graph::ExecutionMode executionMode = sd::graph::ExecutionMode_SEQUENTIAL,
-    sd::graph::ProfilingMode profilingMode = sd::graph::ProfilingMode_NONE,
-    sd::graph::OutputMode outputMode = sd::graph::OutputMode_IMPLICIT,
+    int64_t id = 0, ExecutionMode executionMode = ExecutionMode_SEQUENTIAL,
+    ProfilingMode profilingMode = ProfilingMode_NONE, OutputMode outputMode = OutputMode_IMPLICIT,
     bool timestats = false,
     int64_t footprintForward = 0,
     int64_t footprintBackward = 0,
-    sd::graph::Direction direction = sd::graph::Direction_FORWARD_ONLY) {
+    Direction direction = Direction_FORWARD_ONLY) {
   FlatConfigurationBuilder builder_(_fbb);
   builder_.add_footprintBackward(footprintBackward);
   builder_.add_footprintForward(footprintForward);
@@ -284,33 +274,33 @@ inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
   return builder_.Finish();
 }
 
-inline const sd::graph::FlatConfiguration *GetFlatConfiguration(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatConfiguration>(buf);
+inline const FlatConfiguration *GetFlatConfiguration(const void *buf) {
+  return flatbuffers::GetRoot<FlatConfiguration>(buf);
 }
 
-inline const sd::graph::FlatConfiguration *GetSizePrefixedFlatConfiguration(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatConfiguration>(buf);
+inline const FlatConfiguration *GetSizePrefixedFlatConfiguration(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatConfiguration>(buf);
 }
 
 inline bool VerifyFlatConfigurationBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatConfiguration>(nullptr);
+  return verifier.VerifyBuffer<FlatConfiguration>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatConfigurationBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatConfiguration>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatConfiguration>(nullptr);
 }
 
 inline void FinishFlatConfigurationBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatConfiguration> root) {
+    flatbuffers::Offset<FlatConfiguration> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatConfigurationBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatConfiguration> root) {
+    flatbuffers::Offset<FlatConfiguration> root) {
   fbb.FinishSizePrefixed(root);
 }
 

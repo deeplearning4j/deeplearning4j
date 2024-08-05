@@ -57,7 +57,7 @@ void BiDiagonalUp::_evalData() {
 
   T x, y;
 
-  for (sd::LongType i = 0; i < cols - 1; ++i) {
+  for (LongType i = 0; i < cols - 1; ++i) {
     // evaluate Householder matrix nullifying columns
     NDArray column1 = _HHmatrix({i, rows, i, i + 1});
 

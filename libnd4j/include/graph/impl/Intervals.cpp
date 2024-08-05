@@ -27,12 +27,12 @@ namespace sd {
 Intervals::Intervals() : _content({{}}) {}
 
 // constructor
-Intervals::Intervals(const std::initializer_list<std::vector<sd::LongType>>& content) : _content(content) {}
-Intervals::Intervals(const std::vector<std::vector<sd::LongType>>& content) : _content(content) {}
+Intervals::Intervals(const std::initializer_list<std::vector<LongType>>& content) : _content(content) {}
+Intervals::Intervals(const std::vector<std::vector<LongType>>& content) : _content(content) {}
 
 //////////////////////////////////////////////////////////////////////////
 // accessing operator
-std::vector<sd::LongType> Intervals::operator[](const sd::LongType i) const { return *(_content.begin() + i); }
+std::vector<LongType> Intervals::operator[](const LongType i) const { return *(_content.begin() + i); }
 
 //////////////////////////////////////////////////////////////////////////
 // returns size of _content

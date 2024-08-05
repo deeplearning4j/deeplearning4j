@@ -31,19 +31,19 @@ namespace ops {
 CUSTOM_OP_IMPL(eye, -2, 1, false, -2, -2) {
   helpers::eye(block.launchContext(), *OUTPUT_VARIABLE(0));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(eye) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS});
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
   getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(eye) {
   std::vector<LongType> params;
 
-  sd::DataType dtype = block.getTArguments()->empty() ? sd::DataType::FLOAT32 : sd::DataTypeUtils::fromInt(T_ARG(0));
+  DataType dtype = block.getTArguments()->empty() ? FLOAT32 : DataTypeUtils::fromInt(T_ARG(0));
 
   if (block.width() == 0) {
     params = *block.getIArguments();
@@ -52,7 +52,7 @@ DECLARE_SHAPE_FN(eye) {
       auto input = INPUT_VARIABLE(i);
       REQUIRE_TRUE(input->rankOf() == 1, 0, "Inputs to eye should be 1D");
 
-      for (int e = 0; e < input->lengthOf(); e++) params.emplace_back(input->e<int>(e));
+      for (int e = 0; e < input->lengthOf(); e++) params.emplace_back(input->e<LongType>(e));
     }
   }
 
@@ -63,7 +63,7 @@ DECLARE_SHAPE_FN(eye) {
 
   REQUIRE_TRUE(params.size() > 1, 0, "Size is not provided for eye op.");
 
-  sd::LongType* outShapeInfo(nullptr);
+  LongType* outShapeInfo(nullptr);
 
   const int size = params.size();
 
@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(eye) {
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
   auto ret =  SHAPELIST(result);
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 

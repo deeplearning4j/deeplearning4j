@@ -37,26 +37,26 @@ GraphProfile::~GraphProfile() {
   _timings.clear();
 }
 
-void GraphProfile::addToTotal(sd::LongType bytes) { _memoryTotal += bytes; }
+void GraphProfile::addToTotal(LongType bytes) { _memoryTotal += bytes; }
 
-void GraphProfile::addToActivations(sd::LongType bytes) { _memoryActivations += bytes; }
+void GraphProfile::addToActivations(LongType bytes) { _memoryActivations += bytes; }
 
-void GraphProfile::addToTemporary(sd::LongType bytes) { _memoryTemporary += bytes; }
+void GraphProfile::addToTemporary(LongType bytes) { _memoryTemporary += bytes; }
 
-void GraphProfile::addToObjects(sd::LongType bytes) { _memoryObjects += bytes; }
+void GraphProfile::addToObjects(LongType bytes) { _memoryObjects += bytes; }
 
-void GraphProfile::setBuildTime(sd::LongType nanos) { _buildTime = nanos; }
+void GraphProfile::setBuildTime(LongType nanos) { _buildTime = nanos; }
 
-void GraphProfile::setExecutionTime(sd::LongType nanos) { _executionTime = nanos; }
+void GraphProfile::setExecutionTime(LongType nanos) { _executionTime = nanos; }
 
-sd::LongType GraphProfile::currentTime() {
+LongType GraphProfile::currentTime() {
   auto t = std::chrono::system_clock::now();
   auto v = std::chrono::time_point_cast<std::chrono::nanoseconds>(t);
   auto epoch = v.time_since_epoch();
-  return (sd::LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
+  return (LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(epoch).count();
 }
 
-sd::LongType GraphProfile::relativeTime(sd::LongType time) {
+LongType GraphProfile::relativeTime(LongType time) {
   auto t1 = currentTime();
   return t1 - time;
 }
@@ -76,7 +76,7 @@ void GraphProfile::recordEvent(const char *name) {
   }
   auto t0 = _timers[k];
   auto t1 = std::chrono::system_clock::now();
-  auto v = (sd::LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+  auto v = (LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
 
   _timings[k] = v;
   _timers.erase(k);
@@ -89,7 +89,7 @@ void GraphProfile::deleteEvent(const char *name) {
 
 void GraphProfile::spotEvent(const char *name) {
   auto t = std::chrono::system_clock::now();
-  auto d = (sd::LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(t - _last).count();
+  auto d = (LongType)std::chrono::duration_cast<std::chrono::nanoseconds>(t - _last).count();
   std::string k = name;
   _timings[k] = d;
   updateLast();
@@ -144,10 +144,10 @@ void GraphProfile::printOut() {
   sd_printf("Graph profile: %i executions\n", _merges);
   sd_printf("\nMemory:\n", "");
 
-  sd::LongType tmp = 0L;
-  sd::LongType obj = 0L;
-  sd::LongType act = 0L;
-  sd::LongType ttl = 0L;
+  LongType tmp = 0L;
+  LongType obj = 0L;
+  LongType act = 0L;
+  LongType ttl = 0L;
   for (auto v : _profiles) {
     tmp += v->getTemporarySize();
     obj += v->getObjectsSize();

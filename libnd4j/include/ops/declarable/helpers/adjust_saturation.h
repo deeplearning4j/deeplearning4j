@@ -28,8 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void adjustSaturation(sd::LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr,
-                                    NDArray* output, const sd::LongType dimC);
+SD_LIB_HIDDEN void adjustSaturation(LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr,
+                                    NDArray* output, const LongType dimC);
 
 
 

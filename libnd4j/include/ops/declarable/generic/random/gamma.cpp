@@ -52,12 +52,12 @@ CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
 
   helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(random_gamma) {
   auto in = INPUT_VARIABLE(0);
-  auto shape = in->template asVectorT<sd::LongType>();
+  auto shape = in->template asVectorT<LongType>();
   auto alphaShape = inputShape->at(1);
   auto additionalShape = alphaShape;
   if (inputShape->size() > 2) {
@@ -65,13 +65,13 @@ DECLARE_SHAPE_FN(random_gamma) {
     additionalShape = nullptr;
     REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(alphaShape, rest), 0,
                  "random_gamma: alpha and beta shapes should be broadcastable.");
-    const sd::LongType* additionalShapeBroadcasted = nullptr;
+    const LongType* additionalShapeBroadcasted = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShapeBroadcasted, block.workspace());
     additionalShape = additionalShapeBroadcasted;
   }
-  auto lastDim = shape::sizeAt(alphaShape, static_cast<sd::LongType>(0));
+  auto lastDim = shape::sizeAt(alphaShape, static_cast<LongType>(0));
   auto dtype = block.numD() > 0 ? D_ARG(0) : ArrayOptions::dataType(alphaShape);
-  for (sd::LongType i = 0; i < shape::rank(additionalShape); i++) shape.push_back(shape::sizeAt(additionalShape, i));
+  for (LongType i = 0; i < shape::rank(additionalShape); i++) shape.push_back(shape::sizeAt(additionalShape, i));
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
   return SHAPELIST(newShape);
 }

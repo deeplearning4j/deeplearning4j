@@ -262,8 +262,8 @@ class BlasHelper {
  public:
   static BlasHelper &getInstance();
 
-  void initializeFunctions(sd::Pointer *functions);
-  void initializeDeviceFunctions(sd::Pointer *functions);
+  void initializeFunctions(Pointer *functions);
+  void initializeDeviceFunctions(Pointer *functions);
 
   template <typename T>
   bool hasGEMV();
@@ -271,8 +271,8 @@ class BlasHelper {
   template <typename T>
   bool hasGEMM();
 
-  bool hasGEMM(const sd::DataType dtype);
-  bool hasGEMV(const sd::DataType dtype);
+  bool hasGEMM(const DataType dtype);
+  bool hasGEMV(const DataType dtype);
 
   template <typename T>
   bool hasBatchedGEMM();

@@ -66,7 +66,7 @@ LIST_OP_IMPL(create_list, -2, 2, 0, -2) {
   auto scalar = NDArrayFactory::create_(list->counter());
   block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(TensorArrayV3, create_list);
 DECLARE_SYN(tensorarrayv3, create_list);

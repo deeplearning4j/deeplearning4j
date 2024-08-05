@@ -28,8 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void adjustHue(sd::LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr,
-                             NDArray* output, const sd::LongType dimC);
+SD_LIB_HIDDEN void adjustHue(LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr,
+                             NDArray* output, const LongType dimC);
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -37,8 +37,8 @@ SD_INLINE SD_HOST_DEVICE void rgbToHsv(const T& r, const T& g, const T& b, T& h,
   // h values are in range [0, 360)
   // s and v values are in range [0, 1]
 
-  const T max = sd::math::sd_max<T>(r, sd::math::sd_max<T>(g, b));
-  const T min = sd::math::sd_min<T>(r, sd::math::sd_min<T>(g, b));
+  const T max = math::sd_max<T>(r, math::sd_max<T>(g, b));
+  const T min = math::sd_min<T>(r, math::sd_min<T>(g, b));
   const T c = max - min;
   const T _p6 = (T)1 / (T)6;
   // calculate h

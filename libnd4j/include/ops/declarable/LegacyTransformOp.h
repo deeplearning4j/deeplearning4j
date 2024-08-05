@@ -32,7 +32,7 @@ namespace ops {
  */
 class SD_LIB_EXPORT LegacyTransformOp : public LegacyOp {
  protected:
-  sd::Status validateAndExecute(Context& block);
+  sd::Status validateAndExecute(sd::graph::Context& block);
 
  public:
   LegacyTransformOp();

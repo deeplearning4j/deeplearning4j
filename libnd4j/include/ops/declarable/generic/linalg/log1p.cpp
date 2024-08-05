@@ -35,13 +35,13 @@ OP_IMPL(Log1p, 1, 1, true) {
 
   STORE_RESULT(z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(log1p, Log1p);
 }  // namespace ops
 
 DECLARE_TYPES(Log1p) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace sd
 

@@ -23,17 +23,17 @@
 
 using namespace sd;
 
-sd::IndicesList::IndicesList(std::initializer_list<NDIndex*> list) {
+IndicesList::IndicesList(std::initializer_list<NDIndex*> list) {
   for (auto v : list) _indices.emplace_back(v);
 }
 
-sd::IndicesList::~IndicesList() {
+IndicesList::~IndicesList() {
   for (auto v : _indices) delete v;
 }
 
-int sd::IndicesList::size() { return (int)_indices.size(); }
+int IndicesList::size() { return (int)_indices.size(); }
 
-bool sd::IndicesList::isScalar() {
+bool IndicesList::isScalar() {
   if (_indices.size() == 1) {
     return _indices.at(0)->isPoint();
   }
@@ -41,6 +41,6 @@ bool sd::IndicesList::isScalar() {
   return false;
 }
 
-sd::NDIndex* sd::IndicesList::at(int idx) { return _indices.at(idx); }
+NDIndex* IndicesList::at(int idx) { return _indices.at(idx); }
 
-void sd::IndicesList::push_back(NDIndex* idx) { _indices.emplace_back(idx); }
+void IndicesList::push_back(NDIndex* idx) { _indices.emplace_back(idx); }

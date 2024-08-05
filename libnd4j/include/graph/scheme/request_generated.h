@@ -101,40 +101,40 @@ inline flatbuffers::Offset<FlatInferenceRequest> CreateFlatInferenceRequestDirec
     const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
     flatbuffers::Offset<FlatConfiguration> configuration = 0) {
   auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0;
-  return sd::graph::CreateFlatInferenceRequest(
+  return CreateFlatInferenceRequest(
       _fbb,
       id,
       variables__,
       configuration);
 }
 
-inline const sd::graph::FlatInferenceRequest *GetFlatInferenceRequest(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatInferenceRequest>(buf);
+inline const FlatInferenceRequest *GetFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetRoot<FlatInferenceRequest>(buf);
 }
 
-inline const sd::graph::FlatInferenceRequest *GetSizePrefixedFlatInferenceRequest(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatInferenceRequest>(buf);
+inline const FlatInferenceRequest *GetSizePrefixedFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatInferenceRequest>(buf);
 }
 
 inline bool VerifyFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatInferenceRequest>(nullptr);
+  return verifier.VerifyBuffer<FlatInferenceRequest>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatInferenceRequest>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatInferenceRequest>(nullptr);
 }
 
 inline void FinishFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatInferenceRequest> root) {
+    flatbuffers::Offset<FlatInferenceRequest> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatInferenceRequest> root) {
+    flatbuffers::Offset<FlatInferenceRequest> root) {
   fbb.FinishSizePrefixed(root);
 }
 

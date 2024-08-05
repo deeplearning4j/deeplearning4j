@@ -58,6 +58,15 @@
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
+        <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
+         FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
+         FOR ADDRESS USE: address,float-divide-by-zero,float-cast-overflow
+          FOR UNDEFINED USE: undefined,float-divide-by-zero,float-cast-overflow
+         Note that address and undefined can't be used at the same time.
+         An address memory overlap will occur otherwise.
+         See: https://github.com/google/sanitizers/issues/856
+         -->
+        <libnd4j.sanitizers>address,</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
         <openblas.classifier></openblas.classifier>
@@ -70,7 +79,10 @@
         <libnd4j.log>none</libnd4j.log>
         <libnd4j.test.runner></libnd4j.test.runner>
         <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
+        <libnd4j.optimization>3</libnd4j.optimization>
+        <libnd4j.printindices>OFF</libnd4j.printindices>
         <junit.version>5.9.2</junit.version>
+
         <cpu.core.count></cpu.core.count>
 
     </properties>
@@ -369,12 +381,18 @@
                                         <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
                                         <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--use_lto</argument>
                                         <argument>${libnd4j.lto}</argument>
-                                        <argument>--callstack</argument>
+                                        <argument>--functrace</argument>
                                         <argument>${libnd4j.calltrace}</argument>
                                         <argument>--log-output</argument>
                                         <argument>${libnd4j.log}</argument>
+                                        <argument>--optimization-level</argument>
+                                        <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -494,6 +512,8 @@
                                         <argument>${libnd4j.datatypes}</argument>
                                         <argument>--sanitize</argument>
                                         <argument>${libnd4j.sanitize}</argument>
+                                        <argument>--sanitizers</argument>
+                                        <argument>${libnd4j.sanitizers}</argument>
                                         <argument>--arch</argument>
                                         <argument>${libnd4j.arch}</argument>
                                         <argument>--use_lto</argument>
@@ -504,6 +524,10 @@
                                         <argument>${libnd4j.log}</argument>
                                         <argument>--keep-nvcc-output</argument>
                                         <argument>${libnd4j.keepnvcc}</argument>
+                                        <argument>--optimization-level</argument>
+                                        <argument>${libnd4j.optimization}</argument>
+                                        <argument>--print-indices</argument>
+                                        <argument>${libnd4j.printindices}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

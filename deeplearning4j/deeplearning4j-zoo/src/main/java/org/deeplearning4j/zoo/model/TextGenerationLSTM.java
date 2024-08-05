@@ -22,12 +22,11 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -81,9 +80,9 @@ public class TextGenerationLSTM extends ZooModel {
                         .inferenceWorkspaceMode(workspaceMode)
                         .cudnnAlgoMode(cudnnAlgoMode)
                         .list()
-                        .layer(0, new GravesLSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)
+                        .layer(0, new LSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)
                                         .build())
-                        .layer(1, new GravesLSTM.Builder().nOut(256).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nOut(256).activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX) //MCXENT + softmax for classification
                                         .nOut(totalUniqueCharacters).build())

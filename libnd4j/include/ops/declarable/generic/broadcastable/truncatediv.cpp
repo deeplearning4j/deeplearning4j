@@ -34,19 +34,19 @@ BROADCASTABLE_OP_IMPL(truncatediv, 0, 0) {
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST(TruncateDiv), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(truncatediv) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, INHERIT);
 }
 }  // namespace ops
 }  // namespace sd

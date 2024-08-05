@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
   if (rank == 1) {
     OUTPUT_VARIABLE(0)->assign(INPUT_VARIABLE(0));
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
@@ -51,23 +51,23 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
   helpers::meshgrid(block.launchContext(), inArrs, outArrs, swapFirst2Dims);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(meshgrid) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes(DataType::INHERIT)->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes(INHERIT)->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(meshgrid) {
   bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
 
   int rank = block.width();
-  sd::LongType* outShapeInfo = nullptr;
+  LongType* outShapeInfo = nullptr;
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
   outShapeInfo[0] = rank;
-  for (int i = 1; i <= rank; ++i) outShapeInfo[i] = (sd::LongType)shape::length(inputShape->at(i - 1));
+  for (int i = 1; i <= rank; ++i) outShapeInfo[i] = (LongType)shape::length(inputShape->at(i - 1));
 
-  if (swapFirst2Dims && rank > 1) math::sd_swap<sd::LongType>(outShapeInfo[1], outShapeInfo[2]);
+  if (swapFirst2Dims && rank > 1) math::sd_swap<LongType>(outShapeInfo[1], outShapeInfo[2]);
 
   auto in = inputShape->at(0);
   ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));

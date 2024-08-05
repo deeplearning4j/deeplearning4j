@@ -32,20 +32,20 @@ BOOLEAN_OP_IMPL(is_non_decreasing, 1, true) {
   auto input = INPUT_VARIABLE(0);
 
   // in case of empty input there's nothing to do
-  if (input->isEmpty()) return sd::Status::EQ_TRUE;
+  if (input->isEmpty()) return Status::EQ_TRUE;
 
   bool isNonDecreasing = true;
 
-  sd::ops::helpers::compare_elem(block.launchContext(), input, false, isNonDecreasing);
+  helpers::compare_elem(block.launchContext(), input, false, isNonDecreasing);
 
   if (isNonDecreasing)
-    return sd::Status::EQ_TRUE;
+    return Status::EQ_TRUE;
   else
-    return sd::Status::EQ_FALSE;
+    return Status::EQ_FALSE;
 }
 
 DECLARE_TYPES(is_non_decreasing) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY)->setAllowedOutputTypes(0, DataType::BOOL);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedOutputTypes(0, BOOL);
 }
 }  // namespace ops
 }  // namespace sd

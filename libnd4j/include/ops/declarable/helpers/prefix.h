@@ -33,11 +33,11 @@ namespace ops {
 namespace helpers {
 
 
-SD_LIB_HIDDEN void prefix(sd::LaunchContext* context, sd::scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive,
+SD_LIB_HIDDEN void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive,
                           bool reverse);
 
-SD_LIB_HIDDEN void prefix(sd::LaunchContext* context, sd::scalar::Ops op, const NDArray* x, NDArray* z,
-                          const std::vector<sd::LongType>& dims, bool exclusive, bool reverse);
+SD_LIB_HIDDEN void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z,
+                          const std::vector<LongType>& dims, bool exclusive, bool reverse);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

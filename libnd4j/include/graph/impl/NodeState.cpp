@@ -25,13 +25,13 @@ namespace sd {
 namespace graph {
 NodeState::NodeState(int id) { _id = id; }
 
-void NodeState::setInnerTime(sd::LongType time) { _inner = time; }
+void NodeState::setInnerTime(LongType time) { _inner = time; }
 
-void NodeState::setOuterTime(sd::LongType time) { _outer = time; }
+void NodeState::setOuterTime(LongType time) { _outer = time; }
 
-sd::LongType NodeState::innerTime() { return _inner; }
+LongType NodeState::innerTime() { return _inner; }
 
-sd::LongType NodeState::outerTime() { return _outer; }
+LongType NodeState::outerTime() { return _outer; }
 
 void NodeState::markActive(bool isActive) { _active = isActive; }
 

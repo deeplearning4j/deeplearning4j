@@ -29,7 +29,7 @@
 namespace sd {
 DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
   DebugInfo info;
-  DebugHelper::retrieveDebugStatistics(&info, input);
+  retrieveDebugStatistics(&info, input);
   return info;
 }
 void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray const* input) {
@@ -49,41 +49,41 @@ void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray const* input)
     info->_maxValue = info->_minValue;
     info->_meanValue = info->_minValue;
     info->_stdDevValue = info->_minValue;
-    info->_zeroCount = sd::math::sd_abs(input->e<double>(0)) > 0.00001 ? 0 : 1;
+    info->_zeroCount = math::sd_abs(input->e<double>(0)) > 0.00001 ? 0 : 1;
     info->_positiveCount = input->e<double>(0) > 0 ? 1 : 0;
     info->_negativeCount = input->e<double>(0) < 0 ? 1 : 0;
-    info->_infCount = sd::math::sd_isinf(input->e<double>(0));
-    info->_nanCount = sd::math::sd_isnan(input->e<double>(0));
+    info->_infCount = math::sd_isinf(input->e<double>(0));
+    info->_nanCount = math::sd_isnan(input->e<double>(0));
   } else if (input->lengthOf() > 0) {
     // TO DO: here processing for all elements with array
     auto _minValue = input->e<double>(0);
     auto _maxValue = input->e<double>(0);
     auto _meanValue = input->e<double>(0);
     auto _stdDevValue = 0.;  // info->_minValue;
-    auto _zeroCount = sd::math::sd_abs(input->e<double>(0)) > 0.00001 ? 0L : 1L;
+    auto _zeroCount = math::sd_abs(input->e<double>(0)) > 0.00001 ? 0L : 1L;
     auto _positiveCount = input->e<double>(0) > 0 ? 1L : 0L;
     auto _negativeCount = input->e<double>(0) < 0 ? 1L : 0L;
-    auto _infCount = sd::math::sd_isinf(input->e<double>(0)) ? 1L : 0L;
-    auto _nanCount = sd::math::sd_isnan(input->e<double>(0)) ? 1L : 0L;
+    auto _infCount = math::sd_isinf(input->e<double>(0)) ? 1L : 0L;
+    auto _nanCount = math::sd_isnan(input->e<double>(0)) ? 1L : 0L;
 
     PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) reduction(+:_nanCount,_infCount,_meanValue,_zeroCount,_positiveCount,_negativeCount) reduction(min:_minValue) reduction(max:_maxValue))
-    for (sd::LongType e = 1; e < input->lengthOf(); e++) {
+    for (LongType e = 1; e < input->lengthOf(); e++) {
       auto current = input->e<double>(e);
       auto n = e + 1.;
       //                auto delta = current - _meanValue;
       //                auto delta2 = delta * delta;
-      _minValue = sd::math::sd_min(current, _minValue);
-      _maxValue = sd::math::sd_max(current, _maxValue);
+      _minValue = math::sd_min(current, _minValue);
+      _maxValue = math::sd_max(current, _maxValue);
 
       _meanValue += current;
       //_meanValue += delta / n; // this is a perfect formula but not working with omp in this notation
       //_stdDevValue += delta2 * e / n;
 
-      _zeroCount += sd::math::sd_abs(current) > 0.00001 ? 0 : 1;
+      _zeroCount += math::sd_abs(current) > 0.00001 ? 0 : 1;
       _positiveCount += current > 0 ? 1 : 0;
       _negativeCount += current < 0 ? 1 : 0;
-      _infCount += sd::math::sd_isinf(current);
-      _nanCount += sd::math::sd_isnan(current);
+      _infCount += math::sd_isinf(current);
+      _nanCount += math::sd_isnan(current);
     }
     *info = {_minValue,      _maxValue,  _meanValue / input->lengthOf(),
              _stdDevValue,   _zeroCount, _positiveCount,

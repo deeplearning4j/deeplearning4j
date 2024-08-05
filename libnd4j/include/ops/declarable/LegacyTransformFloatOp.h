@@ -32,13 +32,13 @@ namespace ops {
  */
 class SD_LIB_EXPORT LegacyTransformFloatOp : public LegacyOp {
  protected:
-  sd::Status validateAndExecute(Context& block) override;
+  Status validateAndExecute(sd::graph::Context& block) override;
 
  public:
   LegacyTransformFloatOp();
   LegacyTransformFloatOp(int opNum);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
 }  // namespace ops

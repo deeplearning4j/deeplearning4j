@@ -29,16 +29,16 @@
 
 namespace sd {
 namespace ops {
-LegacyReduceSameOp::LegacyReduceSameOp() : LegacyOp::LegacyOp(1) {
+LegacyReduceSameOp::LegacyReduceSameOp() : LegacyOp(1) {
   //
 }
 
-LegacyReduceSameOp::LegacyReduceSameOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+LegacyReduceSameOp::LegacyReduceSameOp(int opNum) : LegacyOp(1, opNum) {
 }
 
 LegacyOp* LegacyReduceSameOp::clone() { return new LegacyReduceSameOp(this->_opNum); }
 
-sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
+Status LegacyReduceSameOp::validateAndExecute(Context& block) {
   auto x = INPUT_VARIABLE(0);
 
   auto z = OUTPUT_VARIABLE(0);
@@ -64,24 +64,24 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
           extras.argumentsAsT(z->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
     } else {
       // TAD
-      std::vector<sd::LongType> dims(axis);
+      std::vector<LongType> dims(axis);
 
       for (int e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
 
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-      const sd::LongType* zShapeInfoH = z->shapeInfo();
-      const sd::LongType* zShapeInfoD = z->specialShapeInfo();
+      const LongType* zShapeInfoH = z->shapeInfo();
+      const LongType* zShapeInfoD = z->specialShapeInfo();
 
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
-        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
-        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
+        zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
+        zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<sd::LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceSame(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2->data(), dims2->size());
@@ -94,14 +94,14 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
     if (indices->lengthOf() == x->rankOf()) allAxes = true;
 
 
-    std::vector<sd::LongType> dims(indices->lengthOf());
+    std::vector<LongType> dims(indices->lengthOf());
     for (int e = 0; e < indices->lengthOf(); e++) {
       // segfault on macOS if not like this
-      int f = indices->e<sd::LongType>(e);
+      int f = indices->e<LongType>(e);
       dims[e] = f >= 0 ? f : f += x->rankOf();
     }
 
-    if ((block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>()) || allAxes) {
+    if ((block.getIArguments()->size() == 1 && INT_ARG(0) == DataTypeUtils::max<int>()) || allAxes) {
       // scalar
       NativeOpExecutioner::execReduceSameScalar(
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -110,17 +110,17 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
       // TAD
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-      const sd::LongType* zShapeInfoH = z->shapeInfo();
-      const sd::LongType* zShapeInfoD = z->specialShapeInfo();
+      const LongType* zShapeInfoH = z->shapeInfo();
+      const LongType* zShapeInfoD = z->specialShapeInfo();
 
       if (x->rankOf() - dims.size() != z->rankOf()) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
-        zShapeInfoH = reinterpret_cast<sd::LongType const*>(zPack->primary());
-        zShapeInfoD = reinterpret_cast<sd::LongType const*>(zPack->special());
+        zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
+        zShapeInfoD = reinterpret_cast<LongType const*>(zPack->special());
       }
 
-      std::vector<sd::LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
+      std::vector<LongType> *dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), &dims);
       NativeOpExecutioner::execReduceSame(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
                                           x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(),
                                           zShapeInfoD, dims2->data(), dims2->size());
@@ -132,11 +132,11 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
 
   manager.synchronize();
   if(OpRegistrator::getInstance().traceOps()) {
-    std::vector<const sd::LongType *> *inputShapeBuffers = new std::vector<const sd::LongType *>();
+    std::vector<const LongType*> *inputShapeBuffers = new std::vector<const LongType*>();
     for(int i = 0; i < block.width(); i++) {
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
-    std::vector<const sd::LongType *> *outputShapeBuffers = new std::vector<const sd::LongType *>();
+    std::vector<const LongType*> *outputShapeBuffers = new std::vector<const LongType*>();
     for(int i = 0; i < block.outputWidth(); i++) {
       outputShapeBuffers->push_back(getZ(block,i)->shapeInfo());
     }
@@ -144,14 +144,14 @@ sd::Status LegacyReduceSameOp::validateAndExecute(Context& block) {
     OpExecTrace *opExecTrace = new OpExecTrace(inputShapeBuffers,outputShapeBuffers,this->getOpName());
     OpRegistrator::getInstance().registerOpExec(opExecTrace);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
  *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
  *   It solely depends on input shape, and requested dimensions
  */
-ShapeList* LegacyReduceSameOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
+ShapeList* LegacyReduceSameOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
   auto inShape = inputShape->at(0);
 
   bool allAxes = false;
@@ -159,7 +159,7 @@ ShapeList* LegacyReduceSameOp::calculateOutputShape(ShapeList* inputShape, sd::g
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
-  auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getAxis();
+  auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getAxis();
 
   if (axis.size() == shape::rank(inShape)) allAxes = true;
 

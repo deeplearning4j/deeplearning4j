@@ -22,11 +22,11 @@ namespace sd {
 class SD_LIB_EXPORT NDIndexUtils {
 
  public:
-  static sd::NDArray createInterval(sd::LongType start,sd::LongType end,sd::LongType stride = 1,sd::LongType inclusive = 1);
-  static sd::NDArray createInterval(LongType start, LongType end, LongType stride = 1, bool inclusive = true);
-  static sd::NDArray createPoint(sd::LongType offset);
-  static sd::NDArray createNewAxis();
-  static sd::NDArray createAll();
+  static NDArray createInterval(LongType start, LongType end, LongType stride = 1, LongType inclusive = 1);
+  static NDArray createInterval(LongType start, LongType end, LongType stride = 1, bool inclusive = true);
+  static NDArray createPoint(LongType offset);
+  static NDArray createNewAxis();
+  static NDArray createAll();
 
 };
 }

@@ -17,54 +17,78 @@
  ******************************************************************************/
 #include <build_info.h>
 #include <config.h>
+
 #include <string>
-const char *buildInfo() {
- std::string ret = "Build Info: ";
-#if defined(__clang__)
-         ret += "Clang: " STRINGIZE(__clang_version__);
-#elif defined(_MSC_VER)
-         ret += "MSVC: " STRINGIZE(_MSC_FULL_VER);
-#elif defined(__NEC__)
-         ret += "Nec CC: " STRINGIZE(__VERSION__);
+
+#include "helpers/logger.h"
+
+#if defined(SD_GCC_FUNCTRACE)
+
+bool isFuncTrace() {
+  return true;
+}
+
 #else
-         ret += "GCC: " STRINGIZE(__VERSION__);
+
+bool isFuncTrace() {
+  return false;
+}
+
+#endif
+
+const char *buildInfo() {
+  std::string ret = "Build Info: ";
+#if defined(SD_GCC_FUNCTRACE)
+  ret += "\nFunctrace: ";
+  ret += isFuncTrace() ? "ON\n" : "OFF";
+
+#endif
+
+#if defined(__clang__)
+  ret += "Clang: " STRINGIZE(__clang_version__);
+#elif defined(_MSC_VER)
+  ret += "MSVC: " STRINGIZE(_MSC_FULL_VER);
+#elif defined(__NEC__)
+  ret += "Nec CC: " STRINGIZE(__VERSION__);
+#else
+  ret += "GCC: " STRINGIZE(__VERSION__);
 #endif
 #if defined(_MSC_VER) && defined(_MSVC_LANG)
-        ret +=      "\nSTD version: " STRINGIZE(_MSVC_LANG);
+  ret +=      "\nSTD version: " STRINGIZE(_MSVC_LANG);
 #elif defined(__cplusplus)
-             ret += "\nSTD version: " STRINGIZE(__cplusplus);
+  ret += "\nSTD version: " STRINGIZE(__cplusplus);
 #endif
 
 #if defined(__CUDACC__)
-                ret +=  "\nCUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(;
+  ret +=  "\nCUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(;
                      __CUDACC_VER_BUILD__)
 #endif
 #if defined(DEFAULT_ENGINE)
-              ret +=        "\nDEFAULT_ENGINE: " STRINGIZE(DEFAULT_ENGINE);
+  ret +=        "\nDEFAULT_ENGINE: " STRINGIZE(DEFAULT_ENGINE);
 #endif
 #if defined(HAVE_FLATBUFFERS)
-                       ret +=   "\nHAVE_FLATBUFFERS";
+  ret +=   "\nHAVE_FLATBUFFERS";
 #endif
 #if defined(HAVE_ONEDNN)
-                       ret +=   "\nHAVE_ONEDNN";
+  ret +=   "\nHAVE_ONEDNN";
 #endif
 #if defined(HAVE_VEDNN)
-                     ret +=     "\nHAVE_VEDNN";
+  ret +=     "\nHAVE_VEDNN";
 #endif
 #if defined(__EXTERNAL_BLAS__)
-                    ret +=      "\nHAVE_EXTERNAL_BLAS";
+  ret +=      "\nHAVE_EXTERNAL_BLAS";
 #endif
 #if defined(HAVE_OPENBLAS)
-                         ret += "\nHAVE_OPENBLAS";
+  ret += "\nHAVE_OPENBLAS";
 #endif
 #if defined(HAVE_CUDNN)
-                        ret +=  "\nHAVE_CUDNN";
+  ret +=  "\nHAVE_CUDNN";
 #endif
 #if defined(HAVE_ARMCOMPUTE)
-                        ret +=  "\nHAVE_ARMCOMPUTE";
+  ret +=  "\nHAVE_ARMCOMPUTE";
 #endif
 
-#if defined(__CUDACC__)
+#if defined(SD_CUDA)
 
   ret +=  "\nCUDA: " STRINGIZE(__CUDACC_VER_MAJOR__) "." STRINGIZE(__CUDACC_VER_MINOR__) "." STRINGIZE(
       __CUDACC_VER_BUILD__);
@@ -77,5 +101,12 @@ const char *buildInfo() {
 
 
 
-return ret.c_str();
+
+  std::string *ret2 =  new std::string(ret);
+  //risk of build information not being printed during debug settings
+  if(isFuncTrace())
+    sd_printf("%s", ret2->c_str());
+  return ret2->c_str();
 }
+
+

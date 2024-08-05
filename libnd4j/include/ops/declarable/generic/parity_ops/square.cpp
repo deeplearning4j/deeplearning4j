@@ -34,10 +34,10 @@ OP_IMPL(square, 1, 1, true) {
   int extras = 2;
   input->applyScalar(scalar::Pow, extras, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(square) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(square) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 
