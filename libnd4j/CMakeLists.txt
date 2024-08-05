@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
+
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(libnd4j)
+
+
+
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
@@ -17,14 +23,36 @@ option(SD_STATIC_LIB "Build static library" OFF)
 option(SD_SHARED_LIB "Build shared library" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
 option(SD_USE_LTO "Use link time optimization" OFF)
+option(PRINT_INDICES "Print indices" OFF)
 # GCC specific flag: 	 -finstrument-functions enables call stack logging. Useful for debugging segfaults.
-# TODO: from https://sii.pl/blog/en/call-stack-logger-function-instrumentation-as-a-way-to-trace-programs-flow-of-execution/?category=hard-development&tag=binutils-en,cpp-en,embedded-competency-center-en,function-instrumentation-en,gcc-en,logging-en,trace-en
-# from: https://github.com/TomaszAugustyn/call-stack-logger/blob/master/src/trace.cpp
 option(SD_GCC_FUNCTRACE "Use call traces" OFF)
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 
-set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+message("PRINT_INDICES: ${PRINT_INDICES}")
+if("${PRINT_INDICES}" STREQUAL "ON")
+    message("Added print indices compile definition")
+    add_compile_definitions(PRINT_INDICES)
+endif()
 
+
+if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
+    message("Set optimization for functrace ${SD_GCC_FUNCTRACE}")
+    set(SD_OPTIMIZATION_LEVEL   "0")
+
+else()
+    message("Set optimization level for no functrace ${SD_GCC_FUNCTRACE}")
+    set(SD_OPTIMIZATION_LEVEL  "3")
+endif()
+
+message("Set default optimization level ${SD_OPTIMIZATION_LEVEL}")
+set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+# note we may or may not use a build type called "none" to prevent default injection
+# of flags from cmake. We do this when using functrace so we can add symbols
+# to a binary but still run from java without freezing.
+# Normally, we would just want to use debug build. Running a debug build
+# via JNI seems to just freeze though. The goal is to just use tools like
+# valgrind or compute-sanitizer or even address sanitizer with symbols
+# embedded in a binary but still run code from java.
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
 macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")
@@ -46,7 +74,7 @@ if(SD_AURORA)
     endif()
 else()
 
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND NOT SD_CUDA)
         SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
     endif()
 
@@ -260,14 +288,14 @@ endif()
 if (SD_AURORA)
     message("Aurora build in process")
     set(SD_X86_BUILD false)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O4 -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-defer-inline-template-instantiation  -msched-block -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O${SD_OPTIMIZATION_LEVEL} -fPIC -DSD_AURORA=true")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 elseif (SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64*" OR "${SD_ARCH}" MATCHES "armv8-a")
         set(SD_ARCH armv8-a)
@@ -276,20 +304,20 @@ elseif (APPLE)
     endif()
 
 
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
     set(SD_X86_BUILD true)
     if (SD_CUDA)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
-        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
     endif()
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
-    set(CMAKE_CXX_FLAGS_RELEASE  "-w -O3 -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O0 -fPIC -fno-openmp -fassociative-math")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-w -O${SD_OPTIMIZATION_LEVEL} -fPIC -finline-functions -finline-max-depth=10 -fopenmp -fassociative-math -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "-w -g -O${SD_OPTIMIZATION_LEVEL} -fPIC -fno-openmp -fassociative-math")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,$ENV{NLC_ROOT}/lib/")
 
@@ -308,15 +336,32 @@ else()
     # ideally debug builds would work but since it's not consistent it's better to just
     # set this for release flags so we can debug code even from the java level
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O0 -fPIC -D_RELEASE=true")
+        # note we may or may not use a build type called "none" to prevent default injection
+        # of flags from cmake. We do this when using functrace so we can add symbols
+        # to a binary but still run from java without freezing.
+        # Normally, we would just want to use debug build. Running a debug build
+        # via JNI seems to just freeze though. The goal is to just use tools like
+        # valgrind or compute-sanitizer or even address sanitizer with symbols
+        # embedded in a binary but still run code from java.
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -g")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
     endif()
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
-
-    if (SD_CPU AND SD_SANITIZE)
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
+    # note on ftls model: https://github.com/microsoft/mimalloc/issues/147 tsanitize sometimes throws errors
+    if (SD_SANITIZE)
+        set(SANITIZE_FLAGS " -Wall -Wextra -fPIE   -lpthread -ftls-model=local-dynamic -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
+        message("Using sanitizers: ${SD_SANITIZERS} - note you can not use both thread and address sanitizer at the same time. Be careful what sanitizers you specify.
+         Note that address and undefined can not be used at the same time or an address overlap error will occur.  See: https://github.com/google/sanitizers/issues/856
+         FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
+         FOR ADDRESS USE: address,undefined,float-divide-by-zero,float-cast-overflow")
+        if(SD_CPU)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS}")
+        endif()
+        if(SD_CUDA)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
+        endif()
         # adds stack size to prevent misc errors with address sanitizer
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}   -Wall -Wextra -shared-libsan -fPIE  -fsanitize=address,thread,undefined,float-divide-by-zero,float-cast-overflow -fno-sanitize-recover=all  -fPIE stack-size=8192")
     endif()
 endif()
 
@@ -380,33 +425,6 @@ if(NOT SD_CUDA)
         set(OPENBLAS_LIBRARIES openblas)
     endif()
 
-    # building cpu_features
-    if (SD_X86_BUILD)
-        add_definitions(-DCPU_FEATURES=true)
-        set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
-        configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
-        message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
-        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-
-        if(result)
-            message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
-        endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-        if(result)
-            message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
-        endif()
-
-        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
-                ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
-                EXCLUDE_FROM_ALL)
-        set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
-        include_directories(${CPUF_SOURCE_DIR}/include)
-        set(CPU_FEATURES cpu_features)
-    endif()
 endif()
 
 
@@ -454,40 +472,6 @@ endif()
 
 
 
-if ( (NOT SD_AURORA) AND HAVE_VEDNN )
-    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /usr/local/ve/veda/cmake /opt/nec/ve/share/veda/cmake)
-
-    message("--VEDA--")
-    FIND_PACKAGE(VEDA)
-
-    if(VEDA_FOUND)
-        ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
-        message("---${VEDA_INCLUDE_DIRS}--${VEDA_LIBRARY}-----")
-        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDE_DIRS} )
-        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
-
-        list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDE_DIRS} )
-
-        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
-        set(HAVE_VEDA 1)
-    else()
-        #try older
-        message("---try to look for VE package-----")
-        FIND_PACKAGE(VE REQUIRED)
-
-        ENABLE_LANGUAGE(VEDA_C VEDA_CXX)
-
-        message("---${VEDA_INCLUDES}--${VEDA_LIBRARY}-----")
-        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDA_INCLUDES} )
-        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDA_LIBRARY} )
-
-        list(APPEND VEDA_INCLUDE_DIRS ${VEDNN_INCLUDE} ${VEDA_INCLUDES} )
-
-        list(APPEND VEDA_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} ${VEDA_DEVICE_LIBRARY})
-        set(HAVE_VEDA 1)
-    endif()
-
-endif()
 
 if (${HELPERS_onednn})
     message("Going to pull & build onednn")
@@ -495,7 +479,7 @@ if (${HELPERS_onednn})
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
     configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+    execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
     if(result)
@@ -560,7 +544,7 @@ endif()
 
 # Download and unpack flatbuffers at configure time
 configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
 if(result)
