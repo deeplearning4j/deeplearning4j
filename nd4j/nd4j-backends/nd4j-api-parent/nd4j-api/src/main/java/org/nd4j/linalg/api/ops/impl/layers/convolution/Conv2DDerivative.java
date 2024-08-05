@@ -71,8 +71,8 @@ public class Conv2DDerivative extends Conv2D {
     }
 
     @Override
-    public int getNumOutputs(){
-        if(args().length == 4){
+    public int getNumOutputs() {
+        if(args().length == 4) {
             return 3;   //Includes bias
         } else {
             return 2;   //No bias - only input + weight grads
@@ -80,11 +80,11 @@ public class Conv2DDerivative extends Conv2D {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;  //Original inputs + gradient at
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         List<DataType> out = new ArrayList<>(n-1);
-        for( int i=0; i<n-1; i++ ){
+        for( int i = 0; i < n - 1; i++) {
             out.add(inputDataTypes.get(i));
         }
         return out;

@@ -26,8 +26,11 @@ import lombok.Setter;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.OpType;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -300,7 +303,10 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     y = args[1].getArr();
                 else if((opType() == Type.REDUCE_FLOAT || opType() == Type.REDUCE_LONG || opType() == Type.REDUCE_BOOL  || opType() == Type.REDUCE_BOOL || opType() == Type.REDUCE_SAME) && args.length > 1) {
                     this.dimensionz = args[1].getArr();
-                    this.dimensions = args[1].getArr().toLongVector();
+                    if(!args[1].getArr().isEmpty())
+                        this.dimensions = args[1].getArr().toLongVector();
+                    else
+                        this.dimensions = new long[0];
                 }
             }
 
@@ -320,16 +326,21 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             }
 
             if(z == null) {
-                if(!(this instanceof ReduceOp))
-                    setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()));
-                else {
+                if(!(this instanceof ReduceOp)) {
+                    if(x.isEmpty()) {
+                        setZ(Nd4j.emptyWithShape(x.shape(),x.dataType()));
+                    }
+                    else {
+                        setZ(Nd4j.zeros(x.shape()).castTo(newVars[0].dataType()).detach());
+                    }
+                }  else {
                     if(this instanceof BaseReduceOp) {
                         if(dimensions == null && dimensionz != null)
                             dimensions = dimensionz.ravel().toLongVector();
                         BaseReduceOp baseReduceOp = (BaseReduceOp) this;
-                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,baseReduceOp.keepDims)).castTo(newVars[0].dataType()));
+                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,baseReduceOp.keepDims)).castTo(newVars[0].dataType()).detach());
                     } else {
-                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()));
+                        setZ(Nd4j.create(Shape.reductionShape(x,dimensions,true,false)).castTo(newVars[0].dataType()).detach());
 
                     }
                 }
@@ -342,6 +353,36 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                         baseScalarOp.setScalar(baseScalarOp.scalar().castTo(x().dataType()));
                     }
                 }
+            }
+
+
+            try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                if(y == null)
+                    ctx.setInputArrays(x);
+                else if(y != null) {
+                    ctx.setInputArrays(x,y);
+                }
+
+                ctx.setOutputArrays(z);
+
+                SameDiffOp op2 = sameDiff.getOps().get(getOwnName());
+                for(Listener l : sameDiff.getListeners()) {
+                    l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
+                }
+
+                INDArray exec = Nd4j.getExecutioner().exec(this,ctx);
+                for(Listener  l : sameDiff.getListeners()) {
+                    l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,new INDArray[]{exec});
+                }
+
+                for(Listener  l : sameDiff.getListeners()) {
+                    l.preUpdate(sameDiff,At.defaultAt(),sameDiff.getVariables().get(outputVariable().name()),z);
+
+                }
+
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
             INDArray exec = Nd4j.getExecutioner().exec(this);
@@ -422,9 +463,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if (dimensions == null || dimensions.length == 0)
             dimensions = new long[]{Integer.MAX_VALUE};
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            this.dimensionz = Shape.ndArrayDimFromLong(dimensions);
-        }
+        this.dimensionz = Shape.ndArrayDimFromLong(dimensions).detach();
+
     }
 
     public long[] dimensionsArr() {

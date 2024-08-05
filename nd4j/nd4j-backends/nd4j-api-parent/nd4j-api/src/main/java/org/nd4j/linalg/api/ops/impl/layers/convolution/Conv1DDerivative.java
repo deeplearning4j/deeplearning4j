@@ -59,7 +59,7 @@ public class Conv1DDerivative extends DynamicCustomOp {
         this(sd, wrapFilterNull(input, weights, bias, gradOut), config);
     }
 
-    public Conv1DDerivative(INDArray[] inputs, INDArray[] outputs, Conv1DConfig config){
+    public Conv1DDerivative(INDArray[] inputs, INDArray[] outputs, Conv1DConfig config) {
         super(inputs, outputs);
 
         initConfig(config);
@@ -132,7 +132,7 @@ public class Conv1DDerivative extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
         if(args().length == 4){
             return 3;   //Includes bias
         } else {
@@ -141,7 +141,7 @@ public class Conv1DDerivative extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return new ArrayList<>(inputDataTypes.subList(0, inputDataTypes.size()-1)); //All except gradient input variable
