@@ -2369,7 +2369,6 @@ TEST_F(DeclarableOpsTests1, OneHotTests_1) {
   ASSERT_EQ(sd::Status::OK, result.status());
 
   auto z = result.at(0);
-  // z->printBuffer();
 
 ASSERT_EQ(exp,*z);
 }
@@ -2829,7 +2828,6 @@ TEST_F(DeclarableOpsTests1, Reverse_3) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2854,7 +2852,6 @@ TEST_F(DeclarableOpsTests1, Reverse_4) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));
@@ -2901,7 +2898,6 @@ TEST_F(DeclarableOpsTests1, Reverse_6) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(input));
   ASSERT_TRUE(expected.equalsTo(&input));
@@ -2947,7 +2943,6 @@ TEST_F(DeclarableOpsTests1, Reverse_8) {
   ASSERT_EQ(sd::Status::OK, results.status());
 
   auto result = results.at(0);
-  // result->printBuffer();
 
   ASSERT_TRUE(expected.isSameShapeStrict(*result));
   ASSERT_TRUE(expected.equalsTo(result));

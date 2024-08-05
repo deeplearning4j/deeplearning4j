@@ -30,12 +30,20 @@ namespace helpers {
 
 // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 template <typename T>
-static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType sH, const LongType sW,
+static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW,
                     const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
-  auto imBuff = output.bufferAsT<T>();
-  auto colBuff = input.bufferAsT<T>();
-  auto imShapeBuffer = output.shapeInfo();
-  auto colShapeBuffer = input.shapeInfo();
+  if(input->rankOf() != 6) {
+    THROW_EXCEPTION("ops::helpers::col2im: input array must have rank = 6");
+  }
+
+  if(output->rankOf() != 4) {
+    THROW_EXCEPTION("ops::helpers::col2im: output array must have rank = 4");
+  }
+
+  auto colBuff = input->bufferAsT<T>();
+  auto imBuff = output->bufferAsT<T>();
+  auto colShapeBuffer = input->shapeInfo();
+  auto imShapeBuffer = output->shapeInfo();
   auto colShape = shape::shapeOf(colShapeBuffer);
   auto colStride = shape::stride(colShapeBuffer);
   auto imShape = shape::shapeOf(imShapeBuffer);
@@ -58,44 +66,45 @@ static void col2im_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   const sd::LongType imStride2 = imStride[2];
   const sd::LongType imStride3 = imStride[3];
 
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto b = start; b < stop; b++) {
-        T* im0 = imBuff + b * imStride0;
-        T const* col4 = colBuff + b * colStride0;
-        for (sd::LongType colH = 0; colH < oH; ++colH, col4 += colStride4) {
-          T const* col5 = col4;
-          for (sd::LongType colW = 0; colW < oW; ++colW, col5 += colStride5) {
-            T const* col1 = col5;
-            T* im1 = im0;
-            for (sd::LongType c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
-              sd::LongType imRow = (-pH + colH * sH);
-              T const* col2 = col1;
-              T* im2 = im1 + imRow * imStride2;
-              for (sd::LongType kRow = 0; kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH * imStride2) {
-                sd::LongType imCol = -pW + colW * sW;
-                T const* col3 = col2;
-                T* im3 = im2 + imCol * imStride3;
-                for (sd::LongType kCol = 0; kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW * imStride3) {
-                  if (static_cast<LongType>(imRow) < static_cast<LongType>(iH) &&
-                      static_cast<LongType>(imRow) >= 0 &&
-                      static_cast<LongType>(imCol) < static_cast<LongType>(iW) &&
-                      static_cast<LongType>(imCol) >= 0)
-                    *im3 += *col3;
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto b = start; b < stop; b++) {
+      LongType im0Offset = b * imStride0;
+      LongType col4Offset = b * colStride0;
+      for (int colH = 0; colH < oH; ++colH) {
+        LongType col5Offset = col4Offset + colH * colStride4;
+        for (int colW = 0; colW < oW; ++colW) {
+          LongType col1Offset = col5Offset + colW * colStride5;
+          LongType im1Offset = im0Offset;
+          for (int c = 0; c < iC; ++c) {
+            int imRow = (-pH + colH * sH);
+            LongType col2Offset = col1Offset + c * colStride1;
+            LongType im2Offset = im1Offset + c * imStride1 + imRow * imStride2;
+            for (int kRow = 0; kRow < kH; ++kRow) {
+              int imCol = -pW + colW * sW;
+              LongType col3Offset = col2Offset + kRow * colStride2;
+              LongType im3Offset = im2Offset + kRow * dH * imStride2 + imCol * imStride3;
+              for (int kCol = 0; kCol < kW; ++kCol) {
+                if (static_cast<unsigned>(imRow) < static_cast<unsigned>(iH) &&
+                    static_cast<unsigned>(imCol) < static_cast<unsigned>(iW)) {
+                  imBuff[im3Offset] += colBuff[col3Offset];
                 }
+                col3Offset += colStride3;
+                imCol += dW;
+                im3Offset += dW * imStride3;
               }
+              imRow += dH;
             }
           }
         }
       }
-    };
+    }
+  };
 
-    samediff::Threads::parallel_tad(func, 0, bS);
-
+  samediff::Threads::parallel_tad(func, 0, bS);
 }
-
-void col2im(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType sH, const LongType sW, const LongType pH,
+void col2im(LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
-  BUILD_SINGLE_SELECTOR(input.dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW),
+  BUILD_SINGLE_SELECTOR(input->dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW),
                         SD_FLOAT_TYPES);
 }
 

@@ -1552,7 +1552,6 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_1) {
   z.assign(0.f);
 
   x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), y, z);
-  // z.printBuffer();
   ASSERT_EQ(e, z);
 }
 ///////////////////////////////////////////////////////////////////////

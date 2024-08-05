@@ -1291,7 +1291,6 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
   auto _gradWD = resultBP.at(1);
   auto _gradWP = resultBP.at(2);
 
-  //_gradWP->printBuffer("gradWP");
 
   ASSERT_TRUE(_gradWP->isSameShape(&expGWP));
   ASSERT_TRUE(_gradWP->isSameShape(&weightsP));
@@ -1511,7 +1510,6 @@ TEST_F(ConvolutionTests2, deconv3d_test1) {
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
   auto output = results.at(0);
 
-  // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
 ASSERT_EQ(exp,*output);
@@ -3073,7 +3071,6 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test2) {
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
-  // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
   ASSERT_TRUE(expected.isSameShape(output));
@@ -4223,7 +4220,6 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_8) {
   sd::ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
-  // output->printBuffer();
 
   ASSERT_EQ(sd::Status::OK, results.status());
 

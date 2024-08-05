@@ -270,12 +270,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_1) {
 
   sd::ops::rgb_to_hsv op;
   auto status = op.execute(&ctx);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("HSV ");
-    expected.printBuffer("exp");
-#endif
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(expected.equalsTo(actual));
 }
@@ -885,10 +879,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_5) {
 
   sd::ops::yiq_to_rgb op;
   auto status = op.execute(&ctx);
-#if 0
-    actual.printBuffer("actual");
-    expected.printBuffer("expected");
-#endif
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(expected.equalsTo(actual));
 }
