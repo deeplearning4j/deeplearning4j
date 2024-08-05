@@ -32,6 +32,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -49,10 +50,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     protected boolean hasBias = true;
     protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate; //Default to truncate here - default for 0.6.0 and earlier networks on JSON deserialization
-    protected int dilation[] = new int[] {1, 1};
-    protected int[] kernelSize; // Square filter
-    protected int[] stride; // Default is 2. Down-sample by a factor of 2
-    protected int[] padding;
+    protected long dilation[] = {1, 1};
+    protected long[] kernelSize; // Square filter
+    protected long[] stride; // Default is 2. Down-sample by a factor of 2
+    protected long[] padding;
     protected boolean cudnnAllowFallback = true;
     protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW; //default value for legacy serialization reasons
     @JsonIgnore
@@ -113,7 +114,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      */
     protected ConvolutionLayer(BaseConvBuilder<?> builder) {
         super(builder);
-        int dim = builder.convolutionDim;
+        long dim = builder.convolutionDim;
 
         this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
@@ -193,7 +194,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
                     + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnnLayersLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                 nOut, layerIndex, getLayerName(), cnn2dDataFormat, ConvolutionLayer.class);
     }
 
@@ -276,6 +277,21 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
     public static class Builder extends BaseConvBuilder<Builder> {
 
+
+
+        public Builder(long[] kernelSize, long[] stride, long[] padding) {
+            super(kernelSize, stride, padding);
+        }
+
+        public Builder(long[] kernelSize, long[] stride) {
+            super(kernelSize, stride);
+        }
+
+        public Builder(long... kernelSize) {
+            super(kernelSize);
+        }
+
+
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
         }
@@ -305,20 +321,46 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *
          * @param kernelSize the height and width of the kernel
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
 
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
 
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
+
+
+
+
+
+
+        /**
+         * Size of the convolution rows/columns
+         *
+         * @param kernelSize the height and width of the kernel
+         */
+        public Builder kernelSize(int... kernelSize) {
+            this.setKernelSize(ArrayUtil.toLongArray(kernelSize));
+            return this;
+        }
+
+        public Builder stride(int... stride) {
+            this.setStride(ArrayUtil.toLongArray(stride));
+            return this;
+        }
+
+        public Builder padding(int... padding) {
+            this.setPadding(ArrayUtil.toLongArray(padding));
+            return this;
+        }
+
 
         /**
          * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
@@ -326,7 +368,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * Default: NCHW
          * @param format Format for activations (in and out)
          */
-        public Builder dataFormat(CNN2DFormat format){
+        public Builder dataFormat(CNN2DFormat format) {
             this.dataFormat = format;
             return this;
         }
@@ -346,7 +388,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @param kernelSize kernel size
          */
         @Override
-        public void setKernelSize(int... kernelSize) {
+        public void setKernelSize(long... kernelSize) {
             this.kernelSize = ValidationUtils.validate2NonNegative(kernelSize, false, "kernelSize");
         }
 
@@ -356,7 +398,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @param stride kernel size
          */
         @Override
-        public void setStride(int... stride) {
+        public void setStride(long... stride) {
             this.stride = ValidationUtils.validate2NonNegative(stride, false, "stride");
         }
 
@@ -366,7 +408,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @param padding kernel size
          */
         @Override
-        public void setPadding(int... padding) {
+        public void setPadding(long... padding) {
             this.padding = ValidationUtils.validate2NonNegative(padding, false, "padding");
         }
 
@@ -376,7 +418,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * @param dilation kernel size
          */
         @Override
-        public void setDilation(int... dilation) {
+        public void setDilation(long... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
         }
 
@@ -389,7 +431,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     @Setter
     public static abstract class BaseConvBuilder<T extends BaseConvBuilder<T>> extends FeedForwardLayer.Builder<T> {
 
-        protected int convolutionDim = 2; // 2D convolution by default
+        protected long convolutionDim = 2; // 2D convolution by default
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.
@@ -414,10 +456,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
          * http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions</a><br>
          *
          */
-        protected int[] dilation = new int[] {1, 1};
-        public int[] kernelSize = new int[] {5, 5};
-        protected int[] stride = new int[] {1, 1};
-        protected int[] padding = new int[] {0, 0};
+        protected long[] dilation = {1, 1};
+        public long[] kernelSize = {5, 5};
+        protected long[] stride = {1, 1};
+        protected long[] padding = {0, 0};
 
         /**
          * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
@@ -437,54 +479,101 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation, int dim) {
-            this.setKernelSize(kernelSize);
-            this.setStride(stride);
-            this.setPadding(padding);
-            this.setDilation(dilation);
-            this.setConvolutionDim(dim);
+            this(toLongArray(kernelSize), toLongArray(stride), toLongArray(padding), toLongArray(dilation), dim);
         }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
+            this(toLongArray(kernelSize), toLongArray(stride), toLongArray(padding), toLongArray(dilation));
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int dim) {
+            this(toLongArray(kernelSize), toLongArray(stride), toLongArray(padding), dim);
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
+            this(toLongArray(kernelSize), toLongArray(stride), toLongArray(padding));
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int dim) {
+            this(toLongArray(kernelSize), toLongArray(stride), dim);
+        }
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride) {
+            this(toLongArray(kernelSize), toLongArray(stride));
+        }
+
+        protected BaseConvBuilder(int dim, int... kernelSize) {
+            this(dim, toLongArray(kernelSize));
+        }
+
+        protected BaseConvBuilder(int... kernelSize) {
+            this(toLongArray(kernelSize));
+        }
+
+        // Helper method to convert int array to long array
+        private static long[] toLongArray(int[] intArray) {
+            if (intArray == null) {
+                return null;
+            }
+            return Arrays.stream(intArray).asLongStream().toArray();
+        }
+
+
+
+
+
+        protected BaseConvBuilder(long[] kernelSize, long[] stride, long[] padding, long[] dilation, long dim) {
+            this.setKernelSize(kernelSize);
+            this.setStride(stride);
+            this.setPadding(padding);
+            this.setDilation(dilation);
+            this.setConvolutionDim(dim);
+        }
+
+        protected BaseConvBuilder(long[] kernelSize, long[] stride, long[] padding, long[] dilation) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
             this.setPadding(padding);
             this.setDilation(dilation);
         }
 
-        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int dim) {
+        protected BaseConvBuilder(long[] kernelSize, long[] stride, long[] padding, long dim) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
             this.setPadding(padding);
             this.setConvolutionDim(dim);
         }
 
-        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
+        protected BaseConvBuilder(long[] kernelSize, long[] stride, long[] padding) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
             this.setPadding(padding);
         }
 
-        protected BaseConvBuilder(int[] kernelSize, int[] stride, int dim) {
+        protected BaseConvBuilder(long[] kernelSize, long[] stride, long dim) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
             this.setConvolutionDim(dim);
         }
 
 
-        protected BaseConvBuilder(int[] kernelSize, int[] stride) {
+        protected BaseConvBuilder(long[] kernelSize, long[] stride) {
             this.setKernelSize(kernelSize);
             this.setStride(stride);
         }
 
-        protected BaseConvBuilder(int dim, int... kernelSize) {
+        protected BaseConvBuilder(long dim, long... kernelSize) {
             this.setKernelSize(kernelSize);
             this.setConvolutionDim(dim);
         }
 
 
-        protected BaseConvBuilder(int... kernelSize) {
+        protected BaseConvBuilder(long... kernelSize) {
             this.setKernelSize(kernelSize);
         }
+
+
+
 
         protected BaseConvBuilder() {}
 
@@ -529,22 +618,22 @@ public class ConvolutionLayer extends FeedForwardLayer {
          *
          * @param dilation Dilation for kernel
          */
-        public T dilation(int... dilation) {
+        public T dilation(long... dilation) {
             this.setDilation(dilation);
             return (T) this;
         }
 
-        public T kernelSize(int... kernelSize) {
+        public T kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return (T) this;
         }
 
-        public T stride(int... stride) {
+        public T stride(long... stride) {
             this.setStride(stride);
             return (T) this;
         }
 
-        public T padding(int... padding) {
+        public T padding(long... padding) {
             this.setPadding(padding);
             return (T) this;
         }

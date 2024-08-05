@@ -25,6 +25,9 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
+import org.nd4j.common.util.ArrayUtil;
+
+import java.lang.reflect.Array;
 
 /**
  * Upsampling base layer
@@ -38,7 +41,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseUpsamplingLayer extends NoParamLayer {
 
-    protected int[] size;
+    protected long[] size;
 
     protected BaseUpsamplingLayer(UpsamplingBuilder builder) {
         super(builder);
@@ -71,7 +74,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * dimensions (e.g. 2 for Upsampling2D etc.)
          *
          */
-        protected int[] size = new int[] {1};
+        protected long[] size = {1};
 
         /**
          * A single size integer is used for upsampling in all spatial dimensions
@@ -79,7 +82,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int size) {
-            this.setSize(new int[] {size});
+            this.setSize(new long[] {size});
         }
 
         /**
@@ -89,7 +92,7 @@ public abstract class BaseUpsamplingLayer extends NoParamLayer {
          * @param size int for upsampling
          */
         protected UpsamplingBuilder(int[] size) {
-            this.setSize(size);
+            this.setSize(ArrayUtil.toLongArray(size));
         }
     }
 

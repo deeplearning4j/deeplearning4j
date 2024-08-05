@@ -88,7 +88,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             //Probably: user did InputType.recurrent(x) without specifying sequence length
             outLength = -1;
         } else {
-            outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
+            outLength = Convolution1DUtils.getOutputSizeLong(inputTsLength, kernelSize[0], stride[0], padding[0],
                     convolutionMode, dilation[0]);
         }
 
@@ -153,7 +153,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
         public Builder() {
             this(0, 1, 0);
-            this.setKernelSize((int[]) null);
+            this.setKernelSize((long[]) null);
         }
 
         @Override
@@ -189,9 +189,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
          * @param padding Padding
          */
         public Builder(int kernelSize, int stride, int padding) {
-            this.kernelSize = new int[] {1, 1};
-            this.stride = new int[] {1, 1};
-            this.padding = new int[] {0, 0};
+            this.kernelSize = new long[] {1, 1};
+            this.stride = new long[] {1, 1};
+            this.padding = new long[] {0, 0};
 
             this.setKernelSize(kernelSize);
             this.setStride(stride);
@@ -229,49 +229,49 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         @Override
-        public void setKernelSize(int... kernelSize) {
+        public void setKernelSize(long... kernelSize) {
 
             if(kernelSize == null){
                 this.kernelSize = null;
                 return;
             }
 
-            this.kernelSize = ConvolutionUtils.getIntConfig(kernelSize,1);
+            this.kernelSize = ConvolutionUtils.getLongConfig(kernelSize,1);
         }
 
         @Override
-        public void setStride(int... stride) {
+        public void setStride(long... stride) {
 
             if(stride == null){
                 this.stride = null;
                 return;
             }
 
-            this.stride = ConvolutionUtils.getIntConfig(stride,1);
+            this.stride = ConvolutionUtils.getLongConfig(stride,1);
 
         }
 
         @Override
-        public void setPadding(int... padding) {
+        public void setPadding(long... padding) {
 
             if(padding == null){
                 this.padding = null;
                 return;
             }
 
-            this.padding = ConvolutionUtils.getIntConfig(padding,0);
+            this.padding = ConvolutionUtils.getLongConfig(padding,0);
 
         }
 
         @Override
-        public void setDilation(int... dilation) {
+        public void setDilation(long... dilation) {
 
             if(dilation == null) {
                 this.dilation = null;
                 return;
             }
 
-            this.dilation = ConvolutionUtils.getIntConfig(dilation,1);
+            this.dilation = ConvolutionUtils.getLongConfig(dilation,1);
 
         }
 

@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
@@ -61,7 +62,53 @@ public class ConvolutionUtils {
 
     private ConvolutionUtils() {
     }
+    public static PaddingMode fromConvolutionMode(ConvolutionMode paddingMode) {
+        switch (paddingMode) {
+            case Same:
+                return PaddingMode.SAME;
+            case Truncate:
+                return PaddingMode.VALID;
+            case Causal:
+                return PaddingMode.CAUSAL;
+            default:
+                throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
+        }
+    }
 
+
+    public static ConvolutionMode fromPaddingMode(PaddingMode paddingMode) {
+        switch (paddingMode) {
+            case SAME:
+                return ConvolutionMode.Same;
+            case VALID:
+                return ConvolutionMode.Truncate;
+            case CAUSAL:
+                return ConvolutionMode.Causal;
+            default:
+                throw new UnsupportedOperationException("Unknown/not supported padding mode: " + paddingMode);
+        }
+    }
+
+
+    /**
+     * Return the configuration for a given value
+     * for values like stride, dilation, kernel size
+     * that require 2 values
+     * If the input is already length 2, return that
+     * if the length is only 1, return the value specified twice
+     * otherwise return the default value duplicated twice
+     *
+     * @param inputValue the input value to return
+     * @param defaultValue the default value if none is present
+     * @return the int value as specified above.
+     */
+    public static long[] getLongConfig(long[] inputValue,long defaultValue) {
+        if(inputValue != null && inputValue.length < 2)
+            return new long[]{ inputValue[0] ,inputValue[0]};
+        else if(inputValue.length == 2)
+            return inputValue;
+        return new long[]{ defaultValue ,defaultValue};
+    }
 
     /**
      * Return the configuration for a given value
@@ -84,6 +131,47 @@ public class ConvolutionUtils {
     }
 
     /**
+     * For NCHW we expect:
+     * 4D input with shape [minibatch, inputChannels, inputHeight, inputWidth]
+     * for NHWC:
+     * 4D input with shape [minibatch, inputHeight, inputWidth, inputChannels]
+     * Note this is also tied to convolutions.h weightShape
+     * @param format
+     * @return
+     */
+    public static WeightsFormat getWeightFormat(CNN2DFormat format) {
+        return format == CNN2DFormat.NCHW ? WeightsFormat.YXIO : WeightsFormat.OIYX;
+    }
+
+
+    public static long[] getWeightShape1d(WeightsFormat weightsFormat, long kernelSize, long inputDepth, long outputDepth) {
+        //[kW, iC, oC]
+        switch(weightsFormat) {
+            case OIYX:
+                return new long[]{outputDepth, inputDepth, 1,kernelSize};
+            case YXIO:
+                return new long[]{kernelSize,1, inputDepth,outputDepth};
+            case OYXI:
+                return new long[]{outputDepth,1, kernelSize, inputDepth};
+            default:
+                throw new IllegalArgumentException("Unknown weights format: " + weightsFormat);
+        }
+    }
+
+    public static long[] getWeightShape(WeightsFormat weightsFormat,long[] kernelSize,long inputDepth,long outputDepth) {
+        switch(weightsFormat) {
+            case OIYX:
+                return new long[]{outputDepth, inputDepth, kernelSize[0], kernelSize[1]};
+            case YXIO:
+                return new long[]{kernelSize[0], kernelSize[1],inputDepth, outputDepth};
+            case OYXI:
+                return new long[]{outputDepth, kernelSize[0], kernelSize[1], inputDepth};
+            default:
+                throw new IllegalArgumentException("Unknown weights format: " + weightsFormat);
+        }
+    }
+
+    /**
      * Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
      */
     @Deprecated
@@ -91,6 +179,44 @@ public class ConvolutionUtils {
                                       ConvolutionMode convolutionMode) {
         return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONES);
     }
+
+
+    /**
+     * Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
+     * of the shape computation of a convolution.
+     *
+     * @param inputData       Input data
+     * @param kernel          Kernel size (height/width)
+     * @param strides         Strides (height/width)
+     * @param padding         Padding (height/width)
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation (height/width)
+     * @return Output size: int[2] with output height/width
+     */
+    public static long[] getDeconvolutionOutputSizeLong(INDArray inputData, long[] kernel, long[] strides, long[] padding,
+                                                        ConvolutionMode convolutionMode, long[] dilation, CNN2DFormat format) {
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int hDim = nchw ? 2 : 1;
+        int wDim = nchw ? 3 : 2;
+
+        if (inputData.size(hDim) > Integer.MAX_VALUE || inputData.size(wDim) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+        int hIn = (int) inputData.size(hDim);
+        int wIn = (int) inputData.size(wDim);
+        long[] eKernel = effectiveKernelSize(kernel, dilation);
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            long hOut = strides[0] * hIn;
+            long wOut = strides[1] * wIn;
+            return new long[]{hOut, wOut};
+        }
+
+        long hOut = strides[0] * (hIn - 1) + eKernel[0] - 2 * padding[0];
+        long wOut = strides[1] * (wIn - 1) + eKernel[1] - 2 * padding[1];
+
+        return new long[]{hOut, wOut};
+    }
+
 
     /**
      * Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
@@ -106,27 +232,12 @@ public class ConvolutionUtils {
      */
     public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                                    ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
-        boolean nchw = format == CNN2DFormat.NCHW;
-        int hDim = nchw ? 2 : 1;
-        int wDim = nchw ? 3 : 2;
-
-        if (inputData.size(hDim) > Integer.MAX_VALUE || inputData.size(wDim) > Integer.MAX_VALUE)
-            throw new ND4JArraySizeException();
-        int hIn = (int) inputData.size(hDim);
-        int wIn = (int) inputData.size(wDim);
-        int[] eKernel = effectiveKernelSize(kernel, dilation);
-
-        if (convolutionMode == ConvolutionMode.Same) {
-            int hOut = strides[0] * hIn;
-            int wOut = strides[1] * wIn;
-            return new int[]{hOut, wOut};
-        }
-
-        int hOut = strides[0] * (hIn - 1) + eKernel[0] - 2 * padding[0];
-        int wOut = strides[1] * (wIn - 1) + eKernel[1] - 2 * padding[1];
-
-        return new int[]{hOut, wOut};
+        return Arrays.stream(getDeconvolutionOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
     }
+
+
+
 
     /**
      * Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
@@ -140,8 +251,8 @@ public class ConvolutionUtils {
      * @param dilation        Kernel dilation (height/width)
      * @return Output size: int[2] with output height/width
      */
-    public static long[] getDeconvolution3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, int[] dilation,
-                                                      ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+    public static long[] getDeconvolution3DOutputSizeLong(INDArray inputData, long[] kernel, long[] strides, long[] padding, long[] dilation,
+                                                          ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
 
         long hIn, wIn, dIn;
         if(dataFormat == Convolution3D.DataFormat.NCDHW){
@@ -155,7 +266,7 @@ public class ConvolutionUtils {
         }
 
 
-        int[] eKernel = effectiveKernelSize(kernel, dilation);
+        long[] eKernel = effectiveKernelSize(kernel, dilation);
 
         if (convolutionMode == ConvolutionMode.Same) {
             long hOut = strides[0] * hIn;
@@ -173,12 +284,91 @@ public class ConvolutionUtils {
 
 
     /**
-     * @deprecated Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
+     * Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
+     * of the shape computation of a convolution.
+     *
+     * @param inputData       Input data
+     * @param kernel          Kernel size (height/width)
+     * @param strides         Strides (height/width)
+     * @param padding         Padding (height/width)
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation (height/width)
+     * @return Output size: int[2] with output height/width
+     */
+    public static int[] getDeconvolution3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, int[] dilation,
+                                                     ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+
+        return Arrays.stream(getDeconvolution3DOutputSizeLong(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                toLongArray(dilation), convolutionMode, dataFormat)).mapToInt(Math::toIntExact).toArray();
+    }
+
+
+    /**
+     * @deprecated Use {@link #getOutputSize(INDArray, long[], long[], long[], ConvolutionMode, long[], CNN2DFormat)}
      */
     @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation) {
-        return getOutputSize(inputData, kernel, strides, padding, convolutionMode, dilation, CNN2DFormat.NCHW);
+        return Arrays.stream(getOutputSize(inputData, toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                convolutionMode, toLongArray(dilation), CNN2DFormat.NCHW)).mapToInt(Math::toIntExact).toArray();
+    }
+
+    /**
+     * Get the output size for a 2D convolution operation based on the input data, kernel, strides, padding, convolution mode,
+     * dilation, and CNN2DFormat.
+     *
+     * @param inputData       The input data.
+     * @param kernel          The kernel size.
+     * @param strides         The strides.
+     * @param padding         The padding.
+     * @param convolutionMode The convolution mode.
+     * @param dilation        The dilation.
+     * @param format          The CNN2DFormat (NCHW or NHWC).
+     * @return The output size.
+     */
+    public static long[] getOutputSize(INDArray inputData, long[] kernel, long[] strides, long[] padding,
+                                       ConvolutionMode convolutionMode, long[] dilation, CNN2DFormat format) {
+        if (inputData.rank() != 4) {
+            throw new IllegalArgumentException("Input data must have rank 4 (received input with rank " + inputData.rank() + ")");
+        }
+        if (kernel.length != 2) {
+            throw new IllegalArgumentException("Kernel size must be an array of length 2 (received array of length " + kernel.length + ")");
+        }
+        if (strides.length != 2) {
+            throw new IllegalArgumentException("Strides must be an array of length 2 (received array of length " + strides.length + ")");
+        }
+        if (padding.length != 2) {
+            throw new IllegalArgumentException("Padding must be an array of length 2 (received array of length " + padding.length + ")");
+        }
+        if (dilation.length != 2) {
+            throw new IllegalArgumentException("Dilation must be an array of length 2 (received array of length " + dilation.length + ")");
+        }
+
+        long inH = format == CNN2DFormat.NCHW ? inputData.size(2) : inputData.size(1);
+        long inW = format == CNN2DFormat.NCHW ? inputData.size(3) : inputData.size(2);
+
+        long padH = padding[0];
+        long padW = padding[1];
+
+        long kH = kernel[0];
+        long kW = kernel[1];
+
+        long sH = strides[0];
+        long sW = strides[1];
+
+        long dH = dilation[0];
+        long dW = dilation[1];
+
+        long outH, outW;
+        if (convolutionMode == ConvolutionMode.Same) {
+            outH = (long) Math.ceil(inH / (double) sH);
+            outW = (long) Math.ceil(inW / (double) sW);
+        } else {
+            outH = (long) Math.ceil((inH - (kH - 1) * dH + 2 * padH) / (double) sH);
+            outW = (long) Math.ceil((inW - (kW - 1) * dW + 2 * padW) / (double) sW);
+        }
+
+        return new long[]{outH, outW};
     }
 
     /**
@@ -286,54 +476,103 @@ public class ConvolutionUtils {
         }
     }
 
+
+
+
     /**
      * Get the output size (height/width) for the given input data and CNN configuration
      *
-     * @param inputData       Input data
-     * @param kernel          Kernel size (height/width)
-     * @param strides         Strides (height/width)
-     * @param padding         Padding (height/width)
-     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
-     * @param dilation        Kernel dilation (height/width)
-     * @param format          Format for input activations
-     * @return Output size: int[2] with output height/width
+     * @param inputShape       Input shape
+     * @param kernel           Kernel size (height/width)
+     * @param strides          Strides (height/width)
+     * @param padding          Padding (height/width)
+     * @param convolutionMode  Convolution mode (Valid, Same, Causal)
+     * @param dilation         Kernel dilation (height/width)
+     * @param format           Format for input activations
+     * @return Output size: long[2] with output height/width
      */
-    public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                                      ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
+    public static long[] getOutputSizeLong(long[] inputShape, long[] kernel, long[] strides, long[] padding,
+                                           ConvolutionMode convolutionMode, long[] dilation, CNN2DFormat format) {
         int hDim = 2;
         int wDim = 3;
 
-        if(format == CNN2DFormat.NHWC) {
+        if (format == CNN2DFormat.NHWC) {
             hDim = 1;
             wDim = 2;
         }
 
-        if (inputData.size(hDim) > Integer.MAX_VALUE || inputData.size(wDim) > Integer.MAX_VALUE)
+        if (inputShape[hDim] > Integer.MAX_VALUE || inputShape[wDim] > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        int inH = (int) inputData.size(hDim);
-        int inW = (int) inputData.size(wDim);
+        long inputHeight = inputShape[hDim];
+        long inputWidth = inputShape[wDim];
 
-        //Determine the effective kernel size, accounting for dilation
-        //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
-        int[] eKernel = effectiveKernelSize(kernel, dilation);
-        boolean atrous = (eKernel == kernel);
+        long kH = kernel[0];
+        long kW = kernel[1];
 
-        int[] inShape = new int[]{inH, inW};
-        validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
+        long sH = strides[0];
+        long sW = strides[1];
+        long pH = padding == null ? 0 : padding[0];
+        long pW = padding == null ? 0 : padding[1];
+        long dH = dilation == null ? 1 : dilation[0];
+        long dW = dilation == null ? 1 : dilation[1];
 
-        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
+        long oH, oW;
 
-            int outH = (int) Math.ceil(inH / ((double) strides[0]));
-            int outW = (int) Math.ceil(inW / ((double) strides[1]));
+        if (convolutionMode == ConvolutionMode.Truncate) {  // valid
+            oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+            oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+        } else if (convolutionMode == ConvolutionMode.Same) {  // same
+            oH = (inputHeight + sH - 1) / sH;
+            oW = (inputWidth + sW - 1) / sW;
 
-            return new int[]{outH, outW};
+            // Calculate the padding needed to achieve the same output size
+            long paddingNeededH = ((oH - 1) * sH + (kH - 1) * dH + 1 - inputHeight) / 2;
+            long paddingNeededW = ((oW - 1) * sW + (kW - 1) * dW + 1 - inputWidth) / 2;
+
+            // Update the padding values
+            pH = paddingNeededH;
+            pW = paddingNeededW;
+
+            // Recalculate the output height and width with the updated padding
+            oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+            oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+        } else if (convolutionMode == ConvolutionMode.Causal) {  // causal
+            // Update the padding values for causal convolution
+            pH = (kH - 1) * dH;
+            pW = (kW - 1) * dW;
+
+            // Calculate the output height and width with the updated padding
+            oH = (inputHeight + 2 * pH - (kH - 1) * dH - 1) / sH + 1;
+            oW = (inputWidth + 2 * pW - (kW - 1) * dW - 1) / sW + 1;
+        } else {
+            throw new IllegalArgumentException("Unknown convolution mode: " + convolutionMode);
         }
 
-        int hOut = (inH - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
-        int wOut = (inW - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
-
-        return new int[]{hOut, wOut};
+        return new long[]{oH, oW};
     }
+
+
+    /**
+     * Get the output size (height/width) for the given input data and CNN configuration
+     *
+     * @param inputShape       Input shape
+     * @param kernel          Kernel size (height/width)
+     * @param strides         Strides (height/width)
+     * @param padding         Padding (height/width)
+     * @param convolutionMode Convolution mode (Valid, Same, Causal)
+     * @param dilation        Kernel dilation (height/width)
+     * @param format          Format for input activations
+     * @return Output size: int[2] with output height/width
+     */
+    public static int[] getOutputSize(INDArray inputShape, int[] kernel, int[] strides, int[] padding,
+                                      ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
+        return Arrays.stream(getOutputSizeLong(inputShape.shape(), toLongArray(kernel), toLongArray(strides), toLongArray(padding),
+                convolutionMode, toLongArray(dilation), format)).mapToInt(Math::toIntExact).toArray();
+    }
+
+
+
+
 
     public static void validateShapes(INDArray inputData, int[] eKernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation, int[] inShape,
@@ -458,6 +697,34 @@ public class ConvolutionUtils {
 
     }
 
+
+
+    public static long[] effectiveKernelSize(long[] kernel, long[] dilation) {
+        //Determine the effective kernel size, accounting for dilation
+        //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
+        if (kernel.length == 2) {
+            if (dilation[0] == 1 && dilation[1] == 1) {
+                return kernel;
+            } else {
+                return new long[] {
+                        kernel[0] + (kernel[0] - 1) * (dilation[0] - 1),
+                        kernel[1] + (kernel[1] - 1) * (dilation[1] - 1)};
+            }
+        } else if (kernel.length == 3) {
+            if (dilation[0] == 1 && dilation[1] == 1 && dilation[2] == 1) {
+                return kernel;
+            } else {
+                return new long[] {
+                        kernel[0] + (kernel[0] - 1) * (dilation[0] - 1),
+                        kernel[1] + (kernel[1] - 1) * (dilation[1] - 1),
+                        kernel[2] + (kernel[2] - 1) * (dilation[2] - 1)
+                };
+            }
+        } else {
+            throw new IllegalArgumentException("Kernel size has to be either two or three, got: " + kernel.length);
+        }
+    }
+
     public static int[] effectiveKernelSize(int[] kernel, int[] dilation) {
         //Determine the effective kernel size, accounting for dilation
         //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
@@ -495,6 +762,33 @@ public class ConvolutionUtils {
                 + Arrays.toString(padding) + ", dilation=" + Arrays.toString(dilation);
     }
 
+
+    /**
+     * Get top and left padding for same mode only.
+     *
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Top left padding (length 2 array, height dimension first)
+     */
+    public static long[] getSameModeTopLeftPadding(long[] outSize, long[] inSize, long[] kernel, long[] strides, long[] dilation) {
+        long[] eKernel = effectiveKernelSize(kernel, dilation);
+        long[] outPad = new long[kernel.length];
+        boolean allGt0 = true;
+
+        for( int i = 0; i < kernel.length; i++) {
+            outPad[i] = ((outSize[i] - 1) * strides[i] + eKernel[i] - inSize[i]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+            allGt0 &= outPad[i] >= 0;
+        }
+
+        Preconditions.checkState(allGt0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
+
+        return outPad;
+    }
+
     /**
      * Get top and left padding for same mode only.
      *
@@ -518,6 +812,27 @@ public class ConvolutionUtils {
         Preconditions.checkState(allGt0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
                 outPad, inSize, outSize, kernel, strides, dilation);
 
+        return outPad;
+    }
+
+
+    /**
+     * Get bottom and right padding for same mode only.
+     *
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Bottom right padding (length 2 array, height dimension first)
+     */
+    public static long[] getSameModeBottomRightPadding(long[] outSize, long[] inSize, long[] kernel, long[] strides, long[] dilation) {
+        long[] eKernel = effectiveKernelSize(kernel, dilation);
+        long[] outPad = new long[2];
+        outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0] + 1) / 2; //Note that padTop is 1 smaller than this if bracketed term is not divisible by 2
+        outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1] + 1) / 2; //As above
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 
@@ -548,7 +863,7 @@ public class ConvolutionUtils {
      * @param conf the configuration to get height and width from
      * @return the configuration to get height and width from
      */
-    public static int[] getHeightAndWidth(NeuralNetConfiguration conf) {
+    public static long[] getHeightAndWidth(NeuralNetConfiguration conf) {
         return getHeightAndWidth(
                 ((ConvolutionLayer) conf.getLayer()).getKernelSize());
     }
@@ -571,11 +886,33 @@ public class ConvolutionUtils {
      * @return the height and width for the image
      */
     public static int[] getHeightAndWidth(int[] shape) {
-        if (shape.length < 2)
-            throw new IllegalArgumentException("No width and height able to be found: array must be at least length 2");
-        return new int[]{shape[shape.length - 1], shape[shape.length - 2]};
+        return Arrays.stream(getHeightAndWidth(toLongArray(shape))).mapToInt(Math::toIntExact).toArray();
     }
 
+    /**
+     * Get the height and width
+     * for an image
+     *
+     * @param shape the shape of the image
+     * @return the height and width for the image
+     */
+    public static long[] getHeightAndWidth(long[] shape) {
+        if (shape.length < 2)
+            throw new IllegalArgumentException("No width and height able to be found: array must be at least length 2");
+        return new long[]{shape[shape.length - 1], shape[shape.length - 2]};
+    }
+
+    /**
+     * Helper method to convert an int array to a long array.
+     * @param intArray The int array to convert.
+     * @return The converted long array.
+     */
+    private static long[] toLongArray(int[] intArray) {
+        if (intArray == null) {
+            return null;
+        }
+        return Arrays.stream(intArray).asLongStream().toArray();
+    }
     /**
      * Returns the number of
      * feature maps for a given shape (must be at least 3 dimensions
@@ -595,6 +932,20 @@ public class ConvolutionUtils {
     /**
      * Check that the convolution mode is consistent with the padding specification
      */
+    public static void validateConvolutionModePadding(ConvolutionMode mode, long[] padding) {
+        if (mode == ConvolutionMode.Same) {
+            boolean nullPadding = true;
+            for (long i : padding) {
+                if (i != 0) nullPadding = false;
+            }
+            if (!nullPadding)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
+        }
+    }
+
+    /**
+     * Check that the convolution mode is consistent with the padding specification
+     */
     public static void validateConvolutionModePadding(ConvolutionMode mode, int[] padding) {
         if (mode == ConvolutionMode.Same) {
             boolean nullPadding = true;
@@ -605,6 +956,51 @@ public class ConvolutionUtils {
                 throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
         }
     }
+
+
+    /**
+     * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
+     * stride, and values >= 0 for padding.
+     *
+     * @param kernelSize Kernel size array to check
+     * @param stride     Stride array to check
+     * @param padding    Padding array to check
+     */
+    public static void validateCnnKernelStridePadding(long[] kernelSize, long[] stride, long[] padding) {
+        if (kernelSize == null || kernelSize.length != 2) {
+            throw new IllegalStateException("Invalid kernel size: expected int[] of length 2, got "
+                    + (kernelSize == null ? null : Arrays.toString(kernelSize)));
+        }
+
+        if (stride == null || stride.length != 2) {
+            throw new IllegalStateException("Invalid stride configuration: expected int[] of length 2, got "
+                    + (stride == null ? null : Arrays.toString(stride)));
+        }
+
+        if (padding == null || padding.length != 2) {
+            throw new IllegalStateException("Invalid padding configuration: expected int[] of length 2, got "
+                    + (padding == null ? null : Arrays.toString(padding)));
+        }
+
+        if (kernelSize[0] <= 0 || kernelSize[1] <= 0) {
+            throw new IllegalStateException(
+                    "Invalid kernel size: values must be positive (> 0) for all dimensions. Got: "
+                            + Arrays.toString(kernelSize));
+        }
+
+        if (stride[0] <= 0 || stride[1] <= 0) {
+            throw new IllegalStateException(
+                    "Invalid stride configuration: values must be positive (> 0) for all dimensions. Got: "
+                            + Arrays.toString(stride));
+        }
+
+        if (padding[0] < 0 || padding[1] < 0) {
+            throw new IllegalStateException(
+                    "Invalid padding configuration: values must be >= 0 for all dimensions. Got: "
+                            + Arrays.toString(padding));
+        }
+    }
+
 
     /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
@@ -838,7 +1234,11 @@ public class ConvolutionUtils {
                             + " Got: " + inputType);
         }
         return new int[]{inH, inW, inDepth};
+
+
+
     }
+
 
     /**
      * Given a mask array for a 1D CNN layer of shape [minibatch, sequenceLength], reduce the mask according to the 1D CNN layer configuration.
@@ -853,32 +1253,32 @@ public class ConvolutionUtils {
      * @param cm       Convolution mode
      * @return Reduced mask
      */
-    public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm){
-        Preconditions.checkState(in.rank()==2, "Rank must be 2 for cnn1d mask array - shape ", in.shape());
-        if((cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) && stride == 1 ){
+    public static INDArray cnn1dMaskReductionLong(INDArray in, long kernel, long stride, long padding, long dilation, ConvolutionMode cm) {
+        Preconditions.checkState(in.rank() == 2, "Rank must be 2 for cnn1d mask array - shape ", in.shape());
+        if((cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) && stride == 1 ) {
             return in;
         }
 
-        if(!Shape.hasDefaultStridesForShape(in)){
+        if(!Shape.hasDefaultStridesForShape(in)) {
             in = in.dup();
         }
 
         INDArray reshaped4d = in.reshape(in.size(0), 1, in.size(1), 1);
 
-        int[] outSize;
-        int[] pad = null;
-        int[] k = new int[]{kernel,1};
-        int[] s = new int[]{stride, 1};
-        int[] d = new int[]{dilation, 1};
+        long[] outSize;
+        long[] pad = null;
+        long[] k = {kernel,1};
+        long[] s = {stride, 1};
+        long[] d = {dilation, 1};
         if (cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) {
             outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d, CNN2DFormat.NCHW); //Also performs validation
         } else {
-            pad = new int[]{padding, 0};
+            pad = new long[]{padding, 0};
             outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, pad, cm, d, CNN2DFormat.NCHW); //Also performs validation
         }
-        int outH = outSize[0];
+        long outH = outSize[0];
 
-        INDArray output = Nd4j.createUninitialized(new int[]{(int)in.size(0), 1, outH, 1}, 'c');
+        INDArray output = Nd4j.createUninitialized(new long[]{(int)in.size(0), 1, outH, 1}, 'c');
 
         DynamicCustomOp op = new MaxPooling2D(reshaped4d, output, Pooling2DConfig.builder()
                 .kH(k[0]).kW(k[1])
@@ -894,6 +1294,23 @@ public class ConvolutionUtils {
     }
 
     /**
+     * Given a mask array for a 1D CNN layer of shape [minibatch, sequenceLength], reduce the mask according to the 1D CNN layer configuration.
+     * Unlike RNN layers, 1D CNN layers may down-sample the data; consequently, we need to down-sample the mask array
+     * in the same way, to maintain the correspondence between the masks and the output activations
+     *
+     * @param in       Input size
+     * @param kernel   Kernel size
+     * @param stride   Stride
+     * @param padding  Padding
+     * @param dilation Dilation
+     * @param cm       Convolution mode
+     * @return Reduced mask
+     */
+    public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm) {
+        return cnn1dMaskReductionLong(in, kernel, stride, padding, dilation, cm);
+    }
+
+    /**
      * Reduce a 2d CNN layer mask array (of 0s and 1s) according to the layer configuration. Note that when a CNN layer
      * changes the shape of the activations (for example, stride > 1) the corresponding mask array needs to change shape
      * also (as there is a correspondence between the two). This method performs the forward pass for the mask.
@@ -905,45 +1322,61 @@ public class ConvolutionUtils {
      * @param convolutionMode Convolution mode
      * @return The mask array corresponding to the network output
      */
-    public static INDArray cnn2dMaskReduction(INDArray inMask, int[] kernel, int[] stride, int[] padding, int[] dilation, ConvolutionMode convolutionMode ){
+    public static INDArray cnn2dMaskReduction(INDArray inMask, int[] kernel, int[] stride, int[] padding, int[] dilation, ConvolutionMode convolutionMode) {
+        return cnn2dMaskReduction(inMask, toLongArray(kernel), toLongArray(stride), toLongArray(padding), toLongArray(dilation), convolutionMode);
+    }
+
+    /**
+     * Reduce a 2d CNN layer mask array (of 0s and 1s) according to the layer configuration. Note that when a CNN layer
+     * changes the shape of the activations (for example, stride > 1) the corresponding mask array needs to change shape
+     * also (as there is a correspondence between the two). This method performs the forward pass for the mask.
+     * @param inMask          Input mask array - rank 4, shape [mb,c,h,1] or [mb,c,w,1] or [mb,c,h,w]
+     * @param kernel          Kernel configuration for the layer
+     * @param stride          Stride
+     * @param padding         Padding
+     * @param dilation        Dilation
+     * @param convolutionMode Convolution mode
+     * @return The mask array corresponding to the network output
+     */
+    public static INDArray cnn2dMaskReduction(INDArray inMask, long[] kernel, long[] stride, long[] padding, long[] dilation, ConvolutionMode convolutionMode) {
         //Mask array should be broadcastable with CNN activations. Thus should have shape [mb,x,y,z]
         //where:
         // x == 1 OR channels
         // y == 1 OR height
         // z == 1 OR width
 
-        if(inMask.rank() != 4){
+        if (inMask.rank() != 4) {
             throw new IllegalStateException("Expected rank 4 mask array for 2D CNN layers. Mask arrays for 2D CNN layers " +
                     "must have shape [batchSize,channels,X,Y] where X = (1 or activationsHeight) and Y = (1 or activationsWidth): " +
                     "Got rank " + inMask.rank() + " array with shape " + Arrays.toString(inMask.shape()));
         }
 
-        if(convolutionMode == ConvolutionMode.Same && stride[0] == 1 && stride[1] == 1){
+        if (convolutionMode == ConvolutionMode.Same && stride[0] == 1 && stride[1] == 1) {
             //Output activations size same as input activations size
             return inMask;
         }
 
-        if(inMask.size(2) == 1 && inMask.size(3) == 1){
+        if (inMask.size(2) == 1 && inMask.size(3) == 1) {
             //per-example mask - broadcast along all channels/x/y
             return inMask;
         }
 
-        int[] k;
-        int[] s;
-        int[] p;
-        int[] d;
-        if(inMask.size(3) == 1){
+        long[] k;
+        long[] s;
+        long[] p;
+        long[] d;
+        if (inMask.size(3) == 1) {
             //[mb,x,y,1] case -> pool mask along height
-            k = new int[]{kernel[0],1};
-            s = new int[]{stride[0], 1};
-            p = new int[]{padding[0], 0};
-            d = new int[]{dilation[0], 1};
-        } else if(inMask.size(2) == 1){
+            k = new long[]{kernel[0], 1};
+            s = new long[]{stride[0], 1};
+            p = new long[]{padding[0], 0};
+            d = new long[]{dilation[0], 1};
+        } else if (inMask.size(2) == 1) {
             //[mb,x,1,z] case -> pool mask along width
-            k = new int[]{1, kernel[1]};
-            s = new int[]{1, stride[1]};
-            p = new int[]{0, padding[1]};
-            d = new int[]{1, dilation[1]};
+            k = new long[]{1, kernel[1]};
+            s = new long[]{1, stride[1]};
+            p = new long[]{0, padding[1]};
+            d = new long[]{1, dilation[1]};
         } else {
             //[mb,x,y,z] -> pool mask along height and width
             k = kernel;
@@ -952,15 +1385,15 @@ public class ConvolutionUtils {
             d = dilation;
         }
 
-        int[] outSize = ConvolutionUtils.getOutputSize(inMask, k, s, p, convolutionMode, d); //Also performs validation
+        long[] outSize = getOutputSizeLong(inMask.shape(), k, s, p, convolutionMode, d,CNN2DFormat.NCHW); //Also performs validation
         boolean allEq = true;
-        for( int i=0; i<outSize.length; i++ ){
-            if(outSize[i] != inMask.size(i)){
+        for (int i = 0; i < outSize.length; i++) {
+            if (outSize[i] != inMask.size(i)) {
                 allEq = false;
                 break;
             }
         }
-        if(allEq){
+        if (allEq) {
             //Same output size -> same mask size
             return inMask;
         }
@@ -980,4 +1413,6 @@ public class ConvolutionUtils {
         Nd4j.exec(op);
         return outMask;
     }
+
+
 }

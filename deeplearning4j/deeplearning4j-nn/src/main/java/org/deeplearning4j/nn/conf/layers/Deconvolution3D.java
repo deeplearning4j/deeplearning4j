@@ -129,7 +129,7 @@ public class Deconvolution3D extends ConvolutionLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        return InputTypeUtil.getOutputTypeDeconv3dLayer(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeDeconv3dLayerLong(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         dataFormat, nOut, layerIndex, getLayerName(), Deconvolution3DLayer.class);
     }
 
@@ -161,39 +161,39 @@ public class Deconvolution3D extends ConvolutionLayer {
          *
          * @param kernelSize the height and width of the kernel
          */
-        public Builder kernelSize(int... kernelSize) {
+        public Builder kernelSize(long... kernelSize) {
             this.setKernelSize(kernelSize);
             return this;
         }
 
-        public Builder stride(int... stride) {
+        public Builder stride(long... stride) {
             this.setStride(stride);
             return this;
         }
 
-        public Builder padding(int... padding) {
+        public Builder padding(long... padding) {
             this.setPadding(padding);
             return this;
         }
 
         @Override
-        public void setKernelSize(int... kernelSize) {
-            this.kernelSize = ValidationUtils.validate3NonNegative(kernelSize, "kernelSize");
+        public void setKernelSize(long... kernelSize) {
+            this.kernelSize = ValidationUtils.validate3NonNegativeLong(kernelSize, "kernelSize");
         }
 
         @Override
-        public void setStride(int... stride) {
-            this.stride = ValidationUtils.validate3NonNegative(stride, "stride");
+        public void setStride(long... stride) {
+            this.stride = ValidationUtils.validate3NonNegativeLong(stride, "stride");
         }
 
         @Override
-        public void setPadding(int... padding) {
-            this.padding = ValidationUtils.validate3NonNegative(padding, "padding");
+        public void setPadding(long... padding) {
+            this.padding = ValidationUtils.validate3NonNegativeLong(padding, "padding");
         }
 
         @Override
-        public void setDilation(int... dilation) {
-            this.dilation = ValidationUtils.validate3NonNegative(dilation, "dilation");
+        public void setDilation(long... dilation) {
+            this.dilation = ValidationUtils.validate3NonNegativeLong(dilation, "dilation");
         }
 
         public Builder dataFormat(Convolution3D.DataFormat dataFormat) {
