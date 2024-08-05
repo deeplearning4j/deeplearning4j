@@ -98,7 +98,6 @@ DECLARE_SHAPE_FN(broadcast_to) {
 
   auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo),
                                                                          shape::order(inputShapeInfo), outShape);
-  shape::printShapeInfo(outShapeInfo);
   return SHAPELIST(outShapeInfo);
 }
 
