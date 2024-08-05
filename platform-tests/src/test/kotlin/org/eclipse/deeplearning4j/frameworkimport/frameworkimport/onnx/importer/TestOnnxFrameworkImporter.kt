@@ -3,19 +3,11 @@ package org.eclipse.deeplearning4j.frameworkimport.frameworkimport.onnx.importer
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
-import org.nd4j.autodiff.samediff.TrainingConfig
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.resources.Resources
 import org.nd4j.common.tests.tags.TagNames
-import org.nd4j.linalg.api.buffer.DataType
-import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.linalg.learning.config.Adam
-import org.nd4j.onnxruntime.runner.OnnxRuntimeRunner
-import org.nd4j.onnxruntime.util.ONNXUtils
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
-import org.nd4j.samediff.frameworkimport.onnx.ir.OnnxIRTensor
-import java.io.File
 import java.util.*
 
 @Tag(TagNames.ONNX)
@@ -54,7 +46,7 @@ class TestOnnxFrameworkImporter {
         Nd4j.getExecutioner().enableDebugMode(true)
         val importer = OnnxFrameworkImporter()
         val file = ClassPathResource("mobilenet.onnx").file
-        val result  = importer.runImport(file.absolutePath, emptyMap(),suggestDynamicVariables = true)
+        val result  = importer.runImport(file.absolutePath, emptyMap(), suggestDynamicVariables = true)
         result.outputAll(Collections.singletonMap("input.1",Nd4j.ones(1,3,224,224)))
     }
 

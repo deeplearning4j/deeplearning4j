@@ -999,6 +999,17 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
 
 
+        /*
+        if (blockIdx.x == 0) {
+            printf("original Z shape: \n");
+            shape::printShapeInfoLinear(zShapeInfo);
+
+            printf("Target dimension: [%i], dimensionLength: [%i]\n", dimension[0], dimensionLength);
+
+            printf("TAD shape: \n");
+            shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
+        }
+        */
 
         //2d:
         //[1 0 2]

@@ -20,6 +20,7 @@
 
 package org.eclipse.deeplearning4j.integration.testcases.dl4j;
 
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.integration.ModelType;
 import org.eclipse.deeplearning4j.integration.TestCase;
 import org.eclipse.deeplearning4j.integration.testcases.dl4j.misc.CharacterIterator;
@@ -109,10 +110,10 @@ public class RNNTestCases {
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
                 int nOut = iter.totalOutcomes();
 
-                int lstmLayerSize = 200;					//Number of units in each GravesLSTM layer
+                int lstmLayerSize = 200;					//Number of units in each LSTM layer
                 int tbpttLength = 50;                       //Length for truncated backpropagation through time. i.e., do parameter updates ever 50 characters
 
-                return new NeuralNetConfiguration.Builder()
+                ListBuilder listBuilder = new NeuralNetConfiguration.Builder()
                         .dataType(DataType.FLOAT)
                         .seed(12345)
                         .l2(0.001)
@@ -125,9 +126,9 @@ public class RNNTestCases {
                                 .activation(Activation.TANH).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)        //MCXENT + softmax for classification
                                 .nIn(lstmLayerSize).nOut(nOut).build())
-                        .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(tbpttLength).tBPTTBackwardLength(tbpttLength)
+                        .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(tbpttLength).tBPTTBackwardLength(tbpttLength);
 
-                        .build();
+                return listBuilder.build();
             }
 
             @Override
@@ -306,7 +307,7 @@ public class RNNTestCases {
     }
 
     /**
-     * Similar to test case 1 - but using GravesLSTM + bidirectional wrapper + min/max scaler normalizer
+     * Similar to test case 1 - but using LSTM + bidirectional wrapper + min/max scaler normalizer
      */
     protected static class RnnCsvSequenceClassificationTestCase2 extends RnnCsvSequenceClassificationTestCase1 {
         protected RnnCsvSequenceClassificationTestCase2() {

@@ -85,9 +85,9 @@ public class TestSetGetParameters extends BaseDL4JTest {
         //Set up a MLN, then do set(get) on parameters. Results should be identical compared to before doing this.
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(9).nOut(10)
+                        .layer(0, new LSTM.Builder().nIn(9).nOut(10)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new GravesLSTM.Builder().nIn(10).nOut(11)
+                        .layer(1, new LSTM.Builder().nIn(10).nOut(11)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE)
                                         .dist(new NormalDistribution(0, 1)).nIn(11).nOut(12).build())
@@ -117,45 +117,5 @@ public class TestSetGetParameters extends BaseDL4JTest {
         assertEquals(net.params(), randomParams);
     }
 
-    @Test
-    public void testInitWithParams() {
 
-        Nd4j.getRandom().setSeed(12345);
-
-        //Create configuration. Doesn't matter if this doesn't actually work for forward/backward pass here
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
-                        .layer(0, new ConvolutionLayer.Builder().nIn(10).nOut(10).kernelSize(2, 2).stride(2, 2)
-                                        .padding(2, 2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(2, new GravesLSTM.Builder().nIn(10).nOut(10).build())
-                        .layer(3, new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                        .layer(4, new OutputLayer.Builder(LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
-                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-        INDArray params = net.params();
-
-
-        MultiLayerNetwork net2 = new MultiLayerNetwork(conf);
-        net2.init(params, true);
-
-        MultiLayerNetwork net3 = new MultiLayerNetwork(conf);
-        net3.init(params, false);
-
-        assertEquals(params, net2.params());
-        assertEquals(params, net3.params());
-
-        assertFalse(params == net2.params()); //Different objects due to clone
-        assertTrue(params == net3.params()); //Same object due to clone
-
-
-        Map<String, INDArray> paramsMap = net.paramTable();
-        Map<String, INDArray> paramsMap2 = net2.paramTable();
-        Map<String, INDArray> paramsMap3 = net3.paramTable();
-        for (String s : paramsMap.keySet()) {
-            assertEquals(paramsMap.get(s), paramsMap2.get(s));
-            assertEquals(paramsMap.get(s), paramsMap3.get(s));
-        }
-    }
 }

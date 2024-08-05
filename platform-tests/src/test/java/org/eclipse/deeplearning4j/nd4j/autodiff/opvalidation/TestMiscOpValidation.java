@@ -30,8 +30,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.internal.matchers.Same;
-import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -52,7 +50,6 @@ import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.custom.FusedBatchNorm;
 import org.nd4j.linalg.api.ops.custom.Igamma;
 import org.nd4j.linalg.api.ops.custom.Igammac;
-import org.nd4j.linalg.api.ops.custom.Lgamma;
 import org.nd4j.linalg.api.ops.custom.Lu;
 import org.nd4j.linalg.api.ops.custom.MatrixBandPart;
 import org.nd4j.linalg.api.ops.custom.Polygamma;
@@ -73,7 +70,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -83,7 +79,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Triple;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.weightinit.impl.XavierInitScheme;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -824,7 +819,6 @@ public class TestMiscOpValidation extends BaseOpValidation {
         DataSetIterator iterator = new RecordReaderDataSetIterator(
                 reader, batchSize, seqLength, seqLength + batchSize - 1, true);
 
-        System.out.println(sd.output(iterator, "predictions").get("predictions")); // forward pass works
 
         sd.fit(iterator, 1);
     }

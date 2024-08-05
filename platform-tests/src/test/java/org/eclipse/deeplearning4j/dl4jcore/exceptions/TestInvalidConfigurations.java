@@ -60,7 +60,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
 
     public static MultiLayerNetwork getLSTMPlusRnnOutput(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(10).build())
+                        .layer(0, new LSTM.Builder().nIn(nIn).nOut(10).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(nOut).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -155,7 +155,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
     public void testLSTMNOut0() {
         try {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                            .layer(0, new GravesLSTM.Builder().nIn(10).nOut(0).build())
+                            .layer(0, new LSTM.Builder().nIn(10).nOut(0).build())
                             .layer(1, new RnnOutputLayer.Builder().nIn(10).nOut(10).build()).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);

@@ -21,6 +21,7 @@
 package org.eclipse.deeplearning4j.dl4jcore.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.ListBuilder;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.gradientcheck.GradientCheckUtil;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -75,14 +76,14 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         int depth = 6;
         int hw = 5;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(minibatch, depth, hw, hw);
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
         for (int i = 0; i < minibatch; i++) {
             labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
+        ListBuilder builder = new NeuralNetConfiguration.Builder().updater(new NoOp())
                         .dataType(DataType.DOUBLE)
                         .seed(12345L)
                         .dist(new NormalDistribution(0, 2)).list()
@@ -96,10 +97,7 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
 
-//        if (PRINT_RESULTS) {
-//            for (int j = 0; j < mln.getnLayers(); j++)
-//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-//        }
+
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);

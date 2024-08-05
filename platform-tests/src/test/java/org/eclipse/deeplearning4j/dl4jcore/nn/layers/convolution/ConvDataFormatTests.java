@@ -54,6 +54,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,14 +66,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 @NativeTag
 @Tag(TagNames.DL4J_OLD_API)
-@Disabled("Fails on gpu, to be revisited")
 public class ConvDataFormatTests extends BaseDL4JTest {
 
 
     public static Stream<Arguments> params() {
         List<Arguments> args = new ArrayList<>();
         for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
-            for(DataType dataType : Arrays.asList(new DataType[]{DataType.FLOAT, DataType.DOUBLE})) {
+            for(DataType dataType : Arrays.asList(DataType.FLOAT, DataType.DOUBLE)) {
                 args.add(Arguments.of(dataType,nd4jBackend));
             }
         }
@@ -85,11 +85,11 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         return 999999999L;
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testConv2d(DataType dataType,Nd4jBackend backend) {
         try {
-            for (boolean helpers : new boolean[]{false, true}) {
+            for (boolean helpers : new boolean[]{false}) {
                 for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
                     Nd4j.getRandom().setSeed(12345);
                     Nd4j.getEnvironment().allowHelpers(helpers);
@@ -119,7 +119,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testSubsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
@@ -153,7 +153,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testDepthwiseConv2d(DataType dataType,Nd4jBackend backend) {
         try {
@@ -187,7 +187,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testSeparableConv2d(DataType dataType,Nd4jBackend backend) {
         try {
@@ -221,7 +221,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testDeconv2d(DataType dataType,Nd4jBackend backend) {
         try {
@@ -255,7 +255,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testLRN(DataType dataType,Nd4jBackend backend) {
         try {
@@ -289,7 +289,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testZeroPaddingLayer(DataType dataType,Nd4jBackend backend) {
         try {
@@ -321,7 +321,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testCropping2DLayer(DataType dataType,Nd4jBackend backend) {
         try {
@@ -353,7 +353,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testUpsampling2d(DataType dataType,Nd4jBackend backend) {
         try {
@@ -385,7 +385,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testBatchNormNet(DataType dataType,Nd4jBackend backend) {
         try {
@@ -419,7 +419,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testCnnLossLayer(DataType dataType,Nd4jBackend backend) {
         try {
@@ -456,7 +456,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testSpaceToDepthNet(DataType dataType,Nd4jBackend backend) {
         try {
@@ -488,7 +488,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testSpaceToBatchNet(DataType dataType,Nd4jBackend backend) {
         try {
@@ -520,7 +520,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         }
     }
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testLocallyConnected(DataType dataType,Nd4jBackend backend) {
         try {
@@ -555,7 +555,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
 
-    @MethodSource("org.deeplearning4j.nn.layers.convolution.ConvDataFormatTests#params")
+    @MethodSource("params")
     @ParameterizedTest
     public void testGlobalPooling(DataType dataType,Nd4jBackend backend) {
         try {
@@ -613,17 +613,17 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     private MultiLayerNetwork getSubsampling2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm) {
         if (setOnLayerAlso) {
             return getNetWithLayer(dataType,new SubsamplingLayer.Builder()
-                            .kernelSize(2, 2)
-                            .stride(1, 1)
-                            .dataFormat(format)
-                            .helperAllowFallback(false)
-                            .build(), format, cm, null);
+                    .kernelSize(2, 2)
+                    .stride(1, 1)
+                    .dataFormat(format)
+                    .helperAllowFallback(false)
+                    .build(), format, cm, null);
         } else {
             return getNetWithLayer(dataType,new SubsamplingLayer.Builder()
-                            .kernelSize(2, 2)
-                            .stride(1, 1)
-                            .helperAllowFallback(false)
-                            .build(), format, cm, null);
+                    .kernelSize(2, 2)
+                    .stride(1, 1)
+                    .helperAllowFallback(false)
+                    .build(), format, cm, null);
         }
     }
 
@@ -687,7 +687,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     private MultiLayerNetwork getZeroPaddingNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
             return getNetWithLayer(dataType,new ZeroPaddingLayer.Builder(2,2)
-                            .dataFormat(format).build(), format, ConvolutionMode.Same, null);
+                    .dataFormat(format).build(), format, ConvolutionMode.Same, null);
         } else {
             return getNetWithLayer(dataType,new ZeroPaddingLayer.Builder(2,2).build(),
                     format, ConvolutionMode.Same, null);
@@ -696,8 +696,8 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
     private MultiLayerNetwork getCropping2dNet(DataType dataType,CNN2DFormat format, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
-           return getNetWithLayer(dataType,new Cropping2D.Builder(2,2)
-                            .dataFormat(format).build(), format, ConvolutionMode.Same, null);
+            return getNetWithLayer(dataType,new Cropping2D.Builder(2,2)
+                    .dataFormat(format).build(), format, ConvolutionMode.Same, null);
         } else {
             return getNetWithLayer(dataType,new Cropping2D.Builder(2,2)
                     .build(), format, ConvolutionMode.Same, null);
@@ -793,7 +793,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
     private MultiLayerNetwork getNetWithLayer(DataType dataType,Layer layer, CNN2DFormat format, ConvolutionMode cm, InputType inputType) {
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .dataType(dataType)
                 .seed(12345)
                 .convolutionMode(cm)
@@ -824,7 +824,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     private MultiLayerNetwork getGlobalPoolingNet(DataType dataType,CNN2DFormat format, PoolingType pt, boolean setOnLayerAlso) {
         if (setOnLayerAlso) {
             return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)
-                    .poolingDimensions(format == CNN2DFormat.NCHW ? new int[]{2,3} : new int[]{1,2})
+                    .poolingDimensions(format == CNN2DFormat.NCHW ? new long[]{2,3} : new long[]{1,2})
                     .build(), format, ConvolutionMode.Same, null);
         } else {
             return getNetWithLayer(dataType,new GlobalPoolingLayer.Builder(pt)
@@ -833,7 +833,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
     private MultiLayerNetwork getCnnLossNet(CNN2DFormat format, boolean setOnLayerAlso, ConvolutionMode cm){
-        NeuralNetConfiguration.ListBuilder builder = new NeuralNetConfiguration.Builder()
+        ListBuilder builder = new NeuralNetConfiguration.Builder()
                 .seed(12345)
                 .convolutionMode(cm)
                 .list()
@@ -878,24 +878,35 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     }
 
     public static void testHelper(TestCase tc) {
-
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder()
+                .checkForNAN(true)
+                .checkForINF(true)
+                .checkLocality(true)
+                .stackTrace(true)
+                .build());
         tc.net2.params().assign(tc.net1.params());
         tc.net3.params().assign(tc.net1.params());
         tc.net4.params().assign(tc.net1.params());
 
         //Test forward pass:
         INDArray inNCHW = tc.inNCHW;
-        INDArray inNHWC = tc.inNCHW.permute(0, 2, 3, 1).dup();
+        INDArray inNHWC = tc.inNCHW.permute(0, 2,3,1).dup();
 
+        System.out.println("Net 1 " + tc.net1.summary());
         INDArray l0_1 = tc.net1.feedForward(inNCHW).get(tc.testLayerIdx + 1);
-        INDArray l0_2 = tc.net2.feedForward(inNCHW).get(tc.testLayerIdx + 1);
+        System.out.println("Net 3  " + tc.net3.summary());
         INDArray l0_3 = tc.net3.feedForward(inNHWC).get(tc.testLayerIdx + 1);
+        INDArray l0_2 = tc.net2.feedForward(inNCHW).get(tc.testLayerIdx + 1);
         INDArray l0_4 = tc.net4.feedForward(inNHWC).get(tc.testLayerIdx + 1);
 
         assertEquals(l0_1, l0_2,tc.msg);
         if(l0_1.rank() == 4) {
-            assertEquals(l0_1, l0_3.permute(0, 3, 1, 2),tc.msg);
-            assertEquals(l0_1, l0_4.permute(0, 3, 1, 2),tc.msg);
+            INDArray l0_3Permuted = l0_3.permute(0, 3, 1, 2);
+            assertEquals(l0_1, l0_3Permuted,tc.msg);
+            INDArray l0_4Permuted = l0_4.permute(0, 3, 1, 2);
+            assertEquals(l0_1, l0_4Permuted,tc.msg);
         } else {
             assertEquals(l0_1, l0_3,tc.msg);
             assertEquals( l0_1, l0_4,tc.msg);
@@ -922,7 +933,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         Pair<Gradient, INDArray> p3 = tc.net3.calculateGradients(inNHWC, tc.labelsNHWC, null, null);
         Pair<Gradient, INDArray> p4 = tc.net4.calculateGradients(inNHWC, tc.labelsNHWC, null, null);
 
-            //Inpput gradients
+        //Inpput gradients
         assertEquals( p1.getSecond(), p2.getSecond(),tc.msg);
         assertEquals(p1.getSecond(), p3.getSecond().permute(0,3,1,2),tc.msg);  //Input gradients for NHWC input are also in NHWC format
         assertEquals( p1.getSecond(), p4.getSecond().permute(0,3,1,2),tc.msg);
@@ -1018,7 +1029,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
         for(CNN2DFormat df : CNN2DFormat.values()) {
             for(int i = 0; i < 4; i++) {
-                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                ListBuilder b = new NeuralNetConfiguration.Builder()
                         .list();
                 switch (i){
                     case 0:

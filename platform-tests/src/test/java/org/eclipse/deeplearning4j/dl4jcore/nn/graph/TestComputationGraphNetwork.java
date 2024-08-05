@@ -411,7 +411,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //First: check FF -> RNN
         ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .setInputTypes(InputType.feedForward(5))
-                .addLayer("rnn", new GravesLSTM.Builder().nOut(5).build(), "in")
+                .addLayer("rnn", new LSTM.Builder().nOut(5).build(), "in")
                 .addLayer("out", new RnnOutputLayer.Builder().nOut(5).activation(Activation.SOFTMAX).build(), "rnn").setOutputs("out").build();
 
         assertEquals(5, ((FeedForwardLayer) ((LayerVertex) conf1.getVertices().get("rnn")).getLayerConf().getLayer())
@@ -780,8 +780,6 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int nOut = 3;
 
         for(WorkspaceMode ws : WorkspaceMode.values()) {
-//            System.out.println("***** WORKSPACE: " + ws);
-
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Adam(0.01))
                     .trainingWorkspaceMode(ws)
@@ -1332,7 +1330,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                         .addLayer("layer3", new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50)
                                 .weightInit(WeightInit.RELU).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                 .gradientNormalizationThreshold(10).build(), "layer2")
-                        .addLayer("layer4", new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
+                        .addLayer("layer4", new LSTM.Builder().activation(Activation.SOFTSIGN).nIn(50)
                                 .nOut(50).weightInit(WeightInit.XAVIER).updater(Updater.ADAGRAD)
                                 .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                 .gradientNormalizationThreshold(10)

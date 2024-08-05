@@ -241,7 +241,7 @@ class CNNProcessorTest extends BaseDL4JTest {
         int[] zeroPaddingArray = new int[] { 0, 0 };
         int processWidth = 4;
         // Building the DL4J network
-        NeuralNetConfiguration.ListBuilder listBuilder = builder.list();
+        ListBuilder listBuilder = builder.list();
         listBuilder = listBuilder.layer(0, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray).name("cnn1").convolutionMode(ConvolutionMode.Strict).nIn(// 2 input channels
         2).nOut(processWidth).weightInit(WeightInit.XAVIER_UNIFORM).activation(Activation.RELU).biasInit(1e-2).build());
         listBuilder = listBuilder.layer(1, new ConvolutionLayer.Builder(kernelArray, strideArray, zeroPaddingArray).name("cnn2").convolutionMode(ConvolutionMode.Strict).nOut(processWidth).weightInit(WeightInit.XAVIER_UNIFORM).activation(Activation.RELU).biasInit(1e-2).build());

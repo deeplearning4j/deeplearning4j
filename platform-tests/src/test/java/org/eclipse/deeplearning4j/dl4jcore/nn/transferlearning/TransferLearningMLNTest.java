@@ -21,12 +21,9 @@ package org.eclipse.deeplearning4j.dl4jcore.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.*;
 import org.eclipse.deeplearning4j.dl4jcore.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -169,27 +166,40 @@ class TransferLearningMLNTest extends BaseDL4JTest {
         int V_WIDTH = 130;
         int V_HEIGHT = 130;
         int V_NFRAMES = 150;
-        MultiLayerConfiguration confForArchitecture = // l2 regularization on all layers
+        ListBuilder confForArchitecture = // l2 regularization on all layers
         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new AdaGrad(0.4)).list().layer(0, // 3 channels: RGB
-        new ConvolutionLayer.Builder(10, 10).nIn(3).nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3).stride(2, 2).build()).layer(2, new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).layer(3, new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50).weightInit(WeightInit.RELU).updater(new AdaGrad(0.5)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).layer(4, new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(50).nOut(// 4 possible shapes: circle, square, arc, line
-        4).weightInit(WeightInit.XAVIER).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3)).inputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10)).inputPreProcessor(4, new FeedForwardToRnnPreProcessor()).backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5).build();
-        MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(confForArchitecture);
+        new ConvolutionLayer.Builder(10, 10).nIn(3).nOut(30).stride(4, 4)
+                .activation(Activation.RELU).weightInit(WeightInit.RELU).build())
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(3, 3).stride(2, 2).build())
+                .layer(2, new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
+                        .activation(Activation.RELU).weightInit(WeightInit.RELU).build()).layer(3, new DenseLayer.Builder()
+                        .activation(Activation.RELU).nIn(490).nOut(50).weightInit(WeightInit.RELU).updater(new AdaGrad(0.5)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).layer(4, new LSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                .activation(Activation.SOFTMAX).nIn(50).nOut(// 4 possible shapes: circle, square, arc, line
+        4).weightInit(WeightInit.XAVIER).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                        .gradientNormalizationThreshold(10).build())
+                .inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3))
+                .inputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10))
+                .inputPreProcessor(4, new FeedForwardToRnnPreProcessor()).backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5);
+        MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(confForArchitecture.build());
         modelExpectedArch.init();
-        MultiLayerNetwork modelToTweak = new MultiLayerNetwork(new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp(0.1)).list().layer(0, // Only keep the first layer the same
-        new ConvolutionLayer.Builder(10, 10).nIn(// 3 channels: RGB
-        3).nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(WeightInit.RELU).updater(new AdaGrad(0.1)).build()).layer(1, new SubsamplingLayer.Builder(// change kernel size
-        SubsamplingLayer.PoolingType.MAX).kernelSize(5, 5).stride(2, 2).build()).layer(2, // change here
-        new ConvolutionLayer.Builder(6, 6).nIn(30).nOut(10).stride(2, 2).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).layer(3, // change here
-        new DenseLayer.Builder().activation(Activation.RELU).nIn(250).nOut(50).weightInit(WeightInit.RELU).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).updater(new RmsProp(0.01)).build()).layer(4, // change here
-        new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(25).weightInit(WeightInit.XAVIER).build()).layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(25).nOut(4).weightInit(WeightInit.XAVIER).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3)).inputPreProcessor(3, new CnnToFeedForwardPreProcessor(5, 5, 10)).inputPreProcessor(4, new FeedForwardToRnnPreProcessor()).backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5).build());
+
+        ListBuilder listBuilder = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp(0.1)).list().layer(0, // Only keep the first layer the same
+                new ConvolutionLayer.Builder(10, 10).nIn(// 3 channels: RGB
+                        3).nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(WeightInit.RELU).updater(new AdaGrad(0.1)).build()).layer(1, new SubsamplingLayer.Builder(// change kernel size
+                SubsamplingLayer.PoolingType.MAX).kernelSize(5, 5).stride(2, 2).build()).layer(2, // change here
+                new ConvolutionLayer.Builder(6, 6).nIn(30).nOut(10).stride(2, 2).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).layer(3, // change here
+                new DenseLayer.Builder().activation(Activation.RELU).nIn(250).nOut(50).weightInit(WeightInit.RELU).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).updater(new RmsProp(0.01)).build()).layer(4, // change here
+                new LSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(25).weightInit(WeightInit.XAVIER).build()).layer(5, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(25).nOut(4).weightInit(WeightInit.XAVIER).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, 3)).inputPreProcessor(3, new CnnToFeedForwardPreProcessor(5, 5, 10)).inputPreProcessor(4, new FeedForwardToRnnPreProcessor()).backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(V_NFRAMES / 5).tBPTTBackwardLength(V_NFRAMES / 5);
+
+        MultiLayerNetwork modelToTweak = new MultiLayerNetwork(listBuilder.build());
         modelToTweak.init();
         MultiLayerNetwork modelNow = new TransferLearning.Builder(modelToTweak).fineTuneConfiguration(// l2 regularization on all layers
-        new FineTuneConfiguration.Builder().seed(12345).l2(0.001).updater(new AdaGrad(0.4)).weightInit(WeightInit.RELU).build()).removeLayersFromOutput(5).addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3).stride(2, 2).build()).addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50).weightInit(WeightInit.RELU).updater(new AdaGrad(0.5)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).addLayer(new GravesLSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).addLayer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(50).nOut(// 4 possible shapes: circle, square, arc, line
+        new FineTuneConfiguration.Builder().seed(12345).l2(0.001).updater(new AdaGrad(0.4)).weightInit(WeightInit.RELU).build()).removeLayersFromOutput(5).addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3).stride(2, 2).build()).addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2).activation(Activation.RELU).weightInit(WeightInit.RELU).build()).addLayer(new DenseLayer.Builder().activation(Activation.RELU).nIn(490).nOut(50).weightInit(WeightInit.RELU).updater(new AdaGrad(0.5)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).addLayer(new LSTM.Builder().activation(Activation.SOFTSIGN).nIn(50).nOut(50).weightInit(WeightInit.XAVIER).updater(new AdaGrad(0.6)).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).addLayer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(50).nOut(// 4 possible shapes: circle, square, arc, line
         4).weightInit(WeightInit.XAVIER).gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue).gradientNormalizationThreshold(10).build()).setInputPreProcessor(3, new CnnToFeedForwardPreProcessor(7, 7, 10)).setInputPreProcessor(4, new FeedForwardToRnnPreProcessor()).build();
         // modelNow should have the same architecture as modelExpectedArch
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(0).toJson(), modelNow.getLayerWiseConfigurations().getConf(0).toJson());
         // some learning related info the subsampling layer will not be overwritten
-        // assertTrue(modelExpectedArch.getLayerWiseConfigurations().getConf(1).toJson().equals(modelNow.getLayerWiseConfigurations().getConf(1).toJson()));
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(2).toJson(), modelNow.getLayerWiseConfigurations().getConf(2).toJson());
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(3).toJson(), modelNow.getLayerWiseConfigurations().getConf(3).toJson());
         assertEquals(modelExpectedArch.getLayerWiseConfigurations().getConf(4).toJson(), modelNow.getLayerWiseConfigurations().getConf(4).toJson());
@@ -197,7 +207,6 @@ class TransferLearningMLNTest extends BaseDL4JTest {
         assertArrayEquals(modelExpectedArch.params().shape(), modelNow.params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(0).params().shape(), modelNow.getLayer(0).params().shape());
         // subsampling has no params
-        // assertArrayEquals(modelExpectedArch.getLayer(1).params().shape(), modelNow.getLayer(1).params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(2).params().shape(), modelNow.getLayer(2).params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(3).params().shape(), modelNow.getLayer(3).params().shape());
         assertArrayEquals(modelExpectedArch.getLayer(4).params().shape(), modelNow.getLayer(4).params().shape());
