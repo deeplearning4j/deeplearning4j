@@ -40,10 +40,10 @@ SD_LIB_HIDDEN void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDAr
                                  const std::vector<float>& params, NDArray* z, NDArray* a, NDArray* h, NDArray* c);
 
 //////////////////////////////////////////////////////////////////////////
-SD_LIB_HIDDEN void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                                   const NDArray* hI, const NDArray* cI, const NDArray* Wp, const NDArray* dLdh,
-                                   const NDArray* dLdhL, const NDArray* dLdcL, const NDArray* z, const NDArray* a,
-                                   const NDArray* c, const std::vector<float>& params, NDArray* dLdx, NDArray* dLdWx,
+SD_LIB_HIDDEN void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                                   NDArray* hI, NDArray* cI, NDArray* Wp, NDArray* dLdh,
+                                   NDArray* dLdhL, NDArray* dLdcL, NDArray* z, NDArray* a,
+                                   NDArray* c, const std::vector<float>& params, NDArray* dLdx, NDArray* dLdWx,
                                    NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp);
 
 //////////////////////////////////////////////////////////////////////////
@@ -53,9 +53,9 @@ SD_LIB_HIDDEN void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const 
                                      NDArray* cL);
 
 //////////////////////////////////////////////////////////////////////////
-SD_LIB_HIDDEN void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                                       const NDArray* seqLen, NDArray* hI, NDArray* cI, const NDArray* Wp,
-                                       const NDArray* dLdh, const NDArray* dLdhL, const NDArray* dLdcL,
+SD_LIB_HIDDEN void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                                       NDArray* seqLen, NDArray* hI, NDArray* cI, NDArray* Wp,
+                                       NDArray* dLdh, NDArray* dLdhL, NDArray* dLdcL,
                                        const std::vector<float>& params, const bool forward, NDArray* dLdx,
                                        NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdb, NDArray* dLdhI, NDArray* dLdcI,
                                        NDArray* dLdWp);

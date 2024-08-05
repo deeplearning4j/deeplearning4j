@@ -25,17 +25,17 @@
 
 namespace sd {
 namespace ops {
-LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp::LegacyOp(2) {
+LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp(2) {
   this->getOpDescriptor()->allowInplace(true);
 }
 
-LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
+LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp(2, opNum) {
   this->getOpDescriptor()->allowInplace(true);
 }
 
 LegacyOp *LegacyPairwiseTransformOp::clone() { return new LegacyPairwiseTransformOp(this->_opNum); }
 
-sd::Status LegacyPairwiseTransformOp::validateAndExecute(Context &block) {
+Status LegacyPairwiseTransformOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
@@ -60,16 +60,16 @@ sd::Status LegacyPairwiseTransformOp::validateAndExecute(Context &block) {
   manager.synchronize();
   STORE_RESULT(*z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 /**
  *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
  */
-ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  sd::LongType *newShape;
+  LongType *newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));

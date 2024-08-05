@@ -36,14 +36,14 @@ Hessenberg<T>::Hessenberg(const NDArray& matrix) {
   if (matrix.sizeAt(0) == 1) {
     _Q = NDArray(matrix.ordering(), {1, 1}, matrix.dataType(), matrix.getContext());
     _Q = 1;
-    _H = matrix.dup();
+    _H = matrix.dup(false);
     return;
   }
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
     THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
 
-  _H = matrix.dup();
+  _H = matrix.dup(false);
   _Q = matrix.ulike();
 
   evalData();
@@ -57,7 +57,7 @@ void Hessenberg<T>::evalData() {
   NDArray hhCoeffs(_H.ordering(), {rows - 1}, _H.dataType(), _H.getContext());
 
   // calculate _H
-  for (sd::LongType i = 0; i < rows - 1; ++i) {
+  for (LongType i = 0; i < rows - 1; ++i) {
     T coeff, norm;
 
     NDArray tail1 = _H({i + 1, -1, i, i + 1});

@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicEnter::processNode(Graph *graph, Node *node) {
+Status LogicEnter::processNode(Graph *graph, Node *node) {
   // this op replicates input variable into the frame. basically happens once for single loop.
   // sure, if there's inner loop within outer loop, it'll be called once for outer loop and multiple times for inner
   // loop
@@ -68,7 +68,7 @@ sd::Status LogicEnter::processNode(Graph *graph, Node *node) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

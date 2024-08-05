@@ -41,7 +41,7 @@ LIST_OP_IMPL(unstack_list, 1, 1, 0, 0) {
   // OVERWRITE_RESULT(list);
 
   //
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace ops
 }  // namespace sd

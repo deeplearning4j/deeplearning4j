@@ -31,25 +31,25 @@ using namespace sd::graph;
 
 namespace sd {
 namespace ops {
-class SD_LIB_EXPORT DeclarableListOp : public sd::ops::DeclarableOp {
+class SD_LIB_EXPORT DeclarableListOp : public DeclarableOp {
  protected:
-  sd::Status validateAndExecute(Context& block) override = 0;
+  Status validateAndExecute(sd::graph::Context& block) override = 0;
 
-  sd::NDArray* getZ(Context& block, int inputId);
+  NDArray* getZ(sd::graph::Context& block, int inputId);
   void setupResult(NDArray* array, Context& block);
   void setupResultList(NDArrayList* arrayList, Context& block);
 
  public:
   DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs);
 
-  sd::Status execute(Context* block) override;
+  Status execute(Context* block) override;
 
   ResultSet execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs,
                     std::initializer_list<int> iArgs);
   ResultSet execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs,
                     std::vector<int>& iArgs);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
 }  // namespace ops
 }  // namespace sd

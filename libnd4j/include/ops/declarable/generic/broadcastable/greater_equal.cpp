@@ -34,19 +34,19 @@ BROADCASTABLE_BOOL_OP_IMPL(greater_equal, 0, 0) {
 
   auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(GreaterThanOrEqual), x, y, z);
   if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   else if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(greater_equal) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::BOOL);
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedInputTypes(1, ANY)
+      ->setAllowedOutputTypes(0, BOOL);
 }
 }  // namespace ops
 }  // namespace sd

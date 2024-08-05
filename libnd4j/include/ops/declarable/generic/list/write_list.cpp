@@ -37,8 +37,7 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
 
     REQUIRE_TRUE(idx->isScalar(), 0, "Index should be Scalar");
 
-
-    sd::Status result = list->write(idx->e<int>(0), new NDArray(input->dup()));
+    Status result = list->write(idx->e<int>(0), new NDArray(input->dup(false)));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
 
@@ -50,13 +49,13 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
     auto input = INPUT_VARIABLE(1);
     auto idx = INT_ARG(0);
 
-    sd::Status result = list->write(idx, new NDArray(input->dup()));
+    Status result = list->write(idx, new NDArray(input->dup(false)));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
     setupResult(res, block);
     return result;
   } else
-    return sd::Status::BAD_INPUT;
+    return Status::BAD_INPUT;
 }
 DECLARE_SYN(TensorArrayWriteV3, write_list);
 DECLARE_SYN(tensorarraywritev3, write_list);

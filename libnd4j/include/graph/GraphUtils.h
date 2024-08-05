@@ -32,7 +32,7 @@ namespace graph {
 
 class SD_LIB_EXPORT GraphUtils {
  public:
-  typedef std::vector<sd::ops::OpDescriptor> OpList;
+  typedef std::vector<ops::OpDescriptor> OpList;
 
  public:
   static bool filterOperations(OpList& ops);

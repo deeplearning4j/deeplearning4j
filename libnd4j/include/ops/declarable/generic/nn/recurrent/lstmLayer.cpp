@@ -150,7 +150,7 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::LongType count = 1;
+  LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -184,10 +184,10 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
   auto cL = retLastC ? OUTPUT_VARIABLE(count++) : nullptr;   // cell state at last step
 
   // evaluate dimensions
-  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
+  const LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
+  const LongType nOut = Wx->sizeAt(-1) / 4;
 
   // inputs validations
   if (directionMode < 2) {  // no bidirectional
@@ -332,11 +332,11 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
     if (hFwd != h) delete hFwd;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lstmLayer) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(lstmLayer) {
@@ -357,22 +357,22 @@ DECLARE_SHAPE_FN(lstmLayer) {
   const auto Wr = INPUT_VARIABLE(2);  // recurrent weights
 
   // evaluate dimensions
-  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
+  const LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
+  const LongType nOut = Wx->sizeAt(-1) / 4;
 
   DataType type;
   if (x->isR())
     type = x->dataType();
   else
-    type = sd::DataType::FLOAT32;
+    type = FLOAT32;
 
   auto shapes = SHAPELIST();
 
   // evaluate h shape (output)
   if (retFullSeq) {
-    std::vector<sd::LongType> hShape;
+    std::vector<LongType> hShape;
 
     if (directionMode <= 2) {  // single direction or bidirectional with sum
       if (dataFormat == 0)
@@ -398,7 +398,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
 
   // evaluate hL shape (output at last step)
   if (retLastH) {
-    std::vector<sd::LongType> hLShape;
+    std::vector<LongType> hLShape;
 
     if (directionMode < 2)
       hLShape = {bS, nOut};
@@ -413,7 +413,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
 
   // evaluate cL shape (cell state at last step)
   if (retLastC && !retLastH) {
-    std::vector<sd::LongType> cLShape;
+    std::vector<LongType> cLShape;
 
     if (directionMode < 2)
       cLShape = {bS, nOut};
@@ -585,7 +585,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   const auto cellActHasBeta = cellAct == 3 || cellAct == 6;
   const auto outActHasBeta = outAct == 3 || outAct == 6;
 
-  sd::LongType count = 1;
+  LongType count = 1;
   const auto cellClip = T_ARG(0);  // cell clipping value, if it = 0 then do not apply clipping
   const auto gateAlpha = gateActHasAlpha ? T_ARG(count++) : 0;
   const auto gateBeta = gateActHasBeta ? T_ARG(count++) : 0;
@@ -608,10 +608,10 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   const auto Wr = INPUT_VARIABLE(2);  // recurrent weights
 
   // evaluate dimensions
-  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const sd::LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
-  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
+  const LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const LongType nIn = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(2);
+  const LongType nOut = Wx->sizeAt(-1) / 4;
 
   // continue with input
   count = 3;
@@ -625,18 +625,18 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   NDArray *dLdhL = nullptr;
   NDArray *dLdcL = nullptr;
   std::unique_ptr<NDArray> temp_dLdh, temp_dLdhL, temp_dLdcL;
-  std::vector<sd::LongType> expdLdhShape;
+  std::vector<LongType> expdLdhShape;
   // gradient vs. output
   if (retFullSeq) {
     int factor = directionMode <= 2 ? 1 : 2;
     if (dataFormat == 0)
-      expdLdhShape = std::vector<sd::LongType>{sL, bS, factor * nOut};
+      expdLdhShape = std::vector<LongType>{sL, bS, factor * nOut};
     else if (dataFormat == 1)
-      expdLdhShape = std::vector<sd::LongType>{bS, sL, factor * nOut};
+      expdLdhShape = std::vector<LongType>{bS, sL, factor * nOut};
     else if (dataFormat == 2)
-      expdLdhShape = std::vector<sd::LongType>{bS, factor * nOut, sL};
+      expdLdhShape = std::vector<LongType>{bS, factor * nOut, sL};
     else
-      expdLdhShape = std::vector<sd::LongType>{sL, 2, bS, nOut};
+      expdLdhShape = std::vector<LongType>{sL, 2, bS, nOut};
 
     dLdh = INPUT_VARIABLE(count++);
     if (dLdh->isScalar()) {
@@ -649,7 +649,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
     dLdhL = INPUT_VARIABLE(count++);
     if (dLdhL->isScalar()) {
       temp_dLdhL.reset(NDArrayFactory::valueOf(
-          directionMode < 2 ? std::vector<sd::LongType>{bS, nOut} : std::vector<sd::LongType>{2, bS, nOut}, *dLdhL,
+          directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut}, *dLdhL,
           x->ordering()));
       // refresh
       dLdhL = temp_dLdhL.get();
@@ -660,7 +660,7 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
     dLdcL = INPUT_VARIABLE(count++);
     if (dLdcL->isScalar()) {
       temp_dLdcL.reset(NDArrayFactory::valueOf(
-          directionMode < 2 ? std::vector<sd::LongType>{bS, nOut} : std::vector<sd::LongType>{2, bS, nOut}, *dLdcL,
+          directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut}, *dLdcL,
           x->ordering()));
       // refresh
       dLdcL = temp_dLdcL.get();
@@ -890,11 +890,11 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(lstmLayer_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(lstmLayer_bp) {

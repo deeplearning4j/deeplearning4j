@@ -62,8 +62,8 @@ struct UpdaterState FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *updaterStateKeys() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_UPDATERSTATEKEYS);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>> *updaterStateValues() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>> *>(VT_UPDATERSTATEVALUES);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *updaterStateValues() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatArray>> *>(VT_UPDATERSTATEVALUES);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -89,7 +89,7 @@ struct UpdaterStateBuilder {
   void add_updaterStateKeys(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> updaterStateKeys) {
     fbb_.AddOffset(UpdaterState::VT_UPDATERSTATEKEYS, updaterStateKeys);
   }
-  void add_updaterStateValues(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>>> updaterStateValues) {
+  void add_updaterStateValues(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> updaterStateValues) {
     fbb_.AddOffset(UpdaterState::VT_UPDATERSTATEVALUES, updaterStateValues);
   }
   explicit UpdaterStateBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -108,7 +108,7 @@ inline flatbuffers::Offset<UpdaterState> CreateUpdaterState(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> paramName = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> updaterStateKeys = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatArray>>> updaterStateValues = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatArray>>> updaterStateValues = 0) {
   UpdaterStateBuilder builder_(_fbb);
   builder_.add_updaterStateValues(updaterStateValues);
   builder_.add_updaterStateKeys(updaterStateKeys);
@@ -120,11 +120,11 @@ inline flatbuffers::Offset<UpdaterState> CreateUpdaterStateDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *paramName = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *updaterStateKeys = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::FlatArray>> *updaterStateValues = nullptr) {
+    const std::vector<flatbuffers::Offset<FlatArray>> *updaterStateValues = nullptr) {
   auto paramName__ = paramName ? _fbb.CreateString(paramName) : 0;
   auto updaterStateKeys__ = updaterStateKeys ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*updaterStateKeys) : 0;
-  auto updaterStateValues__ = updaterStateValues ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatArray>>(*updaterStateValues) : 0;
-  return sd::graph::CreateUpdaterState(
+  auto updaterStateValues__ = updaterStateValues ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*updaterStateValues) : 0;
+  return CreateUpdaterState(
       _fbb,
       paramName__,
       updaterStateKeys__,
@@ -147,17 +147,17 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>> *variables() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>> *>(VT_VARIABLES);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatVariable>> *variables() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatVariable>> *>(VT_VARIABLES);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatNode>> *nodes() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatNode>> *>(VT_NODES);
+  const flatbuffers::Vector<flatbuffers::Offset<FlatNode>> *nodes() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatNode>> *>(VT_NODES);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *outputs() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>> *>(VT_OUTPUTS);
+  const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *outputs() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<IntPair>> *>(VT_OUTPUTS);
   }
-  const sd::graph::FlatConfiguration *configuration() const {
-    return GetPointer<const sd::graph::FlatConfiguration *>(VT_CONFIGURATION);
+  const FlatConfiguration *configuration() const {
+    return GetPointer<const FlatConfiguration *>(VT_CONFIGURATION);
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *placeholders() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_PLACEHOLDERS);
@@ -168,8 +168,8 @@ struct FlatGraph FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *trainingConfig() const {
     return GetPointer<const flatbuffers::String *>(VT_TRAININGCONFIG);
   }
-  const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UpdaterState>> *updaterState() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<sd::graph::UpdaterState>> *>(VT_UPDATERSTATE);
+  const flatbuffers::Vector<flatbuffers::Offset<UpdaterState>> *updaterState() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<UpdaterState>> *>(VT_UPDATERSTATE);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -207,16 +207,16 @@ struct FlatGraphBuilder {
   void add_id(int64_t id) {
     fbb_.AddElement<int64_t>(FlatGraph::VT_ID, id, 0);
   }
-  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>>> variables) {
+  void add_variables(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables) {
     fbb_.AddOffset(FlatGraph::VT_VARIABLES, variables);
   }
-  void add_nodes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatNode>>> nodes) {
+  void add_nodes(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatNode>>> nodes) {
     fbb_.AddOffset(FlatGraph::VT_NODES, nodes);
   }
-  void add_outputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> outputs) {
+  void add_outputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> outputs) {
     fbb_.AddOffset(FlatGraph::VT_OUTPUTS, outputs);
   }
-  void add_configuration(flatbuffers::Offset<sd::graph::FlatConfiguration> configuration) {
+  void add_configuration(flatbuffers::Offset<FlatConfiguration> configuration) {
     fbb_.AddOffset(FlatGraph::VT_CONFIGURATION, configuration);
   }
   void add_placeholders(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> placeholders) {
@@ -228,7 +228,7 @@ struct FlatGraphBuilder {
   void add_trainingConfig(flatbuffers::Offset<flatbuffers::String> trainingConfig) {
     fbb_.AddOffset(FlatGraph::VT_TRAININGCONFIG, trainingConfig);
   }
-  void add_updaterState(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UpdaterState>>> updaterState) {
+  void add_updaterState(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UpdaterState>>> updaterState) {
     fbb_.AddOffset(FlatGraph::VT_UPDATERSTATE, updaterState);
   }
   explicit FlatGraphBuilder(flatbuffers::FlatBufferBuilder &_fbb)
@@ -246,14 +246,14 @@ struct FlatGraphBuilder {
 inline flatbuffers::Offset<FlatGraph> CreateFlatGraph(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatVariable>>> variables = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::FlatNode>>> nodes = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::IntPair>>> outputs = 0,
-    flatbuffers::Offset<sd::graph::FlatConfiguration> configuration = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatNode>>> nodes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> outputs = 0,
+    flatbuffers::Offset<FlatConfiguration> configuration = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> placeholders = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> lossVariables = 0,
     flatbuffers::Offset<flatbuffers::String> trainingConfig = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<sd::graph::UpdaterState>>> updaterState = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<UpdaterState>>> updaterState = 0) {
   FlatGraphBuilder builder_(_fbb);
   builder_.add_id(id);
   builder_.add_updaterState(updaterState);
@@ -270,22 +270,22 @@ inline flatbuffers::Offset<FlatGraph> CreateFlatGraph(
 inline flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
-    const std::vector<flatbuffers::Offset<sd::graph::FlatVariable>> *variables = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::FlatNode>> *nodes = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::IntPair>> *outputs = nullptr,
-    flatbuffers::Offset<sd::graph::FlatConfiguration> configuration = 0,
+    const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
+    const std::vector<flatbuffers::Offset<FlatNode>> *nodes = nullptr,
+    const std::vector<flatbuffers::Offset<IntPair>> *outputs = nullptr,
+    flatbuffers::Offset<FlatConfiguration> configuration = 0,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *placeholders = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *lossVariables = nullptr,
     const char *trainingConfig = nullptr,
-    const std::vector<flatbuffers::Offset<sd::graph::UpdaterState>> *updaterState = nullptr) {
-  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatVariable>>(*variables) : 0;
-  auto nodes__ = nodes ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::FlatNode>>(*nodes) : 0;
-  auto outputs__ = outputs ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::IntPair>>(*outputs) : 0;
+    const std::vector<flatbuffers::Offset<UpdaterState>> *updaterState = nullptr) {
+  auto variables__ = variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0;
+  auto nodes__ = nodes ? _fbb.CreateVector<flatbuffers::Offset<FlatNode>>(*nodes) : 0;
+  auto outputs__ = outputs ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*outputs) : 0;
   auto placeholders__ = placeholders ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*placeholders) : 0;
   auto lossVariables__ = lossVariables ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*lossVariables) : 0;
   auto trainingConfig__ = trainingConfig ? _fbb.CreateString(trainingConfig) : 0;
-  auto updaterState__ = updaterState ? _fbb.CreateVector<flatbuffers::Offset<sd::graph::UpdaterState>>(*updaterState) : 0;
-  return sd::graph::CreateFlatGraph(
+  auto updaterState__ = updaterState ? _fbb.CreateVector<flatbuffers::Offset<UpdaterState>>(*updaterState) : 0;
+  return CreateFlatGraph(
       _fbb,
       id,
       variables__,
@@ -382,33 +382,33 @@ inline flatbuffers::Offset<FlatResponse> CreateFlatResponse(
   return builder_.Finish();
 }
 
-inline const sd::graph::FlatGraph *GetFlatGraph(const void *buf) {
-  return flatbuffers::GetRoot<sd::graph::FlatGraph>(buf);
+inline const FlatGraph *GetFlatGraph(const void *buf) {
+  return flatbuffers::GetRoot<FlatGraph>(buf);
 }
 
-inline const sd::graph::FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatGraph>(buf);
+inline const FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<FlatGraph>(buf);
 }
 
 inline bool VerifyFlatGraphBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<sd::graph::FlatGraph>(nullptr);
+  return verifier.VerifyBuffer<FlatGraph>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatGraphBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatGraph>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<FlatGraph>(nullptr);
 }
 
 inline void FinishFlatGraphBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatGraph> root) {
+    flatbuffers::Offset<FlatGraph> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatGraphBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<sd::graph::FlatGraph> root) {
+    flatbuffers::Offset<FlatGraph> root) {
   fbb.FinishSizePrefixed(root);
 }
 

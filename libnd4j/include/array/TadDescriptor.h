@@ -30,12 +30,12 @@ class SD_LIB_EXPORT TadDescriptor {
  private:
   ShapeDescriptor _originalShape;
 
-  std::vector<sd::LongType> _axis;
+  std::vector<LongType> _axis;
 
   bool _unitiesInShape;
 
  public:
-  explicit TadDescriptor(const sd::LongType *originalShape, const LongType *dimensions, const LongType length,
+  explicit TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
                          const bool keepUnitiesInShape = false);
   explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<LongType> &dimensions,
                          const bool keepUnitiesInShape = false);
@@ -62,7 +62,7 @@ class SD_LIB_EXPORT TadDescriptor {
   // less than operator
   bool operator<(const TadDescriptor &other) const;
 
-  std::vector<sd::LongType> &axis();
+  std::vector<LongType> &axis();
   ShapeDescriptor &originalShape();
   ShapeDescriptor const &originalShapeConst() const;
   bool areUnitiesinShape() const;

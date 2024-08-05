@@ -47,8 +47,8 @@ int BitwiseUtils::valueBit(int holder) {
   return -1;
 }
 
-std::vector<sd::LongType> BitwiseUtils::valueBits(int holder) {
-  std::vector<sd::LongType> bits;
+std::vector<LongType> BitwiseUtils::valueBits(int holder) {
+  std::vector<LongType> bits;
   if (holder == 0) {
     for (int e = 0; e < 32; e++) bits.emplace_back(0);
 
@@ -71,5 +71,5 @@ std::vector<sd::LongType> BitwiseUtils::valueBits(int holder) {
   return bits;
 }
 
-sd::ByteOrder BitwiseUtils::asByteOrder() { return isBE() ? ByteOrder::BE : ByteOrder::LE; }
+ByteOrder BitwiseUtils::asByteOrder() { return isBE() ? BE : LE; }
 }  // namespace sd

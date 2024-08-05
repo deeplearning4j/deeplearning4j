@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(barnes_edge_forces, 4, 1, false, 0, 1) {
 
   helpers::barnes_edge_forces(rowP, colP, valP, N, output, *dataP);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(barnes_edge_forces) {
@@ -61,8 +61,8 @@ DECLARE_TYPES(barnes_edge_forces) {
 }
 
 DECLARE_SHAPE_FN(barnes_edge_forces) {
-  sd::LongType* bufShape;
-  sd::LongType* outShapeInfo;
+  LongType* bufShape;
+  LongType* outShapeInfo;
   outShapeInfo = ShapeBuilders::copyShapeInfoAndType(inputShape->at(3), inputShape->at(3), false, block.getWorkspace());
   return SHAPELIST(CONSTANT(outShapeInfo));
 }

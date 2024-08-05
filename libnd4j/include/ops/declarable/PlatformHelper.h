@@ -44,7 +44,7 @@ class SD_LIB_EXPORT PlatformHelper {
   std::string _name;
 
   // hash of the operation this helper is built for
-  sd::LongType _hash;
+  LongType _hash;
 
  public:
   PlatformHelper(const char *name, samediff::Engine engine);
@@ -55,7 +55,7 @@ class SD_LIB_EXPORT PlatformHelper {
 
   samediff::Engine engine();
 
-  sd::LongType hash();
+  LongType hash();
 
   /**
    * This method checks, if given helper can be used with given input/output/configuration options
@@ -71,7 +71,7 @@ class SD_LIB_EXPORT PlatformHelper {
    * @param context
    * @return
    */
-  virtual sd::Status invokeHelper(graph::Context &context) = 0;
+  virtual Status invokeHelper(graph::Context &context) = 0;
 
   /**
    * Helper method, needed for compatibility with DeclarableOp macros
@@ -79,7 +79,7 @@ class SD_LIB_EXPORT PlatformHelper {
    * @param inputId
    * @return
    */
-  sd::NDArray *getZ(graph::Context &ctx, int inputId);
+  NDArray *getZ(graph::Context &ctx, int inputId);
 
   /**
    * Helper method, needed for compatibility with DeclarableOp macros
@@ -87,7 +87,7 @@ class SD_LIB_EXPORT PlatformHelper {
    * @param inputId
    * @return
    */
-  sd::NDArray *getNullifiedZ(graph::Context &ctx, int inputId);
+  NDArray *getNullifiedZ(graph::Context &ctx, int inputId);
 };
 }  // namespace platforms
 }  // namespace ops

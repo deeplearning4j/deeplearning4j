@@ -26,28 +26,28 @@
 
 namespace sd {
 namespace ops {
-LegacyScalarOp::LegacyScalarOp() : LegacyOp::LegacyOp(1) { this->getOpDescriptor()->allowInplace(true); }
+LegacyScalarOp::LegacyScalarOp() : LegacyOp(1) { this->getOpDescriptor()->allowInplace(true); }
 
-LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
+LegacyScalarOp::LegacyScalarOp(int opNum) : LegacyOp(1, opNum) {
   this->getOpDescriptor()->allowInplace(true);
 }
 
 LegacyOp *LegacyScalarOp::clone() { return new LegacyScalarOp(this->_opNum, *this->_scalar); }
 
-LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp::LegacyOp(1, opNum) {
-  _scalar = new NDArray(scalar.dup(scalar.ordering()));
+LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar) : LegacyOp(1, opNum) {
+  _scalar = new NDArray(scalar.dup(scalar.ordering(), false));
 }
 
-ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
+ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
 
-  sd::LongType *newShape;
+  LongType *newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));
 }
 
-sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
+Status LegacyScalarOp::validateAndExecute(Context &block) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
@@ -70,7 +70,7 @@ sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
   } else if (block.getTArguments()->size() > 0) {
     auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
-    x->applyScalarArr(static_cast<sd::scalar::Ops>(opNum), y, *z);
+    x->applyScalarArr(static_cast<scalar::Ops>(opNum), y, *z);
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});
@@ -86,7 +86,7 @@ sd::Status LegacyScalarOp::validateAndExecute(Context &block) {
 
   traceExecIfNeeded(block);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace ops
 }  // namespace sd

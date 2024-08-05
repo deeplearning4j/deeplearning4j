@@ -27,9 +27,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN   void bgemm( sd:: NDArray *a,  sd::NDArray *b,  sd::NDArray *c,
+SD_LIB_HIDDEN   void bgemm(NDArray* a, NDArray* b, NDArray* c,
                           NDArray* alphas,  NDArray* betas, int transA, int transB, int M, int N, int K,
-                          int lda,  int ldb,  int ldc, sd::NDArray *all = nullptr);
+                          int lda,  int ldb,  int ldc, NDArray* all = nullptr);
 
 SD_LIB_HIDDEN void bgemm( std::vector<NDArray*>& vA,  std::vector<NDArray*>& vB, std::vector<NDArray*>& vC,
                           NDArray* alphas,  NDArray* betas, int transA, int transB, int M, int N, int K,

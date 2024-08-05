@@ -31,14 +31,14 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT VariablesSet {
  protected:
-  std::vector<sd::graph::Variable*> _holder;
-  sd::Status _status;
+  std::vector<Variable*> _holder;
+  Status _status;
 
  public:
-  VariablesSet(sd::Status status = sd::Status::OK);
+  VariablesSet(Status status = Status::OK);
   ~VariablesSet();
 
-  sd::Status status();
+  Status status();
 
   int size();
 

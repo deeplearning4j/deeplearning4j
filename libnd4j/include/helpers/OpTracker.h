@@ -35,7 +35,7 @@ class SD_LIB_EXPORT OpTracker {
   std::string _export;
 
   int _operations = 0;
-  std::map<sd::graph::OpType, std::vector<sd::ops::OpDescriptor>> _map;
+  std::map<graph::OpType, std::vector<ops::OpDescriptor>> _map;
 
   OpTracker() = default;
   ~OpTracker() = default;
@@ -49,8 +49,8 @@ class SD_LIB_EXPORT OpTracker {
   int totalGroups();
   int totalOperations();
 
-  void storeOperation(sd::graph::OpType opType, const sd::ops::OpDescriptor& descriptor);
-  void storeOperation(sd::graph::OpType opType, const char* opName, const sd::LongType opNum);
+  void storeOperation(graph::OpType opType, const ops::OpDescriptor& descriptor);
+  void storeOperation(graph::OpType opType, const char* opName, const LongType opNum);
 
   const char* exportOperations();
 };

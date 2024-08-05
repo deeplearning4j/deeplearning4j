@@ -35,7 +35,7 @@ namespace unicode {
  * @param size of the string
  * @return offset of utf16
  */
-sd::LongType offsetUtf8StringInUtf16(const void* start, const void* end);
+LongType offsetUtf8StringInUtf16(const void* start, const void* end);
 
 /**
  * This method calculate u8 offset based on utf16
@@ -43,7 +43,7 @@ sd::LongType offsetUtf8StringInUtf16(const void* start, const void* end);
  * @param size of the string
  * @return offset of utf8
  */
-sd::LongType offsetUtf16StringInUtf8(const void* start, const void* end);
+LongType offsetUtf16StringInUtf8(const void* start, const void* end);
 
 /**
  * This method calculate u32 offset based on utf16
@@ -51,7 +51,7 @@ sd::LongType offsetUtf16StringInUtf8(const void* start, const void* end);
  * @param size of the string
  * @return offset of utf32
  */
-sd::LongType offsetUtf32StringInUtf16(const void* start, const void* end);
+LongType offsetUtf32StringInUtf16(const void* start, const void* end);
 
 /**
  * This method calculate u32 offset based on utf8
@@ -59,7 +59,7 @@ sd::LongType offsetUtf32StringInUtf16(const void* start, const void* end);
  * @param size of the string
  * @return offset of utf8
  */
-sd::LongType offsetUtf32StringInUtf8(const void* start, const void* end);
+LongType offsetUtf32StringInUtf8(const void* start, const void* end);
 
 /*
  * This function check is valid charecter in u8 string
@@ -82,7 +82,7 @@ bool isStringValidU32(const void* start, const void* stop);
  * @param size of the string
  * @return offset
  */
-sd::LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize);
+LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize);
 
 /**
  * This method count offset for utf8 string in utf32
@@ -90,7 +90,7 @@ sd::LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize);
  * @param const end pointer to the utf8 string
  * @return offset
  */
-sd::LongType offsetUtf8StringInUtf32(const void* input, const void* stop);
+LongType offsetUtf8StringInUtf32(const void* input, const void* stop);
 
 /**
  * This method count offset for utf32 based on utf16 string
@@ -98,7 +98,7 @@ sd::LongType offsetUtf8StringInUtf32(const void* input, const void* stop);
  * @param size of the string
  * @return offset
  */
-sd::LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize);
+LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize);
 
 /**
  * This method calculate offset of u16 based on utf8
@@ -106,7 +106,7 @@ sd::LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize);
  * @param size of the string
  * @return offset of utf16
  */
-sd::LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize);
+LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize);
 
 /**
  * This method calculate offset of u8 based on utf16
@@ -114,7 +114,7 @@ sd::LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize);
  * @param size of the string
  * @return offset of utf8
  */
-sd::LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize);
+LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize);
 
 /**
  * This method calculate offset of u32 based on utf8
@@ -122,7 +122,7 @@ sd::LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize);
  * @param size of the string
  * @return offset of utf32
  */
-sd::LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize);
+LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize);
 
 /**
  * This method calculate offset of u32 based on utf16
@@ -130,7 +130,7 @@ sd::LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize);
  * @param size of the string
  * @return offset of utf32
  */
-sd::LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize);
+LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize);
 
 /**
  * This method convert utf8 string to utf16 string
@@ -184,7 +184,7 @@ bool utf32to16(const void* input, void* output, uint32_t nInputSize);
  * @param size of input utf32 string
  * @return status of convertion
  */
-bool utf32to8(const void* input, void* output, const sd::LongType nInputSize);
+bool utf32to8(const void* input, void* output, const LongType nInputSize);
 }  // namespace unicode
 }  // namespace sd
 

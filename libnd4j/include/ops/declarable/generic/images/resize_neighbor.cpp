@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
   int width;
   int height;
   bool alignCorners = false;  // - default value
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty()) return Status::OK;
   if (block.width() > 1) {
     auto newImageSize = INPUT_VARIABLE(1);
     REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0,
@@ -91,7 +91,7 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
                                                        ? helpers::CoordinateTransformationMode::HALF_PIXEL_NN
                                                        : helpers::CoordinateTransformationMode::ASYMMETRIC;
 
-  return helpers::resizeNeighborFunctor(block.launchContext(), inRank == 4 ? image : &source, width, height, coorMode,
+  return resizeNeighborFunctor(block.launchContext(), inRank == 4 ? image : &source, width, height, coorMode,
                                         nearestMode, alignCorners, inRank == 4 ? output : &target);
 }
 
@@ -99,7 +99,7 @@ DECLARE_SHAPE_FN(resize_nearest_neighbor) {
   auto shapeList = SHAPELIST();
   auto in = inputShape->at(0);
   auto inRank = shape::rank(in);
-  sd::LongType* outputShape;
+  LongType* outputShape;
 
   REQUIRE_TRUE(inRank == 4 || inRank == 3, 0,
                "resize_nearest_neighbor: input image should be 4D "

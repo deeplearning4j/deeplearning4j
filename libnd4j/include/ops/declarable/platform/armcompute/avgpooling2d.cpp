@@ -75,10 +75,7 @@ PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
   padRight = (oW - 1) * sW - iW + kW - pW;
   padBottom = (oH - 1) * sH - iH + kH - pH;
 
-#if 0
-    sd_printf("avgpool kH = %d, kW = %d, sH = %d, sW = %d  , pH = %d  , pW = %d, dH = %d, dW = %d, paddingMode = %d , isNCHW %d exclude pad %d \n" , kH , kW , sH , sW  , pH 
-     , pW , dH , dW , paddingMode,isNCHW?1:0 ,excludePadding?1:0);
-#endif
+
   auto poolPad = arm_compute::PadStrideInfo(sW, sH, padLeft, padRight, padTop, padBottom,
                                             arm_compute::DimensionRoundingType::FLOOR);
   auto poolInfo = arm_compute::PoolingLayerInfo(arm_compute::PoolingType::AVG, arm_compute::Size2D(kW, kH), dataLayout,

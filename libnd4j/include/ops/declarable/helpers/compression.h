@@ -29,8 +29,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output);
-SD_LIB_HIDDEN sd::LongType encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold);
+SD_LIB_HIDDEN void decodeBitmap(LaunchContext* context, const NDArray* input, NDArray* output);
+SD_LIB_HIDDEN LongType encodeBitmap(LaunchContext* context, NDArray* input, NDArray* output, float threshold);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

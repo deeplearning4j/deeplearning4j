@@ -28,13 +28,13 @@ namespace sd {
 namespace ops {
 class SD_LIB_EXPORT LegacyReduceLongOp : public LegacyOp {
  protected:
-  sd::Status validateAndExecute(Context& block) override;
+  Status validateAndExecute(sd::graph::Context& block) override;
 
  public:
   LegacyReduceLongOp();
   LegacyReduceLongOp(int opNum);
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
   LegacyOp* clone() override;
 };
 }  // namespace ops

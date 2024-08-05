@@ -49,15 +49,15 @@ CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
     shift->assign(T_ARG(0));
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(sufficient_statistics) {
   getOpDescriptor()->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS});
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-  getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
-  getOpDescriptor()->setAllowedOutputTypes(1, DataType::INHERIT);
-  getOpDescriptor()->setAllowedOutputTypes(2, DataType::INHERIT);
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
+  getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
+  getOpDescriptor()->setAllowedOutputTypes(1, INHERIT);
+  getOpDescriptor()->setAllowedOutputTypes(2, INHERIT);
 }
 
 DECLARE_SHAPE_FN(sufficient_statistics) {

@@ -33,18 +33,18 @@ class SD_LIB_EXPORT BooleanOp : public DeclarableOp {
  protected:
   OpDescriptor* _descriptor;
 
-  bool prepareOutputs(Context& block);
-  sd::Status validateAndExecute(Context& block) override = 0;
+  bool prepareOutputs(sd::graph::Context& block);
+  Status validateAndExecute(sd::graph::Context& block) override = 0;
 
  public:
   BooleanOp(const char* name, int numInputs, bool scalar);
 
-  bool verify(const std::vector<sd::NDArray*>& args);
+  bool verify(const std::vector<NDArray*>& args);
   bool verify(sd::graph::Context& block);
 
-  sd::Status execute(Context* block) override;
+  Status execute(Context* block) override;
 
-  ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
+  ShapeList* calculateOutputShape(ShapeList* inputShape, Context& block) override;
 };
 }  // namespace ops
 }  // namespace sd

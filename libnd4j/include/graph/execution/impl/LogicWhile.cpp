@@ -26,7 +26,7 @@
 
 namespace sd {
 namespace graph {
-sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
+Status LogicWhile::processNode(Graph* graph, Node* node) {
   auto __variableSpace = graph->getVariableSpace();
 
   sd_debug("Starting on WHILE loop: [%i]\n", node->id());
@@ -36,7 +36,7 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
 
   if (inputs < 3) {
     sd_printf("While [%i]: loop should have at least 1 external variable announced\n", node->id());
-    return sd::Status::BAD_INPUT;
+    return Status::BAD_INPUT;
   }
 
   for (int e = 0; e < inputs - 2; e++) {
@@ -54,7 +54,7 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
       // TODO: ???
     } else {
       // FIXME: in some cases it's possible to have no NDArray
-      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup()));
+      if (inputVar->hasNDArray()) innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup(false)));
     }
   }
 
@@ -79,8 +79,8 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
         LogicExecutor::processNode(graph, v);
       } else {
         sd_debug("Op [<%s>]\n", v->getName()->c_str());
-        sd::Status status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
-        if (status != sd::Status::OK) return status;
+        Status status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
+        if (status != Status::OK) return status;
       }
 
       lastNode = v->id();
@@ -88,13 +88,12 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
 
     if (!__variableSpace->hasVariable(lastNode)) {
       sd_printf("While [%i]: got no results out of conditional loop\n", node->id());
-      return sd::Status::KERNEL_FAILURE;
+      return Status::KERNEL_FAILURE;
     }
 
     // now we should take result of the Scope run, and evaluate it
     auto result = __variableSpace->getVariable(lastNode)->getNDArray();
 
-    if (Environment::getInstance().isDebugAndVerbose()) result->printBuffer("Result of the last node:");
 
     // if result evaluates to 0.0 - condition returned FALSE
     if (result->e<int>(0) == 0)
@@ -113,8 +112,8 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
         } else {
           sd_debug("Op [<%s>]\n", v->getName()->c_str());
           // v->getBlock()->updateVariables();
-          sd::Status status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
-          if (status != sd::Status::OK) return status;
+          Status status = GraphExecutioner::executeFlatNode(graph, v, __variableSpace);
+          if (status != Status::OK) return status;
         }
 
         lastNode = v->id();
@@ -131,10 +130,10 @@ sd::Status LogicWhile::processNode(Graph* graph, Node* node) {
   // if we've hit breaker limit - we should notify about that
   if (breaker >= 10000000) {
     sd_printf("While condition seems to be never ending, aborting...\n", breaker);
-    return sd::Status::KERNEL_FAILURE;
+    return Status::KERNEL_FAILURE;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 }  // namespace graph
 }  // namespace sd

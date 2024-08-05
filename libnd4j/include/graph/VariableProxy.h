@@ -37,7 +37,7 @@ class SD_LIB_EXPORT VariableProxy : public VariableSpace {
   virtual int numberOfPlaceholders();
   virtual std::vector<Variable *> *getPlaceholders();
 
-  virtual sd::memory::Workspace *workspace();
+  virtual memory::Workspace *workspace();
 
   virtual bool hasExternalVariable(int it);
   virtual bool hasExternalVariable(std::pair<int, int> &pair);
@@ -48,10 +48,10 @@ class SD_LIB_EXPORT VariableProxy : public VariableSpace {
   virtual bool hasVariable(std::pair<int, int> &pair);
   virtual bool hasVariable(std::string *symbol);
 
-  virtual sd::graph::Variable *getVariable(int id);
-  virtual sd::graph::Variable *getVariable(int id, int idx);
-  virtual sd::graph::Variable *getVariable(std::pair<int, int> &pair);
-  virtual sd::graph::Variable *getVariable(std::string *symbol);
+  virtual Variable *getVariable(int id);
+  virtual Variable *getVariable(int id, int idx);
+  virtual Variable *getVariable(std::pair<int, int> &pair);
+  virtual Variable *getVariable(std::string *symbol);
 
   virtual std::vector<Variable *> getVariables();
 
@@ -70,20 +70,20 @@ class SD_LIB_EXPORT VariableProxy : public VariableSpace {
 
   virtual void putOutputVariable(Variable *variable);
 
-  virtual void trackList(sd::NDArrayList *list);
+  virtual void trackList(NDArrayList *list);
 
   // memory-related statistics
-  virtual sd::LongType externalMemory();
-  virtual sd::LongType internalMemory();
-  virtual sd::LongType totalMemory();
+  virtual LongType externalMemory();
+  virtual LongType internalMemory();
+  virtual LongType totalMemory();
 
   virtual int externalEntries();
   virtual int internalEntries();
   virtual int totalEntries();
 
-  virtual sd::graph::VariableSpace *clone();
+  virtual VariableSpace *clone();
 
-  virtual sd::graph::Stash *getStash();
+  virtual Stash *getStash();
   virtual void setFlowPath(FlowPath *timers);
   virtual FlowPath *flowPath();
 };

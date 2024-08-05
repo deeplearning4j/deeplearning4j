@@ -44,8 +44,8 @@ class SD_LIB_EXPORT SparseUtils {
    * @param rank
    * @param x
    */
-  static void printIndex(sd::LongType *indices, int rank, int x);
-  static bool ltIndices(sd::LongType *indices, int rank, sd::LongType x, sd::LongType y);
+  static void printIndex(LongType *indices, int rank, int x);
+  static bool ltIndices(LongType *indices, int rank, LongType x, LongType y);
 
   /**
    * Returns true, if x > y, false otherwise
@@ -55,19 +55,19 @@ class SD_LIB_EXPORT SparseUtils {
    * @param y
    * @return
    */
-  static bool gtIndices(sd::LongType *indices, int rank, sd::LongType x, sd::LongType y);
+  static bool gtIndices(LongType *indices, int rank, LongType x, LongType y);
 
-  static void swapEverything(sd::LongType *indices, T *array, int rank, sd::LongType x, sd::LongType y);
+  static void swapEverything(LongType *indices, T *array, int rank, LongType x, LongType y);
 
-  static void coo_quickSort_parallel_internal(sd::LongType *indices, T *array, sd::LongType left, sd::LongType right,
+  static void coo_quickSort_parallel_internal(LongType *indices, T *array, LongType left, LongType right,
                                               int cutoff, int rank);
 
-  static void coo_quickSort_parallel(sd::LongType *indices, T *array, sd::LongType lenArray, int numThreads, int rank);
+  static void coo_quickSort_parallel(LongType *indices, T *array, LongType lenArray, int numThreads, int rank);
 
-  static sd::LongType coo_quickSort_findPivot(sd::LongType *indices, T *array, sd::LongType left, sd::LongType right,
+  static LongType coo_quickSort_findPivot(LongType *indices, T *array, LongType left, LongType right,
                                               int rank);
 
-  static void sortCooIndicesGeneric(sd::LongType *indices, void *vx, sd::LongType length, int rank);
+  static void sortCooIndicesGeneric(LongType *indices, void *vx, LongType length, int rank);
 };
 
 class SD_LIB_EXPORT IndexUtils {
@@ -77,16 +77,14 @@ class SD_LIB_EXPORT IndexUtils {
    *
    * based on numpy.ravel_multi_index
    */
-  static void ravelMultiIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                              sd::LongType *shapeInfo, int mode);
+  static void ravelMultiIndex(LongType *indices, LongType *flatIndices, LongType length, LongType *shapeInfo, int mode);
 
   /**
    * Converts flat indices to index matrix in COO format
    *
    * based on numpy.unravel_index
    */
-  static void unravelIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                           sd::LongType *shapeInfo);
+  static void unravelIndex(LongType *indices, LongType *flatIndices, LongType length, LongType *shapeInfo);
 };
 }  // namespace sparse
 }  // namespace sd

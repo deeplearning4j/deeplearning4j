@@ -40,7 +40,7 @@ SD_LIB_HIDDEN void fillRandomPoisson(LaunchContext* context, graph::RandomGenera
 SD_LIB_HIDDEN void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max,
                                      NDArray* output);
 SD_LIB_HIDDEN void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input,
-                                         NDArray& output, const sd::LongType numOfSamples, const int dimC);
+                                         NDArray& output, const LongType numOfSamples, const int dimC);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

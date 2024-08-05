@@ -26,11 +26,9 @@
 #ifndef REDUCE3_H_
 #define REDUCE3_H_
 
-#define EXTRA_PARAMS_LENGTH 10
 #include <helpers/DebugHelper.h>
 #include <helpers/OmpLaunchHelper.h>
 #include <helpers/TAD.h>
-#include <helpers/shape.h>
 #include <loops/legacy_ops.h>
 #include <math/templatemath.h>
 #include <ops/ops.h>

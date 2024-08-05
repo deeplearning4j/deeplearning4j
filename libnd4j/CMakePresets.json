@@ -14,6 +14,7 @@
                 "SD_CPU": true,
                 "SD_ARCH": "x86-64",
                 "SD_GCC_FUNCTRACE": "ON",
+                "PRINT_INDICES": "ON",
                 "SD_ALL_OPS": true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
@@ -31,7 +32,8 @@
                 "SD_LIBRARY_NAME": "nd4jcpu",
                 "SD_CPU": true,
                 "SD_ARCH": "x86-64",
-                "SD_BUILD_TESTS": "ON",
+                "PRINT_INDICES": "ON",
+                "SD_BUILD_TESTS": "OFF",
                 "SD_ALL_OPS": true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
@@ -53,9 +55,10 @@
                 "BLAS":true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "COMPUTE": "86",
+                "__CUDACC__" : "ON",
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",
-                "SD_BUILD_TESTS": "ON",
+                "SD_BUILD_TESTS": "OFF",
                 "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-12.1",
                 "CMAKE_CUDA_COMPILER": "/usr/local/cuda-12.1/bin/nvcc"
             }
@@ -76,6 +79,7 @@
                 "SD_CUDA": true,
                 "BLAS":true,
                 "SD_GCC_FUNCTRACE": "ON",
+                "__CUDACC__" : "ON",
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "COMPUTE": "86",
                 "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-12.1",
@@ -84,24 +88,6 @@
 
         },
 
-        {
-            "name": "veda_vednn_base",
-            "displayName": "Configure preset for the Veda and Vednn",
-            "description": "Sets Unix Makefile generator, build and install directory",
-            "hidden": true,
-            "inherits": [
-                "base_cpu"
-            ],
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/blasbuild/cpu/${presetName}",
-            "cacheVariables": {
-                "SD_ARCH": "x86-64",
-                "HELPERS_vednn": true
-            },
-            "environment": {
-                "VEDNN_ROOT": "${sourceDir}/vednn_lib"
-            }
-        },
         {
             "name": "cuda_cudnn",
             "displayName": "Configure preset for the CUDA and CUDNN",
@@ -118,20 +104,6 @@
             }
         },
         {
-            "name": "veda_vednn_debug",
-            "displayName": "Configure Debug for the Veda and Vednn",
-            "description": "Sets Unix Makefile generator, build and install directory",
-            "inherits": [
-                "veda_vednn_base"
-            ],
-            "generator": "Unix Makefiles",
-            "binaryDir": "${sourceDir}/blasbuild/cpu/${presetName}",
-            "cacheVariables": {
-                "SD_BUILD_TESTS": "ON",
-                "CMAKE_BUILD_TYPE": "Debug"
-            }
-        },
-        {
             "name": "cuda_cudnn_debug",
             "displayName": "Configure Debug preset for the CUDA and CUDNN",
             "description": "Sets Unix Makefile generator, build and install directory",
@@ -142,7 +114,7 @@
             "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/blasbuild/cuda/${presetName}",
             "cacheVariables": {
-                "SD_BUILD_TESTS": "ON",
+                "SD_BUILD_TESTS": "OFF",
                 "CMAKE_BUILD_TYPE": "Debug"
             }
         }
@@ -153,13 +125,6 @@
             "description": "",
             "displayName": "",
             "configurePreset": "base_cpu",
-            "jobs": 64
-        },
-        {
-            "name": "veda_vednn_debug_build",
-            "description": "",
-            "displayName": "",
-            "configurePreset": "veda_vednn_debug",
             "jobs": 64
         },
         {

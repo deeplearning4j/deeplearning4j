@@ -32,12 +32,12 @@ size_t hash<sd::graph::KeyPair>::operator()(const sd::graph::KeyPair &k) const {
 
 namespace sd {
 namespace graph {
-sd::graph::KeyPair::KeyPair(int node, const char *name) {
+KeyPair::KeyPair(int node, const char *name) {
   _node = node;
   _name = std::string(name);
 }
 
-bool sd::graph::KeyPair::operator<(const KeyPair &other) const {
+bool KeyPair::operator<(const KeyPair &other) const {
   if (_node < other._node)
     return true;
   else if (_node > other._node)
@@ -46,11 +46,11 @@ bool sd::graph::KeyPair::operator<(const KeyPair &other) const {
     return _name < other._name;
 }
 
-sd::graph::Stash::Stash() {
+Stash::Stash() {
   //
 }
 
-sd::graph::Stash::~Stash() {
+Stash::~Stash() {
   if (_handles.size() > 0) this->clear();
 }
 
@@ -60,7 +60,7 @@ bool sd::graph::Stash::checkStash(sd::graph::Block& block, const char *name) {
 }
  */
 
-bool sd::graph::Stash::checkStash(int nodeId, const char *name) {
+bool Stash::checkStash(int nodeId, const char *name) {
   KeyPair kp(nodeId, name);
   return _stash.count(kp) > 0;
 }
@@ -70,7 +70,7 @@ sd::NDArray* sd::graph::Stash::extractArray(sd::graph::Block& block, const char 
     return extractArray(block.getNodeId(), name);
 }
 */
-sd::NDArray *sd::graph::Stash::extractArray(int nodeId, const char *name) {
+NDArray *Stash::extractArray(int nodeId, const char *name) {
   KeyPair kp(nodeId, name);
   return _stash[kp];
 }
@@ -80,7 +80,7 @@ void sd::graph::Stash::storeArray(sd::graph::Block& block, const char *name, sd:
 }
 */
 
-void sd::graph::Stash::storeArray(int nodeId, const char *name, sd::NDArray *array) {
+void Stash::storeArray(int nodeId, const char *name, NDArray *array) {
   KeyPair kp(nodeId, name);
   _stash[kp] = array;
 
@@ -88,7 +88,7 @@ void sd::graph::Stash::storeArray(int nodeId, const char *name, sd::NDArray *arr
   _handles.push_back(array);
 }
 
-void sd::graph::Stash::clear() {
+void Stash::clear() {
   for (auto v : _handles) delete v;
 
   _handles.clear();

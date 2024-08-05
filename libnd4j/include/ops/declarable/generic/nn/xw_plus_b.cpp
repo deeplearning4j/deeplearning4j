@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
 
   auto b = INPUT_VARIABLE(2);
 
-  if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty()) return sd::Status::OK;
+  if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty()) return Status::OK;
 
 
   REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b: Input x array should have rank equal 2, but got instead %i!",
@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
       *z += *b;
     }
   } else {
-    
+
     if(b->rankOf() == 1) {
       b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{1,INPUT_VARIABLE(2)->lengthOf()}));
     }
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   if (bTranspose) {
     delete w;
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(xw_plus_b) {
@@ -97,7 +97,7 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   const int nWeightsFormat = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
   auto weightsShape =
-      (1 == nWeightsFormat) ? ShapeUtils::evalTranspShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
+      (1 == nWeightsFormat) ? ShapeUtils::evalTransposeShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
 
   auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, aTranspose,
                                                     bTranspose,
@@ -107,7 +107,7 @@ DECLARE_SHAPE_FN(xw_plus_b) {
 }
 
 DECLARE_TYPES(xw_plus_b) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
@@ -118,7 +118,7 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   auto b = INPUT_VARIABLE(2);
   auto dLdz = INPUT_VARIABLE(3);
 
-  if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return sd::Status::OK;
+  if (x->isEmpty() || INPUT_VARIABLE(1)->isEmpty() || b->isEmpty() || dLdz->isEmpty()) return Status::OK;
 
   auto w = bTranspose ? new NDArray(INPUT_VARIABLE(1)->transpose()) : INPUT_VARIABLE(1);
 
@@ -135,7 +135,7 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
   auto dLdw = (bTranspose) ? new NDArray(OUTPUT_VARIABLE(1)->transpose()) : OUTPUT_VARIABLE(1);
 
   // dLdb
-  std::vector<sd::LongType> dims({0});
+  std::vector<LongType> dims({0});
   dLdb->assign(dLdz->reduceAlongDimension(reduce::Sum, &dims));
 
   matmul_bp mmul_bp;
@@ -151,13 +151,13 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
     delete dLdw;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(xw_plus_b_bp) {
-  sd::LongType* xShapeInfo;
-  sd::LongType* wShapeInfo;
-  sd::LongType* bShapeInfo;
+  LongType* xShapeInfo;
+  LongType* wShapeInfo;
+  LongType* bShapeInfo;
 
   COPY_SHAPE(inputShape->at(0), xShapeInfo);
   COPY_SHAPE(inputShape->at(1), wShapeInfo);
@@ -166,7 +166,7 @@ DECLARE_SHAPE_FN(xw_plus_b_bp) {
 }
 
 DECLARE_TYPES(xw_plus_b_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 }  // namespace ops
 }  // namespace sd

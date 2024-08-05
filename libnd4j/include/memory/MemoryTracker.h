@@ -37,8 +37,8 @@ namespace memory {
  */
 class SD_LIB_EXPORT MemoryTracker {
  private:
-  std::map<sd::LongType, AllocationEntry> _allocations;
-  std::map<sd::LongType, AllocationEntry> _released;
+  std::map<LongType, AllocationEntry> _allocations;
+  std::map<LongType, AllocationEntry> _released;
   std::mutex _locker;
 
   MemoryTracker();
@@ -47,8 +47,8 @@ class SD_LIB_EXPORT MemoryTracker {
  public:
   static MemoryTracker& getInstance();
 
-  void countIn(MemoryType type, sd::Pointer ptr, sd::LongType numBytes);
-  void countOut(sd::Pointer ptr);
+  void countIn(MemoryType type, Pointer ptr, LongType numBytes);
+  void countOut(Pointer ptr);
 
   void summarize();
   void reset();

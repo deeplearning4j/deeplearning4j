@@ -27,7 +27,7 @@
 namespace sd {
 
 ////////////////////////////////////////////////////////////////////////////////
-OmpLaunchHelper::OmpLaunchHelper(const sd::LongType N, float desiredNumThreads) {
+OmpLaunchHelper::OmpLaunchHelper(const LongType N, float desiredNumThreads) {
   auto maxItersPerThread = Environment::getInstance().elementwiseThreshold();
 
   if (N < maxItersPerThread)
@@ -41,7 +41,7 @@ OmpLaunchHelper::OmpLaunchHelper(const sd::LongType N, float desiredNumThreads) 
     else
       desiredNumThreads = sd::math::sd_min<int>(omp_get_max_threads(), desiredNumThreads);
 #else
-    desiredNumThreads = sd::Environment::getInstance().maxThreads();
+    desiredNumThreads = Environment::getInstance().maxThreads();
 #endif
     _numThreads = sd::math::sd_min<int>(N / maxItersPerThread, desiredNumThreads);
   }
@@ -50,11 +50,9 @@ OmpLaunchHelper::OmpLaunchHelper(const sd::LongType N, float desiredNumThreads) 
   _remainder = N % _numThreads;  // last thread may contain bigger number of iterations
 }
 
-sd::LongType OmpLaunchHelper::betterSpan(sd::LongType N) {
-  return OmpLaunchHelper::betterSpan(N, OmpLaunchHelper::betterThreads(N));
-}
+LongType OmpLaunchHelper::betterSpan(LongType N) { return betterSpan(N, betterThreads(N)); }
 
-sd::LongType OmpLaunchHelper::betterSpan(sd::LongType N, sd::LongType numThreads) {
+LongType OmpLaunchHelper::betterSpan(LongType N, LongType numThreads) {
   auto r = N % numThreads;
   auto t = N / numThreads;
 
@@ -66,29 +64,29 @@ sd::LongType OmpLaunchHelper::betterSpan(sd::LongType N, sd::LongType numThreads
   }
 }
 
-int OmpLaunchHelper::betterThreads(sd::LongType N) {
+int OmpLaunchHelper::betterThreads(LongType N) {
 #ifdef _OPENMP
   return betterThreads(N, omp_get_max_threads());
 #else
-  return betterThreads(N, sd::Environment::getInstance().maxThreads());
+  return betterThreads(N, Environment::getInstance().maxThreads());
   ;
 #endif
 }
 
-int OmpLaunchHelper::betterThreads(sd::LongType N, int maxThreads) {
+int OmpLaunchHelper::betterThreads(LongType N, int maxThreads) {
   auto t = Environment::getInstance().elementwiseThreshold();
   if (N < t)
     return 1;
   else {
-    return static_cast<int>(sd::math::sd_min<sd::LongType>(N / t, maxThreads));
+    return static_cast<int>(sd::math::sd_min<LongType>(N / t, maxThreads));
   }
 }
 
-int OmpLaunchHelper::tadThreads(sd::LongType tadLength, sd::LongType numTads) {
+int OmpLaunchHelper::tadThreads(LongType tadLength, LongType numTads) {
 #ifdef _OPENMP
   auto maxThreads = omp_get_max_threads();
 #else
-  auto maxThreads = sd::Environment::getInstance().maxThreads();
+  auto maxThreads = Environment::getInstance().maxThreads();
 #endif
 
   // if there's only 1 thread allowed - nothing to do here
