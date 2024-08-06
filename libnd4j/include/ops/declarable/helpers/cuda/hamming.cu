@@ -24,24 +24,24 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 template <typename X, typename Z>
-static SD_KERNEL void _hammingKernel(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                                     const sd::LongType *yShapeInfo, void *vz, void *reductionBuffer,
-                                     sd::LongType length) {
+static SD_KERNEL void _hammingKernel(const void *vx, const LongType *xShapeInfo, const void *vy,
+                                     const LongType *yShapeInfo, void *vz, void *reductionBuffer, LongType length) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const X *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
 
-  __shared__ sd::LongType shared[SD_CUDA_BLOCK_SIZE];
+  __shared__ LongType shared[SD_CUDA_BLOCK_SIZE];
 
   // we want to nullify temporary memory before accumulating intermediate results
   shared[threadIdx.x] = 0;
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-  for (sd::LongType e = tid; e < length; e += blockDim.x * gridDim.x) {
+  for (LongType e = tid; e < length; e += blockDim.x * gridDim.x) {
     auto _x = static_cast<unsigned long long>(x[shape::getIndexOffset(e, xShapeInfo)]);
     auto _y = static_cast<unsigned long long>(y[shape::getIndexOffset(e, yShapeInfo)]);
 
@@ -51,7 +51,7 @@ static SD_KERNEL void _hammingKernel(const void *vx, const sd::LongType *xShapeI
   __syncthreads();
 
   // now we accumulate values
-  auto numItems = sd::math::sd_min<sd::LongType>(blockDim.x, length);
+  auto numItems = sd::math::sd_min<LongType>(blockDim.x, length);
   auto floorPow2 = numItems;
   if (floorPow2 & (floorPow2 - 1)) {
     while (floorPow2 & (floorPow2 - 1)) floorPow2 &= floorPow2 - 1;
@@ -63,7 +63,7 @@ static SD_KERNEL void _hammingKernel(const void *vx, const sd::LongType *xShapeI
   }
   __syncthreads();
 
-  for (sd::LongType activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
+  for (LongType activeThreads = floorPow2 >> 1; activeThreads; activeThreads >>= 1) {
     if (threadIdx.x < activeThreads && threadIdx.x + activeThreads < numItems)
       shared[threadIdx.x] = shared[threadIdx.x] + shared[threadIdx.x + activeThreads];
 
@@ -73,7 +73,7 @@ static SD_KERNEL void _hammingKernel(const void *vx, const sd::LongType *xShapeI
 
   // FIXME: do we really want atomicAdd on global memory here
   // and store them to output
-  if (threadIdx.x == 0 && shared[0] > 0) sd::math::atomics::sd_atomicAdd<Z>(&z[0], static_cast<Z>(shared[threadIdx.x]));
+  if (threadIdx.x == 0 && shared[0] > 0) math::atomics::sd_atomicAdd<Z>(&z[0], static_cast<Z>(shared[threadIdx.x]));
 }
 
 template <typename X, typename Z>
@@ -82,6 +82,8 @@ static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z)
   _hammingKernel<X, Z><<<launchDims.x,launchDims.y, launchDims.z, *context->getCudaStream()>>>(
       x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr,
       x.lengthOf());
+  DebugHelper::checkErrorCode(context->getCudaStream(),"_hammingKernel failed");
+
 }
 
 void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {

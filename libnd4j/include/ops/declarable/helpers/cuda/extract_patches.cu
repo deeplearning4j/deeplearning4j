@@ -24,10 +24,12 @@
 #include <helpers/PointersManager.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/axis.h>
+#include <execution/Threads.h>
 
 #include <array>
 
 #include "execution/cuda/LaunchDims.h"
+
 
 namespace sd {
 namespace ops {
@@ -51,37 +53,41 @@ namespace helpers {
 //      - outputOffsets - output TAD offsets
 //
 template <typename T>
-static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount, int sizeRow, int sizeCol, int rowDim,
-                                                 int colDim, int outRowDim, int outColDim, int strideRow, int strideCol,
-                                                 int rateRow, int rateCol, int rowCast, int colCast, int lastDim,
-                                                 const T* input, const sd::LongType* patchShape,
-                                                 const sd::LongType* inputOffsets, T* output,
-                                                 const sd::LongType* outTadShape, const sd::LongType* outputOffsets) {
-  auto start = threadIdx.x + blockIdx.x * blockDim.x;
+static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount,
+                                                 int sizeRow, int sizeCol, int rowDim,
+                                                 int colDim, int outRowDim,
+                                                 int outColDim, int strideRow,
+                                                 int strideCol,
+                                                 int rateRow, int rateCol,
+                                                 int rowCast,
+                                                 int colCast, int lastDim,
+                                                 const T* input,
+                                                 const LongType* patchShape,
+                                                 const LongType* inputOffsets,
+                                                 T* output,
+                                                 const LongType* outTadShape,
+                                                 const LongType* outputOffsets) {
 
-  auto step = blockDim.x * gridDim.x;
-  // batch  input by 3 last dims and extrapole input onto output with outColDim/outRowDim
-  for (sd::LongType batch = start; batch < batchCount; batch += step) {
+  for (auto batch = threadIdx.x; batch < batchCount; batch+= gridDim.x) {
     auto patch = input + inputOffsets[batch];
     auto outMatrix = output + outputOffsets[batch];
 
-    for (sd::LongType i = 0; i < outRowDim; i++) {
-      for (sd::LongType j = 0; j < outColDim; j++) {
-        sd::LongType pos = 0;
+    for (LongType i = 0; i < outRowDim; i++) {
+      for (LongType j = 0; j < outColDim; j++) {
+        LongType pos = 0;
         auto rowStart = i * strideRow - (theSame ? rowCast : 0);
         auto colStart = j * strideCol - (theSame ? colCast : 0);
         auto rowEnd = rowStart + sizeRow * rateRow;
         auto colEnd = colStart + sizeCol * rateCol;
         if (!theSame) {
-          rowEnd = math::sd_min(rowStart + sizeRow * rateRow, sd::LongType(rowDim));
-          colEnd = math::sd_min(colStart + sizeCol * rateCol, sd::LongType(colDim));
+          rowEnd = math::sd_min<T>(rowStart + sizeRow * rateRow, rowDim);
+          colEnd = math::sd_min<T>(colStart + sizeCol * rateCol, colDim);
         }
-
-        for (auto row = rowStart; row < rowEnd; row += rateRow) {
-          for (auto col = colStart; col < colEnd; col += rateCol) {
+        for (auto row = rowStart; row < rowEnd; row += rateRow)
+          for (auto col = colStart; col < colEnd; col += rateCol)
             for (auto pixel = 0; pixel < lastDim; pixel++) {
-              sd::LongType zPos[] = {i, j, pos};
-              sd::LongType xPos[] = {row, col, pixel};
+              LongType zPos[] = {i, j, pos};
+              LongType xPos[] = {row, col, pixel};
               bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
 
               if (setUp) {  // VALID or SAME cases
@@ -89,62 +95,75 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount, i
               }
               pos++;
             }
-          }
-        }
       }
     }
   }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void _extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
+static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
                             int strideRow, int strideCol, int rateRow, int rateCol, bool theSame) {
-  NDArray::prepareSpecialUse({output}, {images});
-  std::vector<sd::LongType> restDims({1, 2, 3});  // the first and the last dims
+  std::vector<LongType> restDims({1, 2, 3});  // the first and the last dims
+  ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
+  ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
   // 3D matrices - 2D matrices of vectors (if last dim is greater than 1)
   // int e = 0;
-  const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
-  const int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
-  const int ksize = ksizeRowsEffective * ksizeColsEffective;
-  sd::LongType lastDim = images->sizeAt(3);
-  sd::LongType outLastDim = output->sizeAt(3);
-  sd::LongType rowDim = images->sizeAt(1);
-  sd::LongType colDim = images->sizeAt(2);
-  sd::LongType outRowDim = output->sizeAt(1);
-  sd::LongType outColDim = output->sizeAt(2);
+
+  int batchCount = listOfMatricies.size();
+  LongType lastDim = images->sizeAt(3);
+  LongType rowDim = images->sizeAt(1);
+  LongType colDim = images->sizeAt(2);
+  LongType outRowDim = output->sizeAt(1);
+  LongType outColDim = output->sizeAt(2);
   auto rowCast = 1;
   auto colCast = 1;
-  // validate shifts
   if (sizeRow * rateRow < 3) rowCast = 0;
   if (sizeCol * rateCol < 3) colCast = 0;
 
-  auto packX =
-      sd::ConstantTadHelper::getInstance().tadForDimensions(images->shapeInfo(), restDims.data(), restDims.size());
-  auto packZ =
-      sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims.data(), restDims.size());
-  int batchCount = packX->numberOfTads();
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto batch = 0; batch < stop; batch++) {
+      auto patch = listOfMatricies.at(batch);
+      auto inPatch = patch->rankOf() > 3 && patch->sizeAt(0) == 1 ? new NDArray(patch->reshape('c',{patch->sizeAt(1),patch->sizeAt(2),patch->sizeAt(3)})) : patch;
+      auto outMatrix = listOfOutputs.at(batch);
+      auto outReshape = outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1 ? new NDArray(outMatrix->reshape('c',{outMatrix->sizeAt(1),outMatrix->sizeAt(2),outMatrix->sizeAt(3)})) : outMatrix;
+      for (LongType i = 0; i < outRowDim; i++) {
+        for (LongType j = 0; j < outColDim; j++) {
+          LongType pos = 0;
+          auto rowStart = i * strideRow - (theSame ? rowCast : 0);
+          auto colStart = j * strideCol - (theSame ? colCast : 0);
+          auto rowEnd = rowStart + sizeRow * rateRow;
+          auto colEnd = colStart + sizeCol * rateCol;
+          if (!theSame) {
+            rowEnd = math::sd_min(rowStart + sizeRow * rateRow, rowDim);
+            colEnd = math::sd_min(colStart + sizeCol * rateCol, colDim);
+          }
+          for (auto row = rowStart; row < rowEnd; row += rateRow)
+            for (auto col = colStart; col < colEnd; col += rateCol)
+              for (auto pixel = 0; pixel < lastDim; pixel++) {
+                bool setUp = (theSame && row >= 0
+                              && col >= 0 && row < rowDim
+                              && col < colDim)
+                             || (!theSame);
+                if (setUp) {
+                  outReshape->p<T>(i,j,pos,inPatch->e<T>(row, col, pixel));
+                }
+                pos++;
+              }
+        }
+      }
+    }
+  };
 
-  PointersManager manager(context, "helpers::extractPatches");
-
-  auto stream = context->getCudaStream();
-  auto imagesBuffer = reinterpret_cast<T*>(images->specialBuffer());
-  auto outputBuffer = reinterpret_cast<T*>(output->specialBuffer());
-  dim3 launchDims = getLaunchDims("extract_patches");
-  globalExtractPatchesKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      theSame, batchCount, sizeRow, sizeCol, rowDim, colDim, outRowDim, outColDim, strideRow, strideCol, rateRow,
-      rateCol, rowCast, colCast, lastDim, imagesBuffer, packX->specialShapeInfo(), packX->specialOffsets(), outputBuffer,
-      packZ->specialShapeInfo(), packZ->specialOffsets());
-
-  manager.synchronize();
-  NDArray::registerSpecialUse({output}, {images});
+  samediff::Threads::parallel_tad(func, 0, batchCount);
 }
 BUILD_SINGLE_TEMPLATE(template void _extractPatches,
                       (sd::LaunchContext * context, NDArray* input, NDArray* output, int sizeRow, int sizeCol,
-                       int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame),
+                          int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame),
                       SD_COMMON_TYPES);
 
-void extractPatches(sd::LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
+void extractPatches(LaunchContext* context, NDArray* images, NDArray* output, int sizeRow, int sizeCol,
                     int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame) {
   auto xType = images->dataType();
 

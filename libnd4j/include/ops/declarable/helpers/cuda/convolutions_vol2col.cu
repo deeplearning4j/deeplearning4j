@@ -25,6 +25,8 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {
@@ -32,18 +34,18 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 // vol [bS, iC, iD, iH, iW] is convoluted to col [bS, iC, kD, kH, kW, oD, oH, oW]
 template <typename T>
-static SD_KERNEL void vol2colCuda(const void* volume, const sd::LongType* volShapeInfo, void* columns,
-                                  const sd::LongType* colShapeInfo, const LongType sD, const LongType sH, const LongType sW,
+static SD_KERNEL void vol2colCuda(const void* volume, const LongType* volShapeInfo, void* columns,
+                                  const LongType* colShapeInfo, const LongType sD, const LongType sH, const LongType sW,
                                   const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW) {
   const T* vol = reinterpret_cast<const T*>(volume);
   T* col = reinterpret_cast<T*>(columns);
 
   __shared__ LongType colRank, volRank;
-  __shared__ sd::LongType colLen, iD, iH, iW, *sharedMem;
+  __shared__ LongType colLen, iD, iH, iW, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     volRank = 5;
     colRank = 8;
@@ -83,16 +85,18 @@ static SD_KERNEL void vol2colCuda(const void* volume, const sd::LongType* volSha
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void vol2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                const cudaStream_t* stream, const void* volume, const sd::LongType* volShapeInfo,
-                                void* columns, const sd::LongType* colShapeInfo, const int sD, const LongType sH,
+                                const cudaStream_t* stream, const void* volume, const LongType* volShapeInfo,
+                                void* columns, const LongType* colShapeInfo, const int sD, const LongType sH,
                                 const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                                 const LongType dW) {
   vol2colCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(volume, volShapeInfo, columns, colShapeInfo,
                                                                          sD, sH, sW, pD, pH, pW, dD, dH, dW);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"vol2colCudaLauncher failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& vol, NDArray& col, const LongType sD, const LongType sH,
+void ConvolutionUtils::vol2col(graph::Context& block, const NDArray& vol, NDArray& col, const LongType sD, const LongType sH,
                                const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                                const LongType dW) {
   PointersManager manager(block.launchContext(), "vol2col");

@@ -23,16 +23,17 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static SD_KERNEL void splitBufferToChuncks(T* buffer, sd::LongType* tempBuffer, sd::LongType numBlocks,
-                                           sd::LongType blockSize, sd::LongType length) {
+static SD_KERNEL void splitBufferToChuncks(T* buffer, LongType* tempBuffer, LongType numBlocks, LongType blockSize,
+                                           LongType length) {
   for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x * blockDim.x) {
     auto blockBuffer = buffer + b * numBlocks;
 
-    sd::LongType r = 1LL;
+    LongType r = 1LL;
     for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
       auto v = longBytes<T>(blockBuffer[e]);
       r = 31LL * r + v;
@@ -43,13 +44,13 @@ static SD_KERNEL void splitBufferToChuncks(T* buffer, sd::LongType* tempBuffer, 
 }
 
 template <typename T>
-static SD_KERNEL void internalHash(sd::LongType* tempBuffer, sd::LongType* tempResult, sd::LongType numBlocks,
-                                   sd::LongType blockSize, sd::LongType lastLength) {
+static SD_KERNEL void internalHash(LongType* tempBuffer, LongType* tempResult, LongType numBlocks, LongType blockSize,
+                                   LongType lastLength) {
   for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x * blockDim.x) {
     auto blockBuffer = tempBuffer + b * numBlocks;
-    sd::LongType r = 1LL;
+    LongType r = 1LL;
 
-    for (sd::LongType e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
+    for (LongType e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
       auto v = longBytes<T>(blockBuffer[e]);
       r = 31LL * r + v;
     }
@@ -58,8 +59,8 @@ static SD_KERNEL void internalHash(sd::LongType* tempBuffer, sd::LongType* tempR
   }
 }
 
-static SD_KERNEL void lastStep(sd::LongType* resultBuf, sd::LongType* tempBufferA, sd::LongType* tempResult,
-                               sd::LongType length, sd::LongType blockSize) {
+static SD_KERNEL void lastStep(LongType* resultBuf, LongType* tempBufferA, LongType* tempResult, LongType length,
+                               LongType blockSize) {
   if (threadIdx.x == 0) {
     if (length <= blockSize)
       *resultBuf = *tempBufferA;
@@ -77,12 +78,12 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
   NDArray::prepareSpecialUse({&result}, {&array});
   auto length = array.lengthOf();
   int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
-  auto tempA = NDArrayFactory::create<sd::LongType>('c', {numBlocks}, context);
-  auto tempB = NDArrayFactory::create<sd::LongType>('c', {numBlocks / blockSize + 1}, context);
+  auto tempA = NDArrayFactory::create<LongType>('c', {numBlocks}, context);
+  auto tempB = NDArrayFactory::create<LongType>('c', {numBlocks / blockSize + 1}, context);
 
   auto buffer = reinterpret_cast<T*>(array.specialBuffer());                  // bufferAsT<T>();
-  auto tempBufferA = reinterpret_cast<sd::LongType*>(tempA.specialBuffer());  // bufferAsT<sd::LongType>();
-  auto tempBufferB = reinterpret_cast<sd::LongType*>(tempB.specialBuffer());  // bufferAsT<sd::LongType>();
+  auto tempBufferA = reinterpret_cast<LongType*>(tempA.specialBuffer());  // bufferAsT<sd::LongType>();
+  auto tempBufferB = reinterpret_cast<LongType*>(tempB.specialBuffer());  // bufferAsT<sd::LongType>();
 
   dim3 launchDims = getHashCodeSplit(length,numBlocks);
   // default buffer is the first one, because it might be the last one in case of small arrays (< blockSize)
@@ -91,6 +92,7 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
 
   // we divide array into 32 element chunks, and store intermediate results once
   splitBufferToChuncks<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
+  DebugHelper::checkErrorCode(context->getCudaStream(),"splitBufferToChuncks failed");
 
   // we replace pointer with intermediate one, and repeat only one chunk left
   int iterationCount = 0;
@@ -99,8 +101,9 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
     numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
 
     dim3 internalLaunchDims = getHashCodeInternal(numBlocks);
-    internalHash<sd::LongType>
+    internalHash<LongType>
         <<<internalLaunchDims.y,internalLaunchDims.x, internalLaunchDims.z, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
+    DebugHelper::checkErrorCode(context->getCudaStream(),"internalHash failed");
 
     iterationCount++;
     // swapping buffers
@@ -114,8 +117,9 @@ void hashCode_(LaunchContext* context, NDArray& array, NDArray& result) {
   }
 
   dim3 lastDims = getLaunchDims("hashcode_last");
-  lastStep<<<lastDims.x, lastDims.y, lastDims.z, *stream>>>(reinterpret_cast<sd::LongType*>(result.specialBuffer()), tempBufferA, tempResult,
+  lastStep<<<lastDims.x, lastDims.y, lastDims.z, *stream>>>(reinterpret_cast<LongType*>(result.specialBuffer()), tempBufferA, tempResult,
                                    length, blockSize);
+  DebugHelper::checkErrorCode(context->getCudaStream(),"lastStep failed");
 
   NDArray::registerSpecialUse({&result}, {&array});
 }

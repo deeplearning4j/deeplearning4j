@@ -25,14 +25,15 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_KERNEL static void addBiasCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                  const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo,
+SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+                                  const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                   const bool isNCHW) {
   // bias [oC]
 
@@ -45,13 +46,13 @@ SD_KERNEL static void addBiasCuda(const void* vx, const sd::LongType* xShapeInfo
   const Y* y = reinterpret_cast<const Y*>(vy);
   X* z = reinterpret_cast<X*>(vz);
 
-  __shared__ sd::LongType rank, channelPosition, posOfNonUnityDim;
-  __shared__ sd::LongType len, *sharedMem;
+  __shared__ LongType rank, channelPosition, posOfNonUnityDim;
+  __shared__ LongType len, *sharedMem;
   __shared__ bool xzSameOffsets, xzAreSame;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     rank = shape::rank(xShapeInfo);  // xRank == zRank
     xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
@@ -65,7 +66,7 @@ SD_KERNEL static void addBiasCuda(const void* vx, const sd::LongType* xShapeInfo
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += blockDim.x * gridDim.x) {
+  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += blockDim.x * gridDim.x) {
     shape::index2coords(i, xShapeInfo, coords);
 
     const auto xOffsets = shape::getOffset(xShapeInfo, coords);
@@ -82,11 +83,13 @@ SD_KERNEL static void addBiasCuda(const void* vx, const sd::LongType* xShapeInfo
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void addBiasCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                const sd::LongType* zShapeInfo, const bool isNCHW) {
+                                const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                const void* vy, const LongType* yShapeInfo, void* vz,
+                                const LongType* zShapeInfo, const bool isNCHW) {
   addBiasCuda<X, Y>
   <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, isNCHW);
+  sd::DebugHelper::checkGlobalErrorCode("addbias  failed");
+
 }
 
 template <typename X, typename Y>
@@ -106,11 +109,15 @@ SD_KERNEL static void addBias2DCuda(const void* vx, const void* vy, void* vz, ui
 template <typename X, typename Y>
 static void addBias2DCudaLauncher(const cudaStream_t* stream, const void* vx, const void* vy, void* vz, uint32_t blocks,
                                   uint32_t length) {
-  addBias2DCuda<X, Y><<<256, 1024, 128, *stream>>>(vx, vy, vz, blocks, length);
+  dim3 dims = getAddBiasDims(2, 2);
+
+  addBias2DCuda<X, Y><<<dims.x, dims.y, dims.z, *stream>>>(vx, vy, vz, blocks, length);
+  sd::DebugHelper::checkGlobalErrorCode("addbias 2d  failed");
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+void addBias(graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
   PointersManager manager(block.launchContext(), "addBias");
   NDArray::prepareSpecialUse({&output}, {&input, &bias});
 

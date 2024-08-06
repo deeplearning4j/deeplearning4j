@@ -32,99 +32,79 @@
 #include "../solve.h"
 #include "../triangular_solve.h"
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static SD_KERNEL void oneOnDiagonalKernel(T* ioBuf, sd::LongType const* ioShape, sd::LongType const* tadShape,
-                                          sd::LongType const* tadOffsets, sd::LongType batchNum, sd::LongType rowNum) {
-  for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
-    auto matrixPart = ioBuf + tadOffsets[i];
-    for (auto j = threadIdx.x; j < rowNum; j += blockDim.x) {
-      sd::LongType pos[] = {j, j};
-      auto offset = shape::getOffset(tadShape, pos);
 
-      matrixPart[offset] = T(1.f);
-    }
-  }
-}
+
 
 template <typename T>
-static SD_KERNEL void restorePermutationsKernel(T* PBuf, sd::LongType const* PShapeInfo,
-                                                const LongType* permutationsBuf,
-                                                sd::LongType const* PTadShapeInfo, sd::LongType const* PTadSOffsets,
-                                                sd::LongType const* permutationsTadShapeInfo,
-                                                sd::LongType const* permutationsTadOffsets, sd::LongType batchNum,
-                                                sd::LongType rowNum) {
-  for (auto batch = blockIdx.x; batch < batchNum; batch += gridDim.x) {
-    auto permutations = permutationsBuf + permutationsTadOffsets[batch];
-    auto P = PBuf + PTadSOffsets[batch];
+static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
+                            NDArray* output) {
+  // TODO: note: this is the cpu implementation.
+  // it's not preferred but cuda has enough edge cases
+  // that I would prefer to have a working solution for now.
+  NDArray::preparePrimaryUse({output}, {leftInput, rightInput});
 
-    for (auto row = threadIdx.x; row < rowNum; row += blockDim.x) {
-      sd::LongType posZ[] = {row, permutations[row]};
-      auto zOffset = shape::getOffset(PTadShapeInfo, posZ);
-      P[zOffset] = T(1.f);
-    }
-  }
-}
-
-template <typename T>
-static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
-                                NDArray* output) {
-  NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
   // stage 1: LU decomposition batched
   auto leftOutput = leftInput->ulike();
+
   auto permuShape = rightInput->getShapeAsVector();
   permuShape.pop_back();
-  auto permutations = NDArrayFactory::create<sd::LongType>('c', permuShape, context);
-  helpers::lu(context, leftInput, &leftOutput, &permutations);
+  auto permutations = NDArrayFactory::create<LongType>('c', permuShape, context);
+  lu(context, leftInput, &leftOutput, &permutations);
   auto leftLower = leftOutput.dup();
+
   auto rightOutput = rightInput->ulike();
-  std::vector<sd::LongType> dims = {-2, -1};
-  auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), &dims);
-  auto stream = context->getCudaStream();
-  dim3 solveDims = getLaunchDims("solve");
-  oneOnDiagonalKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
-      leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad->specialShapeInfo(),
-      leftLowerTad->specialOffsets(), leftLowerTad->numberOfTads(), leftLower.sizeAt(-1));
-  auto P = leftOutput.ulike();
+
+  const std::vector<LongType> dims1 = {-2, -1};
+
+  auto P = leftInput->ulike();
   P.nullify();
-  auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), &dims);
-  auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
-  restorePermutationsKernel<T><<<solveDims.y, solveDims.x, solveDims.z, *stream>>>(
-      P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<sd::LongType>(),
-      PTad->specialShapeInfo(), PTad->specialOffsets(), permutationsTad->specialShapeInfo(),
-      permutationsTad->specialOffsets(), permutationsTad->numberOfTads(), permutations.sizeAt(-1));
-  P.tickWriteDevice();
+  auto PPart = P.allTensorsAlongDimension({-2, -1});
+  auto permutationsPart = permutations.allTensorsAlongDimension({-1});
+  for (auto batch = 0; batch < permutationsPart.size(); batch++) {
+    for (LongType row = 0; row < PPart[batch]->rows(); row++) {
+      std::vector<LongType> vec = {row, permutationsPart[batch]->t<LongType>(row)};
+      PPart[batch]->r<T>(row, permutationsPart[batch]->t<LongType>(row)) = T(1.f);
+    }
+  }
+
+  P.tickWriteHost();
+
   auto rightPart = rightInput->ulike();
-  MmulHelper::matmul(&P, rightInput, &rightPart, 0, 0);
 
-  // stage 2: triangularSolveFunctor for Lower with given b
-  helpers::triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
-  // stage 3: triangularSolveFunctor for Upper with output of previous stage
-  helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
-  NDArray::registerSpecialUse({output}, {leftInput, rightInput});
+  MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0,&rightPart);
+  ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
+  for (auto i = 0; i < leftLowerPart.size(); i++) {
+    for (LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
+  }
+  triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
+  triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
+  NDArray::registerPrimaryUse({output}, {leftInput, rightInput});
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-sd::Status solveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
+Status solveFunctor(LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool adjoint,
                         NDArray* output) {
   BUILD_SINGLE_SELECTOR(leftInput->dataType(), return solveFunctor_, (context, leftInput, rightInput, adjoint, output),
                         SD_FLOAT_TYPES);
 }
 
 template <typename T>
-static SD_KERNEL void adjointKernel(T* output, sd::LongType batchSize, sd::LongType rows, sd::LongType columns,
-                                    sd::LongType const* outputTads, sd::LongType const* outputOffsets) {
+static SD_KERNEL void adjointKernel(T* output, LongType batchSize, LongType rows, LongType columns,
+                                    LongType const* outputTads, LongType const* outputOffsets) {
   for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
     auto outputPart = output + outputOffsets[b];
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
       for (auto c = threadIdx.y; c < r; c += blockDim.y) {
-        sd::LongType zPos[] = {r, c};
-        sd::LongType xPos[] = {c, r};
+        LongType zPos[] = {r, c};
+        LongType xPos[] = {c, r};
         auto zIndex = shape::getOffset(outputTads, zPos);
         auto xIndex = shape::getOffset(outputTads, xPos);
         math::sd_swap(outputPart[zIndex], outputPart[xIndex]);
@@ -134,22 +114,26 @@ static SD_KERNEL void adjointKernel(T* output, sd::LongType batchSize, sd::LongT
 }
 
 template <typename T>
-static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+static void adjointMatrix_(LaunchContext* context, NDArray const* input, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input});
-  std::vector<sd::LongType> dims = {-2, -1};
-  auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),&dims);
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
+  const std::vector<LongType> dims1 = {-2, -1};
+  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), const_cast<LongType*>(dims1.data()), dims1.size());
   auto stream = context->getCudaStream();
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
   output->assign(input);
-  adjointKernel<T><<<128, 256, 256, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
-                                               outputTads->specialShapeInfo(), outputTads->specialOffsets());
+  dim3 solveDims = getLaunchDims("solve");
+
+  adjointKernel<T><<<solveDims.x,solveDims.y, solveDims.z, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
+                                                                      outputTads->specialShapeInfo(), outputTads->specialOffsets());
+
+  sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adjointKernel failed");
+
   NDArray::registerSpecialUse({output}, {input});
 }
 
-void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+void adjointMatrix(LaunchContext* context, NDArray const* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), SD_FLOAT_TYPES);
 }
 

@@ -61,15 +61,15 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
-  std::vector<sd::LongType> expectedOutputShape =
+  std::vector<LongType> expectedOutputShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
   REQUIRE_TRUE(output->isSameShape(expectedOutputShape), 0,
                "AVGPOOL3DNEW OP: wrong shape of output array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedOutputShape).c_str(), ShapeUtils::shapeAsString(output).c_str());
 
   if (!isNCDHW) {
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    output = new NDArray(output->permute({0, 4, 1, 2, 3}, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -79,15 +79,15 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
   ConvolutionUtils::pooling3d(block, *input, *output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, 1, extraParam0);
 
   if (!isNCDHW) {
-    delete input;
-    delete output;
+     delete input;
+     delete output;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(avgpool3dnew) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew) {
@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
   ConvolutionUtils::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW,
                                       isSameMode);
 
-  sd::LongType outputShape[5];
+  LongType outputShape[5];
 
   outputShape[0] = bS;
 
@@ -148,12 +148,12 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
   // TF DOC: A Tensor. Has the same type as input.
   auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 
 DECLARE_TYPES(avgpool3dnew_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -189,9 +189,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
   ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                              indIOioD, indWiC, indWoC, indWkD);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
-  std::vector<sd::LongType> expectedGradIShape =
+  std::vector<LongType> expectedGradIShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, iC, iD, iH, iW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2});
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "AVGPOOL3DNEW_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s "
@@ -203,9 +203,9 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
       ShapeUtils::shapeAsString(expectedGradIShape).c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
   if (!isNCDHW) {
-    input = new NDArray(input->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradI = new NDArray(gradI->permute({0, 4, 1, 2, 3}, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -222,13 +222,13 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
     delete gradO;
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(avgpool3dnew_bp) {
   auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;
 }
 

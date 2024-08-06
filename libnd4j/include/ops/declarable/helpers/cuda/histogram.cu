@@ -23,14 +23,16 @@
 #include <ops/declarable/helpers/histogram.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
 template <typename X, typename Z>
-static void SD_KERNEL histogramKernel(void *xBuffer, const sd::LongType *xShapeInfo, void *zBuffer,
-                                      const sd::LongType *zShapeInfo, void *allocationPointer, void *reductionPointer,
-                                      sd::LongType numBins, X *min_val, X *max_val) {
+static void SD_KERNEL histogramKernel(void *xBuffer, const LongType *xShapeInfo, void *zBuffer,
+                                      const LongType *zShapeInfo, void *allocationPointer, void *reductionPointer,
+                                      LongType numBins, X *min_val, X *max_val) {
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto dx = reinterpret_cast<X *>(xBuffer);
   auto result = reinterpret_cast<Z *>(zBuffer);
@@ -59,7 +61,7 @@ static void SD_KERNEL histogramKernel(void *xBuffer, const sd::LongType *xShapeI
     int idx = int((dx[e] - *min_val) / binSize);
     idx = math::sd_max(idx, 0);                 // atomicMax(&idx, 0);//atomicMax(&idx, 0);
     idx = math::sd_min(idx, int(numBins - 1));  // atomicMin(&idx, int(numBins - 1));
-    sd::math::atomics::sd_atomicAdd<Z>(&bins[idx], (Z)1);
+    math::atomics::sd_atomicAdd<Z>(&bins[idx], (Z)1);
   }
   __syncthreads();
   // at this point all bins in shared memory are calculated, so we aggregate them now via threadfence trick
@@ -113,9 +115,8 @@ static void SD_KERNEL histogramKernel(void *xBuffer, const sd::LongType *xShapeI
 }
 
 template <typename X, typename Z>
-static void histogram_(sd::LaunchContext *context, void *xBuffer, const sd::LongType *xShapeInfo,
-                       const sd::LongType *dxShapeInfo, void *zBuffer, const sd::LongType *zShapeInfo,
-                       sd::LongType numBins, void *min_val, void *max_val) {
+static void histogram_(LaunchContext *context, void *xBuffer, const LongType *xShapeInfo,
+                       const LongType *dxShapeInfo, void *zBuffer, const LongType *zShapeInfo, LongType numBins, void *min_val, void *max_val) {
   dim3 histogramDims = getHistogramDims(shape::length(xShapeInfo),numBins);
   int workspaceSize = histogramDims.x * numBins;
   auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
@@ -123,12 +124,13 @@ static void histogram_(sd::LaunchContext *context, void *xBuffer, const sd::Long
   histogramKernel<X, Z><<<histogramDims.x, histogramDims.y, histogramDims.z, *context->getCudaStream()>>>(
       xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.specialBuffer(), context->getReductionPointer(), numBins,
       reinterpret_cast<X *>(min_val), reinterpret_cast<X *>(max_val));
+  DebugHelper::checkErrorCode(context->getCudaStream(),"histogramKernel failed");
 
   cudaStreamSynchronize(*context->getCudaStream());
 }
 
-void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
-  sd::LongType numBins = output.lengthOf();
+void histogramHelper(LaunchContext *context, NDArray &input, NDArray &output) {
+  LongType numBins = output.lengthOf();
   NDArray::registerSpecialUse({&output}, {&input});
 
   auto min_val = input.reduceNumber(reduce::SameOps::Min);

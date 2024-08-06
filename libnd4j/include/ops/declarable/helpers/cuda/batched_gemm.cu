@@ -31,19 +31,19 @@
 #include <indexing/NDIndexUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 
-void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alphas,  NDArray *betas,
-                  int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc,
-                  sd::NDArray *all) {
-  sd::NDArray *allIndex = nullptr;
+void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas,
+                  int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc, NDArray *all) {
+  NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
-    sd::NDArray allLocal = NDIndexUtils::createAll();
+    NDArray allLocal = NDIndexUtils::createAll();
     all = &allLocal;
   }
 
@@ -53,7 +53,7 @@ void bgemm(sd::NDArray *a, sd::NDArray *b, sd::NDArray *c,  NDArray *alphas,  ND
   std::vector<NDArray *> keyInputs;
   std::vector<NDArray *> outputs;
 
-  sd::ops::create_view createView;
+  create_view createView;
 
   //add alpha and beta before the batch gemm, this just needs to be broadcasted
   inputs.push_back(alphas);
@@ -131,9 +131,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     pCbuffs[i] = pC[i]->specialBuffer();
   }
 
-
-
-  sd::LaunchContext* context = vA[0]->getContext();
+  LaunchContext * context = vA[0]->getContext();
   PointersManager manager(context, "helpers::bgemm cuda");
 
   const void** aBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pAbuffs.data(), bS * sizeof(void*)));
@@ -166,27 +164,27 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
 
   // choose appropriate cuda gemm api depending on data types
-  if (ABC && aType == DataType::DOUBLE) {
+  if (ABC && aType == DOUBLE) {
     double alpha = alphas->e<double>(0);
     double beta = betas->e<double>(0);
     status = cublasDgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const double**)aBuffers, lda,
                                 (const double**)bBuffers, ldb, &beta, (double**)cBuffers, ldc, bS);
-  } else if (ABC && aType == DataType::FLOAT32) {
+  } else if (ABC && aType == FLOAT32) {
     float alpha = alphas->e<float>(0);
     float beta = betas->e<float>(0);
     status = cublasSgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const float**)aBuffers, lda,
                                 (const float**)bBuffers, ldb, &beta, (float**)cBuffers, ldc, bS);
-  } else if (ABC && aType == DataType::HALF) {
+  } else if (ABC && aType == HALF) {
     __half alpha = alphas->e<float>(0);
     __half beta = betas->e<float>(0);
     status = cublasHgemmBatched(*handle, transAblas, transBblas, M, N, K, &alpha, (const __half**)aBuffers, lda,
                                 (const __half**)bBuffers, ldb, &beta, (__half**)cBuffers, ldc, bS);
-  } else if (AB && aType == DataType::INT8 && cType == DataType::FLOAT32) {
+  } else if (AB && aType == INT8 && cType == FLOAT32) {
     float alpha = alphas->e<float>(0);
     float beta = betas->e<float>(0);
     status = cublasGemmBatchedEx(*handle, transAblas, transBblas, M, N, K, &alpha, aBuffers, CUDA_R_8I, lda, bBuffers,
                                  CUDA_R_8I, ldb, &beta, cBuffers, CUDA_R_32F, ldc, bS, CUDA_R_32F, CUBLAS_GEMM_DEFAULT);
-  } else if (AB && aType == DataType::HALF && cType == DataType::FLOAT32) {
+  } else if (AB && aType == HALF && cType == FLOAT32) {
     float alpha = alphas->e<float>(0);
     float beta = betas->e<float>(0);
     status =

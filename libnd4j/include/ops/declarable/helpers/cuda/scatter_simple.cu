@@ -33,14 +33,15 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 template <typename X, typename Y>
-static SD_KERNEL void scatterSimpleKernel(void* vx, const sd::LongType* xTadShape, const sd::LongType* xTadOffsets,
-                                          sd::LongType xLength, sd::LongType numTads, const void* vi,
-                                          const sd::LongType* iShapeInfo, sd::LongType iLength, const void* vu,
-                                          const sd::LongType* uShapeInfo, sd::LongType uLength) {
+static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, const LongType* xTadOffsets,
+                                          LongType xLength, LongType numTads, const void* vi,
+                                          const LongType* iShapeInfo, LongType iLength, const void* vu,
+                                          const LongType* uShapeInfo, LongType uLength) {
   auto u = reinterpret_cast<const X*>(vu);
   auto indices = reinterpret_cast<const Y*>(vi);
 
@@ -54,8 +55,8 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const sd::LongType* xTadShap
 }
 
 template <typename X, typename Y>
-void scatterSimple_(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                    const NDArray& indices, const std::vector<sd::LongType>& dimensions) {
+void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
+                    const NDArray& indices, const std::vector<LongType>& dimensions) {
   auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(),dimensions.size(),dimensions.data());
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
 
@@ -68,10 +69,13 @@ void scatterSimple_(sd::LaunchContext* context, const int opId, NDArray& input, 
       input.specialBuffer(), packX->platformShapeInfo(), packX->platformOffsets(), xLength, packX->numberOfTads(),
       indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(),
       uLength);
+  sd::DebugHelper::checkErrorCode(context->getCudaStream(), "scatterUpdateCuda failed");
+
+
 }
 
-void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                   const NDArray& indices, const std::vector<sd::LongType>& dimensions) {
+void scatterSimple(LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
+                   const NDArray& indices, const std::vector<LongType>& dimensions) {
   auto xType = input.dataType();
   auto yType = indices.dataType();
 
