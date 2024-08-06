@@ -112,7 +112,7 @@ public class LayerVertex extends BaseGraphVertex {
         return ret;
     }
 
-    public void applyPreprocessorAndSetInput(LayerWorkspaceMgr workspaceMgr){
+    public void applyPreprocessorAndSetInput(LayerWorkspaceMgr workspaceMgr) {
         //Apply preprocessor
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
@@ -138,7 +138,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
-        if(!setLayerInput){
+        if(!setLayerInput) {
             applyPreprocessorAndSetInput(workspaceMgr);
         }
 
@@ -241,13 +241,13 @@ public class LayerVertex extends BaseGraphVertex {
         return true;
     }
 
-    public double computeScore(double r, boolean training, LayerWorkspaceMgr workspaceMgr){
-        if(!(layer instanceof IOutputLayer)){
+    public double computeScore(double r, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        if(!(layer instanceof IOutputLayer)) {
             throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
                     + layer.getClass().getSimpleName());
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
-        if(!setLayerInput){
+        if(!setLayerInput) {
             applyPreprocessorAndSetInput(LayerWorkspaceMgr.noWorkspaces()); //TODO
         }
 
@@ -255,13 +255,13 @@ public class LayerVertex extends BaseGraphVertex {
         return ol.computeScore(r, training, workspaceMgr);
     }
 
-    public INDArray computeScoreForExamples(double r, LayerWorkspaceMgr workspaceMgr){
-        if(!(layer instanceof IOutputLayer)){
+    public INDArray computeScoreForExamples(double r, LayerWorkspaceMgr workspaceMgr) {
+        if(!(layer instanceof IOutputLayer)) {
             throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
                     + layer.getClass().getSimpleName());
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
-        if(!setLayerInput){
+        if(!setLayerInput) {
             applyPreprocessorAndSetInput(workspaceMgr);
         }
 
