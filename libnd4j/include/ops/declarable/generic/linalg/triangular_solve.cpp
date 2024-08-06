@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
                b->rankOf());
 
   REQUIRE_TRUE(a->sizeAt(-1) == a->sizeAt(-2), 0,
-               "triangular_solve: The last two dimmensions should be equal, but %i and %i are given", a->sizeAt(-1),
+               "triangular_solve: The last two dimensions should be equal, but %i and %i are given", a->sizeAt(-1),
                a->sizeAt(-2));
   REQUIRE_TRUE(a->sizeAt(-1) == b->sizeAt(-2), 0,
                "triangular_solve: The last dimmension of left part should be equal to prelast of right part, but %i "
@@ -63,14 +63,14 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
   if (useAdjoint) {
     auto adjointA = a->ulike();
     helpers::adjointMatrix(block.launchContext(), a, isLower, &adjointA);
-    input = new NDArray(adjointA);  //.detach();
+    input = new NDArray(adjointA);
     isLower = !isLower;
   };
 
   auto res = helpers::triangularSolveFunctor(block.launchContext(), input, b, isLower, false, z);
   if (input != a) delete input;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(triangular_solve) {

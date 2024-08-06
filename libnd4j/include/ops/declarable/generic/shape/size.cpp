@@ -36,13 +36,13 @@ CUSTOM_OP_IMPL(size, 1, 1, false, 0, 0) {
   output->p(0, input->lengthOf());
   output->syncToDevice();
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SHAPE_FN(size) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
 
 DECLARE_TYPES(size) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
       ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
       ->allowOverride(true);
 }

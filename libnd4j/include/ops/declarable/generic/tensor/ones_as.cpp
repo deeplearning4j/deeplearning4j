@@ -32,20 +32,22 @@ CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
 
   output->assign(1);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(ones_as) {
   auto in = inputShape->at(0);
+  if(shape::isEmptyConst(in))
+    return SHAPELIST(in);
   auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
-  auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
+  auto shape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
   return SHAPELIST(shape);
 }
 
 DECLARE_TYPES(ones_as) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
-      ->setAllowedOutputTypes(sd::DataType::ANY)
+      ->setAllowedInputTypes(ANY)
+      ->setAllowedOutputTypes(ANY)
       ->setSameMode(false);
 }
 }  // namespace ops

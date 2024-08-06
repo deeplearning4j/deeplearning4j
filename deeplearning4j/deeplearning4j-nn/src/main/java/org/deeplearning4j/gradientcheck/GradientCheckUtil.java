@@ -40,9 +40,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.layers.LossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -62,25 +60,19 @@ import java.util.*;
 @Slf4j
 public class GradientCheckUtil {
 
-    private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
-                    Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
-                                    Activation.ELU.getActivationFunction().getClass(),
-                                    Activation.IDENTITY.getActivationFunction().getClass(),
-                                    Activation.RATIONALTANH.getActivationFunction().getClass(),
-                                    Activation.SIGMOID.getActivationFunction().getClass(),
-                                    Activation.SOFTMAX.getActivationFunction().getClass(),
-                                    Activation.SOFTPLUS.getActivationFunction().getClass(),
-                                    Activation.SOFTSIGN.getActivationFunction().getClass(),
-                                    Activation.TANH.getActivationFunction().getClass());
 
     private GradientCheckUtil() {}
 
+    static {
+        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+    }
 
-    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer){
+
+    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer) {
 
         ILossFunction lfn = null;
         IActivation afn = null;
-        if(outputLayer instanceof BaseOutputLayer){
+        if(outputLayer instanceof BaseOutputLayer) {
             BaseOutputLayer o = (BaseOutputLayer)outputLayer;
             lfn = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)o.layerConf()).getLossFn();
             afn = o.layerConf().getActivationFn();
@@ -99,6 +91,8 @@ public class GradientCheckUtil {
                     + " loss function to avoid spurious gradient check failures");
             ((LossBinaryXENT) lfn).setClipEps(0.0);
         }
+
+        log.info("Done setting clipping");
     }
 
     public enum PrintMode {
@@ -164,8 +158,14 @@ public class GradientCheckUtil {
     @Deprecated
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
-        return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
-                .exitOnFirstError(exitOnFirstError).input(input).labels(labels));
+        return checkGradients(new MLNConfig().net(mln)
+                .epsilon(epsilon)
+                .maxRelError(maxRelError)
+                .minAbsoluteError(minAbsoluteError)
+                .print(PrintMode.FAILURES_ONLY)
+                .exitOnFirstError(exitOnFirstError)
+                .input(input)
+                .labels(labels));
     }
 
     @Deprecated
@@ -174,21 +174,15 @@ public class GradientCheckUtil {
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
         Consumer<MultiLayerNetwork> c = null;
-        if(rngSeedResetEachIter != null){
-            c = new Consumer<MultiLayerNetwork>() {
-                @Override
-                public void accept(MultiLayerNetwork multiLayerNetwork) {
-                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
-                }
-            };
+        if(rngSeedResetEachIter != null) {
+            c = multiLayerNetwork -> Nd4j.getRandom().setSeed(rngSeedResetEachIter);
         }
 
         return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
-                        .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
+                .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
     }
 
     public static boolean checkGradients(MLNConfig c) {
-
         //Basic sanity checks on input:
         if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -200,8 +194,8 @@ public class GradientCheckUtil {
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         DataType netDataType = c.net.getLayerWiseConfigurations().getDataType();
@@ -210,7 +204,7 @@ public class GradientCheckUtil {
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != c.net.params().dataType()){
+        if(netDataType != c.net.params().dataType()) {
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
                     + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
@@ -227,35 +221,27 @@ public class GradientCheckUtil {
                     double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + n.getLayer().getLayerName() + "\"");
+                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                + n.getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
-                IActivation activation = bl.getActivationFn();
-                if (activation != null) {
-                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                        log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
-                                        + activation.getClass()
-                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                    }
-                }
+
             }
 
             if (n.getLayer().getIDropout() != null && c.callEachIter == null) {
                 throw new IllegalStateException("When gradient checking dropout, need to reset RNG seed each iter, or no" +
                         " dropout should be present during gradient checks - got dropout = "
-                                + n.getLayer().getIDropout() + " for layer " + layerCount);
+                        + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : c.net.getLayers()){
-            if(l instanceof IOutputLayer){
+        for(Layer l : c.net.getLayers()) {
+            if(l instanceof IOutputLayer) {
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
@@ -263,13 +249,13 @@ public class GradientCheckUtil {
         c.net.setInput(c.input);
         c.net.setLabels(c.labels);
         c.net.setLayerMaskArrays(c.inputMask, c.labelMask);
-        if(c.callEachIter != null){
+        if(c.callEachIter != null) {
             c.callEachIter.accept(c.net);
         }
         c.net.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = c.net.gradientAndScore();
 
-        Updater updater = UpdaterCreator.getUpdater(c.net);
+        Updater updater = c.net().createUpdater();
         updater.update(c.net, gradAndScore.getFirst(), 0, 0, c.net.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
@@ -282,7 +268,7 @@ public class GradientCheckUtil {
         val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         Map<String,Integer> stepSizeForParam;
-        if(c.subset){
+        if(c.subset) {
             stepSizeForParam = new HashMap<>();
             stepSizeForParam.put(paramNames.get(0), (int) Math.max(1, paramTable.get(paramNames.get(0)).length() / c.maxPerParam));
         } else {
@@ -291,9 +277,9 @@ public class GradientCheckUtil {
         for (int i = 1; i < paramEnds.length; i++) {
             val n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
-            if(c.subset){
+            if(c.subset) {
                 long ss = n / c.maxPerParam;
-                if(ss == 0){
+                if(ss == 0) {
                     ss = n;
                 }
 
@@ -304,7 +290,7 @@ public class GradientCheckUtil {
         }
 
         if(c.print == PrintMode.ALL) {
-            int i=0;
+            int i = 0;
             for (Layer l : c.net.getLayers()) {
                 Set<String> s = l.paramTable().keySet();
                 log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
@@ -318,19 +304,18 @@ public class GradientCheckUtil {
         DataSet ds = new DataSet(c.input, c.labels, c.inputMask, c.labelMask);
         int currParamNameIdx = 0;
 
-        if(c.excludeParams != null && !c.excludeParams.isEmpty()){
+        if(c.excludeParams != null && !c.excludeParams.isEmpty()) {
             log.info("NOTE: parameters will be skipped due to config: {}", c.excludeParams);
         }
 
         INDArray params = c.net.params(); //Assumption here: params is a view that we can modify in-place
-        for (long i = 0; i < nParams; ) {
+        for (long i = 0; i < nParams;) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
-            if(c.excludeParams != null && c.excludeParams.contains(paramName)){
-//                log.info("Skipping parameters for parameter name: {}", paramName);
+            if(c.excludeParams != null && c.excludeParams.contains(paramName)) {
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
@@ -338,14 +323,14 @@ public class GradientCheckUtil {
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
             params.putScalar(i, origValue + c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scorePlus = c.net.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scoreMinus = c.net.score(ds, true);
@@ -364,7 +349,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -374,27 +359,27 @@ public class GradientCheckUtil {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < c.minAbsoluteError) {
                     if(c.print == PrintMode.ALL || c.print == PrintMode.ZEROS && absError == 0.0) {
-                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                        log.info("MLN Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
                                 + ", numericalGrad= " + numericalGradient + ", relError= " + relError
                                 + "; absolute error = " + absError + " < minAbsoluteError = " + c.minAbsoluteError);
                     }
                 } else {
-                    log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                    log.info("MLN Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
 
             long step;
-            if(c.subset){
+            if(c.subset) {
                 step = stepSizeForParam.get(paramName);
-                if(i + step > paramEnds[currParamNameIdx]+1){
+                if(i + step > paramEnds[currParamNameIdx] + 1) {
                     step = paramEnds[currParamNameIdx]+1 - i;
                 }
             } else {
@@ -406,12 +391,12 @@ public class GradientCheckUtil {
 
         val nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
+                + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }
 
-    public static boolean checkGradients(GraphConfig c){
+    public static boolean checkGradients(GraphConfig c) {
         //Basic sanity checks on input:
         if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -422,13 +407,13 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid input arrays: expect " + c.net.getNumInputArrays() + " inputs");
         if (c.net.getNumOutputArrays() != c.labels.length)
             throw new IllegalArgumentException(
-                            "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
+                    "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
 
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         DataType netDataType = c.net.getConfiguration().getDataType();
@@ -437,7 +422,7 @@ public class GradientCheckUtil {
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != c.net.params().dataType()){
+        if(netDataType != c.net.params().dataType()) {
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
                     + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
@@ -458,23 +443,15 @@ public class GradientCheckUtil {
                     double lr = ((Sgd) u).getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                + lv.getLayerConf().getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
-                IActivation activation = bl.getActivationFn();
-                if (activation != null) {
-                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                        log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
-                                        + activation.getClass()
-                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                    }
-                }
+
             }
 
             if (lv.getLayerConf().getLayer().getIDropout() != null && c.callEachIter == null) {
@@ -485,8 +462,8 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : c.net.getLayers()){
-            if(l instanceof IOutputLayer){
+        for(Layer l : c.net.getLayers()) {
+            if(l instanceof IOutputLayer) {
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
@@ -546,14 +523,14 @@ public class GradientCheckUtil {
             double origValue = params.getDouble(i);
 
             params.putScalar(i, origValue + c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scorePlus = c.net.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - c.epsilon);
-            if(c.callEachIter != null){
+            if(c.callEachIter != null) {
                 c.callEachIter.accept(c.net);
             }
             double scoreMinus = c.net.score(mds, true);
@@ -572,7 +549,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -588,21 +565,21 @@ public class GradientCheckUtil {
                     }
                 } else {
                     log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
         }
 
         val nPass = nParams - totalNFailures;
         log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                        + totalNFailures + " failed. Largest relative error = " + maxError);
+                + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }
@@ -615,7 +592,7 @@ public class GradientCheckUtil {
      * NOTE: gradient checking pretrain layers can be difficult...
      */
     public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+                                                      double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
 
         LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();
 
@@ -628,8 +605,8 @@ public class GradientCheckUtil {
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                            + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
+                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                    + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:
@@ -638,7 +615,7 @@ public class GradientCheckUtil {
         layer.computeGradientAndScore(mgr);
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        Updater updater = layer.createUpdater();
         updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
@@ -696,7 +673,7 @@ public class GradientCheckUtil {
             //http://cs231n.github.io/neural-networks-3/#gradcheck
             //use mean centered
             double relError = Math.abs(backpropGradient - numericalGradient)
-                            / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
+                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
             if (backpropGradient == 0.0 && numericalGradient == 0.0)
                 relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
 
@@ -706,27 +683,27 @@ public class GradientCheckUtil {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < minAbsoluteError) {
                     log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                            + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
                 } else {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
                     if (exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
             } else if (print) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
-                                + numericalGradient + ", relError= " + relError);
+                        + numericalGradient + ", relError= " + relError);
             }
         }
 
         if (print) {
             val nPass = nParams - totalNFailures;
             log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
+                    + totalNFailures + " failed. Largest relative error = " + maxError);
         }
 
         return totalNFailures == 0;
