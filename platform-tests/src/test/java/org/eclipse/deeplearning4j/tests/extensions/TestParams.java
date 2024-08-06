@@ -17,15 +17,19 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
+package org.eclipse.deeplearning4j.tests.extensions;
 
-package org.deeplearning4j.nn.conf.layers;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import org.deeplearning4j.nn.conf.RNNFormat;
-
-/**
- * Interface to implement by the layers that provide RNN layer format information.
- */
-public interface IRnnLayerFormatInfo {
-
-    RNNFormat getRnnDataFormat();
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class TestParams {
+    private String testMethod;
+    private String testClass;
+    private String testDisplayName;
 }
