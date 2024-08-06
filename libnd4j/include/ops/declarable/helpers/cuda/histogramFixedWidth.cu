@@ -25,18 +25,19 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                              const sd::LongType* zShapeInfo, const X leftEdge, const X rightEdge) {
+SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                              const LongType* zShapeInfo, const X leftEdge, const X rightEdge) {
   const auto x = reinterpret_cast<const X*>(vx);
   auto z = reinterpret_cast<Z*>(vz);
 
-  __shared__ sd::LongType xLen, zLen, totalThreads, nbins;
+  __shared__ LongType xLen, zLen, totalThreads, nbins;
   __shared__ X binWidth, secondEdge, lastButOneEdge;
 
   if (threadIdx.x == 0) {
@@ -53,19 +54,19 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const sd::LongType
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < xLen; i += totalThreads) {
+  for (LongType i = tid; i < xLen; i += totalThreads) {
     const X value = x[shape::getIndexOffset(i, xShapeInfo)];
 
-    sd::LongType zIndex;
+    LongType zIndex;
 
     if (value < secondEdge)
       zIndex = 0;
     else if (value >= lastButOneEdge)
       zIndex = nbins - 1;
     else
-      zIndex = static_cast<sd::LongType>((value - leftEdge) / binWidth);
+      zIndex = static_cast<LongType>((value - leftEdge) / binWidth);
 
-    sd::math::atomics::sd_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo)], 1);
+    math::atomics::sd_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo)], 1);
   }
 }
 
@@ -80,10 +81,12 @@ SD_HOST static void histogramFixedWidthCudaLauncher(const cudaStream_t* stream, 
   histogramFixedWidthCuda<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                              output.specialBuffer(), output.specialShapeInfo(),
                                                              leftEdge, rightEdge);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream),"histogramKernel failed");
+
 }
 
 ////////////////////////////////////////////////////////////////////////
-void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+void histogramFixedWidth(LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
   // firstly initialize output with zeros
   output.nullify();
 

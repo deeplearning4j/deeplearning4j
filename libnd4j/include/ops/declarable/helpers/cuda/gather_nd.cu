@@ -33,24 +33,25 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // x - input, y - indices, z - output
 template <typename X, typename Y>
-SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                                   const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
+SD_KERNEL static void gatherNDCuda(const void *vx, const LongType *xShapeInfo, const void *vy,
+                                   const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo) {
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<X *>(vz);
 
   __shared__ int xRank, yRank, zRank, maxRank, yLastDim;
-  __shared__ sd::LongType zLen, totalThreads, *sharedMem;
+  __shared__ LongType zLen, totalThreads, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType *>(shmem);
+    sharedMem = reinterpret_cast<LongType *>(shmem);
 
     xRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
@@ -66,7 +67,7 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
 
   auto coord = sharedMem + threadIdx.x * maxRank;
 
-  sd::LongType *zCoordStart, *xCoordStart;
+  LongType *zCoordStart, *xCoordStart;
 
   if (yLastDim == xRank) {
     zCoordStart = coord;
@@ -82,7 +83,7 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+  for (LongType i = tid; i < zLen; i += totalThreads) {
     shape::index2coords(i, zShapeInfo, zCoordStart);
 
     const auto zOffset = shape::getOffset(zShapeInfo, zCoordStart);
@@ -98,7 +99,7 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
     if (yLastDim != xRank) zCoordStart[yRank - 1] = coordToRestore;
 
     // construct coordinates for x
-    for (sd::LongType j = 0; j < yLastDim; ++j) xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];  // last stride
+    for (LongType j = 0; j < yLastDim; ++j) xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];  // last stride
 
     const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
 
@@ -109,15 +110,17 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const sd::LongType *xShapeInf
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void gatherNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                 const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo,
-                                 const void *vy, const sd::LongType *yShapeInfo, void *vz,
-                                 const sd::LongType *zShapeInfo) {
+                                 const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo,
+                                 const void *vy, const LongType *yShapeInfo, void *vz,
+                                 const LongType *zShapeInfo) {
   gatherNDCuda<X, Y>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream),"gatherNDCuda failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
-void gatherND(sd::LaunchContext *context, NDArray &input, NDArray &indices, NDArray &output) {
+void gatherND(LaunchContext *context, NDArray &input, NDArray &indices, NDArray &output) {
   const int maxRank = sd::math::sd_max<int>(indices.rankOf(), sd::math::sd_max<int>(input.rankOf(), output.rankOf()));
 
 

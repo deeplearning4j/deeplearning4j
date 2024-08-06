@@ -28,12 +28,13 @@
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 
+
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void conv2dBP_(graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
                       const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
                       const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat) {
@@ -65,7 +66,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
 
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-  std::vector<sd::LongType> gradOaxesForDot;
+  std::vector<LongType> gradOaxesForDot;
 
   if (!isNCHW) {
     gradOaxesForDot = {0, 1, 2};                        // bS, oH, oW
@@ -75,7 +76,7 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
   }
 
-  std::vector<sd::LongType> wPermut, colPermut;
+  std::vector<LongType> wPermut, colPermut;
   if (0 == wFormat) {
     wPermut = {2, 0, 1, 3};
     colPermut = {2, 3, 1, 0, 4, 5};
@@ -87,16 +88,16 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
     colPermut = {2, 3, 1, 0, 4, 5};
   }
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  NDArray *columns = new NDArray(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
 
   // ----- calculation of gradW ----- //
   if (gradW) {
     auto ctx = block.launchContext();
-    helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
+    helpers::im2col(*ctx, *input, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
                     NDArrayFactory::create(
                         0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    sd::MmulHelper::tensorDot(
-        &columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
+    MmulHelper::tensorDot(
+        columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
         wPermut);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
   }
 
@@ -112,21 +113,23 @@ static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDA
   // [kH, kW, iC, oC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
   // [oC, iC, kH, kW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, bS, oH, oW]
   // [oC, kH, kW, iC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
-  sd::MmulHelper::tensorDot(
-      weights, gradO, &columns, {indWoC}, {indIOioC},
+  MmulHelper::tensorDot(
+      weights, gradO, columns, {indWoC}, {indIOioC},
       colPermut);  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
 
-  helpers::col2im(*block.launchContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
+  helpers::col2im(*block.launchContext(), *columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   if (!isNCHW) {
     delete input;
     delete gradI;
   }
+
+  delete columns;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
+void ConvolutionUtils::conv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights,
                                 const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                 NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                                 const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,

@@ -24,6 +24,7 @@
 #include <ops/declarable/helpers/lgamma.h>
 
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -33,15 +34,14 @@ namespace helpers {
 template <typename T>
 void lgamma_(NDArray& x, NDArray& z) {
   auto lgammaProc = LAMBDA_T(x_, dtype) {
-    return T(DataTypeUtils::fromT<T>() == DataType::DOUBLE
-                 ? ::lgamma(x_)
+    return T(DataTypeUtils::fromT<T>() == DOUBLE ? ::lgamma(x_)
                  : ::lgammaf(x_));
   };
 
   x.applyLambda(lgammaProc, z);
 }
 
-void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
+void lgamma(LaunchContext* context, NDArray& x, NDArray& z) {
   BUILD_SINGLE_SELECTOR(x.dataType(), lgamma_, (x, z), SD_FLOAT_TYPES);
 }
 

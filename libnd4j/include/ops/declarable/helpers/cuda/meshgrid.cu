@@ -29,12 +29,13 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_DEVICE void assign_(void *vx, sd::LongType *xShapeInfo, void *vz, sd::LongType *zShapeInfo) {
+static SD_DEVICE void assign_(void *vx, LongType *xShapeInfo, void *vz, LongType *zShapeInfo) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
@@ -46,7 +47,7 @@ static SD_DEVICE void assign_(void *vx, sd::LongType *xShapeInfo, void *vz, sd::
   auto xOrder = shape::order(xShapeInfo);
   auto zOrder = shape::order(zShapeInfo);
 
-  __shared__ sd::LongType length;
+  __shared__ LongType length;
 
   if (threadIdx.x == 0) {
     length = shape::length(xShapeInfo);
@@ -68,12 +69,12 @@ static SD_DEVICE void assign_(void *vx, sd::LongType *xShapeInfo, void *vz, sd::
 }
 
 template <typename T>
-static SD_KERNEL void meshgridKernel(int rank, void **outBuffers, sd::LongType **tadShapes, sd::LongType **tadOffsets,
-                                     sd::LongType *numTads, void **inBuffers, sd::LongType **inShapes) {
+static SD_KERNEL void meshgridKernel(int rank, void **outBuffers, LongType **tadShapes, LongType **tadOffsets,
+                                     LongType *numTads, void **inBuffers, LongType **inShapes) {
   // for all arrays
   for (int i = blockIdx.x; i < rank; i += gridDim.x) {
     // for all tads in this array
-    for (sd::LongType j = 0; j < numTads[i]; j++) {
+    for (LongType j = 0; j < numTads[i]; j++) {
       assign_<T>(inBuffers[i], inShapes[i], reinterpret_cast<T *>(outBuffers[i]) + tadOffsets[i][j], tadShapes[i]);
     }
     __syncthreads();
@@ -81,7 +82,7 @@ static SD_KERNEL void meshgridKernel(int rank, void **outBuffers, sd::LongType *
 }
 
 template <typename T>
-static void meshgrid_(sd::LaunchContext *context, const std::vector<NDArray *> &inArrs,
+static void meshgrid_(LaunchContext *context, const std::vector<NDArray *> &inArrs,
                       const std::vector<NDArray *> &outArrs, const bool swapFirst2Dims) {
   const int rank = inArrs.size();
   int inIndices[SD_MAX_RANK];
@@ -94,12 +95,12 @@ static void meshgrid_(sd::LaunchContext *context, const std::vector<NDArray *> &
   PointersManager pm(context, "meshgrid");
   std::vector<const void *> hInBuffers(rank);
   std::vector<void *> hOutBuffers(rank);
-  std::vector<const sd::LongType *> hInShapes(rank);
+  std::vector<const LongType *> hInShapes(rank);
 
-  std::vector<const sd::LongType *> hOutTadShapes(rank);
-  std::vector<const sd::LongType *> hOutTadOffsets(rank);
+  std::vector<const LongType *> hOutTadShapes(rank);
+  std::vector<const LongType *> hOutTadOffsets(rank);
 
-  std::vector<sd::LongType> hNumTads(rank);
+  std::vector<LongType> hNumTads(rank);
 
   for (int i = 0; i < rank; ++i) {
     hInBuffers[i] = inArrs[i]->specialBuffer();
@@ -119,25 +120,26 @@ static void meshgrid_(sd::LaunchContext *context, const std::vector<NDArray *> &
   auto dOutBuffers =
       reinterpret_cast<void **>(pm.replicatePointer(hOutBuffers.data(), hOutBuffers.size() * sizeof(void *)));
 
-  auto dInShapes = reinterpret_cast<sd::LongType **>(
-      pm.replicatePointer(hInShapes.data(), hInShapes.size() * sizeof(sd::LongType *)));
-  auto dOutTadShapes = reinterpret_cast<sd::LongType **>(
-      pm.replicatePointer(hOutTadShapes.data(), hOutTadShapes.size() * sizeof(sd::LongType *)));
-  auto dOutTadOffsets = reinterpret_cast<sd::LongType **>(
-      pm.replicatePointer(hOutTadOffsets.data(), hOutTadOffsets.size() * sizeof(sd::LongType *)));
+  auto dInShapes = reinterpret_cast<LongType **>(
+      pm.replicatePointer(hInShapes.data(), hInShapes.size() * sizeof(LongType *)));
+  auto dOutTadShapes = reinterpret_cast<LongType **>(
+      pm.replicatePointer(hOutTadShapes.data(), hOutTadShapes.size() * sizeof(LongType *)));
+  auto dOutTadOffsets = reinterpret_cast<LongType **>(
+      pm.replicatePointer(hOutTadOffsets.data(), hOutTadOffsets.size() * sizeof(LongType *)));
 
   auto dNumTads =
-      reinterpret_cast<sd::LongType *>(pm.replicatePointer(hNumTads.data(), hNumTads.size() * sizeof(sd::LongType)));
+      reinterpret_cast<LongType *>(pm.replicatePointer(hNumTads.data(), hNumTads.size() * sizeof(LongType)));
 
   dim3 launchDims = getLaunchDims("meshgrid");
   meshgridKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(rank, dOutBuffers, dOutTadShapes, dOutTadOffsets,
                                                                    dNumTads, dInBuffers, dInShapes);
+  sd::DebugHelper::checkErrorCode(context->getCudaStream(), "meshgridKernel failed");
 
   pm.synchronize();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void meshgrid(sd::LaunchContext *context, const std::vector<NDArray *> &inArrs, const std::vector<NDArray *> &outArrs,
+void meshgrid(LaunchContext *context, const std::vector<NDArray *> &inArrs, const std::vector<NDArray *> &outArrs,
               const bool swapFirst2Dims) {
   BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims),
                         SD_NUMERIC_TYPES);

@@ -24,17 +24,19 @@
 
 #include <memory>
 #include <vector>
+
+
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static sd::Status _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output,
-                                     int seed) {
-  return sd::Status::OK;
+static Status _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+  return Status::OK;
 }
 
-sd::Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
+Status randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return _randomCropFunctor, (context, input, shape, output, seed),
                         SD_FLOAT_TYPES);
 }

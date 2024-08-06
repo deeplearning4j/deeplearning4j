@@ -19,12 +19,13 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::LongType length, const bool isStrict,
+static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType length, const bool isStrict,
                                  void *reductionBuffer, bool *z) {
   auto x = reinterpret_cast<T *>(vx);
   auto reduction = reinterpret_cast<uint32_t *>(reductionBuffer);
@@ -51,7 +52,7 @@ static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::L
   __syncthreads();
 
   // aggregate sums in shared memory
-  for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+  for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
     if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
     __syncthreads();
   }
@@ -82,7 +83,7 @@ static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::L
 
       __syncthreads();
 
-      for (sd::LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+      for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
         if (threadIdx.x < activeThreads) shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
         __syncthreads();
       }
@@ -104,7 +105,7 @@ static SD_KERNEL void comparator(void *vx, const sd::LongType *xShapeInfo, sd::L
 }
 
 template <typename T>
-static void _compare_elem(sd::LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {
+static void _compare_elem(LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {
   auto z = NDArrayFactory::create<bool>(false, context);
 
   dim3 compareElemDims = getCompareElem(input->lengthOf());
@@ -113,12 +114,12 @@ static void _compare_elem(sd::LaunchContext *context, NDArray *input, bool isStr
       context->getReductionPointer(), reinterpret_cast<bool *>(z.specialBuffer()));
 
   z.tickWriteDevice();
-  sd::DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
+  DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
 
   output = z.e<bool>(0);
 }
 
-void compare_elem(sd::LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {
+void compare_elem(LaunchContext *context, NDArray *input, bool isStrictlyIncreasing, bool &output) {
   auto xType = input->dataType();
   input->syncToDevice();
 

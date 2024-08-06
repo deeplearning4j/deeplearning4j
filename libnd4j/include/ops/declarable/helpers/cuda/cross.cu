@@ -25,19 +25,20 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
-                                const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo) {
+SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+                                const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo) {
   __shared__ const T* x;
   __shared__ const T* y;
   __shared__ T* z;
-  __shared__ sd::LongType rank, *sharedMem;
-  __shared__ sd::LongType lenWithoutLastDim, totalThreads;
+  __shared__ LongType rank, *sharedMem;
+  __shared__ LongType lenWithoutLastDim, totalThreads;
 
   if (threadIdx.x == 0) {
     x = reinterpret_cast<const T*>(vx);
@@ -45,7 +46,7 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
     z = reinterpret_cast<T*>(vz);
 
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
     totalThreads = gridDim.x * blockDim.x;
 
     rank = shape::rank(xShapeInfo);
@@ -56,7 +57,7 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
   auto coords = sharedMem + threadIdx.x * rank;
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (sd::LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
+  for (LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
     shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
 
     coords[rank - 1] = 0;
@@ -67,14 +68,14 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
     const auto x0 = x[xOffset];
     const auto y0 = y[yOffset];
 
-    xOffset += shape::stride(const_cast<sd::LongType*>(xShapeInfo))[rank - 1];
-    yOffset += shape::stride(const_cast<sd::LongType*>(yShapeInfo))[rank - 1];
+    xOffset += shape::stride(const_cast<LongType*>(xShapeInfo))[rank - 1];
+    yOffset += shape::stride(const_cast<LongType*>(yShapeInfo))[rank - 1];
 
     const auto x1 = x[xOffset];
     const auto y1 = y[yOffset];
 
-    xOffset += shape::stride(const_cast<sd::LongType*>(xShapeInfo))[rank - 1];
-    yOffset += shape::stride(const_cast<sd::LongType*>(yShapeInfo))[rank - 1];
+    xOffset += shape::stride(const_cast<LongType*>(xShapeInfo))[rank - 1];
+    yOffset += shape::stride(const_cast<LongType*>(yShapeInfo))[rank - 1];
 
     const auto x2 = x[xOffset];
     const auto y2 = y[yOffset];
@@ -82,20 +83,22 @@ SD_KERNEL static void crossCuda(const void* vx, const sd::LongType* xShapeInfo, 
     auto zOffset = shape::getOffset(zShapeInfo, coords);
     z[zOffset] = x1 * y2 - x2 * y1;
 
-    zOffset += shape::stride(const_cast<sd::LongType*>(zShapeInfo))[rank - 1];
+    zOffset += shape::stride(const_cast<LongType*>(zShapeInfo))[rank - 1];
     z[zOffset] = x2 * y0 - x0 * y2;
 
-    zOffset += shape::stride(const_cast<sd::LongType*>(zShapeInfo))[rank - 1];
+    zOffset += shape::stride(const_cast<LongType*>(zShapeInfo))[rank - 1];
     z[zOffset] = x0 * y1 - x1 * y0;
   }
 }
 
 template <typename T>
 SD_HOST static void crossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                      const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                      const void* vy, const sd::LongType* yShapeInfo, void* vz,
-                                      const sd::LongType* zShapeInfo) {
+                                      const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                      const void* vy, const LongType* yShapeInfo, void* vz,
+                                      const LongType* zShapeInfo) {
   crossCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"crossCuda failed");
+
 }
 BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
                       (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -103,7 +106,7 @@ BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher,
                        const sd::LongType* yShapeInfo, void* vz, const sd::LongType* zShapeInfo),
                       SD_NUMERIC_TYPES);
 
-void crossBatched(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* z) {
+void crossBatched(LaunchContext* context, NDArray* x, NDArray* y, NDArray* z) {
   dim3 launchDims = getCross(x->lengthOf(),x->rankOf(),x->sizeAt(-1));
   PointersManager manager(context, "cross");
 

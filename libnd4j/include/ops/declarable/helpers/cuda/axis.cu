@@ -21,14 +21,15 @@
 //
 #include <ops/declarable/helpers/axis.h>
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
-void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
+void adjustAxis(LongType rank, NDArray* axisVector, std::vector<LongType>& output) {
   if(axisVector->isScalar()) {
     output.resize(1);
-    auto ca = axisVector->e<sd::LongType>(0);
+    auto ca = axisVector->e<LongType>(0);
     if (ca < 0)  // shift values on rank for negative vals
       ca += rank;
     output[0] = ca;
@@ -38,7 +39,7 @@ void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& o
   axisVector->tickReadDevice();  // mark input as read on device
   axisVector->syncToHost();      // sync to host
   for (int e = 0; e < axisVector->lengthOf(); e++) {
-    auto ca = axisVector->e<sd::LongType>(e);
+    auto ca = axisVector->e<LongType>(e);
     if (ca < 0)  // shift values on rank for negative vals
       ca += rank;
 
@@ -46,7 +47,7 @@ void adjustAxis(sd::LongType rank, NDArray* axisVector, std::vector<LongType>& o
   }
 }
 
-void adjustAxis(sd::LongType rank, std::vector<sd::LongType>& axisVector) {
+void adjustAxis(LongType rank, std::vector<LongType>& axisVector) {
   for (int e = 0; e < axisVector.size(); e++) {
     auto a = axisVector[e];
     if (a < 0)  // shift vals on rank for negative vals

@@ -23,13 +23,14 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void depthToSpaceKernel(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                         const sd::LongType *zShapeInfo, const int block_size, const bool isNHWC) {
+static SD_KERNEL void depthToSpaceKernel(const void *vx, const LongType *xShapeInfo, void *vz,
+                                         const LongType *zShapeInfo, const int block_size, const bool isNHWC) {
   auto input_ptr = reinterpret_cast<const T *>(vx);
   auto output_ptr = reinterpret_cast<T *>(vz);
 
@@ -92,15 +93,17 @@ static SD_KERNEL void depthToSpaceKernel(const void *vx, const sd::LongType *xSh
 }
 
 template <typename T>
-static void __depthToSpace(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+static void __depthToSpace(LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
                            bool isNHWC) {
   dim3 launchDims = getLaunchDims("depth_to_space");
   depthToSpaceKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
                                                                        output->specialBuffer(),
                                                                        output->specialShapeInfo(), block_size, isNHWC);
+  DebugHelper::checkGlobalErrorCode("depthToSpaceKernel failed");
+
 }
 
-void _depthToSpace(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _depthToSpace(LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
   auto xType = input.dataType();
 
   NDArray::prepareSpecialUse({output}, {&input});

@@ -28,15 +28,16 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void reverseTadKernel(const void* vinput, const sd::LongType* inputShape, void* voutput,
-                                       const sd::LongType* outputShape, const sd::LongType* inputTadShape,
-                                       const sd::LongType* inputTadOffsets, const sd::LongType* outputTadShape,
-                                       const sd::LongType* outputTadOffsets, uint64_t limit,
+static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* inputShape, void* voutput,
+                                       const LongType* outputShape, const LongType* inputTadShape,
+                                       const LongType* inputTadOffsets, const LongType* outputTadShape,
+                                       const LongType* outputTadOffsets, uint64_t limit,
                                        uint64_t numOfElemsToReverse, uint64_t numTads) {
   auto input = reinterpret_cast<const T*>(vinput);
   auto output = reinterpret_cast<T*>(voutput);
@@ -95,8 +96,8 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const sd::LongType* i
 }
 
 template <typename T>
-static SD_KERNEL void reverseArrayKernel(const void* input, const sd::LongType* inputShape, void* output,
-                                         const sd::LongType* outputShape, sd::LongType numOfElemsToReverse) {
+static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inputShape, void* output,
+                                         const LongType* outputShape, LongType numOfElemsToReverse) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
   __shared__ int linearStatus;
@@ -148,9 +149,9 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const sd::LongType* 
 }
 
 template <typename T>
-static void reverseTad(sd::LaunchContext* context, const NDArray* input, NDArray* output,
-                       const sd::LongType* inputTadShape, const sd::LongType* inputTadOffsets,
-                       const sd::LongType* outputTadShape, const sd::LongType* outputTadOffsets, uint64_t tadLength) {
+static void reverseTad(LaunchContext* context, const NDArray* input, NDArray* output,
+                       const LongType* inputTadShape, const LongType* inputTadOffsets,
+                       const LongType* outputTadShape, const LongType* outputTadOffsets, uint64_t tadLength) {
   auto stream = context->getCudaStream();
   dim3 launchDims = getLaunchDims("reverse");
 
@@ -158,47 +159,52 @@ static void reverseTad(sd::LaunchContext* context, const NDArray* input, NDArray
                                                    output->specialBuffer(), output->specialShapeInfo(), inputTadShape,
                                                    inputTadOffsets, outputTadShape, outputTadOffsets, input->lengthOf(),
                                                    tadLength, input->lengthOf() / tadLength);
+  sd::DebugHelper::checkErrorCode(stream, "reverseTadKernel failed");
+
 }
 
 template <typename T>
-static void reverseArray(sd::LaunchContext* context, const NDArray* input, NDArray* output,
-                         sd::LongType numOfElemsToReverse) {
+static void reverseArray(LaunchContext* context, const NDArray* input, NDArray* output, LongType numOfElemsToReverse) {
   auto stream = context->getCudaStream();
-  sd::LongType numOfReverse = numOfElemsToReverse;
+  LongType numOfReverse = numOfElemsToReverse;
   if (numOfElemsToReverse == 0) numOfReverse = input->lengthOf();
   dim3 launchDims = getLaunchDims("reverse");
 
   reverseArrayKernel<T><<<launchDims.y,launchDims.x, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                                                      output->specialBuffer(), output->specialShapeInfo(), numOfReverse);
+  sd::DebugHelper::checkErrorCode(stream, "reverseArrayKernel failed");
+
 }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+static void reverseSequence_(LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
   int posOfNonUnityDim = -1;
   seqLengths->syncToHost();
   auto stream = context->getCudaStream();
   dim3 launchDims = getLaunchDims("reverse");
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
-    sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(0);
+    LongType numOfElemsToReverse = seqLengths->e<LongType>(0);
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
       output->assign(input);
     else
       reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
           numOfElemsToReverse);
+    sd::DebugHelper::checkErrorCode(stream, "reverseArrayKernel failed");
+
   } else {
     if (seqDim > batchDim) --seqDim;
 
-    std::vector<sd::LongType> dim = {batchDim};
-    std::vector<sd::LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,dim.data());
+    std::vector<LongType> dim = {batchDim};
+    std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,dim.data());
 
     auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
     auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
 
     for (int i = 0; i < inSubArrsSet.size(); ++i) {
-      sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
+      LongType numOfElemsToReverse = seqLengths->e<LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
         outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
@@ -214,7 +220,7 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   }
 }
 
-void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
+void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
                      int seqDim, const int batchDim) {
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
@@ -227,9 +233,9 @@ void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
+void reverse(LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
 
   NDArray::prepareSpecialUse({output}, {input});
 
