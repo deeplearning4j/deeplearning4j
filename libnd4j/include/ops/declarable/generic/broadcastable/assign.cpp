@@ -21,6 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
+#include <helpers/StringUtils.h>
 #if NOT_EXCLUDED(OP_assign)
 
 #include <ops/declarable/CustomOperations.h>
@@ -30,37 +31,49 @@ namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(assign, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
+  auto y = block.width() < 2 ? x: INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  BROADCAST_CHECK_EMPTY(x, y, z);
+  // Check if any array is of string type
+  if (x->isS() || y->isS() || z->isS()) {
+    // Handle string broadcast at high level
+    StringUtils::broadcastStringAssign(x,z);
+    return Status::OK;
+  }
 
-  auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), x, y, z);
-  if (tZ == nullptr)
-    return sd::Status::KERNEL_FAILURE;
-  else if (tZ != z) {
+  NDArray *castedX = x->dataType() == z->dataType() ? x : new NDArray(x->cast(z->dataType()));
+  NDArray *castedY = y->dataType() == z->dataType() ? y : new NDArray(y->cast(z->dataType()));
+
+  ArrayOptions::validateSingleDataType(ArrayOptions::dataType(castedX->shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::extra(castedY->shapeInfo()));
+  ArrayOptions::validateSingleDataType(ArrayOptions::extra(z->shapeInfo()));
+
+  auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Assign(), castedX, castedY, z);
+
+  if (tZ != z) {
     OVERWRITE_RESULT(tZ);
   }
 
-  return sd::Status::OK;
+
+  return Status::OK;
 }
 DECLARE_SYN(set, assign);
 DECLARE_SYN(copy, assign);
 
 DECLARE_TYPES(assign) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedInputTypes(1, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT);
+      ->setAllowedInputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedInputTypes(1, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL})
+      ->setAllowedOutputTypes(0, {ALL_INTS,ALL_FLOATS,ALL_STRINGS,BOOL});
 }
 
 DECLARE_TYPES(assign_bp) {
-  getOpDescriptor()->setAllowedInputTypes(DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_INTS,ALL_FLOATS,ALL_STRINGS});
 }
 
 CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
+  auto y = block.width() < 2 ? new NDArray(x->dup(x->ordering(), false)) : INPUT_VARIABLE(1);
   auto epsNext = INPUT_VARIABLE(2);
 
   auto gradX = OUTPUT_VARIABLE(0);
@@ -71,20 +84,20 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   if (x->isSameShape(y)) {
     gradY->assign(epsNext);
   } else if (y->isScalar()) {
-    auto sum = epsNext->reduceNumber(sd::reduce::Sum);
+    auto sum = epsNext->reduceNumber(reduce::Sum);
     gradY->assign(sum);
   } else {
     // broadcastable
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
-      auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, &axisY);
+      auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
       gradY->assign(epsNext);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(assign_bp) {
@@ -95,8 +108,8 @@ DECLARE_SHAPE_FN(assign_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  sd::LongType *shapeE;
-  sd::LongType *shapeG;
+  LongType *shapeE;
+  LongType *shapeG;
 
   COPY_SHAPE(x, shapeE);
   COPY_SHAPE(y, shapeG);

@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(split_string, 2, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto delim = INPUT_VARIABLE(1);
 
-  return sd::Status::OK;
+  return Status::OK;
 };
 
 DECLARE_SHAPE_FN(split_string) {

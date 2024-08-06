@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
 
   helpers::trace(block.launchContext(), *input, *output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(trace) {
@@ -52,7 +52,7 @@ DECLARE_SHAPE_FN(trace) {
                inShapeInfo[0]);
   const int rank = inShapeInfo[0] - 2;
 
-  sd::LongType* outShapeInfo(nullptr);
+  LongType* outShapeInfo(nullptr);
   ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
 
   outShapeInfo[0] = rank;
@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(trace) {
   auto desc = new ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
-  delete desc;
+  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return SHAPELIST(result);
 }
 

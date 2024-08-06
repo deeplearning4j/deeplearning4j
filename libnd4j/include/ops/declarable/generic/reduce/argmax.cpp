@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if (output->isEmpty()) return sd::Status::OK;
+  if (output->isEmpty() || output->lengthOf() < 1) return Status::OK;
 
   auto axis = *block.getIArguments();
 
@@ -55,40 +55,45 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(argmax) {
-  std::vector<sd::LongType> dims;
+  auto firstInputShape = inputShape->at(0);
+  if(shape::isScalar(firstInputShape)) {
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
+  }
+  std::vector<LongType> dims;
 
   if (block.width() == 1) {
     dims = *block.getIArguments();
   } else {
-    auto y = INPUT_VARIABLE(1)->cast(sd::DataType::INT64);
-    dims = y.template asVectorT<sd::LongType>();
+    auto y = INPUT_VARIABLE(1)->cast(INT64);
+    dims = y.template asVectorT<LongType>();
   }
 
   auto keepDims = block.numB() ? B_ARG(0) : false;
-  auto dtype = block.numD() ? D_ARG(0) : DataType::INT64;
+  auto dtype = block.numD() ? D_ARG(0) : INT64;
 
   // we're resolving negative axis here
   helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
-  auto in = inputShape->at(0);
+
+
   for (auto d : dims) {
     // we have special case here
-    if (d == sd::DataTypeUtils::max<int>()) continue;
+    if (d == DataTypeUtils::max<int>()) continue;
 
-    REQUIRE_TRUE(d < shape::rank(in), 0, "ArgMax: axis can't be above rank")
-    REQUIRE_TRUE(in[d + 1] != 0, 0, "ArgMax: you can't reduce along axis with 0 in shape");
+    REQUIRE_TRUE(d < shape::rank(firstInputShape), 0, "ArgMax: axis can't be above rank")
+    REQUIRE_TRUE(firstInputShape[d + 1] != 0, 0, "ArgMax: you can't reduce along axis with 0 in shape");
   }
 
   // special case - output is scalar
-  if (dims.empty() || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
+  if (dims.empty() || (dims.size() == 1 && dims.at(0) == DataTypeUtils::max<int>())) {
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
   }
 
-  return SHAPELIST(
-      ShapeUtils::evalReduceShapeInfo('c', &dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));
+  auto ret = ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace());
+  return SHAPELIST(ret);
 }
 }  // namespace ops
 }  // namespace sd

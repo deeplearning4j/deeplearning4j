@@ -24,11 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,15 +62,15 @@ public class StochasticGradientDescent extends BaseOptimizer {
         //But setParams should be a no-op for MLN and CG
         model.setParams(params);
 
-        int iterationCount = BaseOptimizer.getIterationCount(model);
-        int epochCount = BaseOptimizer.getEpochCount(model);
+        int iterationCount = NetworkUtils.getIterationCount(model);
+        int epochCount = NetworkUtils.getEpochCount(model);
         try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             for (TrainingListener listener : trainingListeners)
                 listener.iterationDone(model, iterationCount, epochCount);
         }
 
-        BaseOptimizer.incrementIterationCount(model, 1);
-        applyConstraints(model);
+        NetworkUtils.incrementIterationCount(model, 1);
+        NetworkUtils.applyConstraints(model);
         return true;
     }
 
