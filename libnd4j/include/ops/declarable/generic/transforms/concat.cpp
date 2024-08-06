@@ -119,10 +119,6 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   helpers::concat(block.launchContext(), nonEmptyArrs, *output, axis);
 
-  /*
-  for(int i = 0; i < arrsToDelete.size(); i++) {
-    delete nonEmptyArrs[arrsToDelete[i]];
-  }*/
 
   return Status::OK;
 }
