@@ -41,12 +41,12 @@ CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
 
   STORE_RESULT(output);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SYN(filllike, fill_as);
 DECLARE_SYN(fill_like, fill_as);
 
-DECLARE_TYPES(fill_as) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(fill_as) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 

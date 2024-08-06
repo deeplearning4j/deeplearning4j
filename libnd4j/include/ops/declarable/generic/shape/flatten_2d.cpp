@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
   // Special case: empty.reshape(<other empty shape>) -> return empty
   if (x->isEmpty()) {
     REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
-    return sd::Status::OK;  // No op
+    return Status::OK;  // No op
   }
 
   REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
@@ -49,11 +49,11 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
 
   z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(flatten_2d) {
-  getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY)->setAllowedInputTypes(1, {ALL_INTS})->setSameMode(true);
 }
 
 DECLARE_SHAPE_FN(flatten_2d) {
@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(flatten_2d) {
     axis += x->rankOf();
   }
   std::vector<int> reshapeArgs;
-  std::vector<sd::LongType> shapeNew;
+  std::vector<LongType> shapeNew;
   auto firstDim = 1;
   auto lastDim = 1;
   for (int i = 0; i < axis; i++) {

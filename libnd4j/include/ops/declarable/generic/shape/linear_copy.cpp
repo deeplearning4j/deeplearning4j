@@ -17,38 +17,38 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 29/10/17.
+// @author Adam Gibson
 //
 
 #include <system/op_boilerplate.h>
-#if NOT_EXCLUDED(OP_reshapeas)
+#if NOT_EXCLUDED(OP_broadcast_to)
 
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/shape.h>
 
 namespace sd {
 namespace ops {
 
+CUSTOM_OP_IMPL(linear_copy, 2, 1, false, 0, 0) {
+  auto output = OUTPUT_VARIABLE(0);
+  auto input = INPUT_VARIABLE(0);
+  DataBuffer::memcpy(*output->dataBuffer(), *input->dataBuffer());
+  return Status::OK;
+}
+
+DECLARE_TYPES(linear_copy) { getOpDescriptor()->setAllowedInputTypes(ANY); }
+
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(reshapeas, 2, 1, false, 0, 0) {
-  auto x = INPUT_VARIABLE(0);
-  auto y = INPUT_VARIABLE(1);
+DECLARE_SHAPE_FN(linear_copy) {
+  if(block.outputWidth() > 0)
+    return SHAPELIST(OUTPUT_VARIABLE(0)->shapeInfo());
+  auto input = INPUT_VARIABLE(0);
+  auto shape = INPUT_VARIABLE(1);
+  ShapeDescriptor *desc = new ShapeDescriptor(input->dataType(), shape::order(input->shapeInfo()), shape->getBufferAsVector<LongType>());
+  auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  return SHAPELIST(outShapeInfo);
 
-  auto z = OUTPUT_VARIABLE(0);
-
-  if (x->reshapei(y->ordering(), y->getShapeAsVector())) {
-    z->assign(x);
-    return Status::OK;
-  }
-
-  return Status::BAD_INPUT;
-}
-DECLARE_SYN(reshape_as, reshapeas);
-
-DECLARE_SHAPE_FN(reshapeas) {
-  return SHAPELIST(ShapeBuilders::copyShapeInfo(INPUT_VARIABLE(1)->shapeInfo(), false, block.workspace()));
 }
 
-DECLARE_TYPES(reshapeas) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 
