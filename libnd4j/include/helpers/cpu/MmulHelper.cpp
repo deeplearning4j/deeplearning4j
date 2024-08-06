@@ -39,11 +39,10 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
   const T1* A = vA->bufferAsT<T1>();
   const T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
-
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
 
-  const bool betaPersent = beta;
+  const bool betaPresent = beta;
 
   const sd::LongType* aShapeInfo = vA->shapeInfo();
   const sd::LongType* bShapeInfo = vB->shapeInfo();
@@ -52,21 +51,22 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
   const int aRank = vA->rankOf();
   const int bRank = vB->rankOf();
   const int cRank = vC->rankOf();
-
   const sd::LongType cLen = vC->lengthOf();
-
   const int K = vA->sizeAt(aKaxis);
+
 
   auto func = PRAGMA_THREADS_FOR {
     std::vector<sd::LongType> aCoords(2), bCoords(2), cCoords(2);
 
-    for (auto i = start; i < stop; ++i) {
+    for (auto i = start; i < stop; i++) {
       // evaluate C coordinates
       shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
+
 
       // evaluate A coordinates
       aCoords[aMaxis] = cCoords[cMaxis];
       aCoords[aKaxis] = 0;
+
 
       // evaluate B coordinates
       bCoords[bKaxis] = 0;
@@ -75,23 +75,24 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
 
+
       T3 val = A[aOffset] * B[bOffset];  // first iteration
 
-      for (int j = 1; j < K; ++j) {  // rest iterations
+      for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];
         bOffset += shape::stride(bShapeInfo)[bKaxis];
-        val = val + A[aOffset] * B[bOffset];
+        val += A[aOffset] * B[bOffset];
       }
 
       auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
-
-      if (betaPersent)
+      if (betaPresent) {
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
-      else
+      } else {
+
         C[cOffset] = alphaZ * val;
+      }
     }
   };
-
   samediff::Threads::parallel_tad(func, 0, cLen);
 }
 
@@ -171,35 +172,40 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
-  if (A->dataType() != B->dataType())
-    throw datatype_exception::build("mmulMxM expects all data types to be the same", A->dataType(), B->dataType());
-
-  if (C != nullptr && A->dataType() != C->dataType()) {
-    std::string errorMessage;
-    errorMessage = "mmulMxM expects all data types to be the same";
-    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
-    errorMessage += "B: " + DataTypeUtils::asString(B->dataType());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of A array is not equal 2 !");
-  if (B->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxM: rank of B array is not equal 2 !");
-
   const auto M = A->sizeAt(0);
   const auto K = A->sizeAt(1);
   const auto N = B->sizeAt(1);
 
-  if (C != nullptr && C->rankOf() != 2)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: rank of C array is not equal 2 !");
-  if (B->sizeAt(0) != K) THROW_EXCEPTION("MmulHelper::mmulMxM: B array has wrong number of rows !");
-  if (C != nullptr && C->sizeAt(0) != M)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: C array has wrong number of rows !");
-  if (C != nullptr && C->sizeAt(1) != N)
-    THROW_EXCEPTION("MmulHelper::mmulMxM: C array has wrong number of columns !");
+  if (C != nullptr && C->rankOf() != 2) {
+    std::string errorMessage = "MmulHelper::mmulMxM: rank of C array should be equal to 2, but got " +
+                               std::to_string(C->rankOf()) + ". ";
+    errorMessage += "C datatype: " + DataTypeUtils::asString(C->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (B->sizeAt(0) != K) {
+    std::string errorMessage = "MmulHelper::mmulMxM: B array should have the same number of rows as A has columns. ";
+    errorMessage += "A columns: " + std::to_string(K) + ", ";
+    errorMessage += "B rows: " + std::to_string(B->sizeAt(0));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (C != nullptr && C->sizeAt(0) != M) {
+    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of rows as A. ";
+    errorMessage += "A rows: " + std::to_string(M) + ", ";
+    errorMessage += "C rows: " + std::to_string(C->sizeAt(0));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
-  if (C == nullptr)
+  if (C != nullptr && C->sizeAt(1) != N) {
+    std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of columns as B. ";
+    errorMessage += "B columns: " + std::to_string(N) + ", ";
+    errorMessage += "C columns: " + std::to_string(C->sizeAt(1));
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  if (C == nullptr) {
     C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
-
+  }
   if (C->isEmpty()) return C;
 
   const auto aType = A->dataType();
@@ -212,7 +218,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  if (!typeFloat && !typeDouble) {
+  if (!typeFloat && !typeDouble || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     std::vector<NDArray*> toDelete;
@@ -227,17 +233,17 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     bool cNcont = N == 1 || C->strideAt(1) == 1;
 
     if (!aMcont && !aKcont) {
-      pA = new NDArray(A->dup('f'));
+      pA = new NDArray(A->dup('f', false));
       toDelete.push_back(pA);
       aMcont = true;
     }
     if (!bKcont && !bNcont) {
-      pB = new NDArray(B->dup('f'));
+      pB = new NDArray(B->dup('f', false));
       toDelete.push_back(pB);
       bKcont = true;
     }
     if (!cMcont && !cNcont) {
-      pC = new NDArray(C->dup('f'));
+      pC = new NDArray(C->dup('f', false));
       toDelete.push_back(pC);
       cMcont = true;
     }
@@ -263,12 +269,14 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
                                         pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double)beta,
                                         pC->bufferAsT<double>(), ldc);
     }
+
     if (pC != C) {
       C->assign(pC);
-      delete pC;
     }
-    if (pA != A) delete pA;
-    if (pB != B) delete pB;
+
+    for (auto* arr : toDelete) {
+      delete arr;
+    }
   }
 
   return C;
@@ -278,12 +286,20 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 // MXN x N = M
 NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
                              const char outOrder) {
-  if (X->dataType() != A->dataType())
-    throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), X->dataType());
-
-  if (Y != nullptr && X->dataType() != Y->dataType())
-    throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), Y->dataType());
-
+  if (X->dataType() != A->dataType()) {
+    std::string errorMessage;
+    errorMessage = "mmulMxV expects all data types to be the same";
+    errorMessage += "A: " + DataTypeUtils::asString(A->dataType());
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (Y != nullptr && X->dataType() != Y->dataType()) {
+    std::string errorMessage;
+    errorMessage = "mmulMxV expects all data types to be the same";
+    errorMessage += "X: " + DataTypeUtils::asString(X->dataType());
+    errorMessage += "Y: " + DataTypeUtils::asString(Y->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   sd::LongType xLenDim, yLenDim(0);
 
   if (A->rankOf() != 2) THROW_EXCEPTION("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
@@ -317,7 +333,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
 
-  if (!typeDouble && !typeFloat) {
+  if (!typeDouble && !typeFloat || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));
@@ -326,7 +342,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
     bool aNcont = N == 1 || A->strideAt(1) == 1;
 
     if (!aMcont && !aNcont) {
-      pA = new NDArray(A->dup('f'));
+      pA = new NDArray(A->dup('f', false));
       aMcont = true;
     }
     const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;
@@ -342,7 +358,6 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
                                         (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
     }
 
-    if (pA != A) delete pA;
   }
 
   return Y;
@@ -351,23 +366,49 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
 NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
-  if (X->dataType() != Y->dataType())
-    throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Y->dataType());
-
-  if (Z != nullptr && X->dataType() != Z->dataType())
-    throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Z->dataType());
-
+  if (X->dataType() != Y->dataType()) {
+    std::string errorMessage = "Dot expects all data types to be the same. ";
+    errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
+    errorMessage += "Y datatype: " + DataTypeUtils::asString(Y->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (Z != nullptr && X->dataType() != Z->dataType()) {
+    std::string errorMessage = "Dot expects all data types to be the same. ";
+    errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
+    errorMessage += "Z datatype: " + DataTypeUtils::asString(Z->dataType());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   sd::LongType xLenDim(0), yLenDim(0);
 
-  if (!shape::isCommonVector(X->shapeInfo(), xLenDim))
-    THROW_EXCEPTION("MmulHelper::dot: X array must be vector !");
-  if (!shape::isCommonVector(Y->shapeInfo(), yLenDim))
-    THROW_EXCEPTION("MmulHelper::dot: Y array must be vector !");
-  if (Z != nullptr && !Z->isScalar()) THROW_EXCEPTION("MmulHelper::dot: Z array must be scalar !");
+  if (!shape::isCommonVector(X->shapeInfo(), xLenDim)) {
+    std::string errorMessage = "MmulHelper::dot: X array must be a vector, but its shape is: ";
+    for (int i = 0; i < X->rankOf(); ++i) {
+      errorMessage += std::to_string(X->sizeAt(i));
+      if (i < X->rankOf() - 1) errorMessage += "x";
+    }
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (!shape::isCommonVector(Y->shapeInfo(), yLenDim)) {
+    std::string errorMessage = "MmulHelper::dot: Y array must be a vector, but its shape is: ";
+    for (int i = 0; i < Y->rankOf(); ++i) {
+      errorMessage += std::to_string(Y->sizeAt(i));
+      if (i < Y->rankOf() - 1) errorMessage += "x";
+    }
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  if (Z != nullptr && Z->lengthOf() > 1) {
+    std::string errorMessage = "MmulHelper::dot: Z array must be a scalar, but it has length " + std::to_string(Z->lengthOf());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   const auto length = X->lengthOf();
 
-  if (Y->lengthOf() != length) THROW_EXCEPTION("MmulHelper::dot: lengths of input vectors are different !");
+  if (Y->lengthOf() != length) {
+    std::string errorMessage = "MmulHelper::dot: lengths of input vectors are different! ";
+    errorMessage += "X length: " + std::to_string(X->lengthOf()) + ", ";
+    errorMessage += "Y length: " + std::to_string(Y->lengthOf());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   if (Z == nullptr)
     Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
@@ -381,7 +422,6 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), SD_NUMERIC_TYPES);
-
 
   return Z;
 }
@@ -461,29 +501,46 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-// [bS,M,K] x [bS,K,N] = [bS,M,N]
-// [bS,M,K] x    [K,N] = [bS,M,N]
-//    [M,K] x [bS,K,N] = [bS,M,N]
-// bS could stand for several axes
 NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
   const sd::LongType aRank = A->rankOf();
   const sd::LongType bRank = B->rankOf();
 
+  auto shapeToString = [](const NDArray* arr) {
+    std::string shape = "[";
+    for (int i = 0; i < arr->rankOf(); ++i) {
+      shape += std::to_string(arr->sizeAt(i));
+      if (i < arr->rankOf() - 1) shape += ",";
+    }
+    shape += "]";
+    return shape;
+  };
+
   // input ranks validation
   if (aRank > bRank && bRank != 2) {
-    THROW_EXCEPTION("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
+    std::string errorMessage = "MmulHelper::mmulNxN: rank of B array should be equal 2, but got " + std::to_string(bRank) +
+                               "! A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
+    THROW_EXCEPTION(errorMessage.c_str());
   } else if (bRank > aRank && aRank != 2) {
-    THROW_EXCEPTION("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
+    std::string errorMessage = "MmulHelper::mmulNxN: rank of A array should be equal 2, but got " + std::to_string(aRank) +
+                               "! A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
+    THROW_EXCEPTION(errorMessage.c_str());
   } else if (aRank == bRank) {
     for (int i = 0; i < aRank - 2; ++i)
-      if (A->sizeAt(i) != B->sizeAt(i))
-        THROW_EXCEPTION(
-            "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
+      if (A->sizeAt(i) != B->sizeAt(i)) {
+        std::string errorMessage = "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication! "
+                                   "Mismatch at dimension " + std::to_string(i) + ": A[" + std::to_string(i) + "] = " +
+                                   std::to_string(A->sizeAt(i)) + ", B[" + std::to_string(i) + "] = " + std::to_string(B->sizeAt(i)) +
+                                   ". Full shapes: A " + shapeToString(A) + ", B " + shapeToString(B);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
   }
 
   if (A->sizeAt(-1) != B->sizeAt(-2)) {
-    THROW_EXCEPTION("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
+    std::string errorMessage = "MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication! "
+                               "A's last dimension (" + std::to_string(A->sizeAt(-1)) + ") must match B's second-to-last dimension (" +
+                               std::to_string(B->sizeAt(-2)) + "). Full shapes: A " + shapeToString(A) + ", B " + shapeToString(B);
+    THROW_EXCEPTION(errorMessage.c_str());
   }
   // validation of C array
   std::vector<sd::LongType> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
@@ -491,8 +548,16 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
 
   if (C != nullptr) {
-    if (!C->isSameShape(cExpectedShape))
-      THROW_EXCEPTION("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication !");
+    if (!C->isSameShape(cExpectedShape)) {
+      std::string errorMessage = "MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication! "
+                                 "Expected shape: [";
+      for (size_t i = 0; i < cExpectedShape.size(); ++i) {
+        errorMessage += std::to_string(cExpectedShape[i]);
+        if (i < cExpectedShape.size() - 1) errorMessage += ",";
+      }
+      errorMessage += "], but got: " + shapeToString(C) + ". A shape: " + shapeToString(A) + ", B shape: " + shapeToString(B);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
   } else {
     C = new NDArray(outOrder, cExpectedShape, B->dataType());
   }
@@ -530,7 +595,6 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
   } else {
     cBatchDims = new std::vector<sd::LongType>();
   }
-
 
   BUILD_SINGLE_SELECTOR_THRICE(A->dataType(), batchedGemm,
                                (A, B, C, aBatchDims->data(), bBatchDims->data(), cBatchDims->data(), aMaxis, aKaxis,
