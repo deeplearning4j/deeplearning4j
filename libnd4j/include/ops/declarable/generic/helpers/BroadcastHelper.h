@@ -33,30 +33,17 @@ namespace sd {
 namespace ops {
 class BroadcastHelper {
  public:
-  static SD_INLINE NDArray* broadcastApply(sd::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
+  static SD_INLINE NDArray* broadcastApply(BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
-      if (!z->isEmpty())
-        THROW_EXCEPTION(
-            "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
-            "as well !");
       return z;
     }
 
-    std::unique_ptr<NDArray> ptr;
-    if (!Environment::getInstance().isExperimentalBuild()) {
-      if (y->dataType() != x->dataType()) {
-        y = new NDArray(y->cast(x->dataType()));
-        std::unique_ptr<NDArray> ptr2(y);
-        ptr.swap(ptr2);
-      }
-    }
-
-    if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
-      x->applyPairwiseTransform(op.p, *y, *z);
-    } else if (!x->isScalar() && y->isScalar()) {
+    if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
+      x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
+    } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
-    } else if (x->isScalar() && !y->isScalar()) {
+    } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
           y->applyScalarArr(op.s, *x, *z);
@@ -88,7 +75,7 @@ class BroadcastHelper {
         tZ->applyPairwiseTransform(op.p, *y, extraArgs);
         return tZ;
       }
-    } else if (x->isScalar() && y->isScalar()) {
+    } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
@@ -104,13 +91,19 @@ class BroadcastHelper {
     return z;
   }
 
-  static SD_INLINE NDArray* broadcastApply(sd::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
+  static SD_INLINE NDArray* broadcastApply(BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z,
                                            ExtraArguments* extraArgs = nullptr) {
     if (x->isEmpty() || y->isEmpty()) {
-      if (!z->isEmpty())
+      if (!z->isEmpty()) {
+        std::string errorMessage;
+        errorMessage += "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty as well !";
+        errorMessage += "X is empty: ";
+        errorMessage += std::to_string(x->isEmpty());
+        errorMessage += "Y is empty: ";
+        errorMessage += std::to_string(y->isEmpty());
         THROW_EXCEPTION(
-            "BroadcastHelper::broadcastApply: when some of input arrays (or both) is empty, output array must be empty "
-            "as well !");
+            errorMessage.c_str());
+      }
       return z;
     }
 
@@ -123,13 +116,11 @@ class BroadcastHelper {
       x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
     } else if (x->isScalar() && !y->isScalar()) {
       if (z->isSameShape(y)) {
-        // z->assign(x);
         x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
         return z;
       } else {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-        // tZ->applyPairwiseTransform(op.p, *y, extraArgs);
         return tZ;
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
