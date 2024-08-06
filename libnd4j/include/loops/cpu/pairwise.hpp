@@ -137,14 +137,10 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       && allSameOrder
        && shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
       && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-    printf("pairwise broadcast case 1\n");
-    fflush(stdout);
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
              !sameShapesXY
              && allSameOrder) {  // not same shape
-    printf("pairwise broadcast case 2\n");
-    fflush(stdout);
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
   } else {
 
@@ -153,8 +149,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         && !shape::isViewConst(xShapeInfo)
         &&  !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
         && allSameOrder) {
-      printf("pairwise broadcast case 3\n");
-      fflush(stdout);
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
       sd::LongType zCoords[SD_MAX_RANK];
@@ -170,8 +164,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
     } else if ((shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
                 || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo))
                &&  allSameOrder) {
-      printf("pairwise broadcast case 4\n");
-      fflush(stdout);
+
       //general case. note we use to do element wise stride here
       //but for some cases of views it doesn't work
       sd::LongType zCoords[SD_MAX_RANK];
@@ -187,8 +180,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
                && !shape::isViewConst(xShapeInfo)
                && !shape::isViewConst(yShapeInfo) && !shape::isViewConst(zShapeInfo)
                && allSameOrder) {
-      printf("pairwise broadcast case 5\n");
-      fflush(stdout);
       sd::LongType xShapeInfoCast[SD_MAX_RANK];
       sd::LongType yShapeInfoCast[SD_MAX_RANK];
       bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -204,8 +195,6 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
         z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       };
     } else {
-      printf("pairwise broadcast case 6\n");
-      fflush(stdout);
       sd::LongType zCoords[SD_MAX_RANK];
 
       for (sd::LongType i = start; i < stop; i++) {
