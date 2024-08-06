@@ -339,7 +339,7 @@ SD_INLINE void TAD::createTadOnlyShapeInfo() {
     this->tadOnlyShapeInfo[shapeInfoLength(this->tadOnlyShapeInfo) - 1] = order(this->originalShapeInfo);
   }
 
-//  if (this->tadShape != nullptr) delete[] this->tadShape;
+  if (this->tadShape != nullptr) delete[] this->tadShape;
 
   this->tadShape = shapeOf(this->tadOnlyShapeInfo);
   this->tadStride = stride(this->tadOnlyShapeInfo);
@@ -478,10 +478,10 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
     sd::LongType ret = getOffset(shapeInfo, tad2Sub);
 
     if (ret < 0) {
-   //   if (ptrManager == nullptr) delete[] tad2Sub;
+     if (ptrManager == nullptr) delete[] tad2Sub;
       return -1;
     }
-   // if (ptrManager == nullptr) delete[] tad2Sub;
+   if (ptrManager == nullptr) delete[] tad2Sub;
 
     return ret;
 
@@ -490,7 +490,7 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
 
     sd::LongType ret = getOffset(shapeInfo, tad2Sub);
 
- //   if (ptrManager == nullptr) delete[] tad2Sub;
+    if (ptrManager == nullptr) delete[] tad2Sub;
 
     return ret;
   }
@@ -641,7 +641,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         finalPermuteDims[forward++] = i;
       }
       shape::permuteShapeBufferInPlace(ret2, finalPermuteDims, ret2);
-     // delete[] finalPermuteDims;
+      delete[] finalPermuteDims;
     }
 
   } else {
@@ -667,7 +667,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         shape::permuteShapeBufferInPlace(ret2, finalPermuteDims, ret2);
       }
 
-     // delete[] finalPermuteDims;
+      delete[] finalPermuteDims;
 
     } else if (length == lengthPerSlice) {
       offset -= slices(ret2) * (offset / slices(ret2));
@@ -684,8 +684,8 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
           finalPermuteDims[forward++] = i;
         }
         sd::LongType *newRet = shape::permuteShapeBuffer(ret2, finalPermuteDims);
-      //  delete[] ret2;
-       // delete[] finalPermuteDims;
+        delete[] ret2;
+        delete[] finalPermuteDims;
         ret2 = newRet;
       }
 
@@ -697,7 +697,7 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
         sliceIndex = sliceOffsetForTensor(sliceIndex, shape::length(ret2), lengthPerSlice2);
         sliceIndex -= slices(ret2) * (sliceIndex / slices(ret2));
         auto newRet2 = sliceOfShapeBuffer(sliceIndex, ret2);
-       // delete[] ret2;
+        delete[] ret2;
         ret2 = newRet2;
       }
 
@@ -720,11 +720,11 @@ SD_INLINE sd::LongType *TAD::shapeInfoOnlyShapeAndStride() {
     }
   }
 
- // delete[] permuted;
- // delete[] newPermuteDims;
- // delete[] rankRange;
-//  delete[] remove;
-//  delete[] reverseDimensions;
+  delete[] permuted;
+  delete[] newPermuteDims;
+  delete[] rankRange;
+  delete[] remove;
+  delete[] reverseDimensions;
   return ret2;
 }
 
@@ -890,7 +890,7 @@ SD_INLINE void TAD::collapse() {
 
     // converge when there are no singular dimensions specified in the reduce
     done = (!oneEncountered && nonOneEncountered) || hitBeginning;
-    // delete[] intermediaryResult;
+    delete[] intermediaryResult;
   }
 
   // nothing changed but need to collapse dimension
