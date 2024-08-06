@@ -19,18 +19,21 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <ops/declarable/helpers/sequence_mask.h>
 #include <execution/cuda/LaunchDims.h>
+#include <ops/declarable/helpers/sequence_mask.h>
+
+
+#include "helpers/DebugHelper.h"
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename I, typename B>
-static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const sd::LongType* inputShape, void* outputBuf,
-                                         const sd::LongType* outputShape, int maxIndex) {
+static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const LongType* inputShape, void* outputBuf,
+                                         const LongType* outputShape, int maxIndex) {
   __shared__ const I* input;
   __shared__ B* output;
-  __shared__ sd::LongType inputLen, outputLen;
+  __shared__ LongType inputLen, outputLen;
   if (threadIdx.x == 0) {
     input = reinterpret_cast<const I*>(inputBuf);
     output = reinterpret_cast<B*>(outputBuf);
@@ -52,10 +55,12 @@ static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* outpu
   auto stream = context->getCudaStream();
   sequenceMaskKernel<I, B><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
       input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), maxIndex);
+  sd::DebugHelper::checkErrorCode(stream, "sequenceMaskKernel failed");
+
   NDArray::registerSpecialUse({output}, {input});
 }
 
-void sequenceMask(sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
+void sequenceMask(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
   BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (context, input, output, maxIndex),
                         SD_INTEGER_TYPES, SD_COMMON_TYPES_EXTENDED);
 }

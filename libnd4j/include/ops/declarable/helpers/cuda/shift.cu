@@ -23,6 +23,7 @@
 //
 #include <ops/declarable/helpers/shift.h>
 
+
 namespace sd {
 namespace ops {
 namespace helpers {

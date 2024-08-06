@@ -25,14 +25,16 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void upsampling3dBPCuda(const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                                         const sd::LongType* zShapeInfo, const bool isNCDHW) {
+SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
+                                         const LongType* zShapeInfo, const bool isNCDHW) {
   // x (gradO) has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
   // z (gradI) has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH,
   // factorW*iW, iC] (NDHWC)
@@ -41,12 +43,12 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const sd::LongType* xSh
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ int rank, dimID;
-  __shared__ sd::LongType factorD, factorH, factorW;
-  __shared__ sd::LongType zLen, *sharedMem;
+  __shared__ LongType factorD, factorH, factorW;
+  __shared__ LongType zLen, *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<sd::LongType*>(shmem);
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
     dimID = isNCDHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
@@ -70,9 +72,9 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const sd::LongType* xSh
 
   z[zOffset] = 0;
 
-  const sd::LongType zCoord2 = coords[dimID] * factorD;
-  const sd::LongType zCoord3 = coords[dimID + 1] * factorH;
-  const sd::LongType zCoord4 = coords[dimID + 2] * factorW;
+  const LongType zCoord2 = coords[dimID] * factorD;
+  const LongType zCoord3 = coords[dimID + 1] * factorH;
+  const LongType zCoord4 = coords[dimID + 2] * factorW;
 
   for (coords[dimID] = zCoord2; coords[dimID] < zCoord2 + factorD; ++coords[dimID])
     for (coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
@@ -83,14 +85,17 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const sd::LongType* xSh
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling3dBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                                       const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo,
-                                       void* vz, const sd::LongType* zShapeInfo, const bool isNCDHW) {
+                                       const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
+                                       void* vz, const LongType* zShapeInfo, const bool isNCDHW) {
   upsampling3dBPCuda<T>
       <<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, isNCDHW);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t*>(stream),"upsampling3dBPCudaLauncher failed");
+
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI,
+void ConvolutionUtils::upsampling3dBP(graph::Context& block, const NDArray& gradO, NDArray& gradI,
                                       const bool isNCDHW) {
   PointersManager manager(block.launchContext(), "upsampling3d_bp");
 

@@ -25,13 +25,14 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                                const sd::LongType *zShapeInfo, sd::LongType fullLength,
+static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const LongType *xShapeInfo, void *vz,
+                                                const LongType *zShapeInfo, LongType fullLength,
                                                 int actualShift) {
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -55,7 +56,7 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const sd::LongTy
       z[sourceIndex * zEws] = _e0;
     }
   } else {
-    for (sd::LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
+    for (LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
       int sourceIndex = fullLength - actualShift + i;
 
       auto xOffsetA = shape::getIndexOffset(i, xShapeInfo);
@@ -74,14 +75,14 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const sd::LongTy
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelLinearStage1(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                             const sd::LongType *zShapeInfo, sd::LongType fullLength, int actualShift) {
+static void SD_KERNEL rollKernelLinearStage1(const void *vx, const LongType *xShapeInfo, void *vz,
+                                             const LongType *zShapeInfo, LongType fullLength, int actualShift) {
   rollKernelLinearStage1Dev<T>(vx, xShapeInfo, vz, zShapeInfo, fullLength, actualShift);
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelLinearStage2(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                             const sd::LongType *zShapeInfo, sd::LongType fullLength, int actualShift,
+static void SD_KERNEL rollKernelLinearStage2(const void *vx, const LongType *xShapeInfo, void *vz,
+                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
                                              int shiftCount) {
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -134,8 +135,8 @@ static void SD_KERNEL rollKernelLinearStage2(const void *vx, const sd::LongType 
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelLinearStage3(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                             const sd::LongType *zShapeInfo, sd::LongType fullLength, int actualShift,
+static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xShapeInfo, void *vz,
+                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
                                              int remainShift) {
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -180,7 +181,7 @@ static void SD_KERNEL rollKernelLinearStage3(const void *vx, const sd::LongType 
 }
 
 template <typename T>
-static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const sd::LongType *zShapeInfo, sd::LongType tadLength) {
+static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const LongType *zShapeInfo, LongType tadLength) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
@@ -212,11 +213,10 @@ static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const sd::LongType *zSh
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelFullAnyDimensionStage1(const void *vx, const sd::LongType *xTadShapeInfo,
-                                                       const sd::LongType *xTadOffsets, void *vz,
-                                                       const sd::LongType *zTadShapeInfo,
-                                                       const sd::LongType *zTadOffsets, int numTads,
-                                                       sd::LongType tadLength, int dim, sd::LongType sizeAt,
+static void SD_KERNEL rollKernelFullAnyDimensionStage1(const void *vx, const LongType *xTadShapeInfo,
+                                                       const LongType *xTadOffsets, void *vz,
+                                                       const LongType *zTadShapeInfo,
+                                                       const LongType *zTadOffsets, int numTads, LongType tadLength, int dim, LongType sizeAt,
                                                        int theShift) {
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -230,11 +230,10 @@ static void SD_KERNEL rollKernelFullAnyDimensionStage1(const void *vx, const sd:
 }
 
 template <typename T>
-static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const sd::LongType *xTadShapeInfo,
-                                                       const sd::LongType *xTadOffsets, void *vz,
-                                                       const sd::LongType *zTadShapeInfo,
-                                                       const sd::LongType *zTadOffsets, int numTads,
-                                                       sd::LongType tadLength, int dim, sd::LongType sizeAt,
+static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const LongType *xTadShapeInfo,
+                                                       const LongType *xTadOffsets, void *vz,
+                                                       const LongType *zTadShapeInfo,
+                                                       const LongType *zTadOffsets, int numTads, LongType tadLength, int dim, LongType sizeAt,
                                                        int theShift) {
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
@@ -248,8 +247,8 @@ static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const sd::LongT
 }
 
 template <typename T>
-static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<sd::LongType> const &shifts,
-                             std::vector<sd::LongType> const &axes, bool inplace) {
+static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<LongType> const &shifts,
+                             std::vector<LongType> const &axes, bool inplace) {
   if (!inplace) output->assign(input);
 
   for (size_t i = 0; i < axes.size(); i++) {
@@ -285,23 +284,26 @@ static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool 
     rollKernelLinearStage1<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
         output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         fullLen, actualShift);
+    sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage1 failed");
 
     // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
     rollKernelLinearStage2<T><<<launchDims.y, launchDims.x, launchDims.z, *(output->getContext()->getCudaStream())>>>(
         output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
         fullLen, actualShift, shiftCount);
-
+    sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage2 failed");
     // FIXME: no parallelism here :(
     // stage 3) swap remainer of items.
     if (remainShift && shiftCount)
       rollKernelLinearStage3<T><<<launchDims.y,launchDims.x,launchDims.z, *(output->getContext()->getCudaStream())>>>(
           output->specialBuffer(), output->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
           fullLen, actualShift, remainShift);
+    sd::DebugHelper::checkErrorCode(output->getContext()->getCudaStream(), "rollKernelLinearStage3 failed");
+
   }
 }
 
-void rollFunctorFull(sd::LaunchContext *context, NDArray *input, NDArray *output, std::vector<sd::LongType> const &shifts,
-                     std::vector<sd::LongType> const &axes, bool inplace) {
+void rollFunctorFull(LaunchContext *context, NDArray *input, NDArray *output, std::vector<LongType> const &shifts,
+                     std::vector<LongType> const &axes, bool inplace) {
   input->syncToDevice();
 
   BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorFull_, (input, output, shifts, axes, inplace), SD_COMMON_TYPES);
@@ -309,7 +311,7 @@ void rollFunctorFull(sd::LaunchContext *context, NDArray *input, NDArray *output
   output->tickWriteDevice();
 }
 
-void rollFunctorLinear(sd::LaunchContext *context, NDArray *input, NDArray *output, int shift, bool inplace) {
+void rollFunctorLinear(LaunchContext *context, NDArray *input, NDArray *output, int shift, bool inplace) {
   input->syncToDevice();
 
   BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), SD_COMMON_TYPES);

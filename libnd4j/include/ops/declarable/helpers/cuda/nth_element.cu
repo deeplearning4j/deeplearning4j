@@ -27,16 +27,18 @@
 #include <ops/declarable/helpers/nth_element.h>
 
 #include "execution/cuda/LaunchDims.h"
+#include "helpers/DebugHelper.h"
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void fillUpElementKernel(void* outputBuffer, sd::LongType const* outputShapeInfo, void* inputBuffer,
-                                          sd::LongType const* inputShapeInfo, sd::LongType const* pTadShape,
-                                          sd::LongType const* pTadOffsets, sd::LongType n) {
-  __shared__ sd::LongType bufferLength;
+static SD_KERNEL void fillUpElementKernel(void* outputBuffer, LongType const* outputShapeInfo, void* inputBuffer,
+                                          LongType const* inputShapeInfo, LongType const* pTadShape,
+                                          LongType const* pTadOffsets, LongType n) {
+  __shared__ LongType bufferLength;
 
   auto z = reinterpret_cast<T*>(outputBuffer);
   auto x = reinterpret_cast<T*>(inputBuffer);
@@ -54,10 +56,10 @@ static SD_KERNEL void fillUpElementKernel(void* outputBuffer, sd::LongType const
 }
 
 template <typename T>
-void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType n, NDArray* output, bool reverse) {
+void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   NDArray::prepareSpecialUse({output}, {input});
   NDArray sortedVals(*input);
-  sd::Pointer params[2];
+  Pointer params[2];
   params[0] = context;
   params[1] = context->getCudaStream();
   // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
@@ -67,10 +69,10 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
     cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n,
                sizeof(T), cudaMemcpyDeviceToDevice);
   } else {  // rank greater than 1
-    std::vector<sd::LongType> lastDims(
+    std::vector<LongType> lastDims(
         {input->rankOf() - 1});
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
 
     auto pTadShape = packX->specialShapeInfo();
     auto pTadShapeH = packX->primaryShapeInfo();
@@ -84,10 +86,12 @@ void nthElementFunctor_(sd::LaunchContext* context, NDArray* input, sd::LongType
     fillUpElementKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(),
                                                       sortedVals.specialBuffer(), sortedVals.specialShapeInfo(),
                                                       pTadShape, pTadOffsets, n);
+    sd::DebugHelper::checkErrorCode(stream, "fillUpElementKernel failed");
+
   }
   NDArray::registerSpecialUse({output}, {input});
 }
-void nthElementFunctor(sd::LaunchContext* context, NDArray* input, sd::LongType n, NDArray* output, bool reverse) {
+void nthElementFunctor(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), SD_COMMON_TYPES);
 }
 

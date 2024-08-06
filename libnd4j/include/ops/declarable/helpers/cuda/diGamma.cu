@@ -26,18 +26,18 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void diGammaCuda(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                  const sd::LongType *zShapeInfo) {
+SD_KERNEL static void diGammaCuda(const void *vx, const LongType *xShapeInfo, void *vz, const LongType *zShapeInfo) {
   const auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  __shared__ sd::LongType len;
+  __shared__ LongType len;
   __shared__ bool sameOffset;
 
   if (threadIdx.x == 0) {
@@ -57,25 +57,27 @@ SD_KERNEL static void diGammaCuda(const void *vx, const sd::LongType *xShapeInfo
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
-                                const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                const sd::LongType *zShapeInfo) {
+                                const cudaStream_t *stream, const void *vx, const LongType *xShapeInfo, void *vz,
+                                const LongType *zShapeInfo) {
   diGammaCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+  DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "crossCuda failed");
 }
 
 ///////////////////////////////////////////////////////////////////
-void diGamma(sd::LaunchContext *context, const NDArray &x, NDArray &z) {
+void diGamma(LaunchContext *context, const NDArray &x, NDArray &z) {
   dim3 digammaDims2 = digammaDims(z.lengthOf());
   NDArray::prepareSpecialUse({&z}, {&x});
   BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher,
-                        (digammaDims2.y, digammaDims2.x,digammaDims2.z, context->getCudaStream(), x.specialBuffer(),
-                            x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
+                        (digammaDims2.y, digammaDims2.x, digammaDims2.z, context->getCudaStream(), x.specialBuffer(),
+                         x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&z}, {&x});
 }
 
 BUILD_SINGLE_TEMPLATE(template void diGammaCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,const cudaStream_t *stream, const void *vx,
-                          const sd::LongType *xShapeInfo, void *vz, const sd::LongType *zShapeInfo),
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,
+                       const cudaStream_t *stream, const void *vx, const sd::LongType *xShapeInfo, void *vz,
+                       const sd::LongType *zShapeInfo),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

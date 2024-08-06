@@ -23,12 +23,13 @@
 //
 #include <ops/declarable/helpers/convolutions.h>
 
+
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void sconv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
+static void sconv2d_(graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
                      const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
                      const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                      const int isNCHW, const int wFormat) {
@@ -60,7 +61,7 @@ static void sconv2d_(sd::graph::Context& block, const NDArray* input, const NDAr
   if (weightsPoint)  // if pointwise convolution is expected
     outputDepth = new NDArray(
         output->ordering(),
-        !isNCHW ? std::vector<sd::LongType>({bS, oH, oW, iC * mC}) : std::vector<sd::LongType>({bS, iC * mC, oH, oW}),
+        !isNCHW ? std::vector<LongType>({bS, oH, oW, iC * mC}) : std::vector<LongType>({bS, iC * mC, oH, oW}),
         input->dataType(), input->getContext());
 
   // ----- perform depthwise convolution (if weightsPoint is absent then oC = iC*mC) ----- //
@@ -76,7 +77,7 @@ static void sconv2d_(sd::graph::Context& block, const NDArray* input, const NDAr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::sconv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
+void ConvolutionUtils::sconv2d(graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
                                const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const LongType kH,
                                const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW,
                                const int paddingMode, const int isNCHW, const int wFormat) {

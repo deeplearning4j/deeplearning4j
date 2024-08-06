@@ -28,6 +28,7 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -42,31 +43,31 @@ namespace helpers {
 //      return value: true, if threshold is overcome, false otherwise
 //
 template <typename T>
-static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, sd::LongType const* boxesShape, int previousIndex,
+static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxesShape, int previousIndex,
                                                   int nextIndex, T threshold) {
-  sd::LongType previous0[] = {previousIndex, 0};
-  sd::LongType previous1[] = {previousIndex, 1};
-  sd::LongType previous2[] = {previousIndex, 2};
-  sd::LongType previous3[] = {previousIndex, 3};
-  sd::LongType next0[] = {nextIndex, 0};
-  sd::LongType next1[] = {nextIndex, 1};
-  sd::LongType next2[] = {nextIndex, 2};
-  sd::LongType next3[] = {nextIndex, 3};
+  LongType previous0[] = {previousIndex, 0};
+  LongType previous1[] = {previousIndex, 1};
+  LongType previous2[] = {previousIndex, 2};
+  LongType previous3[] = {previousIndex, 3};
+  LongType next0[] = {nextIndex, 0};
+  LongType next1[] = {nextIndex, 1};
+  LongType next2[] = {nextIndex, 2};
+  LongType next3[] = {nextIndex, 3};
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 
   T minYPrev =
-      sd::math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+      math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
   T minXPrev =
-      sd::math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+      math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
   T maxYPrev =
-      sd::math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+      math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
   T maxXPrev =
-      sd::math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T minYNext = sd::math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T minXNext = sd::math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
-  T maxYNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T maxXNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+      math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+  T minYNext = math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
+  T minXNext = math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+  T maxYNext = math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
+  T maxXNext = math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
 
   // compute areas for comparation
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -76,12 +77,12 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, sd::LongType const* 
   if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
   // compute intersection of rectangles
-  T minIntersectionY = sd::math::sd_max(minYPrev, minYNext);
-  T minIntersectionX = sd::math::sd_max(minXPrev, minXNext);
-  T maxIntersectionY = sd::math::sd_min(maxYPrev, maxYNext);
-  T maxIntersectionX = sd::math::sd_min(maxXPrev, maxXNext);
-  T intersectionArea = sd::math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                       sd::math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+  T minIntersectionY = math::sd_max(minYPrev, minYNext);
+  T minIntersectionX = math::sd_max(minXPrev, minXNext);
+  T maxIntersectionY = math::sd_min(maxYPrev, maxYNext);
+  T maxIntersectionX = math::sd_min(maxXPrev, maxXNext);
+  T intersectionArea = math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                       math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
   T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
   // final check
   return intersectionValue > threshold;
@@ -89,7 +90,7 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, sd::LongType const* 
 
 
 template <typename T>
-static  inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static  inline T similirityV3_(NDArray const& boxes, LongType i, LongType j) {
   const T zero = static_cast<T>(0.f);
   const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
   const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
@@ -116,30 +117,30 @@ static  inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongTyp
 
 
 template <typename T>
-static SD_DEVICE T similirityV3(T* boxes, sd::LongType const* boxesShape, int previousIndex, int nextIndex) {
-  sd::LongType previous0[] = {previousIndex, 0};
-  sd::LongType previous1[] = {previousIndex, 1};
-  sd::LongType previous2[] = {previousIndex, 2};
-  sd::LongType previous3[] = {previousIndex, 3};
-  sd::LongType next0[] = {nextIndex, 0};
-  sd::LongType next1[] = {nextIndex, 1};
-  sd::LongType next2[] = {nextIndex, 2};
-  sd::LongType next3[] = {nextIndex, 3};
+static SD_DEVICE T similirityV3(T* boxes, LongType const* boxesShape, int previousIndex, int nextIndex) {
+  LongType previous0[] = {previousIndex, 0};
+  LongType previous1[] = {previousIndex, 1};
+  LongType previous2[] = {previousIndex, 2};
+  LongType previous3[] = {previousIndex, 3};
+  LongType next0[] = {nextIndex, 0};
+  LongType next1[] = {nextIndex, 1};
+  LongType next2[] = {nextIndex, 2};
+  LongType next3[] = {nextIndex, 3};
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 
   T minYPrev =
-      sd::math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+      math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
   T minXPrev =
-      sd::math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+      math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
   T maxYPrev =
-      sd::math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+      math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
   T maxXPrev =
-      sd::math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T minYNext = sd::math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T minXNext = sd::math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
-  T maxYNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T maxXNext = sd::math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+      math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+  T minYNext = math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
+  T minXNext = math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+  T maxYNext = math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
+  T maxXNext = math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
 
   // compute areas for comparator
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -149,12 +150,12 @@ static SD_DEVICE T similirityV3(T* boxes, sd::LongType const* boxesShape, int pr
   if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
   // compute intersection of rectangles
-  T minIntersectionY = sd::math::sd_max(minYPrev, minYNext);
-  T minIntersectionX = sd::math::sd_max(minXPrev, minXNext);
-  T maxIntersectionY = sd::math::sd_min(maxYPrev, maxYNext);
-  T maxIntersectionX = sd::math::sd_min(maxXPrev, maxXNext);
-  T intersectionArea = sd::math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                       sd::math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+  T minIntersectionY = math::sd_max(minYPrev, minYNext);
+  T minIntersectionX = math::sd_max(minXPrev, minXNext);
+  T maxIntersectionY = math::sd_min(maxYPrev, maxYNext);
+  T maxIntersectionX = math::sd_min(maxXPrev, maxXNext);
+  T intersectionArea = math::sd_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                       math::sd_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
   T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
   // final check
   return intersectionValue;
@@ -166,7 +167,7 @@ static SD_DEVICE T similirityV3(T* boxes, sd::LongType const* boxesShape, int pr
 // we compute boolean flag as shared uint32 and return it on final only for the first thread
 //
 template <typename T, typename I>
-static SD_KERNEL void shouldSelectKernel(T* boxesBuf, sd::LongType const* boxesShape, I* indexBuf,
+static SD_KERNEL void shouldSelectKernel(T* boxesBuf, LongType const* boxesShape, I* indexBuf,
                                          I* selectedIndicesData, double threshold, int numSelected, int i,
                                          bool* shouldSelect) {
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -195,9 +196,9 @@ static SD_KERNEL void shouldSelectKernel(T* boxesBuf, sd::LongType const* boxesS
 // indices - type depended, indicesLong - type defined (only 64bit integers)
 //
 template <typename I>
-static SD_KERNEL void copyIndices(void* indices, void* indicesLong, sd::LongType len) {
+static SD_KERNEL void copyIndices(void* indices, void* indicesLong, LongType len) {
   I* indexBuf = reinterpret_cast<I*>(indices);
-  sd::LongType* srcBuf = reinterpret_cast<sd::LongType*>(indicesLong);
+  LongType* srcBuf = reinterpret_cast<LongType*>(indicesLong);
   ;
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -207,7 +208,7 @@ static SD_KERNEL void copyIndices(void* indices, void* indicesLong, sd::LongType
 }
 
 template <typename T, typename I>
-static SD_KERNEL void suppressScores(T* scores, I* indices, sd::LongType length, T scoreThreshold) {
+static SD_KERNEL void suppressScores(T* scores, I* indices, LongType length, T scoreThreshold) {
   auto start = blockIdx.x * blockDim.x;
   auto step = gridDim.x * blockDim.x;
 
@@ -225,7 +226,7 @@ static SD_KERNEL void suppressScores(T* scores, I* indices, sd::LongType length,
 // nonMaxSuppressionV2 algorithm - given from TF NonMaxSuppressionV2 implementation
 //
 template <typename T, typename I>
-static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,
+static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,
                                  double threshold, double scoreThreshold, NDArray* output) {
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {boxes, scales});
@@ -233,7 +234,7 @@ static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDA
       'c', {scales->lengthOf()}, context));  // - 1, scales->lengthOf()); //, scales->getContext());
 
   NDArray scores(*scales);
-  sd::Pointer extras[2] = {nullptr, stream};
+  Pointer extras[2] = {nullptr, stream};
   auto indexBuf = indices->dataBuffer()->specialAsT<I>();
   auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
@@ -288,7 +289,7 @@ static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDA
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename I>
-static SD_DEVICE bool checkOverlapBoxes(T* boxes, sd::LongType const* shape, T* scores, I* indices, I* selectedIndices,
+static SD_DEVICE bool checkOverlapBoxes(T* boxes, LongType const* shape, T* scores, I* indices, I* selectedIndices,
                                         I* startIndices, I selectedSize, I nextCandidateIndex, T overlapThreshold,
                                         T scoreThreshold, bool simple) {
   bool shouldHardSuppress = false;
@@ -299,7 +300,7 @@ static SD_DEVICE bool checkOverlapBoxes(T* boxes, sd::LongType const* shape, T* 
   for (int j = selectedSize; j > finish; --j) {
     T boxVal;
     if (simple) {
-      sd::LongType xPos[] = {selectedIndex, selectedIndices[j - 1]};
+      LongType xPos[] = {selectedIndex, selectedIndices[j - 1]};
       auto xShift = shape::getOffset(shape, xPos, 0);
       boxVal = boxes[xShift];
     } else {
@@ -321,10 +322,9 @@ static SD_DEVICE bool checkOverlapBoxes(T* boxes, sd::LongType const* shape, T* 
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename I>
-static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* boxesShape, T* scoresData, I* indices,
-                                                  I* startIndices, sd::LongType length, I maxOutputLen,
-                                                  T overlapThreshold, T scoreThreshold, I* output,
-                                                  sd::LongType const* outputShape, I* outputLength, bool simple) {
+static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, LongType const* boxesShape, T* scoresData, I* indices,
+                                                  I* startIndices, LongType length, I maxOutputLen,
+                                                  T overlapThreshold, T scoreThreshold, I* output, LongType const* outputShape, I* outputLength, bool simple) {
   __shared__ I selectedSize;
   __shared__ I* tempOutput;
 
@@ -360,11 +360,9 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* 
         // Suppression has not occurred, so select nextCandidate
         I currSize = math::atomics::sd_atomicAdd(&selectedSize, (I)1);
         if (output) {
-          printf("Setting output currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
           output[currSize] = nextCandidateBoxIndex;
         }
         tempOutput[currSize] = nextCandidateBoxIndex;
-        printf(" tempOutput: currSize: %i, nextCandidateBoxIndex: %i\n", currSize, nextCandidateBoxIndex);
 
       }
 
@@ -387,26 +385,26 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, sd::LongType const* 
 }
 
 
-typedef NDArray (*SimilarityFunc)(NDArray const& boxes, sd::LongType i, sd::LongType j);
+typedef NDArray (*SimilarityFunc)(NDArray const& boxes, LongType i, LongType j);
 template <typename T>
-static inline T similarityOverlaps_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static inline T similarityOverlaps_(NDArray const& boxes, LongType i, LongType j) {
   return boxes.t<T>(i, j);
 }
 
-static NDArray similiratyOverlaps(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static NDArray similiratyOverlaps(NDArray const& boxes, LongType i, LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 
-static NDArray similarityV3(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static NDArray similarityV3(NDArray const& boxes, LongType i, LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename I>
-static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArray* boxes, NDArray* scores,
+static LongType nonMaxSuppressionGeneric_(LaunchContext* context, NDArray* boxes, NDArray* scores,
                                               int outputSize, float overlapThreshold, float scoreThreshold,
                                               NDArray* output, SimilarityFunc f) {
   auto stream = context->getCudaStream();
@@ -501,11 +499,11 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
     output->dataBuffer()->copyBufferFrom(buf, buf.getLenInBytes());
   }
 
-  return (sd::LongType)selected.size();
+  return (LongType)selected.size();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void nonMaxSuppression(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold,
+void nonMaxSuppression(LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold,
                        double scoreThreshold, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_,
                         (context, boxes, scales, maxSize, threshold, scoreThreshold, output), SD_FLOAT_TYPES,
@@ -513,15 +511,16 @@ void nonMaxSuppression(sd::LaunchContext* context, NDArray* boxes, NDArray* scal
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-sd::LongType nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,
-                                      double threshold, double scoreThreshold, NDArray* output) {
-  BUILD_DOUBLE_SELECTOR(
-      boxes->dataType(), output ? output->dataType() : DataType::INT32, return nonMaxSuppressionGeneric_,
-      (context, boxes, scales, maxSize, threshold, scoreThreshold, output, similiratyOverlaps), SD_FLOAT_TYPES, SD_INDEXING_TYPES);
+LongType nonMaxSuppressionGeneric(LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize,
+                                  double threshold, double scoreThreshold, NDArray* output) {
+  BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType() : DataType::INT32,
+                        return nonMaxSuppressionGeneric_,
+                        (context, boxes, scales, maxSize, threshold, scoreThreshold, output, similiratyOverlaps),
+                        SD_FLOAT_TYPES, SD_INDEXING_TYPES);
   return boxes->sizeAt(0);
 }
 
-sd::LongType nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+LongType nonMaxSuppressionV3(LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                                  double overlapThreshold, double scoreThreshold, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType() : DataType::INT32,
                         return nonMaxSuppressionGeneric_,

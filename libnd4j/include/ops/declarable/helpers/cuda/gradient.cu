@@ -22,6 +22,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <system/op_boilerplate.h>
 
+
 namespace sd {
 namespace ops {
 namespace helpers {
@@ -34,7 +35,7 @@ void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step
   input->applyPairwiseLambda(*step, lambda, *output);
 }
 
-void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+void applyGradientDescent(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (context, input, step, weight, output),
                         SD_FLOAT_TYPES);
 }
