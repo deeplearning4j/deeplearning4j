@@ -80,13 +80,13 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int kH = (int) depthWiseWeights.size(2);
         int kW = (int) depthWiseWeights.size(3);
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
-        int[] pad;
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
+        long[] pad;
         if (convolutionMode == ConvolutionMode.Same) {
-            int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            long[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new long[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
             ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format); //Also performs validation
@@ -101,7 +101,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[] {
+        long[] args = {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode,
                 nchw ? 0 : 1
@@ -209,12 +209,12 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int kH = (int) depthWiseWeights.size(2);
         int kW = (int) depthWiseWeights.size(3);
 
-        int[] dilation = layerConf().getDilation();
-        int[] kernel = layerConf().getKernelSize();
-        int[] strides = layerConf().getStride();
+        long[] dilation = layerConf().getDilation();
+        long[] kernel = layerConf().getKernelSize();
+        long[] strides = layerConf().getStride();
 
-        int[] pad;
-        int[] outSize;
+        long[] pad;
+        long[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(
                     input,
@@ -230,7 +230,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
             }
             pad = ConvolutionUtils.getSameModeTopLeftPadding(
                     outSize,
-                    new int[] {(int) input.size(hIdx), (int) input.size(wIdx)},
+                    new long[] {(int) input.size(hIdx), (int) input.size(wIdx)},
                     kernel,
                     strides,
                     dilation);
@@ -246,8 +246,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                     CNN2DFormat.NCHW); //Also performs validation, note hardcoded due to permute above
         }
 
-        int outH = outSize[0];
-        int outW = outSize[1];
+        long outH = outSize[0];
+        long outW = outSize[1];
 
         val miniBatch = input.size(0);
         long[] outShape = new long[]{miniBatch, outDepth, outH, outW};
@@ -255,7 +255,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[] {
+        long[] args = {
                 kH, kW, strides[0], strides[1],
                 pad[0], pad[1], dilation[0], dilation[1], sameMode,
                 0

@@ -35,21 +35,21 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto numAll = 0;
   auto numNewAxis = 0;
   auto numPoint = 0;
-  auto indicesPerIndex = std::vector<std::vector<sd::LongType>>();
-  auto indexTypes = std::vector<sd::LongType>();
-  auto numIndicesPerIndex = std::vector<sd::LongType>();
-  auto inclusive = std::vector<sd::LongType>();
+  auto indicesPerIndex = std::vector<std::vector<LongType>>();
+  auto indexTypes = std::vector<LongType>();
+  auto numIndicesPerIndex = std::vector<LongType>();
+  auto inclusive = std::vector<LongType>();
 
 
-  auto baseOffset = inputBase->bufferOffset();
+  auto baseOffset = inputBase->offset();
   auto outIdx = 0;
   auto inIdx = 0;
-  std::vector<std::vector<sd::LongType>> indexVectors;
+  std::vector<std::vector<LongType>> indexVectors;
   //note we iterate from i + 1 for each input so we only go to block input size - 1
-  for(sd::LongType i = 0; i < block.width() - 1; i++) {
+  for (LongType i = 0; i < block.width() - 1; i++) {
     //first element is the input we are creating the view from
     auto inputIndex = INPUT_VARIABLE(i + 1);
-    auto indexVector = inputIndex->asVectorT<sd::LongType>();
+    auto indexVector = inputIndex->asVectorT<LongType>();
     indexVectors.push_back(indexVector);
     auto indexType = indexVector[0];
 
@@ -70,8 +70,8 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   }
 
   auto outRank = inputBase->rankOf() + numNewAxis - numPoint;
-  auto outputShape = std::vector<sd::LongType>(outRank);
-  auto outputStrides = std::vector<sd::LongType>(outRank);
+  auto outputShape = std::vector<LongType>(outRank);
+  auto outputStrides = std::vector<LongType>(outRank);
 
 
 
@@ -82,11 +82,11 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     for (int e = numIndices; e < inputBase->rankOf() + numNewAxis; e++) {
       numAll++;
       indexTypes.push_back(ALL_TYPE);
-      indexVectors.push_back(NDIndexUtils::createAll().asVectorT<sd::LongType>());
+      indexVectors.push_back(NDIndexUtils::createAll().asVectorT<LongType>());
     }
   }
 
-  for(sd::LongType i = 0; i < indexVectors.size(); i++) {
+  for (LongType i = 0; i < indexVectors.size(); i++) {
     auto indexVector = indexVectors[i];
     auto indexType = indexVector[0];
     auto currDimension = i;
@@ -94,13 +94,13 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
     indexTypes.push_back(indexType);
     auto stride = indexVector[2];
     //point should start at 3 for indices, interval is 4 (start,end)
-    auto indexIndices = std::vector<sd::LongType>();
+    auto indexIndices = std::vector<LongType>();
     int indexOffset = 3;
 
 
     //accumulate the target indices
     //prevent out of bounds
-    for(sd::LongType j = 0; j < indexVector.size() - indexOffset; j++) {
+    for (LongType j = 0; j < indexVector.size() - indexOffset; j++) {
       indexIndices.push_back(indexVector[j + indexOffset]);
     }
 
@@ -166,7 +166,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   } else if(block.isFastPath() && block.fastpath_out().size() < 1) {
     STORE_RESULT(newResult);
   }
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(create_view) {
@@ -174,7 +174,7 @@ DECLARE_SHAPE_FN(create_view) {
   return SHAPELIST(shapeInput->shapeInfo());
 }
 
-DECLARE_TYPES(create_view) { getOpDescriptor()->setAllowedInputTypes({sd::DataType::ANY})->setAllowedOutputTypes(sd::DataType::ANY); }
+DECLARE_TYPES(create_view) { getOpDescriptor()->setAllowedInputTypes({ANY})->setAllowedOutputTypes(ANY); }
 }  // namespace ops
 }  // namespace sd
 

@@ -38,35 +38,78 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
   // Special case: empty.reshape(<other empty shape>) -> return empty
   if (x->isEmpty()) {
     REQUIRE_TRUE(z->isEmpty(), 0, "TRANSPOSE OP: when input is empty, output must also be empty");
-    return sd::Status::OK;  // No op
+    return Status::OK;  // No op
   }
 
-  if (block.width() == 1 && block.getIArguments()->size() == 0) {
+  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64).asVectorT<LongType>() : *block.getIArguments();
+
+  if (permutationVector.size() == 0) {
     z->assign(x->transpose());
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  std::vector<sd::LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getIArguments();
+  bool isPermuteNecessary = false;
 
-  z->assign(x->permute(permutationVector));
+  int rank = permutationVector.size();
+  //handles empty permute vector case as well as case where array rank and permute vector rank
+  //are different
+  for (LongType i = 0; i < rank; ++i) {
+    if (permutationVector[i] != i) {
+      isPermuteNecessary = true;
+      break;
+    }
+  }
+  if(!isPermuteNecessary) {
+    z->assign(x);
+    return Status::OK;
+  }
 
-  return sd::Status::OK;
+  z->assign(x->permute(permutationVector, false));
+
+  return Status::OK;
 }
 
-DECLARE_TYPES(transpose) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(transpose) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(transpose) {
   auto x = INPUT_VARIABLE(0);
+  const LongType rank = x->rankOf();
 
-  if (block.width() == 1 && block.getIArguments()->size() == 0)
-    return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
+  if(rank < 1)
+    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(x->dataType()));
+  std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->cast(INT64).asVectorT<LongType>() : *block.getIArguments();
 
-  std::vector<sd::LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<sd::LongType>() : *block.getIArguments();
+  if (permutationVector.size() == 0) {
+    auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
+    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp,true);
+    return SHAPELIST(ret);
+  }
 
-  auto outputShapeInfo =
-      ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
 
-  return SHAPELIST(outputShapeInfo);
+  bool isPermuteNecessary = false;
+
+  if(permutationVector.size() == rank)
+    for (LongType i = 0; i < rank; ++i) {
+      if (permutationVector[i] != i) {
+        isPermuteNecessary = true;
+        break;
+      }
+    }
+
+  if(!isPermuteNecessary) {
+    //note: do not deallocate this buffer. they are kept around.
+    auto permEvalShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(inputShape->at(0));
+    return SHAPELIST(permEvalShapeInfo);
+  }
+
+
+  //note: do not deallocate this buffer. they are kept around.
+  auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
+  if(x->isEmpty()) {
+    ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
+  }
+  auto ret = CONSTANT(permEvalShapeInfo);
+  return SHAPELIST(ret);
 }
 
 }  // namespace ops

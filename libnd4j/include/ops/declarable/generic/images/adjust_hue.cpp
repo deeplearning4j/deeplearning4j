@@ -35,11 +35,11 @@ CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   // just skip op if input is empty
-  if (input->isEmpty()) return sd::Status::OK;
+  if (input->isEmpty()) return Status::OK;
 
   const int rank = input->rankOf();
   const int arg_size = block.getIArguments()->size();
-  const sd::LongType dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+  const LongType dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
   REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_HUE: delta factor is required !");
   REQUIRE_TRUE(rank >= 3, 0, "ADJUST_HUE: op expects rank of input array to be >= 3, but got %i instead", rank);
@@ -67,10 +67,10 @@ CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, 0, 0) {
 
   if (block.width() == 1) delete delta;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(adjust_hue) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(adjust_hue) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd

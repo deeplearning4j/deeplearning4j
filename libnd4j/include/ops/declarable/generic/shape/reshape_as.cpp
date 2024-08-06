@@ -37,10 +37,10 @@ CUSTOM_OP_IMPL(reshapeas, 2, 1, false, 0, 0) {
 
   if (x->reshapei(y->ordering(), y->getShapeAsVector())) {
     z->assign(x);
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  return sd::Status::BAD_INPUT;
+  return Status::BAD_INPUT;
 }
 DECLARE_SYN(reshape_as, reshapeas);
 
@@ -48,7 +48,7 @@ DECLARE_SHAPE_FN(reshapeas) {
   return SHAPELIST(ShapeBuilders::copyShapeInfo(INPUT_VARIABLE(1)->shapeInfo(), false, block.workspace()));
 }
 
-DECLARE_TYPES(reshapeas) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(reshapeas) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 }  // namespace ops
 }  // namespace sd
 
