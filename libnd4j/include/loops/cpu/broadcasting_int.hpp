@@ -624,6 +624,5 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
   }
 }
 
-// BUILD_SINGLE_TEMPLATE(template class SD_LIB_HIDDEN BroadcastInt, , SD_INTEGER_TYPES);
 }  // namespace broadcast
 }  // namespace functions

@@ -46,7 +46,7 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   const sd::LongType length = shape::length(xShapeInfo);
   auto xEws = shape::elementWiseStride(xShapeInfo);
 
-  if (shape::isEmpty(xShapeInfo)) {
+  if (shape::isEmptyConst(xShapeInfo)) {
     if (std::is_same<OpType, simdOps::Mean<X, Z>>::value) {
       z[0] = sd::DataTypeUtils::nanOrZero<Z>();
     } else {
