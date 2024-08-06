@@ -45,9 +45,9 @@ CUSTOM_OP_IMPL(col2im, 1, 1, false, 0, 9) {
   LongType dX = INT_ARG(7);  // Dilation in width/x dimension
 
   LaunchContext* ctx = block.launchContext();
-  helpers::col2im(*ctx, *x, *z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
+  helpers::col2im(*ctx, x, z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_SHAPE_FN(col2im) {
   auto inShape = inputShape->at(0);
@@ -65,7 +65,7 @@ DECLARE_SHAPE_FN(col2im) {
   LongType dX = INT_ARG(7);  // Dilation, width/x dimension
   bool isSameMode = INT_ARG(8) > 0;
 
-  sd::LongType* zShape;
+  LongType* zShape;
   ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(4), sd::LongType);
 
   zShape[0] = 4;
@@ -84,8 +84,8 @@ DECLARE_SHAPE_FN(col2im) {
 
 DECLARE_TYPES(col2im) {
   getOpDescriptor()
-      ->setAllowedInputTypes(0, DataType::ANY)
-      ->setAllowedOutputTypes(0, DataType::INHERIT)
+      ->setAllowedInputTypes(0, ANY)
+      ->setAllowedOutputTypes(0, INHERIT)
       ->setSameMode(true);
 }
 }  // namespace ops

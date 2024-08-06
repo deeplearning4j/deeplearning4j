@@ -76,13 +76,21 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
-  if (_specialBuffer == nullptr && getLenInBytes() > 0) {
-    auto deviceId = sd::AffinityManager::currentDeviceId();
+#if defined(SD_GCC_FUNCTRACE)
+  if(Environment::getInstance().isFuncTracePrintAllocate()) {
+    allocationStackTraceSpecial = new StackTrace();
+    allocationStackTraceSpecial->load_here();
+  }
+
+#endif
+
+  if (_specialBuffer == nullptr) {
+    auto deviceId = AffinityManager::currentDeviceId();
 
     if (_workspace == nullptr) {
-      if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-        throw sd::allocation_exception::build("Requested amount exceeds device limits",
-                                              sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId),
+      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
+        throw allocation_exception::build("Requested amount exceeds device limits",
+                                          memory::MemoryCounter::getInstance().deviceLimit(deviceId),
                                               getLenInBytes());
     }
 
@@ -90,8 +98,8 @@ void DataBuffer::allocateSpecial() {
     _isOwnerSpecial = true;
 
     if (_workspace == nullptr) {
-      sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
-      sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
+      memory::MemoryCounter::getInstance().countIn(memory::MemoryType::DEVICE, getLenInBytes());
 
     }
   } else if(getLenInBytes() == 0) {
