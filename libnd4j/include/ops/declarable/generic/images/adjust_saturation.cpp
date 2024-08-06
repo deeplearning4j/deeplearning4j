@@ -35,7 +35,7 @@ CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
 
   // just skip op if input is empty
-  if (input->isEmpty()) return sd::Status::OK;
+  if (input->isEmpty()) return Status::OK;
 
   const int rank = input->rankOf();
   const int arg_size = block.getIArguments()->size();
@@ -64,10 +64,10 @@ CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
 
   if (block.width() == 1) delete factor;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(adjust_saturation) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(adjust_saturation) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 }  // namespace ops
 }  // namespace sd
