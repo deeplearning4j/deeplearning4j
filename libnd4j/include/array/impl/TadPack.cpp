@@ -25,44 +25,73 @@
 #include <system/Environment.h>
 
 namespace sd {
-TadPack::TadPack(const ConstantShapeBuffer& shapes, const ConstantOffsetsBuffer& offets, sd::LongType numTads)
-    : _tadShape(shapes), _tadOffsets(offets) {
-  _numTads = numTads;
-}
+    TadPack::TadPack(const ConstantShapeBuffer& shapes,
+                     const ConstantOffsetsBuffer& offets, LongType numTads,
+                 LongType* dimensions, LongType dimLength)
+            : _tadShape(shapes),
+              _tadOffsets(offets) {
+        _numTads = numTads;
+        _dimensionsLength = dimLength;
+        if(dimensions != nullptr) {
+            _dimensions = new LongType[dimLength];
+            for(int i = 0; i < dimLength; i++) {
+                _dimensions[i] = dimensions[i];
+            }
+        }
 
-const sd::LongType* TadPack::primaryShapeInfo() const {
-  if(_tadShape.primary() == nullptr)
-    THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");
-  return _tadShape.primary();
-}
+    }
 
-const sd::LongType* TadPack::primaryOffsets() const {
-  return _tadOffsets.primary();
-}
+    const LongType* TadPack::primaryShapeInfo() const {
+        if(_tadShape.primary() == nullptr)
+            THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");
+        return _tadShape.primary();
+    }
 
-const sd::LongType* TadPack::specialShapeInfo() const { return _tadShape.special(); }
+    const LongType* TadPack::primaryOffsets() const {
+        return _tadOffsets.primary();
+    }
 
-const sd::LongType* TadPack::specialOffsets() const { return _tadOffsets.special(); }
+    const LongType* TadPack::specialShapeInfo() const { return _tadShape.special(); }
 
-sd::LongType TadPack::numberOfTads() const { return _numTads; }
+    const LongType* TadPack::specialOffsets() const { return _tadOffsets.special(); }
 
-const sd::LongType* TadPack::platformShapeInfo() const {
-  return sd::Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
-}
+LongType TadPack::numberOfTads() const { return _numTads; }
 
-const sd::LongType* TadPack::platformOffsets() const {
-  return sd::Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
-}
+    const LongType* TadPack::platformShapeInfo() const {
+        return Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
+    }
+
+    const LongType* TadPack::platformOffsets() const {
+        return Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
+    }
 
 
-void  TadPack::printOffsets(const char* msg) const {
+    void TadPack::print(const char* msg) const {
+  printf("---------------------------\n");
   printf("%s: ", msg);
+  printf("Offsets:\n");
   for (int e = 0; e < _numTads; e++) {
     printf("%lld, ", _tadOffsets.primary()[e]);
   }
   printf("\n");
+
+  printf("Dimensions:\n");
+  if (_dimensions == nullptr || _dimensionsLength == 0) {
+    printf("none\n");
+  } else {
+    for (int i = 0; i < _dimensionsLength; i++) {
+      printf("%lld, ", _dimensions[i]);
+    }
+    printf("\n");
+  }
+
+  printf("tad pack shape info:");
+  shape::printShapeInfo(_tadShape.primary());
+  printf("\n");
+  printf("number of tads: %lld\n", _numTads);
+  printf("shape info length: %lld\n", _shapeInfoLength);
+  printf("---------------------------\n");
 }
 
-
-sd::LongType TadPack::shapeInfoLength() const { return shape::shapeInfoLength(primaryShapeInfo()); }
+LongType TadPack::shapeInfoLength() const { return shape::shapeInfoLength(primaryShapeInfo()); }
 }  // namespace sd

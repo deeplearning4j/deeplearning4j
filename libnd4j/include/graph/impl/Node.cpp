@@ -398,16 +398,6 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
       }
     }
 
-    /*
-    if (node->output() != nullptr)
-        for (int e = 0; e < (int) node->output()->size(); e++) {
-            auto oid = node->output()->Get(e);
-            if (oid != this->_id && oid != 0) {
-                sd_verbose("Picking output: %i\n", node->output()->Get(e));
-                pickOutput(oid);
-            }
-        }
-    */
 
     if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {
       _extraParams = new double[node->extraParams()->size()];
