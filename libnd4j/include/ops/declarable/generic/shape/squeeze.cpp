@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<int> axis;
+  std::vector<LongType> axis;
 
   if (block.numI() > 0)
     for (int e = 0; e < block.numI(); e++) {
@@ -42,8 +42,8 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
     }
   else if (block.width() > 1) {
     auto a = INPUT_VARIABLE(1);
-    for (sd::LongType e = 0; e < a->lengthOf(); e++) {
-      int _a = a->e<int>(e);
+    for (LongType e = 0; e < a->lengthOf(); e++) {
+      int _a = a->e<LongType>(e);
 
       if (_a < 0) _a += input->rankOf();
 
@@ -53,10 +53,10 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
 
   if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
     output->assign(input);
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  std::vector<sd::LongType> shape;
+  std::vector<LongType> shape;
   if (axis.size() == 0) {
     for (int d = 0; d < input->rankOf(); d++)
       if (input->sizeAt(d) > 1) shape.emplace_back(input->sizeAt(d));
@@ -70,37 +70,35 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   }
 
   if (block.isInplace()) {
-    output->reshapei(input->ordering(), shape, false);
+    output->reshapei(input->ordering(), shape);
   } else {
     if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
-      output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(),
+      output->dataBuffer()->copyBufferFrom(*input->dataBuffer(),
                                            output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0,
-                                           input->bufferOffset());
+                                           input->offset());
     } else {
       auto tmp = input->reshape(input->ordering(), shape);
       output->assign(tmp);
     }
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
-DECLARE_TYPES(squeeze) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setSameMode(true); }
+DECLARE_TYPES(squeeze) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }
 
 DECLARE_SHAPE_FN(squeeze) {
   auto shapeList = SHAPELIST();
 
-  //            sd::LongType* newShape;
   auto in = inputShape->at(0);
   auto rank = shape::rank(in);
   auto length = shape::length(in);
-
   if (rank == 0 || (rank == 1 && length == 1)) {
     shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
     return shapeList;
   }
 
-  std::vector<int> axis;
+  std::vector<LongType> axis;
 
   if (block.numI() > 0)
     for (int e = 0; e < block.numI(); e++) {
@@ -111,8 +109,8 @@ DECLARE_SHAPE_FN(squeeze) {
     }
   else if (block.width() > 1) {
     auto a = INPUT_VARIABLE(1);
-    for (int e = 0; e < a->lengthOf(); e++) {
-      int _a = a->e<int>(e);
+    for (LongType e = 0; e < a->lengthOf(); e++) {
+      LongType _a = a->e<LongType>(e);
 
       if (_a < 0) _a += rank;
 
@@ -123,9 +121,9 @@ DECLARE_SHAPE_FN(squeeze) {
   auto order = shape::order(in);
   auto oldShape = shape::shapeOf(in);
 
-  std::vector<sd::LongType> shape;
+  std::vector<LongType> shape;
   if (axis.size() == 0) {
-    for (int d = 0; d < rank; d++)
+    for (LongType d = 0; d < rank; d++)
       if (oldShape[d] > 1) shape.emplace_back(oldShape[d]);
   } else {
     for (int d = 0; d < rank; d++) {
@@ -141,8 +139,21 @@ DECLARE_SHAPE_FN(squeeze) {
     return shapeList;
   }
 
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
-  shapeList->push_back(newShape);
+  if(shape::isEmptyConst(in)) {
+    if(shape::rank(in) < 1) {
+      shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(in)));
+      return shapeList;
+    }
+
+
+    shapeList->push_back(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(in),shape));
+    return shapeList;
+  } else {
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
+    shapeList->push_back(newShape);
+  }
+
+
   return shapeList;
 }
 }  // namespace ops

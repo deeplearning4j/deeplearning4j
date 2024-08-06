@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(create, 1, 1, false, 0, 1) {
 
   if (init) OUTPUT_VARIABLE(0)->nullify();
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(create) {
@@ -43,12 +43,12 @@ DECLARE_SHAPE_FN(create) {
 
   REQUIRE_TRUE(order == 'c' || order == 'f', 0, "create: order must be either c or f");
 
-  auto shape = shapeInput->getBufferAsVector<sd::LongType>();
+  auto shape = shapeInput->getBufferAsVector<LongType>();
 
   return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
 }
 
-DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(sd::DataType::ANY); }
+DECLARE_TYPES(create) { getOpDescriptor()->setAllowedInputTypes({ALL_INTS})->setAllowedOutputTypes(ANY); }
 }  // namespace ops
 }  // namespace sd
 

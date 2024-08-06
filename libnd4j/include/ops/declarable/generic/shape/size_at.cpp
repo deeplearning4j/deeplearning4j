@@ -39,15 +39,15 @@ CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
   output->p(0, input->sizeAt(dim));
   output->syncToDevice();
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(size_at) { return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64)); }
 
 DECLARE_TYPES(size_at) {
   getOpDescriptor()
-      ->setAllowedInputTypes(sd::DataType::ANY)
-      ->setAllowedOutputTypes(DataType::INT64)
+      ->setAllowedInputTypes(ANY)
+      ->setAllowedOutputTypes(INT64)
       ->allowOverride(true);
 }
 }  // namespace ops
