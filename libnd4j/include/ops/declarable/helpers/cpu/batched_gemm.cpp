@@ -33,10 +33,10 @@ namespace ops {
 namespace helpers {
 
 
- void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
-                   int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
-                   sd::NDArray *all) {
-   sd::NDArray *allIndex = nullptr;
+void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
+           int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
+           sd::NDArray *all) {
+  sd::NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
@@ -73,7 +73,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
                     NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
                     int lda,  int ldb,  int ldc) {
   int batchSize = vA.size();
-  if (BlasHelper::getInstance().hasBatchedGEMM<T>()) {
+  if (BlasHelper::getInstance().hasBatchedGEMM<T>() || !Environment::getInstance().isEnableBlas()) {
     auto arr = vA.at(0);
     CBLAS_TRANSPOSE *tA, *tB;
     int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
@@ -99,24 +99,24 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
     shape::fill(tldC, ldc, batchSize);
     shape::fill(tsize, 1, batchSize);
 
-    std::vector<T *> buffersA(batchSize);
-    std::vector<T *> buffersB(batchSize);
-    std::vector<T *> buffersC(batchSize);
+    std::vector<T *> buffersA;
+    std::vector<T *> buffersB;
+    std::vector<T *> buffersC;
 
 
 
     for (int e = 0; e < batchSize; e++) {
-      buffersA[e] = reinterpret_cast<T *>(vA[e]->buffer());
-      buffersB[e] = reinterpret_cast<T *>(vB[e]->buffer());
-      buffersC[e] = reinterpret_cast<T *>(vC[e]->buffer());
+      buffersA.push_back(reinterpret_cast<T *>(vA[e]->buffer()));
+      buffersB.push_back(reinterpret_cast<T *>(vB[e]->buffer()));
+      buffersC.push_back(reinterpret_cast<T *>(vC[e]->buffer()));
     }
 
-    if (std::is_same<T, double>::value) {
+    if (std::is_same<T, double>::value || !Environment::getInstance().isEnableBlas()) {
       BlasHelper::getInstance().dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *)alphas->buffer(),
                                                (double **)buffersA.data(), tldA, (double **)buffersB.data(), tldB,
                                                (double *)betas->buffer(), (double **)buffersC.data(), tldC, vA.size(),
                                                tsize);
-    } else if (std::is_same<T, float>::value) {
+    } else if (std::is_same<T, float>::value || !Environment::getInstance().isEnableBlas()) {
       BlasHelper::getInstance().sgemmBatched()(
           CblasColMajor, tA, tB, tM, tN, tK, (float *)alphas->buffer(), (float **)buffersA.data(), tldA,
           (float **)buffersB.data(), tldB, (float *)betas->buffer(), (float **)buffersC.data(), tldC, vA.size(), tsize);
@@ -146,11 +146,11 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
         auto alpha = alphas->isScalar() ? alphas->e<T>(0) : alphas->e<T>(p);
         auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
-        for (int m = 0; m < M; ++m) {
-          for (int n = 0; n < N; ++n) {
+        for (int m = 0; m < M; m++) {
+          for (int n = 0; n < N; n++) {
             T c_mnp = 0;
             PRAGMA_OMP_SIMD
-            for (int k = 0; k < K; ++k) {
+            for (int k = 0; k < K; k++) {
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *
                        B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
             }
@@ -175,8 +175,8 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
 
 BUILD_SINGLE_TEMPLATE(template void bgemm_,
                       ( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector<NDArray *> &vC,
-                           NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
-                           int lda,  int ldb,  int ldc),
+                          NDArray *alphas,  NDArray *betas, int transA, int transB, int M, int N, int K,
+                          int lda,  int ldb,  int ldc),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers
