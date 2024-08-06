@@ -87,7 +87,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         Gradient ret = new DefaultGradient();
 
-        if(hasBias()){
+        if(hasBias()) {
             INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
             delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
@@ -318,7 +318,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                             + W.size(0) + ") " + layerId());
         }
 
-         INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, W.dataType(), input.size(0), W.size(1));
+        //scope out of workspaces here to avoid borrow clashes
+        INDArray ret = workspaceMgr.create(ArrayType.ACTIVATIONS,W.dataType(),new long[]{ input.size(0), W.size(1)},'f');
         input.mmuli(W, ret);
 
         INDArray preNorm = ret;
@@ -327,7 +328,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
         }
 
-        if(hasBias()){
+        if(hasBias()) {
             ret.addiRowVector(b);
         }
 
@@ -335,7 +336,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             applyMask(ret);
         }
 
-        return new Pair<>(ret, preNorm);
+        return new Pair<>(workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,ret), workspaceMgr.leverageTo(ArrayType.ACTIVATIONS,preNorm));
+
+
+
+
     }
 
     @Override
