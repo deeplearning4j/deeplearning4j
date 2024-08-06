@@ -97,13 +97,13 @@ DECLARE_SHAPE_FN(transpose) {
     }
 
   if(!isPermuteNecessary) {
-    //note: do not deallocate thhis buffer. they are kept around.
+    //note: do not deallocate this buffer. they are kept around.
     auto permEvalShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(inputShape->at(0));
     return SHAPELIST(permEvalShapeInfo);
   }
 
 
-  //note: do not deallocate thhis buffer. they are kept around.
+  //note: do not deallocate this buffer. they are kept around.
   auto permEvalShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), x, nullptr, true);
   if(x->isEmpty()) {
     ArrayOptions::setPropertyBit(permEvalShapeInfo, ARRAY_EMPTY);
