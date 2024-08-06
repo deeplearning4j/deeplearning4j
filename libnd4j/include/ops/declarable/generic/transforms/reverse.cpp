@@ -35,13 +35,13 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
 
   if (output->isEmpty()) {
     // No-op
-    return sd::Status::OK;
+    return Status::OK;
   }
 
-  std::vector<sd::LongType> axis;
+  std::vector<LongType> axis;
 
   if (block.width() > 1)
-    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 
@@ -53,15 +53,15 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     helpers::reverse(block.launchContext(), input, output, &axis);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SYN(reverse_v2, reverse);
 
 DECLARE_TYPES(reverse) {
-  getOpDescriptor()->setAllowedInputTypes(0, DataType::ANY);
-  getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64});
-  getOpDescriptor()->setAllowedOutputTypes(0, DataType::INHERIT);
+  getOpDescriptor()->setAllowedInputTypes(0, ANY);
+  getOpDescriptor()->setAllowedInputTypes(1, {INT32, INT64});
+  getOpDescriptor()->setAllowedOutputTypes(0, INHERIT);
 }
 
 CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
@@ -69,10 +69,10 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
   auto eps = block.width() == 3 ? INPUT_VARIABLE(2) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
-  std::vector<sd::LongType> axis;
+  std::vector<LongType> axis;
 
   if (block.width() == 3)
-    axis = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
+    axis = INPUT_VARIABLE(1)->template asVectorT<LongType>();
   else if (block.numI() > 0)
     axis = *block.getIArguments();
 
@@ -85,16 +85,16 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
     helpers::reverse(block.launchContext(), eps, output, &axis);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(reverse_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(reverse_bp) {
   auto in = inputShape->at(0);
-  sd::LongType *out;
+  LongType *out;
   COPY_SHAPE(in, out);
 
   return SHAPELIST(CONSTANT(out));
