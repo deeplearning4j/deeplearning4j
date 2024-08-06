@@ -35,9 +35,9 @@ constexpr int kShrinkAxis = -1, kNewAxis = -2;
 struct StridedSliceSparseSpec {
   int dims;
   int num_add_axis_after_ellipsis;
-  std::vector<sd::LongType>* begin_tensor;
-  const std::vector<sd::LongType>* end_tensor;
-  const std::vector<sd::LongType>* strides_tensor;
+  std::vector<LongType>* begin_tensor;
+  const std::vector<LongType>* end_tensor;
+  const std::vector<LongType>* strides_tensor;
   const int begin_mask, end_mask;
   int ellipsis_mask;
   const int new_axis_mask, shrink_axis_mask;
@@ -49,10 +49,10 @@ struct StridedSliceDenseSpec {
   int end_mask;
   bool begin_valid;
   bool end_valid;
-  std::vector<sd::LongType>& begin;
-  std::vector<sd::LongType>& end;
-  std::vector<sd::LongType>& strides;
-  std::vector<sd::LongType> final_shape_gather_indices;
+  std::vector<LongType>& begin;
+  std::vector<LongType>& end;
+  std::vector<LongType>& strides;
+  std::vector<LongType> final_shape_gather_indices;
   int shrink_axis_mask;
 
  public:
@@ -88,7 +88,6 @@ struct StridedSliceDenseSpec {
           this->final_shape_gather_indices.emplace_back(kNewAxis);
         } else {
           if (full_index == this->begin.size()) {
-            sd_printf("Index out of range: %i out of %i\n", full_index, this->dims);
             return false;
           }
 
@@ -120,7 +119,7 @@ struct StridedSliceDenseSpec {
   }
 };
 
-void vectorize(std::vector<sd::LongType>& input_shape) {
+void vectorize(std::vector<LongType>& input_shape) {
   if (input_shape.size() == 2 && input_shape[0] == 1) {
     int v = input_shape[1];
     input_shape.clear();
@@ -128,8 +127,8 @@ void vectorize(std::vector<sd::LongType>& input_shape) {
   }
 }
 
-bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vector<sd::LongType>* final_shape,
-                               std::vector<sd::LongType>& input_shape, std::vector<LongType>& begin,
+bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<LongType>* final_shape,
+                               std::vector<LongType>& input_shape, std::vector<LongType>& begin,
                                std::vector<LongType>& end, std::vector<LongType>& strides, int begin_mask, int ellipsis_mask, int end_mask,
                                int new_axis_mask, int shrink_axis_mask, bool* is_identity, bool* is_simple_slice,
                                bool* slice_dim0) {
@@ -187,7 +186,6 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     };
 
     if (shrink_i && stride_idx <= 0) {
-      sd_printf("StridedSlice: only stride 1 allowed on non-range indexing\n", e);
       return false;
     }
 
@@ -258,7 +256,7 @@ bool _preprocess_strided_slice(std::vector<sd::LongType>* indicesList, std::vect
     }
   }
 
-  std::vector<int> postshape;
+  std::vector<int> * postshape = new std::vector<int>();
   final_shape->clear();
   for (auto gather_index : dense_spec.final_shape_gather_indices) {
     if (gather_index >= 0) {
@@ -280,7 +278,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
   if (z->isEmpty() || z->lengthOf() == 0) {
-    return sd::Status::OK;
+    return Status::OK;
   }
 
   int begin_mask = INT_ARG(0);
@@ -293,13 +291,11 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   int delta = 0;       // dim_values % 3;
   int elements = 0;    // dim_values / 3;
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> end;
-  std::vector<sd::LongType> strides;
+  std::vector<LongType> *begin = new std::vector<LongType>();
+  std::vector<LongType> *end = new std::vector<LongType>();
+  std::vector<LongType> *strides = new  std::vector<LongType>();
 
-  bool isLive = false;
-
-  std::vector<sd::LongType> args;
+  std::vector<LongType> *args = new std::vector<LongType>();
 
   // statically evaluated
   if (block.getIArguments()->size() > 5) {
@@ -307,35 +303,33 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     delta = dim_values % 3;
     elements = dim_values / 3;
 
-    for (int e = 5; e < block.getIArguments()->size(); e++) args.emplace_back(INT_ARG(e));
+    for (int e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
 
     REQUIRE_TRUE(delta == 0, 0,
                  "StridedSlice: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead",
                  (x->rankOf() * 3), dim_values);
 
-    ShapeUtils::copyVectorPart(begin, args, elements, 0);
-    ShapeUtils::copyVectorPart(end, args, elements, elements);
-    ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
+    ShapeUtils::copyVectorPart(*begin, *args, elements, 0);
+    ShapeUtils::copyVectorPart(*end, *args, elements, elements);
+    ShapeUtils::copyVectorPart(*strides, *args, elements, elements * 2);
 
   } else if (block.width() > 1) {
-    isLive = true;
-
     auto v_begin = INPUT_VARIABLE(1);
     auto v_end = INPUT_VARIABLE(2);
 
     elements = v_begin->lengthOf();
 
     REQUIRE_TRUE(v_begin->lengthOf() == v_end->lengthOf(), 0,
-                 "StridedSlice: Length of begin/end should match, but got %i vs %i instead", (int)v_begin->lengthOf(),
-                 (int)v_end->lengthOf());
+                 "StridedSlice: Length of begin/end should match, but got %i vs %i instead", v_begin->lengthOf(),
+                 v_end->lengthOf());
 
-    for (int e = 0; e < v_begin->lengthOf(); e++) begin.emplace_back(v_begin->e<int>(e));
+    for (int e = 0; e < v_begin->lengthOf(); e++) begin->emplace_back(v_begin->e<LongType>(e));
 
     for (int e = 0; e < v_end->lengthOf(); e++) {
       if(v_end->e<int>(e) < 0) {
-        end.emplace_back(v_end->e<int>(e)+ x->sizeAt(e));
+        end->emplace_back(v_end->e<LongType>(e)+ x->sizeAt(e));
       } else {
-        end.emplace_back(v_end->e<int>(e));
+        end->emplace_back(v_end->e<LongType>(e));
       }
     }
 
@@ -344,12 +338,12 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
 
       REQUIRE_TRUE(v_stride->lengthOf() == v_begin->lengthOf(), 0,
                    "StridedSlice: Length of begin/end/stride should match, but got %i vs %i vs %i instead",
-                   (int)v_begin->lengthOf(), (int)v_end->lengthOf(), (int)v_stride->lengthOf());
+                   v_begin->lengthOf(), v_end->lengthOf(), v_stride->lengthOf());
 
 
-      for (int e = 0; e < v_stride->lengthOf(); e++) strides.emplace_back(v_stride->e<int>(e));
+      for (int e = 0; e < v_stride->lengthOf(); e++) strides->emplace_back(v_stride->e<LongType>(e));
     } else {
-      for (int e = 0; e < v_begin->lengthOf(); e++) strides.emplace_back(1);
+      for (int e = 0; e < v_begin->lengthOf(); e++) strides->emplace_back(1);
     }
   } else {
     REQUIRE_TRUE(false, 0,
@@ -357,66 +351,73 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   }
 
   // validation of begin and start
-  std::vector<sd::LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
-  std::vector<sd::LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
-  std::vector<sd::LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
-  std::vector<sd::LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
+  std::vector<LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+  std::vector<LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
+  std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
+  std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
   if (shrink_axis_mask == 0)
     for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
       if (moveAxes[dim]) continue;
 
-      if (b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
-        int first = strides[b] > 0 ? begin[b] : math::sd_abs<int>(begin[b]) - 1;
+      if (b < begin->size() && !ignoreBegin[b] && !addAxes[dim]) {
+        int first = strides->at(b) > 0 ? begin->at(b) : math::sd_abs<int>(begin->at(b)) - 1;
         REQUIRE_TRUE(first <= x->sizeAt(dim), 0,
                      "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index "
                      "= %i for dimension %i!",
-                     begin[b], dim);
+                     begin->at(b), dim);
       }
-      if (e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
-        int last = strides[e] > 0 ? end[e] : math::sd_abs<int>(end[e]) - 1;
+      if (e < end->size() && !ignoreEnd[e] && !addAxes[dim]) {
+        int last = strides->at(e) > 0 ? end->at(e) : math::sd_abs<int>(end->at(e)) - 1;
         REQUIRE_TRUE(last <= x->sizeAt(dim), 0,
                      "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = "
                      "%i for dimension %i!",
-                     end[e], dim);
+                     end->at(e), dim);
       }
       ++b;
       ++e;
     }
 
-  std::vector<sd::LongType> indices;
+  std::vector<LongType> *indices = new std::vector<sd::LongType>();
   auto input_shape = x->getShapeAsVector();
-  std::vector<sd::LongType> final_shape;
+  std::vector<LongType> *final_shape = new std::vector<sd::LongType>();
   bool is_identity;
   bool is_simple_slice;
   bool is_dim0;
 
   // FIXME: remove this method once we get 1D vectors supported
   REQUIRE_TRUE(
-      _preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask,
+      _preprocess_strided_slice(indices, final_shape, input_shape, *begin, *end, *strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0),
       0, "StridedSlice: shape calculation failed");
-  if (indices.size()) {
-    sd::LongType* subArrShapeInfo = nullptr;
-    ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()), sd::LongType);
-    sd::LongType offset;
+  if (indices->size()) {
+    LongType* subArrShapeInfo = nullptr;
+    ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()) * 8, sd::LongType);
+    LongType offset;
 
-    shape::calcSubArrShapeInfoAndOffset(indices.data(), x->shapeInfo(), subArrShapeInfo, offset, true, true);
+    shape::calcSubArrShapeInfoAndOffset(indices->data(), x->shapeInfo(), subArrShapeInfo, offset, true, true);
     auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 
     NDArray::prepareSpecialUse({z}, {x});
 
-    NativeOpExecutioner::execTransformAny(block.launchContext(), sd::transform::Assign, x->bufferWithOffset(offset),
+    NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, x->bufferWithOffset(offset),
                                           subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
                                           subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
                                           z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr, true);
 
     NDArray::registerSpecialUse({z}, {x});
 
-    RELEASE(subArrShapeInfo, block.getWorkspace());
   } else if (!z->isEmpty()) {
     z->assign(x->e(0));
   }
-  return sd::Status::OK;
+
+  delete indices;
+  delete final_shape;
+  delete begin;
+  delete end;
+  delete strides;
+  delete args;
+
+  return Status::OK;
 }
 DECLARE_SYN(stridedslice, strided_slice);
 
@@ -435,65 +436,62 @@ DECLARE_SHAPE_FN(strided_slice) {
   int delta = dim_values % 3;
   int elements = dim_values / 3;
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> end;
-  std::vector<sd::LongType> strides;
+  //print all masks
+  std::vector<LongType> begin;
+  std::vector<LongType> end;
+  std::vector<LongType> strides;
 
   // if that's live - shape will be resolved in runtime
   if (block.width() > 1) {
-    begin = INPUT_VARIABLE(1)->template asVectorT<sd::LongType>();
-    end = INPUT_VARIABLE(2)->template asVectorT<sd::LongType>();
+    begin = INPUT_VARIABLE(1)->template asVectorT<LongType>();
+    end = INPUT_VARIABLE(2)->template asVectorT<LongType>();
     for(int  e = 0; e < end.size(); e++) {
       if(end[e] < 0) {
         end[e] += inShape[e];
       }
     }
 
-    strides = INPUT_VARIABLE(3)->template asVectorT<sd::LongType>();
+    strides = INPUT_VARIABLE(3)->template asVectorT<LongType>();
   } else if (dim_values > 0) {
     int delta2 = dim_values / x_rank;
 
-    std::vector<sd::LongType> args;
-    for (int e = 5; e < block.getIArguments()->size(); e++) args.emplace_back(INT_ARG(e));
+    std::vector<LongType> *args = new std::vector<LongType>();
+    for (int e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
 
     // FIXME: probably template required here
-    ShapeUtils::copyVectorPart(begin, args, elements, 0);
-    ShapeUtils::copyVectorPart(end, args, elements, elements);
-    ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
+    ShapeUtils::copyVectorPart(begin, *args, elements, 0);
+    ShapeUtils::copyVectorPart(end, *args, elements, elements);
+    ShapeUtils::copyVectorPart(strides, *args, elements, elements * 2);
   }
 
   REQUIRE_TRUE(begin.size() > 0 && end.size() > 0 && strides.size() > 0, 0, "Strided_Slice: empty arguments");
 
-  // validation of begin and start
-  std::vector<sd::LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
-  std::vector<sd::LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
-  std::vector<sd::LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
-  std::vector<sd::LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
 
-
-  std::vector<sd::LongType> input_shape;  //(shape::rank(inShape));
-  auto inputLen = shape::length(inShape);
-  std::vector<sd::LongType> shape;
+  std::vector<LongType> *input_shape = new std::vector<LongType>();
+  std::vector<LongType> *shape = new std::vector<LongType>();
 
   auto rank = shape::rank(inShape);
   auto shortShape = shape::shapeOf(inShape);
-  for (auto e = 0; e < rank; e++) input_shape.emplace_back(shortShape[e]);
+  for (auto e = 0; e < rank; e++) input_shape->emplace_back(shortShape[e]);
 
   bool is_identity;
   bool is_simple_slice;
   bool is_dim0;
 
-  std::vector<sd::LongType> indices;
+  std::vector<LongType> *indices = new std::vector<sd::LongType>();
   bool result =
-      _preprocess_strided_slice(&indices, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
+      _preprocess_strided_slice(indices, shape, *input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask,
                                 new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
-  if (indices.size()) {
+
+
+  if (indices->size()) {
     auto retDtype = block.numD() > 0 ? block.getDArguments()->at(0) : ArrayOptions::dataType(inShape);
-    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', shape);
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(retDtype, 'c', *shape);
     return SHAPELIST(newShape);
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
+  std::vector<LongType> *retShape = new std::vector<sd::LongType>{0};
+  return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(ArrayOptions::dataType(inShape),*retShape));
 }
 
 CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
@@ -511,13 +509,13 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   int delta = 0;       // dim_values % 3;
   int elements = 0;    // dim_values / 3;
 
-  std::vector<sd::LongType> begin;
-  std::vector<sd::LongType> end;
-  std::vector<sd::LongType> strides;
+  std::vector<LongType> begin;
+  std::vector<LongType> end;
+  std::vector<LongType> strides;
 
   bool isLive = false;
 
-  std::vector<sd::LongType> args;
+  std::vector<LongType> args;
 
   // statically evaluated
   if (block.getIArguments()->size() > 5) {
@@ -578,10 +576,10 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   }
 
   // validation of begin and start
-  std::vector<sd::LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
-  std::vector<sd::LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
-  std::vector<sd::LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
-  std::vector<sd::LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
+  std::vector<LongType> ignoreBegin = BitwiseUtils::valueBits(begin_mask);
+  std::vector<LongType> ignoreEnd = BitwiseUtils::valueBits(end_mask);
+  std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
+  std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
 
   for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
     if (moveAxes[dim]) continue;
@@ -605,8 +603,8 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   }
 
   auto input_shape = x->getShapeAsVector();
-  std::vector<sd::LongType> indices;
-  std::vector<sd::LongType> final_shape;
+  std::vector<LongType> indices;
+  std::vector<LongType> final_shape;
   bool is_identity;
   bool is_simple_slice;
   bool is_dim0;
@@ -617,8 +615,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
       _preprocess_strided_slice(&indices, &final_shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask,
                                 end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0),
       0, "StridedSliceBP: shape calculation failed");
-  // REQUIRE_TRUE(epsNext->isSameShape(final_shape), 0, "StridedSlice_bp: gradOut shape should be equals to output from
-  // strided_slice op."); Zero output array, so unused elements have 0 gradient
+
   output->nullify();
   //
   // the first case: only for scalar gradient step
@@ -630,21 +627,21 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     sub.assign(epsNext);
   }
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(strided_slice_bp) {
   auto inShape = inputShape->at(0);
-  sd::LongType* newShape;
+  LongType* newShape;
   COPY_SHAPE(inShape, newShape);
 
   return SHAPELIST(CONSTANT(newShape));
 }
 
-DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY); }
+DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(ANY); }
 
 DECLARE_TYPES(strided_slice_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY);
+  getOpDescriptor()->setAllowedInputTypes(ANY);
 }
 }  // namespace ops
 }  // namespace sd

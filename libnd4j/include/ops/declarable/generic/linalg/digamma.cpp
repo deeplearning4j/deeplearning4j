@@ -34,10 +34,12 @@ namespace ops {
 CONFIGURABLE_OP_IMPL(digamma, 1, 1, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
-
+  if (x->isEmpty()) {
+  return Status::OK;
+  }
   helpers::diGamma(block.launchContext(), *x, *z);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(digamma) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})->setSameMode(true); }

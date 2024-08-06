@@ -24,9 +24,6 @@
 
 #include <stdexcept>
 
-#if defined(_WIN32) || defined(_WIN64)
-//#include <windows.h>
-#endif
 
 namespace samediff {
 
@@ -100,20 +97,7 @@ ThreadPool::ThreadPool() {
     int rc = pthread_setaffinity_np(_threads[e]->native_handle(), sizeof(cpu_set_t), &cpuset);
     if (rc != 0) THROW_EXCEPTION("Failed to set pthread affinity");
 #endif
-    /*
-#if defined(_WIN32) || defined(_WIN64)
-    // we can't set affinity to more than 64 cores
-    if (e <= 64) {
-        auto mask = (static_cast<DWORD_PTR>(1) << e);
-        auto result = SetThreadAffinityMask(_threads[e]->native_handle(), mask);
-        if (!result)
-            THROW_EXCEPTION("Failed to set pthread affinity");
-    }
 
-    // that's fine. no need for time_critical here
-    SetThreadPriority(_threads[e]->native_handle(), THREAD_PRIORITY_HIGHEST);
-#endif
-     */
   }
   //add an extra ticket to minimize the risk of running out of tickets due to race conditions
   _tickets.push(new Ticket());
@@ -128,7 +112,7 @@ ThreadPool::~ThreadPool() {
     // release queue and thread
     delete _queues[e];
     _threads[e].detach();
-    // delete _interfaces[e];
+    delete _interfaces[e];
   }
 
   while (!_tickets.empty()) {
@@ -146,7 +130,6 @@ ThreadPool &ThreadPool::getInstance() {
 void ThreadPool::release(int numThreads) { _available += numThreads; }
 
 Ticket *ThreadPool::tryAcquire(int numThreads) {
-  // std::vector<BlockingQueue<CallableWithArguments*>*> queues;
   if (numThreads <= 0) return nullptr;
   Ticket *t = nullptr;
   // we check for threads availability first

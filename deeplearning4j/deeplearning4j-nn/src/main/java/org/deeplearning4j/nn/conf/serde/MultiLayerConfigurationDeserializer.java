@@ -32,10 +32,9 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.shade.jackson.core.JsonLocation;
 import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.databind.DeserializationContext;
-import org.nd4j.shade.jackson.databind.JsonDeserializer;
-import org.nd4j.shade.jackson.databind.JsonNode;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
@@ -45,15 +44,43 @@ import java.util.List;
 
 public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializer<MultiLayerConfiguration> {
 
+    private static ObjectMapper mapper = mapper();
+
     public MultiLayerConfigurationDeserializer(JsonDeserializer<?> defaultDeserializer) {
         super(defaultDeserializer, MultiLayerConfiguration.class);
     }
 
+
+    public static ObjectMapper mapper() {
+        ObjectMapper ret = new ObjectMapper();
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                                                          JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
+                    return new MultiLayerConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+        return ret;
+    }
+
+
     @Override
     public MultiLayerConfiguration deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
         long charOffsetStart = jp.getCurrentLocation().getCharOffset();
-
         MultiLayerConfiguration conf = (MultiLayerConfiguration) defaultDeserializer.deserialize(jp, ctxt);
+
         Layer[] layers = new Layer[conf.getConfs().size()];
         for (int i = 0; i < layers.length; i++) {
             layers[i] = conf.getConf(i).getLayer();
@@ -66,8 +93,9 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
         boolean requiresLegacyActivationHandling = requiresActivationFromLegacy(layers);
         boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
-
+        ObjectMapper mapper = mapper();
         if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
+            System.out.println("Legacy mapping");
             JsonLocation endLocation = jp.getCurrentLocation();
             long charOffsetEnd = endLocation.getCharOffset();
             Object sourceRef = endLocation.getSourceRef();
@@ -81,17 +109,17 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
             }
             String jsonSubString = s.substring((int) charOffsetStart - 1, (int) charOffsetEnd);
 
-            ObjectMapper om = NeuralNetConfiguration.mapper();
+            ObjectMapper om = mapper;
             JsonNode rootNode = om.readTree(jsonSubString);
 
             ArrayNode confsNode = (ArrayNode)rootNode.get("confs");
 
-            for( int i=0; i<layers.length; i++ ){
+            for( int i = 0; i < layers.length; i++) {
                 ObjectNode on = (ObjectNode) confsNode.get(i);
                 ObjectNode confNode = null;
-                if(layers[i] instanceof BaseLayer && ((BaseLayer)layers[i]).getIUpdater() == null){
+                if(layers[i] instanceof BaseLayer && ((BaseLayer)layers[i]).getIUpdater() == null) {
                     //layer -> (first/only child) -> updater
-                    if(on.has("layer")){
+                    if(on.has("layer")) {
                         confNode = on;
                         on = (ObjectNode) on.get("layer");
                     } else {
@@ -122,11 +150,11 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                     }
                 }
 
-                if(requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling || requiresLegacyActivationHandling){
-                    if(on.has("layer")){
+                if(requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling || requiresLegacyActivationHandling) {
+                    if(on.has("layer")) {
                         //Legacy format
                         ObjectNode layerNode = (ObjectNode)on.get("layer");
-                        if(layerNode.has("@class")){
+                        if(layerNode.has("@class")) {
                             //Later legacy format: class field for JSON subclass
                             on = layerNode;
                         } else {
@@ -155,16 +183,13 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         }
 
 
-
-
-
         //After 1.0.0-beta3, batchnorm reparameterized to support both variance and log10stdev
         //JSON deserialization uses public BatchNormalization() constructor which defaults to log10stdev now
         // but, as there is no useLogStdev=false property for legacy batchnorm JSON, the 'real' value (useLogStdev=false)
         // is not set to override the default, unless we do it manually here
-        for(NeuralNetConfiguration nnc : conf.getConfs()){
+        for(NeuralNetConfiguration nnc : conf.getConfs()) {
             Layer l = nnc.getLayer();
-            if(l instanceof BatchNormalization){
+            if(l instanceof BatchNormalization) {
                 BatchNormalization bn = (BatchNormalization)l;
                 List<String> vars = nnc.getVariables();
                 boolean isVariance = vars.contains(BatchNormalizationParamInitializer.GLOBAL_VAR);

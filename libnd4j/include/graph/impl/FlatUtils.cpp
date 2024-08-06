@@ -30,48 +30,48 @@ namespace sd {
 namespace graph {
 std::pair<int, int> FlatUtils::fromIntPair(IntPair *pair) { return std::pair<int, int>(pair->first(), pair->second()); }
 
-std::pair<sd::LongType, sd::LongType> FlatUtils::fromLongPair(LongPair *pair) {
-  return std::pair<sd::LongType, sd::LongType>(pair->first(), pair->second());
+std::pair<LongType, LongType> FlatUtils::fromLongPair(LongPair *pair) {
+  return std::pair<LongType, LongType>(pair->first(), pair->second());
 }
 
-NDArray *FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
+NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
   auto rank = static_cast<int>(flatArray->shape()->Get(0));
-  auto newShape = new sd::LongType[shape::shapeInfoLength(rank)];
+  auto newShape = new LongType[shape::shapeInfoLength(rank)];
   memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
 
   auto length = shape::length(newShape);
   auto dtype = DataTypeUtils::fromFlatDataType(flatArray->dtype());
 
   // empty arrays is special case, nothing to restore here
-  if (shape::isEmpty(newShape)) {
-    delete[] newShape;
+  if (shape::isEmptyConst(newShape)) {
+     delete[] newShape;
     return NDArrayFactory::empty_(dtype, nullptr);
   }
   // TODO fix UTF16 and UTF32
   if (dtype == UTF8) {
     bool isBe = BitwiseUtils::isBE();
-    bool canKeep = (isBe && flatArray->byteOrder() == sd::graph::ByteOrder_BE) ||
-                   (!isBe && flatArray->byteOrder() == sd::graph::ByteOrder_LE);
+    bool canKeep = (isBe && flatArray->byteOrder() == ByteOrder_BE) ||
+                   (!isBe && flatArray->byteOrder() == ByteOrder_LE);
 
     std::vector<std::string> substrings(length);
-    std::vector<sd::LongType> shapeVector(rank);
+    std::vector<LongType> shapeVector(rank);
     for (int e = 0; e < rank; e++) shapeVector[e] = newShape[e + 1];
 
     auto rawPtr = (void *)flatArray->buffer()->data();
-    auto longPtr = reinterpret_cast<sd::LongType *>(rawPtr);
+    auto longPtr = reinterpret_cast<LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
-    auto offsets = new sd::LongType[length + 1];
+    auto offsets = new LongType[length + 1];
 #if defined(__NEC__)
-    #pragma _NEC novector
+#pragma _NEC novector
 #endif
-    for (sd::LongType e = 0; e <= length; e++) {
+    for (LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];
       // FIXME: BE vs LE on partials
       // auto v = canKeep ?  o : BitwiseUtils::swap_bytes<sd::LongType>(o);
       offsets[e] = o;
     }
 
-    for (sd::LongType e = 0; e < length; e++) {
+    for (LongType e = 0; e < length; e++) {
       auto start = offsets[e];
       auto end = offsets[e + 1];
       auto len = end - start;
@@ -99,7 +99,7 @@ NDArray *FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
                                       ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()), length),
                         SD_COMMON_TYPES);
 
-  auto array = new NDArray(newBuffer, newShape, sd::LaunchContext::defaultContext(), true);
+  auto array = new NDArray(newBuffer, newShape, LaunchContext::defaultContext(), true);
 
   delete[] newShape;
   return array;
@@ -111,9 +111,9 @@ flatbuffers::Offset<FlatArray> FlatUtils::toFlatArray(flatbuffers::FlatBufferBui
   auto fBuffer = builder.CreateVector(byteVector);
   auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
 
-  auto bo = static_cast<sd::graph::ByteOrder>(BitwiseUtils::asByteOrder());
+  auto bo = static_cast<ByteOrder>(BitwiseUtils::asByteOrder());
 
-  return CreateFlatArray(builder, fShape, fBuffer, static_cast<sd::graph::DType>(array.dataType()), bo);
+  return CreateFlatArray(builder, fShape, fBuffer, static_cast<DType>(array.dataType()), bo);
 }
 }  // namespace graph
 }  // namespace sd

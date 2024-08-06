@@ -46,9 +46,9 @@ CUSTOM_OP_IMPL(eig, 1, 2, false, 0, 0) {
                eig_vectors->sizeAt(2) == 2,
                0, "Eig: the shape of the eigenvector results should be {%i, %i, 2}", n1);
 
-  sd::ops::helpers::eig(*input, *eig_vals, *eig_vectors);
+  helpers::eig(*input, *eig_vals, *eig_vectors);
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_TYPES(eig) { getOpDescriptor()->setAllowedInputTypes({ALL_FLOATS})->setSameMode(true); }
@@ -70,8 +70,10 @@ DECLARE_SHAPE_FN(eig) {
   auto output0 = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   auto desc2 = new ShapeDescriptor(dtype_float, ordering, {n1, n1, 2});
   auto output1 =ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-  delete desc;
-  delete desc2;
+  if (Environment::getInstance().isDeleteShapeInfo()) {
+    delete desc;
+    delete desc2;
+  }
   return SHAPELIST(output0, output1);
 }
 
