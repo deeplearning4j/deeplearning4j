@@ -157,16 +157,6 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray in = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering());
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, format, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
-        //just  print all inputs and outputs + method name
-        System.out.println("CnnLossLayer activation - forward pass input ("
-                + layerId() + " - " + this.layerConf().getLayerName() + " )");
-        System.out.println("input: " + input.toStringFull());
-        System.out.println("CnnLossLayer activation - forward pass result ("
-                + layerId() + " - " + this.layerConf().getLayerName() + " )");
-        System.out.println("Output shape: " + Arrays.toString(out2d.shape()));
-        System.out.println("Output: " + out2d.toStringFull());
-
-
         return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), format, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
