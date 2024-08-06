@@ -159,6 +159,8 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     T bestModel;
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
+
+                       if(bestModel != null)
                         bestModelScore = bestModel.score();
                         
                     } catch (IOException e2) {

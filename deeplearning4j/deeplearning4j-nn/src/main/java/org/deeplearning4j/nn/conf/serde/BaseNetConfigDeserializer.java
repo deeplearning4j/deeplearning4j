@@ -51,9 +51,14 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> implements ResolvableDeserializer {
+
+    static {
+        activationMap = getMap();
+    }
 
     protected final JsonDeserializer<?> defaultDeserializer;
 
@@ -66,9 +71,9 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     public abstract T deserialize(JsonParser jp, DeserializationContext ctxt)
                     throws IOException, JsonProcessingException;
 
-    protected boolean requiresIUpdaterFromLegacy(Layer[] layers){
-        for(Layer l : layers){
-            if(l instanceof BaseLayer){
+    protected boolean requiresIUpdaterFromLegacy(Layer[] layers) {
+        for(Layer l : layers) {
+            if(l instanceof BaseLayer) {
                 BaseLayer bl = (BaseLayer)l;
                 if(bl.getIUpdater() == null && bl.initializer().numParams(bl) > 0){
                     return true;
@@ -78,53 +83,46 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
         return false;
     }
 
-    protected boolean requiresDropoutFromLegacy(Layer[] layers){
-        for(Layer l : layers){
-            if(l.getIDropout() != null){
-                return false;
-            }
-        }
-        return true;
-    }
 
-    protected boolean requiresRegularizationFromLegacy(Layer[] layers){
+
+    protected boolean requiresRegularizationFromLegacy(Layer[] layers) {
         for(Layer l : layers){
-            if(l instanceof BaseLayer && ((BaseLayer)l).getRegularization() == null){
+            if(l instanceof BaseLayer && ((BaseLayer)l).getRegularization() == null) {
                 return true;
             }
         }
         return false;
     }
 
-    protected boolean requiresWeightInitFromLegacy(Layer[] layers){
-        for(Layer l : layers){
-            if(l instanceof BaseLayer && ((BaseLayer)l).getWeightInitFn() == null){
+    protected boolean requiresWeightInitFromLegacy(Layer[] layers) {
+        for(Layer l : layers) {
+            if(l instanceof BaseLayer && ((BaseLayer)l).getWeightInitFn() == null) {
                 return true;
             }
         }
         return false;
     }
 
-    protected boolean requiresActivationFromLegacy(Layer[] layers){
+    protected boolean requiresActivationFromLegacy(Layer[] layers) {
         for(Layer l : layers){
-            if(l instanceof BaseLayer && ((BaseLayer)l).getActivationFn() == null){
+            if(l instanceof BaseLayer && ((BaseLayer)l).getActivationFn() == null) {
                 return true;
             }
         }
         return false;
     }
 
-    protected boolean requiresLegacyLossHandling(Layer[] layers){
+    protected boolean requiresLegacyLossHandling(Layer[] layers) {
         for(Layer l : layers){
-            if(l instanceof BaseOutputLayer && ((BaseOutputLayer)l).getLossFn() == null){
+            if(l instanceof BaseOutputLayer && ((BaseOutputLayer)l).getLossFn() == null) {
                 return true;
             }
         }
         return false;
     }
 
-    protected void handleUpdaterBackwardCompatibility(BaseLayer layer, ObjectNode on){
-        if(on != null && on.has("updater")){
+    protected void handleUpdaterBackwardCompatibility(BaseLayer layer, ObjectNode on) {
+        if(on != null && on.has("updater")) {
             String updaterName = on.get("updater").asText();
             if(updaterName != null){
                 Updater u = Updater.valueOf(updaterName);
@@ -180,14 +178,14 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                         ((Nadam)iu).setEpsilon(eps);
                         break;
                     case ADAGRAD:
-                        if(Double.isNaN(eps)){
+                        if(Double.isNaN(eps)) {
                             eps = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
                         }
                         ((AdaGrad)iu).setLearningRate(lr);
                         ((AdaGrad)iu).setEpsilon(eps);
                         break;
                     case RMSPROP:
-                        if(Double.isNaN(eps)){
+                        if(Double.isNaN(eps)) {
                             eps = RmsProp.DEFAULT_RMSPROP_EPSILON;
                         }
                         ((RmsProp)iu).setLearningRate(lr);
@@ -204,19 +202,19 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
         }
     }
 
-    protected void handleL1L2BackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
-        if(on != null && (on.has("l1") || on.has("l2"))){
+    protected void handleL1L2BackwardCompatibility(BaseLayer baseLayer, ObjectNode on) {
+        if(on != null && (on.has("l1") || on.has("l2"))) {
             //Legacy format JSON
             baseLayer.setRegularization(new ArrayList<Regularization>());
             baseLayer.setRegularizationBias(new ArrayList<Regularization>());
 
-            if(on.has("l1")){
+            if(on.has("l1")) {
                 double l1 = on.get("l1").doubleValue();
                 if(l1 > 0.0){
                     baseLayer.getRegularization().add(new L1Regularization(l1));
                 }
             }
-            if(on.has("l2")){
+            if(on.has("l2")) {
                 double l2 = on.get("l2").doubleValue();
                 if(l2 > 0.0){
                     //Default to non-LR based WeightDecay, to match behaviour in 1.0.0-beta3
@@ -239,10 +237,10 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
         }
     }
 
-    protected void handleWeightInitBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
-        if(on != null && on.has("weightInit") ){
+    protected void handleWeightInitBackwardCompatibility(BaseLayer baseLayer, ObjectNode on) {
+        if(on != null && on.has("weightInit")) {
             //Legacy format JSON
-            if(on.has("weightInit")){
+            if(on.has("weightInit")) {
                 String wi = on.get("weightInit").asText();
                 try{
                     WeightInit w = WeightInit.valueOf(wi);
@@ -261,7 +259,7 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     }
 
     //Changed after 0.7.1 from "activationFunction" : "softmax" to "activationFn" : <object>
-    protected void handleActivationBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
+    protected void handleActivationBackwardCompatibility(BaseLayer baseLayer, ObjectNode on) {
         if(baseLayer.getActivationFn() == null && on.has("activationFunction")){
             String afn = on.get("activationFunction").asText();
             IActivation a = null;
@@ -279,7 +277,7 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     }
 
     //0.5.0 and earlier: loss function was an enum like "lossFunction" : "NEGATIVELOGLIKELIHOOD",
-    protected void handleLossBackwardCompatibility(BaseOutputLayer baseLayer, ObjectNode on){
+    protected void handleLossBackwardCompatibility(BaseOutputLayer baseLayer, ObjectNode on) {
         if(baseLayer.getLossFn() == null && on.has("activationFunction")) {
             String lfn = on.get("lossFunction").asText();
             ILossFunction loss = null;
@@ -304,10 +302,10 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     }
 
     private static Map<String,Class<? extends IActivation>> activationMap;
-    private static synchronized Map<String,Class<? extends IActivation>> getMap(){
-        if(activationMap == null){
-            activationMap = new HashMap<>();
-            for(Activation a : Activation.values()){
+    private static  Map<String,Class<? extends IActivation>> getMap() {
+        if(activationMap == null) {
+            activationMap = new ConcurrentHashMap<>();
+            for(Activation a : Activation.values()) {
                 activationMap.put(a.toString().toLowerCase(), a.getActivationFunction().getClass());
             }
         }

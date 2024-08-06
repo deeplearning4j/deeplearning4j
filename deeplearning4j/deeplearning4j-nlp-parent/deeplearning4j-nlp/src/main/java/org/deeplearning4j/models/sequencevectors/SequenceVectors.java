@@ -1215,7 +1215,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                 // if buffered level is below limitLower, we're going to fetch limitUpper number of strings from fetcher
                 if (buffer.size() < limitLower) {
-                    update();
                     AtomicInteger linesLoaded = new AtomicInteger(0);
                     while (linesLoaded.getAndIncrement() < limitUpper && this.iterator.hasMoreSequences()) {
                         Sequence<T> document = this.iterator.nextSequence();
