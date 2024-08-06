@@ -172,10 +172,6 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
-  A->printBufferRaw("mmulMXM A");
-  B->printBufferRaw("mmulMXM B");
-  C->printBufferRaw("mmulMXM C");
-
   const auto M = A->sizeAt(0);
   const auto K = A->sizeAt(1);
   const auto N = B->sizeAt(1);
