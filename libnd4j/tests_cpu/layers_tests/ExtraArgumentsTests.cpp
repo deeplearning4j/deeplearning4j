@@ -30,8 +30,6 @@ using namespace sd;
 class ExtraArgumentsTests : public NDArrayTests {
  public:
   ExtraArgumentsTests() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 

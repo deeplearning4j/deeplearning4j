@@ -34,14 +34,14 @@ class DeclarableOpsTests2 : public NDArrayTests {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_1) {
   NDArray input('c', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24},
-                sd::DataType::FLOAT32);
-  NDArray indices('c', {1, 6}, {0, 1, 2, 2, 1, 2}, sd::DataType::INT32);
+                FLOAT32);
+  NDArray indices('c', {1, 6}, {0, 1, 2, 2, 1, 2}, INT32);
   NDArray expected('c', {2, 1, 6, 4},
                    {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 9,  10, 11, 12, 5,  6,  7,  8,  9,  10, 11, 12,
                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 21, 22, 23, 24, 17, 18, 19, 20, 21, 22, 23, 24},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {1});
 
@@ -61,7 +61,7 @@ TEST_F(DeclarableOpsTests2, gather_2) {
                    {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 9,  10, 11, 12, 5,  6,  7,  8,  9,  10, 11, 12,
                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 21, 22, 23, 24, 17, 18, 19, 20, 21, 22, 23, 24});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input}, {}, {1, 0, 1, 2, 2, 1, 2}, {true});
 
@@ -77,10 +77,10 @@ TEST_F(DeclarableOpsTests2, gather_2) {
 TEST_F(DeclarableOpsTests2, gather_3) {
   NDArray input('c', {2, 3, 4},
                 {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-  NDArray indices('c', {1, 1}, std::vector<double>{2}, sd::DataType::INT32);
+  NDArray indices('c', {1, 1}, std::vector<double>{2}, INT32);
   NDArray expected('c', {2, 1, 1, 4}, {9, 10, 11, 12, 21, 22, 23, 24});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {1});
 
@@ -98,7 +98,7 @@ TEST_F(DeclarableOpsTests2, gather_4) {
   // auto indices ('c', {1,1},   {2});
   NDArray expected('c', {2, 4}, {9, 10, 11, 12, 21, 22, 23, 24});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input}, {}, {1, 2});
 
@@ -114,12 +114,12 @@ TEST_F(DeclarableOpsTests2, gather_4) {
 TEST_F(DeclarableOpsTests2, gather_5) {
   NDArray input('c', {2, 3, 4},
                 {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, sd::DataType::INT32);
+  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, INT32);
   NDArray expected('c', {2, 2, 3, 4},
                    {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 9,  10, 11, 12, 5,  6,  7,  8,  9,  10, 11, 12,
                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 21, 22, 23, 24, 17, 18, 19, 20, 21, 22, 23, 24});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {1}, {true});
 
@@ -135,13 +135,13 @@ TEST_F(DeclarableOpsTests2, gather_5) {
 TEST_F(DeclarableOpsTests2, gather_6) {
   NDArray input('c', {3, 3, 4}, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
                                  19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36});
-  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, sd::DataType::INT32);
+  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, INT32);
   NDArray expected('c', {2, 3, 3, 4},
                    {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
                     25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
                     13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {0});
 
@@ -157,11 +157,11 @@ TEST_F(DeclarableOpsTests2, gather_6) {
 TEST_F(DeclarableOpsTests2, gather_7) {
   NDArray input('c', {2, 3, 4},
                 {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, sd::DataType::INT64);
+  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, INT64);
   NDArray expected('c', {2, 3, 2, 3}, {1,  2,  3,  3,  2,  3,  5,  6,  7,  7,  6,  7,  9,  10, 11, 11, 10, 11,
                                        13, 14, 15, 15, 14, 15, 17, 18, 19, 19, 18, 19, 21, 22, 23, 23, 22, 23});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {2});
 
@@ -175,11 +175,11 @@ TEST_F(DeclarableOpsTests2, gather_7) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_8) {
-  NDArray input('c', {3, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, sd::DataType::FLOAT32);
-  NDArray indices('c', {1}, std::vector<double>{2}, sd::DataType::INT32);
-  NDArray expected('c', {1, 5}, {11, 12, 13, 14, 15.}, sd::DataType::FLOAT32);
+  NDArray input('c', {3, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, FLOAT32);
+  NDArray indices('c', {1}, std::vector<double>{2}, INT32);
+  NDArray expected('c', {1, 5}, {11, 12, 13, 14, 15.}, FLOAT32);
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -191,10 +191,10 @@ TEST_F(DeclarableOpsTests2, gather_8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_9) {
-  NDArray x('c', {2, 4, 3, 2}, sd::DataType::FLOAT32);
-  NDArray indices('c', {2}, std::vector<double>{1, 0}, sd::DataType::INT32);
+  NDArray x('c', {2, 4, 3, 2}, FLOAT32);
+  NDArray indices('c', {2}, std::vector<double>{1, 0}, INT32);
 
-  sd::ops::gather op;
+  ops::gather op;
   auto result = op.evaluate({&x, &indices}, {}, {-2});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -206,7 +206,7 @@ TEST_F(DeclarableOpsTests2, gather_10) {
   NDArray x('c', {2, 2}, {1, 2, 3, 4});
   NDArray e('c', {2, 2}, {3, 4, 1, 2});
 
-  sd::ops::gather op;
+  ops::gather op;
   auto result = op.evaluate({&x}, {}, {0, 1, 0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -219,10 +219,10 @@ TEST_F(DeclarableOpsTests2, gather_10) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_11) {
   NDArray x('c', {2, 2}, {1, 2, 3, 4});
-  NDArray indices('c', {2}, std::vector<double>{1, 0}, sd::DataType::INT64);
+  NDArray indices('c', {2}, std::vector<double>{1, 0}, INT64);
   NDArray e('c', {2, 2}, {3, 4, 1, 2});
 
-  sd::ops::gather op;
+  ops::gather op;
   auto result = op.evaluate({&x, &indices}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -235,10 +235,10 @@ TEST_F(DeclarableOpsTests2, gather_11) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_12) {
   NDArray input('c', {4}, {2.f, 3.f, 4.f, 5.f});
-  NDArray indices('c', {2}, {0, 2}, sd::DataType::INT32);
+  NDArray indices('c', {2}, {0, 2}, INT32);
   NDArray exp('c', {2}, {2.f, 4.f});
 
-  sd::ops::gather op;
+  ops::gather op;
   auto result = op.evaluate({&input, &indices}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -249,9 +249,8 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_13) {
-  NDArray input('c', {2, 3, 4, 5}, sd::DataType::DOUBLE);
-  NDArray indices('c', {2, 3, 4}, {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
-                  sd::DataType::INT32);
+  NDArray input('c', {2, 3, 4, 5}, DOUBLE);
+  NDArray indices('c', {2, 3, 4}, {0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3}, INT32);
   NDArray expected(
       'c', {2, 3, 2, 3, 4, 5},
       {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  0,   1,
@@ -290,7 +289,7 @@ TEST_F(DeclarableOpsTests2, gather_13) {
 
   input.linspace(0);
 
-  sd::ops::gather op;
+  ops::gather op;
 
   auto result = op.evaluate({&input, &indices}, {}, {2}, {true});
 
@@ -306,22 +305,21 @@ TEST_F(DeclarableOpsTests2, gather_13) {
 TEST_F(DeclarableOpsTests2, gather_14) {
   NDArray input('c', {2, 3, 4},
                 {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-  NDArray indices('c', {2, 3}, {0, 10, 2, 20, 1, 2}, sd::DataType::INT32);
+  NDArray indices('c', {2, 3}, {0, 10, 2, 20, 1, 2}, INT32);
   NDArray output('c', {2, 2, 3, 4});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {1}, {true}));
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_15) {
-  NDArray input('c', {2, 3, 4, 5}, sd::DataType::DOUBLE);
-  NDArray indices('c', {2, 3, 4}, {0, 10, 2, 3, 0, 1, 20, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 30, 0, 1, 2, 3},
-                  sd::DataType::INT32);
+  NDArray input('c', {2, 3, 4, 5}, DOUBLE);
+  NDArray indices('c', {2, 3, 4}, {0, 10, 2, 3, 0, 1, 20, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 30, 0, 1, 2, 3}, INT32);
   NDArray output('c', {2, 3, 2, 3, 4, 5});
 
-  sd::ops::gather op;
+  ops::gather op;
 
   ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {2}, {true}));
 }
@@ -329,10 +327,10 @@ TEST_F(DeclarableOpsTests2, gather_15) {
 TEST_F(DeclarableOpsTests2, BroadcastGradientArgs_1) {
   NDArray input('c', {3, 3, 4}, {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18,
                                  19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36},
-                sd::DataType::INT32);
-  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, sd::DataType::INT32);
+                INT32);
+  NDArray indices('c', {2, 3}, {0, 1, 2, 2, 1, 2}, INT32);
 
-  sd::ops::broadcastgradientargs op;
+  ops::broadcastgradientargs op;
 
   auto result = op.evaluate({&input, &indices}, {}, {});
 
@@ -346,7 +344,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
   x.linspace(1);
   auto exp = x.reshape('c', {2, 3, 4});
 
-  sd::ops::squeeze op;
+  ops::squeeze op;
   auto result = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -361,7 +359,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
   x.linspace(1);
   auto exp = new NDArray(x.dup());
 
-  sd::ops::squeeze op;
+  ops::squeeze op;
   auto result = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -379,7 +377,7 @@ TEST_F(DeclarableOpsTests2, Test_FloorMod_1) {
   auto y = NDArrayFactory::create<float>('c', {1, 3}, {-3.0f, 2.0f, -2.0f});
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {-1.f, 0.f, -1.f});
 
-  sd::ops::floormod op;
+  ops::floormod op;
 
   auto result = op.evaluate({&x, &y}, {}, {});
 
@@ -395,7 +393,7 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_1) {
   auto y = NDArrayFactory::create<float>('c', {1, 3}, {-2.0f, 2.0f, -2.0f});
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {-2.f, 3.f, 1.f});
 
-  sd::ops::floordiv op;
+  ops::floordiv op;
 
   auto result = op.evaluate({&x, &y}, {}, {});
 
@@ -411,7 +409,7 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_2) {
   auto exp1 = NDArrayFactory::create<float>('c', {1, 3}, {0.f, 0.f, 0.f});
   auto exp2 = NDArrayFactory::create<float>('c', {1, 3}, {0.f, 0.f, 0.f});
 
-  sd::ops::floordiv_bp op;
+  ops::floordiv_bp op;
 
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
@@ -425,7 +423,7 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_1) {
   auto x = NDArrayFactory::create<float>('c', {2, 2}, {1.0f, 2.0f, 3.0f, 4.0f});
   auto exp = NDArrayFactory::create<float>('c', {2, 4}, {1.0f, 2.0f, 0.f, 0.f, 3.0f, 4.0f, 0.f, 0.f});
 
-  sd::ops::crelu op;
+  ops::crelu op;
 
   auto result = op.evaluate({&x}, {}, {});
 
@@ -441,7 +439,7 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
   auto eps = NDArrayFactory::create<float>('c', {2, 4}, {1.0f, 2.0f, 4.f, 3.f, 3.0f, 4.0f, 2.f, 1.f});
   auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, -2.f, 4.f});
 
-  sd::ops::crelu_bp op;
+  ops::crelu_bp op;
   auto result = op.evaluate({&x, &eps});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(1, result.size());
@@ -458,7 +456,7 @@ TEST_F(DeclarableOpsTests2, Test_Concat_BP_1) {
   auto expEX = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
   auto expEY = NDArrayFactory::create<float>('c', {2, 2}, {0.f, 1.f, 0.f, 1.f});
 
-  sd::ops::concat_bp op;
+  ops::concat_bp op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {-1});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(2, result.size());
@@ -485,7 +483,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_1) {
   weights.assign(0.5f);
   expected.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -508,7 +506,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_2) {
   weights.assign(0.5f);
   expected.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -530,7 +528,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_3) {
   weights.assign(0.5f);
   expected.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -553,7 +551,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_4) {
   weights.assign(0.5f);
   expected.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -576,7 +574,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_5) {
   weights.assign(0.5f);
   expected.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -599,7 +597,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_6) {
   weights.assign(0.f);
   expected.assign(0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -620,7 +618,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_7) {
   predictions.linspace(2);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -641,7 +639,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
   predictions.linspace(2);
   weights.assign(0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -662,7 +660,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
   predictions.linspace(2);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -683,7 +681,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
   predictions.linspace(2);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -704,7 +702,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
   predictions.linspace(2);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -725,7 +723,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
   predictions.linspace(2);
   weights.assign(0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -746,7 +744,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
   predictions.linspace(2);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -769,7 +767,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
   weights.p(1, 0.f);
   weights.p(2, 0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -790,7 +788,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
   predictions.linspace(3);
   weights.assign(0.5f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -815,7 +813,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
   predictions.p(2, 0.f);
   predictions.p(3, 0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -844,7 +842,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
   labels.p(2, 0.f);
   labels.p(3, 0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -873,7 +871,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
   labels.p(2, 0.f);
   labels.p(3, 0.f);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -894,7 +892,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_19) {
   predictions.linspace(3);
   weights.assign(0.5);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -915,7 +913,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_20) {
   predictions.linspace(3);
   weights.assign(0.5);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -936,7 +934,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_21) {
   predictions.linspace(3);
   weights.assign(0.5);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -957,7 +955,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_22) {
   predictions.linspace(3);
   weights.assign(0.);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -990,7 +988,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
   weights.p(40 + 2, 0.);
   weights.p(40 + 3, 0.);
 
-  sd::ops::absolute_difference_loss op;
+  ops::absolute_difference_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1014,7 +1012,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test1) {
   predictions.linspace(2);
   weights.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1037,7 +1035,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test2) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1059,7 +1057,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test3) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0, 2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1081,7 +1079,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test4) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0, 2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1102,7 +1100,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test5) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1123,7 +1121,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1144,7 +1142,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
   weights.assign(0.5);
   predictions.assign(0.5);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1165,7 +1163,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
   weights.assign(0.5f);
   predictions.assign(0.5f);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2, 2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1186,7 +1184,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
   weights.assign(0.5f);
   predictions.assign(0.5f);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2, 2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1209,7 +1207,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
   weights.p(0, 0.f);
   weights.p(1, 0.f);
 
-  sd::ops::cosine_distance_loss op;
+  ops::cosine_distance_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2, 2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1233,7 +1231,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1257,7 +1255,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1281,7 +1279,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test3) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1302,7 +1300,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test4) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1323,7 +1321,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test5) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1344,7 +1342,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test6) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1365,7 +1363,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test7) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1386,7 +1384,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test8) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1407,7 +1405,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test9) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1428,7 +1426,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test10) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1449,7 +1447,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test11) {
   logits.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1474,7 +1472,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1495,7 +1493,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test13) {
   logits.linspace(1);
   weights.assign(0.);
 
-  sd::ops::hinge_loss op;
+  ops::hinge_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1520,7 +1518,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test1) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1545,7 +1543,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test2) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1570,7 +1568,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test3) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1591,7 +1589,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test4) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1612,7 +1610,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test5) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1633,7 +1631,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test6) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1654,7 +1652,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test7) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1679,7 +1677,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1700,7 +1698,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test9) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1721,7 +1719,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test10) {
   predictions.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1746,7 +1744,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::huber_loss op;
+  ops::huber_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {0.1}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1772,7 +1770,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test1) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1798,7 +1796,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test2) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1813,7 +1811,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test2) {
 TEST_F(DeclarableOpsTests2, log_loss_test3) {
   auto labels = NDArrayFactory::create<double>('c', {2, 3, 4});
   auto predictions = NDArrayFactory::create<double>('c', {2, 3, 4});
-  NDArray weights(sd::DataType::DOUBLE);
+  NDArray weights(DOUBLE);
   auto expected = NDArrayFactory::create<double>(
       'c', {2, 3, 4},
       {1.60943663,  2.48403668, 3.05256081,   3.40363169,   3.57730675,   3.59525585,   3.46986699,   3.20791793,
@@ -1824,7 +1822,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test3) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1845,7 +1843,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test4) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1866,7 +1864,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test5) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1881,13 +1879,13 @@ TEST_F(DeclarableOpsTests2, log_loss_test5) {
 TEST_F(DeclarableOpsTests2, log_loss_test6) {
   auto labels = NDArrayFactory::create<double>('c', {2, 3, 4});
   auto predictions = NDArrayFactory::create<double>('c', {2, 3, 4});
-  NDArray weights(sd::DataType::DOUBLE);
+  NDArray weights(DOUBLE);
 
   predictions.linspace(0.04, 0.04);
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1908,7 +1906,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test7) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1929,7 +1927,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test8) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1944,13 +1942,13 @@ TEST_F(DeclarableOpsTests2, log_loss_test8) {
 TEST_F(DeclarableOpsTests2, log_loss_test9) {
   auto labels = NDArrayFactory::create<double>('c', {2, 3, 4});
   auto predictions = NDArrayFactory::create<double>('c', {2, 3, 4});
-  NDArray weights(sd::DataType::DOUBLE);
+  NDArray weights(DOUBLE);
 
   predictions.linspace(0.04, 0.04);
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1975,7 +1973,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1996,7 +1994,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test11) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2017,7 +2015,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test12) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2042,7 +2040,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::log_loss op;
+  ops::log_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2060,7 +2058,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
   auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
   auto expected = NDArrayFactory::create<double>('c', {1, 1}, {1.});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2099,7 +2097,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
       {1.9665822560405073, 3.806679563402927, 6.185624212589066, 20.237895345263905, 16.739700814450472,
        13.655430201400929, 6.473256392322658, 3.9337379694106325, 22.509455553531062, 1.4741234749089487});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2138,7 +2136,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
       {0.0, 0.0, 21.748459867092496, 6.090581568657439, 7.51315897553838, 5.999534225166869, 22.58050883748054,
        6.8600435676788605, 107.5976928688877, 191.56864939172544});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2173,7 +2171,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
        -0.3624048087249232, 1.6008209804575328,   0.1245980660014825,   1.0685424462364297,   -0.5672594432046791});
   auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2208,7 +2206,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
        1.2268011099696847,  0.48061693077695455,  -0.5306373077054981, 1.5005367299570744,  -2.1005486985463966});
   auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2243,7 +2241,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
        0.47525819203475833,  1.2215678456801444,   -0.39319465979983964, 1.9435677135606038,   1.4540100039010526});
   auto weights = NDArrayFactory::create<double>('c', {1, 1}, {1});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2278,7 +2276,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
        -0.6292022623165172, 2.1114596721927508,  0.4634986528550097,   0.08922001427846013,  1.5767749644913223});
   auto weights = NDArrayFactory::create<double>('c', {10, 1}, {0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2313,7 +2311,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
        -1.0816010467183583, 0.25033738231939673, -1.605752685708275,   1.1029112741353981,   0.3237822320282494});
   auto weights = NDArrayFactory::create<double>('c', {10, 1}, {0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2348,7 +2346,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
        -9.410401291588706E-4, -0.7721838774717349, 0.4784019579457375,  -0.6979798841469268,  -0.319729737118584});
   auto weights = NDArrayFactory::create<double>('c', {10, 1}, {0.0, 0.0, 1.0, 1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0});
 
-  sd::ops::mean_pairwssqerr_loss op;
+  ops::mean_pairwssqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2371,7 +2369,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2395,7 +2393,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2419,7 +2417,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2447,7 +2445,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2468,7 +2466,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2489,7 +2487,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2510,7 +2508,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2535,7 +2533,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
   weights.p(2, 0.);
   weights.p(3, 0.);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2556,7 +2554,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2577,7 +2575,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2598,7 +2596,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2622,7 +2620,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
   weights.p(1, 0.);
   weights.p(2, 0.);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2643,7 +2641,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2664,7 +2662,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2685,7 +2683,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
   labels.linspace(1);
   weights.assign(0.5);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2709,7 +2707,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
   weights.p(1, 0.);
   weights.p(2, 0.);
 
-  sd::ops::mean_sqerr_loss op;
+  ops::mean_sqerr_loss op;
   auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2734,7 +2732,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2759,7 +2757,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2784,7 +2782,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2810,7 +2808,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2831,7 +2829,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2852,7 +2850,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2873,7 +2871,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2894,7 +2892,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2918,7 +2916,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
   weights.p(1, 0.);
   weights.p(2, 0.);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2939,7 +2937,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2960,7 +2958,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2981,7 +2979,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3005,7 +3003,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
   weights.p(1, 0.);
   weights.p(2, 0.);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3026,7 +3024,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3047,7 +3045,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3068,7 +3066,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3092,7 +3090,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
   weights.p(1, 0.);
   weights.p(2, 0.);
 
-  sd::ops::sigm_cross_entropy_loss op;
+  ops::sigm_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {3});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3115,7 +3113,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3137,7 +3135,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0}, {});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3160,7 +3158,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3183,7 +3181,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3206,7 +3204,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3227,7 +3225,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3248,7 +3246,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3269,7 +3267,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3290,7 +3288,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3311,7 +3309,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3332,7 +3330,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {3}, {}, {}, false);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3352,7 +3350,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {3}, {}, {}, false);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3373,7 +3371,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3394,7 +3392,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3415,7 +3413,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
   logits.linspace(0.1, 0.1);
   weights.assign(0.5);
 
-  sd::ops::softmax_cross_entropy_loss op;
+  ops::softmax_cross_entropy_loss op;
   auto results = op.evaluate({&logits, &weights, &labels}, {5.}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3458,7 +3456,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test1) {
       'c', {batchSize, numUnits},
       {3.99987108, 3.99987108, 3.99987108, 3.99987108, 3.99987108, 3.99987108, 3.99987108, 3.99987108});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.}, {0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3504,7 +3502,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test2) {
       'c', {batchSize, numUnits},
       {1.93001527, 1.93001527, 1.93001527, 1.93001527, 1.93001527, 1.93001527, 1.93001527, 1.93001527});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., -10.5}, {0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3548,7 +3546,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test3) {
       {0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3592,7 +3590,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test4) {
       {0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568, 0.37992568});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3634,7 +3632,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test5) {
   auto expHt = NDArrayFactory::create<double>('c', {batchSize, numProj}, {0.3, 0.3, 0.3, 0.3, 0.3, 0.3});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0.3, 1.5}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3679,7 +3677,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test6) {
       'c', {batchSize, numUnits},
       {3.99972188, 3.99972188, 3.99972188, 3.99972188, 3.99972188, 3.99972188, 3.99972188, 3.99972188});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 1.5}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3722,7 +3720,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test7) {
                                               {0.75977136, 0.75977136, 0.75977136, 0.75977136, 0.75977136, 0.75977136});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0.4, 0., 1.5}, {0, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3768,7 +3766,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
       'c', {batchSize, numUnits},
       {3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3812,7 +3810,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test9) {
       {0.99501777, 0.99501777, 0.99501777, 0.99501777, 0.99501777, 0.99501777, 0.99501777, 0.99501777});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {3., 3., 3., 3., 3., 3., 3., 3.});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3857,7 +3855,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test10) {
       'c', {batchSize, numUnits},
       {3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277, 3.99996277});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 10.5}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3900,7 +3898,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test11) {
                                               {1.99003554, 1.99003554, 1.99003554, 1.99003554, 1.99003554, 1.99003554});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {3., 3., 3., 3., 3., 3., 3., 3.});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 0., 10.5}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -3942,7 +3940,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
   auto expHt = NDArrayFactory::create<double>('c', {batchSize, numProj}, {1., 1., 1., 1., 1., 1.});
   auto expCt = NDArrayFactory::create<double>('c', {batchSize, numUnits}, {3., 3., 3., 3., 3., 3., 3., 3.});
 
-  sd::ops::lstmCell op;
+  ops::lstmCell op;
   auto results = op.evaluate({&xt, &ht_1, &ct_1, &Wx, &Wh, &Wc, &Wp, &b}, {3., 1., -5.}, {1, 1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -4008,7 +4006,7 @@ TEST_F(DeclarableOpsTests2, ctc_loss_test1) {
 #else
   auto expected = NDArrayFactory::create<float>('c', {BATCH_LEN}, {6.0661564f, 6.4285727f, 7.7180986f, 4.936057f});
 #endif
-  sd::ops::ctc_loss op;
+  ops::ctc_loss op;
 
   auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
 
@@ -4102,7 +4100,7 @@ TEST_F(DeclarableOpsTests2, ctc_loss_grad_test1) {
        -0.07685445f, 0.1546654f,   0.00699046f,  -0.26606354f, 0.17164008f,  -0.06723261f, 0.2533586f,   -0.31069174f,
        -0.07983261f, 0.19742766f,  -0.06026195f, 0.1379485f,   -0.47723943f, 0.11733948f,  0.29238105f,  -0.07042958});
 #endif
-  sd::ops::ctc_loss_grad op;
+  ops::ctc_loss_grad op;
 
   auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
 
@@ -4139,7 +4137,7 @@ TEST_F(DeclarableOpsTests2, ctc_beam_test1) {
 
   auto expected_probs = NDArrayFactory::create<float>('c', {BATCH_LEN, NBEST_LEN}, {-2.817627f, -3.054376f});
 
-  sd::ops::ctc_beam op;
+  ops::ctc_beam op;
 
   auto result = op.execute({&logits, &logits_length}, {&output_sequence, &output_seq_prob, &output_seq_length},
                            {BLANK_INDEX, BEAM_WIDTH, NBEST_LEN});
@@ -4189,7 +4187,7 @@ TEST_F(DeclarableOpsTests2, ctc_beam_test2) {
   auto expected_probs =
       NDArrayFactory::create<float>('c', {BATCH_LEN, NBEST_LEN}, {-5.497302f, -5.469760f, -5.338807f, -5.520249f});
 
-  sd::ops::ctc_beam op;
+  ops::ctc_beam op;
 
   auto results = op.evaluate({&logits, &logits_length}, {}, {BATCH_LEN, BEAM_WIDTH, NBEST_LEN});
 

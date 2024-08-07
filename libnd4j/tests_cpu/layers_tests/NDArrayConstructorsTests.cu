@@ -83,7 +83,7 @@ TEST_F(NDArrayConstructorsTests, test_constructor_3) {
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_4) {
-  auto x = NDArrayFactory::create(sd::DataType::FLOAT32, 1.0f);
+  auto x = NDArrayFactory::create(FLOAT32, 1.0f);
 
   ASSERT_FALSE(x.buffer() == nullptr);
   ASSERT_FALSE(x.specialBuffer() == nullptr);
@@ -181,7 +181,7 @@ TEST_F(NDArrayConstructorsTests, test_linspace_1) {
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_10) {
-  NDArray scalar1(sd::DataType::DOUBLE);  // scalar1 = 0
+  NDArray scalar1(DOUBLE);  // scalar1 = 0
   NDArray scalar2('c', {}, std::vector<double>{0});
 
   ASSERT_TRUE(scalar1.isActualOnDeviceSide());

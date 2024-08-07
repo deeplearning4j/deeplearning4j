@@ -34,13 +34,13 @@ class SortCudaTests : public NDArrayTests {
 };
 
 TEST_F(SortCudaTests, test_linear_sort_by_key_1) {
-  auto k = NDArrayFactory::create<sd::LongType>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
+  auto k = NDArrayFactory::create<LongType>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
   auto v = NDArrayFactory::create<double>('c', {10}, {1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5});
 
-  auto ek = NDArrayFactory::create<sd::LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+  auto ek = NDArrayFactory::create<LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   sortByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
             v.specialBuffer(), v.specialShapeInfo(), false);
@@ -52,13 +52,13 @@ TEST_F(SortCudaTests, test_linear_sort_by_key_1) {
 }
 
 TEST_F(SortCudaTests, test_linear_sort_by_val_1) {
-  auto k = NDArrayFactory::create<sd::LongType>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
+  auto k = NDArrayFactory::create<LongType>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
   auto v = NDArrayFactory::create<double>('c', {10}, {1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5});
 
-  auto ek = NDArrayFactory::create<sd::LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+  auto ek = NDArrayFactory::create<LongType>('c', {10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
               v.specialBuffer(), v.specialShapeInfo(), false);
@@ -76,7 +76,7 @@ TEST_F(SortCudaTests, test_linear_sort_by_val_2) {
   auto ek = NDArrayFactory::create<int>('c', {6}, {3, 0, 1, 2, 4, 5});
   auto ev = NDArrayFactory::create<double>('c', {6}, {0.95, 0.9, 0.75, 0.6, 0.5, 0.3});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
               v.specialBuffer(), v.specialShapeInfo(), true);
@@ -88,18 +88,18 @@ TEST_F(SortCudaTests, test_linear_sort_by_val_2) {
 
 TEST_F(SortCudaTests, test_tad_sort_by_key_1) {
   auto k =
-      NDArrayFactory::create<sd::LongType>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8, 1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
+      NDArrayFactory::create<LongType>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8, 1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
   auto v = NDArrayFactory::create<double>('c', {2, 10}, {1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5,
                                                          1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5});
 
   auto ek =
-      NDArrayFactory::create<sd::LongType>('c', {2, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+      NDArrayFactory::create<LongType>('c', {2, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {2, 10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5,
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-  sd::LongType axis = 1;
+  LongType axis = 1;
   sortTadByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
   k.tickWriteDevice();
@@ -111,18 +111,18 @@ TEST_F(SortCudaTests, test_tad_sort_by_key_1) {
 
 TEST_F(SortCudaTests, test_tad_sort_by_val_1) {
   auto k =
-      NDArrayFactory::create<sd::LongType>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8, 1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
+      NDArrayFactory::create<LongType>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8, 1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
   auto v = NDArrayFactory::create<double>('c', {2, 10}, {1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5,
                                                          1.5, 3.5, 5.5, 9.5, 0.5, 2.5, 4.5, 6.5, 7.5, 8.5});
 
   auto ek =
-      NDArrayFactory::create<sd::LongType>('c', {2, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+      NDArrayFactory::create<LongType>('c', {2, 10}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   auto ev = NDArrayFactory::create<double>('c', {2, 10}, {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5,
                                                           0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-  sd::LongType axis = 1;
+  LongType axis = 1;
   sortTadByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(),
                  v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
   k.tickWriteDevice();

@@ -37,8 +37,8 @@ class RNGTests : public NDArrayTests {
  public:
   long _seed = 119L;
 
-  sd::graph::RandomGenerator _rngA;
-  sd::graph::RandomGenerator _rngB;
+  RandomGenerator _rngA;
+  RandomGenerator _rngB;
 
   NDArray* nexp0 = NDArrayFactory::create_<float>('c', {10, 10});
   NDArray* nexp1 = NDArrayFactory::create_<float>('c', {10, 10});
@@ -65,7 +65,7 @@ TEST_F(RNGTests, TestSeeds_1) {
   ASSERT_EQ(123, generator.rootState());
   ASSERT_EQ(456, generator.nodeState());
 
-  sd::Pointer ptr = malloc(sizeof(RandomGenerator));
+  Pointer ptr = malloc(sizeof(RandomGenerator));
   memcpy(ptr, &generator, sizeof(RandomGenerator));
 
   auto cast = reinterpret_cast<RandomGenerator*>(ptr);
@@ -89,8 +89,7 @@ TEST_F(RNGTests, TestGenerator_SGA_1) {
   auto array = NDArrayFactory::create<float>('c', {10000000});
   generator.setStates(123L, 456L);
   for (auto idx = 0; idx < array.lengthOf(); idx++) {
-    float x = generator.relativeT(idx, -sd::DataTypeUtils::template max<float>() / 10,
-                                  sd::DataTypeUtils::template max<float>() / 10);
+    float x = generator.relativeT(idx, -DataTypeUtils::template max<float>() / 10, DataTypeUtils::template max<float>() / 10);
     array.r<float>(idx) = x;
   }
   auto minimum = array.reduceNumber(reduce::AMin);
@@ -201,7 +200,7 @@ TEST_F(RNGTests, Test_Uniform_10) {
 
   RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x, 0.0f, 1.0f);
 
-  sd::ops::reduce_max op;
+  ops::reduce_max op;
   auto status = op.execute({&x}, {&z});
   ASSERT_EQ(Status::OK, status);
 
@@ -214,7 +213,7 @@ TEST_F(RNGTests, Test_Uniform_10_double) {
 
   RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x, 0.0f, 1.0f);
 
-  sd::ops::reduce_max op;
+  ops::reduce_max op;
   auto status = op.execute({&x}, {&z});
   ASSERT_EQ(Status::OK, status);
 
@@ -308,7 +307,7 @@ TEST_F(RNGTests, Test_Gaussian_21) {
   ASSERT_FALSE(x0.equalsTo(nexp0));
   ASSERT_FALSE(x0.equalsTo(nexp1));
   ASSERT_FALSE(x0.equalsTo(nexp2));
-  sd::ops::moments op;
+  ops::moments op;
   auto result = op.evaluate({&x0}, {}, {});
   ASSERT_TRUE(result.status() == Status::OK);
   auto mean = result.at(0);
@@ -525,12 +524,12 @@ TEST_F(RNGTests, Test_Binomial_1) {
 }
 
 TEST_F(RNGTests, Test_Uniform_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-  auto op = new sd::ops::LegacyRandomOp(0);
+  auto op = new ops::LegacyRandomOp(0);
   auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -547,18 +546,18 @@ TEST_F(RNGTests, Test_Uniform_SGA_3) {
   // auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
-  RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, -sd::DataTypeUtils::template max<float>(),
-                              sd::DataTypeUtils::template max<float>());
+  RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, -DataTypeUtils::template max<float>(),
+                              DataTypeUtils::template max<float>());
   auto minimumU = x1.reduceNumber(reduce::AMin);
 }
 
 TEST_F(RNGTests, Test_Gaussian_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-  auto op = new sd::ops::LegacyRandomOp(random::GaussianDistribution);
+  auto op = new ops::LegacyRandomOp(random::GaussianDistribution);
   auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -572,12 +571,12 @@ TEST_F(RNGTests, Test_Gaussian_2) {
 }
 
 TEST_F(RNGTests, Test_LogNorm_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillLogNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-  auto op = new sd::ops::LegacyRandomOp(random::LogNormalDistribution);
+  auto op = new ops::LegacyRandomOp(random::LogNormalDistribution);
   auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -591,12 +590,12 @@ TEST_F(RNGTests, Test_LogNorm_2) {
 }
 
 TEST_F(RNGTests, Test_TruncatedNorm_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-  auto op = new sd::ops::LegacyRandomOp(random::TruncatedNormalDistribution);
+  auto op = new ops::LegacyRandomOp(random::TruncatedNormalDistribution);
   auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -609,12 +608,12 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
 }
 
 TEST_F(RNGTests, Test_Binomial_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillBinomial(LaunchContext::defaultContext(), _rngB, &x1, 3, 0.5f);
 
-  auto op = new sd::ops::LegacyRandomOp(random::BinomialDistributionEx);
+  auto op = new ops::LegacyRandomOp(random::BinomialDistributionEx);
   auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -628,12 +627,12 @@ TEST_F(RNGTests, Test_Binomial_2) {
 }
 
 TEST_F(RNGTests, Test_Bernoulli_2) {
-  auto input = NDArrayFactory::create<sd::LongType>('c', {1, 2}, {10, 10});
+  auto input = NDArrayFactory::create<LongType>('c', {1, 2}, {10, 10});
   auto x1 = NDArrayFactory::create<float>('c', {10, 10});
 
   RandomLauncher::fillBernoulli(LaunchContext::defaultContext(), _rngB, &x1, 0.5f);
 
-  auto op = new sd::ops::LegacyRandomOp(random::BernoulliDistribution);
+  auto op = new ops::LegacyRandomOp(random::BernoulliDistribution);
   auto result = op->execute(_rngA, {&input}, {0.5f}, {});
 
   ASSERT_EQ(Status::OK, result.status());
@@ -647,10 +646,10 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
 }
 
 TEST_F(RNGTests, Test_GaussianDistribution_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
-  sd::ops::random_normal op;
+  ops::random_normal op;
   auto result = op.evaluate({&x}, {0.0, 1.0f}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -664,10 +663,10 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_BernoulliDistribution_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
-  sd::ops::random_bernoulli op;
+  ops::random_bernoulli op;
   auto result = op.evaluate({&x}, {0.5f}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -681,10 +680,10 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
-  sd::ops::random_exponential op;
+  ops::random_exponential op;
   auto result = op.evaluate({&x}, {0.25f}, {0});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -701,10 +700,10 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
-  sd::ops::random_exponential op;
+  ops::random_exponential op;
   auto result = op.evaluate({&x}, {1.f}, {0});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -721,11 +720,11 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
   RandomGenerator oc(2716049175077475646L, -6182841917129177862L);
 
-  sd::ops::random_exponential op;
+  ops::random_exponential op;
   RandomLauncher::fillExponential(x.getContext(), oc, &exp0, 2.f);
   auto result = op.evaluate({&x}, {1.f}, {0});
   ASSERT_EQ(Status::OK, result.status());
@@ -745,13 +744,13 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10, 10});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10, 10});
   auto y = NDArrayFactory::create<float>('c', {10, 10});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
   y.assign(1.0);
 
-  sd::ops::random_exponential op;
+  ops::random_exponential op;
   auto result = op.evaluate({&x, &y}, {0.25f}, {0});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -765,13 +764,13 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
 }
 
 TEST_F(RNGTests, Test_PoissonDistribution_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {1}, {10});
+  auto x = NDArrayFactory::create<LongType>('c', {1}, {10});
   auto la = NDArrayFactory::create<float>('c', {2, 3});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 2, 3});
 
   la.linspace(1.0);
 
-  sd::ops::random_poisson op;
+  ops::random_poisson op;
   auto result = op.evaluate({&x, &la}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -781,13 +780,13 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_1) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {1}, {10});
+  auto x = NDArrayFactory::create<LongType>('c', {1}, {10});
   auto al = NDArrayFactory::create<float>('c', {2, 3});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 2, 3});
 
   al.linspace(1.0);
 
-  sd::ops::random_gamma op;
+  ops::random_gamma op;
   auto result = op.evaluate({&x, &al}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -798,7 +797,7 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_2) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {1}, {10});
+  auto x = NDArrayFactory::create<LongType>('c', {1}, {10});
   auto al = NDArrayFactory::create<float>('c', {2, 3});
   auto be = NDArrayFactory::create<float>('c', {2, 3});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 2, 3});
@@ -806,7 +805,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
   al.linspace(1.0);
   be.assign(1.0);
 
-  sd::ops::random_gamma op;
+  ops::random_gamma op;
   auto result = op.evaluate({&x, &al, &be}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -817,7 +816,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_3) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {1}, {10});
+  auto x = NDArrayFactory::create<LongType>('c', {1}, {10});
   auto al = NDArrayFactory::create<float>('c', {3, 1});
   auto be = NDArrayFactory::create<float>('c', {1, 2});
   auto exp0 = NDArrayFactory::create<float>('c', {10, 3, 2});
@@ -825,7 +824,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
   al.linspace(1.0);
   be.assign(2.0);
 
-  sd::ops::random_gamma op;
+  ops::random_gamma op;
   auto result = op.evaluate({&x, &al, &be}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
@@ -835,7 +834,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_4) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {1000, 1000});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {1000, 1000});
   auto al = NDArrayFactory::create<float>(2.f);
   auto be = NDArrayFactory::create<float>(2.f);
   auto exp0 = NDArrayFactory::create<float>('c', {1000, 1000});
@@ -843,15 +842,15 @@ TEST_F(RNGTests, Test_GammaDistribution_4) {
   //    al.linspace(1.0);
   //    be.assign(2.0);
 
-  sd::ops::random_gamma op;
+  ops::random_gamma op;
   auto result = op.evaluate({&x, &al, &be}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
   ASSERT_TRUE(exp0.isSameShape(z));
   ASSERT_FALSE(exp0.equalsTo(z));
-  sd::ops::reduce_mean testOps1;
-  sd::ops::reduce_variance testOps2;
+  ops::reduce_mean testOps1;
+  ops::reduce_variance testOps2;
   auto testRes1 = testOps1.evaluate({z});
   auto testRes2 = testOps2.evaluate({z});
   ASSERT_NEAR(testRes1[0]->t<float>(0), 1.0f, 0.01);
@@ -859,7 +858,7 @@ TEST_F(RNGTests, Test_GammaDistribution_4) {
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_5) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {100, 100});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {100, 100});
   auto al = NDArrayFactory::create<float>(0.2f);
   auto be = NDArrayFactory::create<float>(2.f);
   auto exp0 = NDArrayFactory::create<float>('c', {100, 100});
@@ -867,15 +866,15 @@ TEST_F(RNGTests, Test_GammaDistribution_5) {
   //    al.linspace(1.0);
   //    be.assign(2.0);
 
-  sd::ops::random_gamma op;
+  ops::random_gamma op;
   auto result = op.evaluate({&x, &al, &be}, {}, {});
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
   ASSERT_TRUE(exp0.isSameShape(z));
   ASSERT_FALSE(exp0.equalsTo(z));
-  sd::ops::reduce_mean testOps1;
-  sd::ops::reduce_variance testOps2;
+  ops::reduce_mean testOps1;
+  ops::reduce_variance testOps2;
   auto testRes1 = testOps1.evaluate({z});
   auto testRes2 = testOps2.evaluate({z});
   ASSERT_NEAR(testRes1[0]->t<float>(0), 0.1f, 0.02);
@@ -883,13 +882,13 @@ TEST_F(RNGTests, Test_GammaDistribution_5) {
 }
 
 TEST_F(RNGTests, Test_UniformDistribution_04) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {1}, {10});
+  auto x = NDArrayFactory::create<LongType>('c', {1}, {10});
   auto al = NDArrayFactory::create<int>(1);
   auto be = NDArrayFactory::create<int>(20);
   auto exp0 = NDArrayFactory::create<float>('c', {10});
 
-  sd::ops::randomuniform op;
-  auto result = op.evaluate({&x, &al, &be}, {}, {DataType::INT32});
+  ops::randomuniform op;
+  auto result = op.evaluate({&x, &al, &be}, {}, {INT32});
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
@@ -898,36 +897,37 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
 }
 
 TEST_F(RNGTests, Test_UniformDistribution_05) {
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {10000, 10000});
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {10000, 10000});
   auto al = NDArrayFactory::create<float>(0.f);
   auto be = NDArrayFactory::create<float>(1.f);
   auto exp0 = NDArrayFactory::create<float>('c', {10000, 10000});
 
-  sd::ops::randomuniform op;
-  auto result = op.evaluate({&x, &al, &be}, {}, {}, {}, {DataType::FLOAT32});
+  ops::randomuniform op;
+  auto result = op.evaluate({&x, &al, &be}, {}, {}, {}, {FLOAT32});
   ASSERT_EQ(Status::OK, result.status());
 
   auto z = result.at(0);
   ASSERT_TRUE(exp0.isSameShape(z));
   ASSERT_FALSE(exp0.equalsTo(z));
 
-  sd::ops::reduce_max checkOp;
+  ops::reduce_max checkOp;
   auto checkResult = checkOp.evaluate({z});
 }
 
 namespace sd {
 namespace tests {
-static void fillList(sd::LongType seed, int numberOfArrays, std::vector<sd::LongType>& shape,
-                     std::vector<NDArray*>& list, sd::graph::RandomGenerator* rng) {
+static void fillList(LongType seed, int numberOfArrays, std::vector<LongType>& shape,
+                     std::vector<NDArray*>& list,
+                     RandomGenerator* rng) {
   rng->setSeed((int)seed);
 
   for (int i = 0; i < numberOfArrays; i++) {
-    auto arrayI = NDArrayFactory::create<sd::LongType>(shape);
+    auto arrayI = NDArrayFactory::create<LongType>(shape);
     auto arrayR = NDArrayFactory::create_<double>('c', shape);
     auto min = NDArrayFactory::create(0.0);
     auto max = NDArrayFactory::create(1.0);
-    sd::ops::randomuniform op;
-    op.execute(*rng, {&arrayI, &min, &max}, {arrayR}, {}, {DataType::DOUBLE}, {}, {}, false);
+    ops::randomuniform op;
+    op.execute(*rng, {&arrayI, &min, &max}, {arrayR}, {}, {DOUBLE}, {}, {}, false);
 
     list.emplace_back(arrayR);
   }
@@ -936,17 +936,17 @@ static void fillList(sd::LongType seed, int numberOfArrays, std::vector<sd::Long
 }  // namespace sd
 
 TEST_F(RNGTests, Test_Reproducibility_1) {
-  sd::LongType seed = 123;
+  LongType seed = 123;
 
-  std::vector<sd::LongType> shape = {32, 3, 28, 28};
-  sd::graph::RandomGenerator rng;
+  std::vector<LongType> shape = {32, 3, 28, 28};
+  RandomGenerator rng;
 
   std::vector<NDArray*> expList;
-  sd::tests::fillList(seed, 10, shape, expList, &rng);
+  tests::fillList(seed, 10, shape, expList, &rng);
 
   for (int e = 0; e < 2; e++) {
     std::vector<NDArray*> trialList;
-    sd::tests::fillList(seed, 10, shape, trialList, &rng);
+    tests::fillList(seed, 10, shape, trialList, &rng);
 
     for (int a = 0; a < expList.size(); a++) {
       auto arrayE = expList[a];
@@ -966,17 +966,17 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
 #ifndef DEBUG_BUILD
 TEST_F(RNGTests, Test_Reproducibility_2) {
-  sd::LongType seed = 123;
+  LongType seed = 123;
 
-  std::vector<sd::LongType> shape = {32, 3, 64, 64};
-  sd::graph::RandomGenerator rng;
+  std::vector<LongType> shape = {32, 3, 64, 64};
+  RandomGenerator rng;
 
   std::vector<NDArray*> expList;
-  sd::tests::fillList(seed, 10, shape, expList, &rng);
+  tests::fillList(seed, 10, shape, expList, &rng);
 
   for (int e = 0; e < 2; e++) {
     std::vector<NDArray*> trialList;
-    sd::tests::fillList(seed, 10, shape, trialList, &rng);
+    tests::fillList(seed, 10, shape, trialList, &rng);
 
     for (int a = 0; a < expList.size(); a++) {
       auto arrayE = expList[a];
@@ -984,11 +984,11 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
       bool t = arrayE->equalsTo(arrayT);
       if (!t) {
-        for (sd::LongType f = 0; f < arrayE->lengthOf(); f++) {
+        for (LongType f = 0; f < arrayE->lengthOf(); f++) {
           double x = arrayE->e<double>(f);
           double y = arrayT->e<double>(f);
 
-          if (sd::math::sd_re(x, y) > 0.1) {
+          if (math::sd_re(x, y) > 0.1) {
             THROW_EXCEPTION("boom");
           }
         }
@@ -1024,7 +1024,7 @@ TEST_F(RNGTests, test_choice_1) {
   auto z = NDArrayFactory::create<double>('c', {1000});
 
   RandomGenerator rng(119, 256);
-  NativeOpExecutioner::execRandom(sd::LaunchContext ::defaultContext(), random::Choice, &rng, x->buffer(),
+  NativeOpExecutioner::execRandom(LaunchContext ::defaultContext(), random::Choice, &rng, x->buffer(),
                                   x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), prob->buffer(),
                                   prob->shapeInfo(), prob->specialBuffer(), prob->specialShapeInfo(), z.buffer(),
                                   z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
@@ -1037,27 +1037,27 @@ TEST_F(RNGTests, test_uniform_119) {
   auto x = NDArrayFactory::create<int>('c', {2}, {1, 5});
   auto z = NDArrayFactory::create<float>('c', {1, 5});
 
-  sd::ops::randomuniform op;
+  ops::randomuniform op;
   auto status = op.execute({&x}, {&z}, {1.0, 2.0}, {}, {});
   ASSERT_EQ(Status::OK, status);
 }
 
 TEST_F(RNGTests, test_multinomial_1) {
-  NDArray probs('f', {3, 3}, {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3}, sd::DataType::FLOAT32);
-  NDArray expected('f', {3, 3}, {0., 1, 2, 2, 0, 0, 1, 2, 1}, sd::DataType::INT64);
-  NDArray output('f', {3, 3}, sd::DataType::INT64);
-  NDArray samples('f', {1}, std::vector<double>({3}), sd::DataType::INT32);
+  NDArray probs('f', {3, 3}, {0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3}, FLOAT32);
+  NDArray expected('f', {3, 3}, {0., 1, 2, 2, 0, 0, 1, 2, 1}, INT64);
+  NDArray output('f', {3, 3}, INT64);
+  NDArray samples('f', {1}, std::vector<double>({3}), INT32);
 
-  sd::ops::random_multinomial op;
+  ops::random_multinomial op;
   RandomGenerator rng(1234, 1234);
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&output}, {}, {0, sd::DataType::INT64}, {}, {}, false));
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));
 
-  NDArray probsZ('c', {1, 3}, {0.3, 0.3, 0.3}, sd::DataType::FLOAT32);
-  NDArray expectedZ('c', {3, 3}, {0., 0, 0, 0, 0, 0, 0, 0, 0}, sd::DataType::INT64);
+  NDArray probsZ('c', {1, 3}, {0.3, 0.3, 0.3}, FLOAT32);
+  NDArray expectedZ('c', {3, 3}, {0., 0, 0, 0, 0, 0, 0, 0, 0}, INT64);
 
-  auto result = op.evaluate({&probsZ, &samples}, {}, {1, DataType::INT64});
+  auto result = op.evaluate({&probsZ, &samples}, {}, {1, INT64});
   auto outputZ = result.at(0);
 
   ASSERT_EQ(Status::OK, result.status());
@@ -1066,28 +1066,26 @@ TEST_F(RNGTests, test_multinomial_1) {
 }
 
 TEST_F(RNGTests, test_multinomial_2) {
-  NDArray samples('c', {1}, std::vector<double>{20}, sd::DataType::INT32);
-  NDArray probs('c', {3, 5}, {0.2, 0.3, 0.5, 0.3, 0.5, 0.2, 0.5, 0.2, 0.3, 0.35, 0.25, 0.3, 0.25, 0.25, 0.5},
-                sd::DataType::FLOAT32);
+  NDArray samples('c', {1}, std::vector<double>{20}, INT32);
+  NDArray probs('c', {3, 5}, {0.2, 0.3, 0.5, 0.3, 0.5, 0.2, 0.5, 0.2, 0.3, 0.35, 0.25, 0.3, 0.25, 0.25, 0.5}, FLOAT32);
   NDArray expected('c', {3, 20},
                    {0, 2, 0, 2, 0, 4, 2, 0, 1, 2, 0, 2, 3, 0, 0, 2, 4, 4, 1, 0, 2, 3, 2, 3, 0, 1, 3, 1, 1, 1,
                     2, 4, 3, 3, 1, 4, 4, 2, 0, 0, 3, 3, 3, 0, 0, 2, 2, 3, 3, 0, 0, 2, 3, 4, 2, 2, 3, 2, 1, 2},
-                   sd::DataType::INT64);
-  NDArray output('c', {3, 20}, sd::DataType::INT64);
+                   INT64);
+  NDArray output('c', {3, 20}, INT64);
 
-  sd::ops::random_multinomial op;
+  ops::random_multinomial op;
   RandomGenerator rng(1234, 1234);
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&output}, {}, {0, sd::DataType::INT64}, {}, {}, false));
   ASSERT_TRUE(expected.isSameShape(output));
   ASSERT_TRUE(expected.equalsTo(output));
 
-  NDArray probs2('c', {5, 3}, {0.2, 0.3, 0.5, 0.3, 0.5, 0.2, 0.5, 0.2, 0.3, 0.35, 0.25, 0.3, 0.25, 0.25, 0.5},
-                 sd::DataType::FLOAT32);
+  NDArray probs2('c', {5, 3}, {0.2, 0.3, 0.5, 0.3, 0.5, 0.2, 0.5, 0.2, 0.3, 0.35, 0.25, 0.3, 0.25, 0.25, 0.5}, FLOAT32);
   NDArray expected2('c', {20, 3},
                     {0, 2, 3, 2, 3, 3, 0, 2, 3, 2, 3, 0, 0, 0, 0, 4, 1, 2, 2, 3, 2, 3, 1, 3, 1, 1, 3, 2, 1, 0,
                      0, 2, 0, 2, 4, 2, 3, 3, 3, 0, 3, 4, 0, 1, 2, 2, 0, 2, 4, 4, 0, 4, 2, 2, 1, 0, 1, 0, 0, 2},
-                    sd::DataType::INT64);
-  NDArray output2('c', {20, 3}, sd::DataType::INT64);
+                    INT64);
+  NDArray output2('c', {20, 3}, INT64);
 
   rng.setStates(1234, 1234);
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs2, &samples}, {&output2}, {}, {1, sd::DataType::INT64}, {}, {}, false));
@@ -1096,13 +1094,13 @@ TEST_F(RNGTests, test_multinomial_2) {
 }
 
 TEST_F(RNGTests, test_multinomial_3) {
-  NDArray probs('c', {4, 3}, {0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3}, sd::DataType::FLOAT32);
-  NDArray expected('c', {4, 5}, sd::DataType::INT64);
-  NDArray output('c', {4, 5}, sd::DataType::INT64);
-  NDArray samples('c', {1}, std::vector<double>{5}, sd::DataType::INT32);
+  NDArray probs('c', {4, 3}, {0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3}, FLOAT32);
+  NDArray expected('c', {4, 5}, INT64);
+  NDArray output('c', {4, 5}, INT64);
+  NDArray samples('c', {1}, std::vector<double>{5}, INT32);
   RandomGenerator rng(1234, 1234);
 
-  sd::ops::random_multinomial op;
+  ops::random_multinomial op;
 
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&expected}, {}, {0, sd::DataType::INT64}, {}, {}, false));
 
@@ -1113,13 +1111,13 @@ TEST_F(RNGTests, test_multinomial_3) {
 }
 
 TEST_F(RNGTests, test_multinomial_4) {
-  NDArray probs('c', {3, 4}, {0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3}, sd::DataType::FLOAT32);
-  NDArray expected('c', {5, 4}, sd::DataType::INT64);
-  NDArray output('c', {5, 4}, sd::DataType::INT64);
-  NDArray samples('c', {1}, std::vector<double>{5}, sd::DataType::INT32);
+  NDArray probs('c', {3, 4}, {0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3}, FLOAT32);
+  NDArray expected('c', {5, 4}, INT64);
+  NDArray output('c', {5, 4}, INT64);
+  NDArray samples('c', {1}, std::vector<double>{5}, INT32);
 
   RandomGenerator rng(1234, 1234);
-  sd::ops::random_multinomial op;
+  ops::random_multinomial op;
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&expected}, {}, {1, sd::DataType::INT64}, {}, {}, false));
 
   rng.setStates(1234, 1234);
@@ -1134,13 +1132,13 @@ TEST_F(RNGTests, test_multinomial_5) {
   int ClassValue = 2;
   int Samples = 100000;
 
-  NDArray samples('c', {1}, std::vector<double>{1. * Samples}, sd::DataType::INT32);
+  NDArray samples('c', {1}, std::vector<double>{1. * Samples}, INT32);
 
-  NDArray probs('c', {ClassValue, batchValue}, {1.0, 1.0}, sd::DataType::FLOAT32);
+  NDArray probs('c', {ClassValue, batchValue}, {1.0, 1.0}, FLOAT32);
 
-  sd::ops::random_multinomial op;
+  ops::random_multinomial op;
 
-  NDArray output('c', {Samples, batchValue}, sd::DataType::INT64);
+  NDArray output('c', {Samples, batchValue}, INT64);
   RandomGenerator rng(1234, 1234);
 
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&output}, {}, {1}, {}, {}, false));
@@ -1152,7 +1150,7 @@ TEST_F(RNGTests, test_multinomial_5) {
   ASSERT_NEAR(0.5, mean.e<double>(0), 4e-3);       // 1000000 3e-3);
 
   for (int i = 0; i < output.lengthOf(); i++) {
-    auto value = output.e<sd::LongType>(i);
+    auto value = output.e<LongType>(i);
     ASSERT_TRUE(value >= 0 && value < ClassValue);
   }
 
@@ -1167,7 +1165,7 @@ TEST_F(RNGTests, test_multinomial_5) {
   ASSERT_NEAR(0.5, mean.e<double>(0), 45e-3);       // 1000000 35e-3);
 
   for (int i = 0; i < outputR->lengthOf(); i++) {
-    auto value = outputR->e<sd::LongType>(i);
+    auto value = outputR->e<LongType>(i);
     ASSERT_TRUE(value >= 0 && value < ClassValue);
   }
 }
@@ -1177,22 +1175,22 @@ TEST_F(RNGTests, test_multinomial_6) {
   int ClassValue = 5;
   int Samples = 100000;
 
-  NDArray samples('c', {1}, std::vector<double>{1. * Samples}, sd::DataType::INT32);
+  NDArray samples('c', {1}, std::vector<double>{1. * Samples}, INT32);
 
-  sd::ops::random_multinomial op;
-  NDArray probExpect('c', {ClassValue}, {0.058, 0.096, 0.1576, 0.2598, 0.4287}, sd::DataType::DOUBLE);
+  ops::random_multinomial op;
+  NDArray probExpect('c', {ClassValue}, {0.058, 0.096, 0.1576, 0.2598, 0.4287}, DOUBLE);
 
   // without seed
-  NDArray probsR('c', {batchValue, ClassValue}, {1., 1.5, 2., 2.5, 3.}, sd::DataType::FLOAT32);
+  NDArray probsR('c', {batchValue, ClassValue}, {1., 1.5, 2., 2.5, 3.}, FLOAT32);
 
   auto resultR = op.evaluate({&probsR, &samples}, {}, {0});
   auto outputR = resultR.at(0);
   ASSERT_EQ(Status::OK, resultR.status());
 
-  NDArray countsR('c', {ClassValue}, {0., 0, 0, 0, 0}, sd::DataType::DOUBLE);
+  NDArray countsR('c', {ClassValue}, {0., 0, 0, 0, 0}, DOUBLE);
 
   for (int i = 0; i < outputR->lengthOf(); i++) {
-    auto value = outputR->e<sd::LongType>(i);
+    auto value = outputR->e<LongType>(i);
     ASSERT_TRUE(value >= 0 && value < ClassValue);
     double* z = countsR.bufferAsT<double>();
     z[value] += 1;
@@ -1212,15 +1210,15 @@ TEST_F(RNGTests, test_multinomial_6) {
   ASSERT_NEAR(2.906, mean.e<double>(0), 45e-3);        // 1000000 35e-3);
 
   RandomGenerator rng(1234, 1234);
-  NDArray probs('c', {batchValue, ClassValue}, {1., 1.5, 2., 2.5, 3.}, sd::DataType::FLOAT32);
-  NDArray output('c', {batchValue, Samples}, sd::DataType::INT64);
+  NDArray probs('c', {batchValue, ClassValue}, {1., 1.5, 2., 2.5, 3.}, FLOAT32);
+  NDArray output('c', {batchValue, Samples}, INT64);
 
   ASSERT_EQ(Status::OK, op.execute(rng, {&probs, &samples}, {&output}, {}, {0, sd::DataType::INT64}, {}, {}, false));
 
-  NDArray counts('c', {ClassValue}, {0., 0, 0, 0, 0}, sd::DataType::DOUBLE);
+  NDArray counts('c', {ClassValue}, {0., 0, 0, 0, 0}, DOUBLE);
 
   for (int i = 0; i < output.lengthOf(); i++) {
-    auto value = output.e<sd::LongType>(i);
+    auto value = output.e<LongType>(i);
     ASSERT_TRUE(value >= 0 && value < ClassValue);
     double* z = counts.bufferAsT<double>();
     z[value] += 1;

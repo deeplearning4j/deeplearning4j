@@ -45,7 +45,35 @@ class SD_LIB_EXPORT StringUtils {
 
     // convert the string stream into a string and return
     return os.str();
+
   }
+
+  static NDArray* createDataBufferFromVector(const std::vector<LongType>& vec, DataType dataType);
+
+  static void broadcastStringAssign(NDArray* x, NDArray* z);
+
+  static std::vector<LongType>* determineOffsetsAndLengths(const NDArray& array, DataType dtype);
+
+  static void convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<LongType>& offsets, DataType inType, DataType outType);
+
+  static DataBuffer *  createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context);
+
+  static NDArray createStringNDArray(const NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
+
+  template <typename T>
+  static void convertStringsForDifferentDataType(const NDArray* sourceArray, NDArray* targetArray);
+
+  template <typename T>
+  static std::vector<LongType> calculateOffsetsForTargetDataType(const NDArray* sourceArray);
+
+  std::vector<LongType> determineOffsets(const std::string& input, const std::vector<LongType>& lengths);
+
+  std::vector<LongType> determineLengths(const std::string& input);
+
+  static void setValueForDifferentDataType(NDArray* arr, LongType idx, NDArray* input, DataType zType);
+
+  static void assignStringData(NDArray& dest, const NDArray& src, const std::vector<LongType>& offsets, DataType dtype);
+
 
   /**
    * These methods convert integer values to string with 0s and 1s
@@ -61,10 +89,10 @@ class SD_LIB_EXPORT StringUtils {
    * @param graphId
    * @return
    */
-  static SD_INLINE std::string buildGraphErrorMessage(const char* message, sd::LongType graphId) {
+  static SD_INLINE std::string buildGraphErrorMessage(const char* message, LongType graphId) {
     std::string result(message);
     result += " [";
-    result += valueToString<sd::LongType>(graphId);
+    result += valueToString<LongType>(graphId);
     result += "]";
 
     return result;
@@ -90,7 +118,7 @@ class SD_LIB_EXPORT StringUtils {
    * @param array
    * @return
    */
-  static sd::LongType byteLength(const NDArray& array);
+  static LongType byteLength(const NDArray& array);
 
   /**
    * This method splits a string into substring by delimiter

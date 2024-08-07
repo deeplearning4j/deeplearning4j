@@ -53,10 +53,10 @@ TEST_F(BitwiseUtilsTests, Test_ValueBit_2) {
 }
 
 TEST_F(BitwiseUtilsTests, Test_ValueBits_1) {
-  std::vector<sd::LongType> expected({1, 1});
+  std::vector<LongType> expected({1, 1});
   while (expected.size() < 32) expected.push_back(0);
 
-  std::vector<sd::LongType> result = BitwiseUtils::valueBits(3);
+  std::vector<LongType> result = BitwiseUtils::valueBits(3);
 
   ASSERT_EQ(32, result.size());
   ASSERT_EQ(expected, result);

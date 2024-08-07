@@ -1720,7 +1720,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
   gradO.linspace(0.01, 0.01);
 
   OpArgsHolder holderFF({&input}, {}, {2, 3});
-  sd::ops::tile opFF;  // the kind of op doesn't matter, we simply check here whether op.execute() works with
+  ops::tile opFF;  // the kind of op doesn't matter, we simply check here whether op.execute() works with
                        // OpArgsHolder correctly
   auto results = opFF.execute(holderFF);
   auto tiled = results.at(0);
@@ -1729,7 +1729,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
   ASSERT_TRUE(exp.equalsTo(tiled));
 
   OpArgsHolder holderBP = holderFF.createArgsHolderForBP({&gradO}, true);
-  sd::ops::tile_bp opBP;
+  ops::tile_bp opBP;
   results = opBP.execute(holderBP);
   auto gradI = results.at(0);
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1745,8 +1745,8 @@ TEST_F(HelpersTests1, checkGrad_test1) {
   const OpArgsHolder argsHolderFF({&x}, {}, {});
   const OpArgsHolder argsHolderBP({&x, &gradO}, {}, {});
 
-  sd::ops::sigmoid opFF;
-  sd::ops::sigmoid_bp opBP;
+  ops::sigmoid opFF;
+  ops::sigmoid_bp opBP;
 
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1766,8 +1766,8 @@ TEST_F(HelpersTests1, checkGrad_test2) {
   const OpArgsHolder argsHolderFF({&x, &weights}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
   const OpArgsHolder argsHolderBP({&x, &weights, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::conv2d opFF;
-  sd::ops::conv2d_bp opBP;
+  ops::conv2d opFF;
+  ops::conv2d_bp opBP;
 
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1789,8 +1789,8 @@ TEST_F(HelpersTests1, checkGrad_test3) {
   const OpArgsHolder argsHolderFF({&x, &weights, &bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
   const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::conv2d opFF;
-  sd::ops::conv2d_bp opBP;
+  ops::conv2d opFF;
+  ops::conv2d_bp opBP;
 
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1812,8 +1812,8 @@ TEST_F(HelpersTests1, checkGrad_test4) {
   const OpArgsHolder argsHolderFF({&x, &weights, &bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
   const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::conv2d opFF;
-  sd::ops::conv2d_bp opBP;
+  ops::conv2d opFF;
+  ops::conv2d_bp opBP;
 
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1});
 
@@ -1835,8 +1835,8 @@ TEST_F(HelpersTests1, checkGrad_test5) {
   const OpArgsHolder argsHolderFF({&x, &weights, &bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
   const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::conv2d opFF;
-  sd::ops::conv2d_bp opBP;
+  ops::conv2d opFF;
+  ops::conv2d_bp opBP;
 
   const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1}, {0.5, 1});
 
@@ -1858,8 +1858,8 @@ TEST_F(HelpersTests1, checkGrad_test6) {
   const OpArgsHolder argsHolderFF({&x, &weights, &bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
   const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-  sd::ops::conv2d opFF;
-  sd::ops::conv2d_bp opBP;
+  ops::conv2d opFF;
+  ops::conv2d_bp opBP;
 
   const bool isGradCorrect =
       GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1}, {0.5, 1}, GradCheck::MEAN);
@@ -1874,7 +1874,7 @@ TEST_F(HelpersTests1, softMaxForVector_test1) {
   auto expOutput = NDArrayFactory::create<double>('c', {1, 5});
   expOutput = 1;
 
-  ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::softmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1886,7 +1886,7 @@ TEST_F(HelpersTests1, softMaxForVector_test2) {
   auto expOutput =
       NDArrayFactory::create<double>('c', {5, 1}, {0.01165623, 0.03168492, 0.08612854, 0.23412166, 0.63640865});
 
-  ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::softmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -1898,15 +1898,15 @@ TEST_F(HelpersTests1, softMaxForVector_test3) {
   auto expOutput =
       NDArrayFactory::create<double>('c', {5}, {0.01165623, 0.03168492, 0.08612854, 0.23412166, 0.63640865});
 
-  ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::softmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softMaxForVector_test4) {
-  NDArray input('c', {1500}, sd::DataType::DOUBLE);
-  NDArray output('c', {1500}, sd::DataType::DOUBLE);
+  NDArray input('c', {1500}, DOUBLE);
+  NDArray output('c', {1500}, DOUBLE);
   NDArray expOutput(
       'c', {1500},
       {0,        0,        0,        0,        0,        0,        0,        0,        0,        0,        0,
@@ -2046,10 +2046,10 @@ TEST_F(HelpersTests1, softMaxForVector_test4) {
        0.007749, 0.007827, 0.007906, 0.007985, 0.008065, 0.008147, 0.008228, 0.008311, 0.008395, 0.008479, 0.008564,
        0.008650, 0.008737, 0.008825, 0.008914, 0.009003, 0.009094, 0.009185, 0.009277, 0.009371, 0.009465, 0.009560,
        0.009656, 0.009753, 0.009851, 0.009950},
-      sd::DataType::DOUBLE);
+      DOUBLE);
   input.linspace(0.01, 0.01);
 
-  ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::softmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2061,7 +2061,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
   auto expOutput = NDArrayFactory::create<double>('c', {1, 5});
   expOutput = 0;
 
-  ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::logSoftmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2073,7 +2073,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
   auto expOutput =
       NDArrayFactory::create<double>('c', {5, 1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-  ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::logSoftmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2085,15 +2085,15 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
   auto expOutput =
       NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-  ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::logSoftmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
-  NDArray input('c', {1500}, sd::DataType::DOUBLE);
-  NDArray output('c', {1500}, sd::DataType::DOUBLE);
+  NDArray input('c', {1500}, DOUBLE);
+  NDArray output('c', {1500}, DOUBLE);
   NDArray expOutput(
       'c', {1500},
       {-8.154773, -8.153772, -8.152773, -8.151772, -8.150773, -8.149773, -8.148773, -8.147773, -8.146772, -8.145773,
@@ -2246,162 +2246,161 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
        -6.684773, -6.683773, -6.682773, -6.681773, -6.680773, -6.679773, -6.678773, -6.677773, -6.676773, -6.675773,
        -6.674773, -6.673773, -6.672773, -6.671773, -6.670773, -6.669773, -6.668773, -6.667773, -6.666773, -6.665773,
        -6.664773, -6.663773, -6.662773, -6.661773, -6.660773, -6.659773, -6.658773, -6.657773, -6.656773, -6.655773},
-      sd::DataType::DOUBLE);
+      DOUBLE);
   input.linspace(0.01, 0.001);
 
-  ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
+  ops::helpers::logSoftmax(LaunchContext ::defaultContext(), input, output, 0);
 
   ASSERT_TRUE(output.equalsTo(&expOutput));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_1) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('f', {M, N}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('f', {M, N}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   NDArray temp('f', {M, N, 5}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(6, {0, 2});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {5.5, 5.1, 4.7}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {5.5, 5.1, 4.7}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_2) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('f', {M, N, 5}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(6, {0, 2});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {5.1, 3.3, 1.5}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {5.1, 3.3, 1.5}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_3) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('f', {N, M, 5}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(4, {1, 2});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {6.2, 4.5, 1.7}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {6.2, 4.5, 1.7}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_4) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('f', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('f', {5, M, N}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(3, {0, 1});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {1.5, 1.8, 1.5}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {1.5, 1.8, 1.5}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_5) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('f', {5, M, N}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(2, {0, 1});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_6) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('c', {5, N, M}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(13, {0, 2});
-  NDArray y('f', {M}, sd::DataType::DOUBLE);
+  NDArray y('f', {M}, DOUBLE);
 
-  NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, sd::DataType::DOUBLE);
+  NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, mmulMxV_7) {
-  const sd::LongType M = 3;
-  const sd::LongType N = 4;
+  const LongType M = 3;
+  const LongType N = 4;
 
-  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, sd::DataType::DOUBLE);
+  NDArray a('c', {N, M}, {1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.5, 0.4, 0.3, 0.2, 0.1, 0}, DOUBLE);
   a.permutei({1, 0});
   NDArray temp('c', {5, N, M}, {16,  2,  -6, 7, 2,  -2, 4,   -7, 6, 4,  4,  6, -3,  1,  3,  9,  1, 4,  9,  10,
                                 -10, -3, -8, 7, -7, -7, 6,   9,  7, -6, 8,  7, -3,  -3, 4,  -2, 5, -3, -3, 4,
                                 6,   -5, -1, 7, -5, 4,  -10, -1, 8, 0,  -7, 4, -10, -7, -8, -9, 2, 9,  7,  9},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray x = temp(10, {0, 2});
-  NDArray y('c', {M}, sd::DataType::DOUBLE);
+  NDArray y('c', {M}, DOUBLE);
 
-  NDArray exp('c', {M}, {3.3, 3.3, 3.3}, sd::DataType::DOUBLE);
+  NDArray exp('c', {M}, {3.3, 3.3, 3.3}, DOUBLE);
 
-  sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+  MmulHelper::mmul(&a, &x, &y, 1., 0.);
   ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_1) {
-  NDArray input('c', {3, 3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, sd::DataType::DOUBLE);
+  NDArray input('c', {3, 3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, DOUBLE);
   NDArray expOutput('c', {3, 3}, {0.04508, 0.04514, 0.0008, 0.0472, 0.00087, 0.10492, 0.00235, 0.04592, 0.10553},
-                    sd::DataType::DOUBLE);
-  NDArray output('c', {3, 3}, sd::DataType::DOUBLE);
+                    DOUBLE);
+  NDArray output('c', {3, 3}, DOUBLE);
 
-
-  sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+  ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
   ASSERT_TRUE(expOutput.isSameShape(output));
   ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -2409,28 +2408,26 @@ TEST_F(HelpersTests1, softmaxDerivative_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_2) {
   NDArray input('c', {3, 3, 3}, {-1, 1, -2, 2, -3,  3,  -4,  4,  -5,  5,  -6,  6,  -7, 7,
-                                 -8, 8, -9, 9, -10, 10, -11, 11, -12, 12, -13, 13, 14.},
-                sd::DataType::DOUBLE);
+                                 -8, 8, -9, 9, -10, 10, -11, 11, -12, 12, -13, 13, 14.}, DOUBLE);
   NDArray expOutput('c', {3, 3, 3},
                     {4.50755e-02, 4.51394e-02, 6.64586e-03, 4.72027e-02, 8.67128e-04, 6.97440e-03, 2.35008e-03,
                      4.59243e-02, 3.32995e-04, 4.51766e-02, 2.26032e-06, 4.51767e-02, 2.91394e-07, 2.37285e-06,
                      3.94360e-08, 4.51769e-02, 1.12535e-07, 4.51767e-02, 7.58256e-10, 4.51767e-02, 1.22325e-11,
                      7.96007e-10, 1.32293e-11, 1.04994e-01, 3.77513e-11, 4.51767e-02, 1.04994e-01},
-                    sd::DataType::DOUBLE);
-  NDArray output('c', {3, 3, 3}, sd::DataType::DOUBLE);
+                    DOUBLE);
+  NDArray output('c', {3, 3, 3}, DOUBLE);
 
-
-  sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
+  ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
   ASSERT_TRUE(expOutput.isSameShape(output));
   ASSERT_TRUE(expOutput.equalsTo(output));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_3) {
-  NDArray input('c', {5}, {-1., 1, -2, 2, 3}, sd::DataType::DOUBLE);
-  NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, sd::DataType::DOUBLE);
-  NDArray output('c', {5}, sd::DataType::DOUBLE);
-  sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+  NDArray input('c', {5}, {-1., 1, -2, 2, 3}, DOUBLE);
+  NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, DOUBLE);
+  NDArray output('c', {5}, DOUBLE);
+  ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
   ASSERT_TRUE(expOutput.isSameShape(output));
   ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -2453,21 +2450,21 @@ TEST_F(HelpersTests1, lstmLayerCell_1) {
   const float outAlpha = 0;    // alpha value for output activation, not required for tanh
   const float outBeta = 0;     // beta value for output activation, not required for tanh
 
-  NDArray x('c', {bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
-  NDArray h('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray c('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray h('c', {bS, nOut}, FLOAT32);
+  NDArray c('c', {bS, nOut}, FLOAT32);
 
   NDArray expH('c', {bS, nOut}, {0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288},
-               sd::DataType::FLOAT32);
+               FLOAT32);
   NDArray expC('c', {bS, nOut}, {3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778},
-               sd::DataType::FLOAT32);
+               FLOAT32);
 
   std::vector<float> params = {dataFormat, 0,         cellClip, gateAct, gateAlpha, gateBeta,
                                cellAct,    cellAlpha, cellBeta, outAct,  outAlpha,  outBeta};
@@ -2480,7 +2477,7 @@ TEST_F(HelpersTests1, lstmLayerCell_1) {
   Wp = 0.3;
   b = 0.7;
 
-  sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+  ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
   ASSERT_TRUE(expH.isSameShape(h));
   ASSERT_TRUE(expH.equalsTo(h));
@@ -2506,19 +2503,19 @@ TEST_F(HelpersTests1, lstmLayerCell_2) {
   const float outAlpha = 0;    // alpha value for output activation, not required for tanh
   const float outBeta = 0;     // beta value for output activation, not required for tanh
 
-  NDArray x('c', {bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
-  NDArray h('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray c('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray h('c', {bS, nOut}, FLOAT32);
+  NDArray c('c', {bS, nOut}, FLOAT32);
 
-  NDArray expH('c', {bS, nOut}, {0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995}, sd::DataType::FLOAT32);
-  NDArray expC('c', {bS, nOut}, {3., 3., 3., 3., 3., 3., 3., 3.}, sd::DataType::FLOAT32);
+  NDArray expH('c', {bS, nOut}, {0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995}, FLOAT32);
+  NDArray expC('c', {bS, nOut}, {3., 3., 3., 3., 3., 3., 3., 3.}, FLOAT32);
 
   std::vector<float> params = {dataFormat, 0,         cellClip, gateAct, gateAlpha, gateBeta,
                                cellAct,    cellAlpha, cellBeta, outAct,  outAlpha,  outBeta};
@@ -2531,7 +2528,7 @@ TEST_F(HelpersTests1, lstmLayerCell_2) {
   Wp = 0.3;
   b = 0.7;
 
-  sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+  ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
   ASSERT_TRUE(expH.isSameShape(h));
   ASSERT_TRUE(expH.equalsTo(h));
@@ -2556,19 +2553,19 @@ TEST_F(HelpersTests1, lstmLayerCell_3) {
   const float outAlpha = 0;    // alpha value for output activation, not required for tanh
   const float outBeta = 0;     // beta value for output activation, not required for tanh
 
-  NDArray x('c', {nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {nOut}, FLOAT32);
+  NDArray cI('c', {nOut}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
-  NDArray h('c', {nOut}, sd::DataType::FLOAT32);
-  NDArray c('c', {nOut}, sd::DataType::FLOAT32);
+  NDArray h('c', {nOut}, FLOAT32);
+  NDArray c('c', {nOut}, FLOAT32);
 
-  NDArray expH('c', {nOut}, {0.999288, 0.999288, 0.999288, 0.999288}, sd::DataType::FLOAT32);
-  NDArray expC('c', {nOut}, {3.999778, 3.999778, 3.999778, 3.999778}, sd::DataType::FLOAT32);
+  NDArray expH('c', {nOut}, {0.999288, 0.999288, 0.999288, 0.999288}, FLOAT32);
+  NDArray expC('c', {nOut}, {3.999778, 3.999778, 3.999778, 3.999778}, FLOAT32);
 
   std::vector<float> params = {dataFormat, 0,         cellClip, gateAct, gateAlpha, gateBeta,
                                cellAct,    cellAlpha, cellBeta, outAct,  outAlpha,  outBeta};
@@ -2581,7 +2578,7 @@ TEST_F(HelpersTests1, lstmLayerCell_3) {
   Wp = 0.3;
   b = 0.7;
 
-  sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+  ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
   ASSERT_TRUE(expH.isSameShape(h));
   ASSERT_TRUE(expH.equalsTo(h));

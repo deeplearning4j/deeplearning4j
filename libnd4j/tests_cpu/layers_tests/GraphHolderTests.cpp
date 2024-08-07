@@ -33,7 +33,7 @@ class GraphHolderTests : public NDArrayTests {
 
 TEST_F(GraphHolderTests, SimpleTests_1) {
   Graph graph;
-  sd::LongType graphId = 119;
+  LongType graphId = 119;
   GraphHolder::getInstance().registerGraph(graphId, &graph);
 
   ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
@@ -45,7 +45,7 @@ TEST_F(GraphHolderTests, SimpleTests_1) {
 
 TEST_F(GraphHolderTests, SimpleTests_2) {
   auto graph = new Graph;
-  sd::LongType graphId = 117;
+  LongType graphId = 117;
   GraphHolder::getInstance().registerGraph(graphId, graph);
 
   ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));
@@ -65,7 +65,7 @@ TEST_F(GraphHolderTests, SimpleTests_2) {
 
 TEST_F(GraphHolderTests, SimpleTests_3) {
   auto graph = new Graph;
-  sd::LongType graphId = 117;
+  LongType graphId = 117;
   GraphHolder::getInstance().registerGraph(graphId, graph);
 
   ASSERT_TRUE(GraphHolder::getInstance().hasGraph(graphId));

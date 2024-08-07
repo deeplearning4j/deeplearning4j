@@ -410,8 +410,8 @@ TEST_F(GraphTests, IndexReductionsTest1) {
     }
   }
 
-  auto z = NDArrayFactory::create_<sd::LongType>('c', {5, 1});
-  auto axis = NDArrayFactory::create_<sd::LongType>('c', {1}, {1});
+  auto z = NDArrayFactory::create_<LongType>('c', {5, 1});
+  auto axis = NDArrayFactory::create_<LongType>('c', {1}, {1});
   graph->getVariableSpace()->putVariable(-1, x);
   graph->getVariableSpace()->putVariable(-2, z);
 
@@ -863,7 +863,7 @@ TEST_F(GraphTests, OutputValidation6) {
 }
 
 TEST_F(GraphTests, TestMultiOutput1) {
-  sd::ops::testop2i2o op1;
+  ops::testop2i2o op1;
   auto graph = new Graph();
 
   auto x = NDArrayFactory::create_<float>('c', {5, 5});
@@ -881,7 +881,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
   auto nodeB0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {-2}, {11});
   nodeB0->markInplace(false);
 
-  auto op = sd::ops::OpRegistrator::getInstance().getOperation("testop2i2o");
+  auto op = ops::OpRegistrator::getInstance().getOperation("testop2i2o");
 
   // this op will add 1.0 to first input, and 2.0 for second input
   auto nodeT = new Node(op, 11, {1, 2}, {21, 31}, {}, 0.0f);
@@ -910,7 +910,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair0));
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(pair1));
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
 
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -921,7 +921,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
 }
 
 TEST_F(GraphTests, TestDivergentNode1) {
-  auto op = sd::ops::OpRegistrator::getInstance().getOperation("Switch");
+  auto op = ops::OpRegistrator::getInstance().getOperation("Switch");
   auto nodeY = new Node(op, 1);
 
   ASSERT_TRUE(nodeY->isDivergencePoint());
@@ -1033,7 +1033,7 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
   graph.getVariableSpace()->putVariable(-1, x);
 
-  sd::ops::testcustom op;
+  ops::testcustom op;
 
   auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
   auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
@@ -1109,7 +1109,7 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
   ASSERT_EQ(0, nodeB0->getLayer());
   ASSERT_EQ(1, nodeB1->getLayer());
 
-  sd::Status status = GraphExecutioner::execute(&graphA);
+  Status status = GraphExecutioner::execute(&graphA);
   ASSERT_EQ(sd::Status::OK, status);
 
   float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().e<float>(0);
@@ -1179,7 +1179,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
   ASSERT_EQ(0, nodeB0->getLayer());
   ASSERT_EQ(1, nodeB1->getLayer());
 
-  sd::Status status = GraphExecutioner::execute(&graphA);
+  Status status = GraphExecutioner::execute(&graphA);
   ASSERT_EQ(sd::Status::OK, status);
 
   float m = graphA.getVariableSpace()->getVariable(4)->getNDArray()->meanNumber().e<float>(0);
@@ -1194,7 +1194,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_1) {
   auto exp = NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
   auto z = NDArrayFactory::create<float>('c', {2, 3});
 
-  sd::ops::test_output_reshape op;
+  ops::test_output_reshape op;
   auto result = op.execute({&x}, {&z}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result);
 
@@ -1210,7 +1210,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
   auto z = NDArrayFactory::create<float>('c', {3, 3});
 
   bool failed = false;
-  sd::ops::test_output_reshape op;
+  ops::test_output_reshape op;
   try {
     op.execute({&x}, {&z}, {}, {}, {});
 

@@ -313,22 +313,12 @@ TEST_F(ContextTests, test_short_context_2) {
   auto z = new NDArray(NDArrayFactory::create<float>('c', {3, 2}));
   auto exp = new NDArray(NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f}));
   Context ctx(1);
-#if defined(HAVE_VEDA)
-  // veda should be set using InteropDataBuffer
-  InteropDataBuffer i0(array0.dataBuffer());
-  InteropDataBuffer i1(array1.dataBuffer());
-  InteropDataBuffer o0(z.dataBuffer());
-  ctx.setInputArray(0, &i0, array0.shapeInfo(), array0.specialShapeInfo());
-  ctx.setInputArray(1, &i1, array1.shapeInfo(), array1.specialShapeInfo());
-  ctx.setOutputArray(0, &o0, z.shapeInfo(), z.specialShapeInfo());
 
-#else
   ctx.setInputArray(0, array0->buffer(), array0->shapeInfo(), array0->specialBuffer(), array0->specialShapeInfo());
   ctx.setInputArray(1, array1->buffer(), array1->shapeInfo(), array1->specialBuffer(), array1->specialShapeInfo());
   ctx.setOutputArray(0, z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
-#endif
   ASSERT_EQ(2, ctx.width());
-  sd::ops::add op;
+  add op;
   op.execute(&ctx);
 
   ASSERT_EQ(*exp, *z);
@@ -347,7 +337,7 @@ TEST_F(ContextTests, test_short_context_3) {
 
   ASSERT_EQ(2, ctx.width());
 
-  sd::ops::add op;
+  add op;
   op.execute(&ctx);
 
   ASSERT_EQ(1, ctx.fastpath_out().size());

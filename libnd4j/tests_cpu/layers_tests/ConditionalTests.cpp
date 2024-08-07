@@ -71,7 +71,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
   auto nodeC0 = new Node(OpType_REDUCE_SAME, reduce::Sum, 7, {-1});
   nodeC0->setScopeInfo(1, "scopeCondition");
 
-  sd::ops::eq_scalar op;
+  ops::eq_scalar op;
   auto nodeC1 = new Node(&op, 8, {7, -4});
   nodeC1->setScopeInfo(1, "scopeCondition");
 
@@ -92,7 +92,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
 
   ASSERT_EQ(4, graph.totalNodes());
 
-  sd::Status status = GraphExecutioner::execute(&graph);
+  Status status = GraphExecutioner::execute(&graph);
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(variableSpace->hasVariable(10, 0));

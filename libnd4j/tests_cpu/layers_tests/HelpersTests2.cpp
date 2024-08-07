@@ -34,9 +34,9 @@ class HelpersTests2 : public NDArrayTests {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Hessenberg_1) {
-  NDArray x1('c', {1, 4}, {14, 17, 3, 1}, sd::DataType::DOUBLE);
-  NDArray x2('c', {1, 1}, {14}, sd::DataType::DOUBLE);
-  NDArray expQ('c', {1, 1}, {1}, sd::DataType::DOUBLE);
+  NDArray x1('c', {1, 4}, {14, 17, 3, 1}, DOUBLE);
+  NDArray x2('c', {1, 1}, {14}, DOUBLE);
+  NDArray expQ('c', {1, 1}, {1}, DOUBLE);
 
   ops::helpers::Hessenberg<double> hess1(x1);
   ASSERT_TRUE(hess1._H.isSameShape(&x1));
@@ -53,8 +53,8 @@ TEST_F(HelpersTests2, Hessenberg_1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Hessenberg_2) {
-  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, sd::DataType::DOUBLE);
-  NDArray expQ('c', {2, 2}, {1, 0, 0, 1}, sd::DataType::DOUBLE);
+  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, DOUBLE);
+  NDArray expQ('c', {2, 2}, {1, 0, 0, 1}, DOUBLE);
   ops::helpers::Hessenberg<double> hess(x);
 
 
@@ -67,10 +67,9 @@ TEST_F(HelpersTests2, Hessenberg_2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Hessenberg_3) {
-  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, sd::DataType::DOUBLE);
-  NDArray expH('c', {3, 3}, {33, -23.06939, -48.45414, -57.01061, 12.62845, 3.344058, 0, -9.655942, -5.328448},
-               sd::DataType::DOUBLE);
-  NDArray expQ('c', {3, 3}, {1, 0, 0, 0, -0.99981, -0.019295, 0, -0.019295, 0.99981}, sd::DataType::DOUBLE);
+  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, DOUBLE);
+  NDArray expH('c', {3, 3}, {33, -23.06939, -48.45414, -57.01061, 12.62845, 3.344058, 0, -9.655942, -5.328448}, DOUBLE);
+  NDArray expQ('c', {3, 3}, {1, 0, 0, 0, -0.99981, -0.019295, 0, -0.019295, 0.99981}, DOUBLE);
 
   ops::helpers::Hessenberg<double> hess(x);
 
@@ -85,15 +84,15 @@ TEST_F(HelpersTests2, Hessenberg_3) {
 TEST_F(HelpersTests2, Hessenberg_4) {
   NDArray x('c', {4, 4},
             {0.33, -7.25, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 7.59, 3.44, 2.24, -6.82, -1.15, 4.80, -4.67, 2.14},
-            sd::DataType::DOUBLE);
+            DOUBLE);
   NDArray expH('c', {4, 4},
                {0.33, 0.4961181, 3.51599, 9.017665, -7.792702, 4.190221, 6.500328, 5.438888, 0, 3.646734, 0.4641911,
                 -7.635502, 0, 0, 5.873535, 5.105588},
-               sd::DataType::DOUBLE);
+               DOUBLE);
   NDArray expQ(
       'c', {4, 4},
       {1, 0, 0, 0, 0, -0.171956, 0.336675, -0.925787, 0, -0.973988, 0.0826795, 0.210976, 0, 0.147574, 0.937984, 0.3137},
-      sd::DataType::DOUBLE);
+      DOUBLE);
 
   ops::helpers::Hessenberg<double> hess(x);
 
@@ -113,7 +112,7 @@ TEST_F(HelpersTests2, Hessenberg_5) {
              -0.6, -6.3, -4.5, -1.1, 1.8,  0.6,  9.6,  9.2,  9.7,  -2.6, 4.3,  -3.4, 0.0,  -6.7, 5.0,  10.5, 1.5,
              -7.8, -4.1, -5.3, -5.0, 2.0,  -4.4, -8.4, 6.0,  -9.4, -4.8, 8.2,  7.8,  5.2,  -9.5, -3.9, 0.2,  6.8,
              5.7,  -8.5, -1.9, -0.3, 7.4,  -8.7, 7.2,  1.3,  6.3,  -3.7, 3.9,  3.3,  -6.0, -9.1, 5.9},
-            sd::DataType::DOUBLE);
+            DOUBLE);
   NDArray expH(
       'c', {10, 10},
       {
@@ -128,7 +127,7 @@ TEST_F(HelpersTests2, Hessenberg_5) {
           0,        0,         0,         0,        0,          0,         0,         14.75256,  18.95723,   -5.054717,
           0,        0,         0,         0,        0,          0,         0,         0,         -4.577715,  -5.440827,
       },
-      sd::DataType::DOUBLE);
+      DOUBLE);
   NDArray expQ('c', {10, 10},
                {1, 0,          0,         0,        0,        0,         0,          0,         0,         0,
                 0, -0.0079106, -0.38175,  -0.39287, -0.26002, -0.44102,  -0.071516,  0.12118,   0.64392,   0.057562,
@@ -140,7 +139,7 @@ TEST_F(HelpersTests2, Hessenberg_5) {
                 0, 0.41926,    0.30243,   -0.3714,  -0.16795, -0.12969,  -0.67572,   -0.1205,   -0.26047,  0.10407,
                 0, -0.41135,   -0.28357,  -0.33858, 0.18836,  0.083822,  -0.0068213, -0.30161,  -0.24956,  0.66327,
                 0, 0.68823,    -0.33616,  -0.12129, 0.36163,  -0.063256, 0.34198,    -0.37564,  -0.048196, -0.058948},
-               sd::DataType::DOUBLE);
+               DOUBLE);
 
   ops::helpers::Hessenberg<double> hess(x);
 
@@ -153,10 +152,10 @@ TEST_F(HelpersTests2, Hessenberg_5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Schur_1) {
-  NDArray x('c', {3, 3}, sd::DataType::DOUBLE);
+  NDArray x('c', {3, 3}, DOUBLE);
 
-  NDArray expT('c', {3, 3}, {-2.5, -2, 1, 0, 1.5, -2, 3, 4, 5}, sd::DataType::DOUBLE);
-  NDArray expU('c', {3, 3}, {0.3, 0.2, -0.1, 0, -0.1, 0.2, -0.3, -0.4, 0.5}, sd::DataType::DOUBLE);
+  NDArray expT('c', {3, 3}, {-2.5, -2, 1, 0, 1.5, -2, 3, 4, 5}, DOUBLE);
+  NDArray expU('c', {3, 3}, {0.3, 0.2, -0.1, 0, -0.1, 0.2, -0.3, -0.4, 0.5}, DOUBLE);
 
   ops::helpers::Schur<double> schur(x);
   schur.t.linspace(-3, 1);
@@ -173,14 +172,14 @@ TEST_F(HelpersTests2, Schur_1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Schur_2) {
-  NDArray x('c', {3, 3}, sd::DataType::DOUBLE);
+  NDArray x('c', {3, 3}, DOUBLE);
 
-  NDArray shift('c', {3}, sd::DataType::DOUBLE);
-  NDArray exp1('c', {3}, {1, -3, 0}, sd::DataType::DOUBLE);
-  NDArray exp2('c', {3}, {3, 3, -7}, sd::DataType::DOUBLE);
-  NDArray exp3('c', {3}, {0.964, 0.964, 0.964}, sd::DataType::DOUBLE);
-  NDArray exp1T('c', {3, 3}, {-3, -2, -1, 0, 1, 2, 3, 4, 5}, sd::DataType::DOUBLE);
-  NDArray exp2T('c', {3, 3}, {-8, -2, -1, 0, -4, 2, 3, 4, 0}, sd::DataType::DOUBLE);
+  NDArray shift('c', {3}, DOUBLE);
+  NDArray exp1('c', {3}, {1, -3, 0}, DOUBLE);
+  NDArray exp2('c', {3}, {3, 3, -7}, DOUBLE);
+  NDArray exp3('c', {3}, {0.964, 0.964, 0.964}, DOUBLE);
+  NDArray exp1T('c', {3, 3}, {-3, -2, -1, 0, 1, 2, 3, 4, 5}, DOUBLE);
+  NDArray exp2T('c', {3, 3}, {-8, -2, -1, 0, -4, 2, 3, 4, 0}, DOUBLE);
   NDArray exp3T('c', {3, 3},
                 {
                     -9.464102,
@@ -193,7 +192,7 @@ TEST_F(HelpersTests2, Schur_2) {
                     4,
                     -1.464102,
                 },
-                sd::DataType::DOUBLE);
+                DOUBLE);
 
   ops::helpers::Schur<double> schur(x);
 
@@ -224,8 +223,8 @@ TEST_F(HelpersTests2, Schur_2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Schur_3) {
-  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, sd::DataType::DOUBLE);
-  NDArray expU('c', {2, 2}, {1, 0, 0, 1}, sd::DataType::DOUBLE);
+  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, DOUBLE);
+  NDArray expU('c', {2, 2}, {1, 0, 0, 1}, DOUBLE);
 
   ops::helpers::Schur<double> schur(x);
 
@@ -238,13 +237,12 @@ TEST_F(HelpersTests2, Schur_3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, Schur_4) {
-  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, sd::DataType::DOUBLE);
-  NDArray expT('c', {3, 3}, {53.73337, -20.21406, -50.44809, 0, -27.51557, 26.74307, 0, 0, 14.0822},
-               sd::DataType::DOUBLE);
+  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, DOUBLE);
+  NDArray expT('c', {3, 3}, {53.73337, -20.21406, -50.44809, 0, -27.51557, 26.74307, 0, 0, 14.0822}, DOUBLE);
   NDArray expU(
       'c', {3, 3},
       {-0.5848506, 0.7185352, 0.3763734, -0.7978391, -0.5932709, -0.1071558, -0.1462962, 0.3629555, -0.9202504},
-      sd::DataType::DOUBLE);
+      DOUBLE);
 
   ops::helpers::Schur<double> schur(x);
 
@@ -258,10 +256,9 @@ TEST_F(HelpersTests2, Schur_4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, EigenValsAndVecs_1) {
-  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, sd::DataType::DOUBLE);
-  NDArray expVals('c', {2, 2}, {3.25, 5.562149, 3.25, -5.562149}, sd::DataType::DOUBLE);
-  NDArray expVecs('c', {2, 2, 2}, {-0.3094862, -0.0973726, -0.3094862, 0.0973726, 0, 0.9459053, 0, -0.9459053},
-                  sd::DataType::DOUBLE);
+  NDArray x('c', {2, 2}, {1.5, -2, 17, 5}, DOUBLE);
+  NDArray expVals('c', {2, 2}, {3.25, 5.562149, 3.25, -5.562149}, DOUBLE);
+  NDArray expVecs('c', {2, 2, 2}, {-0.3094862, -0.0973726, -0.3094862, 0.0973726, 0, 0.9459053, 0, -0.9459053}, DOUBLE);
 
   ops::helpers::EigenValsAndVecs<double> eig(x);
 
@@ -274,12 +271,12 @@ TEST_F(HelpersTests2, EigenValsAndVecs_1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, EigenValsAndVecs_2) {
-  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, sd::DataType::DOUBLE);
-  NDArray expVals('c', {3, 2}, {53.73337, 0, -27.51557, 0, 14.0822, 0}, sd::DataType::DOUBLE);
+  NDArray x('c', {3, 3}, {33, 24, -48, 57, 12.5, -3, 1.1, 10, -5.2}, DOUBLE);
+  NDArray expVals('c', {3, 2}, {53.73337, 0, -27.51557, 0, 14.0822, 0}, DOUBLE);
   NDArray expVecs('c', {3, 3, 2},
                   {-0.5848506, 0, 0.5560778, 0, -0.04889745, 0, -0.7978391, 0, -0.7683444, 0, -0.8855156, 0, -0.1462962,
                    0, 0.3168979, 0, -0.4620293, 0},
-                  sd::DataType::DOUBLE);
+                  DOUBLE);
 
   ops::helpers::EigenValsAndVecs<double> eig(x);
 
@@ -294,15 +291,15 @@ TEST_F(HelpersTests2, EigenValsAndVecs_2) {
 TEST_F(HelpersTests2, EigenValsAndVecs_3) {
   NDArray x('c', {4, 4},
             {0.33, -7.25, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 7.59, 3.44, 2.24, -6.82, -1.15, 4.80, -4.67, 2.14},
-            sd::DataType::DOUBLE);
+            DOUBLE);
   NDArray expVals('c', {4, 2}, {6.114896, 4.659591, 6.114896, -4.659591, -1.069896, 4.45631, -1.069896, -4.45631},
-                  sd::DataType::DOUBLE);
+                  DOUBLE);
   NDArray expVecs('c', {4, 4, 2},
                   {-0.2141303, 0.4815241,  -0.2141303, -0.4815241,  0.1035092,  -0.4270603, 0.1035092,  0.4270603,
                    0.2703519,  -0.2892722, 0.2703519,  0.2892722,   -0.5256817, 0.044061,   -0.5256817, -0.044061,
                    0.6202137,  0.05521234, 0.6202137,  -0.05521234, -0.5756007, 0.3932209,  -0.5756007, -0.3932209,
                    -0.4166034, -0.0651337, -0.4166034, 0.0651337,   -0.1723716, 0.1138941,  -0.1723716, -0.1138941},
-                  sd::DataType::DOUBLE);
+                  DOUBLE);
 
   ops::helpers::EigenValsAndVecs<double> eig(x);
 
@@ -319,12 +316,12 @@ TEST_F(HelpersTests2, EigenValsAndVecs_3) {
 TEST_F(HelpersTests2, fullPivLU_1) {
   NDArray a('c', {4, 4},
             {0.33, -7.25, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 7.59, 3.44, 2.24, -6.82, -1.15, 4.80, -4.67, 2.14},
-            sd::DataType::DOUBLE);
-  NDArray b('c', {4, 1}, {-5., 10, 9, 1}, sd::DataType::DOUBLE);
+            DOUBLE);
+  NDArray b('c', {4, 1}, {-5., 10, 9, 1}, DOUBLE);
 
   NDArray x = b.ulike();
 
-  NDArray expX('c', {4, 1}, {0.8527251, -0.2545784, -1.076495, -0.8526268}, sd::DataType::DOUBLE);
+  NDArray expX('c', {4, 1}, {0.8527251, -0.2545784, -1.076495, -0.8526268}, DOUBLE);
 
   ops::helpers::FullPivLU<double>::solve(a, b, x);
 
@@ -335,13 +332,13 @@ TEST_F(HelpersTests2, fullPivLU_1) {
 TEST_F(HelpersTests2, fullPivLU_2) {
   NDArray a('c', {4, 4},
             {0.33, -7.25, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 7.59, 3.44, 2.24, -6.82, -1.15, 4.80, -4.67, 2.14},
-            sd::DataType::DOUBLE);
-  NDArray b('c', {4, 2}, {-5., 10, 9, 1, 1.5, -2, 17, 5}, sd::DataType::DOUBLE);
+            DOUBLE);
+  NDArray b('c', {4, 2}, {-5., 10, 9, 1, 1.5, -2, 17, 5}, DOUBLE);
 
   NDArray x = b.ulike();
 
   NDArray expX('c', {4, 2}, {1.462913, 1.835338, 0.4083664, -2.163816, -3.344481, -3.739225, 0.5156383, 0.01624954},
-               sd::DataType::DOUBLE);
+               DOUBLE);
 
   ops::helpers::FullPivLU<double>::solve(a, b, x);
 
@@ -350,16 +347,13 @@ TEST_F(HelpersTests2, fullPivLU_2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests2, fullPivLU_3) {
-  NDArray a1('c', {4, 3}, {0.33, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 2.24, -6.82, 4.80, -4.67, 2.14},
-             sd::DataType::DOUBLE);
-  NDArray a2('c', {3, 4}, {0.33, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 2.24, -6.82, 4.80, -4.67, 2.14},
-             sd::DataType::DOUBLE);
-  NDArray b1('c', {4, 2}, {-5., 10, 9, 1, 1.5, -2, 17, 5}, sd::DataType::DOUBLE);
-  NDArray b2('c', {3, 2}, {-5., 10, 9, 1, 1.5, -2}, sd::DataType::DOUBLE);
+  NDArray a1('c', {4, 3}, {0.33, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 2.24, -6.82, 4.80, -4.67, 2.14}, DOUBLE);
+  NDArray a2('c', {3, 4}, {0.33, 1.71, 6.20, 1.34, 5.38, -2.76, -8.51, 2.24, -6.82, 4.80, -4.67, 2.14}, DOUBLE);
+  NDArray b1('c', {4, 2}, {-5., 10, 9, 1, 1.5, -2, 17, 5}, DOUBLE);
+  NDArray b2('c', {3, 2}, {-5., 10, 9, 1, 1.5, -2}, DOUBLE);
 
-  NDArray expX1('c', {3, 2}, {0.9344955, -0.5841325, 0.8768102, 1.029137, -1.098021, 1.360152}, sd::DataType::DOUBLE);
-  NDArray expX2('c', {4, 2}, {0.3536033, 0.5270184, 0, 0, -0.8292221, 0.967515, 0.01827441, 2.856337},
-                sd::DataType::DOUBLE);
+  NDArray expX1('c', {3, 2}, {0.9344955, -0.5841325, 0.8768102, 1.029137, -1.098021, 1.360152}, DOUBLE);
+  NDArray expX2('c', {4, 2}, {0.3536033, 0.5270184, 0, 0, -0.8292221, 0.967515, 0.01827441, 2.856337}, DOUBLE);
 
   NDArray x1 = expX1.ulike();
   ops::helpers::FullPivLU<double>::solve(a1, b1, x1);
@@ -379,16 +373,16 @@ TEST_F(HelpersTests2, fullPivLU_4) {
              -0.6, -6.3, -4.5, -1.1, 1.8,  0.6,  9.6,  9.2,  9.7,  -2.6, 4.3,  -3.4, 0.0,  -6.7, 5.0,  10.5, 1.5,
              -7.8, -4.1, -5.3, -5.0, 2.0,  -4.4, -8.4, 6.0,  -9.4, -4.8, 8.2,  7.8,  5.2,  -9.5, -3.9, 0.2,  6.8,
              5.7,  -8.5, -1.9, -0.3, 7.4,  -8.7, 7.2,  1.3,  6.3,  -3.7, 3.9,  3.3,  -6.0, -9.1, 5.9},
-            sd::DataType::DOUBLE);
+            DOUBLE);
   NDArray b('c', {10, 2}, {-5., 10, 9, 1, 1.5, -2, 17, 5, 3.6, 0.12, -3.1, 2.27, -0.5, 27.3, 8.9, 5, -7, 8, -9, 10},
-            sd::DataType::DOUBLE);
+            DOUBLE);
 
   NDArray x = b.ulike();
 
   NDArray expX('c', {10, 2}, {-0.697127, 2.58257,    2.109721,  3.160622,  -2.217796, -3.275736, -0.5752479,
                               2.475356,  1.996841,   -1.928947, 2.213154,  3.541014,  0.7104885, -1.981451,
                               -3.297972, -0.4720612, 3.672657,  0.9161028, -2.322383, -1.784493},
-               sd::DataType::DOUBLE);
+               DOUBLE);
 
   ops::helpers::FullPivLU<double>::solve(a, b, x);
 

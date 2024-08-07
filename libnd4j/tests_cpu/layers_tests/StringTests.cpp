@@ -364,24 +364,24 @@ TEST_F(StringTests, byte_length_test_Default) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, byte_length_test_UTF16) {
   std::string f(u8"alpha");
-  auto array = NDArrayFactory::string(f, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string(f, UTF16);
 
   ASSERT_EQ(sizeof(char16_t) * f.length(), StringUtils::byteLength(array));
 
   std::u16string f16(u"alpha");
-  auto array16 = NDArrayFactory::string(f16, sd::DataType::UTF16);
+  auto array16 = NDArrayFactory::string(f16, UTF16);
 
   ASSERT_EQ(sizeof(char16_t) * f16.length(), StringUtils::byteLength(array16));
 
   std::u32string f32(U"alpha");
-  auto array32 = NDArrayFactory::string(f32, sd::DataType::UTF16);
+  auto array32 = NDArrayFactory::string(f32, UTF16);
 
   ASSERT_EQ(sizeof(char16_t) * f32.length(), StringUtils::byteLength(array32));
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF16toU8) {
   std::u16string f16(u"alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f16, sd::DataType::UTF8);
+  auto array = NDArrayFactory::string(f16, UTF8);
   ASSERT_EQ(sd::DataType::UTF8, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -395,7 +395,7 @@ TEST_F(StringTests, Basic_Test_UTF16toU8) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF32toU8) {
   std::u32string f32(U"alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f32.c_str(), sd::DataType::UTF8);
+  auto array = NDArrayFactory::string(f32.c_str(), UTF8);
   ASSERT_EQ(sd::DataType::UTF8, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -408,7 +408,7 @@ TEST_F(StringTests, Basic_Test_UTF32toU8) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF16toU16) {
   std::u16string f16(u"€alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f16, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string(f16, UTF16);
   ASSERT_EQ(sd::DataType::UTF16, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -420,7 +420,7 @@ TEST_F(StringTests, Basic_Test_UTF16toU16) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF32toU16) {
   std::u32string f32(U"€alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f32, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string(f32, UTF16);
   ASSERT_EQ(sd::DataType::UTF16, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -432,7 +432,7 @@ TEST_F(StringTests, Basic_Test_UTF32toU16) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF16toU32) {
   std::u16string f16(u"€alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f16, sd::DataType::UTF32);
+  auto array = NDArrayFactory::string(f16, UTF32);
   ASSERT_EQ(sd::DataType::UTF32, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -456,7 +456,7 @@ TEST_F(StringTests, Basic_Test_UTF32toU32) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_UTF8toU32) {
   std::string f(u8"€alpha水𝄋ÿ€한𐍈®кею");
-  auto array = NDArrayFactory::string(f, sd::DataType::UTF32);
+  auto array = NDArrayFactory::string(f, UTF32);
   ASSERT_EQ(sd::DataType::UTF32, array.dataType());
 
   ASSERT_EQ(1, array.lengthOf());
@@ -469,7 +469,7 @@ TEST_F(StringTests, Basic_Test_UTF8toU32) {
 TEST_F(StringTests, Basic_Test_StringVecU8toUTF16) {
         std::vector<std::string> strings = {"alpha€", "beta", "gamma水", "phi", "theta", "omega水"};
   auto array =
-      NDArrayFactory::string({3, 2}, strings, sd::DataType::UTF16);
+      NDArrayFactory::string({3, 2}, strings, UTF16);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -478,7 +478,7 @@ TEST_F(StringTests, Basic_Test_StringVecU8toUTF16) {
 TEST_F(StringTests, Basic_Test_StringVecU8toUTF32) {
   std::vector<std::string> strings = {"alpha€", "beta", "gamma水", "phi", "theta", "omega水"};
   auto array =
-      NDArrayFactory::string({3, 2}, strings, sd::DataType::UTF32);
+      NDArrayFactory::string({3, 2}, strings, UTF32);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -486,22 +486,21 @@ TEST_F(StringTests, Basic_Test_StringVecU8toUTF32) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U8toUTF16) {
   std::vector<std::string> strings = {"alpha", "beta", "gamma"};
-  auto array = NDArrayFactory::string({3}, strings, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string({3}, strings, UTF16);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U8toUTF32) {
   std::vector<std::string> strings = {"alpha", "beta", "gamma"};
-  auto array = NDArrayFactory::string({3}, strings, sd::DataType::UTF32);
+  auto array = NDArrayFactory::string({3}, strings, UTF32);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU16toUTF16) {
   std::vector<std::u16string> data2 =  {u"alpha水", u"beta", u"gamma", u"phi", u"theta水", u"omega"};
-  auto array = NDArrayFactory::string({3, 2},data2,
-                                      sd::DataType::UTF16);
+  auto array = NDArrayFactory::string({3, 2},data2, UTF16);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -509,7 +508,7 @@ TEST_F(StringTests, Basic_Test_StringVecU16toUTF16) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU16toUTF32) {
   auto array = NDArrayFactory::string({3, 2}, {u"alpha水", u"beta", u"gamma水", u"phi", u"theta", u"omega"},
-                                      sd::DataType::UTF32);
+                                      UTF32);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -517,33 +516,33 @@ TEST_F(StringTests, Basic_Test_StringVecU16toUTF32) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU16toUTF8) {
   auto array = NDArrayFactory::string({3, 2}, {u"alpha€", u"beta水", u"gamma", u"phi水", u"theta", u"omega"},
-                                      sd::DataType::UTF8);
+                                      UTF8);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U16toUTF8) {
-  auto array = NDArrayFactory::string({3}, {u"alpha", u"beta", u"gamma"}, sd::DataType::UTF8);
+  auto array = NDArrayFactory::string({3}, {u"alpha", u"beta", u"gamma"}, UTF8);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U16toUTF16) {
-  auto array = NDArrayFactory::string({3}, {u"alpha", u"beta", u"gamma"}, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string({3}, {u"alpha", u"beta", u"gamma"}, UTF16);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U16toUTF32) {
-  auto array = NDArrayFactory::string({3}, {u"alpha水", u"beta", u"gamma水"}, sd::DataType::UTF32);
+  auto array = NDArrayFactory::string({3}, {u"alpha水", u"beta", u"gamma水"}, UTF32);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU32toUTF32) {
   auto array = NDArrayFactory::string({3, 2}, {U"alpha€", U"beta水", U"gamma", U"phi", U"theta", U"omega水"},
-                                      sd::DataType::UTF32);
+                                      UTF32);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -551,7 +550,7 @@ TEST_F(StringTests, Basic_Test_StringVecU32toUTF32) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU32toUTF16) {
   auto array = NDArrayFactory::string({3, 2}, {U"alpha水", U"水beta", U"gamma", U"phi水", U"theta", U"omega"},
-                                      sd::DataType::UTF16);
+                                      UTF16);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
@@ -560,26 +559,26 @@ TEST_F(StringTests, Basic_Test_StringVecU32toUTF16) {
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Basic_Test_StringVecU32toUTF8) {
   auto array =
-      NDArrayFactory::string({3, 2}, {U"alpha水", U"beta", U"gamma水", U"phi", U"theta", U"omega"}, sd::DataType::UTF8);
+      NDArrayFactory::string({3, 2}, {U"alpha水", U"beta", U"gamma水", U"phi", U"theta", U"omega"}, UTF8);
 
   ASSERT_EQ(6, array.lengthOf());
   ASSERT_EQ(2, array.rankOf());
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U32toUTF32) {
-  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta", U"gamma"}, sd::DataType::UTF32);
+  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta", U"gamma"}, UTF32);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U32toUTF16) {
-  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta水", U"gamma水"}, sd::DataType::UTF16);
+  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta水", U"gamma水"}, UTF16);
 
   auto vector = array.asByteVector();
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(StringTests, Export_Test_U32toUTF8) {
-  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta", U"gamma水"}, sd::DataType::UTF8);
+  auto array = NDArrayFactory::string({3}, {U"alpha", U"beta", U"gamma水"}, UTF8);
 
   auto vector = array.asByteVector();
 }
@@ -633,7 +632,7 @@ TEST_F(StringTests, Basic_cast_UTF32toUTF8) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF8);
+  auto aCast = array.cast(UTF8);
   auto z0 = array.e<std::u32string>(0);
   auto z1 = aCast.e<std::string>(0);
 
@@ -652,7 +651,7 @@ TEST_F(StringTests, Basic_cast_UTF32toUTF16) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF16);
+  auto aCast = array.cast(UTF16);
 
   auto z0 = array.e<std::u32string>(0);
   auto z1 = aCast.e<std::u16string>(0);
@@ -670,7 +669,7 @@ TEST_F(StringTests, Basic_cast_UTF32toUTF32) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF32);
+  auto aCast = array.cast(UTF32);
 
   auto z0 = array.e<std::u32string>(0);
   auto z1 = aCast.e<std::u32string>(0);
@@ -688,7 +687,7 @@ TEST_F(StringTests, Basic_cast_UTF16toUTF16) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF16);
+  auto aCast = array.cast(UTF16);
 
   auto z0 = array.e<std::u16string>(0);
   auto z1 = aCast.e<std::u16string>(0);
@@ -708,7 +707,7 @@ TEST_F(StringTests, Basic_cast_UTF16toUTF32) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF32);
+  auto aCast = array.cast(UTF32);
 
   auto z0 = array.e<std::u16string>(0);
   auto z1 = aCast.e<std::u32string>(0);
@@ -728,7 +727,7 @@ TEST_F(StringTests, Basic_cast_UTF16toUTF8) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF8);
+  auto aCast = array.cast(UTF8);
 
   auto z0 = array.e<std::u16string>(0);
   auto z1 = aCast.e<std::string>(0);
@@ -746,7 +745,7 @@ TEST_F(StringTests, Basic_cast_UTF8toUTF8) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF8);
+  auto aCast = array.cast(UTF8);
 
   auto z0 = array.e<std::string>(0);
   auto z1 = aCast.e<std::string>(0);
@@ -766,7 +765,7 @@ TEST_F(StringTests, Basic_cast_UTF8toUTF16) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF16);
+  auto aCast = array.cast(UTF16);
 
   auto z0 = array.e<std::string>(0);
   auto z1 = aCast.e<std::u16string>(0);
@@ -786,7 +785,7 @@ TEST_F(StringTests, Basic_cast_UTF8toUTF32) {
   ASSERT_EQ(1, array.lengthOf());
   ASSERT_EQ(0, array.rankOf());
 
-  auto aCast = array.cast(sd::DataType::UTF32);
+  auto aCast = array.cast(UTF32);
 
   auto z0 = array.e<std::string>(0);
   auto z1 = aCast.e<std::u32string>(0);
