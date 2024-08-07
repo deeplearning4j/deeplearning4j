@@ -57,14 +57,14 @@ TEST_F(SwitchTests, SwitchTest1) {
 
   // this is our condition op, we'll be using Equals condition, on variables conditionX and conditionY (ids -2 and -3
   // respectively) we're creating this op manually in tests, as always.
-  sd::ops::eq_scalar eqOp;
+  eq_scalar eqOp;
   auto nodeCondition = new Node(&eqOp, 119, {-2, -3});
   // nodeCondition->setOpType(OpType_BOOLEAN);
 
   // now, this is Switch operation. It takes BooleanOperation operation in,
   // and based on evaluation result (true/false) - it'll pass data via :0 or :1 output
   // other idx will be considered disabled, and that graph branch won't be executed
-  sd::ops::Switch switchOp;
+  Switch switchOp;
   auto nodeSwitch = new Node(&switchOp, 3, {2, 119}, {4, 5});
 
   // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
@@ -95,7 +95,7 @@ TEST_F(SwitchTests, SwitchTest1) {
   ASSERT_EQ(3, nodeZ1->getLayer());
 
   // executing graph
-  sd::Status status = GraphExecutioner::execute(&graph);
+  Status status = GraphExecutioner::execute(&graph);
 
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -145,12 +145,12 @@ TEST_F(SwitchTests, SwitchTest2) {
   auto nodeCondition = new Node(OpType_LOGIC, logic::Scope, 119, {-2, -3});
   nodeCondition->setScopeInfo(3, "scopeCondition");
 
-  sd::ops::eq_scalar eqOp;
+  eq_scalar eqOp;
   nodeCondition->setCustomOp(&eqOp);
 
   auto nodeSwitch = new Node(OpType_LOGIC, logic::Switch, 5, {3, 2});
 
-  sd::ops::Switch switchOp;
+  Switch switchOp;
   nodeSwitch->setCustomOp(&switchOp);
 
   // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
@@ -167,7 +167,7 @@ TEST_F(SwitchTests, SwitchTest2) {
   graph.addNode(nodeZ0);
   graph.addNode(nodeZ1);
 
-  sd::Status status = GraphExecutioner::execute(&graph);
+  Status status = GraphExecutioner::execute(&graph);
 
   ASSERT_EQ(sd::Status::OK, status);
 
@@ -208,12 +208,12 @@ TEST_F(SwitchTests, SwitchTest3) {
   auto nodeCondition = new Node(OpType_LOGIC, logic::Scope, 119, {-2, -3});
   nodeCondition->setScopeInfo(3, "scopeCondition");
 
-  sd::ops::eq_scalar eqOp;
+  eq_scalar eqOp;
   nodeCondition->setCustomOp(&eqOp);
 
   auto nodeSwitch = new Node(OpType_LOGIC, logic::Switch, 5, {3, 2});
 
-  sd::ops::Switch switchOp;
+  Switch switchOp;
   nodeSwitch->setCustomOp(&switchOp);
 
   // these 2 ops are connected to FALSE and TRUE outputs. output :0 considered FALSE, and output :1 considered TRUE
@@ -230,7 +230,7 @@ TEST_F(SwitchTests, SwitchTest3) {
   graph.addNode(nodeZ0);
   graph.addNode(nodeZ1);
 
-  sd::Status status = GraphExecutioner::execute(&graph);
+  Status status = GraphExecutioner::execute(&graph);
 
   ASSERT_EQ(sd::Status::OK, status);
 

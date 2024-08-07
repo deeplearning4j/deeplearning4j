@@ -36,8 +36,6 @@ using namespace sd;
 class DeclarableOpsTests13 : public NDArrayTests {
  public:
   DeclarableOpsTests13() {
-    // printf("\n");
-    // fflush(stdout);
   }
 };
 
@@ -45,12 +43,10 @@ template <typename T>
 class TypedDeclarableOpsTests13 : public NDArrayTests {
  public:
   TypedDeclarableOpsTests13() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 
-typedef ::testing::Types<double, float> TestingTypes;
+typedef testing::Types<double, float> TestingTypes;
 TYPED_TEST_CASE(TypedDeclarableOpsTests13, TestingTypes);
 
 TEST_F(DeclarableOpsTests13, test_pow_1) {
@@ -58,7 +54,7 @@ TEST_F(DeclarableOpsTests13, test_pow_1) {
   auto y = NDArrayFactory::create<int>('c', {2}, {3, 3});
   auto e = NDArrayFactory::create<float>('c', {2, 2}, {8.f, 8.f, 8.f, 8.f});
 
-  sd::ops::Pow op;
+  ops::Pow op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -71,7 +67,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
   auto start = NDArrayFactory::create<int>(0);
   auto limit = NDArrayFactory::create<int>(0);
 
-  sd::ops::range op;
+  ops::range op;
   auto result = op.evaluate({&start, &limit});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -80,7 +76,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
 }
 
 TEST_F(DeclarableOpsTests13, test_empty_range_2) {
-  sd::ops::range op;
+  ops::range op;
   auto result = op.evaluate({}, {1.0, 1.0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -89,7 +85,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_2) {
 }
 
 TEST_F(DeclarableOpsTests13, test_empty_range_3) {
-  sd::ops::range op;
+  ops::range op;
   auto result = op.evaluate({}, {1, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -102,10 +98,10 @@ TEST_F(DeclarableOpsTests13, test_argmax_edge_1) {
   auto arr = NDArrayFactory::create_<float>('c', {1024, 1});
 
   ctx->setInputArray(0, arr, true);
-  ctx->setOutputArray(0, NDArrayFactory::create_<sd::LongType>('c', {1}), true);
-  ctx->setInputArray(1, NDArrayFactory::create_<sd::LongType>(0), true);  // Axis 0
+  ctx->setOutputArray(0, NDArrayFactory::create_<LongType>('c', {1}), true);
+  ctx->setInputArray(1, NDArrayFactory::create_<LongType>(0), true);  // Axis 0
 
-  sd::ops::argmax op;
+  ops::argmax op;
   auto result = op.execute(ctx);
   ASSERT_EQ(sd::Status::OK, result);
   delete ctx;
@@ -131,7 +127,7 @@ TEST_F(DeclarableOpsTests13, test_listdiff_1) {
   auto od = NDArrayFactory::create<int>('c', {2});
   auto oi = NDArrayFactory::create<int>('c', {2});
 
-  sd::ops::listdiff op;
+  ops::listdiff op;
   auto result = op.execute({&x, &y}, std::vector<NDArray *>{&od, &oi}, {}, {}, {});
   ASSERT_EQ(sd::Status::OK, result);
 }
@@ -140,18 +136,18 @@ TEST_F(DeclarableOpsTests13, test_greater_1) {
   auto x = NDArrayFactory::create<float>('c', {3, 1});
   auto y = NDArrayFactory::create<float>('c', {1, 4});
 
-  sd::ops::greater op;
+  ops::greater op;
   auto result = op.evaluate({&x, &y});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
 
 TEST_F(DeclarableOpsTests13, test_eval_reduction_shape_1) {
-  sd::LongType axis = 0L;
-  auto x = NDArrayFactory::create<sd::LongType>('c', {2}, {4, 2});
-  auto y = NDArrayFactory::create<sd::LongType>('c', {1}, {axis});
-  auto exp = NDArrayFactory::create<sd::LongType>('c', {2}, {1, 2});
+  LongType axis = 0L;
+  auto x = NDArrayFactory::create<LongType>('c', {2}, {4, 2});
+  auto y = NDArrayFactory::create<LongType>('c', {1}, {axis});
+  auto exp = NDArrayFactory::create<LongType>('c', {2}, {1, 2});
 
-  sd::ops::evaluate_reduction_shape op;
+  ops::evaluate_reduction_shape op;
   auto result = op.evaluate({&x, &y}, {true});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -161,11 +157,11 @@ TEST_F(DeclarableOpsTests13, test_eval_reduction_shape_1) {
 }
 
 TEST_F(DeclarableOpsTests13, test_or_1) {
-  NDArray x('c', {4}, {false, true, false, true}, sd::DataType::BOOL);
-  NDArray y('c', {4}, {false, false, true, true}, sd::DataType::BOOL);
-  NDArray e('c', {4}, {false, true, true, true}, sd::DataType::BOOL);
+  NDArray x('c', {4}, {false, true, false, true}, BOOL);
+  NDArray y('c', {4}, {false, false, true, true}, BOOL);
+  NDArray e('c', {4}, {false, true, true, true}, BOOL);
 
-  NDArray z('c', {4}, sd::DataType::BOOL);
+  NDArray z('c', {4}, BOOL);
 
   x.applyPairwiseTransform(pairwise::Or, y, z);
 
@@ -201,7 +197,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_1) {
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {1, -2, 3, -4, 5, -6});
   auto eps = NDArrayFactory::create<double>('c', {2, 3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
   auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1.2, 2.2, 3.2, 4.2, 5.2, 6.2});
-  sd::ops::barnes_gains op;
+  ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
@@ -212,7 +208,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_2) {
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {1, -2, 3, -4, 5, -6});
   auto eps = NDArrayFactory::create<double>('c', {2, 3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
   auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1.2, 0.01, 3.2, 0.01, 5.2, 0.01});
-  sd::ops::barnes_gains op;
+  ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
@@ -224,7 +220,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
   auto y = NDArrayFactory::create<double>('c', {2, 3}, {-0.1, -2, 3, -4, -0.5, -6});
   auto eps = NDArrayFactory::create<double>('c', {2, 3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
   auto exp = NDArrayFactory::create<double>('c', {2, 3}, {0.01, 2.2, 0.01, 4.2, 0.01, 6.2});
-  sd::ops::barnes_gains op;
+  ops::barnes_gains op;
   auto result = op.evaluate({&x, &y, &eps}, {}, {});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(exp.equalsTo(result.at(0)));
@@ -240,7 +236,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
       'c', {5, 4},
       {-1.846154, -1.846154, -1.846154, -1.846154, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.});
   data.linspace(1);
-  sd::ops::barnes_edge_forces op;
+  ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {1});
 
   ASSERT_EQ(result.status(), sd::Status::OK);
@@ -256,7 +252,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
       'c', {5, 4}, {-0.622568, -0.622568, -0.622568, -0.622568, 1.846154, 1.846154, 1.846154, 1.846154, 0., 0.,
                     0.,        0.,        0.,        0.,        0.,       0.,       0.,       0.,       0., 0.});
   data.linspace(1);
-  sd::ops::barnes_edge_forces op;
+  ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {2});
 
   ASSERT_EQ(result.status(), sd::Status::OK);
@@ -310,7 +306,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
        -0.288569, 0.124679,  0.054078,  -0.034187, -0.192599, 0.033196,  0.228182,  -0.044972, -0.314217, 0.020287,
        0.054427,  -0.078887, -0.078246, -0.104543, 0.169803});
 
-  sd::ops::barnes_edge_forces op;
+  ops::barnes_edge_forces op;
   auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {11});
 
   ASSERT_EQ(result.status(), sd::Status::OK);
@@ -321,7 +317,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
   auto cols = NDArrayFactory::create<int>('c', {4}, {0, 1, 1, 0});
   auto vals = NDArrayFactory::create<double>('c', {4}, {20., 30., 40., 50.});
   auto exp = NDArrayFactory::create<double>('c', {1, 1}, {20.});
-  sd::ops::barnes_symmetrized op;
+  ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {1});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(exp.equalsTo(result.at(2)));
@@ -333,7 +329,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
   auto vals = NDArrayFactory::create<double>('c', {8}, {20., 30., 40., 50., 120., 130., 140., 150.});
   auto exp = NDArrayFactory::create<double>('c', {1, 5}, {20., 15., 15., 20., 20.});
 
-  sd::ops::barnes_symmetrized op;
+  ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {3});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(exp.equalsTo(result.at(2)));
@@ -352,7 +348,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000,  0.000000,
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000,  0.000000,
        0.000000,  0.000000, 0.000000, 0.000000,  0.000000,  0.000000,   0.000000,  0.000000,  0.000000});
-  sd::ops::barnes_symmetrized op;
+  ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
   ASSERT_EQ(result.status(), sd::Status::OK);
 }
@@ -383,7 +379,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
        0.0171,  0.71495, 0.06515, 0.01835, 0.00775, 0.00115, 0.03695, 0.051,   0.1615,    0.03565, 0.0205,  0.00275,
        0.5098,  0.00775, 0.0055,  0.0026,  0.0013,  0.2085,  0.0183,  0.05085, 0.0173,    0.04775, 0.00135, 0.06515,
        0.0026,  0.35855, 0.1236,  0.00895, 0.0108,  0.65985, 0.2099,  0.03615, 0.0159,    0.01835, 0.0055,  0.35855});
-  sd::ops::barnes_symmetrized op;
+  ops::barnes_symmetrized op;
   auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
   ASSERT_EQ(result.status(), sd::Status::OK);
   auto res = result.at(2);
@@ -394,7 +390,7 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
   auto corners = NDArrayFactory::create<double>({0.5384, 0.5640, 0.3449, 0.5257, 0.5505});
   auto width = NDArrayFactory::create<double>({0.4306, 0.3960, 0.4639, 0.5040, 0.4904});
   auto point = NDArrayFactory::create<double>({0.3000, 0.2625, 0.2674, 0.8604, 0.4803});
-  sd::ops::cell_contains op;
+  ops::cell_contains op;
   auto result = op.evaluate({&corners, &width, &point}, {}, {5});
   ASSERT_EQ(result.status(), sd::Status::OK);
   ASSERT_TRUE(result.at(0)->e<bool>(0));
@@ -402,11 +398,11 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustHue_1) {
-  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, FLOAT32);
   NDArray factor = NDArrayFactory::create<float>(0.5);
-  NDArray exp('c', {2, 2, 3}, {100, 0, 44, 208, 5, 220, 177, 230, 97, 2, 255, 244}, sd::DataType::FLOAT32);
+  NDArray exp('c', {2, 2, 3}, {100, 0, 44, 208, 5, 220, 177, 230, 97, 2, 255, 244}, FLOAT32);
 
-  sd::ops::adjust_hue op;
+  ops::adjust_hue op;
   auto results(op.evaluate({&input, &factor}, {}, {2}));
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -422,13 +418,13 @@ TEST_F(DeclarableOpsTests13, adjustHue_2) {
   NDArray input('c', {2, 2, 3},
                 {0.f, 100.f / 255.f, 56.f / 255.f, 17.f / 255.f, 220.f / 255.f, 5.f / 255.f, 150.f / 255.f,
                  97.f / 255.f, 230.f / 255.f, 255.f / 255.f, 2.f / 255.f, 13.f / 255.f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray exp('c', {2, 2, 3},
               {4.f / 255.f, 100.f / 255.f, 0.f, 146.f / 255.f, 220.f / 255.f, 5.f / 255.f, 97.f / 255.f, 123.8f / 255.f,
                230.f / 255.f, 255.f / 255.f, 2.f / 255.f, 164.8f / 255.f},
-              sd::DataType::FLOAT32);
+              FLOAT32);
 
-  sd::ops::adjust_hue op;
+  ops::adjust_hue op;
   auto results(op.evaluate({&input}, {0.9}, {2}));
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -441,11 +437,10 @@ TEST_F(DeclarableOpsTests13, adjustHue_2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustHue_3) {
-  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {2, 2, 3}, {0., 84., 100., 5., 220., 122.0001, 229.8, 97., 230., 255., 142.8002, 2.},
-              sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, FLOAT32);
+  NDArray exp('c', {2, 2, 3}, {0., 84., 100., 5., 220., 122.0001, 229.8, 97., 230., 255., 142.8002, 2.}, FLOAT32);
 
-  sd::ops::adjust_hue op;
+  ops::adjust_hue op;
   auto results(op.evaluate({&input}, {-0.9}, {2}));
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -458,10 +453,10 @@ TEST_F(DeclarableOpsTests13, adjustHue_3) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustHue_4) {
-  NDArray input('c', {2, 3, 2}, {0, 17, 100, 220, 56, 5, 150, 255, 97, 2, 230, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {2, 3, 2}, {100, 208, 0, 5, 44, 220, 177, 2, 230, 255, 97, 244}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 2}, {0, 17, 100, 220, 56, 5, 150, 255, 97, 2, 230, 13}, FLOAT32);
+  NDArray exp('c', {2, 3, 2}, {100, 208, 0, 5, 44, 220, 177, 2, 230, 255, 97, 244}, FLOAT32);
 
-  sd::ops::adjust_hue op;
+  ops::adjust_hue op;
   auto results(op.evaluate({&input}, {0.5}, {1}));
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -474,10 +469,10 @@ TEST_F(DeclarableOpsTests13, adjustHue_4) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustHue_5) {
-  NDArray input('c', {3, 2, 2}, {0, 17, 150, 255, 100, 220, 97, 2, 56, 5, 230, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {3, 2, 2}, {100, 208, 177, 2, 0, 5, 230, 255, 44, 220, 97, 244}, sd::DataType::FLOAT32);
+  NDArray input('c', {3, 2, 2}, {0, 17, 150, 255, 100, 220, 97, 2, 56, 5, 230, 13}, FLOAT32);
+  NDArray exp('c', {3, 2, 2}, {100, 208, 177, 2, 0, 5, 230, 255, 44, 220, 97, 244}, FLOAT32);
 
-  sd::ops::adjust_hue op;
+  ops::adjust_hue op;
   auto results(op.evaluate({&input}, {0.5}, {0}));
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -490,12 +485,11 @@ TEST_F(DeclarableOpsTests13, adjustHue_5) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
-  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, FLOAT32);
   NDArray factor = NDArrayFactory::create<float>(0.5);
-  NDArray exp('c', {2, 2, 3}, {50, 100, 78, 118.5, 220, 112.5, 190, 163.5, 230, 255, 128.5, 134},
-              sd::DataType::FLOAT32);
+  NDArray exp('c', {2, 2, 3}, {50, 100, 78, 118.5, 220, 112.5, 190, 163.5, 230, 255, 128.5, 134}, FLOAT32);
 
-  sd::ops::adjust_saturation op;
+  ops::adjust_saturation op;
   auto results = op.evaluate({&input, &factor}, {}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -508,11 +502,10 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
-  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, sd::DataType::DOUBLE);
-  NDArray exp('c', {2, 2, 3}, {0., 100., 56., 12.279087, 220., 0., 91.654228, 0., 230., 255., 0., 11.087015},
-              sd::DataType::DOUBLE);
+  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, DOUBLE);
+  NDArray exp('c', {2, 2, 3}, {0., 100., 56., 12.279087, 220., 0., 91.654228, 0., 230., 255., 0., 11.087015}, DOUBLE);
 
-  sd::ops::adjust_saturation op;
+  ops::adjust_saturation op;
   auto results = op.evaluate({&input}, {10}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -524,11 +517,10 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_3) {
-  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {2, 2, 3}, {100., 100., 100., 220., 220., 220., 230., 230., 230., 255., 255., 255.},
-              sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 3}, {0, 100, 56, 17, 220, 5, 150, 97, 230, 255, 2, 13}, FLOAT32);
+  NDArray exp('c', {2, 2, 3}, {100., 100., 100., 220., 220., 220., 230., 230., 230., 255., 255., 255.}, FLOAT32);
 
-  sd::ops::adjust_saturation op;
+  ops::adjust_saturation op;
   auto results = op.evaluate({&input}, {-10}, {2});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -541,11 +533,10 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_3) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_4) {
-  NDArray input('c', {2, 3, 2}, {0, 17, 100, 220, 56, 5, 150, 255, 97, 2, 230, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {2, 3, 2}, {50, 118.5, 100, 220, 78, 112.5, 190, 255, 163.5, 128.5, 230, 134},
-              sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 2}, {0, 17, 100, 220, 56, 5, 150, 255, 97, 2, 230, 13}, FLOAT32);
+  NDArray exp('c', {2, 3, 2}, {50, 118.5, 100, 220, 78, 112.5, 190, 255, 163.5, 128.5, 230, 134}, FLOAT32);
 
-  sd::ops::adjust_saturation op;
+  ops::adjust_saturation op;
   auto results = op.evaluate({&input}, {0.5}, {1});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -558,11 +549,10 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_4) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_5) {
-  NDArray input('c', {3, 2, 2}, {0, 17, 150, 255, 100, 220, 97, 2, 56, 5, 230, 13}, sd::DataType::FLOAT32);
-  NDArray exp('c', {3, 2, 2}, {50, 118.5, 190, 255, 100, 220, 163.5, 128.5, 78, 112.5, 230, 134},
-              sd::DataType::FLOAT32);
+  NDArray input('c', {3, 2, 2}, {0, 17, 150, 255, 100, 220, 97, 2, 56, 5, 230, 13}, FLOAT32);
+  NDArray exp('c', {3, 2, 2}, {50, 118.5, 190, 255, 100, 220, 163.5, 128.5, 78, 112.5, 230, 134}, FLOAT32);
 
-  sd::ops::adjust_saturation op;
+  ops::adjust_saturation op;
   auto results = op.evaluate({&input}, {0.5}, {0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -580,7 +570,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_1) {
   x.assign(32);
   e.assign(512);
 
-  sd::ops::shift_bits op;
+  ops::shift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -596,7 +586,7 @@ TEST_F(DeclarableOpsTests13, rshift_bits_1) {
   x.assign(512);
   e.assign(32);
 
-  sd::ops::rshift_bits op;
+  ops::rshift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -612,7 +602,7 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
   x.assign(32);
   e.assign(512);
 
-  sd::ops::cyclic_shift_bits op;
+  ops::cyclic_shift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -628,7 +618,7 @@ TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_1) {
   x.assign(512);
   e.assign(32);
 
-  sd::ops::cyclic_rshift_bits op;
+  ops::cyclic_rshift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -645,7 +635,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_2) {
   y.assign(4);
   e.assign(512);
 
-  sd::ops::shift_bits op;
+  ops::shift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -662,7 +652,7 @@ TEST_F(DeclarableOpsTests13, rshift_bits_2) {
   y.assign(4);
   e.assign(32);
 
-  sd::ops::rshift_bits op;
+  ops::rshift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -679,7 +669,7 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_2) {
   y.assign(4);
   e.assign(512);
 
-  sd::ops::cyclic_shift_bits op;
+  ops::cyclic_shift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -696,7 +686,7 @@ TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_2) {
   y.assign(4);
   e.assign(32);
 
-  sd::ops::cyclic_rshift_bits op;
+  ops::cyclic_rshift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -712,7 +702,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_3) {
   y.assign(4);
   e.assign(512);
 
-  sd::ops::shift_bits op;
+  ops::shift_bits op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -723,16 +713,16 @@ TEST_F(DeclarableOpsTests13, shift_bits_3) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
-  NDArray x('c', {1, 2, 2, 2, 3}, sd::DataType::FLOAT32);
-  NDArray blockShape('c', {3}, {2, 2, 2}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray paddings('c', {3, 2}, std::vector<double>{0, 0, 0, 0, 0, 0}, sd::DataType::INT32);
+  NDArray x('c', {1, 2, 2, 2, 3}, FLOAT32);
+  NDArray blockShape('c', {3}, {2, 2, 2}, INT32);  // three spatial dimensions
+  NDArray paddings('c', {3, 2}, std::vector<double>{0, 0, 0, 0, 0, 0}, INT32);
 
-  NDArray exp('c', {8, 1, 1, 1, 3}, sd::DataType::FLOAT32);
+  NDArray exp('c', {8, 1, 1, 1, 3}, FLOAT32);
 
   x.linspace(1);
   exp.linspace(1);
 
-  sd::ops::space_to_batch_nd op;
+  ops::space_to_batch_nd op;
   auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -743,9 +733,9 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, space_to_batch_nd_2) {
-  NDArray x('c', {2, 2, 4, 3, 1}, sd::DataType::FLOAT32);
-  NDArray blockShape('c', {3}, {2, 2, 3}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray paddings('c', {3, 2}, {0, 0, 0, 2, 2, 1}, sd::DataType::INT32);
+  NDArray x('c', {2, 2, 4, 3, 1}, FLOAT32);
+  NDArray blockShape('c', {3}, {2, 2, 3}, INT32);  // three spatial dimensions
+  NDArray paddings('c', {3, 2}, {0, 0, 0, 2, 2, 1}, INT32);
 
   NDArray exp(
       'c', {24, 1, 3, 2, 1},
@@ -754,10 +744,10 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_2) {
        0,  0,  4, 0,  10, 0,  0,  0,  28, 0,  34, 0,  0, 0,  0,  14, 0,  20, 0,  0,  0, 38, 0,  44, 0,  0, 0,  15, 0,
        21, 0,  0, 0,  39, 0,  45, 0,  0,  13, 0,  19, 0, 0,  0,  37, 0,  43, 0,  0,  0, 0,  17, 0,  23, 0, 0,  0,  41,
        0,  47, 0, 0,  0,  18, 0,  24, 0,  0,  0,  42, 0, 48, 0,  0,  16, 0,  22, 0,  0, 0,  40, 0,  46, 0, 0,  0},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   x.linspace(1);
 
-  sd::ops::space_to_batch_nd op;
+  ops::space_to_batch_nd op;
   auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -768,9 +758,9 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
-  NDArray x('c', {2, 2, 4, 3, 1}, sd::DataType::FLOAT32);
-  NDArray blockShape('c', {3}, {2, 2, 3}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray paddings('c', {3, 2}, {1, 1, 0, 2, 2, 1}, sd::DataType::INT32);
+  NDArray x('c', {2, 2, 4, 3, 1}, FLOAT32);
+  NDArray blockShape('c', {3}, {2, 2, 3}, INT32);  // three spatial dimensions
+  NDArray paddings('c', {3, 2}, {1, 1, 0, 2, 2, 1}, INT32);
 
   NDArray exp('c', {24, 2, 3, 2, 1},
               {0, 0,  0, 0,  0, 0, 0,  14, 0,  20, 0, 0, 0, 0,  0, 0,  0, 0, 0,  38, 0,  44, 0, 0, 0,  0,  0,  0,  0, 0,
@@ -783,10 +773,10 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
                0, 0,  0, 0,  0, 0, 0,  5,  0,  11, 0, 0, 0, 0,  0, 0,  0, 0, 0,  29, 0,  35, 0, 0, 0,  0,  0,  0,  0, 0,
                0, 6,  0, 12, 0, 0, 0,  0,  0,  0,  0, 0, 0, 30, 0, 36, 0, 0, 0,  0,  0,  0,  0, 0, 4,  0,  10, 0,  0, 0,
                0, 0,  0, 0,  0, 0, 28, 0,  34, 0,  0, 0, 0, 0,  0, 0,  0, 0},
-              sd::DataType::FLOAT32);
+              FLOAT32);
   x.linspace(1);
 
-  sd::ops::space_to_batch_nd op;
+  ops::space_to_batch_nd op;
   auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -797,17 +787,17 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
-  NDArray x('c', {8, 1, 1, 1, 3}, sd::DataType::FLOAT32);
+  NDArray x('c', {8, 1, 1, 1, 3}, FLOAT32);
 
-  NDArray blockShape('c', {3}, {2., 2, 2}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray crop('c', {3, 2}, {0., 0, 0, 0, 0, 0}, sd::DataType::INT32);
+  NDArray blockShape('c', {3}, {2., 2, 2}, INT32);  // three spatial dimensions
+  NDArray crop('c', {3, 2}, {0., 0, 0, 0, 0, 0}, INT32);
 
-  NDArray exp('c', {1, 2, 2, 2, 3}, sd::DataType::FLOAT32);
+  NDArray exp('c', {1, 2, 2, 2, 3}, FLOAT32);
 
   x.linspace(1);
   exp.linspace(1);
 
-  sd::ops::batch_to_space_nd op;
+  ops::batch_to_space_nd op;
   auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -818,17 +808,17 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batch_to_space_nd_2) {
-  NDArray x('c', {24, 1, 3, 2, 1}, sd::DataType::FLOAT32);
-  NDArray blockShape('c', {3}, {2, 2, 3}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray crop('c', {3, 2}, {0, 0, 0, 2, 2, 1}, sd::DataType::INT32);
+  NDArray x('c', {24, 1, 3, 2, 1}, FLOAT32);
+  NDArray blockShape('c', {3}, {2, 2, 3}, INT32);  // three spatial dimensions
+  NDArray crop('c', {3, 2}, {0, 0, 0, 2, 2, 1}, INT32);
 
   NDArray exp('c', {2, 2, 4, 3, 1},
               {25, 2, 14, 61, 38, 50, 27, 4,  16, 63, 40, 52, 97,  74, 86, 133, 110, 122, 99,  76, 88, 135, 112, 124,
                31, 8, 20, 67, 44, 56, 33, 10, 22, 69, 46, 58, 103, 80, 92, 139, 116, 128, 105, 82, 94, 141, 118, 130},
-              sd::DataType::FLOAT32);
+              FLOAT32);
   x.linspace(1);
 
-  sd::ops::batch_to_space_nd op;
+  ops::batch_to_space_nd op;
   auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -839,17 +829,17 @@ ASSERT_EQ(exp,*z);
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batch_to_space_nd_3) {
-  NDArray x('c', {24, 2, 3, 2, 1}, sd::DataType::FLOAT32);
-  NDArray blockShape('c', {3}, {2, 2, 3}, sd::DataType::INT32);  // three spatial dimensions
-  NDArray crop('c', {3, 2}, {1, 1, 0, 2, 2, 1}, sd::DataType::INT32);
+  NDArray x('c', {24, 2, 3, 2, 1}, FLOAT32);
+  NDArray blockShape('c', {3}, {2, 2, 3}, INT32);  // three spatial dimensions
+  NDArray crop('c', {3, 2}, {1, 1, 0, 2, 2, 1}, INT32);
 
   NDArray exp('c', {2, 2, 4, 3, 1}, {193, 146, 170, 265, 218, 242, 195, 148, 172, 267, 220, 244, 55,  8,   32,  127,
                                      80,  104, 57,  10,  34,  129, 82,  106, 205, 158, 182, 277, 230, 254, 207, 160,
                                      184, 279, 232, 256, 67,  20,  44,  139, 92,  116, 69,  22,  46,  141, 94,  118},
-              sd::DataType::FLOAT32);
+              FLOAT32);
   x.linspace(1);
 
-  sd::ops::batch_to_space_nd op;
+  ops::batch_to_space_nd op;
   auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -860,16 +850,16 @@ ASSERT_EQ(exp,*z);
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergemax_1) {
-  NDArray x1('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x2('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x3('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray e('c', {5, 5}, sd::DataType::FLOAT32);
+  NDArray x1('c', {5, 5}, FLOAT32);
+  NDArray x2('c', {5, 5}, FLOAT32);
+  NDArray x3('c', {5, 5}, FLOAT32);
+  NDArray e('c', {5, 5}, FLOAT32);
   x1.assign(3);
   x2.assign(1);
   x3.assign(2);
   e.assign(3);
 
-  sd::ops::mergemax op;
+  ops::mergemax op;
   auto result = op.evaluate({&x1, &x2, &x3}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -881,28 +871,28 @@ TEST_F(DeclarableOpsTests13, mergemax_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergemax_2) {
-  NDArray x1('c', {1, 3}, {0., 1, 2}, sd::DataType::FLOAT32);
-  NDArray x2('c', {1, 1}, std::vector<double>{1.}, sd::DataType::FLOAT32);
-  NDArray out('c', {1, 3}, {-1., -1, -1}, sd::DataType::FLOAT32);
+  NDArray x1('c', {1, 3}, {0., 1, 2}, FLOAT32);
+  NDArray x2('c', {1, 1}, std::vector<double>{1.}, FLOAT32);
+  NDArray out('c', {1, 3}, {-1., -1, -1}, FLOAT32);
 
-  sd::ops::mergemax op;
+  ops::mergemax op;
   auto status = op.execute({&x1, &x2}, {&out}, {}, {}, {});
 
   ASSERT_EQ(sd::Status::VALIDATION, status);
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergemax_bp_1) {
-  NDArray x1('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x2('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x3('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray grad('c', {5, 5}, sd::DataType::FLOAT32);
+  NDArray x1('c', {5, 5}, FLOAT32);
+  NDArray x2('c', {5, 5}, FLOAT32);
+  NDArray x3('c', {5, 5}, FLOAT32);
+  NDArray grad('c', {5, 5}, FLOAT32);
 
   x1.assign(3);
   x2.assign(1);
   x3.assign(2);
   grad.linspace(.1, .1);
 
-  sd::ops::mergemax_bp op;
+  ops::mergemax_bp op;
   auto result = op.evaluate({&x1, &x2, &x3, &grad}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(3, result.size());
@@ -914,18 +904,18 @@ TEST_F(DeclarableOpsTests13, mergemax_bp_1) {
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergemax_bp_2) {
-  NDArray x1('c', {2, 5}, {1, 2, 3, 4, 5, 4, 3, 2, 1, 0}, sd::DataType::FLOAT32);
-  NDArray x2('c', {2, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, sd::DataType::FLOAT32);
-  NDArray x3('c', {2, 5}, {0, 1, 1, 2, 3, 4, 7, 5, 8, 10}, sd::DataType::FLOAT32);
-  NDArray grad('c', {2, 5}, sd::DataType::FLOAT32);
+  NDArray x1('c', {2, 5}, {1, 2, 3, 4, 5, 4, 3, 2, 1, 0}, FLOAT32);
+  NDArray x2('c', {2, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, FLOAT32);
+  NDArray x3('c', {2, 5}, {0, 1, 1, 2, 3, 4, 7, 5, 8, 10}, FLOAT32);
+  NDArray grad('c', {2, 5}, FLOAT32);
 
   grad.linspace(.1, .1);
 
-  NDArray exp1('c', {2, 5}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0}, sd::DataType::FLOAT32);
-  NDArray exp2('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0}, sd::DataType::FLOAT32);
-  NDArray exp3('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0}, sd::DataType::FLOAT32);
+  NDArray exp1('c', {2, 5}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0}, FLOAT32);
+  NDArray exp2('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0}, FLOAT32);
+  NDArray exp3('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0}, FLOAT32);
 
-  sd::ops::mergemax_bp op;
+  ops::mergemax_bp op;
   auto result = op.evaluate({&x1, &x2, &x3, &grad}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(3, result.size());
@@ -943,24 +933,24 @@ TEST_F(DeclarableOpsTests13, mergemax_bp_2) {
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergemax_bp_3) {
-  NDArray x1C('c', {2, 5}, {1, 2, 3, 4, 5, 4, 3, 2, 1, 0}, sd::DataType::FLOAT32);
-  NDArray x2C('c', {2, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, sd::DataType::FLOAT32);
-  NDArray x3C('c', {2, 5}, {0, 1, 1, 2, 3, 4, 7, 5, 8, 10}, sd::DataType::FLOAT32);
-  NDArray grad('c', {2, 5}, sd::DataType::FLOAT32);
+  NDArray x1C('c', {2, 5}, {1, 2, 3, 4, 5, 4, 3, 2, 1, 0}, FLOAT32);
+  NDArray x2C('c', {2, 5}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, FLOAT32);
+  NDArray x3C('c', {2, 5}, {0, 1, 1, 2, 3, 4, 7, 5, 8, 10}, FLOAT32);
+  NDArray grad('c', {2, 5}, FLOAT32);
 
   grad.linspace(.1, .1);
 
-  NDArray x1('f', {2, 5}, sd::DataType::FLOAT32);
-  NDArray x2('f', {2, 5}, sd::DataType::FLOAT32);
-  NDArray x3('f', {2, 5}, sd::DataType::FLOAT32);
+  NDArray x1('f', {2, 5}, FLOAT32);
+  NDArray x2('f', {2, 5}, FLOAT32);
+  NDArray x3('f', {2, 5}, FLOAT32);
 
-  NDArray exp1C('c', {2, 5}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0}, sd::DataType::FLOAT32);
-  NDArray exp2C('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0}, sd::DataType::FLOAT32);
-  NDArray exp3C('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0}, sd::DataType::FLOAT32);
+  NDArray exp1C('c', {2, 5}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0}, FLOAT32);
+  NDArray exp2C('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0}, FLOAT32);
+  NDArray exp3C('c', {2, 5}, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0}, FLOAT32);
 
-  NDArray exp1('f', {2, 5}, sd::DataType::FLOAT32);
-  NDArray exp2('f', {2, 5}, sd::DataType::FLOAT32);
-  NDArray exp3('f', {2, 5}, sd::DataType::FLOAT32);
+  NDArray exp1('f', {2, 5}, FLOAT32);
+  NDArray exp2('f', {2, 5}, FLOAT32);
+  NDArray exp3('f', {2, 5}, FLOAT32);
 
   x1.assign(x1C);
   x2.assign(x2C);
@@ -970,7 +960,7 @@ TEST_F(DeclarableOpsTests13, mergemax_bp_3) {
   exp2.assign(exp2C);
   exp3.assign(exp3C);
 
-  sd::ops::mergemax_bp op;
+  ops::mergemax_bp op;
   auto result = op.evaluate({&x1, &x2, &x3, &grad}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(3, result.size());
@@ -988,17 +978,17 @@ TEST_F(DeclarableOpsTests13, mergemax_bp_3) {
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergeadd_bp_1) {
-  NDArray x1('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x2('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x3('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray grad('c', {5, 5}, sd::DataType::FLOAT32);
+  NDArray x1('c', {5, 5}, FLOAT32);
+  NDArray x2('c', {5, 5}, FLOAT32);
+  NDArray x3('c', {5, 5}, FLOAT32);
+  NDArray grad('c', {5, 5}, FLOAT32);
 
   x1.assign(3);
   x2.assign(1);
   x3.assign(2);
   grad.linspace(.1, .1);
 
-  sd::ops::mergeadd_bp op;
+  ops::mergeadd_bp op;
   auto result = op.evaluate({&x1, &x2, &x3, &grad}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(3, result.size());
@@ -1011,22 +1001,22 @@ TEST_F(DeclarableOpsTests13, mergeadd_bp_1) {
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, mergeavg_bp_1) {
-  NDArray x1('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x2('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray x3('c', {5, 5}, sd::DataType::FLOAT32);
-  NDArray grad('c', {5, 5}, sd::DataType::FLOAT32);
+  NDArray x1('c', {5, 5}, FLOAT32);
+  NDArray x2('c', {5, 5}, FLOAT32);
+  NDArray x3('c', {5, 5}, FLOAT32);
+  NDArray grad('c', {5, 5}, FLOAT32);
 
   x1.assign(3);
   x2.assign(1);
   x3.assign(2);
   grad.linspace(.1, .1);
 
-  sd::ops::mergeavg_bp op;
+  ops::mergeavg_bp op;
   auto result = op.evaluate({&x1, &x2, &x3, &grad}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
   ASSERT_EQ(3, result.size());
 
-  grad.applyScalar(sd::scalar::Divide, 3, grad);
+  grad.applyScalar(scalar::Divide, 3, grad);
 
   for (int i = 0; i < 3; i++) {
     auto z = result.at(i);
@@ -1061,12 +1051,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1076,7 +1066,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
   cI = 2.;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   auto expH = NDArrayFactory::create<float>(
@@ -1090,7 +1080,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
       'c', {bS, nOut},
       {1.1589154f, 1.1589154f, 1.1589154f, 1.1892855f, 1.1892855f, 1.1892855f, 1.219861f, 1.219861f, 1.219861f});
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1131,12 +1121,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {bS, sL, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {bS, sL, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1146,7 +1136,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
   cI = 2.;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   auto expH = NDArrayFactory::create<float>(
@@ -1161,7 +1151,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
       'c', {bS, nOut},
       {0.996965f, 0.996965f, 0.996965f, 1.146756f, 1.146756f, 1.146756f, 1.301922f, 1.301922f, 1.301922f});
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1202,12 +1192,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_3) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1217,7 +1207,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_3) {
   cI = 2.;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1225,14 +1215,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_3) {
       {0.493883f, 0.493883f, 0.493883f, 0.510990f, 0.510990f, 0.510990f, 0.534701f, 0.534701f, 0.534701f, 0.549139f,
        0.549139f, 0.549139f, 0.571900f, 0.571900f, 0.571900f, 0.583561f, 0.583561f, 0.583561f, 0.605106f, 0.605106f,
        0.605106f, 0.614114f, 0.614114f, 0.614114f, 0.635354f, 0.635354f, 0.635354f, 0.642045f, 0.642045f, 0.642045f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  NDArray expHL('c', {bS, nOut}, {0.493883f, 0.493883f, 0.493883f, 0.510990f, 0.510990f, 0.510990f},
-                sd::DataType::FLOAT32);
-  NDArray expCL('c', {bS, nOut}, {1.061274f, 1.061274f, 1.061274f, 1.115888f, 1.115888f, 1.115888f},
-                sd::DataType::FLOAT32);
+  NDArray expHL('c', {bS, nOut}, {0.493883f, 0.493883f, 0.493883f, 0.510990f, 0.510990f, 0.510990f}, FLOAT32);
+  NDArray expCL('c', {bS, nOut}, {1.061274f, 1.061274f, 1.061274f, 1.115888f, 1.115888f, 1.115888f}, FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1276,12 +1264,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {2, nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {2, nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {2, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {2, nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {2, nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {2, 4 * nOut}, FLOAT32);
+  NDArray hI('c', {2, bS, nOut}, FLOAT32);
+  NDArray cI('c', {2, bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx({0, 1, 0, 0, 0, 0}) = 0.003f;
@@ -1296,7 +1284,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
   cI({1, 2, 0, 0, 0, 0}) = -2;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1308,18 +1296,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
        0.550714f,  0.550714f,  0.550714f,  -0.156223f, -0.156223f, -0.156223f, 0.565308f,  0.565308f,  0.565308f,
        -0.152313f, -0.152313f, -0.152313f, 0.563741f,  0.563741f,  0.563741f,  -0.234128f, -0.234128f, -0.234128f,
        0.578676f,  0.578676f,  0.578676f,  -0.228917f, -0.228917f, -0.228917f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {2, bS, nOut},
                 {0.563741f, 0.563741f, 0.563741f, 0.578676f, 0.578676f, 0.578676f, -0.107642f, -0.107642f, -0.107642f,
                  -0.106937f, -0.106937f, -0.106937f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {2, bS, nOut},
                 {1.217757f, 1.217757f, 1.217757f, 1.272398f, 1.272398f, 1.272398f, -0.295768f, -0.295768f, -0.295768f,
                  -0.298453f, -0.298453f, -0.298453f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1363,12 +1351,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {bS, sL, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {2, nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {2, nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {2, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {bS, sL, nIn}, FLOAT32);
+  NDArray Wx('c', {2, nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {2, nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {2, 4 * nOut}, FLOAT32);
+  NDArray hI('c', {2, bS, nOut}, FLOAT32);
+  NDArray cI('c', {2, bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx({0, 1, 0, 0, 0, 0}) = 0.003;
@@ -1383,7 +1371,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
   cI({1, 2, 0, 0, 0, 0}) = -2;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1395,18 +1383,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
        0.599572f,  0.599572f,  0.599572f,  -0.105802f, -0.105802f, -0.105802f, 0.591089f,  0.591089f,  0.591089f,
        -0.116681f, -0.116681f, -0.116681f, 0.588694f,  0.588694f,  0.588694f,  -0.149201f, -0.149201f, -0.149201f,
        0.591492f,  0.591492f,  0.591492f,  -0.228917f, -0.228917f, -0.228917f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {2, bS, nOut},
                 {0.51409f, 0.51409f, 0.51409f, 0.591492f, 0.591492f, 0.591492f, -0.107659f, -0.107659f, -0.107659f,
                  -0.102739f, -0.102739f, -0.102739f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {2, bS, nOut},
                 {1.07293f, 1.07293f, 1.07293f, 1.346609f, 1.346609f, 1.346609f, -0.295811f, -0.295811f, -0.295811f,
                  -0.305394f, -0.305394f, -0.305394f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1414,7 +1402,6 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
   auto h = results.at(0);
   auto hL = results.at(1);
   auto cL = results.at(2);
-
 
   ASSERT_TRUE(expH.isSameShape(h));
   ASSERT_TRUE(expH.equalsTo(h));
@@ -1451,12 +1438,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {2, nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {2, nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {2, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {2, nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {2, nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {2, 4 * nOut}, FLOAT32);
+  NDArray hI('c', {2, bS, nOut}, FLOAT32);
+  NDArray cI('c', {2, bS, nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx({0, 1, 0, 0, 0, 0}) = 0.003f;
@@ -1471,7 +1458,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
   cI({1, 2, 0, 0, 0, 0}) = -2;
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1479,18 +1466,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
       {0.470019f, 0.470019f, 0.470019f, 0.478352f, 0.478352f, 0.478352f, 0.444871f, 0.444871f, 0.444871f, 0.457060f,
        0.457060f, 0.457060f, 0.424090f, 0.424090f, 0.424090f, 0.439778f, 0.439778f, 0.439778f, 0.394491f, 0.394491f,
        0.394491f, 0.412995f, 0.412995f, 0.412995f, 0.329613f, 0.329613f, 0.329613f, 0.349760f, 0.349760f, 0.349760f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {2, bS, nOut},
                 {0.563741f, 0.563741f, 0.563741f, 0.578676f, 0.578676f, 0.578676f, -0.107642f, -0.107642f, -0.107642f,
                  -0.106937f, -0.106937f, -0.106937f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {2, bS, nOut},
                 {1.217757f, 1.217757f, 1.217757f, 1.272398f, 1.272398f, 1.272398f, -0.295768f, -0.295768f, -0.295768f,
                  -0.298453f, -0.298453f, -0.298453f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1537,13 +1524,13 @@ TEST_F(DeclarableOpsTests13, lstmLayer_7) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1554,19 +1541,19 @@ TEST_F(DeclarableOpsTests13, lstmLayer_7) {
   Wp = -0.05;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH('c', {sL, bS, nOut},
                {0.55533,  0.55533,  0.55533,  0.562925, 0.562925, 0.562925, 0.531795, 0.531795, 0.531795, 0.542556,
                 0.542556, 0.542556, 0.521466, 0.521466, 0.521466, 0.534638, 0.534638, 0.534638, 0.524805, 0.524805,
                 0.524805, 0.539187, 0.539187, 0.539187, 0.538309, 0.538309, 0.538309, 0.552923, 0.552923, 0.552923},
-               sd::DataType::FLOAT32);
+               FLOAT32);
 
-  NDArray expHL('c', {bS, nOut}, {0.538309, 0.538309, 0.538309, 0.552923, 0.552923, 0.552923}, sd::DataType::FLOAT32);
-  NDArray expCL('c', {bS, nOut}, {1.147089, 1.147089, 1.147089, 1.197228, 1.197228, 1.197228}, sd::DataType::FLOAT32);
+  NDArray expHL('c', {bS, nOut}, {0.538309, 0.538309, 0.538309, 0.552923, 0.552923, 0.552923}, FLOAT32);
+  NDArray expCL('c', {bS, nOut}, {1.147089, 1.147089, 1.147089, 1.197228, 1.197228, 1.197228}, FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1615,13 +1602,13 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
 
   const double cellClip = 1.;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1632,7 +1619,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
   Wp = -0.05;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1640,14 +1627,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
       {0.436221f, 0.436221f, 0.436221f, 0.450573f, 0.450573f, 0.450573f, 0.463602f, 0.463602f, 0.463602f, 0.474674f,
        0.474674f, 0.474674f, 0.484039f, 0.484039f, 0.484039f, 0.490679f, 0.490679f, 0.490679f, 0.494871f, 0.494871f,
        0.494871f, 0.499028f, 0.499028f, 0.499028f, 0.504649f, 0.504649f, 0.504649f, 0.508719f, 0.508719f, 0.508719f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  NDArray expHL('c', {bS, nOut}, {0.436221f, 0.436221f, 0.436221f, 0.450573f, 0.450573f, 0.450573f},
-                sd::DataType::FLOAT32);
-  NDArray expCL('c', {bS, nOut}, {0.879804f, 0.879804f, 0.879804f, 0.914666f, 0.914666f, 0.914666f},
-                sd::DataType::FLOAT32);
+  NDArray expHL('c', {bS, nOut}, {0.436221f, 0.436221f, 0.436221f, 0.450573f, 0.450573f, 0.450573f}, FLOAT32);
+  NDArray expCL('c', {bS, nOut}, {0.879804f, 0.879804f, 0.879804f, 0.914666f, 0.914666f, 0.914666f}, FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1695,13 +1680,13 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {2, nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {2, nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {2, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {2, 3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {2, nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {2, nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {2, 4 * nOut}, FLOAT32);
+  NDArray hI('c', {2, bS, nOut}, FLOAT32);
+  NDArray cI('c', {2, bS, nOut}, FLOAT32);
+  NDArray Wp('c', {2, 3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx({0, 1, 0, 0, 0, 0}) = 0.003;
@@ -1718,7 +1703,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
   Wp({1, 2, 0, 0}) = 0.05;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1730,18 +1715,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
        0.524805f,  0.524805f,  0.524805f,  -0.145177f, -0.145177f, -0.145177f, 0.539187f,  0.539187f,  0.539187f,
        -0.14157f,  -0.14157f,  -0.14157f,  0.538309f,  0.538309f,  0.538309f,  -0.218056f, -0.218056f, -0.218056f,
        0.552923f,  0.552923f,  0.552923f,  -0.213068f, -0.213068f, -0.213068f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {2, bS, nOut},
                 {0.538309f, 0.538309f, 0.538309f, 0.552923f, 0.552923f, 0.552923f, -0.104502f, -0.104502f, -0.104502f,
                  -0.103843f, -0.103843f, -0.103843f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {2, bS, nOut},
                 {1.147089f, 1.147089f, 1.147089f, 1.197228f, 1.197228f, 1.197228f, -0.289425f, -0.289425f, -0.289425f,
                  -0.292174f, -0.292174f, -0.292174f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1789,14 +1774,14 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003;
@@ -1807,7 +1792,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
   Wp = -0.05;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1821,18 +1806,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
        0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,
        0.f,       0.f,       0.692315f, 0.692315f, 0.692315f, 0.f,       0.f,       0.f,       0.f,       0.f,
        0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {bS, nOut},
                 {0.f, 0.f, 0.f, 0.562925f, 0.562925f, 0.562925f, 0.576568f, 0.576568f, 0.576568f, 0.611224f, 0.611224f,
                  0.611224f, 0.692315f, 0.692315f, 0.692315f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {bS, nOut},
                 {0.f, 0.f, 0.f, 1.534275f, 1.534275f, 1.534275f, 1.40183f, 1.40183f, 1.40183f, 1.449675f, 1.449675f,
                  1.449675f, 1.767702f, 1.767702f, 1.767702f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1880,14 +1865,14 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
+  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, FLOAT32);
+  NDArray Wp('c', {3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx = 0.003f;
@@ -1898,7 +1883,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
   Wp = -0.05f;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -1912,18 +1897,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
        0.f,       0.f,       0.f,       0.f,       0.f,       0.f,       0.699627f, 0.699627f, 0.699627f, 0.705371f,
        0.705371f, 0.705371f, 0.710989f, 0.710989f, 0.710989f, 0.,        0.,        0.,        0.719014,  0.719014,
        0.719014,  0.724087,  0.724087f, 0.724087f, 0.729084f, 0.729084f, 0.729084f, 0.734004f, 0.734004f, 0.734004f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {bS, nOut},
                 {0.f, 0.f, 0.f, 0.719014f, 0.719014f, 0.719014f, 0.699627f, 0.699627f, 0.699627f, 0.677708f, 0.677708f,
                  0.677708f, 0.61209f, 0.61209f, 0.61209f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {bS, nOut},
                 {0.f, 0.f, 0.f, 2.092814f, 2.092814f, 2.092814f, 2.08832f, 2.08832f, 2.08832f, 2.009851f, 2.009851f,
                  2.009851f, 1.646034f, 1.646034f, 1.646034f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1971,14 +1956,14 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {2, nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {2, nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {2, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {2, bS, nOut}, sd::DataType::FLOAT32);
-  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, sd::DataType::FLOAT32);
-  NDArray Wp('c', {2, 3 * nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {2, nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {2, nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {2, 4 * nOut}, FLOAT32);
+  NDArray hI('c', {2, bS, nOut}, FLOAT32);
+  NDArray cI('c', {2, bS, nOut}, FLOAT32);
+  NDArray seqLen('c', {bS}, {0, 1, 2, 3, 5}, FLOAT32);
+  NDArray Wp('c', {2, 3 * nOut}, FLOAT32);
 
   x.linspace(0.5, 0.5);
   Wx({0, 1, 0, 0, 0, 0}) = 0.003f;
@@ -1995,7 +1980,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
   Wp({1, 2, 0, 0}) = 0.05f;
 
   std::initializer_list<double> tArgs = {cellClip};
-  std::initializer_list<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::initializer_list<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::initializer_list<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
   NDArray expH(
@@ -2018,22 +2003,22 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
        0.,       0.,        0.,        0.,        0.,       0.,        0.,        0.,        0.,        0.,
        0.,       0.,        0.,        0.,        0.,       0.,        0.,        0.,        0.,        0.,
        0.,       0.,        0.,        0.,        0.,       0.,        0.,        0.,        0.,        0.},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expHL('c', {2, bS, nOut},
                 {0.f,        0.f,        0.f,        0.562925f,  0.562925f,  0.562925f,  0.576568f,  0.576568f,
                  0.576568f,  0.611224f,  0.611224f,  0.611224f,  0.692315f,  0.692315f,  0.692315f,  0.f,
                  0.f,        0.f,        -0.25361f,  -0.25361f,  -0.25361f,  -0.157103f, -0.157103f, -0.157103f,
                  -0.116502f, -0.116502f, -0.116502f, -0.100025f, -0.100025f, -0.100025f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray expCL('c', {2, bS, nOut},
                 {0.f,        0.f,        0.f,        1.534275f,  1.534275f,  1.534275f,  1.40183f,   1.40183f,
                  1.40183f,   1.449675f,  1.449675f,  1.449675f,  1.767702f,  1.767702f,  1.767702f,  0.f,
                  0.f,        0.f,        -0.86636f,  -0.86636f,  -0.86636f,  -0.470245f, -0.470245f, -0.470245f,
                  -0.341856f, -0.341856f, -0.341856f, -0.294986f, -0.294986f, -0.294986f},
-                sd::DataType::FLOAT32);
+                FLOAT32);
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2056,8 +2041,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_13) {
-  sd::Environment::getInstance().setDebug(true);
-  sd::Environment::getInstance().setVerbose(true);
+  Environment::getInstance().setDebug(true);
+  Environment::getInstance().setVerbose(true);
 
   const int sL = 5;
   const int bS = 3;
@@ -2082,12 +2067,12 @@ TEST_F(DeclarableOpsTests13, lstmLayer_13) {
 
   const double cellClip = 0;  // do not apply clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::FLOAT32);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::FLOAT32);
-  NDArray b('c', {4 * nOut}, sd::DataType::FLOAT32);
-  NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
-  NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+  NDArray x('c', {sL, bS, nIn}, FLOAT32);
+  NDArray Wx('c', {nIn, 4 * nOut}, FLOAT32);
+  NDArray Wr('c', {nOut, 4 * nOut}, FLOAT32);
+  NDArray b('c', {4 * nOut}, FLOAT32);
+  NDArray hI('c', {bS, nOut}, FLOAT32);
+  NDArray cI('c', {bS, nOut}, FLOAT32);
   auto expH = NDArrayFactory::create<float>(
       'c', {sL, bS, nOut}, {0.585381f, 0.618957f, 0.650373f, 0.679638f, 0.706795f, 0.821222f, 0.839291f, 0.855572f,
                             0.870221f, 0.883389f, 0.913720f, 0.922729f, 0.930756f, 0.937913f, 0.944299f,
@@ -2117,14 +2102,14 @@ TEST_F(DeclarableOpsTests13, lstmLayer_13) {
   cI.linspace(0.17f, 0.05f);
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
-  sd::ops::lstmLayer op;
+  ops::lstmLayer op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
-  sd::Environment::getInstance().setDebug(false);
-  sd::Environment::getInstance().setVerbose(false);
+  Environment::getInstance().setDebug(false);
+  Environment::getInstance().setVerbose(false);
 
   ASSERT_EQ(sd::Status::OK, results.status());
   auto h = results.at(0);
@@ -2159,16 +2144,16 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_ScalarCheck) {
 
   const double cellClip = 0.5;  // clipping
 
-  NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
-  NDArray Wx('c', {nIn, 4 * nOut}, sd::DataType::DOUBLE);
-  NDArray Wr('c', {nOut, 4 * nOut}, sd::DataType::DOUBLE);
-  NDArray b('c', {4 * nOut}, sd::DataType::DOUBLE);
-  NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
-  NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
-  NDArray Wp('c', {3 * nOut}, sd::DataType::DOUBLE);
-  NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
-  NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
-  NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+  NDArray x('c', {sL, bS, nIn}, DOUBLE);
+  NDArray Wx('c', {nIn, 4 * nOut}, DOUBLE);
+  NDArray Wr('c', {nOut, 4 * nOut}, DOUBLE);
+  NDArray b('c', {4 * nOut}, DOUBLE);
+  NDArray hI('c', {bS, nOut}, DOUBLE);
+  NDArray cI('c', {bS, nOut}, DOUBLE);
+  NDArray Wp('c', {3 * nOut}, DOUBLE);
+  NDArray dLdh('c', {sL, bS, nOut}, DOUBLE);
+  NDArray dLdhL('c', {bS, nOut}, DOUBLE);
+  NDArray dLdcL('c', {bS, nOut}, DOUBLE);
   dLdh.assign(1.25);
   dLdhL.assign(1.25);
   dLdcL.assign(2.5);
@@ -2185,10 +2170,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_ScalarCheck) {
   b.linspace(1, -0.15);
 
   std::vector<double> tArgs = {cellClip};
-  std::vector<sd::LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+  std::vector<LongType> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
   std::vector<bool> bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
-  sd::ops::lstmLayer_bp op;
+  ops::lstmLayer_bp op;
   auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
   auto results_act =
       op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh_scalar, &dLdhL_scalar, &dLdcL_scalar}, tArgs, iArgs, bArgs);
@@ -2202,20 +2187,20 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_ScalarCheck) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test1) {
-  NDArray input('c', {2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f, 1.1f}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, FLOAT32);
+  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f, 1.1f}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, FLOAT32);
+  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, FLOAT32);
 
   NDArray expected('c', {2, 4},
                    {11.61218734f, 18.52390321f, -8.67185076f, -21.28716864f, 10.93337162f, 19.14541765f, -9.26213931f,
                     -20.71509369f},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input.linspace(0.1, 0.1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1});
 
@@ -2247,7 +2232,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test2) {
   gamma.assign(1.2);
   beta.assign(1.);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1});
 
@@ -2275,7 +2260,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test3) {
 
   input.linspace(0.1, 0.1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
 
@@ -2303,7 +2288,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test4) {
 
   input.linspace(0.1, 0.1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 0, 2});
 
@@ -2317,11 +2302,11 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test4) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test5) {
-  NDArray input('c', {2, 4, 2, 2}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f, 1.1f}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4, 2, 2}, FLOAT32);
+  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, FLOAT32);
+  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f, 1.1f}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, FLOAT32);
+  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, FLOAT32);
 
   NDArray expected(
       'c', {2, 4, 2, 2},
@@ -2329,10 +2314,10 @@ TEST_F(DeclarableOpsTests13, batchnorm_test5) {
        -9.557284f,  -9.704856f, -9.852428f,  -10.f,       -20.f,      -19.856981f, -19.713963f, -19.570944f,
        8.896924f,   8.727221f,  8.557517f,   8.387813f,   21.476097f, 21.631475f,  21.786854f,  21.942233f,
        -11.918438f, -12.06601f, -12.213582f, -12.361154f, -17.7117f,  -17.568681f, -17.425663f, -17.282644f},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   input.linspace(0.1, 0.1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
 
@@ -2346,21 +2331,21 @@ TEST_F(DeclarableOpsTests13, batchnorm_test5) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test6) {
-  NDArray input('c', {2, 2, 2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9, 1.1f}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 2, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, FLOAT32);
+  NDArray variance('c', {4}, {0.5f, 0.7f, 0.9, 1.1f}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, FLOAT32);
+  NDArray beta('c', {4}, {10.f, 20.f, -10.f, -20.f}, FLOAT32);
 
   NDArray expected('c', {2, 2, 2, 4},
                    {11.612187f, 18.523903f, -8.671851f,  -21.287169f, 10.933372f, 19.145418f, -9.262139f,  -20.715094f,
                     10.254556f, 19.766932f, -9.852428f,  -20.143019f, 9.57574f,   20.388447f, -10.442716f, -19.570944f,
                     8.896924f,  21.009961f, -11.033005f, -18.998869f, 8.218109f,  21.631475f, -11.623294f, -18.426794f,
                     7.539293f,  22.25299f,  -12.213582f, -17.854719f, 6.860477f,  22.874504f, -12.803871f, -17.282644f},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
   input.linspace(0.1, 0.1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 3});
 
@@ -2374,22 +2359,22 @@ TEST_F(DeclarableOpsTests13, batchnorm_test6) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test7) {
-  NDArray input1('c', {3, 3, 15, 15}, sd::DataType::FLOAT32);
-  NDArray input2('c', {3, 15, 15, 3}, sd::DataType::FLOAT32);
+  NDArray input1('c', {3, 3, 15, 15}, FLOAT32);
+  NDArray input2('c', {3, 15, 15, 3}, FLOAT32);
   input2.permutei({0, 3, 1, 2});
 
-  NDArray mean('c', {3}, {0., 0, 0}, sd::DataType::FLOAT32);
-  NDArray variance('c', {3}, {1., 1, 1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {3}, {1., 1, 1}, sd::DataType::FLOAT32);
-  NDArray beta('c', {3}, {0., 0, 0}, sd::DataType::FLOAT32);
+  NDArray mean('c', {3}, {0., 0, 0}, FLOAT32);
+  NDArray variance('c', {3}, {1., 1, 1}, FLOAT32);
+  NDArray gamma('c', {3}, {1., 1, 1}, FLOAT32);
+  NDArray beta('c', {3}, {0., 0, 0}, FLOAT32);
 
-  NDArray out1('c', {3, 3, 15, 15}, sd::DataType::FLOAT32);
-  NDArray out2('c', {3, 3, 15, 15}, sd::DataType::FLOAT32);
+  NDArray out1('c', {3, 3, 15, 15}, FLOAT32);
+  NDArray out2('c', {3, 3, 15, 15}, FLOAT32);
 
   input1.linspace(-1012, 1);
   input2.assign(input1);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto res1 = op.execute({&input1, &mean, &variance, &gamma, &beta}, {&out1}, {1e-5}, {1, 1, 1}, {});
   ASSERT_EQ(sd::Status::OK, res1);
@@ -2402,12 +2387,12 @@ TEST_F(DeclarableOpsTests13, batchnorm_test7) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test8) {
-  NDArray input('c', {2, 3, 4, 5}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 4, 5}, FLOAT32);
 
-  NDArray mean('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray variance('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
+  NDArray mean('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray variance('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray gamma('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray beta('c', {1, 3, 4, 5}, FLOAT32);
 
   NDArray expected(
       'c', {2, 3, 4, 5},
@@ -2425,7 +2410,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test8) {
        62.987488,   64.684532,   66.381569,   68.078606,  69.775650,  71.472687,  73.169724,  74.866768,  76.563805,
        78.260841,   79.957886,   81.654922,   83.351959,  85.049004,  86.746040,  88.443077,  90.140121,  91.837158,
        93.534195,   95.231239,   96.928276},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   input.linspace(-60, 1);
   mean.assign(1.);
@@ -2433,7 +2418,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test8) {
   gamma.assign(1.2);
   beta.assign(-1.5);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1, 2, 3});
 
@@ -2447,12 +2432,12 @@ TEST_F(DeclarableOpsTests13, batchnorm_test8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test9) {
-  NDArray input('c', {2, 3, 3, 3, 3}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 3, 3, 3}, FLOAT32);
 
-  NDArray mean('c', {1, 3, 3, 3, 3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {1, 3, 3, 3, 3}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {1, 3, 3, 3, 3}, sd::DataType::FLOAT32);
-  NDArray beta('c', {1, 3, 3, 3, 3}, sd::DataType::FLOAT32);
+  NDArray mean('c', {1, 3, 3, 3, 3}, FLOAT32);
+  NDArray variance('c', {1, 3, 3, 3, 3}, FLOAT32);
+  NDArray gamma('c', {1, 3, 3, 3, 3}, FLOAT32);
+  NDArray beta('c', {1, 3, 3, 3, 3}, FLOAT32);
 
   NDArray expected(
       'c', {2, 3, 3, 3, 3},
@@ -2477,7 +2462,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test9) {
        105.413475,  107.110512,  108.807549,  110.504593,  112.201630,  113.898666,  115.595711,  117.292747,
        118.989784,  120.686829,  122.383865,  124.080902,  125.777946,  127.474976,  129.172028,  130.869064,
        132.566101,  134.263138},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   input.linspace(-80, 1);
   mean.assign(1.);
@@ -2485,7 +2470,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test9) {
   gamma.assign(1.2);
   beta.assign(-1.5);
 
-  sd::ops::batchnorm op;
+  ops::batchnorm op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1, 2, 3, 4});
 
@@ -2499,20 +2484,20 @@ TEST_F(DeclarableOpsTests13, batchnorm_test9) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test1) {
-  NDArray input('c', {2, 3, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.1, 1.2, 1.3, 1.4}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.1, 1.2, 1.3, 1.4}, FLOAT32);
+  NDArray variance('c', {4}, FLOAT32);
+  NDArray gamma('c', {4}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 3, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 3, 4},
                   {-0.000056, -0.000056, -0.000056, -0.000056, -0.000034, -0.000034, -0.000034, -0.000034,
                    -0.000011, -0.000011, -0.000011, -0.000011, 0.000011,  0.000011,  0.000011,  0.000011,
                    0.000034,  0.000034,  0.000034,  0.000034,  0.000056,  0.000056,  0.000056,  0.000056},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {6.148104, 6.148104, 6.148105, 6.148105}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {6.148104, 6.148104, 6.148105, 6.148105}, FLOAT32);
+  NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   variance.assign(0.46666667);
@@ -2520,7 +2505,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test1) {
   beta.assign(1.);  // has no effect on gradient calculations
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1});
 
@@ -2542,26 +2527,26 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test2) {
-  NDArray input('c', {2, 3, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {3}, {1.05, 1.1, 1.15}, sd::DataType::FLOAT32);
-  NDArray variance('c', {3}, {0.5, 0.6, 0.7}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {3}, {1.2, 1.3, 1.4}, sd::DataType::FLOAT32);
-  NDArray beta('c', {3}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 4}, FLOAT32);
+  NDArray mean('c', {3}, {1.05, 1.1, 1.15}, FLOAT32);
+  NDArray variance('c', {3}, {0.5, 0.6, 0.7}, FLOAT32);
+  NDArray gamma('c', {3}, {1.2, 1.3, 1.4}, FLOAT32);
+  NDArray beta('c', {3}, FLOAT32);
+  NDArray gradO('c', {2, 3, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 3, 4},
                   {-0.601415, -0.521226, -0.441037, -0.360849, -0.456306, -0.395465, -0.334624, -0.273784,
                    0.396631,  0.343747,  0.290863,  0.237978,  0.360849,  0.441037,  0.521226,  0.601415,
                    0.273784,  0.334625,  0.395465,  0.456306,  -0.237978, -0.290863, -0.343746, -0.396631},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {3}, {5.81236, 7.048771, 12.155388}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {3}, {1.8, 6.6, 11.4}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {3}, {5.81236, 7.048771, 12.155388}, FLOAT32);
+  NDArray expdLdB('c', {3}, {1.8, 6.6, 11.4}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   // beta.assign(1.);     // has no effect on gradient calculations
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 1});
 
@@ -2583,27 +2568,27 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test3) {
-  NDArray input('c', {2, 3, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {2, 1, 4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4}, sd::DataType::FLOAT32);
-  NDArray variance('c', {2, 1, 4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {2, 1, 4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9}, sd::DataType::FLOAT32);
-  NDArray beta('c', {2, 1, 4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 3, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 4}, FLOAT32);
+  NDArray mean('c', {2, 1, 4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4}, FLOAT32);
+  NDArray variance('c', {2, 1, 4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2}, FLOAT32);
+  NDArray gamma('c', {2, 1, 4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9}, FLOAT32);
+  NDArray beta('c', {2, 1, 4}, FLOAT32);
+  NDArray gradO('c', {2, 3, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 3, 4},
                   {-0.577002, -0.744041, -0.850999, -0.922373, -0.000000, -0.000000, -0.000000, -0.000000,
                    0.577002,  0.744041,  0.850999,  0.922373,  -0.386037, -0.350205, -0.312047, -0.271737,
                    -0.000000, -0.000000, -0.000000, -0.000000, 0.386037,  0.350205,  0.312047,  0.271736},
-                  sd::DataType::FLOAT32);
+                  FLOAT32);
   NDArray expdLdG('c', {2, 1, 4}, {1.378844, 0.910144, 0.573706, 0.335408, 2.640487, 2.954985, 3.289431, 3.64234},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {2, 1, 4}, {-0.9, -0.45, 0., 0.45, 4.5, 4.95, 5.4, 5.85}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdB('c', {2, 1, 4}, {-0.9, -0.45, 0., 0.45, 4.5, 4.95, 5.4, 5.85}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   // beta.assign(1.);     // has no effect on gradient calculations
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 0, 2});
 
@@ -2625,22 +2610,22 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test3) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test4) {
-  NDArray input('c', {2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, FLOAT32);
+  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 4}, {0.162923, -0.289673, 0.354174, -0.386151, -0.162923, 0.289673, -0.354174, 0.386151},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {1.442483, 0.950200, 0.569207, 0.314641}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {-1.2, -0.9, -0.6, -0.3}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {1.442483, 0.950200, 0.569207, 0.314641}, FLOAT32);
+  NDArray expdLdB('c', {4}, {-1.2, -0.9, -0.6, -0.3}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1});
 
@@ -2665,26 +2650,26 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test5) {
 #if defined(HAVE_CUDNN)
   return;
 #endif
-  NDArray input('c', {2, 4, 2, 2}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 4, 2, 2}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4, 2, 2}, FLOAT32);
+  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, FLOAT32);
+  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 4, 2, 2}, FLOAT32);
 
   NDArray expdLdI('c', {2, 4, 2, 2},
                   {-0.737512, -0.659880, -0.582247, -0.504614, 0.561404,  0.502309,  0.443214,  0.384118,
                    -1.168243, -1.045270, -0.922297, -0.799324, 1.899026,  1.699128,  1.499231,  1.299333,
                    0.504614,  0.582247,  0.659880,  0.737512,  -0.384118, -0.443214, -0.502308, -0.561404,
                    0.799324,  0.922297,  1.045270,  1.168243,  -1.299334, -1.499231, -1.699129, -1.899026},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {11.073181, 12.585667, 17.708657, 24.313186}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {4.2, 9., 13.8, 18.6}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {11.073181, 12.585667, 17.708657, 24.313186}, FLOAT32);
+  NDArray expdLdB('c', {4}, {4.2, 9., 13.8, 18.6}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 1});
 
@@ -2710,26 +2695,26 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test6) {
   return;
 #endif
 
-  NDArray input('c', {2, 2, 2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 2, 2, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 2, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, FLOAT32);
+  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 2, 2, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 2, 2, 4},
                   {-4.989124, 2.540357,  -1.515022, 0.791769,  -3.563660, 1.814540,  -1.082159, 0.565549,
                    -2.138196, 1.088724,  -0.649295, 0.339329,  -0.712732, 0.362908,  -0.216432, 0.113110,
                    0.712732,  -0.362908, 0.216432,  -0.113110, 2.138195,  -1.088724, 0.649295,  -0.339330,
                    3.563660,  -1.814540, 1.082159,  -0.565549, 4.989125,  -2.540356, 1.515022,  -0.791770},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {20.364472, 17.856588, 16.949714, 15.903684}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {9.6, 10.8, 12., 13.2}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {20.364472, 17.856588, 16.949714, 15.903684}, FLOAT32);
+  NDArray expdLdB('c', {4}, {9.6, 10.8, 12., 13.2}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 3});
 
@@ -2755,12 +2740,12 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test7) {
   return;
 #endif
 
-  NDArray input('c', {2, 2, 2, 2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 2, 2, 2, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 2, 2, 4}, FLOAT32);
+  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, FLOAT32);
+  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 2, 2, 2, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 2, 2, 2, 4},
                   {-119.435059, 78.159744,  -58.732986, 46.630123,  -103.510391, 67.738441,  -50.901920, 40.412773,
@@ -2771,14 +2756,14 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test7) {
                    39.811691,   -26.053246, 19.577671,  -15.543377, 55.736382,   -36.474548, 27.408726,  -21.760731,
                    71.661064,   -46.895851, 35.239788,  -27.978077, 87.585732,   -57.317154, 43.070866,  -34.195431,
                    103.510384,  -67.738464, 50.901920,  -40.412777, 119.435097,  -78.159744, 58.732998,  -46.630131},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {282.38734, 244.542027, 224.140995, 207.548793}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {57.6, 60., 62.4, 64.8}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {282.38734, 244.542027, 224.140995, 207.548793}, FLOAT32);
+  NDArray expdLdB('c', {4}, {57.6, 60., 62.4, 64.8}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 4});
 
@@ -2788,7 +2773,6 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test7) {
   auto dLdG = results.at(3);
   auto dLdB = results.at(4);
 
-  // dLdI->printBuffer();
 
   ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
   ASSERT_TRUE(expdLdI.equalsTo(dLdI));
@@ -2806,12 +2790,12 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test8) {
   return;
 #endif
 
-  NDArray input('c', {2, 4, 2, 2, 2}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 4, 2, 2, 2}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4, 2, 2, 2}, FLOAT32);
+  NDArray mean('c', {4}, {1.05, 1.15, 1.2, 1.3}, FLOAT32);
+  NDArray variance('c', {4}, {0.5, 0.7, 0.9, 1.1}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 4, 2, 2, 2}, FLOAT32);
 
   NDArray expdLdI('c', {2, 4, 2, 2, 2},
                   {-34.373802, -32.611046, -30.848286, -29.085529, -27.322769, -25.560009, -23.797251, -22.034491,
@@ -2822,14 +2806,14 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test8) {
                    -23.171146, -25.024837, -26.878536, -28.732231, -30.585918, -32.439613, -34.293297, -36.146996,
                    27.484982,  29.683773,  31.882572,  34.081364,  36.280178,  38.478970,  40.677776,  42.876560,
                    -32.483627, -35.082329, -37.681023, -40.279701, -42.878403, -45.477081, -48.075775, -50.674484},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {134.490365, 179.785003, 248.933114, 330.087248}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {32.4, 51.6, 70.8, 90.}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {134.490365, 179.785003, 248.933114, 330.087248}, FLOAT32);
+  NDArray expdLdB('c', {4}, {32.4, 51.6, 70.8, 90.}, FLOAT32);
 
   input.linspace(0.1, 0.1);
   gradO.linspace(-0.9, 0.15);
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 1});
 
@@ -2852,32 +2836,32 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test8) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
-  NDArray input('c', {2, 4, 2, 2}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 4, 2, 2}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 4, 2, 2}, FLOAT32);
+  NDArray mean('c', {4}, FLOAT32);
+  NDArray variance('c', {4}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 4, 2, 2}, FLOAT32);
 
   NDArray expdLdI('c', {2, 4, 2, 2},
                   {0.032378,  0.028967,  0.025558,  0.022147,  -0.035056, -0.031364, -0.027669, -0.024006,
                    0.037742,  0.033766,  0.029791,  0.025818,  -0.040429, -0.036172, -0.031913, -0.027656,
                    -0.022155, -0.025564, -0.028974, -0.032359, 0.023982,  0.027677,  0.031373,  0.035063,
                    -0.025822, -0.029794, -0.033770, -0.037747, 0.027653,  0.031913,  0.036168,  0.040426},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {9.685875, 9.685880, 9.685887, 9.685891}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {4.2, 9., 13.8, 18.6}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {9.685875, 9.685880, 9.685887, 9.685891}, FLOAT32);
+  NDArray expdLdB('c', {4}, {4.2, 9., 13.8, 18.6}, FLOAT32);
 
   input.linspace(1, 0.01);
   gradO.linspace(-0.9, 0.15);
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<sd::LongType> dimensions = {0, 2, 3};
-  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
-  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions);
+  std::vector<LongType> dimensions = {0, 2, 3};
+  LongType *dims = reinterpret_cast<LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(LongType)));
+  input.reduceAlongDimension(reduce::Mean, mean, &dimensions);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
@@ -2885,7 +2869,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 1});
 
@@ -2907,33 +2891,33 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
-  NDArray input('c', {2, 2, 2, 4}, sd::DataType::FLOAT32);
-  NDArray mean('c', {4}, sd::DataType::FLOAT32);
-  NDArray variance('c', {4}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 2, 2, 4}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 2, 2, 4}, FLOAT32);
+  NDArray mean('c', {4}, FLOAT32);
+  NDArray variance('c', {4}, FLOAT32);
+  NDArray gamma('c', {4}, {-1.2, 1.3, -1.4, 1.5}, FLOAT32);
+  NDArray beta('c', {4}, FLOAT32);
+  NDArray gradO('c', {2, 2, 2, 4}, FLOAT32);
 
   NDArray expdLdI('c', {2, 2, 2, 4},
                   {0.032634,  -0.035423, 0.038110,  -0.040864, 0.023302,  -0.025294, 0.027213,  -0.029205,
                    0.013996,  -0.015192, 0.016343,  -0.017519, 0.004664,  -0.005062, 0.005445,  -0.005833,
                    -0.004668, 0.005067,  -0.005452, 0.005824,  -0.013974, 0.015171,  -0.016325, 0.017508,
                    -0.023309, 0.025301,  -0.027221, 0.029197,  -0.032639, 0.035428,  -0.038118, 0.040878},
-                  sd::DataType::FLOAT32);
-  NDArray expdLdG('c', {4}, {10.991656, 10.991631, 10.991643, 10.991632}, sd::DataType::FLOAT32);
-  NDArray expdLdB('c', {4}, {9.6, 10.8, 12., 13.2}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray expdLdG('c', {4}, {10.991656, 10.991631, 10.991643, 10.991632}, FLOAT32);
+  NDArray expdLdB('c', {4}, {9.6, 10.8, 12., 13.2}, FLOAT32);
 
   input.linspace(1, 0.01);
   gradO.linspace(-0.9, 0.15);
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<sd::LongType> dimensions = {0, 1, 2};
-  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
-  const sd::LongType *constDims = const_cast<sd::LongType const *>(dims);
-  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions,false);
+  std::vector<LongType> dimensions = {0, 1, 2};
+  LongType *dims = reinterpret_cast<LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(LongType)));
+  const LongType *constDims = const_cast<LongType const *>(dims);
+  input.reduceAlongDimension(reduce::Mean, mean, &dimensions,false);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
@@ -2941,7 +2925,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 3});
 
@@ -2963,12 +2947,12 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
-  NDArray input('c', {2, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray mean('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray variance('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray gamma('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray beta('c', {1, 3, 4, 5}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {2, 3, 4, 5}, sd::DataType::FLOAT32);
+  NDArray input('c', {2, 3, 4, 5}, FLOAT32);
+  NDArray mean('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray variance('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray gamma('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray beta('c', {1, 3, 4, 5}, FLOAT32);
+  NDArray gradO('c', {2, 3, 4, 5}, FLOAT32);
 
   NDArray expdLdI(
       'c', {2, 3, 4, 5},
@@ -2984,7 +2968,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
        0.0,       0.000166,  0.000334,  0.000500,  0.000668,  0.000834,  0.001003,  0.001170,  0.001337,  0.001502,
        0.001669,  0.001838,  0.002005,  0.002172,  0.002330,  0.002496,  0.002669,  0.002836,  0.003002,  0.003162,
        0.003328,  0.003495,  0.003670,  0.003828,  0.003992,  0.004158,  0.004324,  0.004522,  0.004689,  0.004843},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expdLdG('c', {1, 3, 4, 5},
                   {8.999503, 8.999502, 8.999502, 8.999503, 8.999502, 8.999503, 8.999503, 8.999499, 8.999501, 8.999498,
                    8.999498, 8.999498, 8.999498, 8.999498, 8.999498, 8.999498, 8.999498, 8.999498, 8.999498, 8.999499,
@@ -2992,13 +2976,13 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
                    8.999504, 8.999504, 8.999499, 8.999500, 8.999497, 8.999498, 8.999496, 8.999496, 8.999496, 8.999498,
                    8.999498, 8.999496, 8.999496, 8.999496, 8.999501, 8.999501, 8.999499, 8.999499, 8.999499, 8.999501,
                    8.999501, 8.999501, 8.999499, 8.999500, 8.999501, 8.999501, 8.999501, 8.999495, 8.999495, 8.999497},
-                  sd::DataType::FLOAT32);
+                  FLOAT32);
   NDArray expdLdB('c', {1, 3, 4, 5},
                   {7.2,  7.5,  7.8,  8.1,  8.4,  8.7,  9.0,  9.3,  9.6,  9.9,  10.2, 10.5, 10.8, 11.1, 11.4,
                    11.7, 12.0, 12.3, 12.6, 12.9, 13.2, 13.5, 13.8, 14.1, 14.4, 14.7, 15.0, 15.3, 15.6, 15.9,
                    16.2, 16.5, 16.8, 17.1, 17.4, 17.7, 18.0, 18.3, 18.6, 18.9, 19.2, 19.5, 19.8, 20.1, 20.4,
                    20.7, 21.0, 21.3, 21.6, 21.9, 22.2, 22.5, 22.8, 23.1, 23.4, 23.7, 24.0, 24.3, 24.6, 24.9},
-                  sd::DataType::FLOAT32);
+                  FLOAT32);
 
   input.linspace(1, 0.01);
   gradO.linspace(-0.9, 0.15);
@@ -3006,11 +2990,11 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
 
   // calculate mean and variance of input
   PointersManager manager(input.getContext(), "DeclarableOpsTests13.batchnorm_bp_test9");
-  std::vector<sd::LongType> dimensions = {0};
-  sd::LongType *dims = reinterpret_cast<sd::LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(sd::LongType)));
-  input.reduceAlongDimension(sd::reduce::Mean, mean, &dimensions, true);
+  std::vector<LongType> dimensions = {0};
+  LongType *dims = reinterpret_cast<LongType *>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(LongType)));
+  input.reduceAlongDimension(reduce::Mean, mean, &dimensions, true);
   NDArray::prepareSpecialUse({&variance}, {&input});
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
   NativeOpExecutioner::execSummaryStats(input.getContext(), 0, input.buffer(), input.shapeInfo(), input.specialBuffer(),
                                         input.specialShapeInfo(), nullptr, variance.buffer(), variance.shapeInfo(),
                                         variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),
@@ -3018,7 +3002,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
   manager.synchronize();
   NDArray::registerSpecialUse({&variance}, {&input});
 
-  sd::ops::batchnorm_bp op;
+  ops::batchnorm_bp op;
 
   auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1, 1, 1, 2, 3});
 

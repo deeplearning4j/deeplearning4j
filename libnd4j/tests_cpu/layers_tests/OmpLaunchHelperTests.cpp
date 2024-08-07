@@ -81,8 +81,8 @@ TEST_F(OmpLaunchHelperTests, Test_BetterThreads_3) {
 }
 
 TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
-  sd::LongType numTads = 16;
-  sd::LongType tadLength = 16;
+  LongType numTads = 16;
+  LongType tadLength = 16;
 
   ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }
@@ -90,22 +90,22 @@ TEST_F(OmpLaunchHelperTests, test_tad_threads_1) {
 TEST_F(OmpLaunchHelperTests, test_tad_threads_2) {
   if (omp_get_max_threads() <= 1) return;
 
-  sd::LongType numTads = 2;
-  sd::LongType tadLength = Environment::getInstance().elementwiseThreshold();
+  LongType numTads = 2;
+  LongType tadLength = Environment::getInstance().elementwiseThreshold();
 
   ASSERT_EQ(2, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }
 
 TEST_F(OmpLaunchHelperTests, test_tad_threads_3) {
-  sd::LongType numTads = 2;
-  sd::LongType tadLength = 128;
+  LongType numTads = 2;
+  LongType tadLength = 128;
 
   ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }
 
 TEST_F(OmpLaunchHelperTests, test_tad_threads_4) {
-  sd::LongType numTads = 4;
-  sd::LongType tadLength = 64;
+  LongType numTads = 4;
+  LongType tadLength = 64;
 
   ASSERT_EQ(1, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }
@@ -113,8 +113,8 @@ TEST_F(OmpLaunchHelperTests, test_tad_threads_4) {
 TEST_F(OmpLaunchHelperTests, test_tad_threads_5) {
   auto exp = omp_get_max_threads();
 
-  sd::LongType numTads = exp;
-  sd::LongType tadLength = Environment::getInstance().elementwiseThreshold();
+  LongType numTads = exp;
+  LongType tadLength = Environment::getInstance().elementwiseThreshold();
 
   ASSERT_EQ(exp, OmpLaunchHelper::tadThreads(tadLength, numTads));
 }

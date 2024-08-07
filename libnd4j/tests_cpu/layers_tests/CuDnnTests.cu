@@ -39,7 +39,7 @@ class CuDnnTests : public NDArrayTests {
  public:
 };
 
-static void printer(std::initializer_list<sd::ops::platforms::PlatformHelper*> helpers) {
+static void printer(std::initializer_list<ops::platforms::PlatformHelper*> helpers) {
   for (auto v : helpers) {
     sd_printf("Initialized [%s]\n", v->name().c_str());
   }
@@ -48,22 +48,22 @@ static void printer(std::initializer_list<sd::ops::platforms::PlatformHelper*> h
 TEST_F(CuDnnTests, helpers_includer) {
   // we need this block, to make sure all helpers are still available within binary, and not optimized out by linker
 #ifdef HAVE_CUDNN
-  sd::ops::platforms::PLATFORM_conv2d_ENGINE_CUDA conv2d;
-  sd::ops::platforms::PLATFORM_conv2d_bp_ENGINE_CUDA conv2d_bp;
-  sd::ops::platforms::PLATFORM_conv3dnew_ENGINE_CUDA conv3dnew;
-  sd::ops::platforms::PLATFORM_conv3dnew_bp_ENGINE_CUDA conv3dnew_bp;
-  sd::ops::platforms::PLATFORM_depthwise_conv2d_ENGINE_CUDA depthwise_conv2d;
-  sd::ops::platforms::PLATFORM_depthwise_conv2d_bp_ENGINE_CUDA depthwise_conv2d_bp;
-  sd::ops::platforms::PLATFORM_batchnorm_ENGINE_CUDA batchnorm;
-  sd::ops::platforms::PLATFORM_batchnorm_bp_ENGINE_CUDA batchnorm_bp;
-  sd::ops::platforms::PLATFORM_avgpool2d_ENGINE_CUDA avgpool2d;
-  sd::ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CUDA avgpool2d_bp;
-  sd::ops::platforms::PLATFORM_maxpool2d_ENGINE_CUDA maxpool2d;
-  sd::ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CUDA maxpool2d_bp;
-  sd::ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CUDA avgpool3dnew;
-  sd::ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CUDA avgpool3dnew_bp;
-  sd::ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CUDA maxpool3dnew;
-  sd::ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CUDA maxpool3dnew_bp;
+  ops::platforms::PLATFORM_conv2d_ENGINE_CUDA conv2d;
+  ops::platforms::PLATFORM_conv2d_bp_ENGINE_CUDA conv2d_bp;
+  ops::platforms::PLATFORM_conv3dnew_ENGINE_CUDA conv3dnew;
+  ops::platforms::PLATFORM_conv3dnew_bp_ENGINE_CUDA conv3dnew_bp;
+  ops::platforms::PLATFORM_depthwise_conv2d_ENGINE_CUDA depthwise_conv2d;
+  ops::platforms::PLATFORM_depthwise_conv2d_bp_ENGINE_CUDA depthwise_conv2d_bp;
+  ops::platforms::PLATFORM_batchnorm_ENGINE_CUDA batchnorm;
+  ops::platforms::PLATFORM_batchnorm_bp_ENGINE_CUDA batchnorm_bp;
+  ops::platforms::PLATFORM_avgpool2d_ENGINE_CUDA avgpool2d;
+  ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CUDA avgpool2d_bp;
+  ops::platforms::PLATFORM_maxpool2d_ENGINE_CUDA maxpool2d;
+  ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CUDA maxpool2d_bp;
+  ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CUDA avgpool3dnew;
+  ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CUDA avgpool3dnew_bp;
+  ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CUDA maxpool3dnew;
+  ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CUDA maxpool3dnew_bp;
 
   printer({&conv2d});
   printer({&conv2d_bp});

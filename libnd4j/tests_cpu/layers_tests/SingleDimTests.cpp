@@ -67,7 +67,7 @@ TEST_F(SingleDimTests, Test_Concat_1) {
   auto y = NDArrayFactory::create<float>('c', {3}, {4, 5, 6});
   auto exp = NDArrayFactory::create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
 
-  sd::ops::concat op;
+  ops::concat op;
   auto result = op.evaluate({&x, &y}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -97,7 +97,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_1) {
   auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
   auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
 
-  sd::ops::expand_dims op;
+  ops::expand_dims op;
   auto result = op.evaluate({&x}, {}, {0});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -111,7 +111,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
   auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
   auto exp = NDArrayFactory::create<float>('c', {3, 1}, {1, 2, 3});
 
-  sd::ops::expand_dims op;
+  ops::expand_dims op;
   auto result = op.evaluate({&x}, {}, {1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -122,12 +122,12 @@ ASSERT_EQ(exp,*z);
 }
 
 TEST_F(SingleDimTests, Test_Squeeze_1) {
-  std::vector<sd::LongType> vecS({1});
+  std::vector<LongType> vecS({1});
   std::vector<float> vecB({3.0f});
   auto x = NDArrayFactory::create<float>('c', vecS, vecB);
   auto exp = NDArrayFactory::create<float>(3.0f);
 
-  sd::ops::squeeze op;
+  ops::squeeze op;
   auto result = op.evaluate({&x}, {}, {});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -142,7 +142,7 @@ TEST_F(SingleDimTests, Test_Squeeze_2) {
   auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
   auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
-  sd::ops::squeeze op;
+  ops::squeeze op;
   auto result = op.evaluate({&x}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -155,7 +155,7 @@ TEST_F(SingleDimTests, Test_Permute_1) {
   auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
   auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
-  sd::ops::permute op;
+  ops::permute op;
   auto result = op.evaluate({&x}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 

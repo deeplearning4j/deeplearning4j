@@ -44,19 +44,19 @@ class NDArrayTests : public testing::Test {
  protected:
   sd::NDArray* registerArr(sd::NDArray arr) {
     auto ret = new sd::NDArray(arr);
-    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-    NDArrayTests::arrays[std::string(test_info->name())].push_back(ret);
+    auto const test_info = testing::UnitTest::GetInstance()->current_test_info();
+    arrays[std::string(test_info->name())].push_back(ret);
     return ret;
   }
   void SetUp() override {
     Test::SetUp();
-    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    auto const test_info = testing::UnitTest::GetInstance()->current_test_info();
     arrays[std::string(test_info->name())] = std::vector<sd::NDArray*>();
   }
 
   void TearDown() override {
     Test::TearDown();
-    auto const test_info = ::testing::UnitTest::GetInstance()->current_test_info();
+    auto const test_info = testing::UnitTest::GetInstance()->current_test_info();
     // delete any existing memory not found in the current test
     // this is to avoid deleting any memory that may or may not be asynchronously used
     // by cuda and prevents issues when running only 1 test

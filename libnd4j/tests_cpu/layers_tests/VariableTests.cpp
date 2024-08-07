@@ -73,9 +73,9 @@ TEST_F(VariableTests, Test_FlatVariableDataType_1) {
   auto fBuffer = builder.CreateVector(vec);
   auto fVid = CreateIntPair(builder, 1, 12);
 
-  auto fArray = CreateFlatArray(builder, fShape, fBuffer, sd::graph::DType::DType_FLOAT);
+  auto fArray = CreateFlatArray(builder, fShape, fBuffer, DType_FLOAT);
 
-  auto flatVar = CreateFlatVariable(builder, fVid, 0, sd::graph::DType::DType_FLOAT, 0, fArray);
+  auto flatVar = CreateFlatVariable(builder, fVid, 0, DType_FLOAT, 0, fArray);
 
   builder.Finish(flatVar);
 
@@ -107,9 +107,9 @@ TEST_F(VariableTests, Test_FlatVariableDataType_2) {
   auto fBuffer = builder.CreateVector(vec);
   auto fVid = CreateIntPair(builder, 1, 12);
 
-  auto fArray = CreateFlatArray(builder, fShape, fBuffer, sd::graph::DType::DType_DOUBLE);
+  auto fArray = CreateFlatArray(builder, fShape, fBuffer, DType_DOUBLE);
 
-  auto flatVar = CreateFlatVariable(builder, fVid, 0, sd::graph::DType::DType_DOUBLE, 0, fArray);
+  auto flatVar = CreateFlatVariable(builder, fVid, 0, DType_DOUBLE, 0, fArray);
 
   builder.Finish(flatVar);
 
@@ -143,9 +143,9 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
   auto fBuffer = builder.CreateVector(vec);
   auto fVid = CreateIntPair(builder, 1, 12);
 
-  auto fArray = CreateFlatArray(builder, fShape, fBuffer, sd::graph::DType::DType_DOUBLE);
+  auto fArray = CreateFlatArray(builder, fShape, fBuffer, DType_DOUBLE);
 
-  auto flatVar = CreateFlatVariable(builder, fVid, 0, sd::graph::DType::DType_DOUBLE, 0, fArray);
+  auto flatVar = CreateFlatVariable(builder, fVid, 0, DType_DOUBLE, 0, fArray);
 
   builder.Finish(flatVar);
 

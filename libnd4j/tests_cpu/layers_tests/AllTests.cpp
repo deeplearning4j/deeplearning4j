@@ -25,24 +25,6 @@
 
 
 
-#if defined(HAVE_VEDA)
-#include <libgen.h>
-#include <linux/limits.h>
-#include <unistd.h>
-
-#include <string>
-#include <ops/declarable/platform/vednn/veda_helper.h>
-void load_device_lib() {
-  char result[PATH_MAX];
-  ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
-  const char *path;
-  if (count != -1) {
-    path = dirname(result);
-    sd::Environment::getInstance().setVedaDeviceDir( std::string(path)+"/../../blas/");
-  }
-}
-
-#endif
 
 using namespace testing;
 
@@ -178,12 +160,9 @@ class ConfigurableEventListener : public TestEventListener
 
 
 int main(int argc, char **argv) {
-#if defined(HAVE_VEDA)
-  load_device_lib();
-#endif
-  testing::InitGoogleTest(&argc, argv);
+  InitGoogleTest(&argc, argv);
 
-  testing::TestEventListeners& listeners = testing::UnitTest::GetInstance()->listeners();
+  TestEventListeners& listeners = UnitTest::GetInstance()->listeners();
   auto default_printer = listeners.Release(listeners.default_result_printer());
 
   // add our listener, by default everything is on (the same as using the default listener)

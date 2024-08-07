@@ -65,7 +65,7 @@ class ThreeDTest : public NDArrayTests {
  public:
   sd::LongType shape[3] = {3, 4, 5};
   sd::LongType *shapeBuffer;
-  ThreeDTest() { shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape); }
+  ThreeDTest() { shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape, nullptr, false); }
   ~ThreeDTest() { delete[] shapeBuffer; }
 };
 
@@ -207,7 +207,7 @@ class DimensionWarning : public NDArrayTests {
   int dimensionLength = 2;
   sd::LongType dimensions[2] = {0, 1};
   sd::LongType shape[3] = {1, 5, 1};
-  sd::LongType *shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape);
+  sd::LongType *shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape, nullptr, false);
 
   ~DimensionWarning() { delete[] shapeBuffer; }
 };
@@ -280,8 +280,8 @@ INDArray sum40 = array4d.sum(0);
   sd::LongType dimensionFour = 0;
   sd::LongType dimensionLength = 1;
   FourDTest() {
-    threeDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 3, threeDShape);
-    fourDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 4, fourDShape);
+    threeDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 3, threeDShape, nullptr, false);
+    fourDShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'f', 4, fourDShape, nullptr, false);
   }
   ~FourDTest() {
     if (threeDShapeBuffer != nullptr) delete[] threeDShapeBuffer;
@@ -409,7 +409,7 @@ TEST_F(LabelTest, LabelTad) {
 }
 
 TEST_F(ExpectedValuesTest, TadTest) {
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, mainShape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, mainShape, nullptr, false);
   shape::TAD *tad = new shape::TAD;
   tad->init(shapeBuffer, testDimensions, 3);
   tad->createTadOnlyShapeInfo();
@@ -444,7 +444,7 @@ TEST_F(ThreeDTest, TensorAlongDimensionTest) {
 }
 
 TEST_F(NumTadTests, TadTest) {
-  auto shape = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, this->shape);
+  auto shape = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, this->shape, nullptr, false);
   shape::TAD *tad = new shape::TAD;
   tad->init(shape, &dimension, 1);
   int numTads = shape::tensorsAlongDimension(shape, &dimension, 1);
@@ -454,7 +454,7 @@ TEST_F(NumTadTests, TadTest) {
 }
 
 TEST_F(TADStall, TestStall) {
-  auto shapeInfo = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shape);
+  auto shapeInfo = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shape, nullptr, false);
   shape::TAD *tad = new shape::TAD;
   tad->init(0, shapeInfo, this->dimensions, 3);
   tad->createTadOnlyShapeInfo();
@@ -477,12 +477,15 @@ TEST_F(PermuteTest, PermuteShapeBufferTest) {
   sd::LongType normalOrder[4] = {0, 1, 2, 3};
   sd::LongType shapeToPermute[4] = {5, 3, 2, 6};
   sd::LongType permutedOrder[4] = {6, 2, 3, 5};
-  auto shapeBufferOriginal = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shapeToPermute);
-  auto assertionShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shapeToPermute);
+  auto shapeBufferOriginal =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shapeToPermute, nullptr, false);
+  auto assertionShapeBuffer =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shapeToPermute, nullptr, false);
   shape::permuteShapeBufferInPlace(shapeBufferOriginal, normalOrder, shapeBufferOriginal);
   EXPECT_TRUE(arrsEquals(4, assertionShapeBuffer, shapeBufferOriginal));
 
-  auto backwardsAssertion = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, permutedOrder);
+  auto backwardsAssertion =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, permutedOrder, nullptr, false);
   auto permuted = shape::permuteShapeBuffer(assertionShapeBuffer, permuteOrder);
   EXPECT_TRUE(arrsEquals(4, backwardsAssertion, permuted));
 
@@ -496,9 +499,11 @@ TEST_F(ElementWiseStrideTest, ElementWiseStrideTest) {}
 
 TEST_F(SliceVectorTest, RowColumnVectorTest) {
   sd::LongType rowVectorShape[2] = {1, 5};
-  auto rowVectorShapeInfo = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorShape);
+  auto rowVectorShapeInfo =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorShape, nullptr, false);
   sd::LongType colVectorShape[2] = {5, 1};
-  auto colVectorShapeInfo = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, colVectorShape);
+  auto colVectorShapeInfo =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, colVectorShape, nullptr, false);
   sd::LongType *sliceRow = shape::sliceOfShapeBuffer(0, rowVectorShapeInfo);
   EXPECT_TRUE(arrsEquals(2, rowVectorShapeInfo, sliceRow));
   sd::LongType *scalarSliceInfo = shape::createScalarShapeInfo();
@@ -517,9 +522,9 @@ TEST_F(SliceVectorTest, RowColumnVectorTest) {
 
 TEST_F(SliceTensorTest, TestSlice) {
   sd::LongType shape[3] = {3, 3, 2};
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape, nullptr, false);
   sd::LongType sliceShape[2] = {3, 2};
-  auto sliceShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, sliceShape);
+  auto sliceShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, sliceShape, nullptr, false);
   sd::LongType *testSlice = shape::sliceOfShapeBuffer(0, shapeBuffer);
   EXPECT_TRUE(arrsEquals(2, sliceShapeBuffer, testSlice));
   delete[] testSlice;
@@ -529,9 +534,9 @@ TEST_F(SliceTensorTest, TestSlice) {
 
 TEST_F(SliceMatrixTest, TestSlice) {
   sd::LongType shape[2] = {3, 2};
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, shape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, shape, nullptr, false);
   sd::LongType sliceShape[2] = {1, 2};
-  auto sliceShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, sliceShape);
+  auto sliceShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, sliceShape, nullptr, false);
   sd::LongType *testSlice = shape::sliceOfShapeBuffer(0, shapeBuffer);
   EXPECT_TRUE(arrsEquals(2, sliceShapeBuffer, testSlice));
   delete[] testSlice;
@@ -573,14 +578,14 @@ TEST_F(TensorTwoFromFourDDimTest, TadTwoFromFourDimTest) {
   // Along dimension 1,2: expect matrix with shape [cols,dim2]
   // Along dimension 1,3: expect matrix with shape [cols,dim3]
   // Along dimension 2,3: expect matrix with shape [dim2,dim3]
-  auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shape);
+  auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 4, shape, nullptr, false);
   for (int i = 0; i < 3; i++) {
     sd::LongType *dimArr = dims[i];
     sd::LongType *expectedShape = expectedShapes[i];
     shape::TAD *tad = new shape::TAD;
     tad->init(baseShapeBuffer, dimArr, dimensionLength);
     auto expectedShapeBuffer =
-        sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', dimensionLength, expectedShape);
+        sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', dimensionLength, expectedShape, nullptr, false);
     tad->createTadOnlyShapeInfo();
     sd::LongType *testShapeBuffer = tad->tadOnlyShapeInfo;
     EXPECT_TRUE(arrsEquals(shape::rank(expectedShapeBuffer), expectedShape, shape::shapeOf(testShapeBuffer)));
@@ -597,7 +602,7 @@ TEST_F(TensorTwoDimTest, TadTwoDimTest) {
   // Along dimension 0,1: expect matrix with shape [rows,cols]
   // Along dimension 0,2: expect matrix with shape [rows,dim2]
   // Along dimension 1,2: expect matrix with shape [cols,dim2]
-  auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape);
+  auto baseShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 3, shape, nullptr, false);
 
   for (int i = 0; i < 3; i++) {
     sd::LongType *dimArr = dims[i];
@@ -605,7 +610,7 @@ TEST_F(TensorTwoDimTest, TadTwoDimTest) {
     shape::TAD *tad = new shape::TAD;
     tad->init(baseShapeBuffer, dimArr, dimensionLength);
     auto expectedShapeBuffer =
-        sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', dimensionLength, expectedShape);
+        sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', dimensionLength, expectedShape, nullptr, false);
     tad->createTadOnlyShapeInfo();
     sd::LongType *testShapeBuffer = tad->tadOnlyShapeInfo;
     sd::LongType *expectedStride = expectedStrides[i];
@@ -623,7 +628,7 @@ TEST_F(TensorTwoDimTest, TadTwoDimTest) {
 
 TEST_F(TensorOneDimTest, TadDimensionsForTensor) {
   sd::LongType shape[3] = {rows, cols, dim2};
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', rank, shape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', rank, shape, nullptr, false);
 
   for (int i = 0; i < rank; i++) {
     // Along dimension 0: expect row vector with length 'dims[i]'
@@ -644,7 +649,7 @@ TEST_F(TensorOneDimTest, TadDimensionsForTensor) {
 
 TEST_F(MatrixTest, TadDimensionsForMatrix) {
   sd::LongType shape[2] = {rows, cols};
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', rank, shape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', rank, shape, nullptr, false);
 
   shape::TAD *dimZero = new shape::TAD;
   dimZero->init(shapeBuffer, &dims[0], 1);
@@ -652,7 +657,8 @@ TEST_F(MatrixTest, TadDimensionsForMatrix) {
   dimOne->init(shapeBuffer, &dims[1], 1);
   // Along dimension 0: expect row vector with length 'rows'
   sd::LongType rowVectorShape[2] = {1, rows};
-  auto expectedDimZeroShape = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorShape);
+  auto expectedDimZeroShape =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorShape, nullptr, false);
   dimZero->createTadOnlyShapeInfo();
   sd::LongType *testDimZero = dimZero->tadOnlyShapeInfo;
   EXPECT_TRUE(arrsEquals(2, expectedShapes[0], shape::shapeOf(testDimZero)));
@@ -661,7 +667,8 @@ TEST_F(MatrixTest, TadDimensionsForMatrix) {
   delete[] expectedDimZeroShape;
   // Along dimension 1: expect row vector with length 'cols'
   sd::LongType rowVectorColShape[2]{1, cols};
-  auto expectedDimOneShape = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorColShape);
+  auto expectedDimOneShape =
+      sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVectorColShape, nullptr, false);
   dimOne->createTadOnlyShapeInfo();
   sd::LongType *testDimOneShape = dimOne->tadOnlyShapeInfo;
   EXPECT_TRUE(arrsEquals(2, expectedShapes[1], shape::shapeOf(testDimOneShape)));
@@ -675,11 +682,11 @@ TEST_F(MatrixTest, TadDimensionsForMatrix) {
 
 TEST_F(VectorTest, VectorTadShape) {
   sd::LongType rowVector[2] = {2, 2};
-  auto rowBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVector);
+  auto rowBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, rowVector, nullptr, false);
   sd::LongType rowDimension = 1;
 
   sd::LongType columnVector[2] = {2, 2};
-  auto colShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, columnVector);
+  auto colShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, columnVector, nullptr, false);
   sd::LongType colDimension = 0;
 
   shape::TAD *rowTad = new shape::TAD;
@@ -712,7 +719,7 @@ TEST_F(VectorTest, LinspaceCombinationTest) {
   int len = rows * cols;
   double *linspaced = linspace<double>(1, rows * cols, len);
   sd::LongType shape[2] = {rows, cols};
-  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, shape);
+  auto shapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, shape, nullptr, false);
 
   delete[] shapeBuffer;
   delete[] linspaced;
