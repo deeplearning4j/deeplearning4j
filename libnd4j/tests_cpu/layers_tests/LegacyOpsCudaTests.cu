@@ -46,10 +46,10 @@ TEST_F(LegacyOpsCudaTests, test_sortTad_1) {
   auto e = NDArrayFactory::create<float>(
       'c', {3, 5}, {0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f, 12.f, 13.f, 14.f});
 
-  sd::LongType axis = 1;
+  LongType axis = 1;
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), axis);
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   x.syncToDevice();
   sortTad(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), &axis, 1,
@@ -63,10 +63,10 @@ TEST_F(LegacyOpsCudaTests, test_sort_1) {
   auto x = NDArrayFactory::create<float>('c', {4}, {4.f, 2.f, 1.f, 3.f});
   auto e = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   NDArray::prepareSpecialUse({&x}, {&x});
-  ::sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
+  sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
   NDArray::registerSpecialUse({&x});
 
   ASSERT_EQ(e, x);
@@ -76,10 +76,10 @@ TEST_F(LegacyOpsCudaTests, test_sort_2) {
   auto x = NDArrayFactory::create<float>('c', {4}, {4.f, 2.f, 1.f, 3.f});
   auto e = NDArrayFactory::create<float>('c', {4}, {4.f, 3.f, 2.f, 1.f});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   NDArray::prepareSpecialUse({&x}, {&x});
-  ::sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), true);
+  sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), true);
   NDArray::registerSpecialUse({&x});
 
   ASSERT_EQ(e, x);
@@ -89,10 +89,10 @@ TEST_F(LegacyOpsCudaTests, test_sort_3) {
   auto x = NDArrayFactory::create<double>('c', {4}, {0.5, 0.4, 0.1, 0.2});
   auto e = NDArrayFactory::create<double>('c', {4}, {0.1, 0.2, 0.4, 0.5});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   NDArray::prepareSpecialUse({&x}, {&x});
-  ::sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
+  sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
   NDArray::registerSpecialUse({&x});
 
   ASSERT_EQ(e, x);
@@ -102,10 +102,10 @@ TEST_F(LegacyOpsCudaTests, test_sort_4) {
   auto x = NDArrayFactory::create<double>('c', {4}, {7, 4, 9, 2});
   auto e = NDArrayFactory::create<double>('c', {4}, {2, 4, 7, 9});
 
-  sd::Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
+  Pointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
   NDArray::prepareSpecialUse({&x}, {&x});
-  ::sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
+  sort(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), false);
   NDArray::registerSpecialUse({&x});
 
   ASSERT_EQ(e, x);

@@ -66,7 +66,7 @@ TEST_F(ConvolutionTests2, im2col_1) {
 
   int paddingMode = 0;  // 1-SAME, 0-VALID;
 
-  NDArray image('c', {bS, iC, iH, iW}, sd::DataType::DOUBLE);
+  NDArray image('c', {bS, iC, iH, iW}, DOUBLE);
   NDArray expected(
       'c', {bS, iC, kH, kW, oH, oW},
       {1,  2,  4,  5,  2,  3,  5,  6,  4,  5,  7,  8,  5,  6,  8,  9,  7,  8,  10, 11, 8,  9,  11, 12, 13, 14, 16, 17,
@@ -79,7 +79,7 @@ TEST_F(ConvolutionTests2, im2col_1) {
 
   image.linspace(1, 1);
 
-  sd::ops::im2col op;
+  ops::im2col op;
   auto results = op.evaluate({&image}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode});
   auto column = results.at(0);
 
@@ -94,7 +94,7 @@ class TypedConvolutionTests2 : public NDArrayTests {
  public:
 };
 
-typedef ::testing::Types<double, float> TestingTypes;
+typedef testing::Types<double, float> TestingTypes;
 TYPED_TEST_CASE(TypedConvolutionTests2, TestingTypes);
 
 //////////////////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ TYPED_TEST(TypedConvolutionTests2, deconv2d_tf_test2) {
   input = 0.5;
   weights.linspace(0.1, 0.1);
 
-  sd::ops::deconv2d_tf op;
+  ops::deconv2d_tf op;
   auto results =
       op.evaluate({&outShape, &weights, &input}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
@@ -141,7 +141,7 @@ TYPED_TEST(TypedConvolutionTests2, Test_DeConv2D_TF_1) {
   auto input2 = NDArrayFactory::create<TypeParam>('c', {12, 4, 4, 16});
   auto exp = NDArrayFactory::create<TypeParam>('c', {12, 5, 5, 32});
 
-  sd::ops::deconv2d_tf op;
+  ops::deconv2d_tf op;
   auto result = op.evaluate({&input0, &input1, &input2}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 0, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -1119,7 +1119,7 @@ TYPED_TEST(TypedConvolutionTests2, Test_DeConv2D_TF_2) {
        1.35213876f,   0.00670356f,  -0.02742785f,  -2.16460943f,  1.39449501f,   0.23929763f,  2.37476778f,
        -4.17733765f,  -0.81475425f, -6.15027046f,  -5.74441719f,  3.53978682f,   0.66798484f});
 
-  sd::ops::deconv2d_tf op;
+  ops::deconv2d_tf op;
   auto result = op.evaluate({&input0, &input1, &input2}, {}, {7, 7, 2, 2, 0, 0, 1, 1, 1, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -1134,7 +1134,7 @@ TEST_F(ConvolutionTests2, Test_Dilation2D_Again_1) {
   auto w = NDArrayFactory::create<double>('c', {4, 5, 4});
   auto exp = NDArrayFactory::create<double>('c', {4, 64, 43, 4});
 
-  sd::ops::dilation2d op;
+  ops::dilation2d op;
   auto result = op.evaluate({&x, &w}, {}, {1, 1, 5, 7, 1, 1, 2, 3, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -1148,7 +1148,7 @@ TEST_F(ConvolutionTests2, Test_Dilation2D_Again_2) {
   auto x = NDArrayFactory::create<double>('c', {4, 26, 19, 4});
   auto w = NDArrayFactory::create<double>('c', {11, 7, 4});
 
-  sd::ops::dilation2d op;
+  ops::dilation2d op;
   auto result = op.evaluate({&x, &w}, {}, {0, 1, 2, 3, 1, 1, 3, 2, 1});
   ASSERT_EQ(sd::Status::OK, result.status());
 }
@@ -1164,7 +1164,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
       2832.2858966f,  18695.2134056f, 11201.3483989f, 33146.0259119f, 23624.9109056f, 51651.3384119f, 3007.7966964f,
       19845.1542060f, 11947.9091988f, 35353.0167129f, 25266.5217060f, 55239.3792129f, 3183.3074962f,  20995.095006f,
       12694.4699987f, 37560.007513f,  26908.132506f,  58827.4200139f};
-  sd::LongType _expGradWpS[]{4, 10, 6, 1, 1, 6, 1, 1, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
+  LongType _expGradWpS[]{4, 10, 6, 1, 1, 6, 1, 1, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
   NDArray expGWP(_expGradWpB, _expGradWpS);
   expGWP.permutei({2, 3, 1, 0});
 
@@ -1188,7 +1188,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
       4402.95768f, 4412.8062f,  4471.89732f, 4481.74584f, 4491.59436f, 4501.44288f, 4511.2914f,  4570.38252f,
       4580.23104f, 4590.07956f, 4599.92808f, 4609.7766f,  4668.86772f, 4678.71624f, 4688.56476f, 4698.41328f,
       4708.2618f,  4767.35292f, 4777.20144f, 4787.04996f, 4796.89848f, 4806.747f};
-  sd::LongType _expGradWdS[] = {4, 2, 3, 5, 5, 75, 25, 5, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
+  LongType _expGradWdS[] = {4, 2, 3, 5, 5, 75, 25, 5, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
   NDArray expGWD(_expGradWdB, _expGradWdS);
   expGWD.permutei({2, 3, 1, 0});
 
@@ -1260,7 +1260,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
       502.79898f, 379.18644f, 254.18373f, 127.7889f,  83.74843f,  168.42169f, 254.02108f, 340.5479f,  428.00345f,
       428.7092f,  344.83522f, 260.02861f, 174.28807f, 87.6123f,   43.07464f,  86.61527f,  130.62254f, 175.0971f,
       220.0396f,  220.4006f,  177.26156f, 133.65263f, 89.57316f,  45.0225f};
-  sd::LongType _expES[] = {4, 2, 3, 10, 10, 300, 100, 10, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
+  LongType _expES[] = {4, 2, 3, 10, 10, 300, 100, 10, 1, typeid(TypeParam) == typeid(float) ? 8192 : 16384, 1, 99};
   NDArray expE(_expEB, _expES);
 
   auto input = NDArrayFactory::create<TypeParam>('c', {2, 3, 10, 10});
@@ -1282,7 +1282,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
   weightsP.applyScalar(scalar::Divide, 100.0, weightsP);
   epsilonNext.applyScalar(scalar::Divide, 100.0, epsilonNext);
 
-  sd::ops::sconv2d_bp op;
+  ops::sconv2d_bp op;
   auto resultBP = op.evaluate({&input, &epsilonNext, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
 
   ASSERT_EQ(3, resultBP.size());
@@ -1317,15 +1317,15 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_2) {
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
 
   NDArray input('c', {bS, iC, iH, iW},
-                typeid(TypeParam) == typeid(float) ? sd::DataType::FLOAT32 : sd::DataType::DOUBLE);
+                typeid(TypeParam) == typeid(float) ? FLOAT32 : DOUBLE);
   NDArray gradO('c', {bS, oC, oH, oW},
-                typeid(TypeParam) == typeid(float) ? sd::DataType::FLOAT32 : sd::DataType::DOUBLE);
+                typeid(TypeParam) == typeid(float) ? FLOAT32 : DOUBLE);
   NDArray weightsDepth('c', {kH, kW, iC, mC},
-                       typeid(TypeParam) == typeid(float) ? sd::DataType::FLOAT32 : sd::DataType::DOUBLE);
+                       typeid(TypeParam) == typeid(float) ? FLOAT32 : DOUBLE);
   NDArray weightsPoint('f', {1, 1, iC * mC, oC},
-                       typeid(TypeParam) == typeid(float) ? sd::DataType::FLOAT32 : sd::DataType::DOUBLE);
+                       typeid(TypeParam) == typeid(float) ? FLOAT32 : DOUBLE);
   NDArray bias('c', {1, oC}, {0.5, 0.5},
-               typeid(TypeParam) == typeid(float) ? sd::DataType::FLOAT32 : sd::DataType::DOUBLE);
+               typeid(TypeParam) == typeid(float) ? FLOAT32 : DOUBLE);
 
   NDArray gradI(&input);
   NDArray gradWD(&weightsDepth);
@@ -1337,8 +1337,8 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_2) {
   weightsPoint.linspace(0.15, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::sconv2d_bp op;
-  sd::Status status =
+  ops::sconv2d_bp op;
+  Status status =
       op.execute({&input, &gradO, &weightsDepth, &weightsPoint, &bias}, {&gradI, &gradWD, &gradWP, &gradB}, {},
                  {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat}, {});
 
@@ -1350,7 +1350,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_2) {
   NDArray expGradB = gradB;
 
   for (int i = 0; i < 10; i++) {
-    sd::Status status =
+    Status status =
         op.execute({&input, &gradO, &weightsDepth, &weightsPoint, &bias}, {&gradI, &gradWD, &gradWP, &gradB}, {},
                    {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat}, {});
     ASSERT_EQ(sd::Status::OK, status);
@@ -1376,7 +1376,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_3) {
 
   auto epsilon = NDArrayFactory::create<TypeParam>('c', {3, 3, 16, 16});
 
-  sd::ops::sconv2d_bp op;
+  ops::sconv2d_bp op;
   auto result = op.evaluate({&input, &epsilonNext, &weightsD, &weightsP}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
 
   auto eps = result.at(0);
@@ -1415,7 +1415,7 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_4) {
   weightsDepth.linspace(0.1, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::sconv2d_bp op;
+  ops::sconv2d_bp op;
   auto results = op.evaluate({&input, &gradO, &weightsDepth, &bias}, {},
                              {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* gradI = results.at(0);
@@ -1454,7 +1454,7 @@ TEST_F(ConvolutionTests2, sconv2d_bp_5) {
   weightsDepth.linspace(-0.5, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::sconv2d_bp op;
+  ops::sconv2d_bp op;
   auto status = op.execute({&input, &gradO, &weightsDepth, &weightsPoint, &bias}, {&gradI, &gradWD, &gradWP, &gradB},
                            {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat}, {});
   ASSERT_EQ(sd::Status::OK, status);
@@ -1466,12 +1466,12 @@ TEST_F(ConvolutionTests2, im2col_bp_1) {
   int oH = 12, oW = 12;
 
   // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
-  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::DOUBLE);
-  NDArray gradO('c', {bS, iC, kH, kW, oH, oW}, sd::DataType::DOUBLE);
-  NDArray gradI('c', {bS, iC, iH, iW}, sd::DataType::DOUBLE);  // output
+  NDArray input('c', {bS, iC, iH, iW}, DOUBLE);
+  NDArray gradO('c', {bS, iC, kH, kW, oH, oW}, DOUBLE);
+  NDArray gradI('c', {bS, iC, iH, iW}, DOUBLE);  // output
 
-  sd::ops::im2col_bp op;
-  sd::Status status = op.execute({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 1}, {});
+  ops::im2col_bp op;
+  Status status = op.execute({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, 1}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
 }
@@ -1505,7 +1505,7 @@ TEST_F(ConvolutionTests2, deconv3d_test1) {
   input = 0.5;
   weights.linspace(0.1, 0.1);
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
   auto output = results.at(0);
@@ -1544,7 +1544,7 @@ TEST_F(ConvolutionTests2, deconv3d_test2) {
   input = 0.5;
   weights.linspace(0.1, 0.1);
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
   auto output = results.at(0);
@@ -1555,11 +1555,11 @@ ASSERT_EQ(exp,*output);
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, deconv3d_test3) {
-  sd::LongType bS = 2, iD = 4, iH = 4, iW = 4, iC = 2, oC = 3, kD = 2, kH = 2, kW = 2, sD = 1, sH = 1, sW = 1, pD = 0, pH = 0,
-      pW = 0, dD = 1, dH = 1, dW = 1;
-  sd::LongType oD = 3, oH = 3, oW = 3;
-  sd::LongType paddingMode = 0;  // 1-SAME, 0-VALID;
-  sd::LongType dataFormat = 0;   // 1-NDHWC, 0-NCDHW
+  LongType bS = 2, iD = 4, iH = 4, iW = 4, iC = 2, oC = 3, kD = 2, kH = 2, kW = 2, sD = 1, sH = 1, sW = 1, pD = 0,
+           pH = 0, pW = 0, dD = 1, dH = 1, dW = 1;
+  LongType oD = 3, oH = 3, oW = 3;
+  LongType paddingMode = 0;  // 1-SAME, 0-VALID;
+  LongType dataFormat = 0;   // 1-NDHWC, 0-NCDHW
 
   auto input = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
   auto weights = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
@@ -1583,7 +1583,7 @@ TEST_F(ConvolutionTests2, deconv3d_test3) {
   weights.linspace(0.1, 0.1);
   weights.permutei({2, 3, 4, 1, 0});
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
   auto output = results.at(0);
@@ -1610,7 +1610,7 @@ TEST_F(ConvolutionTests2, deconv3d_test4) {
   weights.linspace(0.1, 0.1);
   weights.permutei({2, 3, 4, 1, 0});
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
   auto output = results.at(0);
@@ -1665,7 +1665,7 @@ TEST_F(ConvolutionTests2, deconv3d_test5) {
   weights.linspace(0.1, 0.1);
   bias = 0.2;
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results =
       op.evaluate({&input, &weights}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat});
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1684,7 +1684,7 @@ TEST_F(ConvolutionTests2, deconv3d_test6) {
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
   int wFormat = 1;      // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  NDArray input('c', {bS, iD, iH, iW, iC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iD, iH, iW, iC}, FLOAT32);
   NDArray weights(
       'c', {iC, oC, kD, kH, kW},
       {20.,       15.,  10.,   5.,         0.,        -5.,  -10.,  -15.,       19.,       14.,  9.,    4.,
@@ -1721,7 +1721,7 @@ TEST_F(ConvolutionTests2, deconv3d_test6) {
        -1.9,      -6.9, -11.9, -16.9,      17.1,      12.1, 7.1,   2.1,        -2.9,      -7.9, -12.9, -17.9,
        16.1,      11.1, 6.1,   1.1,        -3.9,      -8.9, -13.9, -18.9,      15.1,      10.1, 5.1,   0.1,
        -4.9,      -9.9, -14.9, -19.9},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expOutput(
       'c', {bS, oD, oH, oW, oC},
       {-5191.349609,  -4925.850098, -4660.350098,  -4394.850098,  -4129.349609,  -8859.700195,  -8338.700195,
@@ -1816,11 +1816,11 @@ TEST_F(ConvolutionTests2, deconv3d_test6) {
        -3289.350098,  -3533.850098, -6438.700195,  -6937.700195,  -7436.700195,  -7935.700195,  -8434.699219,
        -6697.700195,  -7216.700195, -7735.700195,  -8254.699219,  -8773.700195,  -4087.349854,  -4351.850098,
        -4616.349609,  -4880.850098, -5145.350098},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   input.linspace(-27, 0.1);
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat, wFormat});
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -1840,7 +1840,7 @@ TEST_F(ConvolutionTests2, deconv3d_test7) {
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
   int wFormat = 2;      // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  NDArray input('c', {bS, iC, iD, iH, iW}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iD, iH, iW}, FLOAT32);
   NDArray weights(
       'c', {iC, kD, kH, kW, oC},
       {20.,        19.5,       19.,        18.5,       18.,        17.5,       17.,        16.5,       16.,
@@ -1888,7 +1888,7 @@ TEST_F(ConvolutionTests2, deconv3d_test7) {
        -9.4,       -9.9,       -10.4,      -10.9,      -11.4,      -11.9,      -12.4,      -12.9,      -13.4,
        -13.9,      -14.4,      -14.9,      -15.4,      -15.9,      -16.4,      -16.9,      -17.4,      -17.9,
        -18.4,      -18.9,      -19.4,      -19.9},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expOutput(
       'c', {bS, oC, oD, oH, oW},
       {-1907.199951, -3324.499756, -3307.199707, -3289.899902, -2814.799805, -4664.800293, -4640.199707, -4615.600098,
@@ -2051,11 +2051,11 @@ TEST_F(ConvolutionTests2, deconv3d_test7) {
        249.200073,   -1080.999878, -1089.799805, -1098.599854, 251.600098,   -1116.199951, -1124.999878, -1133.799683,
        957.599976,   1080.499878,  1086.10022,   1091.700073,  256.400024,   -1186.599854, -1195.400146, -1204.199829,
        258.799927,   -1221.800171, -1230.599976, -1239.400269, 261.199951,   -1257.,       -1265.799927, -1274.600098},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   input.linspace(-32, 0.1);
 
-  sd::ops::deconv3d op;
+  ops::deconv3d op;
   auto results = op.evaluate({&input, &weights},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat, wFormat});
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2081,18 +2081,16 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test1) {
 
   NDArray expGradI(
       'c', {bS, oD, oH, oW, oC},
-      {62., 67.6, 68.4, 74.8, 81.2, 89.2, 87.6, 96.4, 119.6, 132.4, 126., 139.6, 138.8, 154., 145.2, 161.2},
-      sd::DataType::FLOAT32);
+      {62., 67.6, 68.4, 74.8, 81.2, 89.2, 87.6, 96.4, 119.6, 132.4, 126., 139.6, 138.8, 154., 145.2, 161.2}, FLOAT32);
   NDArray expGradW('c', {kD, kH, kW, iC, oC},
-                   {28., 28., 32., 32., 40., 40., 44., 44., 64, 64., 68., 68., 76., 76., 80., 80.},
-                   sd::DataType::FLOAT32);
-  NDArray expGradB('c', {iC}, std::vector<double>{364.5}, sd::DataType::FLOAT32);
+                   {28., 28., 32., 32., 40., 40., 44., 44., 64, 64., 68., 68., 76., 76., 80., 80.}, FLOAT32);
+  NDArray expGradB('c', {iC}, std::vector<double>{364.5}, FLOAT32);
 
   input = 0.5;
   weights.linspace(0.1, 0.1);
   gradO.linspace(0.5);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &bias, &gradO}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
 
@@ -2125,16 +2123,15 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test2) {
   auto gradO = NDArrayFactory::create<float>('c', {bS, iD, iH, iW, iC});
 
   NDArray expGradI('c', {bS, oD, oH, oW, oC},
-                   {34, 37.2, 16.6, 18.4, 15.4, 17.4, 7.1, 8.2, 10.6, 13., 4.3, 5.6, 2.9, 4.3, 0.75, 1.5},
-                   sd::DataType::FLOAT32);
+                   {34, 37.2, 16.6, 18.4, 15.4, 17.4, 7.1, 8.2, 10.6, 13., 4.3, 5.6, 2.9, 4.3, 0.75, 1.5}, FLOAT32);
   NDArray expGradW('c', {kD, kH, kW, iC, oC}, {16, 16, 9, 9, 10, 10, 5.5, 5.5, 12, 12, 6.5, 6.5, 7, 7, 3.75, 3.75},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 0.5;
   weights.linspace(0.1, 0.1);
   gradO.linspace(0.5);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &gradO}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
 
@@ -2167,14 +2164,14 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test3) {
   NDArray expGradI(
       'c', {bS, oD, oH, oW, oC},
       {33.8, 37.4, 44.6, 48.2, 66.2, 69.8, 77., 80.6, 77.25, 86.35, 104.55, 113.65, 159.15, 168.25, 186.45, 195.55},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expGradW('c', {kD, kH, kW, iC, oC}, {28., 28, 32, 32, 40, 40, 44, 44, 64, 64, 68, 68, 76, 76, 80, 80.},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 0.5;
   gradO.linspace(0.5);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &gradO}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
 
@@ -2209,15 +2206,15 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test4) {
       {0.4, 1.55, 1.05, 2.3,   5.7,   3.2,  1.5,  3.35,  1.75, 3.8, 8.3,   4.3,  9.0,  18.6,  9.2,  4.4,  8.7,  4.1,
        1.8, 3.55, 1.65, 3.5,   6.5,   2.8,  1.3,  2.15,  0.75, 0.8, 3.15,  2.25, 4.7,  12.1,  7.2,  3.5,  8.15, 4.55,
        7.8, 17.9, 9.9,  19.75, 42.85, 23.6, 9.35, 21.55, 12.9, 5.4, 11.55, 6.05, 8.25, 20.75, 13.2, 0.65, 6.6,  6.75},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expGradW('c', {kD, kH, kW, iC, oC},
                    {16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 0.5;
   gradO.linspace(0.5);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &gradO}, {},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat}, {});
 
@@ -2242,11 +2239,11 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test5) {
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
   int wFormat = 1;      // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  NDArray input('c', {bS, iC, iD, iH, iW}, sd::DataType::FLOAT32);
-  NDArray bias('c', {oC}, {-0.1, 0.2}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iD, iH, iW}, FLOAT32);
+  NDArray bias('c', {oC}, {-0.1, 0.2}, FLOAT32);
   NDArray weights('c', {iC, oC, kD, kH, kW}, {-0.6, 0., -0.3, 0.3, -0.5, 0.1, -0.2, 0.4, -0.4, 0.2, -0.1, 0.5},
-                  sd::DataType::FLOAT32);
-  NDArray gradO('c', {bS, oC, oD, oH, oW}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray gradO('c', {bS, oC, oD, oH, oW}, FLOAT32);
 
   NDArray expGradI(
       'c', {bS, iC, iD, iH, iW},
@@ -2289,18 +2286,18 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test5) {
        -1.792,    -1.788,    -1.784,    -1.78,     -1.776,    -1.771999, -1.768,    -1.764,    6.112,    6.102,
        6.092,     6.082,     6.072,     6.062,     6.052,     6.042,     6.032,     6.022,     6.012,    6.002,
        5.992,     5.982,     5.972,     5.962},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradW('c', {iC, oC, kD, kH, kW},
                    {-73678.695312, -59907.972656, -67739.515625, -54962.082031, -15966.075195, -17115.042969,
                     -15269.777344, -16101.275391, 41746.566406, 25677.917969, 37200.003906, 22759.517578},
-                   sd::DataType::FLOAT32);
-  NDArray expGradB('c', {oC}, {-1803.520020, -1639.679932}, sd::DataType::FLOAT32);
+                   FLOAT32);
+  NDArray expGradB('c', {oC}, {-1803.520020, -1639.679932}, FLOAT32);
 
   input.linspace(100., -0.5);
   gradO.linspace(-16, 0.02);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &bias, &gradO},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat, wFormat});
 
@@ -2329,11 +2326,11 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test6) {
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
   int wFormat = 2;      // 0 - [kD, kH, kW, oC, iC], 1 - [iC, oC, kD, kH, kW], 2 - [iC, kD, kH, kW, oC]
 
-  NDArray input('c', {bS, iD, iH, iW, iC}, sd::DataType::FLOAT32);
-  NDArray bias('c', {oC}, {-0.1, 0.2}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iD, iH, iW, iC}, FLOAT32);
+  NDArray bias('c', {oC}, {-0.1, 0.2}, FLOAT32);
   NDArray weights('c', {iC, kD, kH, kW, oC}, {-0.6, -0.3, 0., 0.3, -0.5, -0.2, 0.1, 0.4, -0.4, -0.1, 0.2, 0.5},
-                  sd::DataType::FLOAT32);
-  NDArray gradO('c', {bS, oD, oH, oW, oC}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray gradO('c', {bS, oD, oH, oW, oC}, FLOAT32);
 
   NDArray expGradI(
       'c', {bS, iD, iH, iW, iC},
@@ -2365,18 +2362,18 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test6) {
        0.436,  -0.54,  -0.05,  0.44,   -0.552, -0.054, 0.444,  -0.564, -0.058, 0.448,  -0.576, -0.062, 0.452,  -0.588,
        -0.066, 0.456,  -0.6,   -0.07,  0.46,   -0.612, -0.074, 0.464,  -0.624, -0.078, 0.468,  -0.636, -0.082, 0.472,
        -0.648, -0.086, 0.476,  -0.66,  -0.09,  0.48},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradW('c', {iC, kD, kH, kW, oC},
                    {-6328.958984, -6322.880371, -6134.400879, -6128.319824, -6318.079590, -6312.640137, -6144.000000,
                     -6138.560547, -6307.202637, -6302.399414, -6153.599609, -6148.799316},
-                   sd::DataType::FLOAT32);
-  NDArray expGradB('c', {oC}, {-1.599994, 0.000001}, sd::DataType::FLOAT32);
+                   FLOAT32);
+  NDArray expGradB('c', {oC}, {-1.599994, 0.000001}, FLOAT32);
 
   input.linspace(100., -0.5);
   gradO.linspace(-1.6, 0.01);
 
-  sd::ops::deconv3d_bp op;
+  ops::deconv3d_bp op;
   auto results = op.evaluate({&input, &weights, &bias, &gradO},
                              {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, dataFormat, wFormat});
 
@@ -2406,13 +2403,13 @@ TEST_F(ConvolutionTests2, maxpool2d_1) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d pooling;
-  sd::Status status = pooling.execute(block.get());
+  ops::maxpool2d pooling;
+  Status status = pooling.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -2444,13 +2441,13 @@ TEST_F(ConvolutionTests2, maxpool2d_2) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d pooling;
-  sd::Status status = pooling.execute(block.get());
+  ops::maxpool2d pooling;
+  Status status = pooling.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -2482,13 +2479,13 @@ TEST_F(ConvolutionTests2, maxpool2d_3) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d pooling;
-  sd::Status status = pooling.execute(block.get());
+  ops::maxpool2d pooling;
+  Status status = pooling.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -2520,13 +2517,13 @@ TEST_F(ConvolutionTests2, maxpool2d_4) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d pooling;
-  sd::Status status = pooling.execute(block.get());
+  ops::maxpool2d pooling;
+  Status status = pooling.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -2560,13 +2557,13 @@ TEST_F(ConvolutionTests2, maxpool2d_5) {
 
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH,
            pW, dH, dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                             // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d pooling;
-  sd::Status status = pooling.execute(block.get());
+  ops::maxpool2d pooling;
+  Status status = pooling.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -2582,7 +2579,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
 
   x.linspace(1);
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2600,7 +2597,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_7) {
 
   x.linspace(1);
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2618,7 +2615,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
 
   x.linspace(1);
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 0});
 
   ASSERT_EQ(sd::Status::OK, result.status());
@@ -2643,7 +2640,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_9) {
 
   auto input = NDArrayFactory::create<TypeParam>('c', {bS, iC, iH, iW});
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto results = op.evaluate({&input}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, 1, 0});
   auto output = results.at(0);
 
@@ -2673,7 +2670,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_10) {
                               0.78289545f, 0.9613717f,  0.9613717f,  0.78289545f, 0.7997134f,  0.8536445f,  0.8536445f,
                               0.7997134f,  0.85019743f, 0.85019743f, 0.85722464f, 0.85722464f, 0.85019743f});
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto results = op.evaluate({&input}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode});
   auto* output = results.at(0);
 
@@ -2684,12 +2681,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_10) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, maxpool2d_11) {
-  NDArray input('c', {1, 1, 4, 5}, sd::DataType::FLOAT32);
-  NDArray z('c', {1, 1, 4, 5}, sd::DataType::FLOAT32);
+  NDArray input('c', {1, 1, 4, 5}, FLOAT32);
+  NDArray z('c', {1, 1, 4, 5}, FLOAT32);
 
   input.linspace(1.);
 
-  sd::ops::maxpool2d op;
+  ops::maxpool2d op;
   auto results = op.evaluate({&input}, {}, {2, 2, 1, 1, 1, 1, 2, 2, 1, 0, 0});
 
   ASSERT_EQ(sd::Status::OK, results.status());
@@ -2712,7 +2709,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test1) {
        166.5f, 167.5f, 169.5f, 170.5f, 190.5f, 191.5f, 193.5f, 194.5f, 202.5f, 203.5f, 205.5f, 206.5f});
   input.linspace(1.);
 
-  sd::ops::avgpool3dnew op;
+  ops::avgpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2751,7 +2748,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test2) {
        208.f,  209.f,  210.f,  209.5f, 210.5f, 211.5f});
   input.linspace(1.);
 
-  sd::ops::avgpool3dnew op;
+  ops::avgpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 0, dataFormat});
   auto output = results.at(0);
@@ -2778,7 +2775,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test3) {
        173.5f, 174.5f, 175.5f, 176.5f, 177.5f, 178.5f, 182.5f, 183.5f, 184.5f, 185.5f, 186.5f, 187.5f});
   input.linspace(1.);
 
-  sd::ops::avgpool3dnew op;
+  ops::avgpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2840,7 +2837,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test4) {
        35.416668f,  71.00f,  71.333336f,  35.75f});
   input.linspace(1.);
 
-  sd::ops::avgpool3dnew op;
+  ops::avgpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2866,7 +2863,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test1) {
        164.f, 165.f, 167.f, 168.f, 176.f, 177.f, 179.f, 180.f, 200.f, 201.f, 203.f, 204.f, 212.f, 213.f, 215.f, 216.f});
   input.linspace(1.);
 
-  sd::ops::maxpool3dnew op;
+  ops::maxpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2903,7 +2900,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test2) {
        212.f, 213.f, 214.f, 215.f, 216.f, 214.f, 215.f, 216.f});
   input.linspace(1.);
 
-  sd::ops::maxpool3dnew op;
+  ops::maxpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2929,7 +2926,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test3) {
        177.f, 178.f, 179.f, 180.f, 202.f, 203.f, 204.f, 205.f, 206.f, 207.f, 211.f, 212.f, 213.f, 214.f, 215.f, 216.f});
   input.linspace(1.);
 
-  sd::ops::maxpool3dnew op;
+  ops::maxpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -2976,7 +2973,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test4) {
        208.f, 209.f, 210.f, 210.f, 211.f, 212.f, 213.f, 213.f, 214.f, 215.f, 216.f, 216.f, 214.f, 215.f, 216.f, 216.f});
   input.linspace(1.);
 
-  sd::ops::maxpool3dnew op;
+  ops::maxpool3dnew op;
   auto results =
       op.evaluate({&input}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3023,7 +3020,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test1) {
   input.linspace(1.);
   gradO = 2.;
 
-  sd::ops::avgpool3dnew_bp op;
+  ops::avgpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3066,7 +3063,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test2) {
   input.linspace(1.);
   gradO = 2.;
 
-  sd::ops::avgpool3dnew_bp op;
+  ops::avgpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3112,7 +3109,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test3) {
   input.linspace(1.);
   gradO = 2.;
 
-  sd::ops::avgpool3dnew_bp op;
+  ops::avgpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 0, dataFormat});
   auto output = results.at(0);
@@ -3157,7 +3154,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test4) {
   input.linspace(1.);
   gradO = 2.;
 
-  sd::ops::avgpool3dnew_bp op;
+  ops::avgpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 0, dataFormat});
   auto output = results.at(0);
@@ -3195,7 +3192,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test1) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool3dnew_bp op;
+  ops::maxpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3244,7 +3241,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test2) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool3dnew_bp op;
+  ops::maxpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3284,7 +3281,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test3) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool3dnew_bp op;
+  ops::maxpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3324,7 +3321,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test4) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool3dnew_bp op;
+  ops::maxpool3dnew_bp op;
   auto results =
       op.evaluate({&input, &gradO}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
@@ -3347,13 +3344,13 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_1) {
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
   block->fillInputs({-2});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                                 // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d_bp bp;
-  sd::Status status = bp.execute(block.get());
+  ops::maxpool2d_bp bp;
+  Status status = bp.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -3378,12 +3375,12 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_2) {
 
   input.linspace(1.);
 
-  std::initializer_list<sd::LongType> argI = {
+  std::initializer_list<LongType> argI = {
       kH, kW, sH, sW, pH, pW,
       dW, dH, 0,  0,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                            // dilation Height/Width; 8 - same mode;
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &epsilon}, {}, argI);
   auto output = results.at(0);
 
@@ -3409,7 +3406,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_3) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3437,7 +3434,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_4) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3464,7 +3461,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_5) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3491,7 +3488,7 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_6) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3513,7 +3510,7 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_7) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::maxpool2d_bp op;
+  ops::maxpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   // auto output = results.at(0);
 
@@ -3536,14 +3533,14 @@ TEST_F(ConvolutionTests2, avgpool2d_bp_1) {
   std::unique_ptr<Context> block(new Context(1, variableSpace.get(), false));
   block->fillInputs({-1});
   block->fillInputs({-2});
-  std::vector<sd::LongType>* argI = block->getIArguments();
+  std::vector<LongType>* argI = block->getIArguments();
   *argI = {kH, kW, sH, sW, pH, pW,
            dW, dH, 0,  1,  0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 -
                                 // dilation Height/Width; 8 - same mode, 9 - extraParam0 (unnecessary for avg mode), 10
                                 // - data format
 
-  sd::ops::avgpool2d_bp bp;
-  sd::Status status = bp.execute(block.get());
+  ops::avgpool2d_bp bp;
+  Status status = bp.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -3573,9 +3570,9 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_2) {
 
   input.linspace(1.);
 
-  std::initializer_list<sd::LongType> argI = {kH, kW, sH, sW, pH, pW, dW, dH, 1, 1, 0};
+  std::initializer_list<LongType> argI = {kH, kW, sH, sW, pH, pW, dW, dH, 1, 1, 0};
 
-  sd::ops::avgpool2d_bp op;
+  ops::avgpool2d_bp op;
   auto results = op.evaluate({&input, &epsilon}, {}, argI);
   auto output = results.at(0);
 
@@ -3605,7 +3602,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_3) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::avgpool2d_bp op;
+  ops::avgpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3636,7 +3633,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_4) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::avgpool2d_bp op;
+  ops::avgpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3666,7 +3663,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_5) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::avgpool2d_bp op;
+  ops::avgpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 0, dataFormat});
   auto output = results.at(0);
 
@@ -3695,7 +3692,7 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_6) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::avgpool2d_bp op;
+  ops::avgpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, 1, dataFormat});
   auto output = results.at(0);
 
@@ -3725,8 +3722,8 @@ TEST_F(ConvolutionTests2, pnormpool2d_bp_1) {
   std::vector<double>* argT = block->getTArguments();
   *argT = {0.000001};
 
-  sd::ops::pnormpool2d_bp bp;
-  sd::Status status = bp.execute(block.get());
+  ops::pnormpool2d_bp bp;
+  Status status = bp.execute(block.get());
   ASSERT_EQ(sd::Status::OK, status);
 
   auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
@@ -3761,7 +3758,7 @@ TYPED_TEST(TypedConvolutionTests2, pnormpool2d_bp_2) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::pnormpool2d_bp op;
+  ops::pnormpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {eps}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, pnorm, dataFormat});
   auto output = results.at(0);
 
@@ -3795,7 +3792,7 @@ TYPED_TEST(TypedConvolutionTests2, pnormpool2d_bp_3) {
   input.linspace(1.);
   gradO.linspace(0.1, 0.1);
 
-  sd::ops::pnormpool2d_bp op;
+  ops::pnormpool2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {eps}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, pnorm, dataFormat});
   auto output = results.at(0);
 
@@ -3817,7 +3814,7 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_1) {
   auto expGradI = NDArrayFactory::create<float>('c', {bS, iC, iH, iW});
   expGradI = 4.;
 
-  sd::ops::upsampling2d_bp op;
+  ops::upsampling2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
   auto* gradI = results.at(0);
 
@@ -3839,7 +3836,7 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_2) {
   auto expGradI = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
   expGradI = 4.;
 
-  sd::ops::upsampling2d_bp op;
+  ops::upsampling2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
   auto* gradI = results.at(0);
 
@@ -3854,7 +3851,7 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_3) {
   const int factorH = 2, factorW = 2;
   const int isNCHW = 1;  // data format, default is NCHW
 
-  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iH, iW}, FLOAT32);
 
   NDArray gradO(
       'c', {bS, iC, iH * factorH, iW * factorW},
@@ -3866,14 +3863,14 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_3) {
        0.23272,    0.35214192,  0.058909304, 0.7112212,  0.6744568,   0.19694561, 0.6994972,   0.0743224,  0.42042503,
        0.5842631,  0.14957358,  0.44640633,  0.72307247, 0.06448108,  0.48307765, 0.8759956,   0.5698191,  0.4458631,
        0.5277549,  0.016646361, 0.753678,    0.14063567, 0.7541292,   0.16193217, 0.7750374,   0.3326449,  0.11739397},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradI('c', {bS, iC, iH, iW},
                    {2.4203868, 1.5216494, 2.1776323, 2.0290341, 0.772146, 1.5008594, 1.0523045, 1.3174672, 1.9263644,
                     1.090545, 1.9094483, 1.3611296, 2.1195147, 2.0659215, 1.0423062, 2.3405795, 1.9105877, 1.2203633},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
-  sd::ops::upsampling2d_bp op;
+  ops::upsampling2d_bp op;
   auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
   auto* gradI = results.at(0);
 
@@ -3904,7 +3901,7 @@ TYPED_TEST(TypedConvolutionTests2, depthwise_conv2d_1) {
   input = 2.;
   weights.linspace(0.1, 0.1);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
 
@@ -3932,7 +3929,7 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_2) {
   input = 2.;
   weights.linspace(0.1, 0.1);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
 
@@ -3957,13 +3954,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_3) {
   NDArray expOutput('c', {bS, oC, oH, oW},
                     {5.2, 5.2, 5.2, 5.2, 20.6, 20.6, 20.6, 20.6, 14.4, 14.4, 14.4, 14.4, 29.8, 29.8, 29.8, 29.8,
                      5.2, 5.2, 5.2, 5.2, 20.6, 20.6, 20.6, 20.6, 14.4, 14.4, 14.4, 14.4, 29.8, 29.8, 29.8, 29.8},
-                    sd::DataType::FLOAT32);
+                    FLOAT32);
 
   input = 2.;
   weights.linspace(0.1, 0.1);
   weights.permutei({2, 3, 1, 0});
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results =
       op.evaluate({&input, &weights, &biases}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
@@ -3985,20 +3982,20 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_4) {
 
   const float unique = -1000000;
 
-  NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
-  NDArray output('c', {bS, oH, oW, oC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iH, iW, iC}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
+  NDArray output('c', {bS, oH, oW, oC}, FLOAT32);
   input.linspace(0.1, 0.0001);
   weights = 0.5;
   output = unique;
 
-  sd::ops::depthwise_conv2d op;
-  sd::Status status =
+  ops::depthwise_conv2d op;
+  Status status =
       op.execute({&input, &weights}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat}, {});
 
   ASSERT_EQ(sd::Status::OK, status);
 
-  for (sd::LongType i = output.lengthOf() / 1.5; i < output.lengthOf(); ++i)
+  for (LongType i = output.lengthOf() / 1.5; i < output.lengthOf(); ++i)
     ASSERT_EQ(output.e<float>(i) != unique, true);
 }
 
@@ -4014,13 +4011,12 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_5) {
   auto weights = NDArrayFactory::create<float>('c', {kH, kW, iC, mC});
 
   NDArray expOutput('c', {bS, oH, oW, oC},
-                    {10., 12., 14., 16., 8., 9., 22., 24., 26., 28., 14., 15., 14., 15., 16., 17., 8.5, 9.},
-                    sd::DataType::FLOAT32);
+                    {10., 12., 14., 16., 8., 9., 22., 24., 26., 28., 14., 15., 14., 15., 16., 17., 8.5, 9.}, FLOAT32);
 
   input.linspace(1.);
   weights = 0.5;
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
 
@@ -4038,16 +4034,16 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_6) {
   int paddingMode = 1;  // 1-SAME, 0-VALID;
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
 
-  NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iH, iW, iC}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
 
   NDArray expOutput('c', {bS, oH, oW, oC},
                     {20., 24., 28., 32., 16., 18., 44., 48., 52., 56., 28., 30., 28., 30., 32., 34., 17., 18.},
-                    sd::DataType::FLOAT32);
+                    FLOAT32);
   input.linspace(1.);
   weights = 1.;
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   NDArray* output = results.at(0);
 
@@ -4070,12 +4066,11 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_7) {
                  0.3106933832168579, 0.44793984293937683, 0.9380097389221191, 0.3266739547252655, 0.15187257528305054,
                  0.3833175301551819, 0.7821229696273804, 0.19880719482898712, 0.7985635995864868, 0.16326339542865753,
                  0.14696824550628662, 0.2608966827392578, 0.13505761325359344},
-                sd::DataType::FLOAT32);
+                FLOAT32);
   NDArray weights('c', {kH, kW, iC, mC},
-                  {0.1308445781469345, 0.6442840099334717, 0.5698848366737366, 0.19896849989891052},
-                  sd::DataType::FLOAT32);
+                  {0.1308445781469345, 0.6442840099334717, 0.5698848366737366, 0.19896849989891052}, FLOAT32);
   NDArray biases('c', {1, iC * mC}, {0.6123566627502441, 0.37637925148010254, 0.17464971542358398, 0.4270855486392975},
-                 sd::DataType::FLOAT32);
+                 FLOAT32);
 
   NDArray expOutput(
       'c', {bS, oC, oH, oW},
@@ -4087,9 +4082,9 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_7) {
        0.3233307788551656, 0.25161700129415276, 0.4573034071191504, 0.5033536625992294,  0.5827033826425385,
        0.4666419179635315, 0.585974550122895,   0.4595698215161401, 0.45632759998045813, 0.4789957702325296,
        0.4539577593482922},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results =
       op.evaluate({&input, &weights, &biases}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* output = results.at(0);
@@ -4108,8 +4103,8 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_8) {
   int paddingMode = 1;  // 1-SAME, 0-VALID;
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
 
-  NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iH, iW, iC}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
 
   NDArray expOutput('c', {bS, oH, oW, oC},
                     {-42.879997, -43.959999, -44.959999, -45.879997, -46.720005, -47.480003,  -48.160000,  -48.760002,
@@ -4212,12 +4207,12 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_8) {
                      31.360008,  69.579971,  107.920006, 146.379990, 184.960007, 223.660004,  262.479980,  301.419983,
                      31.360001,  70.059975,  108.880020, 147.819977, 186.880020, 226.059998,  265.359985,  304.779999,
                      -83.840004, -58.040001, -32.159988, -6.200012,  19.840012,  45.959984,   72.159996,   98.440010},
-                    sd::DataType::FLOAT32);
+                    FLOAT32);
 
   input.linspace(-10, 0.1);
   weights.linspace(-2, 0.1);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
 
@@ -4235,8 +4230,8 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_9) {
   int paddingMode = 1;  // 1-SAME, 0-VALID;
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
 
-  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iH, iW}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
 
   NDArray expOutput(
       'c', {bS, oC, oH, oW},
@@ -4340,12 +4335,12 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_9) {
        1170.839966, 1172.550049, 1174.260010, 620.369995,  948.809998,  1179.390015, 1181.099976, 1182.810059,
        1184.520020, 1186.229980, 1187.939941, 1189.650024, 1191.359985, 629.370056,  304.099976,  292.039978,
        292.460022,  292.880005,  293.300018,  293.720001,  294.140015,  294.559998,  294.980042,  85.700005},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   input.linspace(-10, 0.1);
   weights.linspace(-2, 0.1);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results = op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto output = results.at(0);
 
@@ -4369,10 +4364,10 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_10) {
                  0.3106933832168579, 0.44793984293937683, 0.9380097389221191, 0.3266739547252655, 0.15187257528305054,
                  0.3833175301551819, 0.7821229696273804, 0.19880719482898712, 0.7985635995864868, 0.16326339542865753,
                  0.14696824550628662, 0.2608966827392578, 0.13505761325359344},
-                sd::DataType::FLOAT32);
-  NDArray weights('c', {mC, iC, kH, kW}, {0.130845, 0.569885, 0.644284, 0.198968}, sd::DataType::FLOAT32);
+                FLOAT32);
+  NDArray weights('c', {mC, iC, kH, kW}, {0.130845, 0.569885, 0.644284, 0.198968}, FLOAT32);
   NDArray biases('c', {iC * mC}, {0.6123566627502441, 0.37637925148010254, 0.17464971542358398, 0.4270855486392975},
-                 sd::DataType::FLOAT32);
+                 FLOAT32);
 
   NDArray expOutput(
       'c', {bS, oC, oH, oW},
@@ -4384,9 +4379,9 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_10) {
        0.3233307788551656, 0.25161700129415276, 0.4573034071191504, 0.5033536625992294,  0.5827033826425385,
        0.4666419179635315, 0.585974550122895,   0.4595698215161401, 0.45632759998045813, 0.4789957702325296,
        0.4539577593482922},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results =
       op.evaluate({&input, &weights, &biases}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat, wFormat});
   auto* output = results.at(0);
@@ -4406,14 +4401,14 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_11) {
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
   int wFormat = 2;      // 0-[kH, kW, iC, mC], 1-[mC, iC, kH, kW], 2-[mC, kH, kW, iC]
 
-  NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iH, iW, iC}, FLOAT32);
   NDArray weights(
       'c', {mC, kH, kW, iC},
       {-2.,  -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1., -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3,
        -0.2, -0.1, 0.,   0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8, 0.9,  1.,   1.1,  1.2,  1.3,  1.4,  1.5,
        1.6,  1.7,  1.8,  1.9,  2.,   2.1,  2.2,  2.3,  2.4,  2.5,  2.6, 2.7,  2.8,  2.9,  3.,   3.1,  3.2,  3.3,
        3.4,  3.5,  3.6,  3.7,  3.8,  3.9,  4.,   4.1,  4.2,  4.3,  4.4, 4.5,  4.6,  4.7,  4.8,  4.9,  5.,   5.1},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expOutput('c', {bS, oH, oW, oC},
                     {-42.879997, -43.959999, -44.959999, -45.879997, -46.720005, -47.480003,  -48.160000,  -48.760002,
@@ -4516,12 +4511,12 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_11) {
                      31.360008,  69.579971,  107.920006, 146.379990, 184.960007, 223.660004,  262.479980,  301.419983,
                      31.360001,  70.059975,  108.880020, 147.819977, 186.880020, 226.059998,  265.359985,  304.779999,
                      -83.840004, -58.040001, -32.159988, -6.200012,  19.840012,  45.959984,   72.159996,   98.440010},
-                    sd::DataType::FLOAT32);
+                    FLOAT32);
 
   input.linspace(-10, 0.1);
   weights.linspace(-2, 0.1);
 
-  sd::ops::depthwise_conv2d op;
+  ops::depthwise_conv2d op;
   auto results =
       op.evaluate({&input, &weights}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat, wFormat});
   auto output = results.at(0);
@@ -4550,18 +4545,18 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test1) {
                     1.071, 1.515, 2.982, 3.966,  3.534,  4.614, 1.606, 1.982, 3.932, 4.748,  4.428, 5.308,
                     1.126, 1.63,  3.228, 4.3,    3.468,  4.604, 3.123, 3.999, 7.95,  9.798,  8.502, 10.446,
                     3.807, 4.827, 9.606, 11.742, 10.158, 12.39, 4.198, 4.958, 9.884, 11.468, 10.38, 12.028},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   NDArray expGradW('c', {kH, kW, iC, mC},
                    {19.08, 19.44, 19.8,  20.16, 12.24, 12.48, 12.72, 12.96, 22.56, 23.04, 23.52, 24.,
                     14.4,  14.72, 15.04, 15.36, 14.76, 15.12, 15.48, 15.84, 9.36,  9.6,   9.84,  10.08},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 2.;
   weights.linspace(0.1, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results =
       op.evaluate({&input, &weights, &bias, &gradO}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* gradI = results.at(0);
@@ -4594,16 +4589,16 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test2) {
       {0.005, 0.025, 0.034, 0.106, 0.061, 0.113, 0.058, 0.162, 0.292, 0.564, 0.298, 0.466, 0.234, 0.402, 0.772, 1.172,
        0.602, 0.834, 0.333, 0.449, 0.882, 1.146, 0.581, 0.729, 0.053, 0.137, 0.258, 0.458, 0.237, 0.353, 0.41,  0.642,
        1.252, 1.78,  0.906, 1.202, 1.098, 1.394, 2.756, 3.412, 1.722, 2.082, 0.893, 1.073, 2.13,  2.522, 1.269, 1.481},
-      sd::DataType::FLOAT32);
+      FLOAT32);
   NDArray expGradW('c', {kH, kW, iC, mC}, {2.4, 2.56, 2.72, 2.88, 2.4, 2.56, 2.72, 2.88, 2.4, 2.56, 2.72, 2.88,
                                            2.4, 2.56, 2.72, 2.88, 2.4, 2.56, 2.72, 2.88, 2.4, 2.56, 2.72, 2.88},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 2.;
   weights.linspace(0.1, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results =
       op.evaluate({&input, &weights, &bias, &gradO}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* gradI = results.at(0);
@@ -4643,10 +4638,10 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test4) {
   int paddingMode = 1;  // 1-SAME, 0-VALID;
   int dataFormat = 1;   // 1-NHWC, 0-NCHW
 
-  NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {bS, oH, oW, oC}, sd::DataType::FLOAT32);
-  NDArray bias('c', {oC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iH, iW, iC}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
+  NDArray gradO('c', {bS, oH, oW, oC}, FLOAT32);
+  NDArray bias('c', {oC}, FLOAT32);
 
   input.linspace(-10, 0.1);
   weights.linspace(-2, 0.1);
@@ -4754,7 +4749,7 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test4) {
        -884.479980, -924.140015, -963.919922, -1003.819946, -1043.839966, -1083.979980, -1124.239990, -1164.619995,
        -896.000000, -936.140015, -976.399963, -1016.780029, -1057.280029, -1097.899902, -1138.640015, -1179.500122,
        -705.919983, -733.000000, -760.159912, -787.400024,  -814.719971,  -842.119995,  -869.599976,  -897.160034},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradW(
       'c', {kH, kW, iC, mC},
@@ -4769,11 +4764,11 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test4) {
        -116289.593750, -116823.296875, -117358.781250, -117896.109375, -118435.210938, -118976.109375, -119518.796875,
        -120063.296875, -104306.421875, -104786.734375, -105268.687500, -105752.250000, -106237.421875, -106724.242188,
        -107212.671875, -107702.734375},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  NDArray expGradB('c', {oC}, {-2960., -2970., -2980., -2990., -3000., -3010., -3020., -3030.}, sd::DataType::FLOAT32);
+  NDArray expGradB('c', {oC}, {-2960., -2970., -2980., -2990., -3000., -3010., -3020., -3030.}, FLOAT32);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results =
       op.evaluate({&input, &weights, &bias, &gradO}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   NDArray* gradI = results.at(0);
@@ -4800,10 +4795,10 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test5) {
   int paddingMode = 1;  // 1-SAME, 0-VALID;
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
 
-  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
-  NDArray weights('c', {kH, kW, iC, mC}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {bS, oC, oH, oW}, sd::DataType::FLOAT32);
-  NDArray bias('c', {oC}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iH, iW}, FLOAT32);
+  NDArray weights('c', {kH, kW, iC, mC}, FLOAT32);
+  NDArray gradO('c', {bS, oC, oH, oW}, FLOAT32);
+  NDArray bias('c', {oC}, FLOAT32);
 
   input.linspace(-10, 0.1);
   weights.linspace(-2, 0.1);
@@ -4911,7 +4906,7 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test5) {
        -1141.079956, -1142.790039, -1144.500122, -926.610046,  -602.730042,  -1149.629883, -1151.339966, -1153.050049,
        -1154.760132, -1156.469971, -1158.179810, -1159.890137, -1161.600098, -940.410034,  -737.859985,  -1272.040039,
        -1273.899902, -1275.760010, -1277.619995, -1279.479980, -1281.340088, -1283.200195, -1285.060059, -968.420044},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradW(
       'c', {kH, kW, iC, mC},
@@ -4926,12 +4921,11 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test5) {
        -2880.149902,   -2790.150146,   -20700.152344,  -56610.148438,  -110520.156250, -182430.156250, -272340.156250,
        -380250.125000, -2586.600586,   -2505.600098,   -18624.595703,  -50943.605469,  -99462.601562,  -164181.609375,
        -245100.609375, -342219.625000},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
-  NDArray expGradB('c', {oC}, {505., -495., -1495., -2495., -3495., -4494.999512, -5495., -6495.},
-                   sd::DataType::FLOAT32);
+  NDArray expGradB('c', {oC}, {505., -495., -1495., -2495., -3495., -4494.999512, -5495., -6495.}, FLOAT32);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results =
       op.evaluate({&input, &weights, &bias, &gradO}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   NDArray* gradI = results.at(0);
@@ -4976,7 +4970,7 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test6) {
   weights.linspace(0.1, 0.1);
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results =
       op.evaluate({&input, &weights, &bias, &gradO}, {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat});
   auto* gradI = results.at(0);
@@ -5000,26 +4994,26 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_bp_test7) {
   int dataFormat = 0;   // 1-NHWC, 0-NCHW
   int wFormat = 1;      // 0-[kH, kW, iC, mC], 1-[mC, iC, kH, kW], 2-[mC, kH, kW, iC]
 
-  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
+  NDArray input('c', {bS, iC, iH, iW}, FLOAT32);
   NDArray weights('c', {mC, iC, kH, kW}, {0.10, 0.30, 0.50, 0.70, 0.90, 1.10, 0.20, 0.40, 0.60, 0.80, 1., 1.2},
-                  sd::DataType::FLOAT32);
-  NDArray bias('c', {oC}, {3, 4}, sd::DataType::FLOAT32);
-  NDArray gradO('c', {bS, oC, oH, oW}, sd::DataType::FLOAT32);
+                  FLOAT32);
+  NDArray bias('c', {oC}, {3, 4}, FLOAT32);
+  NDArray gradO('c', {bS, oC, oH, oW}, FLOAT32);
 
   NDArray expGradI(
       'c', {bS, iC, iH, iW},
       {0.001, 0.005, 0.006, 0.008, 0.03,  0.026, 0.024, 0.07,  0.05,  0.027, 0.069, 0.044, 0.01,  0.032, 0.024, 0.044,
        0.12,  0.08,  0.092, 0.224, 0.136, 0.07,  0.164, 0.096, 0.009, 0.037, 0.03,  0.056, 0.158, 0.106, 0.136, 0.326,
        0.194, 0.099, 0.229, 0.132, 0.026, 0.08,  0.056, 0.108, 0.28,  0.176, 0.22,  0.512, 0.296, 0.15,  0.34,  0.192},
-      sd::DataType::FLOAT32);
+      FLOAT32);
 
   NDArray expGradW('c', {mC, iC, kH, kW}, {1.04, 1.04, 1.04, 1.04, 1.04, 1.04, 1.68, 1.68, 1.68, 1.68, 1.68, 1.68},
-                   sd::DataType::FLOAT32);
+                   FLOAT32);
 
   input = 2.;
   gradO.linspace(0.01, 0.01);
 
-  sd::ops::depthwise_conv2d_bp op;
+  ops::depthwise_conv2d_bp op;
   auto results = op.evaluate({&input, &weights, &bias, &gradO},
                              {kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, dataFormat, wFormat});
   auto* gradI = results.at(0);

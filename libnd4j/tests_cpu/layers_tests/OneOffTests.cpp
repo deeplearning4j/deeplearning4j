@@ -45,7 +45,7 @@ TEST_F(OneOffTests, test_avg_pool_3d_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   delete graph;
 }
@@ -57,7 +57,7 @@ TEST_F(OneOffTests, test_non2d_0A_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   delete graph;
 }
@@ -79,16 +79,16 @@ TEST_F(OneOffTests, test_assert_scalar_float32_1) {
 }*/
 
 TEST_F(OneOffTests, test_assert_scalar_float32_2) {
-  sd::ops::Assert op;
-  sd::ops::identity op1;
-  sd::ops::noop op2;
+  Assert op;
+  identity op1;
+  noop op2;
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assertsomething.fb");
 
   ASSERT_TRUE(graph != nullptr);
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   delete graph;
 }
@@ -99,8 +99,7 @@ TEST_F(OneOffTests, test_pad_1D_1) {
 
   ASSERT_TRUE(graph != nullptr);
 
-
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(4));
@@ -142,7 +141,7 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(9));
@@ -165,7 +164,7 @@ TEST_F(OneOffTests, test_tensor_array_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(5));
 
@@ -187,7 +186,7 @@ TEST_F(OneOffTests, test_tensor_array_2) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(6));
 
@@ -208,7 +207,7 @@ TEST_F(OneOffTests, test_tensor_array_3) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(15));
 
@@ -221,7 +220,7 @@ TEST_F(OneOffTests, test_tensor_array_3) {
 }
 
 TEST_F(OneOffTests, test_tensor_array_4) {
-  auto e = NDArrayFactory::create<sd::LongType>('c', {2, 3}, {4, 3, 1, 1, 1, 0});
+  auto e = NDArrayFactory::create<LongType>('c', {2, 3}, {4, 3, 1, 1, 1, 0});
 
   auto graph = GraphExecutioner::importFromFlatBuffers(
       "./resources/tensor_array_unstack_sz1_int64_nodynamic_noname_shape2-3.fb");
@@ -229,7 +228,7 @@ TEST_F(OneOffTests, test_tensor_array_4) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(11));
 
@@ -242,14 +241,14 @@ TEST_F(OneOffTests, test_tensor_array_4) {
 }
 
 TEST_F(OneOffTests, test_assert_4) {
-  auto e = NDArrayFactory::create<sd::LongType>('c', {2, 2}, {1, 1, 1, 1});
+  auto e = NDArrayFactory::create<LongType>('c', {2, 2}, {1, 1, 1, 1});
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/assert_type_rank2_int64.fb");
   ASSERT_TRUE(graph != nullptr);
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
 
@@ -266,14 +265,14 @@ TEST_F(OneOffTests, test_identity_n_2) {
   auto e = NDArrayFactory::create<float>(
       'c', {2, 3}, {0.77878559f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f});
 
-  sd::ops::identity_n op;
+  identity_n op;
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/identity_n_2.fb");
   ASSERT_TRUE(graph != nullptr);
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1, 1));
@@ -294,7 +293,7 @@ TEST_F(OneOffTests, test_non2d_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(3));
@@ -315,7 +314,7 @@ TEST_F(OneOffTests, test_reduce_all_1) {
 
   // graph->printOut();
 
-  sd::Status status = GraphExecutioner::execute(graph);
+  Status status = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, status);
 
   ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));

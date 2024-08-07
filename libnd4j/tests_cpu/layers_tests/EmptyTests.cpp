@@ -29,8 +29,6 @@ using namespace sd;
 class EmptyTests : public NDArrayTests {
  public:
   EmptyTests() {
-    printf("\n");
-    fflush(stdout);
   }
 };
 
@@ -41,7 +39,7 @@ TEST_F(EmptyTests, Test_Create_Empty_1) {
   ASSERT_EQ(0, empty->lengthOf());
   ASSERT_TRUE(empty->buffer() == nullptr);
 
-  ASSERT_TRUE(shape::isEmpty(empty->shapeInfo()));
+  ASSERT_TRUE(shape::isEmptyConst(empty->shapeInfo()));
 
   delete empty;
 }
@@ -53,18 +51,18 @@ TEST_F(EmptyTests, Test_Create_Empty_2) {
   ASSERT_EQ(0, empty.lengthOf());
   ASSERT_TRUE(empty.buffer() == nullptr);
 
-  ASSERT_TRUE(shape::isEmpty(empty.shapeInfo()));
+  ASSERT_TRUE(shape::isEmptyConst(empty.shapeInfo()));
   ASSERT_TRUE(empty.isEmpty());
 }
 
 TEST_F(EmptyTests, Test_Concat_1) {
   //    auto empty = NDArrayFactory::empty_<float>();
-  auto empty = new NDArray('c', {0}, sd::DataType::FLOAT32);  // NDArrayFactory::create_<float>('c', {(sd::LongType)0}};
+  auto empty = new NDArray('c', {0}, FLOAT32);  // NDArrayFactory::create_<float>('c', {(sd::LongType)0}};
   auto vector = NDArrayFactory::create_<float>('c', {1}, {1.0f});
 
   ASSERT_TRUE(empty->isEmpty());
 
-  sd::ops::concat op;
+  ops::concat op;
   auto result = op.evaluate({empty, vector}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -76,14 +74,14 @@ TEST_F(EmptyTests, Test_Concat_1) {
 }
 
 TEST_F(EmptyTests, Test_Concat_2) {
-  auto empty = new NDArray('c', {0}, sd::DataType::FLOAT32);  // NDArrayFactory::empty_<float>();
+  auto empty = new NDArray('c', {0}, FLOAT32);  // NDArrayFactory::empty_<float>();
   auto scalar1 = NDArrayFactory::create_<float>('c', {1}, {1.0f});
   auto scalar2 = NDArrayFactory::create_<float>('c', {1}, {2.0f});
   auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
 
   ASSERT_TRUE(empty->isEmpty());
 
-  sd::ops::concat op;
+  ops::concat op;
   auto result = op.evaluate({empty, scalar1, scalar2}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -104,7 +102,7 @@ TEST_F(EmptyTests, Test_Concat_3) {
 
   ASSERT_TRUE(empty.isEmpty());
 
-  sd::ops::concat op;
+  ops::concat op;
   auto result = op.evaluate({&empty, &scalar1, &scalar2}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -121,7 +119,7 @@ TEST_F(EmptyTests, Test_Concat_4) {
 
   ASSERT_TRUE(empty.isEmpty());
 
-  sd::ops::concat op;
+  ops::concat op;
   auto result = op.evaluate({&scalar1, &empty, &scalar2}, {}, {0});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -142,15 +140,15 @@ TEST_F(EmptyTests, Test_dup_1) {
 
 TEST_F(EmptyTests, test_empty_scatter_1) {
 
-  std::vector<sd::LongType> shape = {5};
-  std::vector<sd::LongType> zero = {0};
+  std::vector<LongType> shape = {5};
+  std::vector<LongType> zero = {0};
   auto x = NDArrayFactory::create<float>('c', shape);
   auto indices = NDArrayFactory::create<int>('c', zero);
   auto updates = NDArrayFactory::create<float>('c',zero);
 
   x.linspace(1.0f);
 
-  sd::ops::scatter_upd op;
+  ops::scatter_upd op;
   auto result = op.evaluate({&x, &indices, &updates}, {}, {}, {true});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -159,15 +157,15 @@ TEST_F(EmptyTests, test_empty_scatter_1) {
 }
 
 TEST_F(EmptyTests, test_empty_scatter_2) {
-  NDArray x('c', {5}, sd::DataType::FLOAT32);
-  NDArray z('c', {5}, sd::DataType::FLOAT32);
-  std::vector<sd::LongType> zero = {0};
+  NDArray x('c', {5}, FLOAT32);
+  NDArray z('c', {5}, FLOAT32);
+  std::vector<LongType> zero = {0};
   auto indices = NDArrayFactory::create<int>('c', zero);
   auto updates = NDArrayFactory::create<float>('c',zero);
 
   x.linspace(1.0f);
 
-  sd::ops::scatter_upd op;
+  ops::scatter_upd op;
   auto status = op.execute({&x, &indices, &updates}, {&z}, {}, {}, {true});
 
   ASSERT_EQ(sd::Status::OK, status);
@@ -177,7 +175,7 @@ TEST_F(EmptyTests, test_empty_scatter_2) {
 
 TEST_F(EmptyTests, test_shaped_empty_1) {
   auto empty = NDArrayFactory::create<float>('c', {2, 0, 3});
-  std::vector<sd::LongType> shape = {2, 0, 3};
+  std::vector<LongType> shape = {2, 0, 3};
 
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
@@ -188,7 +186,7 @@ TEST_F(EmptyTests, test_shaped_empty_1) {
 
 TEST_F(EmptyTests, test_shaped_empty_2) {
   auto empty = NDArrayFactory::create<float>('c', {0, 3});
-  std::vector<sd::LongType> shape = {0, 3};
+  std::vector<LongType> shape = {0, 3};
 
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
@@ -198,9 +196,9 @@ TEST_F(EmptyTests, test_shaped_empty_2) {
 }
 
 TEST_F(EmptyTests, test_shaped_empty_3) {
-  std::vector<sd::LongType> zero = {0};
+  std::vector<LongType> zero = {0};
   auto empty = NDArrayFactory::create<float>('c', zero);
-  std::vector<sd::LongType> shape = {0};
+  std::vector<LongType> shape = {0};
 
   ASSERT_EQ(sd::DataType::FLOAT32, empty.dataType());
   ASSERT_EQ(0, empty.lengthOf());
@@ -210,9 +208,9 @@ TEST_F(EmptyTests, test_shaped_empty_3) {
 }
 
 TEST_F(EmptyTests, test_shaped_empty_4) {
-  const auto shape = ConstantShapeHelper::getInstance().vectorShapeInfo(0, sd::DataType::FLOAT32);
-  NDArray array(shape, true, sd::LaunchContext::defaultContext());
-  std::vector<sd::LongType> shapeOf({0});
+  const auto shape = ConstantShapeHelper::getInstance().vectorShapeInfo(0, FLOAT32);
+  NDArray array(shape, true, LaunchContext::defaultContext());
+  std::vector<LongType> shapeOf({0});
 
   ASSERT_TRUE(array.isEmpty());
   ASSERT_EQ(1, array.rankOf());
@@ -224,7 +222,7 @@ TEST_F(EmptyTests, test_empty_matmul_1) {
   auto y = NDArrayFactory::create<float>('c', {1, 0});
   auto e = NDArrayFactory::create<float>('c', {0, 0});
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 
@@ -237,7 +235,7 @@ TEST_F(EmptyTests, test_empty_matmul_2) {
   auto y = NDArrayFactory::create<float>('c', {1, 4, 0});
   auto e = NDArrayFactory::create<float>('c', {1, 0, 0});
 
-  sd::ops::matmul op;
+  ops::matmul op;
   auto result = op.evaluate({&x, &y}, {}, {});
   ASSERT_EQ(sd::Status::OK, result.status());
 

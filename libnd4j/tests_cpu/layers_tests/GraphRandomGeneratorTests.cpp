@@ -31,8 +31,8 @@ class GraphRandomGeneratorTests : public NDArrayTests {
 };
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_1) {
-  sd::graph::RandomGenerator g0(119);
-  sd::graph::RandomGenerator g1(119);
+  RandomGenerator g0(119);
+  RandomGenerator g1(119);
 
   auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -41,8 +41,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_1) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_2) {
-  sd::graph::RandomGenerator g0(119);
-  sd::graph::RandomGenerator g1(117);
+  RandomGenerator g0(119);
+  RandomGenerator g1(117);
 
   auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -51,8 +51,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_2) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_3) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 10);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 10);
 
   auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -61,8 +61,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_3) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_4) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(117, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(117, 5);
 
   auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -71,8 +71,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_4) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_1) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
   auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -91,8 +91,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_1) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_2) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
   auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -112,8 +112,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_2) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
   auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -133,8 +133,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
   auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
   auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -172,22 +172,22 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
 //#ifndef __clang__
 
 TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
-  std::array<sd::LongType, 10000> z0, z1, z2, z3;
+  std::array<LongType, 10000> z0, z1, z2, z3;
 
   for (int e = 0; e < z0.size(); e++) {
-    z0[e] = g0.relativeT<sd::LongType>(e);
-    z1[e] = g1.relativeT<sd::LongType>(e);
+    z0[e] = g0.relativeT<LongType>(e);
+    z1[e] = g1.relativeT<LongType>(e);
   }
 
   g0.rewindH(z0.size());
   g1.rewindH(z0.size());
 
   for (int e = 0; e < z0.size(); e++) {
-    z2[e] = g0.relativeT<sd::LongType>(e);
-    z3[e] = g1.relativeT<sd::LongType>(e);
+    z2[e] = g0.relativeT<LongType>(e);
+    z3[e] = g1.relativeT<LongType>(e);
   }
 
   // these sequences should be equal
@@ -214,8 +214,8 @@ TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
 }
 
 TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
-  sd::graph::RandomGenerator g0(119, 5);
-  sd::graph::RandomGenerator g1(119, 5);
+  RandomGenerator g0(119, 5);
+  RandomGenerator g1(119, 5);
 
   std::array<double, 100> z0, z1, z2, z3;
 

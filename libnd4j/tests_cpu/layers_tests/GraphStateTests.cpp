@@ -59,8 +59,8 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
   // this call will create scope internally
   state->registerScope(119);
 
-  sd::ops::add opA;
-  sd::ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
+  ops::add opA;
+  ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
 
   ArgumentsList argsA;
   ArgumentsList argsB;
@@ -83,8 +83,8 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
   // this call will create scope internally
   state->registerScope(119);
 
-  sd::ops::add opA;
-  sd::ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
+  ops::add opA;
+  ops::LegacyTransformSameOp opB(transform::Neg);  // simdOps::Neg
 
   ArgumentsList argsA;
   ArgumentsList argsB;

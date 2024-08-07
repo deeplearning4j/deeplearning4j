@@ -37,8 +37,8 @@ class FlatBuffersTest : public NDArrayTests {
  public:
   int alpha = 0;
 
-  sd::LongType *cShape = new sd::LongType[8]{2, 2, 2, 2, 1, 8192, 1, 99};
-  sd::LongType *fShape = new sd::LongType[8]{2, 2, 2, 1, 2, 8192, 1, 102};
+  LongType *cShape = new LongType[8]{2, 2, 2, 2, 1, 8192, 1, 99};
+  LongType *fShape = new LongType[8]{2, 2, 2, 1, 2, 8192, 1, 102};
 
   FlatBuffersTest() {
     Environment::getInstance().setDebug(false);
@@ -140,7 +140,6 @@ TEST_F(FlatBuffersTest, expand_dims) {
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/expand_dim.fb");
 
-  //    graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -158,7 +157,6 @@ TEST_F(FlatBuffersTest, transpose) {
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/transpose.fb");
 
-  // graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -170,7 +168,6 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
   sd::ops::realdiv op0;
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
-  // graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -183,7 +180,6 @@ TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
   sd::Environment::getInstance().setVerbose(false);
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
-  // graph->printOut();
 
   auto timeStart = std::chrono::system_clock::now();
   auto result = GraphExecutioner::execute(graph);
@@ -203,7 +199,6 @@ TEST_F(FlatBuffersTest, Test_Non2D_2) {
   sd::ops::realdiv op0;
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/non2d_2.fb");
-  // graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -263,7 +258,6 @@ TEST_F(FlatBuffersTest, Test_TensorDotMisc) {
        5.f, 3.f, 4.f, 5.f, 5.f, 3.f, 4.f, 3.f, 4.f, 8.f, 6.f, 5.f, 9.f, 6.f});
 
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/tensor_dot_misc.fb");
-  //    graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -422,7 +416,6 @@ TEST_F(FlatBuffersTest, Test_MNIST_00_1) {
 
 TEST_F(FlatBuffersTest, Test_MNIST_1) {
   auto graph = GraphExecutioner::importFromFlatBuffers("./resources/mnist.fb");
-  // graph->printOut();
 
   auto result = GraphExecutioner::execute(graph);
   ASSERT_EQ(sd::Status::OK, result);
@@ -430,52 +423,5 @@ TEST_F(FlatBuffersTest, Test_MNIST_1) {
   delete graph;
 }
 
-/*
-// FIXME: uncomment this test once conv_0 fb reexported
-TEST_F(FlatBuffersTest, nhwc_conv_0) {
-    sd::ops::rank<float> op1;
 
-    auto exp('c', {4, 2}, {2.958640f, 0.602521f, 7.571267f, 1.496686f, -2.292647f, -1.791460f, 13.055838f, 4.278642f});
-
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/conv_0.fb");
-
-    graph->printOut();
-
-    auto result = GraphExecutioner<float>::execute(graph);
-    ASSERT_EQ(sd::Status::OK, result);
-
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(11));
-
-    auto z = graph->getVariableSpace()->getVariable(11)->getNDArray();
-
-
-//    [[2.96,  0.60],
-//    [7.57,  1.50],
-//    [-2.29,  -1.79],
-//    [13.06,  4.28]]
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete graph;
-}
-
-*/
-
-/*
-TEST_F(FlatBuffersTest, ReadLoops_SimpleWhile_1) {
-    // TF graph:
-    // https://gist.github.com/raver119/2aa49daf7ec09ed4ddddbc6262f213a0
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/simple_while.fb");
-
-    ASSERT_TRUE(graph != nullptr);
-
-    sd::Status status = GraphExecutioner<float>::execute(graph);
-
-    ASSERT_EQ(sd::Status::OK, status);
-
-    delete graph;
-}
-
- */
 #endif

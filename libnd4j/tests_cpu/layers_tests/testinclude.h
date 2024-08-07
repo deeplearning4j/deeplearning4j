@@ -39,16 +39,16 @@ SD_INLINE std::string int_array_to_string(sd::LongType int_array[], sd::LongType
   return returnstring;
 }
 
-SD_INLINE ::testing::AssertionResult arrsEquals(sd::LongType n, sd::LongType *assertion, sd::LongType *other) {
+SD_INLINE testing::AssertionResult arrsEquals(sd::LongType n, sd::LongType *assertion, sd::LongType *other) {
   for (int i = 0; i < n; i++) {
     if (assertion[i] != other[i]) {
       std::string message = std::string("Failure at index  ") + std::to_string(i) + std::string(" assertion: ") +
                             int_array_to_string(assertion, n) + std::string(" and test array ") +
                             int_array_to_string(other, n) + std::string("  is not equal");
-      return ::testing::AssertionFailure() << message;
+      return testing::AssertionFailure() << message;
     }
   }
-  return ::testing::AssertionSuccess();
+  return testing::AssertionSuccess();
 }
 
 #endif  // LIBND4J_TESTINCLUDE_H
