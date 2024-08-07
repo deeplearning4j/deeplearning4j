@@ -31,7 +31,14 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
+/**
+ * A backend agnostic abstraction
+ * for creating {@link DataBuffer}
+ * for a given backend.
+ */
 public interface DataBufferFactory {
+
+
 
     /**
      * Setter for the allocation mode
@@ -86,6 +93,27 @@ public interface DataBufferFactory {
      * @return
      */
     DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace);
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+     DataBuffer createBuffer(String[] data);
+
+    /**
+     * Create a databuffer from the given strings
+     * with the given string data type.
+     * Only {@link DataType#UTF8}
+     * {@link DataType#UTF16}
+     * {@link DataType#UTF32}
+     * are accepted otherwise an {@link UnsupportedOperationException}
+     * is thrown.
+     * @param data the data to create the buffer from
+     * @param dataType the data type to use
+     * @return the new buffer
+     */
+     DataBuffer createTypedBuffer(String[] data,DataType dataType);
 
     /**
      * Create a float data buffer

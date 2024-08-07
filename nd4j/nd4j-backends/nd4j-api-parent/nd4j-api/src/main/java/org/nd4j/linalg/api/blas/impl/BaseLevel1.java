@@ -26,10 +26,8 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpProfiler;
 
 public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     /**
@@ -43,10 +41,7 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double dot(long n, double alpha, INDArray X, INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, X, Y);
-
-        if (X.data().dataType() == DataType.DOUBLE) {
+           if (X.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
             return ddot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
         } else if (X.data().dataType() == DataType.FLOAT) {
@@ -88,10 +83,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double nrm2(INDArray arr) {
-
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, arr);
-
         if (arr.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return dnrm2(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
@@ -110,10 +101,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public double asum(INDArray arr) {
-
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, arr);
-
         if (arr.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return dasum(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
@@ -146,9 +133,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
 
     @Override
     public int iamax(long n, INDArray arr, int stride) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, arr);
-
         if (arr.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return idamax(n, arr, stride);
@@ -183,10 +167,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public int iamax(INDArray arr) {
-
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, arr);
-
         if (arr.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, arr);
             return idamax(arr.length(), arr, BlasBufferUtil.getBlasStride(arr));
@@ -215,9 +195,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void swap(INDArray x, INDArray y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, x, y);
-
         if (x.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             dswap(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
@@ -236,9 +213,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void copy(INDArray x, INDArray y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, x, y);
-
         if (x.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             dcopy(x.length(), x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
@@ -283,10 +257,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void axpy(long n, double alpha, INDArray x, INDArray y) {
-
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, x, y);
-
         if (x.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, x, y);
             daxpy(n, alpha, x, BlasBufferUtil.getBlasStride(x), y, BlasBufferUtil.getBlasStride(y));
@@ -344,10 +314,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void rot(long N, INDArray X, INDArray Y, double c, double s) {
-
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, X, Y);
-
         if (X.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
             drot(N, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(X), c, s);
@@ -380,9 +346,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public void scal(long N, double alpha, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, X);
-
         if (X.data().dataType() == DataType.DOUBLE)
             dscal(N, alpha, X, BlasBufferUtil.getBlasStride(X));
         else if (X.data().dataType() == DataType.FLOAT)

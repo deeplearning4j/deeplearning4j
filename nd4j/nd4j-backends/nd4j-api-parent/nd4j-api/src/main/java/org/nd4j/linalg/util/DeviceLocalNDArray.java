@@ -27,7 +27,6 @@ import lombok.val;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.Arrays;
 
@@ -102,11 +101,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
 
         Nd4j.getExecutioner().commit();
 
-        val config = OpProfiler.getInstance().getConfig();
-        val locality = config.isCheckLocality();
 
-        if (locality)
-            config.setCheckLocality(false);
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
@@ -135,7 +130,6 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
             }
         }
 
-        config.setCheckLocality(locality);
     }
 
     /**

@@ -714,9 +714,9 @@ public class ArrayUtil {
 
     /**
      * Credit to mikio braun from jblas
-     * <p/>
+     * <p>
      * Create a random permutation of the numbers 0, ..., size - 1.
-     * <p/>
+     * </p>
      * see Algorithm P, D.E. Knuth: The Art of Computer Programming, Vol. 2, p. 145
      */
     public static int[] randomPermutation(int size) {
@@ -2064,6 +2064,9 @@ public class ArrayUtil {
      * item
      */
     public static long[] removeIndex(long[] data, long... index) {
+        if(data.length < 1)
+            return data;
+
         if (index.length >= data.length) {
             throw new IllegalStateException("Illegal remove: indexes.length > data.length (index.length="
                     + index.length + ", data.length=" + data.length + ")");
@@ -2188,8 +2191,8 @@ public class ArrayUtil {
             n2 *= aShape[axes[0][i]];
         }
 
-        //if listA and listB are empty these donot initialize.
-        //so initializing with {1} which will then get overriden if not empty
+        //if listA and listB are empty these do not initialize.
+        //so initializing with {1} which will then get overridden if not empty
         long[] oldShapeA;
         if (listA.size() == 0) {
             oldShapeA = new long[] {1};
@@ -2345,7 +2348,7 @@ public class ArrayUtil {
 
     /**
      * Note this byte array conversion is a simple cast and not a true
-     * cast. Use {@link #toByteArraySimple(longArray[])} for a true cast.
+     * cast. Use {@link #toByteArraySimple(long[])} for a true cast.
      * @param longArray
      * @return
      */
@@ -3040,6 +3043,33 @@ public class ArrayUtil {
         for (int i = 0; i < arr.length; i++) {
             System.arraycopy(arr[i], 0, ret, count, arr[i].length);
             count += arr[i].length;
+        }
+        return ret;
+    }
+
+    public static String[] flatten(String[][] arr) {
+        if(arr.length == 0 || arr[0].length == 0)
+            return new String[0];
+        String[] ret = new String[arr.length * arr[0].length];
+        int count = 0;
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
+        return ret;
+    }
+
+    public static String[] flatten(String[][][] arr) {
+        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+            return new String[0];
+        String[] ret = new String[arr.length * arr[0].length * arr[0][0].length];
+
+        int count = 0;
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
         }
         return ret;
     }

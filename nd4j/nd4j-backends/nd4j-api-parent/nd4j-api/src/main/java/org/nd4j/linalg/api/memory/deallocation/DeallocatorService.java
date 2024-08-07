@@ -25,9 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.Counter;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpContextTracker;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.*;
@@ -105,7 +105,9 @@ public class DeallocatorService {
      */
     public  interface CustomDeallocatorListener {
 
-       void registerDeallocatable(DeallocatableReference reference);
+        void registerDataBuffer(DataBuffer reference);
+
+        void registerDeallocatable(DeallocatableReference reference);
         /**
          * Adds a listener for deallocation.
          * This intercepts deallocate calls and calls them when the user is ready.
@@ -115,7 +117,11 @@ public class DeallocatorService {
     }
 
 
-
+    public void registerDataBufferToListener(DataBuffer reference) {
+        for(CustomDeallocatorListener listener : listeners) {
+            listener.registerDataBuffer(reference);
+        }
+    }
     public void registerDeallocatbleToListener(DeallocatableReference reference) {
         for(CustomDeallocatorListener listener : listeners) {
             listener.registerDeallocatable(reference);
@@ -220,11 +226,7 @@ public class DeallocatorService {
 
             val desiredDevice = deallocatable.targetDevice();
             val map = deviceMap.get(desiredDevice);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                allocated.incrementCount(deallocatable.getClass().getName(),1.0);
-                referenceTypes.put(deallocatable.getUniqueId(),deallocatable.getClass().getName());
 
-            }
 
             val reference = new DeallocatableReference(deallocatable, map.get(RandomUtils.nextInt(0, numThreads)));
             referenceMap.put(deallocatable.getUniqueId(), reference);
@@ -272,11 +274,6 @@ public class DeallocatorService {
                     } else {
                         // invoking deallocator
                         if (reference != null) {
-                            if(OpContextTracker.getInstance().isEnabled()) {
-                                deallocated.incrementCount(referenceTypes.get(reference.getId()), 1.0);
-                                referenceTypes.remove(reference.getId());
-                            }
-
                             if(!listeners.isEmpty()) {
                                 reference.deallocate();
                                 if(referenceMap.containsKey(reference.getId()))
@@ -302,8 +299,6 @@ public class DeallocatorService {
                             if(referenceMap.containsKey(reference.getId()))
                                 referenceMap.remove(reference.getId());
 
-                            updateDeallocationCount(reference.getId());
-
                         }
 
                         else {
@@ -321,16 +316,4 @@ public class DeallocatorService {
         }
     }
 
-    public void updateDeallocationCount(long deallocatableId) {
-        if(OpContextTracker.getInstance().isEnabled() && referenceTypes.containsKey(deallocatableId)) {
-            deallocated.incrementCount(referenceTypes.get(deallocatableId), 1.0);
-            if(referenceTypes.get(deallocatableId).contains("Context")) {
-                OpContextTracker.getInstance().deallocateContext(deallocatableId);
-            }
-
-            referenceTypes.remove(deallocatableId);
-
-
-        }
-    }
 }

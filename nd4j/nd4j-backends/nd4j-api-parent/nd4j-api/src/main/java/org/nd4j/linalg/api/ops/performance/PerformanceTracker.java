@@ -23,11 +23,9 @@ package org.nd4j.linalg.api.ops.performance;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -94,19 +92,12 @@ public class PerformanceTracker {
 
 
     public long helperStartTransaction() {
-        if (OpProfiler.getInstance().getConfig().isCheckBandwidth())
-            return System.nanoTime();
-        else
             return 0L;
     }
 
 
     public void helperRegisterTransaction(int deviceId, long timeSpentNanos, long numberOfBytes, @NonNull MemcpyDirection direction) {
         // only do something if profiling is enabled
-
-        if (OpProfiler.getInstance().getConfig().isCheckBandwidth()) {
-            addMemoryTransaction(deviceId, System.nanoTime() - timeSpentNanos, numberOfBytes, direction);
-        }
     }
 
     public Map<Integer, Map<MemcpyDirection, Long>> getCurrentBandwidth() {

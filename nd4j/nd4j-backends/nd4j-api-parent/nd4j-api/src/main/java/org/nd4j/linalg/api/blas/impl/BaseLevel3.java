@@ -26,13 +26,10 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpProfiler;
 
 @Slf4j
 public abstract class BaseLevel3 extends BaseLevel implements Level3 {
@@ -54,14 +51,7 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(char Order, char TransA, char TransB, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(true, A, B, C);
-
-
-
         Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(false).transposeB(false).build()));
-
-
         OpExecutionerUtil.checkForAny(C);
     }
 
@@ -70,9 +60,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void gemm(INDArray A, INDArray B, INDArray C, boolean transposeA, boolean transposeB, double alpha,
                     double beta) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(true, A, B, C);
-
         Nd4j.exec(new Mmul(A, B, C, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
 
         OpExecutionerUtil.checkForAny(C);
@@ -97,9 +84,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void symm(char Order, char Side, char Uplo, double alpha, INDArray A, INDArray B, double beta, INDArray C) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, B, C);
-
         if (C.rows() > Integer.MAX_VALUE || C.columns() > Integer.MAX_VALUE ||
             A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE || C.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
@@ -134,9 +118,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void syrk(char Order, char Uplo, char Trans, double alpha, INDArray A, double beta, INDArray C) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, C);
-
         if (C.rows() > Integer.MAX_VALUE ||
                 A.size(0) > Integer.MAX_VALUE ||
                 C.size(0) > Integer.MAX_VALUE) {
@@ -173,9 +154,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void syr2k(char Order, char Uplo, char Trans, double alpha, INDArray A, INDArray B, double beta,
                     INDArray C) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, B, C);
-
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
             A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE || C.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
@@ -212,9 +190,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     @Override
     public void trmm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B,
                     INDArray C) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, B, C);
-
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
             A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
@@ -250,9 +225,6 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
      */
     @Override
     public void trsm(char Order, char Side, char Uplo, char TransA, char Diag, double alpha, INDArray A, INDArray B) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, B);
-
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
             A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();

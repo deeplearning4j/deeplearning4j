@@ -24,7 +24,6 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
-import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.linalg.profiler.data.RunTimeMemory;
 import org.nd4j.linalg.profiler.data.WorkspaceInfo;
 

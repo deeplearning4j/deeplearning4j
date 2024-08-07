@@ -88,7 +88,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
 
     @Getter
-    private Map<String,OpContext> opContexts = new HashMap<>();
+    private Map<String,OpContext> opContexts = new LinkedHashMap<>();
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
@@ -793,8 +793,8 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
             return Invoke.doInvoke(invoke,inputs,valueInputs);
         } else if (op instanceof Assert) {
-            Assert a = (Assert)op;
-            boolean condition = !opContext.getInputArray(0).isEmpty() &&  opContext.getInputArray(0).getDouble(0) != 0.0;
+            Assert a = (Assert) op;
+            boolean condition =  !opContext.getInputArray(0).isEmpty() && opContext.getInputArray(0).getDouble(0) != 0.0;
             if(!condition) {
                 //Assertion failed
                 String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";

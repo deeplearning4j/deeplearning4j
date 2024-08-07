@@ -34,7 +34,7 @@ public class WorkspacesCloseable implements AutoCloseable {
 
     @Override
     public void close() {
-        for( int i=workspaces.length-1; i>=0; i-- ){
+        for( int i = workspaces.length - 1; i >= 0; i--) {
             workspaces[i].close();
         }
     }

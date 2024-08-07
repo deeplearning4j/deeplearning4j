@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.workspace.WorkspaceMgr;
 
 public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     String DEFAULT_ID = "DefaultWorkspace";
@@ -46,11 +47,58 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     }
 
     /**
+     * This method returns the stack trace
+     * from when this workspace was entered
+     * @return
+     */
+    StackTraceElement[] lastEntered();
+
+    /**
+     * This method returns the stack trace
+     * from when this workspace was closed
+     * @return
+     */
+    StackTraceElement[] lastClosed();
+
+    /**
+     * This method returns the stack trace
+     * from when this workspace was last borrowed
+     * @return
+     */
+    StackTraceElement[] lastBorrowed();
+
+    /**
+     * Set the workspace manager.
+     * This is only needed for notifications for logging
+     * when this workspace is destroyed/closed.
+     * @param mgr
+     */
+    void setWorkspaceMgr(WorkspaceMgr mgr);
+
+    /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance
      *
      * @return
      */
     WorkspaceConfiguration getWorkspaceConfiguration();
+
+    /**
+     * This method sets asn associated enum type
+     * to be used for logging purposes.
+     * This is mainly used with deeplearning4j's
+     * ArrayType and the dl4j network workspaces
+     * but can easily be used with any enum based type specified in the
+     * super class.
+     * @param enumType the enum type to use
+     */
+    void setAssociatedEnumType(Enum enumType);
+
+    /**
+     * This method returns associated enum type, if any
+     * @return
+     */
+    Enum getAssociatedEnumType();
+
 
     /**
      * This method returns Type of this workspace
@@ -151,7 +199,7 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     void destroyWorkspace(boolean extended);
 
     /**
-     * This method allows you to temporary disable/enable given Workspace use.
+     * This method allows you to temporarily disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.
      *
      * @param isEnabled

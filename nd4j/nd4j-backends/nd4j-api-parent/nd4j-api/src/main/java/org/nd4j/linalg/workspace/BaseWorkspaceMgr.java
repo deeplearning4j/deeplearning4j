@@ -22,34 +22,125 @@ package org.nd4j.linalg.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.util.StackTraceUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
+import org.nd4j.linalg.api.memory.WorkspaceUseMetaData;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
+import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicReference;
 
+import static org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner.allOpenWorkspaces;
+
+/**
+ * A {@link WorkspaceMgr} for use with {@link INDArray} instances.<br>
+ * This class handles the creation and initializiation of workspaces, and provides methods for validating that arrays
+ * are in the correct workspace, and leveraging arrays to the correct workspace.<br>
+ * <br>
+ * <b>Usage:</b><br>
+ * {@code
+ * WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+ *     .initialSize(10 * 1024L * 1024L)  //10MB initial workspace size
+ *     .overallocationLimit(3.0)         //Allocate 3x initialSize as workspace grows
+ *     .policyAllocation(AllocationPolicy.OVERALLOCATE)  //Allocate over and above what was initially requested
+ *     .policyLearning(LearningPolicy.FIRST_LOOP)        //Learn overallocation after first iteration
+ *     .policyMirroring(MirroringPolicy.FULL)            //Preallocate workspace for use on both host (CPU) and device (GPU)
+ *     .policySpill(SpillPolicy.REALLOCATE)              //Reallocate workspaces when they are full. This means data will be copied
+ *     .build();                                             // from workspace to system memory (and back) when necessary
+ *                                                  //Use SPILL_EXTERNAL if you want workspaces to spill directly to disk when full
+ *                                                  //Use SPILL_RESET for behavior like SPILL_EXTERNAL, but the workspace will be
+ *                                                  // automatically reset to 0 if/when it is closed
+ *                                                  //Use NO_SPILL to disable spilling. Once the workspace is full, any further
+ *                                                  // attempt to allocate memory will result in an exception
+ *                                                  //Use EXTERNAL if you want workspaces to spill directly to disk when full
+ *                                                  //Use RESET for behavior like EXTERNAL, but the workspace will be
+ *                                                  // automatically reset to 0 if/when it is closed
+ *                                                  //Use NONE to disable spilling. Once the workspace is full, any further
+ *                                                  // attempt to allocate memory will result in an exception
+ *                                                  //Use ALWAYS if you want workspaces to always spill to disk when full
+ *
+ * @param <T> Enum type for the array type
+ */
 @Slf4j
 public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     private static final boolean DISABLE_LEVERAGE = false;  //Mainly for debugging/optimization purposes
 
-    protected final Set<T> scopeOutOfWs;
-    protected final Map<T, WorkspaceConfiguration> configMap;
-    protected final Map<T, String> workspaceNames;
+    protected  Set<T> scopeOutOfWs;
+    protected  Map<T, WorkspaceConfiguration> configMap;
+    protected  Map<T, String> workspaceNames;
+    protected AtomicReference<StackTraceElement[]> lastWorkspaceEntered = new AtomicReference<>();
+    protected Map<T,StackTraceElement[]> lastWorkspaceEnteredMap = new ConcurrentHashMap<>();
+    @Override
+    public void recordWorkspaceClose(MemoryWorkspace workspace, T type) {
+        recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes.CLOSE,workspace, type);
+    }
+
+    @Override
+    public void recordWorkspaceOpen(MemoryWorkspace workspace, T arrayType) {
+        recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes.ENTER,workspace, arrayType);
+    }
+
+
+    @Override
+    public void recordWorkspaceBorrow(MemoryWorkspace workspace, T type) {
+        recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes.BORROW,workspace, type);
+    }
+
+
+    @Override
+    public void recordWorkspaceSet(MemoryWorkspace workspace, T type) {
+        recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes.SET_CURRENT,workspace, type);
+    }
+
+
+    @Override
+    public void closeWorkspace(T... types) {
+        for(T type : types) {
+            if(configMap.containsKey(type)) {
+                String workspaceName = getWorkspaceName(type);
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceName).close();
+            }
+        }
+    }
+
+    protected void recordWorkspaceEvent(WorkspaceUseMetaData.EventTypes eventType, MemoryWorkspace workspace, T arrayType) {
+        if(workspace == null)
+            return;
+        WorkspaceUseMetaData workspaceUseMetaData = WorkspaceUseMetaData.builder()
+                .stackTrace(Thread.currentThread().getStackTrace())
+                .workspaceActivateAtTimeOfEvent(workspace.isScopeActive())
+                .generation(workspace.getGenerationId())
+                .uniqueId(workspace.getUniqueId())
+                .workspaceSize(workspace.getCurrentSize())
+                .lastCycleAllocations(workspace.getLastCycleAllocations())
+                .eventTime(System.currentTimeMillis())
+                .workspaceName(workspace.getId())
+                .eventType(eventType)
+                .associatedEnum(arrayType)
+                .threadName(Thread.currentThread().getName())
+                .build();
+        Nd4j.getExecutioner().getNd4jEventLog().recordWorkspaceEvent(workspaceUseMetaData);
+
+    }
+
 
     protected BaseWorkspaceMgr(Set<T> scopeOutOfWs, Map<T, WorkspaceConfiguration> configMap,
-                               Map<T, String> workspaceNames){
+                               Map<T, String> workspaceNames) {
         this.scopeOutOfWs = scopeOutOfWs;
         this.configMap = configMap;
         this.workspaceNames = workspaceNames;
     }
 
-    protected BaseWorkspaceMgr(){
+    protected BaseWorkspaceMgr() {
         scopeOutOfWs = new HashSet<>();
         configMap = new HashMap<>();
         workspaceNames = new HashMap<>();
@@ -68,8 +159,6 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     @Override
     public void setScopedOutFor(@NonNull T arrayType) {
         scopeOutOfWs.add(arrayType);
-        configMap.remove(arrayType);
-        workspaceNames.remove(arrayType);
     }
 
     @Override
@@ -78,19 +167,24 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
-    public boolean hasConfiguration(@NonNull T arrayType){
+    public boolean hasConfiguration(@NonNull T arrayType) {
         return scopeOutOfWs.contains(arrayType) || workspaceNames.containsKey(arrayType);
     }
 
     @Override
     public MemoryWorkspace notifyScopeEntered(@NonNull T arrayType) {
         validateConfig(arrayType);
-
         if(isScopedOut(arrayType)) {
+            recordWorkspaceOpen(Nd4j.getWorkspaceManager().scopeOutOfWorkspaces(), arrayType);
             return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
         } else {
+            lastWorkspaceEntered.set(Thread.currentThread().getStackTrace());
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                     getConfiguration(arrayType), getWorkspaceName(arrayType));
+            ws.setAssociatedEnumType(arrayType);
+            ws.setWorkspaceMgr(this);
+            recordWorkspaceOpen(ws, arrayType);
+            lastWorkspaceEnteredMap.put(arrayType,Thread.currentThread().getStackTrace());
             return ws.notifyScopeEntered();
         }
     }
@@ -98,7 +192,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     @Override
     public WorkspacesCloseable notifyScopeEntered(@NonNull T... arrayTypes) {
         MemoryWorkspace[] ws = new MemoryWorkspace[arrayTypes.length];
-        for(int i=0; i<arrayTypes.length; i++ ){
+        for(int i = 0; i < arrayTypes.length; i++) {
             ws[i] = notifyScopeEntered(arrayTypes[i]);
         }
         return new WorkspacesCloseable(ws);
@@ -110,10 +204,14 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         enforceExistsAndActive(arrayType);
 
         if(scopeOutOfWs.contains(arrayType)) {
+            recordWorkspaceBorrow(Nd4j.getWorkspaceManager().scopeOutOfWorkspaces(), arrayType);
             return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
         } else {
             MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                     getConfiguration(arrayType), getWorkspaceName(arrayType));
+            ws.setWorkspaceMgr(this);
+            recordWorkspaceBorrow(ws, arrayType);
+
             return ws.notifyScopeBorrowed();
         }
     }
@@ -148,7 +246,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public void assertOpen(T arrayType, String msg) throws ND4JWorkspaceException {
-        if(!scopeOutOfWs.contains(arrayType) && !isWorkspaceOpen(arrayType)){
+        if(!scopeOutOfWs.contains(arrayType) && !isWorkspaceOpen(arrayType)) {
             throw new ND4JWorkspaceException("Assertion failed: expected workspace for array type " + arrayType
                     + " to be open: " + msg);
         }
@@ -163,10 +261,29 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     }
 
     @Override
+    public void setCurrentWorkspace(T arrayType) {
+        validateConfig(arrayType);
+        if(scopeOutOfWs.contains(arrayType)) {
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        } else {
+            String workspaceName = getWorkspaceName(arrayType);
+            MemoryWorkspaceManager workspaceManager = Nd4j.getWorkspaceManager();
+            MemoryWorkspace workspaceForCurrentThread = workspaceManager.getWorkspaceForCurrentThread(workspaceName);
+            workspaceForCurrentThread.setAssociatedEnumType(arrayType);
+            recordWorkspaceSet(workspaceForCurrentThread, arrayType);
+            if(workspaceForCurrentThread != null) {
+                Nd4j.getMemoryManager().setCurrentWorkspace(workspaceForCurrentThread);
+            } else {
+                throw new IllegalArgumentException("Workspace for array type " + arrayType + " not found.");
+            }
+        }
+    }
+
+    @Override
     public void assertCurrentWorkspace(@NonNull T arrayType, String msg) {
         validateConfig(arrayType);
         MemoryWorkspace curr = Nd4j.getMemoryManager().getCurrentWorkspace();
-        if(!scopeOutOfWs.contains(arrayType) && (curr == null || !getWorkspaceName(arrayType).equals(curr.getId()))){
+        if(!scopeOutOfWs.contains(arrayType) && (curr == null || !getWorkspaceName(arrayType).equals(curr.getId()))) {
             throw new ND4JWorkspaceException("Assertion failed: expected current workspace to be \"" + getWorkspaceName(arrayType)
                     + "\" (for array type " + arrayType + ") - actual current workspace is " + (curr == null ? null : curr.getId())
                     + (msg == null ? "" : ": " + msg));
@@ -175,20 +292,49 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
     @Override
     public INDArray leverageTo(@NonNull T arrayType, @NonNull INDArray array) {
-        if(array == null || !array.isAttached()){
-            return array;
+        if(array == null || !array.isAttached()) {
+
+
+            if(!DISABLE_LEVERAGE) {
+                if(scopeOutOfWs.contains(arrayType)) {
+                    return array.detach();
+                }
+                String workspaceName = getWorkspaceName(arrayType);
+                INDArray ret =  array.leverageTo(workspaceName, true);
+                if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                    Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(array.getId(),
+                            NDArrayEvent.builder()
+                                    .stackTrace(Thread.currentThread().getStackTrace())
+                                    .parentDataAtEvent(NDArrayMetaData.fromArr(array))
+                                    .dataAtEvent(NDArrayMetaData.from(ret))
+                                    .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
+                                    .build());
+                }
+            }
         }
+
         validateConfig(arrayType);
         enforceExistsAndActive(arrayType);
 
-        if(!DISABLE_LEVERAGE){
-            if(scopeOutOfWs.contains(arrayType)){
+        if(!DISABLE_LEVERAGE) {
+            if(scopeOutOfWs.contains(arrayType)) {
                 return array.detach();
             }
-            return array.leverageTo(getWorkspaceName(arrayType), true);
+            INDArray ret =  array.leverageTo(getWorkspaceName(arrayType), true);
+            if(Nd4j.getEnvironment().isLogNDArrayEvents()) {
+                Nd4j.getExecutioner().getNd4jEventLog().addToNDArrayLog(array.getId(),
+                        NDArrayEvent.builder()
+                                .stackTrace(Thread.currentThread().getStackTrace())
+                                .parentDataAtEvent(NDArrayMetaData.fromArr(array))
+                                .dataAtEvent(NDArrayMetaData.from(ret))
+                                .ndArrayEventType(NDArrayEventType.ARRAY_WORKSPACE_LEVERAGE)
+                                .build());
+            }
+
+            return ret;
         } else {
-            if(array.isAttached()){
-                if(!array.data().getParentWorkspace().getId().equals(getWorkspaceName(arrayType))){
+            if(array.isAttached()) {
+                if(!array.data().getParentWorkspace().getId().equals(getWorkspaceName(arrayType))) {
                     throw new IllegalStateException("Array of type " + arrayType + " is leveraged from " + array.data().getParentWorkspace().getId()
                             + " to " + getWorkspaceName(arrayType) + " but WorkspaceMgn.leverageTo() is currently disabled");
                 }
@@ -201,10 +347,10 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
     public INDArray validateArrayLocation(@NonNull T arrayType, @NonNull INDArray array, boolean migrateIfInvalid, boolean exceptionIfDetached) {
         validateConfig(arrayType);
 
-        if(scopeOutOfWs.contains(arrayType)){
+        if(scopeOutOfWs.contains(arrayType)) {
             //Array is supposed to be detached (no workspace)
             boolean ok = !array.isAttached();
-            if(!ok){
+            if(!ok) {
                 if(migrateIfInvalid) {
                     log.trace("Migrating array of type " + arrayType + " to workspace " + getWorkspaceName(arrayType));
                     return leverageTo(arrayType, array);
@@ -220,7 +366,7 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
         //At this point: we expect the array to be in a workspace
         String wsNameExpected = getWorkspaceName(arrayType);
-        if(!array.isAttached()){
+        if(!array.isAttached()) {
             if(exceptionIfDetached) {
                 throw new ND4JWorkspaceException("Array workspace validation failed: Array of type " + arrayType +
                         " should be in workspace \"" + wsNameExpected + "\" but is detached");
@@ -231,8 +377,8 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
 
 
         String wsNameAct = array.data().getParentWorkspace().getId();
-        if(!wsNameExpected.equals(wsNameAct)){
-            if(migrateIfInvalid){
+        if(!wsNameExpected.equals(wsNameAct)) {
+            if(migrateIfInvalid) {
                 return leverageTo(arrayType, array);
             } else {
                 throw new ND4JWorkspaceException("Array workspace validation failed: Array of type " + arrayType +
@@ -250,12 +396,31 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         return create(arrayType, dataType, shape, Nd4j.order());
     }
 
+    /**
+     * This method creates INDArray of specified dataType and shape, and puts it into Workspace, if any.
+     * has with respect to the java deallocator service.
+     *
+     * All crashes now seem to be induced by java side free calls.
+     *
+     * We need to figure out where these free calls are coming from
+     * and why they crash everything. The guess is the way
+     * deallocation + workspace closing works. This is the most recent set of changes
+     * made.
+     *
+     * @param arrayType Array type
+     * @param dataType  Data type for the created array
+     * @param shape     Shape
+     * @param order Order of the array
+     * @return
+     */
+
     @Override
     public INDArray create(@NonNull T arrayType, @NonNull DataType dataType, @NonNull long[] shape, @NonNull char order) {
         enforceExistsAndActive(arrayType);
-        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
             return Nd4j.create(dataType, shape, order);
         }
+
     }
 
     @Override
@@ -269,16 +434,16 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
             return Nd4j.createUninitialized(dataType, shape, order);
         }
+
     }
 
     @Override
     public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order) {
         enforceExistsAndActive(arrayType);
-        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+        try (MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
             return toDup.dup(order);
         }
     }
-
     @Override
     public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup) {
         return dup(arrayType, toDup, toDup.ordering());
@@ -298,32 +463,53 @@ public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMg
             try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)) {
                 return toCast.castTo(dataType);
             }
+
         }
     }
 
 
     private void validateConfig(@NonNull T arrayType) {
-        if(scopeOutOfWs.contains(arrayType)){
+        if(scopeOutOfWs.contains(arrayType)) {
             return;
         }
 
-        if(!configMap.containsKey(arrayType)){
+        if(!configMap.containsKey(arrayType)) {
             throw new ND4JWorkspaceException("No workspace configuration has been provided for arrayType: " + arrayType);
         }
-        if(!workspaceNames.containsKey(arrayType)){
+        if(!workspaceNames.containsKey(arrayType)) {
             throw new ND4JWorkspaceException("No workspace name has been provided for arrayType: " + arrayType);
         }
     }
 
     private void enforceExistsAndActive(@NonNull T arrayType) {
         validateConfig(arrayType);
-        if(scopeOutOfWs.contains(arrayType)){
+        if(scopeOutOfWs.contains(arrayType)) {
             return;
         }
 
-        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceNames.get(arrayType))) {
-            throw new ND4JWorkspaceException("Workspace \"" + workspaceNames.get(arrayType) + "\" for array type " + arrayType
-                    + " is not open");
+        String name = workspaceNames.get(arrayType);
+        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(name)) {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("Workspace \"").append(name).append("\" for array type ").append(arrayType)
+                    .append(" is not open. Workspaces open: ").append(allOpenWorkspaces());
+
+            MemoryWorkspaceManager workspaceManager = Nd4j.getWorkspaceManager();
+            List<MemoryWorkspace> allWorkspacesForCurrentThread = workspaceManager.getAllWorkspacesForCurrentThread();
+            for(MemoryWorkspace memoryWorkspace : allWorkspacesForCurrentThread) {
+                if(memoryWorkspace.getId().equals(name)) {
+                    stringBuilder.append("Last opened: ");
+                    stringBuilder.append(StackTraceUtils.renderStackTrace(memoryWorkspace.lastEntered()));
+                    stringBuilder.append("Last closed:");
+                    stringBuilder.append(StackTraceUtils.renderStackTrace(memoryWorkspace.lastClosed()));
+                }
+            }
+
+
+            throw new ND4JWorkspaceException(stringBuilder.toString());
         }
     }
+
+
+
+
 }

@@ -44,7 +44,6 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.*;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,6 +72,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
     protected transient OpaqueDataBuffer ptrDataBuffer;
     protected transient Deallocator deallocator;
+    protected StackTraceElement[] allocationTrace =  Nd4j.getEnvironment().isFuncTracePrintAllocate()
+            || Nd4j.getEnvironment().isFuncTracePrintJavaOnly() ?
+            Thread.currentThread().getStackTrace() : null;
+
 
     protected DataType type;
     protected long length;
@@ -97,11 +100,17 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient long originalOffset = 0;
 
     protected transient boolean constant = false;
-    protected transient boolean released = false;
+    protected transient AtomicBoolean released = new AtomicBoolean(false);
 
     protected transient AtomicBoolean referenced = new AtomicBoolean(false);
 
     public BaseDataBuffer() {}
+
+
+    @Override
+    public StackTraceElement[] allocationTrace() {
+        return allocationTrace;
+    }
 
     @Override
     public Deallocator deallocator() {
@@ -115,6 +124,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public OpaqueDataBuffer opaqueBuffer() {
+        if(offset > 0) {
+            return ptrDataBuffer.createView(length * elementSize,offset * elementSize);
+        }
         return ptrDataBuffer;
     }
 
@@ -157,6 +169,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (length > 0 || indexer != null) {
             this.pointer = pointer;
             setIndexer(indexer);
+        }
+        if(!Nd4j.getDeallocatorService().getListeners().isEmpty()) {
+            Nd4j.getDeallocatorService().registerDataBufferToListener(this);
         }
     }
 
@@ -217,6 +232,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         pointer = underlyingBuffer.pointer();
         setIndexer(underlyingBuffer.indexer());
+
+
     }
 
     /**
@@ -243,7 +260,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     @Override
     public Indexer indexer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return indexer;
@@ -251,7 +268,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer pointer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         if (underlyingDataBuffer() != null && underlyingDataBuffer() != this) {
@@ -261,10 +278,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return underlyingDataBuffer().pointer();
         } else {
             if (underlyingDataBuffer() != null)
-                if (((BaseDataBuffer) underlyingDataBuffer()).released)
+                if (((BaseDataBuffer) underlyingDataBuffer()).released.get())
                     throw new IllegalStateException("Underlying buffer was released via close() call");
 
-            if (released)
+            if (released.get())
                 throw new IllegalStateException("This buffer was already released via close() call");
 
             return pointer;
@@ -331,7 +348,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long address() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return pointer().address();
@@ -761,7 +778,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double getDouble(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         if (indexer == null) {
@@ -801,7 +818,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long getLong(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -842,7 +859,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return
      */
     protected short getShort(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -885,7 +902,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float getFloat(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -922,7 +939,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public int getInt(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -959,7 +976,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Number getNumber(long i) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         if (dataType() == DataType.DOUBLE)
@@ -996,7 +1013,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, float element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1046,7 +1063,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, double element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1098,7 +1115,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, short element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1149,7 +1166,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, int element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1199,7 +1216,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, boolean element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1249,7 +1266,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i,long element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1299,7 +1316,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(float[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1351,7 +1368,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(double[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1402,7 +1419,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(int[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1453,7 +1470,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(boolean[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1504,7 +1521,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(short[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1555,7 +1572,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(byte[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -1605,7 +1622,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long[] element) {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         switch (dataType()) {
@@ -2230,7 +2247,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean shouldDeAllocate() {
-        return !isConstant() && !released;
+        return !isConstant() && !released.get();
     }
 
     @Override
@@ -2267,13 +2284,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public MemoryWorkspace getParentWorkspace() {
-        if(parentWorkspace != null){
+        if(parentWorkspace != null) {
             return parentWorkspace;
         }
-        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null){
+        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null) {
             return wrappedDataBuffer.getParentWorkspace();
         }
-        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null){
+        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null) {
             return originalBuffer.getParentWorkspace();
         }
         return null;
@@ -2291,7 +2308,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean closeable() {
-        if (released || isAttached() || isConstant())
+        if (released.get() || isAttached() || isConstant())
             return false;
 
         if (wrappedDataBuffer != null && wrappedDataBuffer != this)
@@ -2310,7 +2327,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     protected void release() {
-        this.released = true;
+        this.released.set(true);
         this.indexer = null;
         this.pointer = null;
         Nd4j.getDeallocatorService().getReferenceMap().remove(deallocationId);
@@ -2328,7 +2345,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (wrappedDataBuffer != null && wrappedDataBuffer != this)
             return wrappedDataBuffer.wasClosed();
 
-        return released;
+        return released.get();
     }
 
 

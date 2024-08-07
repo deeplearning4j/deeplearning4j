@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.ops.*;
-import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.LogEvent;
@@ -5561,14 +5560,6 @@ public class Nd4j {
     }
 
 
-    /**
-     * Returns the {@link UnifiedProfiler}
-     * containing methods for both op execution and memory.
-     * @return
-     */
-    public static UnifiedProfiler getProfiler() {
-        return UnifiedProfiler.getInstance();
-    }
 
     /**
      * This method returns sizeOf(currentDataType), in bytes

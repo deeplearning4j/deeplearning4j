@@ -390,8 +390,8 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     @Override
     public void close() {
         getArraysForThread().values().stream().forEach(input -> input.stream().forEach(arr -> {
-            if (arr.closeable())
-                arr.close();
+           // if (arr.closeable())
+           //     arr.close();
         }));
     }
 
