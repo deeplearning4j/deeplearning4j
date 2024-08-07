@@ -44,7 +44,6 @@ import java.util.Collection;
  */
 public class Utf8Buffer extends BaseCpuDataBuffer {
 
-    protected Collection<Pointer> references = new ArrayList<>();
 
     @Getter
     protected long numWords = 0;

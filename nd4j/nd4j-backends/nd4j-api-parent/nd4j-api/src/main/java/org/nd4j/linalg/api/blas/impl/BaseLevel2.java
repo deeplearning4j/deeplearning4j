@@ -26,12 +26,10 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.OpProfiler;
 
 public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     /**
@@ -51,44 +49,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
-        GemvParameters parameters = new GemvParameters(A, X, Y);
-
         Nd4j.exec(new Mmul(A, X, Y, alpha, beta, MMulTranspose.builder().transposeA(false).build()));
-
-        /*
-        if (A.data().dataType() == DataType.DOUBLE) {
-            DefaultOpExecutioner.validateDataType(DataType.DOUBLE, parameters.getA(), parameters.getX(),
-                            parameters.getY());
-            dgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), alpha, parameters.getA(),
-                            parameters.getLda(), parameters.getX(), parameters.getIncx(), beta, parameters.getY(),
-                            parameters.getIncy());
-        } else if (A.data().dataType() == DataType.FLOAT){
-            DefaultOpExecutioner.validateDataType(DataType.FLOAT, parameters.getA(), parameters.getX(),
-                            parameters.getY());
-            sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
-                            parameters.getA(), parameters.getLda(), parameters.getX(), parameters.getIncx(),
-                            (float) beta, parameters.getY(), parameters.getIncy());
-        } else if (A.data().dataType() == DataType.HALF) {
-            DefaultOpExecutioner.validateDataType(DataType.HALF, parameters.getA(), parameters.getX(),
-                    parameters.getY());
-
-            // TODO: provide optimized GEMV kernel eventually
-            val fA = parameters.getA().castTo(DataType.FLOAT);
-            val fX = parameters.getX().castTo(DataType.FLOAT);
-            val fY = parameters.getY().castTo(DataType.FLOAT);
-
-            sgemv(order, parameters.getAOrdering(), parameters.getM(), parameters.getN(), (float) alpha,
-                    fA, parameters.getLda(), fX, parameters.getIncx(),
-                    (float) beta, fY, parameters.getIncy());
-
-            Y.assign(fY);
-        } else {
-            throw new ND4JIllegalStateException("Unsupported data type " + A.dataType());
-        }
-        */
         OpExecutionerUtil.checkForAny(Y);
     }
 
@@ -112,8 +73,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, double alpha, INDArray A, INDArray X, double beta,
                     INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
@@ -141,9 +100,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void ger(char order, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
         if (X.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, X, Y);
             if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
@@ -172,10 +128,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void sbmv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
-        if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE) {
+         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
         }
         if (X.data().dataType() == DataType.DOUBLE) {
@@ -202,9 +155,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spmv(char order, char Uplo, double alpha, INDArray Ap, INDArray X, double beta, INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, Ap, X, Y);
-
         if (X.length() > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
         }
@@ -232,10 +182,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr(char order, char Uplo, double alpha, INDArray X, INDArray Ap) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, Ap, X);
-
-
         if (X.length() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -263,9 +209,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void spr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
         if (X.length() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -295,9 +238,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void symv(char order, char Uplo, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -326,9 +266,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr(char order, char Uplo, int N, double alpha, INDArray X, INDArray A) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X);
-
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -353,9 +290,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void syr2(char order, char Uplo, double alpha, INDArray X, INDArray Y, INDArray A) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X, Y);
-
         if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -383,9 +317,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X);
-
         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE) {
             throw new ND4JArraySizeException();
         }
@@ -411,9 +342,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tbsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X);
-
         if (X.length() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE ) {
             throw new ND4JArraySizeException();
         }
@@ -440,10 +368,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpmv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, Ap, X);
-
-        if (Ap.length() > Integer.MAX_VALUE)
+          if (Ap.length() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
         if (X.data().dataType() == DataType.DOUBLE) {
@@ -469,9 +394,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void tpsv(char order, char Uplo, char TransA, char Diag, INDArray Ap, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, Ap, X);
-
         if (X.length() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -498,10 +420,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trmv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X);
-
-        if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
+          if (X.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
         if (A.data().dataType() == DataType.DOUBLE) {
@@ -527,9 +446,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
      */
     @Override
     public void trsv(char order, char Uplo, char TransA, char Diag, INDArray A, INDArray X) {
-        if (OpProfiler.getInstance().getConfig().isCheckElapsedTime())
-            OpProfiler.getInstance().processBlasCall(false, A, X);
-
         if (A.length() > Integer.MAX_VALUE || A.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 

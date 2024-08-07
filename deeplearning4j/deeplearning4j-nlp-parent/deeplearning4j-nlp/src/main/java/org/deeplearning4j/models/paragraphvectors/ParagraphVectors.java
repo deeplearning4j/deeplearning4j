@@ -20,8 +20,6 @@
 
 package org.deeplearning4j.models.paragraphvectors;
 
-import org.deeplearning4j.models.sequencevectors.SequenceVectors;
-import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.shade.guava.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

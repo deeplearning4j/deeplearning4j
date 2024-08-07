@@ -35,6 +35,8 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.List;
@@ -61,6 +63,14 @@ public interface OpExecutioner {
         BANDWIDTH,
     }
 
+
+    /**
+     * When {@link Environment#isLogNDArrayEvents()}
+     *  is true all arrays will log to {@link #getNd4jEventLog()}
+     * @return
+     */
+    Nd4jEventLog getNd4jEventLog();
+
     /**
      * This method returns true if verbose mode is enabled, false otherwise
      * @return
@@ -80,6 +90,12 @@ public interface OpExecutioner {
      */
     ExecutionerType type();
 
+
+    OpContext injectNewContext();
+
+    void clearOpContext();
+
+    void setNextOpContext(OpContext context);
 
     /**
      * This method returns opName of the last invoked op
@@ -390,6 +406,8 @@ public interface OpExecutioner {
      */
     INDArrayStatistics inspectArray(INDArray array);
 
+
+    DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView);
 
     /**
      * This method returns shapeInfo DataBuffer

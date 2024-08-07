@@ -56,7 +56,6 @@ import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
 import org.nd4j.graph.ExecutionMode;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -7010,32 +7009,6 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
-    /**
-     * Import a frozen Tensorflow graph to a new SameDiff graph.
-     *
-     * @param graphFile The text or binary file containing the graph
-     * @return The imported graph
-     */
-    public static SameDiff importFrozenTF(File graphFile) {
-        return TFGraphMapper.importGraph(graphFile);
-    }
-
-    /**
-     * See {@link #importFrozenTF(File)}
-     */
-    public static SameDiff importFrozenTF(GraphDef graphDef) {
-        return TFGraphMapper.importGraph(graphDef);
-    }
-
-
-    /**
-     * See {@link #importFrozenTF(File)}
-     * <p>
-     * Again, the input can be text or binary.
-     */
-    public static SameDiff importFrozenTF(InputStream graph) {
-        return TFGraphMapper.importGraph(graph);
-    }
 
 
     /**

@@ -47,6 +47,30 @@ public class WorkspaceUtils {
         assertNoWorkspacesOpen(msg, false);
     }
 
+
+    /**
+     * Assert that no workspaces are currently open
+     *
+     * @param msg Message to include in the exception, if required
+     * @param allowScopedOut If true: don't fail if we have an open workspace but are currently scoped out
+     */
+    public static void closeWorkspacesForCurrentThread(boolean allowScopedOut) throws ND4JWorkspaceException {
+        if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
+
+            MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
+            if(allowScopedOut && (currWs == null || currWs instanceof DummyWorkspace))
+                return; //Open WS but we've scoped out
+
+            List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
+            for (MemoryWorkspace ws : l) {
+                if(ws.isScopeActive()) {
+                    ws.close();
+                }
+            }
+
+        }
+    }
+
     /**
      * Assert that no workspaces are currently open
      *
@@ -106,8 +130,8 @@ public class WorkspaceUtils {
      * @param array Array to check
      * @param msg   Message (prefix) to include in the exception, if required. May be null
      */
-    public static void assertValidArray(INDArray array, String msg){
-        if(array == null || !array.isAttached()){
+    public static void assertValidArray(INDArray array, String msg) {
+        if(array == null || !array.isAttached()) {
             return;
         }
 
@@ -119,7 +143,6 @@ public class WorkspaceUtils {
                 throw new ND4JWorkspaceException( (msg == null ? "" : msg + ": ") + "Array uses leaked workspace pointer " +
                         "from workspace " + ws.getId() + "\nAll open workspaces: " + allOpenWorkspaces());
             }
-
             if (ws.getGenerationId() != array.data().getGenerationId()) {
                 throw new ND4JWorkspaceException( (msg == null ? "" : msg + ": ") + "Array outdated workspace pointer " +
                         "from workspace " + ws.getId() + " (array generation " + array.data().getGenerationId() +
@@ -128,10 +151,10 @@ public class WorkspaceUtils {
         }
     }
 
-    private static List<String> allOpenWorkspaces() {
+    public static List<String> allOpenWorkspaces() {
         List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
         List<String> workspaces = new ArrayList<>(l.size());
-        for( MemoryWorkspace ws : l){
+        for( MemoryWorkspace ws : l) {
             if(ws.isScopeActive()) {
                 workspaces.add(ws.getId());
             }

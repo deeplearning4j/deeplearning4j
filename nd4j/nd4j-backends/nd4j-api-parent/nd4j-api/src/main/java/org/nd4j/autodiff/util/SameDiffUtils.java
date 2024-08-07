@@ -35,10 +35,33 @@ import org.nd4j.linalg.api.ops.impl.shape.ReductionShape;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JException;
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SameDiffUtils {
+
+
+    /**
+     * Tests whether the given function was executed on the given line number and class name.
+     * Note: In order for this function to work correctly, ensure that
+     * {@link Environment#isVerbose()}} or {@link Environment#isDebug()} is true
+     * set via {@link Environment#setDebug(boolean)} or {@link Environment#setVerbose(boolean)}
+     * or {@link org.nd4j.linalg.api.ops.executioner.OpExecutioner#enableDebugMode(boolean)}
+     * or {@link org.nd4j.linalg.api.ops.executioner.OpExecutioner#enableVerboseMode(boolean)}
+     * @param className class name to test
+     * @param lineNumber line number to test
+     * @param funcToTest function to test
+     * @return
+     */
+    public static boolean executedOn(String className,int lineNumber,DifferentialFunction funcToTest) {
+        if(funcToTest.getCreationLocation() != null) {
+                return funcToTest.getCreationLocation().getLineNumber() == lineNumber &&
+                        funcToTest.getCreationLocation().getClassName().equals(className);
+        }
+
+        return false;
+    }
 
     /**
      * Stack batch outputs, like an output from {@link SameDiff#output(MultiDataSetIterator, String...)}

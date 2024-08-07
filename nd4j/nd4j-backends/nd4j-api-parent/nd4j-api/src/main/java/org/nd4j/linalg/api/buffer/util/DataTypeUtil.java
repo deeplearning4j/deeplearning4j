@@ -20,8 +20,10 @@
 
 package org.nd4j.linalg.api.buffer.util;
 
+import lombok.NonNull;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -154,4 +156,82 @@ public class DataTypeUtil {
     }
 
 
+    /**
+     * Convert the data type to the
+     * appropriate nd4j data type.
+     * @param dataType
+     * @return
+     */
+    public static DataType convertToDataType(org.tensorflow.framework.DataType dataType) {
+        switch (dataType) {
+            case DT_UINT16:
+                return DataType.UINT16;
+            case DT_UINT32:
+                return DataType.UINT32;
+            case DT_UINT64:
+                return DataType.UINT64;
+            case DT_BOOL:
+                return DataType.BOOL;
+            case DT_BFLOAT16:
+                return DataType.BFLOAT16;
+            case DT_FLOAT:
+                return DataType.FLOAT;
+            case DT_INT32:
+                return DataType.INT32;
+            case DT_INT64:
+                return DataType.INT64;
+            case DT_INT8:
+                return DataType.INT8;
+            case DT_INT16:
+                return DataType.INT16;
+            case DT_DOUBLE:
+                return DataType.DOUBLE;
+            case DT_UINT8:
+                return DataType.UINT8;
+            case DT_HALF:
+                return DataType.FLOAT16;
+            case DT_STRING:
+                return DataType.UTF8;
+            default:
+                throw new UnsupportedOperationException("Unknown TF data type: [" + dataType.name() + "]");
+        }
+    }
+
+    public static DataType dataType(@NonNull String dataType) {
+        switch (dataType) {
+            case "uint64":
+                return DataType.UINT64;
+            case "uint32":
+                return DataType.UINT32;
+            case "uint16":
+                return DataType.UINT16;
+            case "int64":
+                return DataType.INT64;
+            case "int32":
+                return DataType.INT32;
+            case "int16":
+                return DataType.INT16;
+            case "int8":
+                return DataType.INT8;
+            case "bool":
+                return DataType.BOOL;
+            case "resource": //special case, nodes like Enter
+            case "float32":
+                return DataType.FLOAT;
+            case "float64":
+            case "double":
+                return DataType.DOUBLE;
+            case "string":
+                return DataType.UTF8;
+            case "uint8":
+            case "ubyte":
+                return DataType.UINT8;
+            case "bfloat16":
+                return DataType.BFLOAT16;
+            case "float16":
+                return DataType.FLOAT16;
+            default:
+                throw new ND4JIllegalStateException("Unknown data type used: [" + dataType + "]");
+        }
+    }
 }

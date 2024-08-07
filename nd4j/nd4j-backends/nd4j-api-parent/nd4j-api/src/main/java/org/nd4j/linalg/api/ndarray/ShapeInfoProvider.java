@@ -49,6 +49,9 @@ public interface ShapeInfoProvider {
 
     Pair<DataBuffer, long[]> createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, long extras);
 
+    Pair<DataBuffer,long[]> createShapeInformation(long[] shape, long[] stride, long ews, char ordering, DataType dataType, boolean isEmpty, boolean isView);
+
+
     /**
      * This method forces cache purge, if cache is available for specific implementation
      */
@@ -59,4 +62,5 @@ public interface ShapeInfoProvider {
      * @return
      */
     long getCachedBytes();
+
 }

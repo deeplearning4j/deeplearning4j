@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.random.impl.Range;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -135,6 +136,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return Nd4j.getDistributions().createUniform(min, max).sample(shape);
     }
 
+
     @Override
     public INDArray rand(int[] shape, double min, double max, org.nd4j.linalg.api.rng.Random rng) {
         Nd4j.getRandom().setSeed(rng.getSeed());
@@ -155,7 +157,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public void setDType(DataType dtype) {
         assert dtype == DataType.DOUBLE || dtype == DataType.FLOAT
-                        || dtype == DataType.INT : "Invalid opType passed, must be float or double";
+                || dtype == DataType.INT : "Invalid opType passed, must be float or double";
         // this.dtype = dtype;
     }
 
@@ -185,8 +187,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     }
 
     @Override
-    public INDArray create(int[] ints, int[] ints1, int[] stride, long offset) {
-        return create(Nd4j.createBuffer(ints), ints1, stride, offset);
+    public INDArray create(int[] ints, int[] shape, int[] stride, long offset) {
+        return create(Nd4j.createBuffer(ints), shape, stride, offset);
     }
 
     @Override
@@ -422,7 +424,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         for (INDArray vector : vectors) {
             INDArray put = toFlattened(vector, Nd4j.ones(vector.dataType(), 1));
             result.put(new INDArrayIndex[] {NDArrayIndex.interval(index, index + vector.rows() + 1),
-                            NDArrayIndex.interval(0, vectors[0].columns())}, put);
+                    NDArrayIndex.interval(0, vectors[0].columns())}, put);
             index += vector.rows();
         }
 
@@ -881,7 +883,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             for (int j = 0; j < toConcat[i].rank(); j++) {
                 if (j != dimension && toConcat[i].size(j) != outputShape[j] && !toConcat[i].isVector()) {
                     throw new IllegalArgumentException(
-                                    "Illegal concatenation at array " + i + " and shape element " + j);
+                            "Illegal concatenation at array " + i + " and shape element " + j);
                 }
             }
         }
@@ -907,7 +909,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
             int currBufferOffset = 0;
             for (int i = 0; i < ret.length(); i++) {
                 ret.data().put(i, toConcat[currBuffer].data()
-                                .getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
+                        .getDouble(toConcat[currBuffer].offset() + currBufferOffset++));
                 if (currBufferOffset >= toConcat[currBuffer].length()) {
                     currBuffer++;
                     currBufferOffset = 0;
@@ -1134,7 +1136,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray create(long rows, long columns, int[] stride, long offset) {
-      return create(new int[]{(int) rows,(int) columns},stride,0,'c');
+        return create(new int[]{(int) rows,(int) columns},stride,0,'c');
     }
 
 
@@ -1313,7 +1315,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value) {
-        return create(new double[] {value}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        INDArray ret =  create(new double[] {value}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        return ret;
     }
 
     @Override

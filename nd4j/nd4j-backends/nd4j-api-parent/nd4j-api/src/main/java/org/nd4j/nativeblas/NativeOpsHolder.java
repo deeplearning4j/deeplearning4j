@@ -169,7 +169,6 @@ public class NativeOpsHolder {
                     log.info("Veda device library cache path: {}", path);
                 }
 
-                deviceNativeOps.setVedaDeviceLibFolder(path);
             }
         }
     }
