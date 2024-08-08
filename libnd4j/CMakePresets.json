@@ -52,7 +52,7 @@
                 "SD_LIBRARY_NAME": "nd4jcuda",
                 "SD_ALL_OPS": true,
                 "SD_CUDA": true,
-                "BLAS":true,
+                 "BLAS":true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "COMPUTE": "86",
                 "__CUDACC__" : "ON",
@@ -143,12 +143,6 @@
         }
     ],
     "testPresets": [
-        {
-            "name": "veda_vednn_debug_test",
-            "description": "",
-            "displayName": "",
-            "configurePreset": "veda_vednn_debug"
-        },
         {
             "name": "cuda_cudnn_debug_test",
             "description": "",

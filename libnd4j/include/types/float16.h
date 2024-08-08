@@ -30,7 +30,7 @@
 
 struct bfloat16;
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 #include <cuda_fp16.h>
 
 #if CUDA_VERSION_MAJOR != 8
@@ -133,7 +133,7 @@ SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
 }
 
 #else
-SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
+SD_INLINE SD_HOST_DEVICE short cpu_float2ihalf_rn(float f) {
   ihalf ret;
 
   unsigned x = *((int*)(void*)(&f));
@@ -204,8 +204,8 @@ struct float16 {
   };
 
  public:
-  ihalf data;
-  SD_INLINE SD_HOST_DEVICE float16() { *data.getXP() = 0; }
+  short data;
+  SD_INLINE SD_HOST_DEVICE float16() { data = 0; }
 
   template <typename T,
             typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
@@ -214,14 +214,14 @@ struct float16 {
   }
 
   SD_INLINE SD_HOST_DEVICE float16(const half& rhs) {
-#ifdef __CUDACC__
-    data.assign(rhs);
+#if defined(__CUDA_ARCH__)  || defined(SD_CUDA)
+    data = rhs;
 #endif
   }
 
   SD_INLINE SD_HOST_DEVICE operator float() const {
-#ifdef __CUDA_ARCH__
-    return __half2float(data);
+#if defined(__CUDA_ARCH__)  || defined(SD_CUDA)
+    return __half2float(static_cast<float>(data));
 #else
     return cpu_ihalf2float(data);
 #endif
@@ -229,7 +229,7 @@ struct float16 {
 
   SD_INLINE SD_HOST_DEVICE explicit operator bool() const { return static_cast<float>(*this) != 0.0f; }
 
-  SD_INLINE SD_HOST_DEVICE explicit operator half() const { return data; }
+  SD_INLINE SD_HOST_DEVICE explicit operator half() const { return (float) data; }
 
   template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
   SD_INLINE SD_HOST_DEVICE explicit operator T() const {
@@ -237,14 +237,14 @@ struct float16 {
   }
 
   SD_INLINE SD_HOST_DEVICE float16& operator=(const float& rhs) {
-#ifdef __CUDA_ARCH__
+#if defined(__CUDA_ARCH__)  || defined(SD_CUDA)
     auto t = __float2half_rn(rhs);
-    auto b = *(data.getXP());
+    auto b = data;
 
 #if CUDA_VERSION_MAJOR == 8
     *(data.getXP()) = t;
 #else
-    data.assign(t);
+    data = t;
 #endif
 
 #else
@@ -255,7 +255,7 @@ struct float16 {
   }
 
   SD_INLINE SD_HOST_DEVICE float16& operator=(const unsigned short rhs) {
-    *data.getXP() = rhs;
+    data = rhs;
     return *this;
   }
 
@@ -265,13 +265,13 @@ struct float16 {
   }
 
   SD_INLINE SD_HOST_DEVICE float16& operator=(const ihalf& rhs) {
-    *data.getXP() = ((ihalf)rhs).getX();
+    data = ((ihalf)rhs).getX();
     return *this;
   }
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
   SD_INLINE SD_HOST_DEVICE float16& operator=(const half& rhs) {
-    data.assign(rhs);
+    data = (rhs);
     return *this;
   }
 #endif
@@ -291,9 +291,7 @@ struct float16 {
 #ifdef SD_NATIVE_HALFS
   SD_INLINE SD_HOST_DEVICE friend bool operator==(const float16& a, const float16& b) { return __hequ(a.data, b.data); }
 #else
-  SD_INLINE SD_HOST_DEVICE friend bool operator==(const float16& a, const float16& b) {
-    return ishequ_(((ihalf)a.data).getX(), ((ihalf)b.data).getX());
-  }
+  SD_INLINE SD_HOST_DEVICE friend bool operator==(const float16& a, const float16& b) { return ishequ_(a.data, b.data); }
 #endif
 
 #ifdef SD_NATIVE_HALFS
@@ -521,10 +519,10 @@ struct float16 {
 
 };
 
-#ifdef __CUDACC__
-SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
+#if defined(__CUDACC__) || defined(SD_CUDA)
+SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_((h.data)); }
 
-SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
+SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(h.data); }
 #endif
 
 

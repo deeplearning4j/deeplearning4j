@@ -1278,8 +1278,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE void excludeUnitiesFromShapeInfo(const sd::LongType
 }  // namespace shape
 #endif /* SHAPE_H_ */
 
-#if !defined(SHAPE_HXX_)
-#define SHAPE_HXX_
 namespace shape {
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideEquals(int const shape1Rank, sd::LongType const *shape1, int const shape2Rank,
@@ -2076,7 +2074,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool shapeEquals(const sd::LongType *shap
 }
 
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 /**
  * BEWARE: THIS METHOD DOES NOT CHECKS ALLOCATION BOUNDARIES
  */
@@ -2790,7 +2788,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE T1 *removeIndex(T1 const *data, T2 const 
  * a global element given the shape information
  * and the offset to be read.
  */
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 SD_LIB_EXPORT SD_INLINE SD_DEVICE int tadOffset(ShapeInformation *xInfo, int offset) {
   return offset + threadIdx.x * xInfo->elementWiseStride;
 }
@@ -3032,7 +3030,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType sliceOffsetForTensor(sd::Lon
   return offset;
 }
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 /**
  * Computes the offset for accessing
  * a global element given the shape information
@@ -3197,7 +3195,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType prodLong(const sd::LongType 
   return prod;
 }
 
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 SD_DEVICE SD_LIB_EXPORT SD_INLINE void sweepShapeInfoBuffer(sd::LongType *shapeInfoBuffer, sd::LongType *targetBuffer) {
   // we read first element, to find out length of our shapeInfoBuffer
   int rank = shapeInfoBuffer[0];
@@ -4313,4 +4311,3 @@ SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, 
 
 
 #endif // SHAPE_HXX_
-#endif
