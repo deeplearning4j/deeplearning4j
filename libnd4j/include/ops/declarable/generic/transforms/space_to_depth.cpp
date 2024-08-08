@@ -34,7 +34,7 @@ namespace ops {
 
     DECLARE_TYPES(space_to_depth) {
         getOpDescriptor()
-                ->setAllowedInputTypes(sd::DataType::ANY)
+                ->setAllowedInputTypes(ANY)
                 ->setSameMode(true);
     }
 
@@ -60,7 +60,7 @@ namespace ops {
         if (shape::strideDescendingCAscendingF(input->shapeInfo()))
             helpers::_spaceTodepth(block.launchContext(), *input, output, block_size, isNHWC);
         else
-            helpers::_spaceTodepth(block.launchContext(), input->dup(), output, block_size, isNHWC);
+            helpers::_spaceTodepth(block.launchContext(), input->dup(false), output, block_size, isNHWC);
 
         return Status::OK;
     }
@@ -72,22 +72,23 @@ namespace ops {
         REQUIRE_TRUE(block_size > 0,0, "SpaceToDepth: input should be > 0");
         bool isNHWC = INT_ARG(1) == 1;
 
-        int bS = shape::sizeAt(in, static_cast<sd::LongType>(0));
-        int iD = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(3)) : shape::sizeAt(in, static_cast<sd::LongType>(1));
-        int iH = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(1)) : shape::sizeAt(in, static_cast<sd::LongType>(2));
-        int iW = isNHWC ? shape::sizeAt(in, static_cast<sd::LongType>(2)) : shape::sizeAt(in, static_cast<sd::LongType>(3));
+        int bS = shape::sizeAt(in, static_cast<LongType>(0));
+        int iD = isNHWC ? shape::sizeAt(in, static_cast<LongType>(3)) : shape::sizeAt(in, static_cast<LongType>(1));
+        int iH = isNHWC ? shape::sizeAt(in, static_cast<LongType>(1)) : shape::sizeAt(in, static_cast<LongType>(2));
+        int iW = isNHWC ? shape::sizeAt(in, static_cast<LongType>(2)) : shape::sizeAt(in, static_cast<LongType>(3));
 
         int oD = iD * block_size * block_size;
         int oH = iH / block_size;
         int oW = iW / block_size;
         
-        std::array<sd::LongType, 4> shape;
+        std::array<LongType, 4> shape;
         if (isNHWC) 
             shape = {{bS, oH, oW, oD }};
         else 
             shape = {{bS, oD, oH, oW }};
 
-        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
+        auto newShape =
+            ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data(), -1);
         return SHAPELIST(newShape);
     }
 

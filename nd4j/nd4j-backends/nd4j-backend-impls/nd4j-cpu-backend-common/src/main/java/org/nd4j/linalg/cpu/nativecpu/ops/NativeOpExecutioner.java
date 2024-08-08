@@ -34,6 +34,7 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -44,6 +45,7 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
@@ -205,9 +207,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            StringBuilder errorMessage = new StringBuilder();
+            errorMessage.append("Op [").append(op.getClass().getSimpleName()).append("] execution failed\n");
+            errorMessage.append("Inputs:\n");
+            errorMessage.append("X:\n");
+            errorMessage.append(x);
+            errorMessage.append("\n");
+            errorMessage.append("Z:\n");
+            errorMessage.append(z);
+            errorMessage.append("\n");
+            errorMessage.append(loop.lastErrorMessage());
+            errorMessage.append(differentialFunction.debugInfo());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
@@ -227,6 +241,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         Preconditions.checkNotNull(x, "Op.x() cannot be null: Was null for op %s", op);
+        long st = profilingConfigurableHookIn(op, oc);
         op.validateDataTypes(oc);
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()) {
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
@@ -235,6 +250,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 if(!x.isScalar() && !z.isScalar())
                     Preconditions.checkState(x.equalShapes(z), "For empty reductions, result (z) array must have same shape as x shape." +
                             " Got: x=%ndShape, z=%ndShape", x, z);
+                //assign will crash if z < x. Just return empty z.
+                if(z.length() < x.length())
+                    return z;
+
+
                 z.assign(x);
                 return z;
             } else {
@@ -251,8 +271,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
 
 
-        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null)
+        if (x.isVector() && x.length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && y == null) {
+            profilingConfigurableHookOut(op, oc, st);
             return op.noOp();
+        }
 
         /**
          * This is the result array.
@@ -308,7 +330,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Pair<DataBuffer, DataBuffer> yTadBuffers = null;
 
 
-        long st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
 
         /**
          * Note because dimension arrays don't change,
@@ -338,9 +359,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             null,
 
                             var.isBiasCorrected(), null, null);
-                } catch (Throwable t){
+                } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             }
 
@@ -362,7 +387,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     );
                 } catch (Throwable t){
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             } else if (ret.isScalar()) {
                 loop.execReduce3Scalar(null, op.opNum(),
@@ -380,9 +409,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
                             (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null,
                             null, null, null, null);
-                } catch (Throwable t){
+                } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
-                    throw new RuntimeException("Native AccumulationOp execution (double) failed: " + str, t);
+                    StringBuilder errorMessage = new StringBuilder();
+                    DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                    errorMessage.append("Native AccumulationOp execution (double) failed: " + str +  t);
+                    errorMessage.append(differentialFunction.debugInfo());
+                    throw new RuntimeException(errorMessage.toString());
                 }
             }
 
@@ -455,8 +488,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        if (loop.lastErrorCode() != 0) {
+            String str = opInfoString(op, Optional.of(dimension));
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native AccumulationOp execution (double) failed: " + str);
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
+        profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
 
@@ -534,8 +575,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException();
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        if (loop.lastErrorCode() != 0) {
+            String str = opInfoString(op, Optional.of(dimension));
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: " + str);
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
     }
 
     public INDArray exec(ScalarOp op) {
@@ -589,9 +637,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException("Op " + op.opName() + " failed with message:" + loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            // the variable is mainly for ease of use with the debugger
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
@@ -614,172 +668,183 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
         long st = profilingConfigurableHookIn(op,oc);
+        //redirect assign so we support more ops cases lke strings
+        if(op instanceof Assign) {
+            DefaultOpExecutioner.execAssign(op, oc,this);
+        } else {
+            if (extraz.get() == null)
+                extraz.set(new PointerPointer(32));
 
+            PointerPointer dummy = extraz.get();
 
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        PointerPointer dummy = extraz.get();
-
-        // Pow operations might be special
-        if (op.opNum() == 31) {
-            if (y != null && y.isScalar()) {
-                setY(Nd4j.valueArrayOf(x.shape(), y.getDouble(0)), op, oc);
+            // Pow operations might be special
+            if (op.opNum() == 31) {
+                if (y != null && y.isScalar()) {
+                    setY(Nd4j.valueArrayOf(x.shape(), y.getDouble(0)), op, oc);
+                }
             }
-        }
-
-        /**
-         * This is the {@link IsMax}
-         * operation.
-         *
-         * @see {@link Op#extraArgs()}
-         * for what an extra argument is in an op.
-         *
-         * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
-         * dimension to do the ismax along
-         */
-        if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
-            long[] dimension = new long[(int) op.extraArgs()[0]];
-
-            for (int i = 0; i < dimension.length; i++) {
-                dimension[i] = (int) op.extraArgs()[i + 1];
-            }
-
 
             /**
-             * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
-             * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
-             * The first item is the shape information. The second one is the offsets.
+             * This is the {@link IsMax}
+             * operation.
+             *
+             * @see {@link Op#extraArgs()}
+             * for what an extra argument is in an op.
+             *
+             * The extra argument in the op here is the {@link IsMax#IsMax(INDArray, int...)}
+             * dimension to do the ismax along
              */
-            Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
+            if (op.opName().equalsIgnoreCase("ismax") && op.extraArgs() != null && op.extraArgs().length > 0) {
+                long[] dimension = new long[(int) op.extraArgs()[0]];
+
+                for (int i = 0; i < dimension.length; i++) {
+                    dimension[i] = (int) op.extraArgs()[i + 1];
+                }
 
 
-            Pointer tad = tadBuffers.getFirst().addressPointer();
+                /**
+                 * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
+                 * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
+                 * The first item is the shape information. The second one is the offsets.
+                 */
+                Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
-            DataBuffer offsets = tadBuffers.getSecond();
-            Pointer off = offsets == null ? null : offsets.addressPointer();
-            dummy.put(0, tad);
-            dummy.put(1, off);
 
-            st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
-        } else
-            st = profilingConfigurableHookIn(op);
+                Pointer tad = tadBuffers.getFirst().addressPointer();
 
-        if (y != null) {
+                DataBuffer offsets = tadBuffers.getSecond();
+                Pointer off = offsets == null ? null : offsets.addressPointer();
+                dummy.put(0, tad);
+                dummy.put(1, off);
 
-            if (z == null) {
-                setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
-                z = getZ(op, oc);
+                st = profilingConfigurableHookIn(op, tadBuffers.getFirst());
+            } else
+                st = profilingConfigurableHookIn(op);
+
+            if (y != null) {
+
+                if (z == null) {
+                    setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
+
+
+                op.validateDataTypes(oc, experimentalMode.get());
+
+
+
+                val xb =  x.data().opaqueBuffer();
+                val yb = y.data().opaqueBuffer();
+                val zb = z.data().opaqueBuffer();
+                ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
+                ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
+                switch (op.getOpType()) {
+                    case TRANSFORM_ANY:
+                    case TRANSFORM_FLOAT:
+                    case TRANSFORM_STRICT:
+                    case TRANSFORM_SAME:
+                        if (!experimentalMode.get())
+                            Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL,
+                                    "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
+
+                        loop.execPairwiseTransform(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, z.dataType()));
+                        break;
+                    case TRANSFORM_BOOL:
+                        loop.execTransformBool(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, x.dataType()));
+                        break;
+                    case PAIRWISE_BOOL:
+                        loop.execPairwiseTransformBool(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                getPointerForExtraArgs(op, x.dataType()));
+                        break;
+                }
+            } else {
+
+                if (z == null) {
+                    setZ(Nd4j.createUninitialized((oc != null ? op.resultType(oc) : op.resultType()), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
+
+                op.validateDataTypes(oc, experimentalMode.get());
+
+                val xb = x.data().opaqueBuffer();
+                val zb = z.data().opaqueBuffer();
+
+                switch (op.getOpType()) {
+                    case TRANSFORM_FLOAT: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+
+
+                        loop.execTransformFloat(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
+                                null, xtraz);
+                        break;
+                    }
+                    case TRANSFORM_STRICT: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+                        loop.execTransformStrict(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_SAME: {
+                        val xtraz = getPointerForExtraArgs(op, z.dataType());
+
+                        loop.execTransformSame(dummy, op.opNum(),
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_ANY: {
+                        val xtraz = getPointerForExtraArgs(op, x.dataType());
+                        val opNum = op.opNum();
+                        loop.execTransformAny(dummy, opNum,
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    case TRANSFORM_BOOL: {
+                        val xtraz = getPointerForExtraArgs(op, x.dataType());
+                        val opNum = op.opNum();
+
+                        loop.execTransformBool(dummy, opNum,
+                                xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
+                                zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
+                                xtraz);
+                        break;
+                    }
+                    default:
+                        throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
+                }
+
             }
 
-
-            op.validateDataTypes(oc, experimentalMode.get());
-
-
-
-            val xb =  x.data().opaqueBuffer();
-            val yb = y.data().opaqueBuffer();
-            val zb = z.data().opaqueBuffer();
-            ((BaseCpuDataBuffer) x.data()).actualizePointerAndIndexer();
-            ((BaseCpuDataBuffer) z.data()).actualizePointerAndIndexer();
-            switch (op.getOpType()) {
-                case TRANSFORM_ANY:
-                case TRANSFORM_FLOAT:
-                case TRANSFORM_STRICT:
-                case TRANSFORM_SAME:
-                    if (!experimentalMode.get())
-                        Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL,
-                                "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
-
-                    loop.execPairwiseTransform(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, z.dataType()));
-                    break;
-                case TRANSFORM_BOOL:
-                    loop.execTransformBool(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, x.dataType()));
-                    break;
-                case PAIRWISE_BOOL:
-                    loop.execPairwiseTransformBool(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            getPointerForExtraArgs(op, x.dataType()));
-                    break;
+            if (loop.lastErrorCode() != 0) {
+                StringBuilder errorMessage = new StringBuilder();
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
             }
-        } else {
-
-            if (z == null) {
-                setZ(Nd4j.createUninitialized((oc != null ? op.resultType(oc) : op.resultType()), x.shape()), op, oc);
-                z = getZ(op, oc);
-            }
-
-            op.validateDataTypes(oc, experimentalMode.get());
-
-            val xb = x.data().opaqueBuffer();
-            val zb = z.data().opaqueBuffer();
-
-            switch (op.getOpType()) {
-                case TRANSFORM_FLOAT: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-
-
-                    loop.execTransformFloat(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(),
-                            null, xtraz);
-                    break;
-                }
-                case TRANSFORM_STRICT: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-                    loop.execTransformStrict(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_SAME: {
-                    val xtraz = getPointerForExtraArgs(op, z.dataType());
-
-                    loop.execTransformSame(dummy, op.opNum(),
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_ANY: {
-                    val xtraz = getPointerForExtraArgs(op, x.dataType());
-                    val opNum = op.opNum();
-                    loop.execTransformAny(dummy, opNum,
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                case TRANSFORM_BOOL: {
-                    val xtraz = getPointerForExtraArgs(op, x.dataType());
-                    val opNum = op.opNum();
-
-                    loop.execTransformBool(dummy, opNum,
-                            xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
-                            zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                            xtraz);
-                    break;
-                }
-                default:
-                    throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
-            }
-
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+
         profilingConfigurableHookOut(op, oc, st);
     }
 
@@ -822,17 +887,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
 
-        val xb = ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
-
+        val xb = x.data().opaqueBuffer();
+        val yb = y.data().opaqueBuffer();
+        val zb = z.data().opaqueBuffer();
         switch (op.getOpType()) {
             case BROADCAST:
                 loop.execBroadcast(dummy, op.opNum(),
                         xb, (LongPointer) x.shapeInfoDataBuffer().addressPointer(), null,
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
-                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
+                        null);
+
                 break;
             case BROADCAST_BOOL:
                 loop.execBroadcastBool(dummy, op.opNum(),
@@ -840,14 +907,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         yb, (LongPointer) y.shapeInfoDataBuffer().addressPointer(), null,
                         zb, (LongPointer) z.shapeInfoDataBuffer().addressPointer(), null,
                         null,
-                        ((BaseCpuDataBuffer) op.dimensions().castTo(DataType.LONG).data()).getOpaqueDataBuffer(), (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
+                        op.dimensions().castTo(DataType.LONG).data().opaqueBuffer(),
+                        (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(), null);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         profilingConfigurableHookOut(op,oc,st);
         return z;
     }
@@ -976,8 +1050,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                 batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
-        if (loop.lastErrorCode() != 0)
+        if (loop.lastErrorCode() != 0) {
             throw new RuntimeException(loop.lastErrorMessage());
+        }
 
     }
 
@@ -1141,7 +1216,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null){
+        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null) {
             //Ugly hack to ensure the triple arg call occurs
             //See GaussianDistribution.setZ etc
             x = z;
@@ -1157,9 +1232,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if(z != null)
             Preconditions.checkArgument(z.isR(), "Op.Z must have one of floating point types");
 
-        val xb = x == null ? null : ((BaseCpuDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = y == null ? null : ((BaseCpuDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = z == null ? null : ((BaseCpuDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = x == null ? null : x.data().opaqueBuffer();
+        val yb = y == null ? null : y.data().opaqueBuffer();
+        val zb = z == null ? null : z.data().opaqueBuffer();
 
         if (x != null && y != null && z != null) {
             DataBuffer dataBuffer = op.extraArgsDataBuff(z.dataType());
@@ -1183,9 +1258,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     op.extraArgsDataBuff(z.dataType()).addressPointer());
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
 
         return z;
     }
@@ -1319,6 +1399,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             return result;
         } catch (ND4JOpProfilerException e) {
+
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
@@ -1354,7 +1435,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
         if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if(log.isTraceEnabled()){
+            if(log.isTraceEnabled()) {
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
@@ -1365,12 +1446,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputShapes = new PointerPointer<>(nIn);
         val inputArgs = opContext != null && opContext.getInputArrays() != null && !opContext.getInputArrays().isEmpty()
                 ? opContext.getInputArrays() : op.inputArguments();
-        int cnt= 0;
+        int cnt = 0;
+        int numProcessed = 0;
         for (val in: inputArgs) {
             if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().opaqueBuffer().primaryBuffer());
+                inputBuffers.put(cnt, in.data().addressPointer());
 
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().opaqueBuffer().primaryBuffer());
+            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+            numProcessed++;
+        }
+
+
+
+        if(numProcessed != nIn) {
+            throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
+                    "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
 
@@ -1378,11 +1468,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
         cnt = 0;
         if(opContext != null) {
-            for (val i: opContext.getIArguments())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: opContext.getIArguments())
+                    iArgs.put(cnt++, i);
         } else {
-            for (val i: op.iArgs())
-                iArgs.put(cnt++, i);
+            if(iArgs != null)
+                for (val i: op.iArgs())
+                    iArgs.put(cnt++, i);
         }
 
 
@@ -1397,50 +1489,67 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getBArguments())
-                bArgs.put(cnt++, b);
+            if(bArgs != null)
+                for (val b: opContext.getBArguments())
+                    bArgs.put(cnt++, b);
         } else {
-            for (val b: op.bArgs())
-                bArgs.put(cnt++, b);
+            if(bArgs != null)
+                for (val b: op.bArgs())
+                    bArgs.put(cnt++, b);
         }
 
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getTArguments())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: opContext.getTArguments())
+                    tArgs.put(cnt++, b);
         } else {
-            for (val b: op.tArgs())
-                tArgs.put(cnt++, b);
+            if(tArgs != null)
+                for (val b: op.tArgs())
+                    tArgs.put(cnt++, b);
         }
 
         cnt = 0;
         if(opContext != null) {
-            for (val b: opContext.getDArguments())
-                dArgs.put(cnt++, b.toInt());
+            if(dArgs != null)
+                for (val b: opContext.getDArguments())
+                    dArgs.put(cnt++, b.toInt());
         } else {
-            for (val b: op.dArgs())
-                dArgs.put(cnt++, b.toInt());
+            if(dArgs != null)
+                for (val b: op.dArgs())
+                    dArgs.put(cnt++, b.toInt());
+        }
+
+
+
+        if(numProcessed != nIn) {
+            throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
+                    "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
 
         OpaqueShapeList ptrptr;
         try {
             ptrptr = loop.calculateOutputShapes2(null,
-                    hash, inputBuffers, inputShapes, nIn, tArgs,
-                    nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
+                    hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
+                    iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
             if (loop.lastErrorCode() != 0) {
+                //used with debuggers mainly
+                StringBuilder errorMessage = new StringBuilder();
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;
-                if(opContext != null)
-                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute." +  " Here is the error from c++: " + loop.lastErrorMessage());
-                else {
-                    throw new RuntimeException("Op " + op.opName() + " with name " + differentialFunction.getOwnName() + " failed to execute. Here is the error from c++: " + loop.lastErrorMessage());
-
-                }
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
             }
+            if (ptrptr == null)
+                throw new RuntimeException();
+
         } catch (Throwable t) {
             StringBuilder sb = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
             sb.append("Inputs: [(");
             for( int i = 0; i < inputArgs.size(); i++) {
                 if(i > 0)
@@ -1448,9 +1557,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 sb.append(Shape.shapeToStringShort(inputArgs.get(i)));
             }
             sb.append(")]");
-            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null) {
-                appendSameDiffInfo(sb, (DifferentialFunction) op);
-            }
+            sb.append(differentialFunction.debugInfo());
 
             int nOut = opContext != null ? opContext.numOutputArguments() : op.numOutputArguments();
             log.error("Failed to calculate output shapes for op {}. Attempted to execute with {} inputs, {} outputs, " +
@@ -1459,9 +1566,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             throw t;
         }
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-
+        if (loop.lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(loop.lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
         if (ptrptr == null)
             throw new RuntimeException();
 
@@ -1469,7 +1581,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             result.add(getShapeFromPointer(new PagedPointer(loop.getShape(ptrptr, e)).asLongPointer()));
 
 
-        loop.deleteShapeList(ptrptr);
+        //loop.deleteShapeList(ptrptr);
 
         if(log.isTraceEnabled()) {/**/
             String[] arr = new String[result.size()];
@@ -1564,7 +1676,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             newMap.put(nodeName, array);
         }
 
-        loop.deleteVariablesSet(result);
+        // loop.deleteVariablesSet(result);
 
         return newMap;
     }
@@ -1641,7 +1753,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public OpContext buildContext() {
-        return new CpuOpContext();
+        if(this.nextOpContext.get() != null) {
+            return this.nextOpContext.get();
+        }
+
+        CpuOpContext ctx =  new CpuOpContext();
+        return ctx;
     }
 
     @Override
@@ -1662,8 +1779,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
             if (status != 0) {
-                DifferentialFunction differentialFunction = (DifferentialFunction)  op;
-                throw new RuntimeException("Op with name " + differentialFunction.getOwnName() + " and op type [" + op.opName() + "] execution failed with message " + loop.lastErrorMessage());
+                StringBuilder errorMessage = new StringBuilder();
+                DifferentialFunction differentialFunction = (DifferentialFunction) op;
+                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append(differentialFunction.debugInfo());
+                errorMessage.append(loop.lastErrorMessage());
+                throw new RuntimeException(errorMessage.toString());
             }
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];
@@ -1713,7 +1834,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
-            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null){
+            if(op instanceof DifferentialFunction && ((DifferentialFunction)op).getSameDiff() != null) {
                 appendSameDiffInfo(sb, (DifferentialFunction) op);
             }
 
@@ -1737,29 +1858,83 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty, boolean isView) {
         long[] merged = new long[Shape.shapeInfoLength(shape.length)];
-        DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
-        merged[0] = shape.length;
-        int shapeIdx = 0;
-        int strideIdx = 0;
-        for(int i = 1; i < shape.length * 2 + 1; i++) {
-            if(shapeIdx < shape.length) {
-                merged[i] = shape[shapeIdx];
-                shapeIdx++;
-            } else {
-                merged[i] = stride[strideIdx];
-                strideIdx++;
+
+        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            DataBuffer ret = Nd4j.createBuffer(DataType.INT64,Shape.shapeInfoLength(shape.length),true);
+            merged[0] = shape.length;
+            int shapeIdx = 0;
+            int strideIdx = 0;
+            for(int i = 1; i < shape.length * 2 + 1; i++) {
+                if(shapeIdx < shape.length) {
+                    merged[i] = shape[shapeIdx];
+                    shapeIdx++;
+                } else {
+                    merged[i] = stride[strideIdx];
+                    strideIdx++;
+                }
             }
+
+
+
+            Shape.setElementWiseStride(merged,(int) elementWiseStride);
+            LongPointer longPointer = new LongPointer(merged);
+            loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.addressPointer()),order,(int) elementWiseStride,empty,isView);
+            longPointer.deallocate();
+            longPointer.releaseReference();
+            if(isView != ArrayOptionsHelper.isView(Shape.options(ret))) {
+                throw new IllegalStateException("isView is not set properly");
+            }
+
+            if(empty != ArrayOptionsHelper.isEmpty(Shape.options(ret))) {
+                throw new IllegalStateException("Empty is not set properly");
+            }
+
+
+            long[] shape2 = Shape.shape(ret.asLong());
+            long[] stride2 = Shape.stride(ret.asLong());
+            long ews = Shape.elementWiseStride(ret.asLong());
+            char order2 = Shape.order(ret.asLong());
+            DataType dtype2 = ArrayOptionsHelper.dataType(Shape.options(ret));
+            boolean empty2 = ArrayOptionsHelper.isEmpty(Shape.options(ret));
+            boolean isView2 = ArrayOptionsHelper.isView(Shape.options(ret));
+            if(!Arrays.equals(shape,shape2)) {
+                throw new IllegalStateException("Shape is not set properly");
+            }
+
+            if(!Arrays.equals(stride,stride2)) {
+                throw new IllegalStateException("Stride is not set properly");
+            }
+
+            if(ews > 0 && ews != elementWiseStride) {
+                throw new IllegalStateException("Element wise stride is not set properly");
+            }
+
+            if(order != order2) {
+                throw new IllegalStateException("Order is not set properly");
+            }
+
+            if(dtype != dtype2) {
+                throw new IllegalStateException("Data type is not set properly");
+            }
+
+            if(empty != empty2) {
+                throw new IllegalStateException("Empty is not set properly");
+            }
+
+            if(isView != isView2) {
+                throw new IllegalStateException("Is view is not set properly");
+            }
+            return ret;
         }
 
 
-        Shape.setElementWiseStride(merged,(int) elementWiseStride);
-        LongPointer longPointer = new LongPointer(merged);
-        loop.setShapeBuffer(longPointer,dtype.toInt(),new LongPointer(ret.pointer()),order,(int) elementWiseStride,empty);
-        longPointer.deallocate();
-        longPointer.releaseReference();
-        return ret;
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
+        return createShapeInfo(shape,stride,elementWiseStride,order,dtype,empty,false);
     }
 
     @Override
@@ -1772,8 +1947,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
-        loop.deleteConstantShapeBuffer(dbf);
-
         return result;
     }
 
@@ -1783,17 +1956,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         for(int i = 0; i < inputDimensions.length; i++) {
             inputDimensions[i] = dimension[i];
         }
-        OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new LongPointer(inputDimensions), dimension.length);
+        try {
+            OpaqueTadPack pack = loop.tadOnlyShapeInfo(array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(inputDimensions), dimension.length);
 
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
+            if (loop.lastErrorCode() != 0)
+                throw new RuntimeException(loop.lastErrorMessage());
 
-        val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
-        val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
-
-        //    loop.deleteTadPack(pack);
-
-        return new TadPack(tadShape, tadOffsets);
+            val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
+            val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
+            return new TadPack(tadShape, tadOffsets);
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     protected void appendSameDiffInfo(StringBuilder sb, DifferentialFunction df) {

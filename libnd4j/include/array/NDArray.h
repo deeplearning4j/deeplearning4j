@@ -1730,10 +1730,6 @@ int NDArray::rankOf() const { return shape::rank(_shapeInfo); }
 
 //////////////////////////////////////////////////////////////////////////
 LongType NDArray::lengthOf() const {
- if(_length != shape::length(_shapeInfo)) {
-  Printer p;
-  p.print(creationTrace);
- }
   return _length;
 }
 

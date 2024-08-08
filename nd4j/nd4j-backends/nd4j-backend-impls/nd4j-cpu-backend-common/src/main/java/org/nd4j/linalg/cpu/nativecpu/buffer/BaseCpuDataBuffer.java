@@ -67,7 +67,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
-        if (released)
+        if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         return ptrDataBuffer;
@@ -170,7 +170,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     protected BaseCpuDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
 
-        // for vew we need "externally managed" pointer and deallocator registration
+        // for view we need "externally managed" pointer and deallocator registration
         ptrDataBuffer = ((BaseCpuDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
 
@@ -517,34 +517,33 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asDoublePointer(); //new DoublePointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
 
         } else if (dataType() == DataType.FLOAT) {
             attached = true;
             parentWorkspace = workspace;
-
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer();
             setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
         } else if (dataType() == DataType.HALF) {
             attached = true;
             parentWorkspace = workspace;
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new FloatPointer(length());
             setIndexer(HalfIndexer.create((ShortPointer) pointer));
 
         } else if (dataType() == DataType.BFLOAT16) {
             attached = true;
             parentWorkspace = workspace;
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new FloatPointer(length());
             setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
         } else if (dataType() == DataType.INT) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer();
             setIndexer(IntIndexer.create((IntPointer) pointer));
 
         } else if (dataType() == DataType.UINT32) {
@@ -564,38 +563,38 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer(); //new LongPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asLongPointer();
             setIndexer(LongIndexer.create((LongPointer) pointer));
         } else if (dataType() == DataType.BYTE) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer(); //new LongPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer();
             setIndexer(ByteIndexer.create((BytePointer) pointer));
         } else if (dataType() == DataType.UBYTE) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer(); //new LongPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBytePointer();
             setIndexer(UByteIndexer.create((BytePointer) pointer));
         } else if (dataType() == DataType.UINT16) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
             setIndexer(UShortIndexer.create((ShortPointer) pointer));
 
         } else if (dataType() == DataType.SHORT) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer(); //new LongPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asShortPointer();
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
         } else if (dataType() == DataType.BOOL) {
             attached = true;
             parentWorkspace = workspace;
 
-            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBoolPointer(); //new LongPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asBoolPointer();
             setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
         } else if (dataType() == DataType.UTF8) {
             attached = true;
@@ -872,8 +871,10 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     protected void release() {
-        if(!released)
+        if(!released.get())
             ptrDataBuffer.closeBuffer();
+
+
 
     }
 

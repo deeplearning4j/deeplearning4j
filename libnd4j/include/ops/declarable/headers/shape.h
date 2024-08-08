@@ -34,6 +34,11 @@ DECLARE_CUSTOM_OP(permute, 1, 1, false, 0, -2);
 DECLARE_CUSTOM_OP(reshapeas, 2, 1, false, 0, 0);
 #endif
 
+#if NOT_EXCLUDED(OP_linear_copy)
+DECLARE_CUSTOM_OP(linear_copy, 2, 1, false, 0, 0);
+#endif
+
+
 #if NOT_EXCLUDED(OP_transpose)
 DECLARE_CUSTOM_OP(transpose, 1, 1, false, 0, 0);
 #endif
