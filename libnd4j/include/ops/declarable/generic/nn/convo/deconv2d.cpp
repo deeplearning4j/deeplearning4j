@@ -50,8 +50,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                          // strides height
   LongType sW = INT_ARG(3);                                                          // strides width
-  sd::LongType pH = INT_ARG(4);                                                          // paddings height
-  sd::LongType  pW = INT_ARG(5);                                                          // paddings width
+  LongType pH = INT_ARG(4);                                                          // paddings height
+  LongType pW = INT_ARG(5);                                                          // paddings width
   LongType dH = INT_ARG(6);                                                          // dilations height
   LongType dW = INT_ARG(7);                                                          // dilations width
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWoC, indWiC, indWkH, indOoH);
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,
                "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
@@ -76,7 +76,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
                "instead !",
                oC, bias->rankOf(), bias->lengthOf());
 
-  if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+  if (!isNCHW) output = new NDArray(output->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
   std::vector<LongType> colPermut;
   if (1 == wFormat)
@@ -94,22 +94,21 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
   // NHWC: [iC, oC, kH, kW] x [bS, iH, iW, iC] = [oC, kH, kW, bS, iH, iW]
   // NHWC: [iC, kH, kW, oC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
-  sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, colPermut);
+  MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, colPermut);
   LaunchContext* ctx = block.launchContext();
-  helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH,
+  helpers::col2im(*ctx, &columns, output, sH, sW, pH, pW, oH, oW, dH,
                   dW);  // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
 
   //----- add biases if required -----//
   if (bias)
-    // output->applyBroadcast(broadcast::Add, {1}, bias);
     helpers::addBias(block, *output, *bias, *output, true);
 
   if (!isNCHW) delete output;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 DECLARE_TYPES(deconv2d) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(deconv2d) {
@@ -125,8 +124,8 @@ DECLARE_SHAPE_FN(deconv2d) {
                "CUSTOM DECONV2D OP: rank of weights array must be equal to %i, but got %i instead !", rank,
                shape::rank(weightsShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -154,7 +153,7 @@ DECLARE_SHAPE_FN(deconv2d) {
   const LongType iC = inputShapeInfo[indIOioC + 1];  // input channels
   const LongType oC = weightsShapeInfo[indWoC + 1];  // output channels
 
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
   REQUIRE_TRUE(shape::shapeEquals(4, expectedWeightsShape.data(), shape::rank(weightsShapeInfo),
                                   shape::shapeOf(weightsShapeInfo)),
                0, "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !",
@@ -169,7 +168,7 @@ DECLARE_SHAPE_FN(deconv2d) {
   LongType oH, oW;  // output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  sd::LongType outputShape[4];
+  LongType outputShape[4];
 
   outputShape[0] = bS;
   if (isNCHW) {
@@ -187,7 +186,7 @@ DECLARE_SHAPE_FN(deconv2d) {
 }
 
 DECLARE_TYPES(deconv2d_bp) {
-  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -217,8 +216,8 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(weights->sizeAt(1));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                          // strides height
   LongType sW = INT_ARG(3);                                                          // strides width
-  sd::LongType pH = INT_ARG(4);                                                          // paddings height
-  sd::LongType pW = INT_ARG(5);                                                          // paddings width
+  LongType pH = INT_ARG(4);                                                          // paddings height
+  LongType pW = INT_ARG(5);                                                          // paddings width
   LongType dH = INT_ARG(6);                                                          // dilations height
   LongType dW = INT_ARG(7);                                                          // dilations width
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
@@ -236,9 +235,9 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
   REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,
                "CUSTOM DECONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got "
                "%s instead !",
@@ -259,17 +258,17 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   }
 
   // ----- calculation of gradI -> pass it through conv2d_ff ----- //
-  sd::ops::conv2d conv2d;
+  conv2d conv2d;
 
-  const sd::Status status =
+  const Status status =
       conv2d.execute({gradO, weights}, {gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, !isNCHW, wFormat}, {});
-  if (status != sd::Status::OK) return status;
+  if (status != Status::OK) return status;
 
   // -----prepare permutation arrays and axes for dot product ----- //
   std::vector<LongType> inputAxes;
 
   if (!isNCHW) {
-    gradO = new NDArray(gradO->permute({0, 3, 1, 2}));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradO = new NDArray(gradO->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     inputAxes = {0, 1, 2};                              // bS, iH, iW
   } else
     inputAxes = {0, 2, 3};  // bS, iH, iW
@@ -284,29 +283,30 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.launchContext());
 
   LaunchContext* ctx = block.launchContext();
+  std::vector<LongType> emptyPermute;
   helpers::im2col(
       *ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW,
       NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
-  MmulHelper::tensorDot(input, &columns, gradW, inputAxes, {0, 4, 5},
-                        gradWAxes);  // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
+  MmulHelper::tensorDot2(input, &columns, gradW, inputAxes, {0, 4, 5}, emptyPermute, emptyPermute, gradWAxes,
+                         gradW);  // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
   // ----- calculation of gradB ----- //
   if (gradB) {
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}, false));
-    std::vector<sd::LongType> axesForReduction = {0, 2, 3};  // bS, oH, oW
+    std::vector<LongType> axesForReduction = {0, 2, 3};  // bS, oH, oW
     gradO->reduceAlongDimension(reduce::Sum, *gradB, &axesForReduction);  // sum over bS, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 
   if (!isNCHW) delete gradO;
 
-  return sd::Status::OK;
+  return Status::OK;
 }
 
 DECLARE_SHAPE_FN(deconv2d_bp) {
   auto inputShapeInfo = inputShape->at(0);    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
   auto weightsShapeInfo = inputShape->at(1);  // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
-  sd::LongType const* biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
+  LongType const* biasShapeInfo = block.width() > 3 ? inputShape->at(2) : nullptr;  // [oC]
   auto gradOShapeInfo = block.width() > 3
                         ? inputShape->at(3)
                         : inputShape->at(2);  // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
@@ -323,8 +323,8 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
       "CUSTOM DECONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !",
       rank, shape::rank(gradOShapeInfo));
 
-  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(0)));  // filter(kernel) height
-  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<sd::LongType>(1)));  // filter(kernel) width
+  LongType kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(0)));  // filter(kernel) height
+  LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<LongType>(shape::sizeAt(weightsShapeInfo, static_cast<LongType>(1)));  // filter(kernel) width
   LongType sH = INT_ARG(2);                                                                          // strides height
   LongType sW = INT_ARG(3);                                                                          // strides width
   LongType pH = INT_ARG(4);                                                                          // paddings height
@@ -357,9 +357,9 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
   LongType trueoH, trueoW;  // true output height, width
   ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-  std::vector<sd::LongType> expectedGradOShape =
+  std::vector<LongType> expectedGradOShape =
       ShapeUtils::composeShapeUsingDimsAndIdx({bS, oC, trueoH, trueoW, 0, indIOioC, indOoH, indOoH + 1});
-  std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
+  std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
   REQUIRE_TRUE(
       shape::shapeEquals(4, expectedGradOShape.data(), shape::rank(gradOShapeInfo), shape::shapeOf(gradOShapeInfo)), 0,
       "CUSTOM DECONV2D_BP OP: wrong shape of output gradients next epsilon) array, expected is %s, but got %s instead "

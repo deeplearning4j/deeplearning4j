@@ -32,13 +32,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CpuOpContext extends BaseOpContext implements OpContext, Deallocatable {
@@ -54,19 +53,12 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     public CpuOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().allocateOpContext(this);
-        }
 
     }
 
     @Override
     public void close() {
-        purge();
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().deallocateContext(this);
-            Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
-        }
+        //   purge();
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
     }
@@ -88,6 +80,48 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     public void setDArguments(Pointer arguments, int length) {
         IntPointer dArgs = arguments instanceof IntPointer ?(IntPointer) arguments : new IntPointer(arguments);
         nativeOps.setGraphContextDArguments(context, dArgs,length);
+    }
+
+    @Override
+    public int numIntermediateResults() {
+        return Nd4j.getNativeOps().numIntermediateResults(context);
+    }
+
+    @Override
+    public void setIntermediateResult(int index, INDArray arr) {
+        if(arr == null) {
+            throw new IllegalArgumentException("Unable to set intermediate result for index " + index + " with null array");
+        }
+        Nd4j.getNativeOps().setIntermediateResult(context,
+                index, arr.data().opaqueBuffer(),
+                arr.shapeInfoDataBuffer().opaqueBuffer());
+    }
+
+    @Override
+    public INDArray getIntermediateResult(int index) {
+        LongPointer shapeInfo = nativeOps.intermediateResultShapeInfoAt(index,context);
+        long rank = shapeInfo.get(0);
+        shapeInfo.capacity(Shape.shapeInfoLength(rank));
+        DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
+        OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
+        long numElements = nativeOps.dbBufferLength(buffer);
+        /**
+         * TODO: figure out why the buffer is the wrong length.
+         * The shape buffer works but the normal databuffer doesn't.
+         */
+        Pointer pointer = buffer.primaryBuffer();
+        pointer.capacity(numElements);
+        DataBuffer firstBuffer = Nd4j.createBuffer(pointer,null,
+                Shape.length(shapeInfoBuffer), Shape.dataType(shapeInfoBuffer));
+        INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
+        return result;
+    }
+
+    @Override
+    public void addIntermediateResult(INDArray arr) {
+        Nd4j.getNativeOps().pushIntermediateResult(context,
+                arr.data().opaqueBuffer(),
+                arr.shapeInfoDataBuffer().opaqueBuffer());
     }
 
     @Override
@@ -164,10 +198,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             INDArray array = arrays.get(i);
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array.isEmpty() ? null : array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateInput(array,this);
-            }
+            fastpath_in.put(i,array);
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
@@ -186,9 +217,6 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateOutput(array,this);
-            }
         }
 
         PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
@@ -205,8 +233,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             fastpath_in.clear();
         for(int i = 0; i < arrays.length; i++) {
             INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
-            shapeInfoBufers2[i] = ((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer();
+            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
+            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_in.put(i,array);
         }
 
@@ -223,8 +251,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         for(int i = 0; i < arrays.length; i++) {
             INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
-            shapeInfoBufers2[i] =((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer();
+            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
+            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
         }
 
@@ -238,8 +266,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
         nativeOps.setGraphContextInputBuffer(context, index,
-                array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer(),
-                ((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer(),
+                array.isEmpty() ? null : array.data().opaqueBuffer(),
+                array.shapeInfoDataBuffer().opaqueBuffer(),
                 null);
         super.setInputArray(index, array);
     }

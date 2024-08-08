@@ -98,7 +98,6 @@ public class LSTMHelpers {
         int timeSeriesLength = (int) (is2dInput ? 1 : input.size(2));
         int hiddenLayerSize = (int) recurrentWeights.size(0);
         int miniBatchSize = (int) input.size(0);
-        workspaceMgr.allOpen();
         INDArray prevMemCellState;
         if (originalPrevMemCellState == null) {
             prevMemCellState = Nd4j.create(inputWeights.dataType(), new long[]{miniBatchSize, hiddenLayerSize}, 'f');

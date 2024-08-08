@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void dropoutSimple(NDArray const* input, NDArray* output, double probValue, int seed, NDArray* mask) {
+static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int seed, NDArray* mask) {
   sd::graph::RandomGenerator nodeRng(3019L, seed);
   int inLen = input->lengthOf();
 
@@ -48,7 +48,7 @@ static void dropoutSimple(NDArray const* input, NDArray* output, double probValu
 
   samediff::Threads::parallel_for(func, 0, inLen);
 }
-BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed,NDArray *mask),
+BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray* input, NDArray* output, double probValue, int seed,NDArray *mask),
                       SD_FLOAT_TYPES);
 
 template <typename T>

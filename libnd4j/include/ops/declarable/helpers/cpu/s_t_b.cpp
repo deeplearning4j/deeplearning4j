@@ -79,7 +79,7 @@ BUILD_SINGLE_TEMPLATE(template void batchToSpace_,
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType cropBottom,
+void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output, const sd::LongType cropBottom,
                   const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight,
                   const sd::LongType blockSize) {
   // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
@@ -88,7 +88,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
   NDArray inputRearranged0 = input.reshape(
       input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)});
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5});
+  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
 
   if (input.lengthOf() == output.lengthOf())
     output.assign(inputRearranged0);
@@ -148,7 +148,7 @@ BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_,
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop,
+void batchToSpaceND(sd::LaunchContext* context, NDArray input, const NDArray& blockShape, const NDArray& crop,
                     NDArray& output) {
   // 4D example, numOfSpatialDims = 2 - two spatial dimensions
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
@@ -178,7 +178,7 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
   }
   for (i = 2 * numOfSpatialDims + 1; i < static_cast<sd::LongType>(temp.size()); ++i) temp[i] = i;
 
-  inputRearranged0.permutei(temp);
+  inputRearranged0.permutei(temp, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
@@ -263,7 +263,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
   NDArray outputRearranged0 = output.reshape(
       output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)},
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5});
+  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
@@ -368,7 +368,7 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp);
+  outputRearranged0.permutei(temp, false);
 
   // ****** //
 

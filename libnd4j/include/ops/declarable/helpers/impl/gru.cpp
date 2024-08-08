@@ -42,7 +42,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
+void gruCell(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
              const NDArray* b, const NDArray* bc, NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
   // Inputs:
   // x        input [bS, nIn], nIn - input size
@@ -100,7 +100,7 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
+void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
              NDArray* gates, NDArray* h, bool linearBeforeReset) {
 
   if(linearBeforeReset) {
@@ -168,8 +168,8 @@ void gruCell(const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
-                 const NDArray* b, NDArray* h, bool linearBeforeReset) {
+void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh,
+                 NDArray* b, NDArray* h, bool linearBeforeReset) {
   // sL means time steps
 
   // x   input [sL, bS, nIn]
@@ -196,7 +196,7 @@ void gruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* hI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
+void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
                const NDArray* b, const NDArray* bc, const NDArray* dLdr, const NDArray* dLdu, const NDArray* dLdc,
                const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb,
                NDArray* dLdbc) {
@@ -378,7 +378,7 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
   dLdWcx.assign(mmul(xT, dLdZc));                        // [iS, bS] × [bS, nU] = [iS, nU]
   dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));  // [nU, bS] × [bS, nU] = [nU, nU]
 
-  std::vector<sd::LongType> zeroVec = {0};
+  std::vector<LongType> zeroVec = {0};
   dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
   dLdbu.assign(dLdZu.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
 
@@ -386,7 +386,7 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
+void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
                const NDArray* b, const NDArray* dLdh, const NDArray* gates, NDArray* dLdx, NDArray* dLdhI,
                NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // Inputs:
@@ -488,7 +488,7 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, 
   // dLdWx
   *dLdWx += mmul(x->transpose(), dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
-  std::vector<sd::LongType> zeroVec = {0};
+  std::vector<LongType> zeroVec = {0};
   // dLdb
   *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &zeroVec);  // [bS, 3*nOut] -> reduce -> [3*nOut];
 
@@ -503,8 +503,8 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoopBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx,
-                   const NDArray* Wh, const NDArray* b, const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhI,
+void gruTimeLoopBp(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
+                   NDArray* Wh, NDArray* b, NDArray* dLdh, NDArray* dLdx, NDArray* dLdhI,
                    NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // sL means time steps
 

@@ -100,11 +100,11 @@ public class BootstrapFromLocal {
             case PYTORCH:
                 //filter out invalid files
                 if(format.equals("onnx"))
-                    sameDiff = onnxFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
+                    sameDiff = onnxFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true, false);
                 break;
             case TENSORFLOW:
                 if(format.equals("pb"))
-                    sameDiff = tensorflowFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true);
+                    sameDiff = tensorflowFrameworkImporter.runImport(inputFile.getAbsolutePath(), Collections.emptyMap(),true, false);
                 break;
         }
 

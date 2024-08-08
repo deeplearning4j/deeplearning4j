@@ -59,6 +59,9 @@ public class NDArray extends BaseNDArray {
         super();
     }
 
+    public NDArray(LongShapeDescriptor descriptor) {
+        super(descriptor);
+    }
 
     public NDArray(DataBuffer buffer, LongBuffer shapeInfo, long[] javaShapeInfo) {
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
@@ -77,6 +80,10 @@ public class NDArray extends BaseNDArray {
         super(buffer, shape, stride, offset, ordering);
     }
 
+
+    public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering,boolean isView) {
+        super(buffer, shape, stride, offset, ews, ordering,isView);
+    }
     public NDArray(DataBuffer buffer, long[] shape, long[] stride, long offset, long ews, char ordering) {
         super(buffer, shape, stride, offset, ews, ordering);
     }
@@ -455,6 +462,10 @@ public class NDArray extends BaseNDArray {
     public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
             MemoryWorkspace workspace){
         super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
+
+    public NDArray(DataType dataType, long[] shape, long[] strides, MemoryWorkspace currentWorkspace) {
+        super(dataType, shape, strides, currentWorkspace);
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {
