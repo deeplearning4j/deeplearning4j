@@ -59,8 +59,8 @@
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",
                 "SD_BUILD_TESTS": "OFF",
-                "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda-12.1",
-                "CMAKE_CUDA_COMPILER": "/usr/local/cuda-12.1/bin/nvcc"
+                "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc"
             }
 
         },
@@ -143,12 +143,6 @@
         }
     ],
     "testPresets": [
-        {
-            "name": "veda_vednn_debug_test",
-            "description": "",
-            "displayName": "",
-            "configurePreset": "veda_vednn_debug"
-        },
         {
             "name": "cuda_cudnn_debug_test",
             "description": "",

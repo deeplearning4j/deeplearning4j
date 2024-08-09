@@ -73,8 +73,9 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     modifGradO1 = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-    input = new NDArray(input->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    const std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
+    input = new NDArray(input->permute(permuteVec,false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    gradI = new NDArray(gradI->permute(permuteVec,false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifGradO1 = {{1, 0, 3, 4, 2},
@@ -93,7 +94,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
   NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-  NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
+  NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape,false);
 
   // ----- calculation of gradW and gradB ----- //
 
@@ -106,7 +107,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(LongType)gradB->lengthOf()}));
+    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(LongType)gradB->lengthOf()},false));
     std::vector<LongType> dims =  {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, *gradBR,&dims, false);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;

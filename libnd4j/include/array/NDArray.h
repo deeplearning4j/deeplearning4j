@@ -583,6 +583,8 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
+  NDArray permute(std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &;
+
   NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &;
   NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &;
   NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &&;
@@ -2085,10 +2087,7 @@ LongType NDArray::offset() const { return _offset; }
 ////////////////////////////////////////////////////////////////////////
 bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }
 
-#if defined(__CUDACC__)
-// for CUDA we need stil stuff inline
-#include <array/NDArrayLambda.hXX>
-#endif
+
 
 }  // namespace sd
 

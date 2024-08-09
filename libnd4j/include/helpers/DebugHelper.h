@@ -43,14 +43,37 @@ class SD_LIB_EXPORT DebugHelper {
   // cuda-specific debug functions
 #ifdef __CUDACC__
   static SD_INLINE void checkErrorCode(cudaStream_t* stream, int opType = 0) {
-    if (Environment::getInstance().isDebug()) {
-      cudaError_t res = cudaStreamSynchronize(*stream);
+    cudaError_t res = cudaStreamSynchronize(*stream);
 
-      if (res != 0) {
+    if (res != 0) {
+      std::string op = "Kernel OpNum failed: [";
+      op += StringUtils::valueToString<int>(opType);
+      op += "]";
+
+      THROW_EXCEPTION(op.c_str());
+    }
+
+    cudaError_t res2 = cudaGetLastError();
+    if(res2 != 0) {
         std::string op = "Kernel OpNum failed: [";
         op += StringUtils::valueToString<int>(opType);
         op += "]";
 
+        THROW_EXCEPTION(op.c_str());
+    }
+  }
+
+
+
+  static SD_INLINE void checkGlobalErrorCode(const char* failMessage = nullptr) {
+    cudaError_t res2 = cudaGetLastError();
+    if (res2 != 0) {
+      if (failMessage == nullptr) {
+        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
+        THROW_EXCEPTION(op.c_str());
+      } else {
+        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
+                         std::string("]");
         THROW_EXCEPTION(op.c_str());
       }
     }
@@ -64,6 +87,20 @@ class SD_LIB_EXPORT DebugHelper {
         THROW_EXCEPTION(op.c_str());
       } else {
         std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res) +
+                         std::string("]");
+        THROW_EXCEPTION(op.c_str());
+      }
+    }
+
+
+
+    cudaError_t res2 = cudaGetLastError();
+    if (res2 != 0) {
+      if (failMessage == nullptr) {
+        std::string op = "CUDA call ended with error code [" + StringUtils::valueToString<int>(res2) + std::string("]");
+        THROW_EXCEPTION(op.c_str());
+      } else {
+        std::string op = std::string(failMessage) + std::string("Error code [") + StringUtils::valueToString<int>(res2) +
                          std::string("]");
         THROW_EXCEPTION(op.c_str());
       }

@@ -101,8 +101,8 @@ void batchToSpace(sd::LaunchContext* context, NDArray& input, NDArray& output, c
   // oW = W - cropLeft - cropRight
 
   NDArray inputRearranged0 = input.reshape(
-      input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)});
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5});
+      input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)},false);
+  inputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
@@ -342,7 +342,7 @@ void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output,
   NDArray outputRearranged0 = output.reshape(
       output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), input.sizeAt(3)},
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5});
+  outputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
@@ -484,7 +484,7 @@ void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray&
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp);
+  outputRearranged0.permutei(temp,false);
 
   // ****** //
 
