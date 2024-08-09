@@ -37,9 +37,6 @@
  *
  */
 
-
-
-#ifndef  __JAVACPP_HACK__
 #ifndef SHAPE_H_
 #define SHAPE_H_
 #include <array/ArrayOptions.h>
@@ -1029,7 +1026,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd
       if (strides[i - 1] >= strides[i]) return false;
     return true;
   } else {
-    printf("Unknown order for array!\n");
     return false;
   }
 }
@@ -1273,12 +1269,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE void excludeUnitiesFromShapeInfo(const sd::LongType
 
 
 
-
-
-}  // namespace shape
-#endif /* SHAPE_H_ */
-
-namespace shape {
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideEquals(int const shape1Rank, sd::LongType const *shape1, int const shape2Rank,
                                                          sd::LongType const *shape2) {

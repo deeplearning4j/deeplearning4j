@@ -55,6 +55,7 @@
                  "BLAS":true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "COMPUTE": "86",
+                "CMAKE_CUDA_HOST_COMPILER": "c++",
                 "__CUDACC__" : "ON",
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",

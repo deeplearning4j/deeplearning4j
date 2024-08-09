@@ -225,7 +225,10 @@ if (HAVE_ONEDNN)
     file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
 endif()
 
-
+if(${ENV_CLION_IDE})
+    include_directories(./include)
+    cuda_include_directories(./include)
+endif()
 
 if(HAVE_ARMCOMPUTE)
     file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES false ../include/ops/declarable/platform/armcompute/*.cpp ../include/ops/declarable/platform/armcompute/*.h)
@@ -243,6 +246,7 @@ if(SD_CUDA)
     if (CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with cxx compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE ${SD_GCC_FUNCTRACE}")
         include_directories(${CUDA_INCLUDE_DIRS})
+        include_directories(../include/array)
         message("CUDA found!")
         # the only difference for debug mode here is host/device debug symbols
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
@@ -360,8 +364,8 @@ if(SD_CUDA)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/cuda/*.cu ../include/execution/cuda/*.h ../include/execution/*.cu ../include/execution/*.h)
         file(GLOB_RECURSE TYPES_SOURCES false ../include/types/*.cpp ../include/types/*.h)
-        file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/impl/*.cpp ../include/array/cuda/*.cu ../include/array/*.h)
-        file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/impl/*.cpp ../include/memory/cuda/*.cu ../include/memory/*.h)
+        file(GLOB_RECURSE ARRAY_SOURCES false ../include/array/impl/*.cpp ../include/array/cuda/*.cu ../include/array/*.h ../include/array/*.hXX)
+        file(GLOB_RECURSE MEMORY_SOURCES false ../include/memory/impl/*.cpp ../include/memory/cuda/*.cu ../include/memory/*.h ../include/memory/*.hXX)
         file(GLOB_RECURSE GRAPH_SOURCES false ../include/graph/*.cpp ../include/graph/*.cu ../include/graph/*.h)
         file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../include/ops/declarable/generic/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../include/ops/declarable/helpers/cuda/*.cu ../include/ops/declarable/helpers/impl/*.cpp)
@@ -392,7 +396,7 @@ if(SD_CUDA)
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-                    )
+            )
 
 
         else()
@@ -401,7 +405,7 @@ if(SD_CUDA)
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-                    )
+            )
 
         endif()
 
@@ -622,7 +626,8 @@ elseif(SD_CPU OR SD_AURORA)
             ${LOOPS_SOURCES} ${CALLSTACK_SRC} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
             ${CUSTOMOPS_VEDNN_SOURCES}
-            ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
+            ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES}
+            ../include/array/NDArrayLambda.hXX)
 
     target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
@@ -654,7 +659,9 @@ elseif(SD_CPU OR SD_AURORA)
             install(TARGETS ${SD_LIBRARY_NAME}static  DESTINATION .)
         elseif(SD_STATIC_LIB)
             # if we only build static library - use this name
-            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>
+                    ../include/array/NDArrayLambda.hXX
+                    ../include/array/NDArrayLambda.hXX)
             set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
             install(TARGETS ${SD_LIBRARY_NAME}  DESTINATION .)
         endif()
