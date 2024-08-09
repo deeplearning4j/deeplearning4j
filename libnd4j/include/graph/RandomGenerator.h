@@ -34,7 +34,7 @@
 
 namespace sd {
 namespace graph {
-#ifdef __CUDACC__
+#if defined(__CUDACC__) || defined(SD_CUDA)
 class SD_LIB_EXPORT CudaManagedRandomGenerator {
  private:
  protected:
@@ -76,10 +76,6 @@ class SD_LIB_EXPORT RandomGenerator {
   SD_INLINE SD_HOST_DEVICE uint32_t xoroshiro32(uint64_t index);
   SD_INLINE SD_HOST_DEVICE uint64_t xoroshiro64(uint64_t index);
 
-  /**
-   * This method returns integer value between 0 and MAX_UINT
-   */
-  // uint32_t relativeUInt32(sd::LongType index);
 
  public:
   SD_INLINE RandomGenerator(LongType rootSeed = 0, LongType nodeSeed = 0);
@@ -122,6 +118,9 @@ class SD_LIB_EXPORT RandomGenerator {
   SD_INLINE SD_HOST_DEVICE LongType rootState() { return _rootState._long; }
 
   SD_INLINE SD_HOST_DEVICE LongType nodeState() { return _nodeState._long; }
+  //float16 relativeT(LongType index, float16 from, float16 to);
+  //float16 relativeT(LongType index, float from, float16 to);
+  //float16 relativeT(LongType index, float16 from, float to);
 };
 
 SD_INLINE RandomGenerator::RandomGenerator(LongType rootSeed, LongType nodeSeed) {
@@ -212,6 +211,24 @@ SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT(LongType index, int from
   auto z = from + float(t * (to - from));
   return z;
 }
+
+/*
+// Specialization for float16
+SD_INLINE SD_HOST_DEVICE float16 RandomGenerator::relativeT(LongType index, float16 from, float16 to) {
+ return static_cast<struct float16>(relativeT<float16>(index, static_cast<float>(from), static_cast<float>(to)));
+}
+
+
+// Additional overload to handle mixed float16 and float arguments
+SD_INLINE SD_HOST_DEVICE float16 RandomGenerator::relativeT(LongType index, float16 from, float to) {
+  return relativeT<float16>(index, from, static_cast<float>(to));
+}
+
+SD_INLINE SD_HOST_DEVICE float16 RandomGenerator::relativeT(LongType index, float from, float16 to) {
+  return relativeT<float16>(index, from, static_cast<float>(to));
+}
+
+*/
 
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(LongType index) {

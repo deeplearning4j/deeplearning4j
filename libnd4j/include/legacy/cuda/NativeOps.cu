@@ -193,8 +193,8 @@ std::vector<ExecTrace*> * listOpTraces() {
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
-  const DataBuffer targetBuf = *copyFrom->dataBuffer().get();
-  const DataBuffer srcBuf = *targetView->dataBuffer().get();
+  const DataBuffer targetBuf = *copyFrom->dataBuffer();
+  const DataBuffer srcBuf = *targetView->dataBuffer();
   DataBuffer::memcpy(targetBuf,srcBuf);
 }
 
@@ -3844,10 +3844,10 @@ void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, LongType elements) {
 OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, LongType length, LongType offset) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbCreateView: dataBuffer is null");
-  return new InteropDataBuffer(*dataBuffer, length, offset);
+  return new OpaqueDataBuffer(dataBuffer, length, offset);
 }
 
-int dbUseCount(OpaqueDataBuffer* dataBuffer){
+int dbUseCount(OpaqueDataBuffer* dataBuffer) {
   if(dataBuffer) return dataBuffer->useCount();
   return 0;
 }
@@ -3855,14 +3855,14 @@ int dbUseCount(OpaqueDataBuffer* dataBuffer){
 void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbSyncToSpecial: dataBuffer is null");
-  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+  if(dataBuffer->dataBuffer() != nullptr  && dataBuffer->dataBuffer()->getNumElements() > 0)
     dataBuffer->dataBuffer()->syncToSpecial();
 }
 
 void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
-  if(dataBuffer->dataBuffer() != nullptr &&  dataBuffer->dataBuffer().get() != nullptr && dataBuffer->dataBuffer()->getNumElements() > 0)
+  if(dataBuffer->dataBuffer() != nullptr  && dataBuffer->dataBuffer()->getNumElements() > 0)
     dataBuffer->dataBuffer()->syncToPrimary(LaunchContext::defaultContext(),false);
 
 }

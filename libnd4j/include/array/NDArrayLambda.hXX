@@ -24,11 +24,11 @@
 #include <helpers/shape.h>
 #include <system/op_boilerplate.h>
 
-static sd::LongType SD_DEVICE __noinline__ getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
+static sd::LongType SD_DEVICE  getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
   return shape::getIndexOffset(index, shapeInfo);
 }
 
-static sd::LongType SD_DEVICE __noinline__ length(const sd::LongType *shapeInfo) { return shape::length(shapeInfo); }
+static sd::LongType SD_DEVICE  length(const sd::LongType *shapeInfo) { return shape::length(shapeInfo); }
 
 template <typename T, typename Lambda>
 static SD_KERNEL void lambdaKernel(const void *vx, const sd::LongType *xShapeInfo, void *vz,

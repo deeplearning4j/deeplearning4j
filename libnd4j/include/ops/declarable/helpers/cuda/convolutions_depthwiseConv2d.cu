@@ -71,7 +71,7 @@ static void depthwiseConv2d_(graph::Context& block, const NDArray* input, const 
     outReShape = {bS, oH, oW, iC, mC};  // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
     modifOutput = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};             // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    input = new NDArray(input->permute({0, 3, 1, 2},false));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     outReShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifOutput = {{1, 0, 3, 4, 2},

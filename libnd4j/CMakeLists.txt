@@ -81,7 +81,7 @@ else()
 
 endif()
 
-if (SD_CUDA AND NOT SD_AURORA)
+if (SD_CUDA)
     message("Enabling cuda")
 
     if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
@@ -115,7 +115,7 @@ if (SD_CUDA AND NOT SD_AURORA)
     endif()
 
 
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v  -Xptxas -O1")
     if(SD_KEEP_NVCC_OUTPUT)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
     endif()

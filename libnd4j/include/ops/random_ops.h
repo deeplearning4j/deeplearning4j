@@ -50,7 +50,7 @@
 #define no_exec_special_cuda                                                                                     \
   static SD_INLINE SD_DEVICE void specialOpCuda(sd::Pointer state, T const *x, sd::LongType const *xShapeBuffer, \
                                                 T const *y, sd::LongType const *yShapeBuffer, T *z,              \
-                                                sd::LongType const *zShapeBuffer, T *extraArguments) {}
+                                                sd::LongType const *zShapeBuffer, T *extraArguments) { printf("No special op for this method\n"); }
 #else
 #define no_exec_special_cuda
 #endif
@@ -277,9 +277,21 @@ class ExponentialDistributionInv {  // inverse exponential distribution
       static SD_INLINE SD_HOST_DEVICE T
       op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
-    T x = helper->relativeT(idx, sd::DataTypeUtils::template min_positive<T>(),
-                            (T)1.f - sd::DataTypeUtils::template min_positive<T>());
-    return -sd::math::sd_log<T, T>((T)1.f - x) / lambda;
+
+    if constexpr (std::is_same_v<T, float16>) {
+      // For float16, delegate to float
+      float x = helper->relativeT(idx,
+                                  static_cast<float>(sd::DataTypeUtils::min_positive<float16>()),
+                                  1.f - static_cast<float>(sd::DataTypeUtils::min_positive<float16>()));
+      float result = -sd::math::sd_log<float, float>(1.f - x) / static_cast<float>(lambda);
+      return static_cast<float16>(result);
+    } else {
+      // For other types, use the original implementation
+      T x = helper->relativeT(idx,
+                              sd::DataTypeUtils::min_positive<T>(),
+                              (T)1.f - sd::DataTypeUtils::min_positive<T>());
+      return -sd::math::sd_log<T, T>((T)1.f - x) / lambda;
+    }
   }
 
   static SD_INLINE SD_HOST_DEVICE T op(T valueX, sd::LongType idx, sd::LongType length,
