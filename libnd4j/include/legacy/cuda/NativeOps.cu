@@ -135,6 +135,105 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 
 
+void dbPrintAllocationTrace(OpaqueDataBuffer *db) {
+  db->printDbAllocationTrace();
+}
+
+void setIntermediateResult(OpaqueContext *contextPointer, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo) {
+  if(shapeInfo == nullptr) {
+    THROW_EXCEPTION("Set Intermediate Result: shapeInfo is null");
+  }
+  auto casted = reinterpret_cast<LongType *>(shapeInfo->primary());
+  auto desc = new ShapeDescriptor(casted);
+  auto arr = new NDArray(buffer->dataBuffer(), desc);
+  contextPointer->setIntermediateResult(index, arr);
+}
+
+
+std::vector<const LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer) {
+  std::vector<const LongType *> intermediates;
+  for (auto v: contextPointer->intermediateResults()) {
+    const LongType *buff = v->shapeInfo();
+    intermediates.push_back(buff);
+  }
+
+  return intermediates;
+}
+
+std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer) {
+  std::vector<OpaqueDataBuffer *> intermediates;
+  for (auto v: contextPointer->intermediateResults()) {
+    OpaqueDataBuffer *buff = new OpaqueDataBuffer (v->dataBuffer());
+    intermediates.push_back(buff);
+  }
+
+  return intermediates;
+}
+
+int numIntermediateResults(OpaqueContext *contextPointer) {
+  return contextPointer->numIntermediates();
+}
+
+void pushIntermediateResult(OpaqueContext *contextPointer, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo) {
+  auto shapeInfoCast = reinterpret_cast<LongType *>(shapeInfo->primary());
+  auto desc = new ShapeDescriptor(shapeInfoCast);
+  auto arr = new NDArray(buffer->dataBuffer(), desc);
+  contextPointer->pushIntermediateResult(arr);
+}
+
+OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer) {
+  auto arr = contextPointer->intermediateResult(index);
+  return new OpaqueDataBuffer(arr->dataBuffer());
+}
+
+const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer) {
+  auto context = reinterpret_cast<graph::Context *>(contextPointer);
+  auto arr = context->intermediateResult(index);
+  return arr->shapeInfo();
+}
+
+
+TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, LongType *dimension, LongType dimensionLength) {
+  try {
+    auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
+    auto rankVal = buffPrim[0];
+    if(rankVal == 0) {
+      //detect when the shape buffer values are unset.
+      auto len = shape::shapeInfoLength(rankVal);
+      //min number of values in a shape info buffer
+      bool allZero = true;
+      for(int i = 0; i < len; i++) {
+        if(buffPrim[i] != 0) {
+          allZero = false;
+          break;
+        }
+      }
+
+      if(allZero) {
+        THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
+      }
+    }
+
+    auto pack = ConstantTadHelper::getInstance().tadForDimensions(reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
+    return pack;
+  } catch (std::exception &e) {
+    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    THROW_EXCEPTION(e.what());
+  }
+
+
+}
+
+
+OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
+                                       char order, LongType ews, bool empty) {
+  return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
+}
+
+LongType dbBufferLength(OpaqueDataBuffer *dataBuffer) {
+  return dataBuffer->dataBuffer()->getNumElements();
+}
 
 
 
@@ -193,8 +292,8 @@ std::vector<ExecTrace*> * listOpTraces() {
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
-  const DataBuffer targetBuf = *copyFrom->dataBuffer();
-  const DataBuffer srcBuf = *targetView->dataBuffer();
+   DataBuffer *targetBuf = copyFrom->dataBuffer();
+   DataBuffer *srcBuf = targetView->dataBuffer();
   DataBuffer::memcpy(targetBuf,srcBuf);
 }
 
@@ -3503,11 +3602,7 @@ void tryPointer(Pointer extra, Pointer p, int len) {
 
 int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header)); }
 
-OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
-                                       char order,
-                                       LongType ews, bool empty) {
-  return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
-}
+
 
 OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
                                          char order,

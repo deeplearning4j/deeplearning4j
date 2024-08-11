@@ -167,8 +167,7 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer  dup();
   void printHostDevice(long offset);
   static void memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src);
-  static void memcpy(const DataBuffer dst, const DataBuffer src);
-  static void memcpy(const DataBuffer *dst, const DataBuffer *src);
+  static void memcpy(DataBuffer *dst, DataBuffer *src);
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

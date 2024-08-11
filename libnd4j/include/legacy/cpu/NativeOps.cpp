@@ -2768,10 +2768,6 @@ void tryPointer(Pointer extra, Pointer p, int len) {
   }
 }
 
-OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
-                                       char order, LongType ews, bool empty) {
-  return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
-}
 
 OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
                                          char order, LongType ews, LongType extras) {
