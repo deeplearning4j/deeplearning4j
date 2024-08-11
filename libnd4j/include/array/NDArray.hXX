@@ -2843,7 +2843,7 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT const, *NDArray::bufferAs
 
 template <typename T>
 T *NDArray::bufferAsT() {
- return bufferasTWithOffset<T>(0);
+  return bufferasTWithOffset<T>(0);
 }
 
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::bufferAsT(), SD_COMMON_TYPES);
@@ -4477,8 +4477,8 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer) const {
   std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
   if(forceOriginalBuffer) {
     NDArray *result = new NDArray(ordering(), shape, dataType(), getContext());
-    const DataBuffer *thisBuff = this->getDataBuffer();
-    const DataBuffer *otherBuff = result->getDataBuffer();
+    DataBuffer *thisBuff = this->getDataBuffer();
+    DataBuffer *otherBuff = result->getDataBuffer();
     DataBuffer::memcpy(otherBuff,thisBuff);
     return *result;
   }

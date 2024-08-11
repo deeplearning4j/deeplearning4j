@@ -136,7 +136,7 @@ void DataBuffer::memcpy(const DataBuffer dst, const DataBuffer src) {
   dst.readPrimary();
 }
 
-void DataBuffer::memcpy(const DataBuffer *dst, const DataBuffer *src) {
+void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src) {
   if (src->_lenInBytes > dst->_lenInBytes) {
     std::string errorMessage;
     errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
