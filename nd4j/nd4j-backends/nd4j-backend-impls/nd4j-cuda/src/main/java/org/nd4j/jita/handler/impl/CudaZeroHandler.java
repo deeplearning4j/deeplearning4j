@@ -20,15 +20,11 @@
 
 package org.nd4j.jita.handler.impl;
 
-import org.nd4j.common.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.nativeblas.OpaqueLaunchContext;
-import org.nd4j.shade.guava.collect.HashBasedTable;
-import org.nd4j.shade.guava.collect.Table;
 import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
@@ -49,6 +45,7 @@ import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.memory.MemoryProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -56,10 +53,11 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueLaunchContext;
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -535,9 +533,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
         // return pointer. length is specified for constructor compatibility purposes. Offset is accounted at C++ side
         val p = new CudaPointer(dstPoint.getDevicePointer(), buffer.length(), 0);
-
-        if (OpProfiler.getInstance().getConfig().isCheckLocality())
-             NativeOpsHolder.getInstance().getDeviceNativeOps().tryPointer(context.getOldStream(), p, 1);
 
         switch (buffer.dataType()) {
             case DOUBLE:

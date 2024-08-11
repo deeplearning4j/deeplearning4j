@@ -22,22 +22,120 @@ import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
 
 /**
  * CUDA backend implementation of {@link Environment}
- * 
+ *
  * @author Alex Black
  */
 public class CudaEnvironment implements Environment {
 
 
     private static final CudaEnvironment INSTANCE = new CudaEnvironment(Nd4jCuda.Environment.getInstance());
+    protected boolean funcTracePrintJavaOnly = false;
+    protected boolean workspaceTrackOpenClose = false;
+    protected int numEventsToKeep = -1;
 
     private final Nd4jCuda.Environment e;
-
     public static CudaEnvironment getInstance(){
         return INSTANCE;
     }
 
     protected CudaEnvironment(Nd4jCuda.Environment environment){
         this.e = environment;
+    }
+
+    @Override
+    public boolean isCheckOutputChange() {
+        return e.isCheckOutputChange();
+    }
+
+    @Override
+    public void setCheckOutputChange(boolean reallyCheck) {
+        e.setCheckOutputChange(reallyCheck);
+    }
+
+
+    @Override
+    public boolean isEnableBlas() {
+        return e.isEnableBlas();
+    }
+
+    @Override
+    public void setEnableBlas(boolean reallyEnable) {
+        e.setEnableBlas(reallyEnable);
+    }
+
+    @Override
+    public boolean isLogNativeNDArrayCreation() {
+        return e.isLogNativeNDArrayCreation();
+    }
+
+    @Override
+    public void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation) {
+        e.setLogNativeNDArrayCreation(logNativeNDArrayCreation);
+    }
+    @Override
+    public boolean isCheckInputChange() {
+        return e.isCheckInputChange();
+    }
+
+    @Override
+    public void setCheckInputChange(boolean reallyCheck) {
+        e.setCheckInputChange(reallyCheck);
+    }
+
+    @Override
+    public void setLogNDArrayEvents(boolean logNDArrayEvents) {
+        e.setLogNDArrayEvents(logNDArrayEvents);
+    }
+
+    @Override
+    public boolean isLogNDArrayEvents() {
+        return e.isLogNDArrayEvents();
+    }
+
+    @Override
+    public boolean isTruncateNDArrayLogStrings() {
+        return false;
+    }
+
+    @Override
+    public void setTruncateLogStrings(boolean truncateLogStrings) {
+
+    }
+
+    @Override
+    public int numWorkspaceEventsToKeep() {
+        return numEventsToKeep;
+    }
+
+    @Override
+    public boolean isTrackWorkspaceOpenClose() {
+        return workspaceTrackOpenClose;
+    }
+
+    @Override
+    public void setTrackWorkspaceOpenClose(boolean trackWorkspaceOpenClose) {
+        this.workspaceTrackOpenClose = trackWorkspaceOpenClose;
+
+    }
+
+    @Override
+    public boolean isFuncTracePrintJavaOnly() {
+        return funcTracePrintJavaOnly;
+    }
+
+    @Override
+    public void setFuncTracePrintJavaOnly(boolean reallyTrace) {
+        this.funcTracePrintJavaOnly = reallyTrace;
+    }
+
+    @Override
+    public boolean isDeleteShapeInfo() {
+        return e.isDeleteShapeInfo();
+    }
+
+    @Override
+    public void setDeleteShapeInfo(boolean reallyDelete) {
+        e.setDeleteShapeInfo(reallyDelete);
     }
 
     @Override
@@ -191,7 +289,48 @@ public class CudaEnvironment implements Environment {
     }
 
     @Override
-    public long getDeviceCouner(int deviceId) {
+    public long getDeviceCounter(int deviceId) {
         return e.getDeviceCounter(deviceId);
     }
+
+    @Override
+    public boolean isFuncTracePrintDeallocate() {
+        return e.isFuncTracePrintDeallocate();
+    }
+
+    @Override
+    public boolean isFuncTracePrintAllocate() {
+        return e.isFuncTracePrintAllocate();
+    }
+
+    @Override
+    public void setFuncTraceForDeallocate(boolean reallyTrace) {
+        e.setFuncTracePrintDeallocate(reallyTrace);
+    }
+
+    @Override
+    public void setFuncTraceForAllocate(boolean reallyTrace) {
+        e.setFuncTracePrintAllocate(reallyTrace);
+    }
+
+    @Override
+    public boolean isDeletePrimary() {
+        return e.isDeletePrimary();
+    }
+
+    @Override
+    public boolean isDeleteSpecial() {
+        return e.isDeleteSpecial();
+    }
+
+    @Override
+    public void setDeletePrimary(boolean reallyDelete) {
+        e.setDeletePrimary(reallyDelete);
+    }
+
+    @Override
+    public void setDeleteSpecial(boolean reallyDelete) {
+        e.setDeleteSpecial(reallyDelete);
+    }
+
 }

@@ -21,7 +21,6 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 import lombok.NonNull;
-import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -517,12 +516,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
 
     @Override
     public DataBuffer createBuffer(String[] data) {
-        val buffer = new Utf8Buffer(Arrays.asList(data));
-        return buffer;
+        return  new Utf8Buffer(Arrays.asList(data));
     }
 
     @Override
-    public DataBuffer createTypedBuffer(String[] data,DataType dataType) {
+    public DataBuffer createTypedBuffer(String[] data, DataType dataType) {
         switch(dataType) {
             case UTF8:
                 return new Utf8Buffer(Arrays.asList(data));

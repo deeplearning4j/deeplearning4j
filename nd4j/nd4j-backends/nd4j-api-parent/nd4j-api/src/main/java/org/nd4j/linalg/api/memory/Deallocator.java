@@ -28,16 +28,6 @@ public interface Deallocator {
      */
     void deallocate();
 
-    /**
-     * Log event for a deallocation.
-     * Only used when {@link org.nd4j.linalg.profiler.data.eventlogger.EventLogger#enabled}
-     * is true. We store events on deallocators to retain metadata
-     * about a be to be deleted buffer without the need to retain a reference
-     * to the deallocatable object. This is to avoid conflict with {@link java.lang.ref.WeakReference}
-     *
-     * @return
-     */
-    LogEvent logEvent();
 
     /**
      * Returns whether the deallocator

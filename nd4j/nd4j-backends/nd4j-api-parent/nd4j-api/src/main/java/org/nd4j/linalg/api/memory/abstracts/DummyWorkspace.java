@@ -305,11 +305,6 @@ public class DummyWorkspace implements MemoryWorkspace {
             }
 
             @Override
-            public LogEvent logEvent() {
-                return null;
-            }
-
-            @Override
             public boolean isConstant() {
                 return false;
             }
