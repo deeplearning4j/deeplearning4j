@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class DefaultDataBufferFactory implements DataBufferFactory {
     protected DataBuffer.AllocationMode allocationMode;
@@ -511,6 +512,25 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace) {
         return create(buffer.dataType(), buffer.length(), init, workspace);
+    }
+
+    @Override
+    public DataBuffer createBuffer(String[] data) {
+        return  new Utf8Buffer(Arrays.asList(data));
+    }
+
+    @Override
+    public DataBuffer createTypedBuffer(String[] data, DataType dataType) {
+        switch(dataType) {
+            case UTF8:
+                return new Utf8Buffer(Arrays.asList(data));
+            case UTF16:
+                return new Utf16Buffer(Arrays.asList(data));
+            case UTF32:
+                return new Utf32Buffer(Arrays.asList(data));
+            default:
+                throw new UnsupportedOperationException("Cannot create buffer of type " + dataType);
+        }
     }
 
     @Override

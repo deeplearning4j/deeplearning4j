@@ -63,10 +63,6 @@ public class CudaDeallocator implements Deallocator {
         NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 
-    @Override
-    public LogEvent logEvent() {
-        return logEvent;
-    }
 
     @Override
     public boolean isConstant() {

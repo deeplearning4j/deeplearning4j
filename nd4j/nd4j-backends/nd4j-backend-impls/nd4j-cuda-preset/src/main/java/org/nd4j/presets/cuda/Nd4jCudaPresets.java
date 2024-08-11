@@ -243,12 +243,15 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
-                .put(new Info("sd::IndicesList").purify());
+                .put(new Info("sd::IndicesList").purify())
+                .put(new Info("shape::cuMalloc").skip())
+                .put(new Info("ErrorResult").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
         infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
         //skip in case header definition not working
         infoMap.put(new Info("calculateOutputShapesNec").skip());
+
 
     }
 

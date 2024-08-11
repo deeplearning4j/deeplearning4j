@@ -112,10 +112,6 @@ public class CudaWorkspaceDeallocator implements Deallocator {
 
     }
 
-    @Override
-    public LogEvent logEvent() {
-        return logEvent;
-    }
 
     @Override
     public boolean isConstant() {

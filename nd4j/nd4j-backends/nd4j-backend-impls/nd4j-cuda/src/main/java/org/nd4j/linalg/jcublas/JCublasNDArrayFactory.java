@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
@@ -192,11 +193,21 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
+    public INDArray create(LongShapeDescriptor longShapeDescriptor) {
+        return null;
+    }
+
+    @Override
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new CudaUtf8Buffer(strings);
         val list = new ArrayList<String>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
+    }
+
+    @Override
+    public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
+        return null;
     }
 
     @Override
@@ -1545,10 +1556,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
-        //if (data.dataType() != dataType  && data.dataType() != DataType.COMPRESSED)
-        //    throw new ND4JIllegalStateException("Data types mismatch: [" + data.dataType() + "] vs [" + dataType + "]");
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, boolean isView) {
+        return new JCublasNDArray(data,newShape,newStride,offset,ews,ordering,data.dataType(),isView);
+    }
 
+    @Override
+    public INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering, DataType dataType) {
         return new JCublasNDArray(data, newShape, newStride, offset, ordering, dataType);
     }
 
