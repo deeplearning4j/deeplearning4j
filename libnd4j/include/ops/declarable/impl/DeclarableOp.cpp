@@ -29,13 +29,11 @@
 #include <ops/declarable/OpRegistrator.h>
 
 #include <cstdarg>
-#if defined(HAVE_VEDA)
-#include <ops/declarable/platform/vednn/veda_helper.h>
-#endif
+
 
 namespace sd {
 namespace ops {
-sd::Status conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
+ErrorResult conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...) {
   if (!condition) {
     va_list args;
 
@@ -45,10 +43,13 @@ sd::Status conditionHelper(const char *file, int line, int condition, int argNum
     va_end(args);
     printf("\n");
     fflush(stdout);
-
-    return sd::Status::BAD_PARAMS;
+    ErrorResult errorResult;
+    errorResult.status = Status::BAD_ARGUMENTS;
+    return errorResult;
   }
-  return sd::Status::OK;
+  ErrorResult errorResult;
+  errorResult.status = Status::OK;
+  return errorResult;
 }
 
 DeclarableOp::DeclarableOp() {
@@ -344,8 +345,8 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch first case");
           }
 
-          if (shape::isEmpty(out) != shape::isEmpty(shape)) {
-            sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmpty(out), shape::isEmpty(shape));
+          if (shape::isEmptyConst(out) != shape::isEmptyConst(shape)) {
+            sd_printf("OP PREPARE OUTPUTS: First array empty: %d Second shape empty: %d\n", shape::isEmptyConst(out), shape::isEmptyConst(shape));
 
             THROW_EXCEPTION("OP PREPARE OUTPUTS: Expected vs provided shapes mismatch");
           }
@@ -426,16 +427,16 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
     auto desc = new ShapeDescriptor(__shape);
-    std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t),desc->dataType(), workspace);
+    DataBuffer * buffer =
+      new DataBuffer(len * sizeof(int8_t),desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
     auto desc = new ShapeDescriptor(__shape);
-    std::shared_ptr<DataBuffer> buffer =
-        std::make_shared<DataBuffer>(len * sizeof(int8_t), desc->dataType(), workspace);
+    DataBuffer * buffer =
+      new DataBuffer(len * sizeof(int8_t), desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     delete desc;
   }
@@ -464,14 +465,15 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
   auto var = block.variable(block.getNodeId(), 0);
   auto workspace = block.getWorkspace();
 
+  std::vector<sd::LongType> shape2 = shape;
   sd::LongType len = shape::length(shape);
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
-    var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
+    var->setNDArray(new NDArray(order, shape2, block.dataType(), block.launchContext()));
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
-    var->setNDArray(new NDArray(order, shape, block.dataType(), block.launchContext()));
+    var->setNDArray(new NDArray(order, shape2, block.dataType(), block.launchContext()));
   }
 
   return true;
@@ -815,11 +817,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       auto shape = ShapeUtils::shapeAsString(array);
       //limit size preview for string arrays due to allocation size when debugging
       int sizePreview = array->isS() ? 2 : 32;
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(sizePreview);
+      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(sizePreview);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i input  shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first.c_str());
+                type.c_str(), first->c_str());
     }
 
     for (int e = 0; e < numOutputs; e++) {
@@ -849,11 +851,11 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       bool isScalar = array->isScalar();
       int lengthOf = array->lengthOf();
       sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
-      auto first = array->isEmpty() ? std::string("Empty NDArray") : array->asString(len);
+      auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
 
       sd_printf("node_%i:%i result shape: %s; dtype: %s; first values %s\n", block->nodeId(), e, shape.c_str(),
-                type.c_str(), first.c_str());
+                type.c_str(), first->c_str());
     }
   }
 

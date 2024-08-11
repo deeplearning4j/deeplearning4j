@@ -49,7 +49,7 @@ static void fillRegularizer(NDArray& ioMatrix, double const value) {
 }
 
 template <typename T>
-sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+sd::Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                      double const l2Regularizer, bool const fast, NDArray* output) {
   NDArray::preparePrimaryUse({output}, {leftInput, rightInput});
   if (fast) {  // Cholesky decomposition approach
@@ -102,7 +102,7 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray const* 
   return sd::Status::OK;
 }
 
-sd::Status leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+sd::Status leastSquaresSolveFunctor(LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                     double const l2Regularizer, bool const fast, NDArray* output) {
   BUILD_SINGLE_SELECTOR(leftInput->dataType(), return leastSquaresSolveFunctor_,
                         (context, leftInput, rightInput, l2Regularizer, fast, output), SD_FLOAT_TYPES);

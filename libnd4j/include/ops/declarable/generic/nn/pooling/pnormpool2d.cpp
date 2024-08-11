@@ -57,8 +57,9 @@ CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
   int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // 1-NHWC, 0-NCHW
 
   if (!isNCHW) {
-    input = new NDArray(input->permute({0, 3, 1, 2}, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    output = new NDArray(output->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    std::vector<sd::LongType> perm = {0, 3, 1, 2};
+    input = new NDArray(input->permute(perm, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = new NDArray(output->permute(perm, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   const LongType inY = static_cast<LongType>(input->sizeAt(2));
@@ -186,9 +187,10 @@ CUSTOM_OP_IMPL(pnormpool2d_bp, 2, 1, false, 1, 10) {
       ShapeUtils::shapeAsString(expectedGradIShape).c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
   if (!isNCHW) {
-    input = new NDArray(input->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradO = new NDArray(gradO->permute({0, 3, 1, 2}, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    std::vector<sd::LongType> perm2 = {0, 3, 1, 2};
+    input = new NDArray(input->permute(perm2, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = new NDArray(gradI->permute(perm2, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = new NDArray(gradO->permute(perm2, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
 

@@ -49,8 +49,8 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
   int isSameMode = INT_ARG(8);                                                  // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   const LongType rank = gradO->rankOf();
 
@@ -64,8 +64,11 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
                "CUSTOM DECONV2D_TF OP: length of array with output shape must be equal to 4, but got %i instead !",
                gradIShape->lengthOf());
 
+
+  auto nonConst = const_cast<NDArray *>(gradIShape);
+  std::vector<sd::LongType> gradIShapeVector = nonConst->template asVectorT<sd::LongType>();
   // create empty conv2d input array
-  NDArray input(gradO->ordering(), gradIShape->asVectorT<sd::LongType>(), gradO->dataType(), block.launchContext());
+  NDArray input(gradO->ordering(), gradIShapeVector, gradO->dataType(), block.launchContext());
 
   LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
@@ -127,8 +130,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
   const int isSameMode = INT_ARG(8);                                                       // 0-VALID, 1-SAME
   const int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;                  // INT_ARG(9): 1-NHWC, 0-NCHW
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
   LongType indIOioC, indIiH, indWoC(0 == wFormat ? 3 : 0), indOoH;
   if (!isNCHW) {
@@ -178,9 +181,8 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
     shape[2] = iW;
     shape[3] = iC;
   }
-
-  return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weightsShapeInfo),
-                                                                      shape::order(gradOShapeInfo), 4, shape));
+  auto ret = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weightsShapeInfo),shape::order(gradOShapeInfo),4,shape,0);
+  return SHAPELIST(ret);
 }
 
 }  // namespace ops

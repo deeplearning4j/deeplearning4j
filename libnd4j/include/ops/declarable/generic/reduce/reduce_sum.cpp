@@ -126,9 +126,10 @@ CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
   if (!keepDims) {
     auto gradOShapeKeepDims =
         ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
+    std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
+        gradOShapeKeepDims);
     auto r = gradO->reshape(gradO->ordering(),
-                            ShapeUtils::pullShapeFromShapeInfo(
-                                gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+                            shape);  // for example could be something like [a,b] -> [1,a,1,b]
     gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), r, *gradI);
   } else
     gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), *gradO, *gradI);

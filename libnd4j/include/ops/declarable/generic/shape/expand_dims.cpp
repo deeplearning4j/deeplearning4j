@@ -45,8 +45,9 @@ CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
     return Status::OK;
   }
 
+  std::vector<sd::LongType> shape = output->getShapeAsVector();
   //the shape was already determined in the calculate shape info, just reshape to the same shape as the output
-  auto tmp = input->reshape(input->ordering(), output->getShapeAsVector(),false);
+  auto tmp = input->reshape(input->ordering(), shape,false);
   output->assign(tmp);
   output->syncToHost();
   return Status::OK;

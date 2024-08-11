@@ -30,7 +30,7 @@ namespace sd {
 class SD_LIB_EXPORT MmulHelper {
  private:
   // multiptication N-dimensions tensor on other N-dimensions one
-  static NDArray* mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha = 1.0,
+  static NDArray* mmulNxN(NDArray* A, NDArray* B, NDArray* C, const double alpha = 1.0,
                               const double beta = 0.0, const char outOrder = 'f');
 
   // dot product of vectors (X * Y) = Z[0]
@@ -56,12 +56,12 @@ class SD_LIB_EXPORT MmulHelper {
   static NDArray* tensorDot(NDArray* A, NDArray* B, const std::vector<LongType>& axesA,
                                 const std::vector<LongType>& axesB);
 
-  static void tensorDot(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
-                        const std::vector<LongType>& axes_b, const std::vector<LongType>& permutForC = {});
+  static void tensorDot(NDArray* a, NDArray* b, NDArray* c, std::vector<LongType>& axes_a,
+                        std::vector<LongType>& axes_b, std::vector<LongType>& permutForC);
 
   static void computeNewShapesAndAxes(
-      const NDArray& as_, const std::vector<LongType>& axes_a,
-      const NDArray& bs, const std::vector<LongType>& axes_b,
+      NDArray& as_, const std::vector<LongType>& axes_a,
+      NDArray& bs, const std::vector<LongType>& axes_b,
       std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
       std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b
       );
@@ -71,12 +71,12 @@ class SD_LIB_EXPORT MmulHelper {
    * take care of correctness of such arrays by himself
    */
   static void tensorDot(NDArray* a, NDArray* b, NDArray* c,
-                        const std::vector<std::vector<LongType>>& modifA,
-                        const std::vector<std::vector<LongType>>& modifB,
-                        const std::vector<std::vector<LongType>>& modifC);
+                        std::vector<std::vector<LongType>>& modifA,
+                        std::vector<std::vector<LongType>>& modifB,
+                        std::vector<std::vector<LongType>>& modifC);
   static NDArray* tensorDot(NDArray* a, NDArray* b,
-                                const std::vector<std::vector<LongType>>& modifA,
-                                const std::vector<std::vector<LongType>>& modifB);
+                                std::vector<std::vector<LongType>>& modifA,
+                                std::vector<std::vector<LongType>>& modifB);
 
   static void tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vector<LongType>& axes_a,
                          const std::vector<LongType>& axes_b, std::vector<LongType>& permutAt,

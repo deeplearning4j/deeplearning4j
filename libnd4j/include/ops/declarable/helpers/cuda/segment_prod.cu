@@ -316,7 +316,9 @@ template <typename T, typename I>
 Status segmentProdFunctorBP_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,
                                  NDArray* output) {
   auto stream = context->getCudaStream();
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
+  auto outShape = gradOut->getShapeAsVector();
+
+  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(),
                   context);  //->shapeInfo(), context);
   segmentProdFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
@@ -376,8 +378,8 @@ static Status unsortedSegmentProdFunctorBP_(LaunchContext* context, NDArray* inp
                                                 NDArray* gradOut,
                                             LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
+  auto outShape = gradOut->getShapeAsVector();
+  NDArray tempRes(gradOut->ordering(),outShape, DataTypeUtils::fromT<T>(),
                   context);
   unsortedSegmentProdFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut});

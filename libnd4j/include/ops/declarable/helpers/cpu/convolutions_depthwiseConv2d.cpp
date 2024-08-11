@@ -32,8 +32,8 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                             const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                             NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                              const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                              const int isNCHW, const int wFormat) {
   // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)

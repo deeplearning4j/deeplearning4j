@@ -79,7 +79,8 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
                  oC, bias->rankOf(), bias->lengthOf());
 
 
-  if (!isNCDHW) output = new NDArray(output->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+  std::vector<LongType> outputPerm = {0, 4, 1, 2, 3};
+  if (!isNCDHW) output = new NDArray(output->permute(outputPerm));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
   std::vector<LongType> colPermut;
   if (1 == wFormat)
@@ -91,13 +92,16 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
                    // deconv) forward pass
     ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-  NDArray columns(input->ordering(), {bS, oC, kD, kH, kW, iD, iH, iW}, input->dataType(), block.launchContext());
+  std::vector<sd::LongType> columnsShape = {bS, oC, kD, kH, kW, iD, iH, iW};
+  NDArray columns(input->ordering(),columnsShape, input->dataType(), block.launchContext());
 
   //----- calculation of output -----//
   // [kD, kH, kW, oC, iC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
   // [iC, oC, kD, kH, kW] x [bS, iD, iH, iW, iC] = [oC, kD, kH, kW, bS, iD, iH, iW]
   // [iC, kD, kH, kW, oC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
-  sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC},
+  std::vector<LongType> indWiCShape = {indWiC};
+  std::vector<LongType> indIOioCShape = {indIOioC};
+  sd::MmulHelper::tensorDot(weights, input, &columns, indWiCShape, indIOioCShape,
                             colPermut);  // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
 
   ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH,
@@ -281,7 +285,8 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   std::vector<LongType> inputAxesForDot;
 
   if (!isNCDHW) {
-    gradO = new NDArray(gradO->permute({0, 4, 1, 2, 3}));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+    std::vector<LongType> grad0Permute = {0,4,1,2,3};
+    gradO = new NDArray(gradO->permute(grad0Permute));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
     inputAxesForDot = {0, 1, 2, 3};                        // bS, iD, iH, iW
   } else
     inputAxesForDot = {0, 2, 3, 4};  // bS, iD, iH, iW
@@ -295,15 +300,18 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
   // ----- calculation of gradW ----- //
   auto columns = NDArrayFactory::create(input->ordering(), {bS, oC, kD, kH, kW, iD, iH, iW}, input->dataType(),
                                         block.launchContext());
-  ConvolutionUtils::vol2col(block, *gradO, columns, sD, sH, sW, pD, pH, pW, dD, dH,
+  ConvolutionUtils::vol2col(block, gradO, &columns, sD, sH, sW, pD, pH, pW, dD, dH,
                             dW);  // [bS, oC, oD, oH, oW] is deconvoluted to [bS, oC, kD, kH, kW, iD, iH, iW]
-  MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 5, 6, 7},
+
+  std::vector<LongType> mulDims = {0,5,6,7};
+  MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, mulDims,
                         gradWAxes);  // [bS, iC, iD, iH, iW]/[bS, iD, iH, iW, iC] x [bS, oC, kD, kH, kW, iD, iH, iW] =
                                      // [iC, oC, kD, kH, kW]
 
   // ----- calculation of gradB ----- //
   if (gradB) {
-    if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
+    std::vector<LongType> biasShape = {gradB->lengthOf()};
+    if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), biasShape, false));
     std::vector<sd::LongType> dims = {{0, 2, 3, 4}};
     gradO->reduceAlongDimension(reduce::Sum, *gradB, &dims);  // sum over bS, oD, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;

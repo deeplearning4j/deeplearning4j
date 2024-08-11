@@ -75,7 +75,8 @@ static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* v
 
 template <typename T>
 NDArray vmul(LaunchContext* context, NDArray const& v, int n) {
-  NDArray res('c', {n, n}, v.dataType(), context);  // x = matrix_new(n, n);
+  std::vector<LongType> shape = {n, n};
+  NDArray res('c', shape, v.dataType(), context);  // x = matrix_new(n, n);
 
   auto stream = context->getCudaStream();
   dim3 launchDims = getLaunchDims("qr");
@@ -103,7 +104,9 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
   auto resR = fullMatrices ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
   NDArray z = *matrix;
-  NDArray e('c', {M}, DataTypeUtils::fromT<T>(), context);  // two internal buffers and scalar for squared norm
+  std::vector<LongType> shape = {M};
+
+  NDArray e('c', shape, DataTypeUtils::fromT<T>(), context);  // two internal buffers and scalar for squared norm
   for (auto k = 0; k < N && k < M - 1; k++) {               // loop for columns, but not further then row number
     e.nullify();
     z = matrixMinor<T>(context, z,
@@ -121,17 +124,17 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     e /= normE;
     q[k] = vmul<T>(context, e, M);
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, &qQ, false, false,&qQ);
+    MmulHelper::matmul(&q[k], &z, &qQ, false, false,1.0,0.0,&qQ);
     z = std::move(qQ);
   }
   resQ.assign(q[0]);
 
   for (int i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false,&tempResQ);
+    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
     resQ = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, &resR, false, false,&resR);
+  MmulHelper::matmul(&resQ, matrix, &resR, false, false,1.0,0.0,&resR);
   // resR *= -1.f;
   resQ.transposei();
 

@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(col2im, 1, 1, false, 0, 9) {
   LongType dX = INT_ARG(7);  // Dilation in width/x dimension
 
   LaunchContext* ctx = block.launchContext();
-  helpers::col2im(*ctx, x, z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
+  helpers::col2im(*ctx, *x, *z, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX);
 
   return Status::OK;
 }

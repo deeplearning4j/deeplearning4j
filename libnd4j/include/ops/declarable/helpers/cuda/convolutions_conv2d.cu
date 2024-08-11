@@ -60,9 +60,12 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     wAxes = {1, 2, 3};
 
 
-  NDArray *col = new NDArray('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-  NDArray *colP = new NDArray(col->permute({0, 3, 4, 5, 1, 2}, false));  // {bS, iC, kH, kW, oH, oW}
-  NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
+  std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
+  NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
+  std::vector<LongType> colPermute = {0, 3, 4, 5, 1, 2};  // {bS, iC, kH, kW, oH, oW}
+  NDArray *colP = new NDArray(col->permute(colPermute, false));  // {bS, iC, kH, kW, oH, oW}
+  std::vector<sd::LongType> mmulResShape = {bS * oH * oW, oC};
+  NDArray mmulResult('f', mmulResShape, output->dataType(), output->getContext());
 
   std::vector<LongType> permuteForOutput = {0, 3, 1, 2};
 
@@ -74,8 +77,9 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     NDArrayFactory::create(0.f, input->getContext()));
   } else {
+    std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
-    NDArray* inputNchw = new NDArray(input->permute({0, 3, 1, 2}));
+    NDArray* inputNchw = new NDArray(input->permute(permute));
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     NDArrayFactory::create(0.f, input->getContext()));
   }
@@ -85,21 +89,26 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
   block.pushIntermediateResult(col);
 
-  auto im2colReshape = col->reshape('c', {bS * oH * oW, kH * kW * iC}, true);
+  std::vector<sd::LongType> shape = {bS * oH * oW, kW * kH * iC};
+  auto im2colReshape = col->reshape('c', shape, true);
 
-  auto weightsPermuted = weights->permute({3, 2, 1, 0});
-  auto reshapedW = weightsPermuted.reshape('f', {iC * kH * kW, oC}, false);
+  auto weightsPermuted = weights->permute(permuteForOutput);
+  std::vector<LongType> weightShape = {iC * kH * kW, oC};
+  auto reshapedW = weightsPermuted.reshape('f', weightShape, false);
   MmulHelper::matmul(&im2colReshape, &reshapedW, &mmulResult, false, false, 1.0, 0.0);
 
 
-  auto reshaped = mmulResult.reshape('f', {oH,oW,bS,oC}, false);
-  auto permuted = reshaped.permute({2,3,1,0});
+  std::vector<LongType> mmulResultShape = {oH, oW, bS, oC};
+  auto reshaped = mmulResult.reshape('f', mmulResultShape, false);
+  std::vector<sd::LongType> permutedShape = {2, 3, 1,0};
+  auto permuted = reshaped.permute(permutedShape);
 
   // Reshape and copy result to output
   if (isNCHW) {
     output->assign(permuted);
   } else {
-    permuted = permuted.permute({0,2,3,1});
+    std::vector<sd::LongType> otherPermute = {0,2,3,1};
+    permuted = permuted.permute(otherPermute);
     output->assign(permuted);
   }
 

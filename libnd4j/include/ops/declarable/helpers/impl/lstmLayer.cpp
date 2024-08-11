@@ -251,7 +251,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
   auto z = mmul(*x, *Wx) + mmul(*hI, *Wr);  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-                                            // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
 
   // add biases if they are given
   if (b != nullptr) z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
@@ -300,7 +300,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
 
   z->assign(mmul(*x, *Wx) +
             mmul(*hI, *Wr));  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
-                              // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
+  // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
   // add biases if they are given
   if (b != nullptr) *z += *b;  // broadcast [bS, 4*nOut](or[4*nOut]) + [4*nOut] = [bS, 4*nOut]
 
@@ -346,9 +346,9 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI,
-                     const NDArray* cI, const NDArray* Wp, const NDArray* dLdh, const NDArray* dLdhL,
-                     const NDArray* dLdcL, const NDArray* z, const NDArray* a, const NDArray* c,
+void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI,
+                     NDArray* cI, NDArray* Wp, NDArray* dLdh, NDArray* dLdhL,
+                     NDArray* dLdcL, NDArray* z, NDArray* a, NDArray* c,
                      const std::vector<float>& params, NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI,
                      NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp) {
   /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
@@ -542,9 +542,12 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
   dLdcI->assign(*dLdcI * dcdcI);  // [bS, nOut](or[nOut])
 
   if (x->rankOf() == 1) {
-    NDArray xT = x->reshape(x->ordering(), {nIn, 1});              // [nIn]  -> [nIn, 1]
-    NDArray hIT = hI->reshape(hI->ordering(), {nOut, 1});          // [nOut] -> [nOut, 1]
-    NDArray dLdzR = dLdz.reshape(dLdz.ordering(), {1, 4 * nOut});  // [nOut] -> [1, 4*nOut]
+    std::vector<sd::LongType> xShape = {nIn, 1};
+    std::vector<sd::LongType> hIShape = {nOut, 1};
+    std::vector<sd::LongType> dLdzShape = {1, 4 * nOut};
+    NDArray xT = x->reshape(x->ordering(), xShape);              // [nIn]  -> [nIn, 1]
+    NDArray hIT = hI->reshape(hI->ordering(), hIShape);          // [nOut] -> [nOut, 1]
+    NDArray dLdzR = dLdz.reshape(dLdz.ordering(), dLdzShape);  // [nOut] -> [1, 4*nOut]
 
     // dLdWx
     *dLdWx += mmul(xT, dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
@@ -573,7 +576,8 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
     (*dLdWp)({2 * nOut, 3 * nOut}) += std::move(dLdzo) * (*c);  // [nOut]
 
   } else if (Wp) {
-    NDArray temp(Wp->ordering(), {nOut}, Wp->dataType(), Wp->getContext());
+    std::vector<sd::LongType> shape = {nOut};
+    NDArray temp(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
     std::vector<sd::LongType> dims = {0};
 
     (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
@@ -616,7 +620,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
   const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
   const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
-  const std::vector<sd::LongType> shapeOut = {bS, nOut};
+  std::vector<sd::LongType> shapeOut = {bS, nOut};
 
   const auto type = h ? h->dataType() : (hL ? hL->dataType() : cL->dataType());
 
@@ -879,11 +883,10 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                         const NDArray* seqLen, NDArray* hI, NDArray* cI, const NDArray* Wp, const NDArray* dLdh,
-                         const NDArray* dLdhL, const NDArray* dLdcL, const std::vector<float>& params,
-                         const bool forward, NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdb,
-                         NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdWp) {
+void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* seqLen, NDArray* hI, NDArray* cI,
+                         NDArray* Wp, NDArray* dLdh, NDArray* dLdhL, NDArray* dLdcL,
+                         const std::vector<float>& params, const bool forward, NDArray* dLdx, NDArray* dLdWx,
+                         NDArray* dLdWr, NDArray* dLdb, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdWp) {
   // INPUTS:
   // x  - current input  [sL, bS, nIn],  [bS, sL, nIn],  [bS, nIn, sL],
   // Wx - input weights [nIn, 4*nOut]
@@ -918,19 +921,22 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
   const auto type = dLdh ? dLdh->dataType() : (dLdhL ? dLdhL->dataType() : dLdcL->dataType());
 
+  std::vector<sd::LongType> shape = {bS, nOut};
   auto dLdh0 = dLdhI;
   if (!hI)
-    dLdh0 = new NDArray(x->ordering(), {bS, nOut}, type,
+    dLdh0 = new NDArray(x->ordering(), shape, type,
                         x->getContext());  // this constructor nullifies array automatically
 
   auto dLdc0 = dLdcI;
   if (!cI)
-    dLdc0 = new NDArray(x->ordering(), {bS, nOut}, type,
+    dLdc0 = new NDArray(x->ordering(), shape, type,
                         x->getContext());  // this constructor nullifies array automatically
 
-  NDArray z(x->ordering(), {sL, bS, 4 * nOut}, type, x->getContext());
+  std::vector<LongType> zShape = {sL, bS, 4 * nOut};
+  NDArray z(x->ordering(), zShape, type, x->getContext());
   NDArray a = z.ulike();
-  NDArray h(x->ordering(), {sL + 1, bS, nOut}, type, x->getContext());
+  std::vector<LongType> hShape = {sL + 1, bS, nOut};
+  NDArray h(x->ordering(), hShape, type, x->getContext());
   NDArray c = h.ulike();
 
   // create sets of required (depends on seqLen presence) sub-arrays
@@ -995,9 +1001,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
       // bp
       for (sd::LongType t = sL - 1; t >= 0; --t) {
 
-        const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
-        const NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
-        const NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
+        NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
+        NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
+        NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL, zSet->at(t),
                         aSet->at(t), cSet->at(t + 1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
 
@@ -1034,9 +1040,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (sd::LongType t = limit - 1; t >= 0; --t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == limit - 1 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == limit - 1 && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at(t * bS + e), cSet->at(t * bS + e), Wp, dLdhh, dLdhhL,
                           dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at((t + 1) * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
@@ -1069,9 +1075,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
       // bp
       for (sd::LongType t = 0; t < sL; ++t) {
-        const NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
-        const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
-        const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
+        NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
+        NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
+        NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), cSet->at(t + 1), Wp, dLdhh, dLdhhL, dLdccL,
                         zSet->at(t), aSet->at(t), cSet->at(t), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb,
                         dLdWp);
@@ -1108,9 +1114,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (sd::LongType t = sL - limit; t < sL; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == sL - limit && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == sL - limit && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e), Wp, dLdhh,
                           dLdhhL, dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at(t * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
@@ -1151,9 +1157,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         // bp
         for (sd::LongType t = 0; t < limit; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-          const NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
-          const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
-          const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+          NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
+          NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+          NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcLSet->at(e) : nullptr;
           lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e), Wp, dLdhh,
                           dLdhhL, dLdccL, zSet->at(t * bS + e), aSet->at(t * bS + e), cSet->at(t * bS + e), params,
                           dLdxSet->at(ind), dLdWx, dLdWr, dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);

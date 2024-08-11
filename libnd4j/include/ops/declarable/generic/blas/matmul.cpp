@@ -224,12 +224,14 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       std::vector<LongType> axesZero({0});
       auto xSum = x->reduceAlongDimension(reduce::Sum, &axesZero);
       xSum *= *eps;
+      std::vector<sd::LongType> xSumShape = {xSum.lengthOf(), 1};
       // ensure we have proper shape for broadcasted multiplication
-      auto xSumRow = xSum.reshape(xSum.ordering(), {xSum.lengthOf(), 1});
+      auto xSumRow = xSum.reshape(xSum.ordering(), xSumShape);
       std::vector<LongType> axes({1});
       auto ySum = y->reduceAlongDimension(reduce::Sum, &axes);
       ySum *= *eps;
-      auto ySumRow = ySum.reshape(ySum.ordering(), {1, ySum.lengthOf()});
+      std::vector<sd::LongType> ySumShape = {1,ySum.lengthOf()};
+      auto ySumRow = ySum.reshape(ySum.ordering(),ySumShape);
       // execute proper multiplication: rows for first input, columns for second
       dldx->mulRowVector(ySumRow, *dldx);
       dldy->muliColumnVector(xSumRow);

@@ -93,23 +93,25 @@ BUILD_SINGLE_TEMPLATE(template void batchToSpaceCudaLauncher,
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void batchToSpace(sd::LaunchContext* context, NDArray& input, NDArray& output, const sd::LongType cropBottom,
-                  const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight,
-                  const sd::LongType blockSize) {
+void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
+                  const sd::LongType cropBottom, const sd::LongType cropTop, const sd::LongType cropLeft,
+                  const sd::LongType cropRight, const sd::LongType blockSize) {
   // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
   // oH = H - cropTop  - cropBottom
   // oW = W - cropLeft - cropRight
 
+  std::vector<sd::LongType> rearrShape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
   NDArray inputRearranged0 = input.reshape(
-      input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)},false);
+      input.ordering(), rearrShape,false);
   inputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
   } else {
+    std::vector<sd::LongType> outputShape =  {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
     NDArray inputRearranged1 = inputRearranged0.reshape(
         input.ordering(),
-        {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)});
+        outputShape);
 
     const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -339,17 +341,19 @@ void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output,
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
   // padLeft + padRight)/blockSize, iC]
 
+  std::vector<sd::LongType> outputShape = {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), input.sizeAt(3)};
   NDArray outputRearranged0 = output.reshape(
-      output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), input.sizeAt(3)},
+      output.ordering(), outputShape,
       false);
   outputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
   } else {
+    std::vector<sd::LongType> outReArrShape =  {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)};
     NDArray outputRearranged1 = outputRearranged0.reshape(
         output.ordering(),
-        {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)}, false);
+        outReArrShape, false);
 
 
     dim3 launchDims = spaceToBatchLaunch(output.lengthOf(),output.rankOf());

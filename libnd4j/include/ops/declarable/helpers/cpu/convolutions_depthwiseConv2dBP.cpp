@@ -31,7 +31,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO,
+static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, NDArray* gradO,
                                NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW, const LongType sH,
                                const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                                const int isNCHW, const int wFormat) {
@@ -123,8 +123,8 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   }
 }
 
-void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights,
-                                         const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+void ConvolutionUtils::depthwiseConv2dBP(graph::Context& block, NDArray* input, NDArray* weights,
+                                         NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                          NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH,
                                          LongType pW, const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,
                                          const int wFormat) {

@@ -302,7 +302,8 @@ static void svdJcb(LaunchContext* context, const NDArray* A, NDArray* S, NDArray
   NDArray* arrToAvoidBugInAPI = nullptr;
   if (!calcUV && m != n) {
     int maxDim = m > n ? m : n;
-    arrToAvoidBugInAPI = new NDArray('c', {maxDim, maxDim}, pA->dataType(), context);
+    std::vector<LongType> shape = {maxDim, maxDim};
+    arrToAvoidBugInAPI = new NDArray('c', shape, pA->dataType(), context);
     nullPtr = arrToAvoidBugInAPI->specialBuffer();
   }
   // ******************

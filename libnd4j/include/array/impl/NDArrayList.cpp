@@ -174,13 +174,15 @@ NDArray* NDArrayList::stack() {
   int rank = shape::rank(inShapeInfo);
   NDArray* array = nullptr;
 
-  if (shape::isEmpty(inShapeInfo)) {
+  if (shape::isEmptyConst(inShapeInfo)) {
     switch (rank) {
       case 0: {
         if (numElements == 1) {
-          array = new NDArray(inputs[0]->ordering(), {0}, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
+          std::vector<sd::LongType> shape = {0};
+          array = new NDArray(inputs[0]->ordering(), shape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
         } else {
-          array = new NDArray('c', {(sd::LongType)numElements, 0}, ArrayOptions::dataType(inShapeInfo),
+          std::vector<sd::LongType> shape =  {(sd::LongType)numElements, 0};
+          array = new NDArray('c', shape, ArrayOptions::dataType(inShapeInfo),
                               inputs[0]->getContext());
         }
       }

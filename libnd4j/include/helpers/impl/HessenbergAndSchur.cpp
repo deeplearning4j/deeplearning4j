@@ -34,7 +34,8 @@ Hessenberg<T>::Hessenberg(const NDArray& matrix) {
   if (matrix.rankOf() != 2) THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) == 1) {
-    _Q = NDArray(matrix.ordering(), {1, 1}, matrix.dataType(), matrix.getContext());
+    std::vector<LongType> qShape = {1, 1};
+    _Q = NDArray(matrix.ordering(),qShape, matrix.dataType(), matrix.getContext());
     _Q = 1;
     _H = matrix.dup(false);
     return;
@@ -54,7 +55,8 @@ template <typename T>
 void Hessenberg<T>::evalData() {
   const int rows = _H.sizeAt(0);
 
-  NDArray hhCoeffs(_H.ordering(), {rows - 1}, _H.dataType(), _H.getContext());
+  std::vector<LongType> coeffsShape = {rows - 1};
+  NDArray hhCoeffs(_H.ordering(), coeffsShape, _H.dataType(), _H.getContext());
 
   // calculate _H
   for (LongType i = 0; i < rows - 1; ++i) {
@@ -139,7 +141,8 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
   if (q >= (T)0) {
     T z = math::sd_sqrt<T, T>(math::sd_abs<T>(q));
 
-    NDArray rotation(t.ordering(), {2, 2}, t.dataType(), t.getContext());
+    std::vector<LongType> rotShape = {2, 2};
+    NDArray rotation(t.ordering(), rotShape, t.dataType(), t.getContext());
 
     if (p >= (T)0)
       JacobiSVD<T>::createJacobiRotationGivens(p + z, t.t<T>(ind, ind - 1), rotation);
@@ -243,7 +246,8 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const
     const bool firstIter = (k == ind2);
 
     T coeff, normX;
-    NDArray tail(t.ordering(), {2, 1}, t.dataType(), t.getContext());
+    std::vector<LongType> tailShape = {2,1};
+    NDArray tail(t.ordering(),tailShape, t.dataType(), t.getContext());
     Householder<T>::evalHHmatrixData(firstIter ? householderVec : t({k, k + 3, k - 1, k}), tail, coeff, normX);
 
     if (normX != T(0)) {
@@ -264,7 +268,8 @@ void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const
   }
 
   T coeff, normX;
-  NDArray tail(t.ordering(), {1, 1}, t.dataType(), t.getContext());
+  std::vector<LongType> tailShape = {1,1};
+  NDArray tail(t.ordering(), tailShape, t.dataType(), t.getContext());
   Householder<T>::evalHHmatrixData(t({ind3 - 1, ind3 + 1, ind3 - 2, ind3 - 1}), tail, coeff, normX);
 
   if (normX != T(0)) {
@@ -317,8 +322,9 @@ void Schur<T>::calcFromHessenberg() {
         iu -= 2;
         iter = 0;
       } else {
-        NDArray householderVec(t.ordering(), {3}, t.dataType(), t.getContext());
-        NDArray shiftVec(t.ordering(), {3}, t.dataType(), t.getContext());
+        std::vector<LongType> shiftVecShape = {3};
+        NDArray householderVec(t.ordering(), shiftVecShape, t.dataType(), t.getContext());
+        NDArray shiftVec(t.ordering(), shiftVecShape, t.dataType(), t.getContext());
 
         calcShift(iu, iter, shift, shiftVec);
 

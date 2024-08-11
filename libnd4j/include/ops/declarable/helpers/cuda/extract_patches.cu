@@ -125,9 +125,11 @@ static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* ou
   auto func = PRAGMA_THREADS_FOR {
     for (auto batch = 0; batch < stop; batch++) {
       auto patch = listOfMatricies.at(batch);
-      auto inPatch = patch->rankOf() > 3 && patch->sizeAt(0) == 1 ? new NDArray(patch->reshape('c',{patch->sizeAt(1),patch->sizeAt(2),patch->sizeAt(3)},false)) : patch;
+      std::vector<sd::LongType> inShape = {patch->sizeAt(1), patch->sizeAt(2), patch->sizeAt(3)};
+      auto inPatch = patch->rankOf() > 3 && patch->sizeAt(0) == 1 ? new NDArray(patch->reshape('c',inShape,false)) : patch;
       auto outMatrix = listOfOutputs.at(batch);
-      auto outReshape = outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1 ? new NDArray(outMatrix->reshape('c',{outMatrix->sizeAt(1),outMatrix->sizeAt(2),outMatrix->sizeAt(3)},false)) : outMatrix;
+      std::vector<sd::LongType> outShape = {outMatrix->sizeAt(1), outMatrix->sizeAt(2), outMatrix->sizeAt(3)};
+      auto outReshape = outMatrix->rankOf() > 3 && outMatrix->sizeAt(0) == 1 ? new NDArray(outMatrix->reshape('c',outShape,false)) : outMatrix;
       for (LongType i = 0; i < outRowDim; i++) {
         for (LongType j = 0; j < outColDim; j++) {
           LongType pos = 0;

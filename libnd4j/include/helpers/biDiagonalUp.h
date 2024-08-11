@@ -40,7 +40,7 @@ class BiDiagonalUp {
    *
    *  matrix - input matrix expected to be bi-diagonalized, remains unaffected
    */
-  BiDiagonalUp(const NDArray& matrix);
+  BiDiagonalUp(NDArray& matrix);
 
   /**
    *  this method evaluates data (coeff, normX, tail) used in Householder transformation

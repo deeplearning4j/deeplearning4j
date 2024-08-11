@@ -78,7 +78,7 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
 
   auto rightPart = rightInput->ulike();
 
-  MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0,&rightPart);
+  MmulHelper::matmul(&P, rightInput, &rightPart,false,false, 0.0, 0.0,&rightPart);
   ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;

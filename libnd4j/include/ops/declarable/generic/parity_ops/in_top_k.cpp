@@ -53,7 +53,7 @@ DECLARE_SHAPE_FN(in_top_k) {
   int shapeRank = shape::rank(in);
 
   auto aShape = ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::BOOL, shape::order(in),
-                                                                   shape::rank(in), shape::shapeOf(in));
+                                                                   shape::rank(in), shape::shapeOf(in),0);
   shapeList->push_back(aShape);
   return shapeList;
 }

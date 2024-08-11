@@ -41,7 +41,8 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
     sd::LongType  offset = shape::getOffset(condition.shapeInfo(), idx);
 
     if (condition.e<bool>(offset)) {
-      auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());
+      std::vector<sd::LongType> arrShape = {1, condition.rankOf()};
+      auto array = NDArrayFactory::create_('c', arrShape, output.dataType(), output.getContext());
       for (int f = 0; f < condition.rankOf(); f++) array->p(f, (T)idx[f]);
 
       list.write(cnt++, array);

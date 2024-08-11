@@ -41,13 +41,17 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
   auto numHeads = projectionMatrix->sizeAt(0);
   auto projectedSize = projectionMatrix->sizeAt(1);
 
-  auto inputPerm = input->permute({1, 0, 2}, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
-  auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});  //[nIn, batch*timeSteps]
+  std::vector<sd::LongType> epsPermVec = {1, 0,2};
+  auto inputPerm = input->permute(epsPermVec, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
+  std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), (miniBatchSize * seqLength)};
+  auto inputPrep = inputPerm.reshape('c', inputPermShape);  //[nIn, batch*timeSteps]
+  std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
   auto projectionPrep = projectionMatrix->reshape(
       'c',
-      {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});  //[nHeads, hS, nIn] -> [nHeads*hS, nIn]
+      projectionMatrixShape);  //[nHeads, hS, nIn] -> [nHeads*hS, nIn]
 
-  NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(),
+  std::vector<LongType> projectedShape = {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)};
+  NDArray projected('c',projectedShape, input->dataType(),
                     context);  //[nHeads*hS, batch*timeSteps]
   ops::matmul mmul;
   mmul.execute({&projectionPrep, &inputPrep}, {&projected});
@@ -443,13 +447,18 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   auto numHeads = projectionMatrix->sizeAt(0);
   auto projectedSize = projectionMatrix->sizeAt(1);
 
-  auto epsPerm = eps->permute({1, 2, 0, 3}, false);
-  auto epsReshaped = epsPerm.reshape('c', {numHeads * projectedSize, miniBatchSize * seqLength});
+  std::vector<sd::LongType> epsPermVec = {1, 2, 0, 3};
+  auto epsPerm = eps->permute(epsPermVec, false);
+  std::vector<sd::LongType> epsReshapeVec = {numHeads * projectedSize, miniBatchSize * seqLength};
+  auto epsReshaped = epsPerm.reshape('c', epsReshapeVec);
 
-  auto inputPerm = input->permute({1, 0, 2}, false);
-  auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
+  std::vector<sd::LongType> inputPermVec = {1, 0, 2};
+  auto inputPerm = input->permute(inputPermVec, false);
+  std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), miniBatchSize * seqLength};
+  auto inputPrep = inputPerm.reshape('c',inputPermShape,false);
+  std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
   auto projectionPrep =
-      projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
+      projectionMatrix->reshape('c', projectionMatrixShape);
 
   ops::matmul_bp mmulBp;
   NDArray dLdProjectionPrep(projectionPrep.shapeInfo(), false, context);

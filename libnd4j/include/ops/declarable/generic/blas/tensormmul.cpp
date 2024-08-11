@@ -49,7 +49,8 @@ CUSTOM_OP_IMPL(tensormmul, 2, 1, false, 0, -1) {
   for (LongType e = 0; e < axe1_size; e++) axes_1[e] = INT_ARG(e + axe0_size + 2);
 
 
-  MmulHelper::tensorDot(a, b, c, axes_0, axes_1);
+  std::vector<sd::LongType> permuteC = {};
+  MmulHelper::tensorDot(a, b, c, axes_0, axes_1,permuteC);
   return Status::OK;
 }
 DECLARE_SYN(tensordot, tensormmul);
@@ -126,7 +127,9 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
 
   //scalar case, tile value to be whatever the c value is. common when directly attached to the loss
   if(dC->isScalar()) {
-    dC = new NDArray('c',C->getShapeAsVector(), dC->dataType(), dC->getContext());
+    auto newVec = const_cast<NDArray *>(C);
+    auto newShape = newVec->getShapeAsVector();
+    dC = new NDArray('c',newShape, dC->dataType(), dC->getContext());
   }
 
 

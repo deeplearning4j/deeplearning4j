@@ -36,9 +36,9 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
   auto y = inputShape->at(1);
   sd::DataType dtype = sd::DataType::BOOL;
 
-  if (shape::isEmpty(x) || shape::isEmpty(y)) {
+  if (shape::isEmptyConst(x) || shape::isEmptyConst(y)) {
     // this is edge case, [3, 4] + [] = []
-    if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
+    if ((shape::isEmptyConst(x) && shape::rank(x) == 0) || (shape::isEmptyConst(y) && shape::rank(y) == 0)) {
       shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
       return shapeList;
     }

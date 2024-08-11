@@ -43,7 +43,7 @@ sd::graph::VariableSpace* sd::graph::VariableSpace::clone() {
 }
 
 void VariableSpace::setWorkspace(sd::memory::Workspace* workspace) {
-  _workspace = *workspace;
+  _workspace = workspace;
 }
 
 sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {

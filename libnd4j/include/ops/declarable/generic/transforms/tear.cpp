@@ -66,7 +66,7 @@ DECLARE_SHAPE_FN(tear) {
   for (sd::LongType e = 0; e < numTads; e++) {
     auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape),
                                                                        shape::rank(tadPack->primaryShapeInfo()),
-                                                                       shape::shapeOf(tadPack->primaryShapeInfo()));
+                                                                       shape::shapeOf(tadPack->primaryShapeInfo()),0);
     result->push_back(newShape);
   }
 

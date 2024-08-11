@@ -648,8 +648,9 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   if (retLastH) {
     dLdhL = INPUT_VARIABLE(count++);
     if (dLdhL->isScalar()) {
+      std::vector<sd::LongType> shape =  directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut};
       temp_dLdhL.reset(NDArrayFactory::valueOf(
-          directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut}, *dLdhL,
+          shape, *dLdhL,
           x->ordering()));
       // refresh
       dLdhL = temp_dLdhL.get();
@@ -659,8 +660,9 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
   if (retLastC) {
     dLdcL = INPUT_VARIABLE(count++);
     if (dLdcL->isScalar()) {
+      std::vector<sd::LongType> shape = directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut};
       temp_dLdcL.reset(NDArrayFactory::valueOf(
-          directionMode < 2 ? std::vector<LongType>{bS, nOut} : std::vector<LongType>{2, bS, nOut}, *dLdcL,
+          shape, *dLdcL,
           x->ordering()));
       // refresh
       dLdcL = temp_dLdcL.get();

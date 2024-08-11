@@ -84,9 +84,11 @@ CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
   if (mask != nullptr) {
     NDArray reshapedMask;
     if (weights->rankOf() == 4) {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
+      std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
+      reshapedMask = mask->reshape(mask->ordering(),shape);
     } else {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
+      std::vector<sd::LongType> shape = {mask->sizeAt(0), mask->sizeAt(1), 1};
+      reshapedMask = mask->reshape(mask->ordering(),shape);
     }
 
     // the mask is 0 for positions we want to skip, and 1 for positions we want to keep. By subtracting 1 from
@@ -188,9 +190,11 @@ CUSTOM_OP_IMPL(dot_product_attention_bp, 4, 3, false, 0, 1) {
   NDArray reshapedMask;
   if (mask != nullptr && !mask->isEmpty()) {
     if (preSoftmax.rankOf() == 4) {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), 1, mask->sizeAt(1), 1});
+      std::vector<sd::LongType> shape = {mask->sizeAt(0), 1, mask->sizeAt(1), 1};
+      reshapedMask = mask->reshape(mask->ordering(), shape);
     } else {
-      reshapedMask = mask->reshape(mask->ordering(), {mask->sizeAt(0), mask->sizeAt(1), 1});
+      std::vector<sd::LongType> shape = {mask->sizeAt(0), mask->sizeAt(1), 1};
+      reshapedMask = mask->reshape(mask->ordering(), shape);
     }
 
     reshapedMask  *= 1e9;

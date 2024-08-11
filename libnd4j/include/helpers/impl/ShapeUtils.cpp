@@ -328,7 +328,7 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array which is result of repeat operation applied to arr
 std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vector<LongType>& repeats,
-                                                  const NDArray& arr) {
+                                                  NDArray& arr) {
   if (axis < 0) axis += arr.rankOf();
 
   if (repeats.size() != 1 && repeats.size() != arr.sizeAt(axis))
