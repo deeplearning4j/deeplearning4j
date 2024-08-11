@@ -156,7 +156,7 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(ShapeDescriptor *de
 }
 
 
-ShapeDescriptor* ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *descriptor) {
+ShapeDescriptor* ConstantShapeHelper:: SD_INLINE (ShapeDescriptor *descriptor) {
   for (const auto& cache : _cache) {
     auto it = cache.find(*descriptor);
     if (it != cache.end()) {

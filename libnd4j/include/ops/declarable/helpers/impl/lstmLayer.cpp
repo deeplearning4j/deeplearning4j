@@ -118,7 +118,7 @@ static void activationDeriv(const NDArray& x, const int opId, const float alpha,
       break;
     case 6: {
       auto func = PRAGMA_THREADS_FOR {
-        for (LongType i = start; i < stop; ++i) {
+        for (sd::LongType i = start; i < stop; ++i) {
           auto val = beta * x.e<float>(i);
           z.p<float>(
               i, alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val)));
@@ -138,7 +138,7 @@ static void activationDeriv(const NDArray& x, const int opId, const float alpha,
       break;
     case 10: {
       auto func = PRAGMA_THREADS_FOR {
-        for (LongType i = start; i < stop; ++i) {
+        for (sd::LongType i = start; i < stop; ++i) {
           auto val = sd::math::sd_exp<float, float>(x.e<float>(i));
           z.p<float>(i, val / (1.f + val));
         }
@@ -157,7 +157,7 @@ static void clipDeriv(const float clipVal, const NDArray& c, NDArray& z0, NDArra
   if (clipVal == 0) return;
 
   auto func = PRAGMA_THREADS_FOR {
-    for (LongType i = start; i < stop; ++i) {
+    for (sd::LongType i = start; i < stop; ++i) {
       const auto val = c.e<float>(i);
       if (val == -clipVal || val == clipVal) {
         z0.p<float>(i, 0.f);
@@ -248,7 +248,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
   // !!! dimension 4*nOut implies order it, ft, c't, ot
   // !!! dimension 3*nOut implies order it, ft, ot
 
-  const LongType nOut = Wx->sizeAt(-1) / 4;
+  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
   auto z = mmul(*x, *Wx) + mmul(*hI, *Wr);  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
   // or [nIn] * [nIn, 4*nOut] + [nOut] * [nOut, 4*nOut] = [4*nOut]
@@ -296,7 +296,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
   // z - zi, zf, zg, zo
   // a - i, f, g, o
 
-  const LongType nOut = Wx->sizeAt(-1) / 4;
+  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
   z->assign(mmul(*x, *Wx) +
             mmul(*hI, *Wr));  //   [bs, nIn] * [nIn, 4*nOut] + [bs, nOut] * [nOut, 4*nOut] = [bS, 4*nOut]
@@ -458,8 +458,8 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   //  dLdWpf = (dLdzf*cI).reduce_sum_along_0_axis       [bS, nOut] -> reduce -> [nOut]
   //  dLdWpo = (dLdzo*c) .reduce_sum_along_0_axis       [bS, nOut] -> reduce -> [nOut]
 
-  const LongType nOut = Wx->sizeAt(-1) / 4;
-  const LongType nIn = x->sizeAt(-1);
+  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
+  const sd::LongType nIn = x->sizeAt(-1);
 
   NDArray zi = x->rankOf() == 1 ? (*z)({0, nOut}) : (*z)({0, 0, 0, nOut});  // input gate i, [bS, nOut](or[nOut])
   NDArray zf =
@@ -502,7 +502,7 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdzo *= temp;
 
   // dcdcI
-  NDArray dcdcI = f.dup(false);  // dcdcI = f*clipDeriv [bS, nOut](or[nOut])
+  NDArray dcdcI = f.dup();  // dcdcI = f*clipDeriv [bS, nOut](or[nOut])
 
   // take into account possible deposit from clipping derivative
   clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, dcdcI);
@@ -542,9 +542,12 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   dLdcI->assign(*dLdcI * dcdcI);  // [bS, nOut](or[nOut])
 
   if (x->rankOf() == 1) {
-    NDArray xT = x->reshape(x->ordering(), {nIn, 1});              // [nIn]  -> [nIn, 1]
-    NDArray hIT = hI->reshape(hI->ordering(), {nOut, 1});          // [nOut] -> [nOut, 1]
-    NDArray dLdzR = dLdz.reshape(dLdz.ordering(), {1, 4 * nOut});  // [nOut] -> [1, 4*nOut]
+    std::vector<sd::LongType> xShape = {nIn, 1};
+    std::vector<sd::LongType> hIShape = {nOut, 1};
+    std::vector<sd::LongType> dLdzShape = {1, 4 * nOut};
+    NDArray xT = x->reshape(x->ordering(), xShape);              // [nIn]  -> [nIn, 1]
+    NDArray hIT = hI->reshape(hI->ordering(), hIShape);          // [nOut] -> [nOut, 1]
+    NDArray dLdzR = dLdz.reshape(dLdz.ordering(), dLdzShape);  // [nOut] -> [1, 4*nOut]
 
     // dLdWx
     *dLdWx += mmul(xT, dLdzR);  // [nIn, 1] x [1, 4*nOut] = [nIn, 4*nOut]
@@ -563,7 +566,7 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   if (b && x->rankOf() == 1)
     *dLdb += dLdz;  // [4*nOut]
   else if (b) {
-    std::vector<LongType> dims = {0};
+    std::vector<sd::LongType> dims = {0};
     *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &dims);  // [bS, 4*nOut] -> reduce -> [4*nOut];
   }
   // dLdWp
@@ -573,8 +576,9 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     (*dLdWp)({2 * nOut, 3 * nOut}) += std::move(dLdzo) * (*c);  // [nOut]
 
   } else if (Wp) {
-    NDArray temp(Wp->ordering(), {nOut}, Wp->dataType(), Wp->getContext());
-    std::vector<LongType> dims = {0};
+    std::vector<sd::LongType> shape = {nOut};
+    NDArray temp(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
+    std::vector<sd::LongType> dims = {0};
 
     (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({0, nOut}) += temp;
@@ -612,11 +616,11 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
   const int dataFormat = params[0];
   const int directionMode = params[1];
 
-  const LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
-  const LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
-  const LongType nOut = Wx->sizeAt(-1) / 4;
+  const sd::LongType sL = dataFormat == 3 ? x->sizeAt(0) : x->sizeAt(dataFormat);
+  const sd::LongType bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
+  const sd::LongType nOut = Wx->sizeAt(-1) / 4;
 
-  const std::vector<LongType> shapeOut = {bS, nOut};
+  std::vector<sd::LongType> shapeOut = {bS, nOut};
 
   const auto type = h ? h->dataType() : (hL ? hL->dataType() : cL->dataType());
 
@@ -639,18 +643,18 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
   if (!h && !hL) ht = new NDArray(x->ordering(), shapeOut, type, x->getContext());
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<LongType> *dims;
+  std::vector<sd::LongType> *dims;
   ResultSet *xSet(nullptr), *hSet(nullptr), *h0Set(nullptr), *c0Set(nullptr), *htSet(nullptr), *ctSet(nullptr);
 
   if (!seqLen) {
-    std::vector<LongType> dims2 =  {dataFormat < 3 ? dataFormat : 0};
+    std::vector<sd::LongType> dims2 =  {dataFormat < 3 ? dataFormat : 0};
     dims = ShapeUtils::evalDimsToExclude(x->rankOf(),
                                          dims2.size(),dims2.data());  // points on bS and nIn/nOut axes
 
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));         // sub-arrays with shape [bS, nIn]
     if (h) hSet = new ResultSet(h->allTensorsAlongDimension(*dims));  // sub-arrays with shape [bS, nOut]
   } else {
-    dims = dataFormat == 2 ? new std::vector<LongType>({1}) : new std::vector<LongType>({2});  // points on nIn/nOut axis
+    dims = dataFormat == 2 ? new std::vector<sd::LongType>({1}) : new std::vector<sd::LongType>({2});  // points on nIn/nOut axis
 
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));           //  sub-arrays with shape [nIn]
     h0Set = new ResultSet(h0->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
@@ -668,12 +672,12 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
       if (!h) {  // seqLen and h are absent
 
         lstmLayerCell(xSet->at(0), Wx, Wr, b, h0, c0, Wp, params, ht, ct);  // first time step
-        for (LongType t = 1; t < sL; ++t)
+        for (sd::LongType t = 1; t < sL; ++t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, ht, ct, Wp, params, ht, ct);  // rest time steps
       } else {                                                                // seqLen is absent and h is present
 
         lstmLayerCell(xSet->at(0), Wx, Wr, b, h0, c0, Wp, params, hSet->at(0), ct);  // first time step
-        for (LongType t = 1; t < sL; ++t)
+        for (sd::LongType t = 1; t < sL; ++t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t - 1), ct, Wp, params, hSet->at(t), ct);  // rest time steps
 
         if (hL) hL->assign(hSet->at(sL - 1));  // assign last output to hL if it is not nullptr
@@ -681,7 +685,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
     } else {
       if (!h) {  // seqLen is present and h is absent
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           const int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -702,7 +706,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
         }
       } else {  // seqLen and h are present
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -740,12 +744,12 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
       if (!h) {  // seqLen and h are absent
 
         lstmLayerCell(xSet->at(sL - 1), Wx, Wr, b, h0, c0, Wp, params, ht, ct);  // first time step
-        for (LongType t = sL - 2; t >= 0; --t)
+        for (sd::LongType t = sL - 2; t >= 0; --t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, ht, ct, Wp, params, ht, ct);  // rest time steps
       } else {                                                                // seqLen is absent and h is present
 
         lstmLayerCell(xSet->at(sL - 1), Wx, Wr, b, h0, c0, Wp, params, hSet->at(sL - 1), ct);  // first time step
-        for (LongType t = sL - 2; t >= 0; --t)
+        for (sd::LongType t = sL - 2; t >= 0; --t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), ct, Wp, params, hSet->at(t), ct);  // rest time steps
 
         if (hL) hL->assign(hSet->at(0));  // assign last output to hL if it is not nullptr
@@ -754,7 +758,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
 
       if (!h) {  // h is absent and seqLen is present
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           const int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -767,7 +771,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
           lstmLayerCell(xSet->at(ind), Wx, Wr, b, h0Set->at(e), c0Set->at(e), Wp, params, htSet->at(e),
                         ctSet->at(e));  // first time step
 
-          for (LongType t = sL - 2; t >= sL - limit; --t) {
+          for (sd::LongType t = sL - 2; t >= sL - limit; --t) {
             ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
             lstmLayerCell(xSet->at(ind), Wx, Wr, b, htSet->at(e), ctSet->at(e), Wp, params, htSet->at(e),
                           ctSet->at(e));  // rest time steps
@@ -775,7 +779,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
         }
       } else {  // seqLen and h are present
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -792,7 +796,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
           lstmLayerCell(xSet->at(indPrev), Wx, Wr, b, h0Set->at(e), c0Set->at(e), Wp, params, hSet->at(indPrev),
                         ctSet->at(e));  // first time step
 
-          for (LongType t = sL - 2; t >= sL - limit; --t) {
+          for (sd::LongType t = sL - 2; t >= sL - limit; --t) {
             auto indCurr = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
             lstmLayerCell(xSet->at(indCurr), Wx, Wr, b, hSet->at(indPrev), ctSet->at(e), Wp, params, hSet->at(indCurr),
                           ctSet->at(e));  // rest time steps
@@ -810,7 +814,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
 
       if (!h) {  // h is absent and seqLen is present
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           const int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -831,7 +835,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
         }
       } else {  // seqLen and h are present
 
-        for (LongType e = 0; e < bS; ++e) {
+        for (sd::LongType e = 0; e < bS; ++e) {
           int limit = seqLen->e<int>(e);
 
           if (limit == 0) {
@@ -879,11 +883,10 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
-                         NDArray* seqLen, NDArray* hI, NDArray* cI, NDArray* Wp, NDArray* dLdh,
-                         NDArray* dLdhL, NDArray* dLdcL, const std::vector<float>& params,
-                         const bool forward, NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdb,
-                         NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdWp) {
+void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* seqLen, NDArray* hI, NDArray* cI,
+                         NDArray* Wp, NDArray* dLdh, NDArray* dLdhL, NDArray* dLdcL,
+                         const std::vector<float>& params, const bool forward, NDArray* dLdx, NDArray* dLdWx,
+                         NDArray* dLdWr, NDArray* dLdb, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdWp) {
   // INPUTS:
   // x  - current input  [sL, bS, nIn],  [bS, sL, nIn],  [bS, nIn, sL],
   // Wx - input weights [nIn, 4*nOut]
@@ -918,29 +921,32 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
 
   const auto type = dLdh ? dLdh->dataType() : (dLdhL ? dLdhL->dataType() : dLdcL->dataType());
 
+  std::vector<sd::LongType> shape = {bS, nOut};
   auto dLdh0 = dLdhI;
   if (!hI)
-    dLdh0 = new NDArray(x->ordering(), {bS, nOut}, type,
+    dLdh0 = new NDArray(x->ordering(), shape, type,
                         x->getContext());  // this constructor nullifies array automatically
 
   auto dLdc0 = dLdcI;
   if (!cI)
-    dLdc0 = new NDArray(x->ordering(), {bS, nOut}, type,
+    dLdc0 = new NDArray(x->ordering(), shape, type,
                         x->getContext());  // this constructor nullifies array automatically
 
-  NDArray z(x->ordering(), {sL, bS, 4 * nOut}, type, x->getContext());
+  std::vector<LongType> zShape = {sL, bS, 4 * nOut};
+  NDArray z(x->ordering(), zShape, type, x->getContext());
   NDArray a = z.ulike();
-  NDArray h(x->ordering(), {sL + 1, bS, nOut}, type, x->getContext());
+  std::vector<LongType> hShape = {sL + 1, bS, nOut};
+  NDArray h(x->ordering(), hShape, type, x->getContext());
   NDArray c = h.ulike();
 
   // create sets of required (depends on seqLen presence) sub-arrays
-  std::vector<LongType> *dims;
+  std::vector<sd::LongType> *dims;
   ResultSet *xSet(nullptr), *dLdxSet(nullptr), *hSet(nullptr), *cSet(nullptr), *zSet(nullptr), *aSet(nullptr),
       *dLdhSet(nullptr), *dLdh0Set(nullptr), *dLdc0Set(nullptr), *dLdhLSet(nullptr), *dLdcLSet(nullptr),
       *hISet(nullptr), *cISet(nullptr);
 
   if (!seqLen) {
-    std::vector<LongType> dim =  {dataFormat < 3 ? dataFormat : 0};
+    std::vector<sd::LongType> dim =  {dataFormat < 3 ? dataFormat : 0};
     dims = ShapeUtils::evalDimsToExclude(x->rankOf(),dim.size(),dim.data());  // points on [bS, nIn/nOut]
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));                  // sub-arrays with shape [bS, nIn]
     dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));            // sub-arrays with shape [bS, nIn]
@@ -951,7 +957,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
     if (dLdh) dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(*dims));  // sub-arrays with shape [bS, nOut]
 
   } else {
-    dims = dataFormat == 2 ? new std::vector<LongType>({1}) : new std::vector<LongType>({2});  // points on nIn/nOut axis
+    dims = dataFormat == 2 ? new std::vector<sd::LongType>({1}) : new std::vector<sd::LongType>({2});  // points on nIn/nOut axis
 
     xSet = new ResultSet(x->allTensorsAlongDimension(*dims));        // sub-arrays with shape [nIn]
     dLdxSet = new ResultSet(dLdx->allTensorsAlongDimension(*dims));  // sub-arrays with shape [nIn]
@@ -987,25 +993,28 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
         cSet->at(0)->nullify();
 
       // ff
-      for (LongType t = 0; t < sL; ++t) {
+      for (sd::LongType t = 0; t < sL; ++t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t + 1), cSet->at(t + 1));
       }
 
       // bp
-      for (LongType t = sL - 1; t >= 0; --t) {
+      for (sd::LongType t = sL - 1; t >= 0; --t) {
 
         NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
         NDArray* dLdhhL = (t == sL - 1 && dLdhL) ? dLdhL : nullptr;
         NDArray* dLdccL = (t == sL - 1 && dLdcL) ? dLdcL : nullptr;
         lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL, zSet->at(t),
                         aSet->at(t), cSet->at(t + 1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
+
       }
+
+
 
     } else {  // seqLen is present
 
-      for (LongType e = 0; e < bS; ++e) {
-        const LongType limit = seqLen->e<LongType>(e);
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const sd::LongType limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1023,13 +1032,13 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
           cSet->at(e)->nullify();
 
         // ff
-        for (LongType t = 0; t < limit; ++t) {
+        for (sd::LongType t = 0; t < limit; ++t) {
           lstmLayerCell(xSet->at(getBatchTimeTotalIndex(dataFormat, sL, bS, t, e)), Wx, Wr, b, hSet->at(t * bS + e),
                         cSet->at(t * bS + e), Wp, params, zSet->at(t * bS + e), aSet->at(t * bS + e),
                         hSet->at((t + 1) * bS + e), cSet->at((t + 1) * bS + e));
         }
         // bp
-        for (LongType t = limit - 1; t >= 0; --t) {
+        for (sd::LongType t = limit - 1; t >= 0; --t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           NDArray* dLdhhL = (t == limit - 1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
@@ -1059,13 +1068,13 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
         cSet->at(sL)->nullify();
 
       // ff
-      for (LongType t = sL - 1; t >= 0; --t) {
+      for (sd::LongType t = sL - 1; t >= 0; --t) {
         lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), cSet->at(t + 1), Wp, params, zSet->at(t), aSet->at(t),
                       hSet->at(t), cSet->at(t));
       }
 
       // bp
-      for (LongType t = 0; t < sL; ++t) {
+      for (sd::LongType t = 0; t < sL; ++t) {
         NDArray* dLdhh = dLdh ? dLdhSet->at(t) : nullptr;
         NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
         NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
@@ -1078,8 +1087,8 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
 
     } else if (directionMode == 1) {  // backward, seqLen is present
 
-      for (LongType e = 0; e < bS; ++e) {
-        const LongType limit = seqLen->e<LongType>(e);
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const sd::LongType limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1103,7 +1112,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
                         aSet->at(t * bS + e), hSet->at(t * bS + e), cSet->at(t * bS + e));
 
         // bp
-        for (LongType t = sL - limit; t < sL; ++t) {
+        for (sd::LongType t = sL - limit; t < sL; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           NDArray* dLdhhL = (t == sL - limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
@@ -1121,8 +1130,8 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
 
     } else {  // bidirectional mode, seqLen is present
 
-      for (LongType e = 0; e < bS; ++e) {
-        const int limit = seqLen->e<LongType>(e);
+      for (sd::LongType e = 0; e < bS; ++e) {
+        const int limit = seqLen->e<sd::LongType>(e);
 
         if (limit == 0) {
           tensorAlongTimeBatchDims(*dLdx, dataFormat, 0, 0, e, e + 1)
@@ -1146,7 +1155,7 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
                         aSet->at(t * bS + e), hSet->at(t * bS + e), cSet->at(t * bS + e));
 
         // bp
-        for (LongType t = 0; t < limit; ++t) {
+        for (sd::LongType t = 0; t < limit; ++t) {
           const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
           NDArray* dLdhh = dLdh ? dLdhSet->at(ind) : nullptr;
           NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;

@@ -500,8 +500,9 @@ class SD_LIB_HIDDEN ConvolutionUtils {
                       const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                       const int isNCHW, const int wFormat);
 
-  static void vol2col(graph::Context& block, NDArray* vol, NDArray* col, const int sD, const int sH,
-                      const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
+  static void vol2col(graph::Context& block, NDArray* vol, NDArray* col, const LongType sD, const LongType sH,
+                      const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD,
+                      const LongType dH, const LongType dW);
 
   static void col2vol(graph::Context& block, const NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
                       const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW);

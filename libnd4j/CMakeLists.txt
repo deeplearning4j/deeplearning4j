@@ -526,7 +526,6 @@ if (${HELPERS_cudnn})
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES cuda/include include)
 
-
     find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)

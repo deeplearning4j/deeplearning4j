@@ -40,13 +40,15 @@ bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* 
     if (array->dataType() != sd::DataType::INT32)
       THROW_EXCEPTION("multiUnique: this op support INT32 data type only.");
 
-    reshaped[pos] = array->reshape(array->ordering(), {-1});
+    std::vector<sd::LongType> reshape = {-1};
+    reshaped[pos] = array->reshape(array->ordering(), reshape);
     cContext.setInputArray(pos, &reshaped[pos]);
 
     length += array->lengthOf();
     pos++;
   }
-  NDArray arrayFull('c', {length}, sd::DataType::INT32, inputList[0]->getContext());
+  std::vector<LongType> shape = {length};
+  NDArray arrayFull('c',shape, sd::DataType::INT32, inputList[0]->getContext());
   cContext.setOutputArray(0, &arrayFull);
   cContext.setIArguments(&axis, 1);
 

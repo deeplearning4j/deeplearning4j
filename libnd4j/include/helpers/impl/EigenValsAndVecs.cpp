@@ -40,9 +40,11 @@ EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
   NDArray& schurMatrixU = schur.u;
   NDArray& schurMatrixT = schur.t;
 
-  _Vecs = NDArray(matrix.ordering(), {schurMatrixU.sizeAt(1), schurMatrixU.sizeAt(1), 2}, matrix.dataType(),
+  std::vector<LongType> shape = {schurMatrixU.sizeAt(1), schurMatrixU.sizeAt(1), 2};
+  _Vecs = NDArray(matrix.ordering(), shape, matrix.dataType(),
                   matrix.getContext());
-  _Vals = NDArray(matrix.ordering(), {matrix.sizeAt(1), 2}, matrix.dataType(), matrix.getContext());
+  std::vector<LongType> shape2 = {matrix.sizeAt(1), 2};
+  _Vals = NDArray(matrix.ordering(), shape2, matrix.dataType(), matrix.getContext());
 
   // sequence of methods calls matters
   calcEigenVals(schurMatrixT);

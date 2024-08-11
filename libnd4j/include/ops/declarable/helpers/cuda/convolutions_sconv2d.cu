@@ -29,8 +29,8 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void sconv2d_(graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
-                     const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
+static void sconv2d_(graph::Context& block, NDArray* input, NDArray* weightsDepth,
+                     NDArray* weightsPoint, NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
                      const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                      const int isNCHW, const int wFormat) {
   // input         [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
@@ -58,12 +58,11 @@ static void sconv2d_(graph::Context& block, const NDArray* input, const NDArray*
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
 
   NDArray* outputDepth = output;
-  if (weightsPoint)  // if pointwise convolution is expected
-    outputDepth = new NDArray(
-        output->ordering(),
-        !isNCHW ? std::vector<LongType>({bS, oH, oW, iC * mC}) : std::vector<LongType>({bS, iC * mC, oH, oW}),
-        input->dataType(), input->getContext());
-
+  if (weightsPoint) {  // if pointwise convolution is expected
+    std::vector<sd::LongType> shape1 = {bS, oH, oW, iC * mC};
+    std::vector<sd::LongType> shape2 = {bS, iC * mC, oH, oW};
+    outputDepth = new NDArray(output->ordering(), !isNCHW ? shape1 : shape2, input->dataType(), input->getContext());
+  }
   // ----- perform depthwise convolution (if weightsPoint is absent then oC = iC*mC) ----- //
   ConvolutionUtils::depthwiseConv2d(block, input, weightsDepth, weightsPoint ? nullptr : bias, outputDepth, kH, kW, sH,
                                     sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
@@ -77,13 +76,13 @@ static void sconv2d_(graph::Context& block, const NDArray* input, const NDArray*
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::sconv2d(graph::Context& block, const NDArray* input, const NDArray* weightsDepth,
-                               const NDArray* weightsPoint, const NDArray* bias, NDArray* output, const LongType kH,
+void ConvolutionUtils::sconv2d(graph::Context& block, NDArray* input, NDArray* weightsDepth,
+                               NDArray* weightsPoint, NDArray* bias, NDArray* output, const LongType kH,
                                const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW,
                                const int paddingMode, const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_,
                               (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
-                               paddingMode, isNCHW, wFormat),
+                                  paddingMode, isNCHW, wFormat),
                               SD_FLOAT_TYPES);
 }
 

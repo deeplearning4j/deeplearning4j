@@ -177,7 +177,8 @@ Variable *Context::getVariable(int idx) {
 
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
-      auto raveled = array->reshape(array->ordering(), {array->lengthOf()});
+      std::vector<sd::LongType> shapeLen = {array->lengthOf()};
+      auto raveled = array->reshape(array->ordering(), shapeLen);
       sd_printf("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
         auto v = raveled.e<float>(i);

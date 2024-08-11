@@ -68,11 +68,14 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
   if (checkIndices) {
     NDArray* pIndices = indices;
-    if (indices == nullptr)
+    if (indices == nullptr) {
+     std::vector<sd::LongType> shape =  {static_cast<sd::LongType>(intArgs.size()) - 1};
       pIndices =
-          new NDArray(input->ordering(), {static_cast<sd::LongType>(intArgs.size()) - 1},
+          new NDArray(input->ordering(), shape,
                       std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
-    const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+    }
+      const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+
     REQUIRE_TRUE(numOfBadIndx == 0, 0,
                  "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!",
                  numOfBadIndx);

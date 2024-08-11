@@ -52,95 +52,95 @@ namespace sd {
 
 namespace math {
 template <typename T>
-SD_HOST_DEVICE inline T sd_abs(T value);
+SD_HOST_DEVICE SD_INLINE T sd_abs(T value);
 
 template <typename T>
-SD_HOST_DEVICE inline void sd_swap(T& val1, T& val2);
+SD_HOST_DEVICE SD_INLINE void sd_swap(T& val1, T& val2);
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_max(T val1, T val2);
+SD_HOST_DEVICE SD_INLINE T sd_max(T val1, T val2);
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_min(T val1, T val2);
+SD_HOST_DEVICE SD_INLINE T sd_min(T val1, T val2);
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_eq(T val1, T val2, double eps);
+SD_HOST_DEVICE SD_INLINE bool sd_eq(T val1, T val2, double eps);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_re(T val1, T val2);
+SD_HOST_DEVICE SD_INLINE Z sd_re(T val1, T val2);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_rint(T val1);
+SD_HOST_DEVICE SD_INLINE Z sd_rint(T val1);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_copysign(T val1, T val2);
+SD_HOST_DEVICE SD_INLINE Z sd_copysign(T val1, T val2);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_softplus(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val);
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_rotl(T val, T shift);
+SD_HOST_DEVICE SD_INLINE T sd_rotl(T val, T shift);
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_rotr(T val, T shift);
+SD_HOST_DEVICE SD_INLINE T sd_rotr(T val, T shift);
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length);
+SD_HOST_DEVICE SD_INLINE Z sd_dot(X* x, Y* y, int length);
 
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_ceil(T val1);
+SD_HOST_DEVICE SD_INLINE Z sd_ceil(T val1);
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_isnan(T val1);
+SD_HOST_DEVICE SD_INLINE bool sd_isnan(T val1);
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_isinf(T val1);
+SD_HOST_DEVICE SD_INLINE bool sd_isinf(T val1);
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_isfin(T val1);
+SD_HOST_DEVICE SD_INLINE bool sd_isfin(T val1);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_cos(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_cos(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_cosh(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_cosh(T val);
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_exp(X val);
+SD_HOST_DEVICE SD_INLINE Z sd_exp(X val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_floor(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_floor(T val);
 
 
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_log(X val);
+SD_HOST_DEVICE SD_INLINE Z sd_log(X val);
 
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_pow(X val, Y val2);
+SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2);
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_floordiv(X val,Y val2);
+SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val,Y val2);
 
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_round(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_round(T val);
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_remainder(X num, Y denom);
+SD_HOST_DEVICE SD_INLINE Z sd_remainder(X num, Y denom);
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_fmod(X num, Y denom);
+SD_HOST_DEVICE SD_INLINE Z sd_fmod(X num, Y denom);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_erf(T num);
+SD_HOST_DEVICE SD_INLINE Z sd_erf(T num);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_erfc(T num);
+SD_HOST_DEVICE SD_INLINE Z sd_erfc(T num);
 
-SD_HOST_DEVICE inline int32_t floatToRawIntBits(float d) {
+SD_HOST_DEVICE SD_INLINE int32_t floatToRawIntBits(float d) {
  union {
    float f;
    int32_t i;
@@ -149,7 +149,7 @@ SD_HOST_DEVICE inline int32_t floatToRawIntBits(float d) {
  return tmp.i;
 }
 
-SD_HOST_DEVICE inline float intBitsToFloat(int32_t i) {
+SD_HOST_DEVICE SD_INLINE float intBitsToFloat(int32_t i) {
  union {
    float f;
    int32_t i;
@@ -158,27 +158,27 @@ SD_HOST_DEVICE inline float intBitsToFloat(int32_t i) {
  return tmp.f;
 }
 
-SD_HOST_DEVICE inline float mulsignf(float x, float y) {
+SD_HOST_DEVICE SD_INLINE float mulsignf(float x, float y) {
  return intBitsToFloat(floatToRawIntBits(x) ^ (floatToRawIntBits(y) & (1 << 31)));
 }
 
-SD_HOST_DEVICE inline float copysignfk(float x, float y) {
+SD_HOST_DEVICE SD_INLINE float copysignfk(float x, float y) {
  return intBitsToFloat((floatToRawIntBits(x) & ~(1 << 31)) ^ (floatToRawIntBits(y) & (1 << 31)));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_sigmoid(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sigmoid(T val) {
  return (Z)1.0f / ((Z)1.0f + sd_exp<T, Z>(-val));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_elu(T val, T alpha) {
+SD_HOST_DEVICE SD_INLINE Z sd_elu(T val, T alpha) {
  if (val >= (T)0.f) return val;
  return static_cast<Z>(alpha) * (sd_exp<T, Z>(val) - static_cast<Z>(1.0f));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_leakyrelu(T val, T alpha) {
+SD_HOST_DEVICE SD_INLINE Z sd_leakyrelu(T val, T alpha) {
  if (val < (T)0.0f)
    return alpha * val;
  else
@@ -186,91 +186,91 @@ SD_HOST_DEVICE inline Z sd_leakyrelu(T val, T alpha) {
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_eluderivative(T val, T alpha) {
+SD_HOST_DEVICE SD_INLINE Z sd_eluderivative(T val, T alpha) {
  if (val >= static_cast<T>(0.0f)) return static_cast<Z>(1.0f);
  return static_cast<Z>(alpha) * sd_exp<T, Z>(val);
  // return val >= 0.0 ? 1.0 : sd_exp(val);
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_sin(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_sin(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_sinh(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_sinh(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_softplus(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
  return sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_softsign(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_softsign(T val) {
  return val / ((T)1.0f + sd::math::sd_abs<T>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_sqrt(X val);
+SD_HOST_DEVICE SD_INLINE Z sd_sqrt(X val);
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_tanh(X val);
+SD_HOST_DEVICE SD_INLINE Z sd_tanh(X val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_tan(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_tan(T val);
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_atan2(X val1, X val2);
+SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2);
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_atan2(X val1, X val2) {
+SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2) {
  return p_atan2<Z>(static_cast<Z>(val1), static_cast<Z>(val2));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_tan(T tval) {
+SD_HOST_DEVICE SD_INLINE Z sd_tan(T tval) {
  return p_tan<Z>(static_cast<Z>(tval));
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_tanhderivative(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_tanhderivative(T val) {
  Z tanh = sd_tanh<T, Z>(val);
  return (Z)1.0f - tanh * tanh;
 }
 template <typename T, typename Z>
-SD_HOST_DEVICE inline T sd_sigmoidderivative(T val) {
+SD_HOST_DEVICE SD_INLINE T sd_sigmoidderivative(T val) {
  Z sigmoid = sd_sigmoid<T, Z>(val);
  return sigmoid * ((Z)1.0f - sigmoid);
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline T sd_softsignderivative(T val) {
+SD_HOST_DEVICE SD_INLINE T sd_softsignderivative(T val) {
  T y = (T)1.0f + sd_abs(val);
  return (Z)1.0f / (y * y);
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline T sd_sgn(T val) {
+SD_HOST_DEVICE SD_INLINE T sd_sgn(T val) {
  return val < (T)0.0f ? (Z)-1.0f : val > (T)0.0f ? (Z)1.0f : (Z)0.0f;
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_sign(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sign(T val) {
  return sd_sgn<T, Z>(val);
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_signum(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_signum(T val) {
  return sd_sgn<T, Z>(val);
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_gamma(X a);
+SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a);
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_lgamma(X x);
+SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x);
 
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length) {
+SD_HOST_DEVICE SD_INLINE Z sd_dot(X* x, Y* y, int length) {
  Z dot = (Z)0.0f;
 
  for (int e = 0; e < length; e++) {
@@ -281,34 +281,34 @@ SD_HOST_DEVICE inline Z sd_dot(X* x, Y* y, int length) {
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_acos(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_acos(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_sech(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_sech(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_acosh(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_acosh(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_asin(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_asin(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_asinh(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_asinh(T val) {
+SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val) {
  // Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
  return sd_log<Z, Z>(sd_sqrt<Z, Z>(sd_pow<T, T, Z>(val, (T)2) + (Z)1.f) + (Z)val);
 }
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_atan(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_atan(T val);
 
 template <typename T, typename Z>
-SD_HOST_DEVICE inline Z sd_atanh(T val);
+SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 
 template <>
-SD_HOST_DEVICE inline float16 sd_abs<float16>(float16 value) {
+SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16>(float16 value) {
 #ifdef SD_NATIVE_HALFS
  if (value < (float16)0.f) {
    return float16(__hneg(value.data));
@@ -319,131 +319,131 @@ SD_HOST_DEVICE inline float16 sd_abs<float16>(float16 value) {
 #endif
 }
 template <>
-SD_HOST_DEVICE inline bfloat16 sd_abs<bfloat16>(bfloat16 value) {
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_abs<bfloat16>(bfloat16 value) {
  return (bfloat16)fabsf((float)value);
 }
 template <>
-SD_HOST_DEVICE inline float sd_abs<float>(float value) {
+SD_HOST_DEVICE SD_INLINE float sd_abs<float>(float value) {
  return fabsf(value);
 }
 
 template <>
-SD_HOST_DEVICE inline double sd_abs<double>(double value) {
+SD_HOST_DEVICE SD_INLINE double sd_abs<double>(double value) {
  return fabs(value);
 }
 
 template <>
-SD_HOST_DEVICE inline int sd_abs<int>(int value) {
+SD_HOST_DEVICE SD_INLINE int sd_abs<int>(int value) {
  return abs(value);
 }
 
 template <>
-SD_HOST_DEVICE inline sd::LongType sd_abs<sd::LongType>(sd::LongType value) {
+SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType>(sd::LongType value) {
  return llabs(value);
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_abs<bool>(bool value) {
+SD_HOST_DEVICE SD_INLINE bool sd_abs<bool>(bool value) {
  return value;
 }
 
 template <>
-SD_HOST_DEVICE inline uint8_t sd_abs<uint8_t>(uint8_t value) {
+SD_HOST_DEVICE SD_INLINE uint8_t sd_abs<uint8_t>(uint8_t value) {
  return value;
 }
 
 template <>
-SD_HOST_DEVICE inline uint16_t sd_abs<uint16_t>(uint16_t value) {
+SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
  return value;
 }
 
 template <>
-SD_HOST_DEVICE inline uint32_t sd_abs<uint32_t>(uint32_t value) {
+SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
  return value;
 }
 
 template <>
-SD_HOST_DEVICE inline sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
+SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
  return value;
 }
 
 template <>
-SD_HOST_DEVICE inline int8_t sd_abs<int8_t>(int8_t value) {
+SD_HOST_DEVICE SD_INLINE int8_t sd_abs<int8_t>(int8_t value) {
  return value < 0 ? -value : value;
 }
 
 template <>
-SD_HOST_DEVICE inline int16_t sd_abs<int16_t>(int16_t value) {
+SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  return value < 0 ? -value : value;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<float16>(float16 value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<float16>(float16 value) {
  return (value) == 0x7fffU;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<bfloat16>(bfloat16 value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<bfloat16>(bfloat16 value) {
  return value == bfloat16::nan();  // 0x7fffU;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<float>(float value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<float>(float value) {
  return value != value;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<double>(double value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<double>(double value) {
  return value != value;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<int>(int value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int>(int value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<uint32_t>(uint32_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<uint16_t>(uint16_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<uint8_t>(uint8_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint8_t>(uint8_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<int16_t>(int16_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<int8_t>(int8_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<bool>(bool value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<sd::LongType>(sd::LongType value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<float16>(float16 value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
   float16 max_value;
   float16 min_value;
 
@@ -453,12 +453,12 @@ SD_HOST_DEVICE inline bool sd_isinf<float16>(float16 value) {
   return value <= min_value || value >= max_value;
 }
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<bfloat16>(bfloat16 value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
  return value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<float>(float value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
 #ifdef __CUDACC__
  return isinf(value);
 #else
@@ -467,7 +467,7 @@ SD_HOST_DEVICE inline bool sd_isinf<float>(float value) {
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<double>(double value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
 #ifdef __CUDACC__
  return isinf(value);
 #else
@@ -476,72 +476,72 @@ SD_HOST_DEVICE inline bool sd_isinf<double>(double value) {
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<int>(int value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int>(int value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<uint32_t>(uint32_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<uint16_t>(uint16_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<uint8_t>(uint8_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<int16_t>(int16_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<int8_t>(int8_t value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<bool>(bool value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<sd::LongType>(sd::LongType value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
  return false;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
  return false;
 }
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_isfin(T value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
  return !sd_isnan<T>(value) && !sd_isinf<T>(value);
 }
 
 template <>
-SD_HOST_DEVICE inline float16 sd_copysign<float16>(float16 val1, float16 val2) {
+SD_HOST_DEVICE SD_INLINE float16 sd_copysign<float16>(float16 val1, float16 val2) {
  return (float16)copysignf((float)val1, (float)val2);
 }
 
 template <>
-SD_HOST_DEVICE inline float sd_copysign<float>(float val1, float val2) {
+SD_HOST_DEVICE SD_INLINE float sd_copysign<float>(float val1, float val2) {
  return copysignf(val1, val2);
 }
 
 template <>
-SD_HOST_DEVICE inline double sd_copysign<double>(double val1, double val2) {
+SD_HOST_DEVICE SD_INLINE double sd_copysign<double>(double val1, double val2) {
  return copysign(val1, val2);
 }
 
 template <>
-SD_HOST_DEVICE inline int sd_copysign<int>(int val1, int val2) {
+SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
  if (val2 < 0)
    return -(sd_abs<int>(val1));
  else
@@ -549,7 +549,7 @@ SD_HOST_DEVICE inline int sd_copysign<int>(int val1, int val2) {
 }
 
 template <>
-SD_HOST_DEVICE inline sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
+SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
  if (val2 < 0)
    return -(sd_abs<sd::LongType>(val1));
  else
@@ -557,27 +557,27 @@ SD_HOST_DEVICE inline sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, 
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_max(bool val1, bool val2) {
+SD_HOST_DEVICE SD_INLINE bool sd_max(bool val1, bool val2) {
  return (val1 || val2) ? true : false;
 }
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_max(T val1, T val2) {
+SD_HOST_DEVICE SD_INLINE T sd_max(T val1, T val2) {
  return val1 > val2 ? val1 : val2;
 }
 
 template <>
-SD_HOST_DEVICE inline bool sd_min(bool val1, bool val2) {
+SD_HOST_DEVICE SD_INLINE bool sd_min(bool val1, bool val2) {
  return (val1 && val2) ? true : false;
 }
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_min(T val1, T val2) {
+SD_HOST_DEVICE SD_INLINE T sd_min(T val1, T val2) {
  return val1 < val2 ? val1 : val2;
 }
 
 template <typename T>
-SD_HOST_DEVICE inline bool sd_eq(T d1, T d2, double eps) {
+SD_HOST_DEVICE SD_INLINE bool sd_eq(T d1, T d2, double eps) {
  if (sd::math::sd_isinf<T>(d1) && sd::math::sd_isinf<T>(d2)) {
    if (d1 > 0 && d2 > 0)
      return true;
@@ -602,84 +602,84 @@ SD_HOST_DEVICE inline bool sd_eq(T d1, T d2, double eps) {
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_ceil(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_ceil(X val) {
  return static_cast<Z>(p_ceil<X>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_round(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_round(X val) {
  return static_cast<Z>(p_round<X>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_asin(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_asin(X val) {
  return p_asin<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_atan(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_atan(X val) {
  return p_atan<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_atanh(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_atanh(X val) {
  return p_atanh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_cosh(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_cosh(X val) {
  return p_cosh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_rint(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_rint(X val) {
  return p_rint<X>(val);
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_sinh(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sinh(X val) {
  return p_sinh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_acos(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_acos(X val) {
  return p_acos<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_sech(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sech(X val) {
  return static_cast<Z>(1) / sd_cosh<X, Z>(val);
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_acosh(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_acosh(X val) {
  return p_acosh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_cos(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
  return p_cos<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_exp(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
  return p_exp<X>(val);
 }
 
 
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_floor(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_floor(X val) {
  return static_cast<Z>(p_floor<X>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_log(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_log(X val) {
  return static_cast<Z>(p_log<X>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_log2(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
  return static_cast<Z>(p_log2<X>(val));
 }
 
@@ -693,17 +693,17 @@ SD_HOST_DEVICE inline Z sd_log2(X val) {
 * @return
 */
 template <>
-SD_HOST_DEVICE inline float sd_pow(float val, float val2) {
+SD_HOST_DEVICE SD_INLINE float sd_pow(float val, float val2) {
  return p_pow<float>(val, val2);
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_pow(X val, Y val2) {
+SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
  return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_floordiv(X val, Y val2) {
+SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
  return static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
 }
 
@@ -711,7 +711,7 @@ SD_HOST_DEVICE inline Z sd_floordiv(X val, Y val2) {
 * LogGamma(a) - float point extension of ln(n!)
 **/
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_lgamma(X x) {
+SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x) {
  if (x < X(12.0)) {
    return sd_log<Z, Z>(sd_gamma<X, Z>(x));
  }
@@ -740,34 +740,34 @@ SD_HOST_DEVICE inline Z sd_lgamma(X x) {
 }
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_re(T val1, T val2) {
+SD_HOST_DEVICE SD_INLINE T sd_re(T val1, T val2) {
  if (val1 == (T)0.0f && val2 == (T)0.0f) return (T)0.0f;
 
  return sd_abs<T>(val1 - val2) / (sd_abs<T>(val1) + sd_abs<T>(val2));
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_remainder(X val, Y val2) {
+SD_HOST_DEVICE SD_INLINE Z sd_remainder(X val, Y val2) {
  return p_remainder<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_fmod(X val, Y val2) {
+SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
  return p_fmod<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_sin(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sin(X val) {
  return p_sin<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_sqrt(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_sqrt(X val) {
  return p_sqrt<Z>(static_cast<Z>(val));
 }
 
 template <typename X>
-SD_HOST_DEVICE inline X neg_tanh(X val) {
+SD_HOST_DEVICE SD_INLINE X neg_tanh(X val) {
  X o = static_cast<X>(1.0f);
  X t = static_cast<X>(2.0f);
  X e = static_cast<X>(M_E);
@@ -777,7 +777,7 @@ SD_HOST_DEVICE inline X neg_tanh(X val) {
 }
 
 template <typename X>
-SD_HOST_DEVICE inline X pos_tanh(X val) {
+SD_HOST_DEVICE SD_INLINE X pos_tanh(X val) {
  X o = static_cast<X>(1.0f);
  X t = static_cast<X>(-2.0f);
  X e = static_cast<X>(M_E);
@@ -786,7 +786,7 @@ SD_HOST_DEVICE inline X pos_tanh(X val) {
  return (o - p) / (o + p);
 }
 
-SD_HOST_DEVICE inline float neu_tanh(float val, float sign) {
+SD_HOST_DEVICE SD_INLINE float neu_tanh(float val, float sign) {
  float e(M_E);
  float av = sign * val;
  auto p = sd::math::sd_pow<float, float, float>(e, -av * 2.f);
@@ -794,45 +794,45 @@ SD_HOST_DEVICE inline float neu_tanh(float val, float sign) {
 }
 
 template <>
-SD_HOST_DEVICE inline float sd_tanh(float val) {
+SD_HOST_DEVICE SD_INLINE float sd_tanh(float val) {
  float sign = copysignfk(1.0f, val);
  return sign * neu_tanh(val, sign);
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_tanh(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_tanh(X val) {
  return val <= 0 ? neg_tanh(val) : pos_tanh(val);
 }
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_rotl(T val, T shift) {
+SD_HOST_DEVICE SD_INLINE T sd_rotl(T val, T shift) {
  return p_rotl<T>(val, shift);
 }
 
 template <typename T>
-SD_HOST_DEVICE inline T sd_rotr(T val, T shift) {
+SD_HOST_DEVICE SD_INLINE T sd_rotr(T val, T shift) {
  return p_rotr<T>(val, shift);
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_erf(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_erf(X val) {
  return p_erf<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_erfc(X val) {
+SD_HOST_DEVICE SD_INLINE Z sd_erfc(X val) {
  return p_erfc<Z>(static_cast<Z>(val));
 }
 
 template <typename T>
-SD_HOST_DEVICE inline void sd_swap(T& val1, T& val2) {
+SD_HOST_DEVICE SD_INLINE void sd_swap(T& val1, T& val2) {
  T temp = val1;
  val1 = val2;
  val2 = temp;
 };
 
 template <typename X, typename Z>
-SD_HOST_DEVICE inline Z sd_gamma(X a) {
+SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
  // Split the function domain into three intervals:
  // (0, 0.001), [0.001, 12), and (12, infinity)
 
@@ -915,7 +915,7 @@ SD_HOST_DEVICE inline Z sd_gamma(X a) {
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_igamma(X a, Y x) {
+SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
  Z aim = sd_pow<X, X, Z>(x, a) / (sd_exp<X, Z>(x) * sd_gamma<Y, Z>(a));
  auto sum = Z(0.);
  auto denom = Z(1.);
@@ -930,7 +930,7 @@ SD_HOST_DEVICE inline Z sd_igamma(X a, Y x) {
 }
 
 template <typename X, typename Y, typename Z>
-SD_HOST_DEVICE inline Z sd_igammac(X a, Y x) {
+SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
  return Z(1.) - sd_igamma<X, Y, Z>(a, x);
 }
 
@@ -1025,7 +1025,7 @@ SD_DEVICE SD_INLINE double __sync_val_compare_and_swap_custom(double* address, d
   return __sync_val_compare_and_swap_custom<double>(address, compare, val);
 }
 
-// Inline atomicCAS implementations for integer types
+// SD_INLINE atomicCAS implementations for integer types
 SD_DEVICE SD_INLINE int atomicCAS(int* address, int compare, int val) {
  return (int) __sync_val_compare_and_swap_custom((unsigned int*)address, (unsigned int)compare, (unsigned int)val);
 }
@@ -1040,41 +1040,45 @@ SD_DEVICE SD_INLINE unsigned long long int atomicCAS(unsigned long long int* add
  return __sync_val_compare_and_swap_custom(address, compare, val);
 }
 
-
+SD_DEVICE SD_INLINE unsigned long   atomicCAS(unsigned long * address,
+                                                     unsigned long compare,
+                                                     unsigned long  val) {
+  return __sync_val_compare_and_swap_custom(address, compare, val);
+}
 
 
 
 template <typename T>
-inline SD_DEVICE T sd_atomicAdd(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicAdd(T* address, T val);
 
 template <typename T>
-inline SD_DEVICE T sd_atomicSub(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicSub(T* address, T val);
 template <typename T>
-inline SD_DEVICE T sd_atomicMul(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicMul(T* address, T val);
 template <typename T>
-inline SD_DEVICE T sd_atomicDiv(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicDiv(T* address, T val);
 
 template <typename T>
-inline SD_DEVICE T sd_atomicMin(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicMin(T* address, T val);
 template <typename T>
-inline SD_DEVICE T sd_atomicMax(T* address, T val);
+SD_INLINE SD_DEVICE T sd_atomicMax(T* address, T val);
 
 template <typename T>
-inline SD_DEVICE T sd_atomicCAS(T* address, T compare, T val);
+SD_INLINE SD_DEVICE T sd_atomicCAS(T* address, T compare, T val);
 
 template <>
-inline SD_DEVICE int32_t sd_atomicCAS<int32_t>(int32_t* address,int32_t compare, int32_t val) {
+SD_INLINE SD_DEVICE int32_t sd_atomicCAS<int32_t>(int32_t* address,int32_t compare, int32_t val) {
  return atomicCAS((int *) address, (int )compare,(int) val);
 }
 
 template <>
-inline SD_DEVICE uint32_t sd_atomicCAS<uint32_t>(uint32_t* address, uint32_t compare,uint32_t val) {
+SD_INLINE SD_DEVICE uint32_t sd_atomicCAS<uint32_t>(uint32_t* address, uint32_t compare,uint32_t val) {
  return atomicCAS((int *)address, (int) compare,(int) val);
 }
 
 
 
-__device__ __forceinline__ int atomicMin(int* address, int val) {
+SD_DEVICE SD_INLINE int atomicMin(int* address, int val) {
  int old = *address, assumed;
  do {
    assumed = old;
@@ -1419,6 +1423,17 @@ inline SD_DEVICE int32_t sd_atomicMax<int32_t>(int32_t* address, int32_t val) {
 
 template <>
 inline SD_DEVICE uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val) {
+  uint32_t old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, sd_max(val, assumed));
+  } while (assumed != old);
+  return old;
+}
+
+
+template <>
+inline SD_DEVICE unsigned long sd_atomicMax<unsigned long>(unsigned long* address, unsigned long val) {
  uint32_t old = *address, assumed;
  do {
    assumed = old;

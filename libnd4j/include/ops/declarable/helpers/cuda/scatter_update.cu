@@ -119,7 +119,8 @@ void scatterUpdate(LaunchContext* context, NDArray& input, NDArray& updates, con
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &tadDimensions);
   auto packY = ConstantTadHelper::getInstance().tadForDimensions(updates.shapeInfo(), &tadDimensions);
 
-  NDArray indices(const_cast<LongType*>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, INT32, context);
+  std::vector<LongType> shape = {numOfInd};
+  NDArray indices(const_cast<LongType*>(intArgs->data()) + numOfDims + 3, 'c', shape, INT32, context);
 
   PointersManager manager(context, "scatterUpdate");
 

@@ -67,8 +67,9 @@ template <typename T>
 void HHsequence::applyTo_(NDArray& dest) {
   int size = _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
 
+  std::vector<LongType> sizeShape = {size,size};
   if (dest.rankOf() != 2 || (dest.sizeAt(0) != size && dest.sizeAt(1) != size))
-    dest = NDArray(dest.ordering(), {size, size}, dest.dataType(), dest.getContext());
+    dest = NDArray(dest.ordering(), sizeShape, dest.dataType(), dest.getContext());
   dest.setIdentity();
 
   for (int k = _diagSize - 1; k >= 0; --k) {

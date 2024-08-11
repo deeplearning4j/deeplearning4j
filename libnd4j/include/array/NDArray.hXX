@@ -104,7 +104,7 @@ NDArray::NDArray(const NDArray &other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
+NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataType dtype,
                  sd::LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context) - constructor 2\n");
@@ -146,8 +146,8 @@ NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, sd::D
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data,
-                 sd::DataType dtype, sd::LaunchContext *context) {
+NDArray::NDArray(char order, std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype,
+                 LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data, sd::DataType dtype, sd::LaunchContext *context) - constructor 3\n");
     fflush(stdout);
@@ -243,8 +243,7 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, sd::LaunchContext
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype,
-                 sd::LaunchContext *context, const bool isBuffAlloc) {
+NDArray::NDArray(void *buffer, char order, std::vector<LongType> &shape, DataType dtype, LaunchContext *context, const bool isBuffAlloc) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType> &shape, sd::DataType dtype, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 5\n");
     fflush(stdout);
@@ -614,8 +613,7 @@ NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd:
 
 }
 //////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(DataBuffer *buffer, const char order, const std::vector<sd::LongType> &shape,
-                 sd::LaunchContext *context) {
+NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::LongType> &shape, sd::LaunchContext *context) - constructor 18\n");
     fflush(stdout);
@@ -803,28 +801,28 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 }
 /////////////////////////////////////////////////////////////////////////
 // constructors for vector of  strings
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string,
-                 const sd::DataType dataType, sd::LaunchContext *context) {
+NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char *> &strings, DataType dtype,
+                 LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char *> &string, const sd::DataType dataType, sd::LaunchContext *context) - constructor 22\n");
     fflush(stdout);
   }
 
 
-  if (!DataTypeUtils::isS(dataType)) {
+  if (!DataTypeUtils::isS(dtype)) {
     std::string errorMessage;
     errorMessage += "NDArray::NDArray: invalid DataType, only string dataTypes have to be used";
-    errorMessage += "Provided data type: " + DataTypeUtils::asString(dataType);
+    errorMessage += "Provided data type: " + DataTypeUtils::asString(dtype);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (shape::prodLong(shape.data(), shape.size()) != string.size()) {
+  if (shape::prodLong(shape.data(), shape.size()) != strings.size()) {
     std::string errorMessage;
     errorMessage += "NDArray::NDArray: Number of strings should match length of array. ";
-    errorMessage += "Number of strings: " + std::to_string(string.size()) + ", ";
+    errorMessage += "Number of strings: " + std::to_string(strings.size()) + ", ";
     errorMessage += "length of array: " + std::to_string(shape::prodLong(shape.data(), shape.size()));
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  for (const auto &str : string) {
+  for (const auto &str : strings) {
     if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str))) {
       std::string errorMessage;
       errorMessage += "NDArray::NDArray: invalid character in input string: ";
@@ -833,28 +831,28 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
     }
   }
 
-  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(strings.size());
 
-  std::vector<sd::LongType> offsets(string.size() + 1);
+  std::vector<sd::LongType> offsets(strings.size() + 1);
   sd::LongType dataLength = 0;
-  for (int e = 0; e < string.size(); e++) {
+  for (int e = 0; e < strings.size(); e++) {
     offsets[e] = dataLength;
     dataLength += [&] {
-      if (dataType == DataType::UTF16)
-        return unicode::offsetUtf8StringInUtf16(string[e], std::char_traits<char>::length(string[e]));
-      if (dataType == DataType::UTF32)
-        return unicode::offsetUtf8StringInUtf32(string[e], std::char_traits<char>::length(string[e]));
-      return static_cast<sd::LongType>(std::char_traits<char>::length(string[e]));
+      if (dtype == DataType::UTF16)
+        return unicode::offsetUtf8StringInUtf16(strings[e], std::char_traits<char>::length(strings[e]));
+      if (dtype == DataType::UTF32)
+        return unicode::offsetUtf8StringInUtf32(strings[e], std::char_traits<char>::length(strings[e]));
+      return static_cast<sd::LongType>(std::char_traits<char>::length(strings[e]));
     }();
   }
-  offsets[string.size()] = dataLength;
+  offsets[strings.size()] = dataLength;
 
-  _buffer = new DataBuffer(headerLength + dataLength, dataType, context->getWorkspace(), true);
+  _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
   _offset = 0;
 
-  auto desc = new ShapeDescriptor(dataType, 'c', shape);
+  auto desc = new ShapeDescriptor(dtype, 'c', shape);
   setShapeInfo(desc);
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   _isView = false;
@@ -868,12 +866,12 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       auto cdata = data + offsets[e];
-      if (dataType == DataType::UTF16) {
-        unicode::utf8to16(string[e], cdata, std::char_traits<char>::length(string[e]));
-      } else if (dataType == DataType::UTF32) {
-        unicode::utf8to32(string[e], cdata, std::char_traits<char>::length(string[e]));
+      if (dtype == DataType::UTF16) {
+        unicode::utf8to16(strings[e], cdata, std::char_traits<char>::length(strings[e]));
+      } else if (dtype == DataType::UTF32) {
+        unicode::utf8to32(strings[e], cdata, std::char_traits<char>::length(strings[e]));
       } else {
-        memcpy(cdata, string[e], std::char_traits<char>::length(string[e]));
+        memcpy(cdata, strings[e], std::char_traits<char>::length(strings[e]));
       }
     }
   };
@@ -885,8 +883,7 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   syncToDevice();
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::string> &string,
-                 const sd::DataType dataType, sd::LaunchContext *context) {
+NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string> &string, const sd::DataType dataType, sd::LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::string> &string, const sd::DataType dataType, sd::LaunchContext *context) - constructor 23\n");
     fflush(stdout);
@@ -951,8 +948,8 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   syncToDevice();
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u16string> &string, sd::DataType dtype,
-                 sd::LaunchContext *context) {
+NDArray::NDArray(std::vector<LongType> &shape, const std::vector<std::u16string> &string, DataType dtype,
+                 LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u16string> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 24\n");
     fflush(stdout);
@@ -1019,8 +1016,8 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   syncToDevice();
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &string,
-                 sd::DataType dtype, sd::LaunchContext *context) {
+NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char16_t *> &strings, DataType dtype,
+                 LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char16_t *> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 25\n");
     fflush(stdout);
@@ -1030,31 +1027,31 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   if (!DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
-  if (shape::prodLong(shape.data(), shape.size()) != string.size())
+  if (shape::prodLong(shape.data(), shape.size()) != strings.size())
     THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
-  for (const auto &str : string) {
+  for (const auto &str : strings) {
     if (!unicode::isStringValidU16(str, str + std::char_traits<char16_t>::length(str))) {
       THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
     }
   }
 
   int len = isScalar() ? 1 : lengthOf();
-  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(strings.size());
 
-  std::vector<sd::LongType> offsets(string.size() + 1);
+  std::vector<sd::LongType> offsets(strings.size() + 1);
   sd::LongType dataLength = 0;
-  for (int e = 0; e < string.size(); e++) {
+  for (int e = 0; e < strings.size(); e++) {
     offsets[e] = dataLength;
     dataLength += [&] {
       if (dtype == DataType::UTF16)
-        return static_cast<sd::LongType>(sizeof(uint16_t) * std::char_traits<char16_t>::length(string[e]));
+        return static_cast<sd::LongType>(sizeof(uint16_t) * std::char_traits<char16_t>::length(strings[e]));
       if (dtype == DataType::UTF32)
-        return unicode::offsetUtf16StringInUtf32(string[e], std::char_traits<char16_t>::length(string[e]));
-      return unicode::offsetUtf16StringInUtf8(string[e], std::char_traits<char16_t>::length(string[e]));
+        return unicode::offsetUtf16StringInUtf32(strings[e], std::char_traits<char16_t>::length(strings[e]));
+      return unicode::offsetUtf16StringInUtf8(strings[e], std::char_traits<char16_t>::length(strings[e]));
     }();
   }
-  offsets[string.size()] = dataLength;
+  offsets[strings.size()] = dataLength;
 
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
@@ -1076,11 +1073,11 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
     for (auto e = start; e < stop; e++) {
       auto cdata = data + offsets[e];
       if (dtype == DataType::UTF16) {
-        memcpy(cdata, string[e], std::char_traits<char16_t>::length(string[e]) * sizeof(uint16_t));
+        memcpy(cdata, strings[e], std::char_traits<char16_t>::length(strings[e]) * sizeof(uint16_t));
       } else if (dtype == DataType::UTF32) {
-        unicode::utf16to32(string[e], cdata, std::char_traits<char16_t>::length(string[e]));
+        unicode::utf16to32(strings[e], cdata, std::char_traits<char16_t>::length(strings[e]));
       } else {
-        unicode::utf16to8(string[e], cdata, std::char_traits<char16_t>::length(string[e]));
+        unicode::utf16to8(strings[e], cdata, std::char_traits<char16_t>::length(strings[e]));
       }
     }
   };
@@ -1090,7 +1087,7 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   syncToDevice();
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype,
+NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype,
                  sd::LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 26\n");
@@ -1158,8 +1155,8 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<std::
   syncToDevice();
 }
 /////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &string,
-                 sd::DataType dtype, sd::LaunchContext *context) {
+NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char32_t *> &strings, DataType dtype,
+                 LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const char32_t *> &string, sd::DataType dtype, sd::LaunchContext *context) - constructor 27\n");
     fflush(stdout);
@@ -1169,31 +1166,31 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
   int len = isScalar() ? 1 : lengthOf();
   if (!DataTypeUtils::isS(dtype)) THROW_EXCEPTION("NDArray::NDArray: invalid DataType used");
 
-  if (shape::prodLong(shape.data(), shape.size()) != string.size())
+  if (shape::prodLong(shape.data(), shape.size()) != strings.size())
     THROW_EXCEPTION("NDArray::NDArray: Number of strings should match length of array");
 
-  for (const auto &str : string) {
+  for (const auto &str : strings) {
     if (!unicode::isStringValidU32(str, str + std::char_traits<char32_t>::length(str))) {
       THROW_EXCEPTION("NDArray::NDArray: invalid character in input string");
     }
   }
 
-  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+  sd::LongType headerLength = ShapeUtils::stringBufferHeaderRequirements(strings.size());
 
-  std::vector<sd::LongType> offsets(string.size() + 1);
+  std::vector<sd::LongType> offsets(strings.size() + 1);
 
   sd::LongType dataLength = 0;
-  for (int e = 0; e < string.size(); e++) {
+  for (int e = 0; e < strings.size(); e++) {
     offsets[e] = dataLength;
     dataLength += [&] {
       if (dtype == DataType::UTF16)
-        return unicode::offsetUtf32StringInUtf16(string[e], std::char_traits<char32_t>::length(string[e]));
+        return unicode::offsetUtf32StringInUtf16(strings[e], std::char_traits<char32_t>::length(strings[e]));
       if (dtype == DataType::UTF32)
-        return static_cast<sd::LongType>(sizeof(uint32_t) * std::char_traits<char32_t>::length(string[e]));
-      return unicode::offsetUtf32StringInUtf16(string[e], std::char_traits<char32_t>::length(string[e]));
+        return static_cast<sd::LongType>(sizeof(uint32_t) * std::char_traits<char32_t>::length(strings[e]));
+      return unicode::offsetUtf32StringInUtf16(strings[e], std::char_traits<char32_t>::length(strings[e]));
     }();
   }
-  offsets[string.size()] = dataLength;
+  offsets[strings.size()] = dataLength;
 
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
@@ -1215,11 +1212,11 @@ NDArray::NDArray(const std::vector<sd::LongType> &shape, const std::vector<const
     for (auto e = start; e < stop; e++) {
       auto cdata = data + offsets[e];
       if (dtype == DataType::UTF16) {
-        unicode::utf32to16(string[e], cdata, std::char_traits<char32_t>::length(string[e]));
+        unicode::utf32to16(strings[e], cdata, std::char_traits<char32_t>::length(strings[e]));
       } else if (dtype == DataType::UTF32) {
-        memcpy(cdata, string[e], std::char_traits<char32_t>::length(string[e]) * sizeof(uint32_t));
+        memcpy(cdata, strings[e], std::char_traits<char32_t>::length(strings[e]) * sizeof(uint32_t));
       } else {
-        unicode::utf32to8(string[e], cdata, std::char_traits<char32_t>::length(string[e]));
+        unicode::utf32to8(strings[e], cdata, std::char_traits<char32_t>::length(strings[e]));
       }
     }
   };
@@ -1518,7 +1515,7 @@ std::vector<int64_t> NDArray::getShapeAsFlatVector() const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<sd::LongType> NDArray::getShapeAsVector() const {
+std::vector<sd::LongType> NDArray::getShapeAsVector()  {
   std::vector<sd::LongType> *vector = new std::vector<sd::LongType>();
   for (int e = 0; e < this->rankOf(); e++) {
     vector->push_back(this->sizeAt(e));
@@ -2488,7 +2485,7 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) & {
+NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff) & {
   if(order != 'c' && order != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
@@ -2675,7 +2672,7 @@ NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shap
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff) && {
+NDArray NDArray::reshape(const char order,  std::vector<sd::LongType> &shape, const bool copyToNewBuff) && {
   if(order != 'c' && order != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
@@ -2760,7 +2757,7 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool 
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) & {
+NDArray NDArray::permute(std::vector<LongType> &dimensions, bool copyToNewBuff) & {
   if(dimensions.size() < 1)
     return *this;
   return permute(dimensions.data(), rankOf(), copyToNewBuff);
@@ -2789,9 +2786,9 @@ void NDArray::permute(const LongType *dimensions, const int rank, NDArray &targe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::permute(const std::vector<LongType> &dimensions, NDArray &target) const {
-  permute(dimensions.data(), rankOf(), target);
-}
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // check whether array is identity matrix
@@ -2959,8 +2956,11 @@ NDArray NDArray::subarray(const Intervals &idx) const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray NDArray::asT() const {
-  auto result = isScalar() ? NDArray('c', {}, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext())
-                           : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> empty = {};
+  auto result = isScalar() ? NDArray('c', empty, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext())
+                           : NDArray(ordering(), shape, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformAny(getContext(),
@@ -3054,8 +3054,9 @@ NDArray NDArray::asS() const {
 
   DataBuffer *  pBuffer =
       new DataBuffer(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
-
-  std::vector<sd::LongType> shape = isScalar() ? std::vector<sd::LongType>({1}) : getShapeAsVector();
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape2 = nonConst->getShapeAsVector();
+  std::vector<sd::LongType> shape = isScalar() ? std::vector<sd::LongType>({1}) : shape2;
   auto desc = new ShapeDescriptor(dtype, ordering(), shape);
   NDArray res(pBuffer, desc, getContext());
   res.setAttached(getContext()->getWorkspace() != nullptr);
@@ -4472,9 +4473,10 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
 // This method returns new copy of this NDArray, optionally in different order
 NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer) const {
   if (isEmpty()) return NDArrayFactory::empty(dataType(), getContext());
-
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
   if(forceOriginalBuffer) {
-    NDArray *result = new NDArray(ordering(), getShapeAsVector(), dataType(), getContext());
+    NDArray *result = new NDArray(ordering(), shape, dataType(), getContext());
     const DataBuffer *thisBuff = this->getDataBuffer();
     const DataBuffer *otherBuff = result->getDataBuffer();
     DataBuffer::memcpy(otherBuff,thisBuff);
@@ -4496,8 +4498,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer) const {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-
-      return NDArray(getShapeAsVector(), strings, dataType(), getContext());
+      return NDArray(shape, strings, dataType(), getContext());
     }
     if (dataType() == DataType::UTF16) {
       std::vector<std::u16string> strings(len);
@@ -4509,8 +4510,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer) const {
       };
 
       samediff::Threads::parallel_for(func, 0, len, 1);
-
-      return NDArray(getShapeAsVector(), strings, dataType(), getContext());
+      return NDArray(shape, strings, dataType(), getContext());
     }
 
     std::vector<std::u32string> strings(len);
@@ -4521,11 +4521,11 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer) const {
     };
 
     samediff::Threads::parallel_for(func, 0,len, 1);
-
-    return NDArray(getShapeAsVector(), strings, dataType(), getContext());
+    return NDArray(shape, strings, dataType(), getContext());
   }
 
-  NDArray result(order, isScalar() ? std::vector<sd::LongType>({0}) : getShapeAsVector(), dataType(), getContext());
+  std::vector<sd::LongType> shape3 = isScalar() ? std::vector<sd::LongType>({0}) : shape;
+  NDArray result(order, shape3, dataType(), getContext());
   result.assign(*this);
 
   return result;
@@ -4986,7 +4986,9 @@ void NDArray::applyTransform(sd::transform::BoolOps op, NDArray &target, ExtraAr
 NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams) const & {
   if (isS()) THROW_EXCEPTION("NDArray::transform FloatOps: you can't use this method on String array!");
 
-  NDArray result(ordering(), getShapeAsVector(), DataTypeUtils::pickFloatingType(dataType()), getContext());
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
+  NDArray result(ordering(), shape, DataTypeUtils::pickFloatingType(dataType()), getContext());
 
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
@@ -5070,7 +5072,9 @@ NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
 NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) const & {
   if (isS()) THROW_EXCEPTION("NDArray::transform BoolOps: you can't use this method on String array!");
 
-  NDArray result(ordering(), getShapeAsVector(), sd::DataType::BOOL, getContext());
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = nonConst->getShapeAsVector();
+  NDArray result(ordering(), shape, sd::DataType::BOOL, getContext());
 
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),

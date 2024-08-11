@@ -27,7 +27,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void sconv2d_(sd::graph::Context& block, NDArray* input, NDArray* weightsDepth,
+static void sconv2d_(graph::Context& block, NDArray* input, NDArray* weightsDepth,
                      NDArray* weightsPoint, NDArray* bias, NDArray* output, const LongType kH, const LongType kW,
                      const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                      const int isNCHW, const int wFormat) {
@@ -74,13 +74,13 @@ static void sconv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights
   }
 }
 
-void ConvolutionUtils::sconv2d(sd::graph::Context& block, NDArray* input, NDArray* weightsDepth,
+void ConvolutionUtils::sconv2d(graph::Context& block, NDArray* input, NDArray* weightsDepth,
                                NDArray* weightsPoint, NDArray* bias, NDArray* output, const LongType kH,
                                const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW,
                                const int paddingMode, const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_,
                               (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
-                                  paddingMode, isNCHW, wFormat),
+                               paddingMode, isNCHW, wFormat),
                               SD_FLOAT_TYPES);
 }
 

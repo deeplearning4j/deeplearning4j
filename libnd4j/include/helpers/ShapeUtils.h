@@ -70,7 +70,7 @@ class SD_LIB_EXPORT ShapeUtils {
                                                       const bool keepDims, memory::Workspace* workspace);
 
   // evaluate shape for array which is result of repeat operation applied to arr
-  static std::vector<LongType> evalRepeatShape(LongType axis, const std::vector<LongType>& repeats, const NDArray& arr);
+  static std::vector<LongType> evalRepeatShape(LongType axis, const std::vector<LongType>& repeats, NDArray& arr);
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order

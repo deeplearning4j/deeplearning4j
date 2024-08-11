@@ -30,7 +30,7 @@
 
 struct bfloat16;
 
-#if defined(__CUDACC__) || defined(SD_CUDA)
+#if defined(__CUDACC__)
 #include <cuda_fp16.h>
 
 #if CUDA_VERSION_MAJOR != 8
@@ -220,7 +220,7 @@ public:
  }
 
  SD_INLINE SD_HOST_DEVICE operator float() const {
-#if defined(__CUDA_ARCH__) || defined(SD_CUDA)
+#if defined(__CUDA_ARCH__) 
    return __half2float(data);
 #else
    return cpu_ihalf2float(data);
@@ -257,7 +257,7 @@ public:
  }
 
  SD_INLINE SD_HOST_DEVICE float16& operator=(const float& rhs) {
-#if defined(__CUDA_ARCH__) || defined(SD_CUDA)
+#if defined(__CUDA_ARCH__) 
    auto t = __float2half_rn(rhs);
    auto b = *(data.getXP());
 
@@ -303,7 +303,7 @@ public:
    return *this;
  }
 
-#if defined(__CUDACC__) || defined(SD_CUDA)
+#if defined(__CUDACC__) 
  SD_INLINE SD_HOST_DEVICE float16& operator=(const half& rhs) {
    data.assign(rhs);
    return *this;

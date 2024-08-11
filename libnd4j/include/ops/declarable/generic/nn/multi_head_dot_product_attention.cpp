@@ -108,11 +108,12 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
   auto projectedValues = AttentionHelper::multiHeadProject(
       values, Wv, block.launchContext());  //[minibatch, numHeads, projectedSize, seqLength]
 
+  std::vector<sd::LongType> shape = {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)};
   // Apply Attention
   // attnResults = [minibatch, numHeads, projectedSize, seqLenth
   NDArray attnResults(
       'c',
-      {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)},
+      shape,
       projectedValues.dataType(), block.launchContext());
   sd::ops::dot_product_attention attention;
   attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask},
@@ -123,7 +124,8 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
   attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
   sd::ops::matmul mmul;
-  NDArray projRes('c', {attnResults.sizeAt(0), Wo->sizeAt(1)}, values->dataType(), block.launchContext());
+  std::vector<sd::LongType> projShape ={attnResults.sizeAt(0), Wo->sizeAt(1)};
+  NDArray projRes('c', projShape, values->dataType(), block.launchContext());
   mmul.execute({&attnResults, Wo}, {&projRes}, {}, {}, {});
   projRes.reshapei(projRes.ordering(), {miniBatchSize, queryCount, outSize});
   projRes.permutei({0, 2, 1});
@@ -244,11 +246,11 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
   auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.launchContext());
   auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.launchContext());
   auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.launchContext());
-
+  std::vector<sd::LongType> shape = {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)};
   // Apply Attention
   NDArray attnResults(
       'c',
-      {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)},
+      shape,
       projectedValues.dataType(), block.launchContext());
   sd::ops::dot_product_attention attention;
   attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask}, {&attnResults}, {}, {normalization, 0},
@@ -258,9 +260,11 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention_bp, 8, 7, false, 0, 1) {
   attnResults.permutei({0, 3, 1, 2});
   attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
+  std::vector<sd::LongType> perm = {0,2,1};
   // dLdWo
-  auto epsPerm = eps->permute({0, 2, 1});
-  auto epsPostReshape = epsPerm.reshape(eps->ordering(), {miniBatchSize * queryCount, outSize});
+  auto epsPerm = eps->permute(perm);
+  std::vector<sd::LongType> epsShape =  {miniBatchSize * queryCount, outSize};
+  auto epsPostReshape = epsPerm.reshape(eps->ordering(), epsShape);
   sd::ops::matmul_bp matmulBp;
   NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
   matmulBp.execute({&attnResults, Wo, &epsPostReshape}, std::vector<NDArray *>{&dLdPreWo, dLdWo}, {}, {}, {});

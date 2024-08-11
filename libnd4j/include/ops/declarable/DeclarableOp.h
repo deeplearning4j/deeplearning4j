@@ -42,10 +42,10 @@ using namespace sd::graph;
 
 namespace sd {
 namespace ops {
-#ifndef  __JAVACPP_HACK__
+
 SD_LIB_EXPORT ErrorResult conditionHelper(const char* file, int line, int condition, int argNumber, const char* format,
                                          ...);
-#endif
+
 template <typename T>
 sd::Status resultHelper(T status, const char* func, const char* file, int line) {
   if (status != sd::Status::OK) {

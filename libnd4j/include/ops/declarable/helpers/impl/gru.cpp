@@ -42,7 +42,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
+void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
              const NDArray* b, const NDArray* bc, NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
   // Inputs:
   // x        input [bS, nIn], nIn - input size
@@ -168,7 +168,7 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh,
+void gruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh,
                  NDArray* b, NDArray* h, bool linearBeforeReset) {
   // sL means time steps
 
@@ -184,7 +184,8 @@ void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, N
   const int bS = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  NDArray gates(h->ordering(), {bS, 3 * nOut}, h->dataType(), context);
+  std::vector<LongType> shape = {bS, 3 * nOut};
+  NDArray gates(h->ordering(), shape, h->dataType(), context);
 
   auto xSet = x->allTensorsAlongDimension({1, 2});  // sub-arrays with shape [bS, nIn]
   auto hSet = h->allTensorsAlongDimension({1, 2});  // sub-arrays with shape [bS, nOut]
@@ -196,7 +197,7 @@ void gruTimeLoop(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, N
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
+void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
                const NDArray* b, const NDArray* bc, const NDArray* dLdr, const NDArray* dLdu, const NDArray* dLdc,
                const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb,
                NDArray* dLdbc) {
@@ -378,7 +379,7 @@ void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hLast, c
   dLdWcx.assign(mmul(xT, dLdZc));                        // [iS, bS] × [bS, nU] = [iS, nU]
   dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));  // [nU, bS] × [bS, nU] = [nU, nU]
 
-  std::vector<LongType> zeroVec = {0};
+  std::vector<sd::LongType> zeroVec = {0};
   dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
   dLdbu.assign(dLdZu.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
 
@@ -386,7 +387,7 @@ void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hLast, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
+void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
                const NDArray* b, const NDArray* dLdh, const NDArray* gates, NDArray* dLdx, NDArray* dLdhI,
                NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // Inputs:
@@ -488,7 +489,7 @@ void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, cons
   // dLdWx
   *dLdWx += mmul(x->transpose(), dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
-  std::vector<LongType> zeroVec = {0};
+  std::vector<sd::LongType> zeroVec = {0};
   // dLdb
   *dLdb += dLdz.reduceAlongDimension(reduce::Sum, &zeroVec);  // [bS, 3*nOut] -> reduce -> [3*nOut];
 
@@ -503,7 +504,7 @@ void gruCellBp(LaunchContext* context, const NDArray* x, const NDArray* hI, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoopBp(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
+void gruTimeLoopBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
                    NDArray* Wh, NDArray* b, NDArray* dLdh, NDArray* dLdx, NDArray* dLdhI,
                    NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // sL means time steps
@@ -525,8 +526,10 @@ void gruTimeLoopBp(LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   const int bS = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  NDArray gates(x->ordering(), {sL, bS, 3 * nOut}, dLdh->dataType(), x->getContext());
-  NDArray h(x->ordering(), {sL + 1, bS, nOut}, dLdh->dataType(), x->getContext());
+  std::vector<sd::LongType> shape = {bS, 3 * nOut};
+  std::vector<sd::LongType> hShape = {sL + 1, bS, nOut};
+  NDArray gates(x->ordering(), shape, dLdh->dataType(), x->getContext());
+  NDArray h(x->ordering(), hShape, dLdh->dataType(), x->getContext());
 
   auto xSet = x->allTensorsAlongDimension({1, 2});         // sub-arrays with shape [bS, nIn]
   auto dLdhSet = dLdh->allTensorsAlongDimension({1, 2});   // sub-arrays with shape [bS, nOut]

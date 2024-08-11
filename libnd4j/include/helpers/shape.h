@@ -223,8 +223,10 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBufferFortran(int rank, sd::Data
                                                              sd::LongType *output);
 
 #ifdef __CUDACC__
+#ifndef __JAVACPP_HACK__
 
 SD_DEVICE SD_LIB_EXPORT sd::LongType *cuMalloc(sd::LongType *buffer, long size);
+#endif
 #endif
 
 
@@ -2782,6 +2784,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE T1 *removeIndex(T1 const *data, T2 const 
 SD_LIB_EXPORT SD_INLINE SD_DEVICE int tadOffset(ShapeInformation *xInfo, int offset) {
  return offset + threadIdx.x * xInfo->elementWiseStride;
 }
+#else
+SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(ShapeInformation *xInfo, int offset) {
+ return 0;
+}
 #endif
 
 /**
@@ -3029,6 +3035,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType sliceOffsetForTensor(sd::Lon
 SD_LIB_EXPORT SD_INLINE SD_DEVICE int tadOffset(sd::LongType *xInfo, int offset) {
  return offset + threadIdx.x * elementWiseStride(xInfo);
 }
+#else
+SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(sd::LongType *xInfo, int offset) {
+  return 0;
+}
 #endif
 
 /**
@@ -3191,6 +3201,10 @@ SD_DEVICE SD_LIB_EXPORT SD_INLINE void sweepShapeInfoBuffer(sd::LongType *shapeI
  int rank = shapeInfoBuffer[0];
  int len = shape::shapeInfoLength(rank);
  for (int i = threadIdx.x; i < len; i += blockDim.x) targetBuffer[i] = shapeInfoBuffer[i];
+}
+#else
+SD_HOST SD_LIB_EXPORT SD_INLINE void sweepShapeInfoBuffer(sd::LongType *shapeInfoBuffer, sd::LongType *targetBuffer) {
+
 }
 #endif
 

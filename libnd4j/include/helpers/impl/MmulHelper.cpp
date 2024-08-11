@@ -73,8 +73,8 @@ NDArray* MmulHelper::tensorDot(NDArray* A, NDArray* B, const std::vector<LongTyp
 
 
 void MmulHelper::computeNewShapesAndAxes(
-    const NDArray& as_, const std::vector<LongType>& axes_a,
-    const NDArray& bs, const std::vector<LongType>& axes_b,
+    NDArray& as_, const std::vector<LongType>& axes_a,
+    NDArray& bs, const std::vector<LongType>& axes_b,
     std::vector<LongType>& newshape_a, std::vector<LongType>& newaxes_a,
     std::vector<LongType>& newshape_b, std::vector<LongType>& newaxes_b
 ) {
@@ -184,8 +184,8 @@ void MmulHelper::tensorDot2(NDArray* a, NDArray* b, NDArray* c, const std::vecto
 
 
 void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
-                           const std::vector<LongType>& axes_a, const std::vector<LongType>& axes_b,
-                           const std::vector<LongType>& permutForC) {
+                           std::vector<LongType>& axes_a, std::vector<LongType>& axes_b,
+                           std::vector<LongType>& permutForC) {
 
   std::vector<LongType> permutAt, permutBt;
   std::vector<LongType> shapeAt, shapeBt;
@@ -242,9 +242,9 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
 void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
-                           const std::vector<std::vector<LongType>>& modifA,
-                           const std::vector<std::vector<LongType>>& modifB,
-                           const std::vector<std::vector<LongType>>& modifC) {
+                           std::vector<std::vector<LongType>>& modifA,
+                           std::vector<std::vector<LongType>>& modifB,
+                           std::vector<std::vector<LongType>>& modifC) {
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA, whatToDoWithB,
       whatToDoWithC;  // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" -
@@ -262,6 +262,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
     whatToDoWithC = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithC + "p" : whatToDoWithC + "r";
 
   // first step for a array
+
   if (!whatToDoWithA.empty())
     aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0], false))
                                     : new NDArray(a->reshape(a->ordering(), modifA[0]));
@@ -312,8 +313,8 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::tensorDot(NDArray* a, NDArray* b,
-                               const std::vector<std::vector<LongType>>& modifA,
-                               const std::vector<std::vector<LongType>>& modifB) {
+                               std::vector<std::vector<LongType>>& modifA,
+                               std::vector<std::vector<LongType>>& modifB) {
   NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
   std::string whatToDoWithA,
       whatToDoWithB;  // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp"
@@ -385,8 +386,12 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha
   // vector x matrix, A{M} x B{M,N} = C{N} -> reduce to matrix x matrix A2{1,M} x B{M,N} = C2{1,N}, since there is no
   // corresponding blas operation sgevm
   if (isAVector && bRank == 2) {
-    NDArray* A2 = new NDArray(A->reshape(A->ordering(), {1, A->lengthOf()}));                       // A{M} -> A2{1,M}
-    NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), {1, C->lengthOf()}, false)) : nullptr;  // C{N} -> C2{1,N}
+    std::vector<sd::LongType> aShape = {1, A->lengthOf()};
+    std::vector<sd::LongType> cShape = {1, C->lengthOf()};
+
+
+    NDArray* A2 = new NDArray(A->reshape(A->ordering(),aShape));                       // A{M} -> A2{1,M}
+    NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), cShape, false)) : nullptr;  // C{N} -> C2{1,N}
     auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                        // result{1,N}
 
 
@@ -475,9 +480,11 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
     if (xRank == 1 && yRank == 2) {
       // reduce vector-matrix to matrix-matrix case
       //note we dup to avoid mutating input data
-      NDArray xReshape = x->dup(false).reshape(xT->ordering(), {1, xT->lengthOf()},false);
+      std::vector<sd::LongType> xShape = {1, xT->lengthOf()};
+      std::vector<sd::LongType> zShape = {1, z->lengthOf()};
+      NDArray xReshape = x->dup(false).reshape(xT->ordering(), xShape,false);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
-      zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
+      zT = new NDArray(z->reshape(z->ordering(), zShape));
     }
 
 

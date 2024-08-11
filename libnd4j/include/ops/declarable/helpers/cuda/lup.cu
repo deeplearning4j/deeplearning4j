@@ -390,7 +390,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
           throw cuda_exception::build("helpers::lup_: LU factorization is failed due ", status);
         }
       } else {
-        NDArray permutVector('c', {n}, INT32, context);
+        std::vector<LongType> shape = {n};
+        NDArray permutVector('c', shape, INT32, context);
         int *permutationBuf = permutVector.dataBuffer()->specialAsT<int>();
         status = cusolverDnDgetrf(*cusolverH, n, n, matrix, n, d_work, permutationBuf, d_info);
         if (status != CUSOLVER_STATUS_SUCCESS) {
@@ -431,7 +432,8 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
       if (permutation == nullptr)
         status = cusolverDnSgetrf(*cusolverH, n, n, matrix, n, d_work, nullptr, d_info);
       else {
-        NDArray permutVector('c', {n}, INT32, context);
+        std::vector<LongType> shape = {n};
+        NDArray permutVector('c', shape, INT32, context);
         int *permutationBuf = reinterpret_cast<int *>(permutVector.specialBuffer());
         status = cusolverDnSgetrf(*cusolverH, n, n, matrix, n, d_work, permutationBuf, d_info);
         if (permutation->rankOf() == 2) {
@@ -896,7 +898,8 @@ Status cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bool i
   else if (input->dataType() == FLOAT32)
     cholesky__<float>(context, input, output, inplace);
   else {
-    std::unique_ptr<NDArray> tempOutput(NDArrayFactory::create_('c', input->getShapeAsVector(), FLOAT32, context));
+    std::vector<sd::LongType> shape = input->getShapeAsVector();
+    std::unique_ptr<NDArray> tempOutput(NDArrayFactory::create_('c', shape, FLOAT32, context));
     tempOutput->assign(input);
     cholesky__<float>(context, tempOutput.get(), tempOutput.get(), true);
     output->assign(tempOutput.get());

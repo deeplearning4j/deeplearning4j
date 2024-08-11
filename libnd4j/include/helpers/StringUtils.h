@@ -58,7 +58,7 @@ class SD_LIB_EXPORT StringUtils {
 
   static DataBuffer *  createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context);
 
-  static NDArray createStringNDArray(const NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
+  static NDArray createStringNDArray(NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
 
   template <typename T>
   static void convertStringsForDifferentDataType(const NDArray* sourceArray, NDArray* targetArray);

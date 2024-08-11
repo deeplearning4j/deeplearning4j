@@ -137,7 +137,8 @@ static void sqrtmQuasiTrianDiag(const NDArray& matrixT, NDArray& sqrtT) {
 // all matrices are {2,2} here
 template <typename T>
 static void sqrtmQuasiTrianAuxEq(const NDArray& A, const NDArray& B, const NDArray& C, NDArray& X) {
-  NDArray tempMatrix(A.ordering(), {4, 4}, A.dataType(), A.getContext());
+  std::vector<LongType> tempShape = {4,4};
+  NDArray tempMatrix(A.ordering(),tempShape, A.dataType(), A.getContext());
 
   tempMatrix.r<T>(0, 0) = A.t<T>(0, 0) + B.t<T>(0, 0);
   tempMatrix.r<T>(1, 1) = A.t<T>(0, 0) + B.t<T>(1, 1);
@@ -156,7 +157,8 @@ static void sqrtmQuasiTrianAuxEq(const NDArray& A, const NDArray& B, const NDArr
   tempMatrix.r<T>(2, 1) = (T)0;
   tempMatrix.r<T>(3, 0) = (T)0;
 
-  NDArray result(A.ordering(), {4, 1}, A.dataType(), A.getContext());
+  std::vector<LongType> resultShape = {4,1};
+  NDArray result(A.ordering(), resultShape, A.dataType(), A.getContext());
   result.r<T>(0, 0) = C.t<T>(0, 0);
   result.r<T>(1, 0) = C.t<T>(0, 1);
   result.r<T>(2, 0) = C.t<T>(1, 0);
@@ -200,7 +202,8 @@ static void sqrtmQuasiTrianOffDiag(const NDArray& matrixT, NDArray& sqrtT) {
 
         if (j - i > 2) rhs -= mmul(sqrtT({i, i + 2, i + 2, j}, true), sqrtT({i + 2, j, j, j + 1}, true));
 
-        NDArray A(matrixT.ordering(), {2, 2}, matrixT.dataType(), matrixT.getContext());
+        std::vector<LongType> aShape = {2,2};
+        NDArray A(matrixT.ordering(), aShape, matrixT.dataType(), matrixT.getContext());
         A.r<T>(0, 0) = A.r<T>(1, 1) = sqrtT.t<T>(j, j);
         A.r<T>(0, 1) = A.r<T>(1, 0) = T(0);
         A += sqrtT({i, i + 2, i, i + 2}, true);
@@ -210,11 +213,12 @@ static void sqrtmQuasiTrianOffDiag(const NDArray& matrixT, NDArray& sqrtT) {
         // sqrtT.syncToDevice();
         sqrtT({i, i + 2, j, j + 1}, true).assign(rhs);
       } else if (!iBlockIs2x2 && jBlockIs2x2) {
-        NDArray rhs = matrixT({i, i + 1, j, j + 2}, true);  //.dup();
+        NDArray rhs = matrixT({i, i + 1, j, j + 2}, true);
 
         if (j - i > 1) rhs -= mmul(sqrtT({i, i + 1, i + 1, j}, true), sqrtT({i + 1, j, j, j + 2}, true));
 
-        NDArray A(matrixT.ordering(), {2, 2}, matrixT.dataType(), matrixT.getContext());
+        std::vector<LongType> aShape = {2,2};
+        NDArray A(matrixT.ordering(),aShape, matrixT.dataType(), matrixT.getContext());
         A.r<T>(0, 0) = A.r<T>(1, 1) = sqrtT.t<T>(i, i);
         A.r<T>(0, 1) = A.r<T>(1, 0) = T(0);
         A += sqrtT({j, j + 2, j, j + 2}, true).transpose();

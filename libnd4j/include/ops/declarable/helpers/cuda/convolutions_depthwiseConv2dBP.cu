@@ -33,7 +33,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO,
+static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, NDArray* gradO,
                                NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW, const LongType sH,
                                const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                                const int isNCHW, const int wFormat) {
@@ -73,7 +73,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     modifGradO1 = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-    const std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
+    std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
     input = new NDArray(input->permute(permuteVec,false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
     gradI = new NDArray(gradI->permute(permuteVec,false));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
@@ -93,7 +93,8 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   if (paddingMode == 1)  // SAME
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
+  NDArray columns(input->ordering(), colShape, input->dataType(), input->getContext());
   NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape,false);
 
   // ----- calculation of gradW and gradB ----- //
@@ -107,7 +108,10 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(LongType)gradB->lengthOf()},false));
+    if (gradB->rankOf() == 2)  {
+      std::vector<sd::LongType> lenShape = {gradB->lengthOf()};
+      gradBR = new NDArray(gradB->reshape(gradB->ordering(), lenShape,false));
+    }
     std::vector<LongType> dims =  {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, *gradBR,&dims, false);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;
@@ -126,8 +130,8 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::depthwiseConv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights,
-                                         const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+void ConvolutionUtils::depthwiseConv2dBP(graph::Context& block, NDArray* input, NDArray* weights,
+                                         NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                          NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH,
                                          LongType pW, const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,
                                          const int wFormat) {

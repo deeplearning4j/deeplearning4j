@@ -890,7 +890,7 @@ SD_INLINE void TAD::collapse() {
 
     // converge when there are no singular dimensions specified in the reduce
     done = (!oneEncountered && nonOneEncountered) || hitBeginning;
-    delete[] intermediaryResult;
+    delete intermediaryResult;
   }
 
   // nothing changed but need to collapse dimension

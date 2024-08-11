@@ -56,10 +56,10 @@ class SD_LIB_EXPORT NDArrayFactory {
                           LaunchContext *context = LaunchContext ::defaultContext());
 
   template <typename T>
-  static NDArray *valueOf(const std::vector<LongType> &shape, T value, char order = 'c',
+  static NDArray *valueOf(std::vector<LongType> &shape, T value, const char order = 'c',
                           LaunchContext *context = LaunchContext ::defaultContext());
 
-  static NDArray *valueOf(const std::vector<LongType> &shape, const NDArray &value, char order = 'c',
+  static NDArray *valueOf(std::vector<LongType> &shape, const NDArray &value, const char order = 'c',
                           LaunchContext *context = LaunchContext ::defaultContext());
 
   template <typename T>
@@ -86,10 +86,10 @@ class SD_LIB_EXPORT NDArrayFactory {
                          LaunchContext *context = LaunchContext ::defaultContext());
 
   template <typename T>
-  static NDArray *create_(char order, const std::vector<LongType> &shape,
+  static NDArray *create_(const char order, std::vector<LongType> &shape,
                           LaunchContext *context = LaunchContext ::defaultContext());
 
-  static NDArray *create_(char order, const std::vector<LongType> &shape, DataType dataType,
+  static NDArray *create_(const char order, std::vector<LongType> &shape, DataType dataType,
                           LaunchContext *context = LaunchContext ::defaultContext());
 
   template <typename T>
@@ -162,58 +162,58 @@ class SD_LIB_EXPORT NDArrayFactory {
   static NDArray string(const std::u32string &u32string, DataType dtype = UTF32,
                         LaunchContext *context = LaunchContext::defaultContext());
 
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<const char *> &strings,
-                        DataType dtype = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<std::string> &string,
-                        DataType dtype = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<const char *> &strings,
-                          DataType dtype = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<std::string> &string,
-                          DataType dtype = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<const char *> &strings,
+                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<std::string> &string,
+                        DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<const char *> &strings,
+                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::string> &string,
+                          DataType dataType = UTF8, LaunchContext *context = LaunchContext ::defaultContext());
 
   /**
    * This factory create array from vector of utf16 strings
    * @return NDArray default dataType UTF16
    */
-  static NDArray string(const std::vector<LongType> &shape, const std::initializer_list<const char16_t *> &strings,
+  static NDArray string(std::vector<LongType> &shape, const std::initializer_list<const char16_t *> &strings,
+                        DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::initializer_list<std::u16string> &string,
+                        DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<const char16_t *> &strings,
+                        DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<std::u16string> &string,
                         DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::initializer_list<std::u16string> &string,
-                        DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<const char16_t *> &strings,
-                        DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<std::u16string> &string,
-                        DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape,
+  static NDArray *string_(std::vector<LongType> &shape,
                           const std::initializer_list<const char16_t *> &strings,
-                          DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::initializer_list<std::u16string> &string,
-                          DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<const char16_t *> &strings,
-                          DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<std::u16string> &string,
-                          DataType dtype = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+                          DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::initializer_list<std::u16string> &string,
+                          DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<const char16_t *> &strings,
+                          DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::u16string> &string,
+                          DataType dataType = UTF16, LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    * This factory create array from vector of utf32 strings
    * @return NDArray default dataType UTF32
    */
-  static NDArray string(const std::vector<LongType> &shape, const std::initializer_list<const char32_t *> &strings,
+  static NDArray string(std::vector<LongType> &shape, const std::initializer_list<const char32_t *> &strings,
+                        DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::initializer_list<std::u32string> &string,
+                        DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray string(std::vector<LongType> &shape, const std::vector<const char32_t *> &strings, DataType dtype,
+                        LaunchContext *context);
+  static NDArray string(std::vector<LongType> &shape, const std::vector<std::u32string> &string,
                         DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::initializer_list<std::u32string> &string,
-                        DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<const char32_t *> &strings,
-                        DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray string(const std::vector<LongType> &shape, const std::vector<std::u32string> &string,
-                        DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape,
+  static NDArray *string_(std::vector<LongType> &shape,
                           const std::initializer_list<const char32_t *> &strings,
-                          DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::initializer_list<std::u32string> &string,
-                          DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<const char32_t *> &strings,
-                          DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-  static NDArray *string_(const std::vector<LongType> &shape, const std::vector<std::u32string> &string,
-                          DataType dtype = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+                          DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::initializer_list<std::u32string> &string,
+                          DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<const char32_t *> &strings,
+                          DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
+  static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::u32string> &string,
+                          DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
 
   static ResultSet createSetOfArrs(const LongType numOfArrs, const void *buffer, const LongType *shapeInfo,
                                    const LongType *offsets, LaunchContext *context = LaunchContext ::defaultContext());

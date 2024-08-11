@@ -86,8 +86,9 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   auto channels = input->sizeAt(-1);
   int sizeChannels = sd::math::sd_max<int>(1,size * channels);
   auto batch = input->lengthOf() / sizeChannels;
-  auto input3D = input->reshape(input->ordering(), {batch, size, channels});
-  auto output3D = input->reshape(input->ordering(), {batch, size, channels});
+  std::vector<LongType> shape = {batch, size, channels};
+  auto input3D = input->reshape(input->ordering(), shape);
+  auto output3D = input->reshape(input->ordering(), shape);
 
   if (block.width() > 1) {
     factor = INPUT_VARIABLE(1);
