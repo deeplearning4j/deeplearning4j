@@ -113,15 +113,18 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
       _cache[deviceId][descriptor] = t;
     } else {
       //base case: number of sub arrays is zero. just return the original shape.
-      const auto shapeInfo =
+       auto shapeInfo =
           ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo());
-      const LongType rank = shape::rank(shapeInfo);
+       LongType rank = shape::rank(shapeInfo);
       const LongType subArrRank = rank;
 
       auto sPtr = std::make_shared<PointerWrapper>(
           new LongType[shape::shapeInfoLength(subArrRank)]);  // shape of sub-arrays (same for all for them)
 
-      shape::copyTo(shape::shapeInfoLength(subArrRank), shapeInfo, sPtr->pointerAsT<LongType>());
+      sd::LongType * shapeInfo2 = sPtr->pointerAsT<LongType>();
+      auto nonConstant = const_cast<LongType *>(shapeInfo);
+      auto nonConst2 = const_cast<LongType *>(shapeInfo2);
+      shape::copyTo<LongType>(shape::shapeInfoLength(subArrRank), nonConstant, nonConst2);
       LongType *baseOffset = new LongType[numOfSubArrs];
       baseOffset[0] = 0;
       auto oPtr = std::make_shared<PointerWrapper>(baseOffset);

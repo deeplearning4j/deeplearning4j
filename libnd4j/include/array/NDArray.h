@@ -220,7 +220,7 @@ class SD_LIB_EXPORT NDArray {
   NDArray(DataBuffer *  buffer, LongType *shapeInfo,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(DataBuffer *  buffer, char order, const std::vector<LongType> &shape,
+  NDArray(DataBuffer *  buffer, char order, std::vector<LongType> &shape,
           LaunchContext *context = LaunchContext::defaultContext());
 
   /**
@@ -255,28 +255,28 @@ class SD_LIB_EXPORT NDArray {
    * This constructors create array from vector of utf8 strings
    *
    */
-  NDArray(const std::vector<LongType> &shape, const std::vector<const char *> &strings, DataType dtype = UTF8,
+  NDArray(std::vector<LongType> &shape, const std::vector<const char *> &strings, DataType dtype = UTF8,
           LaunchContext *context = LaunchContext::defaultContext());
-  NDArray(const std::vector<LongType> &shape, const std::vector<std::string> &string, DataType dtype = UTF8,
-          LaunchContext *context = LaunchContext::defaultContext());
+  NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string> &string, const sd::DataType dataType = UTF8,
+          sd::LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    * This constructors create array from vector of utf16 strings
    *
    */
-  NDArray(const std::vector<LongType> &shape, const std::vector<const char16_t *> &strings, DataType dtype = UTF16,
+  NDArray(std::vector<LongType> &shape, const std::vector<const char16_t *> &strings, DataType dtype = UTF16,
           LaunchContext *context = LaunchContext::defaultContext());
-  NDArray(const std::vector<LongType> &shape, const std::vector<std::u16string> &string, DataType dtype = UTF16,
+  NDArray(std::vector<LongType> &shape, const std::vector<std::u16string> &string, DataType dtype = UTF16,
           LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    * This constructors create array from vector of utf32 strings
    *
    */
-  NDArray(const std::vector<LongType> &shape, const std::vector<const char32_t *> &strings, DataType dtype = UTF32,
+  NDArray(std::vector<LongType> &shape, const std::vector<const char32_t *> &strings, DataType dtype = UTF32,
           LaunchContext *context = LaunchContext::defaultContext());
-  NDArray(const std::vector<LongType> &shape, const std::vector<std::u32string> &string, DataType dtype = UTF32,
-          LaunchContext *context = LaunchContext::defaultContext());
+  NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32string> &string, sd::DataType dtype = UTF32,
+          sd::LaunchContext *context = LaunchContext::defaultContext());
 
 #endif
 
@@ -328,21 +328,21 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  this constructor creates new array using shape information contained in vector argument
    */
-  NDArray(char order, const std::vector<LongType> &shape, DataType dtype = DOUBLE,
-          LaunchContext *context = LaunchContext::defaultContext());
+  NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataType dtype = DOUBLE,
+          sd::LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    * This constructor creates new array with elements copied from data and using shape information stored in shape,
    * elements from data will be casted to dtype
    */
-  NDArray(char order, const std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype = DOUBLE,
+  NDArray(char order, std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype = DOUBLE,
           LaunchContext *context = LaunchContext::defaultContext());
 
   /**
    *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in
    * shape
    */
-  NDArray(void *buffer, char order, const std::vector<LongType> &shape, DataType dtype,
+  NDArray(void *buffer, char order, std::vector<LongType> &shape, DataType dtype,
           LaunchContext *context = LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
 
@@ -583,17 +583,15 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &;
+  NDArray permute(std::vector<LongType> &dimensions, bool copyToNewBuff = false) &;
+
   NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &;
   NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &&;
   NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &&;
 
   void permute(const LongType *dimensions, const int rank, NDArray &target) const;
-  void permute(const std::vector<LongType> &dimensions, NDArray &target) const;
 
-
-
-  /**
+      /**
    * This method streamlines given view or permuted array, and reallocates buffer
    */
   void streamline(char order = 'a');
@@ -1077,7 +1075,7 @@ class SD_LIB_EXPORT NDArray {
    */
   template <typename T>
   std::vector<T> getBufferAsVector() const;
-  std::vector<LongType> getShapeAsVector() const;
+  std::vector<LongType> getShapeAsVector();
   std::vector<sd::LongType> getStrideAsVector() const;
   std::vector<int> getShapeAsVectorInt() const;
   std::vector<LongType> getShapeInfoAsVector() const;
@@ -1109,8 +1107,8 @@ class SD_LIB_EXPORT NDArray {
    *
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
-  NDArray reshape(const char order, const std::vector<sd::LongType> &shape, const bool copyToNewBuff = true) &;
-  NDArray reshape(const char order, const std::vector<LongType> &shape, const bool copyToNewBuff = true) &&;
+  NDArray reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff = true) &;
+  NDArray reshape(char order,  std::vector<LongType> &shape, bool copyToNewBuff = true) &&;
 
   /**
    *  calculate strides and set given order
@@ -2085,10 +2083,7 @@ LongType NDArray::offset() const { return _offset; }
 ////////////////////////////////////////////////////////////////////////
 bool NDArray::hasPaddedBuffer() const { return ArrayOptions::hasPaddedBuffer(_shapeInfo); }
 
-#if defined(__CUDACC__)
-// for CUDA we need stil stuff inline
-#include <array/NDArrayLambda.hXX>
-#endif
+
 
 }  // namespace sd
 

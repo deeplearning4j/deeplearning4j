@@ -244,8 +244,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
   if (C != nullptr && C->sizeAt(1) != N)
     THROW_EXCEPTION("MmulHelper::mmulMxM cuda: C array has wrong number of columns !");
 
+  std::vector<LongType> cShape = {M, N};
   if (C == nullptr)
-    C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
+    C = new NDArray(outOrder, cShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
 
   if (C->isEmpty()) return C;
@@ -380,8 +381,9 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, NDArray* Y, con
   if (Y != nullptr && Y->lengthOf() != M)
     THROW_EXCEPTION("MmulHelper::mmulMxV cuda: Y array has wrong length !");
 
+  std::vector<LongType> yShape = {M};
   if (Y == nullptr)
-    Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
+    Y = new NDArray(outOrder, yShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
                     A->getContext());
 
   if (Y->isEmpty()) return Y;
@@ -616,7 +618,7 @@ SD_HOST static void batchedGemm(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
+NDArray* MmulHelper::mmulNxN(NDArray* A, NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
   const LongType aRank = A->rankOf();
   const LongType bRank = B->rankOf();

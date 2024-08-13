@@ -84,7 +84,8 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   auto alpha = INPUT_VARIABLE(0);
   NDArray *alphaInput = nullptr;
   if(alpha->isScalar()) {
-    alphaInput = new NDArray('c',{batchSize},alpha->dataType());
+    std::vector<sd::LongType> shape = {batchSize};
+    alphaInput = new NDArray('c',shape,alpha->dataType());
     alphaInput->assign(alpha);
   } else {
     alphaInput = alpha;
@@ -94,7 +95,8 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   auto beta = INPUT_VARIABLE(1);
   NDArray *betaInput = nullptr;
   if(beta->isScalar()) {
-    betaInput = new NDArray('c',{batchSize},beta->dataType());
+    std::vector<LongType> shape = {batchSize};
+    betaInput = new NDArray('c',shape,beta->dataType());
     betaInput->assign(beta);
   } else {
     betaInput = beta;
@@ -238,7 +240,8 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   auto alpha = INPUT_VARIABLE(0);
   NDArray *alphaInput = nullptr;
   if(alpha->lengthOf() != batchSize) {
-    alphaInput = new NDArray('c',{batchSize},alpha->dataType());
+    std::vector<sd::LongType> shape = {batchSize};
+    alphaInput = new NDArray('c',shape,alpha->dataType());
     alphaInput->assign(alpha);
   } else {
     alphaInput = alpha;
@@ -248,7 +251,8 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   auto beta = INPUT_VARIABLE(1);
   NDArray *betaInput = nullptr;
   if(beta->lengthOf() != batchSize) {
-    betaInput = new NDArray('c',{batchSize},beta->dataType());
+    std::vector<sd::LongType> shape = {batchSize};
+    betaInput = new NDArray('c',shape,beta->dataType());
     betaInput->assign(beta);
   } else {
     betaInput = beta;

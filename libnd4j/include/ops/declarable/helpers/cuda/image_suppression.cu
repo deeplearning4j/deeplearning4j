@@ -230,8 +230,9 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
                                  double threshold, double scoreThreshold, NDArray* output) {
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {boxes, scales});
+  std::vector<sd::LongType> shape = {scales->lengthOf()};
   std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>(
-      'c', {scales->lengthOf()}, context));  // - 1, scales->lengthOf()); //, scales->getContext());
+      'c', shape, context));  // - 1, scales->lengthOf()); //, scales->getContext());
 
   NDArray scores(*scales);
   Pointer extras[2] = {nullptr, stream};

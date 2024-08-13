@@ -124,13 +124,15 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
                bS, ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
   // forward steps
-  auto hFW = new NDArray(x->ordering(), {time, bS, numUnitsFW}, x->dataType(), block.launchContext());
+  std::vector<sd::LongType> expectedHshape = {time, bS, numUnitsFW + numUnitsBW};
+  auto hFW = new NDArray(x->ordering(),expectedHshape, x->dataType(), block.launchContext());
   helpers::rnnTimeLoop(block.launchContext(), x, WxFW, WhFW, bFW, h0FW, maxTimeStep, hFW, hFWFinal);
 
   auto seqLen = maxTimeStep;
   if (seqLen == nullptr) {
     //        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.launchContext());      // [bS]
-    seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, INT64, block.launchContext());  // [bS]
+    std::vector<sd::LongType> seqShape = {x->sizeAt(1)};
+    seqLen = new NDArray(x->ordering(),seqShape, INT64, block.launchContext());  // [bS]
     *seqLen = x->sizeAt(0);  // set each element of seqLen to be equal to time
   }
 
@@ -138,8 +140,9 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
   auto revOut = new NDArray(x, false, block.launchContext());
   helpers::reverseSequence(block.launchContext(), x, seqLen, revOut, 0, 1);
 
+  std::vector<sd::LongType> shape = {time, bS, numUnitsBW};
   // backward steps
-  auto hBW = new NDArray(x->ordering(), {time, bS, numUnitsBW}, x->dataType(), block.launchContext());
+  auto hBW = new NDArray(x->ordering(),shape, x->dataType(), block.launchContext());
 
   helpers::rnnTimeLoop(block.launchContext(), revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep, hBW, hBWFinal);
 

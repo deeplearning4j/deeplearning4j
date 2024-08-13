@@ -109,6 +109,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected transient boolean isView = false;
     protected static ThreadLocal<Boolean> callingToString = initWithFalse();
 
+    public BaseNDArray(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, DataType dataType, boolean isView) {
+        this.data = data;
+        this.isView = isView;
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride, ews, ordering, dataType, false));
+        init(newShape, newStride);
+        logCreationFromConstructor();
+    }
+
 
     private static ThreadLocal<Boolean> initWithFalse() {
         return new ThreadLocal<Boolean>() {

@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocatable;
@@ -35,7 +36,6 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.*;
 
 import java.util.List;
@@ -58,7 +58,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
     @Override
     public void close() {
-        //   purge();
+        purge();
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
     }
@@ -198,7 +198,7 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             INDArray array = arrays.get(i);
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array);
+            fastpath_in.put(i,array.isEmpty() ? null : array);
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
@@ -233,8 +233,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
             fastpath_in.clear();
         for(int i = 0; i < arrays.length; i++) {
             INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
+            buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
+            shapeInfoBufers2[i] = ((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer();
             fastpath_in.put(i,array);
         }
 
@@ -251,8 +251,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
 
         for(int i = 0; i < arrays.length; i++) {
             INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
+            buffers1[i] = array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer();
+            shapeInfoBufers2[i] =((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer();
             fastpath_out.put(i,array);
         }
 
@@ -266,8 +266,8 @@ public class CpuOpContext extends BaseOpContext implements OpContext, Deallocata
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
         nativeOps.setGraphContextInputBuffer(context, index,
-                array.isEmpty() ? null : array.data().opaqueBuffer(),
-                array.shapeInfoDataBuffer().opaqueBuffer(),
+                array.isEmpty() ? null : ((BaseCpuDataBuffer) array.data()).getOpaqueDataBuffer(),
+                ((BaseCpuDataBuffer) array.shapeInfoDataBuffer()).getOpaqueDataBuffer(),
                 null);
         super.setInputArray(index, array);
     }

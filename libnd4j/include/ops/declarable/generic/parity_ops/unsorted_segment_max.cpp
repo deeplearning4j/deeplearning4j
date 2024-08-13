@@ -30,7 +30,8 @@ CUSTOM_OP_IMPL(unsorted_segment_max, 2, 1, false, 0, 0) {
   auto idxSegments = INPUT_VARIABLE(1);
   auto reshapedSegments = *idxSegments;
   if (!idxSegments->isVector() && idxSegments->rankOf() > 1) {
-    reshapedSegments = idxSegments->reshape('c', {idxSegments->lengthOf()}, false);
+    std::vector<sd::LongType> shape = {idxSegments->lengthOf()};
+    reshapedSegments = idxSegments->reshape('c',shape, false);
   }
 
   auto segmentedOutput = OUTPUT_NULLIFIED(0);

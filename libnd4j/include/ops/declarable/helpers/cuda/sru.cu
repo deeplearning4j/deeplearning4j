@@ -425,10 +425,10 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
 template <typename T>
 static void sruBIBPCudaLauncher(
     const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo, const void* vwi,
-                                const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo, const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
-                                const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo, const void* vgradHt, const LongType* gradHtShapeInfo, const void* vgradCt,
-                                const LongType* gradCtShapeInfo, void* vgradI, const LongType* gradIShapeInfo, void* vgradWi, const LongType* gradWiShapeInfo, void* vgradB,
-                                const LongType* gradBShapeInfo, void* vgradC0, const LongType* gradC0ShapeInfo) {
+    const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo, const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
+    const LongType* maskShapeInfo, const void* vct, const LongType* ctShapeInfo, const void* vgradHt, const LongType* gradHtShapeInfo, const void* vgradCt,
+    const LongType* gradCtShapeInfo, void* vgradI, const LongType* gradIShapeInfo, void* vgradWi, const LongType* gradWiShapeInfo, void* vgradB,
+    const LongType* gradBShapeInfo, void* vgradC0, const LongType* gradC0ShapeInfo) {
   sruBIBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(
       vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo, vc0, c0ShapeInfo, vmask, maskShapeInfo, vct, ctShapeInfo,
       vgradHt, gradHtShapeInfo, vgradCt, gradCtShapeInfo, vgradI, gradIShapeInfo, vgradWi, gradWiShapeInfo, vgradB,
@@ -463,8 +463,10 @@ void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray
   const int bS = x->sizeAt(1);
   const int K = x->sizeAt(2) / 2;
 
-  NDArray gradBias(x->ordering(), {bS, 4 * K}, x->dataType(), context);
-  NDArray gradWi(x->ordering(), {time, bS, 6 * K}, x->dataType(), context);
+  std::vector<sd::LongType> gradBiasShape = {bS, 4 * K};
+  std::vector<sd::LongType> gradWiShape = {time, bS, 6 * K};
+  NDArray gradBias(x->ordering(), gradBiasShape, x->dataType(), context);
+  NDArray gradWi(x->ordering(), gradWiShape, x->dataType(), context);
 
   PointersManager manager(context, "sru_bi_bp");
 
@@ -494,7 +496,7 @@ void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray
   gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims2);  // [4*K]
 
   // gradW
-  x->permutei({0, 2, 1});                       // [time, bS, 2*K] -> [time, 2*K,  bS]
+  x->permutei({0, 2, 1},false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time, 2*K, bS] x [time, bS , 6*K] = [time, 2*K, 6*K]
 }
 

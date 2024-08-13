@@ -71,7 +71,7 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, LongType const* inputS
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     auto xIndex = shape::getIndexOffset(e, inputShape);
-    math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
+    math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -106,7 +106,7 @@ static SD_KERNEL void unsortedSegmentMaxLinearKernel(void* input, LongType const
       auto xIndex = shape::getIndexOffset(e, inputShape);
       auto yIndex = shape::getIndexOffset(e, indicesShape);
       if (y[yIndex] == segment) {
-        math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
+        math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
     }
 }
@@ -145,13 +145,13 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
+        math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
     } else {
       for (auto e = threadIdx.x; e < len; e += blockDim.x) {
         auto xIndex = shape::getIndexOffset(e, inputTads);
         auto zIndex = shape::getIndexOffset(e, outputTads);
-        if (lengths[segment]) math::atomics::sd_atomicMax(&z[zIndex], x[xIndex]);
+        if (lengths[segment]) math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
     }
   }
@@ -375,8 +375,10 @@ Status segmentMaxFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
                                 NDArray* output) {
   // if input is a vector: (as if in doc sample)
   auto stream = context->getCudaStream();
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
-                  context);  //->shapeInfo(), context);
+/*  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
+                  context); */
+  auto outShape = gradOut->getShapeAsVector();
+  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(), context);
   segmentMaxFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
   if (input->isVector()  || input->isScalar()) {
@@ -449,8 +451,9 @@ static Status unsortedSegmentMaxFunctorBP_(LaunchContext* context, NDArray* inpu
                                            LongType numOfClasses, NDArray* output) {
   // if input is a vector: (as if in doc sample)
   auto stream = context->getCudaStream();
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
-                  context);  //->shapeInfo(), context);
+  auto outShape = gradOut->getShapeAsVector();
+  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(),
+                  context);
   unsortedSegmentMaxFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
   if (input->isVector()  || input->isScalar()) {

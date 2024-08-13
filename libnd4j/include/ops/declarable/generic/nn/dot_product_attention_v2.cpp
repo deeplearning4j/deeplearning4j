@@ -41,8 +41,10 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
   bool reshapedQ = false;
   if(queries->rankOf() == 2) {
     reshapedQ = true;
-    queries = new NDArray(queries->reshape('c', {1,queries->sizeAt(0), queries->sizeAt(-1)}));
-    values = new NDArray(values->reshape('c', {1,queries->sizeAt(0), queries->sizeAt(-1)}));
+    std::vector<sd::LongType> qShape = {1,queries->sizeAt(0), queries->sizeAt(-1)};
+    std::vector<sd::LongType> vShape = {1,values->sizeAt(0), values->sizeAt(-1)};
+    queries = new NDArray(queries->reshape('c',qShape));
+    values = new NDArray(values->reshape('c', vShape));
   }
 
 
@@ -51,7 +53,8 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   auto keys = block.width() > 2  ? INPUT_VARIABLE(2) : values;
   if(reshapedQ && block.width() > 2) {
-    keys = new NDArray(keys->reshape('c', {1,keys->sizeAt(0), keys->sizeAt(-1)}));
+    std::vector<sd::LongType> shape = {1,keys->sizeAt(0), keys->sizeAt(-1)};
+    keys = new NDArray(keys->reshape('c', shape));
   }
 
   auto qMask = block.width() > 3 ? INPUT_VARIABLE(3) : nullptr;
@@ -59,11 +62,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2, -2, -1, false, -2, -2) {
 
   //reshape to handle different shapes
   if(qMask != nullptr && reshapedQ) {
-    qMask = new NDArray(qMask->reshape('c', {1,qMask->sizeAt(0), qMask->sizeAt(-1)}));
+    std::vector<sd::LongType> qShape = {1,qMask->sizeAt(0), qMask->sizeAt(-1)};
+    qMask = new NDArray(qMask->reshape('c', qShape));
   }
 
   if(vMask != nullptr && reshapedQ) {
-    vMask = new NDArray(vMask->reshape('c', {1,vMask->sizeAt(0), vMask->sizeAt(-1)}));
+    std::vector<sd::LongType> vShape = {1,vMask->sizeAt(0), vMask->sizeAt(-1)};
+    vMask = new NDArray(vMask->reshape('c',vShape));
   }
 
 
@@ -191,9 +196,12 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   bool reshapedQ = false;
   if(queries->rankOf() == 2) {
     reshapedQ = true;
-    queries = new NDArray(queries->reshape('c', {1,queries->sizeAt(0), queries->sizeAt(-1)}));
-    values = new NDArray(values->reshape('c', {1,queries->sizeAt(0), queries->sizeAt(-1)}));
-    keys = new NDArray(keys->reshape('c', {1,keys->sizeAt(0), keys->sizeAt(-1)}));
+    std::vector<sd::LongType> qShape = {1,queries->sizeAt(0), queries->sizeAt(-1)};
+    std::vector<sd::LongType> vShape = {1,values->sizeAt(0), values->sizeAt(-1)};
+    std::vector<sd::LongType> kShape = {1,keys->sizeAt(0), keys->sizeAt(-1)};
+    queries = new NDArray(queries->reshape('c', qShape));
+    values = new NDArray(values->reshape('c', vShape));
+    keys = new NDArray(keys->reshape('c',kShape));
   }
 
 
@@ -219,11 +227,13 @@ CUSTOM_OP_IMPL(dot_product_attention_v2_bp, -2, 3, false, 0, -2) {
   auto vMask = block.width() > 9 ? INPUT_VARIABLE(9) : nullptr;
 
   if(qMask != nullptr && qMask->rankOf() == 2) {
-    qMask = new NDArray(qMask->reshape('c', {1,qMask->sizeAt(0), qMask->sizeAt(-1)}));
+    std::vector<sd::LongType> qShape = {1,qMask->sizeAt(0), qMask->sizeAt(-1)};
+    qMask = new NDArray(qMask->reshape('c', qShape));
   }
 
   if(vMask != nullptr && vMask->rankOf() == 2) {
-    vMask = new NDArray(vMask->reshape('c', {1,vMask->sizeAt(0), vMask->sizeAt(-1)}));
+    std::vector<sd::LongType> vShape = {1,vMask->sizeAt(0), vMask->sizeAt(-1)};
+    vMask = new NDArray(vMask->reshape('c', vShape));
   }
 
   auto dLdq = OUTPUT_VARIABLE(0);

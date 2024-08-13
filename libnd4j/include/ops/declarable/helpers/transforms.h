@@ -99,7 +99,7 @@ SD_LIB_HIDDEN void mirrorPad(LaunchContext* context, const NDArray& input, const
 SD_LIB_HIDDEN void concat(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
                           const int axis);
 
-SD_LIB_HIDDEN void tileBP(LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
+SD_LIB_HIDDEN void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*output*/,
                           const std::vector<LongType> reps);
 
 SD_LIB_HIDDEN void split(LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs,

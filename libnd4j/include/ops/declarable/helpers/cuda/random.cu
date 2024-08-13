@@ -49,13 +49,13 @@ namespace helpers {
 template <typename T>
 T SD_DEVICE gammaLess(T const* U, LongType index, LongType maxLength, T const alpha, T const beta) {
   auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
-  auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
+  auto a = math::p_pow(T(2.f), alpha) * math::p_pow<T>(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
   auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
   auto c = a + b;
   T rawX;
   auto indexV = index;
   auto underAlpha = T(1.f) / alpha;
-  auto powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
+  auto powerAlpha = math::p_pow<T>(T(2.f), alpha - T(1.f));
 
   for (;;) {
     auto u = (indexV < maxLength) ? U[indexV++] : U[0];
@@ -70,12 +70,12 @@ T SD_DEVICE gammaLess(T const* U, LongType index, LongType maxLength, T const al
     //            math::atomics::sd_atomicAdd(index, 1LL);
 
     if (rawX <= d) {
-      auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
-                     (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
+      auto testVal = (math::p_pow<T>(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) /
+                     (powerAlpha * math::p_pow<T>(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
       if (testVal < v) continue;
       break;
     } else {
-      if (v <= math::p_pow(d / rawX, T(1.f) - alpha)) break;
+      if (v <= math::p_pow<T>(d / rawX, T(1.f) - alpha)) break;
       continue;
     }
   }
@@ -258,7 +258,8 @@ static SD_KERNEL void fillPoissonKernel(T* uList, LongType uLength, T* lambda, c
 template <typename T>
 static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
   auto shift = output->lengthOf() / lambda->lengthOf();
-  NDArray uniform('c', {shift}, DOUBLE);
+  std::vector<LongType> shape = {shift};
+  NDArray uniform('c',shape, DOUBLE);
   PointersManager manager(context, "fillRandomPoisson");
   auto stream = context->getCudaStream();
   // fill up uniform with given length

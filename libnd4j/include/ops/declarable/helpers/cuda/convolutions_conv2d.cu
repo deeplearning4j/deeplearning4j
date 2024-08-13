@@ -34,47 +34,22 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2d_(graph::Context& block,
-                    const NDArray* input,
-                    const NDArray* weights,
-                    const NDArray* bias,
-                    NDArray* output,
-                    const LongType kH, const LongType kW,
-                    const LongType sH, const LongType sW,
-                    LongType pH, LongType pW,
-                    const LongType dH, const LongType dW,
-                    const int paddingMode,
-                    const int isNCHW, const int wFormat) {
+static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
+                    NDArray* output, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
+                    const LongType dH, const LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
+
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   // bias    [oC]
   // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
-  // kH  filter(kernel) height
-  // kW  filter(kernel) width
-  // sH  strides height
-  // sW  strides width
-  // pH  paddings height
-  // pW  paddings width
-  // dH  dilations height
-  // dW  dilations width
-  // paddingMode 0-VALID, 1-SAME
-  // isNCHW     1-NCHW,  0-NHWC
-
-  LongType bS, iC, iH, iW, oC, oH,
-      oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
-  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
-                                             indIiH, indWiC, indWoC, indWkH, indOoH);
-
-  ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
-
-  std::vector<LongType> permuteForOutput;
-
-  if (isNCHW)
-    permuteForOutput = {0, 3, 1, 2};  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-  else
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW] if NHWC
+  LongType bS = input->sizeAt(0);
+  LongType iC = ConvolutionUtils::inChannels(weights->shapeInfo(), wFormat);
+  LongType oC = ConvolutionUtils::outChannels(weights->shapeInfo(), wFormat);
+  LongType iH = ConvolutionUtils::inputHeight(input->shapeInfo(), isNCHW);
+  LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
+  LongType oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
+  LongType oW = ConvolutionUtils::calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
 
   std::vector<LongType> wAxes;
   if (0 == wFormat)
@@ -84,47 +59,69 @@ static void conv2d_(graph::Context& block,
   else
     wAxes = {1, 2, 3};
 
-  NDArray col('c', {bS, oH, oW, kH, kW, iC}, input->dataType(), input->getContext());
-  NDArray colP = col.permute({0, 5, 3, 4, 1, 2});  // {bS, iC, kH, kW, oH, oW}
-  NDArray mmulResult('f', {bS * oH * oW, oC}, output->dataType(), output->getContext());
+
+  std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
+  NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
+  std::vector<LongType> colPermute = {0, 3, 4, 5, 1, 2};  // {bS, iC, kH, kW, oH, oW}
+  NDArray *colP = new NDArray(col->permute(colPermute, false));  // {bS, iC, kH, kW, oH, oW}
+  std::vector<sd::LongType> mmulResShape = {bS * oH * oW, oC};
+  NDArray mmulResult('f', mmulResShape, output->dataType(), output->getContext());
+
+  std::vector<LongType> permuteForOutput = {0, 3, 1, 2};
 
   //----- calculation of output -----//
   auto ctx = block.launchContext();
-  const NDArray *paddingArr = new NDArray(NDArrayFactory::create(0.f, input->getContext()));
-  helpers::im2col(
-      *ctx, *input, colP, kH, kW, sH, sW, pH, pW, dH, dW,
-      *paddingArr);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
 
 
-
-  MmulHelper::tensorDot(&col, weights, &mmulResult, {3, 4, 5}, wAxes,
-                        {});  // [bS, oH, oW, kH, kW, iC] x [kH, kW, iC, oC] = [bS, oH, oW, oC]
-
-
-
-
-
-  //----- assign outTemp to output  -----//
   if (isNCHW) {
-    mmulResult.reshapei({bS, oH, oW, oC});
-    mmulResult.permutei(permuteForOutput);
+    helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
+                    NDArrayFactory::create(0.f, input->getContext()));
+  } else {
+    std::vector<sd::LongType> permute = {0, 3, 1, 2};
+    // For NHWC, we need to permute the input to NCHW before im2col
+    NDArray* inputNchw = new NDArray(input->permute(permute));
+    helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
+                    NDArrayFactory::create(0.f, input->getContext()));
   }
 
 
 
-  output->assign(mmulResult);
+  std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
+  block.pushIntermediateResult(col);
+
+  std::vector<sd::LongType> shape = {bS * oH * oW, kW * kH * iC};
+  auto im2colReshape = col->reshape('c', shape, true);
+
+  auto weightsPermuted = weights->permute(permuteForOutput);
+  std::vector<LongType> weightShape = {iC * kH * kW, oC};
+  auto reshapedW = weightsPermuted.reshape('f', weightShape, false);
+  MmulHelper::matmul(&im2colReshape, &reshapedW, &mmulResult, false, false, 1.0, 0.0);
+
+
+  std::vector<LongType> mmulResultShape = {oH, oW, bS, oC};
+  auto reshaped = mmulResult.reshape('f', mmulResultShape, false);
+  std::vector<sd::LongType> permutedShape = {2, 3, 1,0};
+  auto permuted = reshaped.permute(permutedShape);
+
+  // Reshape and copy result to output
+  if (isNCHW) {
+    output->assign(permuted);
+  } else {
+    std::vector<sd::LongType> otherPermute = {0,2,3,1};
+    permuted = permuted.permute(otherPermute);
+    output->assign(permuted);
+  }
 
   //----- add biases if required -----//
   if (bias) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
   }
 
-
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::conv2d(graph::Context& block, const NDArray* input, const NDArray* weights,
-                              const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+void ConvolutionUtils::conv2d(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                              NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                               const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
                               const int isNCHW, const int wFormat) {
   BUILD_SINGLE_SELECTOR_TWICE(
@@ -132,6 +129,7 @@ void ConvolutionUtils::conv2d(graph::Context& block, const NDArray* input, const
       (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat),
       SD_FLOAT_TYPES);
 }
+
 
 }  // namespace ops
 }  // namespace sd

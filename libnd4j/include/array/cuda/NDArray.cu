@@ -490,7 +490,9 @@ BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
 NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) const {
-  NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(), getContext());
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = ShapeUtils::evalRepeatShape(axis, repeats, *nonConst);
+  NDArray output('c',shape, dataType(), getContext());
   dim3 launchDims = getRepeatLaunchDims(output.lengthOf(), output.rankOf());
 
   PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
@@ -513,7 +515,10 @@ NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) co
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by repeats
 void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
-  if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
+  auto nonConst = const_cast<NDArray *>(this);
+  std::vector<sd::LongType> shape = ShapeUtils::evalRepeatShape(axis, repeats, *nonConst);
+
+  if (!target.isSameShape(shape))
     THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");

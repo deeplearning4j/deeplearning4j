@@ -57,7 +57,8 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
 
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
-    z->assign(x->reshape(z->ordering(), z->getShapeAsVector(),false));
+    std::vector<sd::LongType> shape = z->getShapeAsVector();
+    z->assign(x->reshape(z->ordering(), shape,false));
   }
   return Status::OK;
 }

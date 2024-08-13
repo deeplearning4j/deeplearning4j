@@ -35,20 +35,23 @@ NDArrayList::NDArrayList(int height, bool expandable) {
   _id.first = 0;
   _id.second = 0;
   _height = height;
+   sd_debug("\nCreating NDArrayList\n","");
 }
 
 NDArrayList::~NDArrayList() {
-  // for (auto const& v : _chunks) delete v.second;
+  sd_debug("\nDeleting NDArrayList: [%i]\n", _chunks.size());
+  for (auto const& v : _chunks) delete v.second;
 
   _chunks.clear();
 }
 
-NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup(false)); }
+NDArray* NDArrayList::read(int idx) { return new NDArray(readRaw(idx)->dup()); }
 
-DataType NDArrayList::dataType() { return _dtype; }
+sd::DataType NDArrayList::dataType() { return _dtype; }
 
 NDArray* NDArrayList::readRaw(int idx) {
   if (_chunks.count(idx) < 1) {
+    sd_debug("Non-existent chunk requested: [%i]\n", idx);
     THROW_EXCEPTION("Bad index");
   }
 
@@ -57,17 +60,19 @@ NDArray* NDArrayList::readRaw(int idx) {
 
 
 NDArray* NDArrayList::remove(int idx) {
-  if (!isWritten(idx)) {
+  if(!isWritten(idx)) {
+    sd_debug("Non-existent chunk requested: [%i]\n", idx);
     THROW_EXCEPTION("Bad index");
   }
 
   delete _chunks[idx];
 
   _elements--;
-  return new NDArray(readRaw(idx)->dup(false));
+  return new NDArray(readRaw(idx)->dup());
 }
 
-Status NDArrayList::write(int idx, NDArray* array) {
+
+sd::Status NDArrayList::write(int idx, NDArray* array) {
   if (_chunks.count(idx) == 0)
     _elements++;
   else {
@@ -131,18 +136,18 @@ Status NDArrayList::write(int idx, NDArray* array) {
   return Status::OK;
 }
 
-std::vector<LongType>& NDArrayList::shape() { return _shape; }
+std::vector<sd::LongType>& NDArrayList::shape() { return _shape; }
 
 int NDArrayList::counter() { return _counter++; }
 
 void NDArrayList::unstack(NDArray* array, LongType axis) {
   _axis = axis;
-  std::vector<LongType> args({axis});
+  std::vector<sd::LongType> args({axis});
   auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(),1, args.data());
   auto result = array->allTensorsAlongDimension(*newAxis);
-  for (LongType e = 0; e < result.size(); e++) {
+  for (sd::LongType e = 0; e < result.size(); e++) {
     auto chunk = result.at(e);
-    write(e, new NDArray(chunk->dup(array->ordering(), false)));
+    write(e, new NDArray(chunk->dup(array->ordering())));
   }
 
   delete newAxis;
@@ -165,8 +170,6 @@ NDArray* NDArrayList::stack() {
     THROW_EXCEPTION("First input element was a null ptr!");
   }
 
-
-
   auto inShapeInfo = inputs[0]->shapeInfo();
   int rank = shape::rank(inShapeInfo);
   NDArray* array = nullptr;
@@ -175,23 +178,24 @@ NDArray* NDArrayList::stack() {
     switch (rank) {
       case 0: {
         if (numElements == 1) {
-          array = new NDArray(inputs[0]->ordering(), {0}, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
+          std::vector<sd::LongType> shape = {0};
+          array = new NDArray(inputs[0]->ordering(), shape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
         } else {
-          array = new NDArray('c', {(LongType)numElements, 0}, ArrayOptions::dataType(inShapeInfo),
+          std::vector<sd::LongType> shape =  {(sd::LongType)numElements, 0};
+          array = new NDArray('c', shape, ArrayOptions::dataType(inShapeInfo),
                               inputs[0]->getContext());
         }
       }
     }
   } else {
 
-    std::vector<LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-    outShape.insert(outShape.begin(), (LongType)numElements);
+    std::vector<sd::LongType> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
+    outShape.insert(outShape.begin(), (sd::LongType)numElements);
     array =
         new NDArray(shape::order(inShapeInfo), outShape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
   }
 
-  if(inputs[0] != nullptr && !shape::isEmptyConst(inputs[0]->shapeInfo()))
-    ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
+  ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
 
   return array;
 }
@@ -200,7 +204,7 @@ std::pair<int, int>& NDArrayList::id() { return _id; }
 
 std::string& NDArrayList::name() { return _name; }
 
-LaunchContext* NDArrayList::context() { return _context; }
+sd::LaunchContext* NDArrayList::context() { return _context; }
 
 int NDArrayList::elements() { return _elements.load(); }
 
@@ -221,13 +225,13 @@ NDArray* NDArrayList::pick(std::initializer_list<LongType> indices) {
 }
 
 NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
-  std::vector<LongType> shape(_shape);
+  std::vector<sd::LongType> shape(_shape);
 
   shape[_axis] = indices.size();
   // do we have to enforce C order here?
   auto array = new NDArray('c', shape, _chunks[0]->dataType(), _context);
-  const LongType* axis2 = const_cast<LongType*>(&_axis);
-  std::vector<LongType> *axis = ShapeUtils::evalDimsToExclude(shape.size(),1, axis2);
+  const sd::LongType *axis2 = const_cast<sd::LongType *>(&_axis);
+  std::vector<sd::LongType> *axis = ShapeUtils::evalDimsToExclude(shape.size(),1, axis2);
   auto tads = array->allTensorsAlongDimension(*axis);
   int indicesSize = indices.size();
 
@@ -248,7 +252,7 @@ NDArrayList* NDArrayList::clone() {
   list->_elements.store(_elements.load());
 
   for (auto const& v : _chunks) {
-    list->_chunks[v.first] = new NDArray(v.second->dup(false));
+    list->_chunks[v.first] = new NDArray(v.second->dup());
   }
 
   return list;

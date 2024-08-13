@@ -47,7 +47,8 @@ CUSTOM_OP_IMPL(flatten_2d, 1, 1, false, 0, -2) {
 
   if (Environment::getInstance().isDebugAndVerbose()) sd_printv("Reshape: new shape", z->getShapeAsVector());
 
-  z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
+  std::vector<sd::LongType> zShape = z->getShapeAsVector();
+  z->assign(x->reshape(z->ordering(), zShape));
 
   return Status::OK;
 }

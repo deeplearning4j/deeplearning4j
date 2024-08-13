@@ -28,15 +28,16 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-BiDiagonalUp::BiDiagonalUp(const NDArray& matrix)
-    : _HHmatrix(
-          NDArray(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())),
-      _HHbidiag(
-          NDArray(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())) {
-  // input validation
+
+BiDiagonalUp::BiDiagonalUp(NDArray& matrix) {
+      // input validation
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::biDiagonalizeUp constructor: input array must be 2D matrix !");
 
+  std::vector<LongType> shape = {matrix.sizeAt(0), matrix.sizeAt(1)};
+  _HHmatrix = NDArray(matrix.ordering(), shape, matrix.dataType(), matrix.getContext());
+  std::vector<sd::LongType> shape2 = {matrix.sizeAt(1), matrix.sizeAt(1)};
+  _HHbidiag = NDArray(matrix.ordering(),shape2, matrix.dataType(), matrix.getContext());
   _HHmatrix.assign(&matrix);
   _HHbidiag.assign(0.);
 
@@ -124,7 +125,8 @@ template <typename T>
 HHsequence BiDiagonalUp::makeHHsequence_(const char type) {
   const int diagSize = type == 'u' ? _HHbidiag.sizeAt(0) : _HHbidiag.sizeAt(0) - 1;
 
-  _hhCoeffs = NDArray(_HHmatrix.ordering(), {diagSize}, _HHmatrix.dataType(), _HHmatrix.getContext());
+  std::vector<LongType> shape = {diagSize};
+  _hhCoeffs = NDArray(_HHmatrix.ordering(),shape, _HHmatrix.dataType(), _HHmatrix.getContext());
 
   if (type == 'u')
     for (int i = 0; i < diagSize; ++i) _hhCoeffs.r<T>(i) = _HHmatrix.t<T>(i, i);

@@ -116,54 +116,56 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
     a = *(reinterpret_cast<const T*>(va) + aOffset);
     b = *(reinterpret_cast<const T*>(vb) + bOffset);
     x = *(reinterpret_cast<const T*>(vx) + xOffset);
-    symmCond = x > (a + static_cast<T>(1)) / (a + b + static_cast<T>(2));
+    symmCond = x > (a + T(1)) / (a + b + T(2));
 
     if (symmCond) {  // swap a and b, x = 1 - x
       T temp = a;
       a = b;
       b = temp;
-      x = static_cast<T>(1) - x;
+      x = T(1) - x;
     }
   }
   __syncthreads();
 
   // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
-  if (zOffset < zLen && a == b && x == static_cast<T>(0.5)) {
-    z[zOffset] = static_cast<T>(0.5);
+  if (zOffset < zLen && a == b && x == T(0.5)) {
+    z[zOffset] = T(0.5);
     return;
   }
 
-  if (zOffset < zLen && x == static_cast<T>(0) || x == static_cast<T>(1)) {
-    z[zOffset] = symmCond ? static_cast<T>(1) - x : x;
+  if (zOffset < zLen && (x == T(0) || x == T(1))) {
+    if (symmCond) {
+      z[zOffset] = T(1) - x;
+    } else {
+      z[zOffset] = x;
+    }
     return;
   }
 
   // calculate two coefficients per thread
   if (threadIdx.x != 0) {
     const int i = threadIdx.x;
-    const T aPlus2i = a + 2 * i;
-    sharedMem[2 * i] = i * (b - i) * x / ((aPlus2i - static_cast<T>(1)) * aPlus2i);
-    sharedMem[2 * i + 1] = -(a + i) * (a + b + i) * x / ((aPlus2i + static_cast<T>(1)) * aPlus2i);
+    const T aPlus2i = a + T(2) * T(i);
+    sharedMem[2 * i] = T(i) * (b - T(i)) * x / ((aPlus2i - T(1)) * aPlus2i);
+    sharedMem[2 * i + 1] = -(a + T(i)) * (a + b + T(i)) * x / ((aPlus2i + T(1)) * aPlus2i);
   }
 
   __syncthreads();
 
   if (threadIdx.x == 0) {
     const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
-    const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(1.f - x) * b - gammaPart);
+    const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(T(1) - x) * b - gammaPart);
 
-    sharedMem[0] = static_cast<T>(1) - (a + b) * x / (a + static_cast<T>(1));
-    sharedMem[1] = static_cast<T>(1);
+    sharedMem[0] = T(1) - (a + b) * x / (a + T(1));
+    sharedMem[1] = T(1);
 
     z[zOffset] = front * continuedFractionCuda(a, b, x) / a;
 
-
     if (symmCond) {  // symmetry relation
-      z[zOffset] = static_cast<T>(1) - z[zOffset];
+      z[zOffset] = T(1) - z[zOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

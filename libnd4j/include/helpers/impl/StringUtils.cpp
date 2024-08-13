@@ -114,7 +114,8 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
 }
 
 NDArray* StringUtils::createDataBufferFromVector(const std::vector<LongType>& vec, DataType dataType) {
-  NDArray* buffer = new NDArray('c', {static_cast<LongType>(vec.size())}, dataType);
+ std::vector<LongType> shape = {static_cast<LongType>(vec.size())};
+  NDArray* buffer = new NDArray('c', shape, dataType);
   for(size_t i = 0; i < vec.size(); i++) {
     buffer->p(i, vec[i]);
   }
@@ -220,7 +221,7 @@ DataBuffer * StringUtils::createBufferForStringData(const std::vector<LongType>&
   return new DataBuffer(offsetsLength + offsets.back(), dtype, context->getWorkspace(), true);
 }
 
-NDArray StringUtils::createStringNDArray(const NDArray& array, const std::vector<LongType>& offsets, DataType dtype) {
+NDArray StringUtils::createStringNDArray(NDArray& array, const std::vector<LongType>& offsets, DataType dtype) {
   DataBuffer *pBuffer = createBufferForStringData(offsets, dtype, array.getContext());
   std::vector<LongType> shape = offsets.size() == 2 ? std::vector<LongType>({1}) : array.getShapeAsVector();
   auto desc = new ShapeDescriptor(dtype, array.ordering(), shape);

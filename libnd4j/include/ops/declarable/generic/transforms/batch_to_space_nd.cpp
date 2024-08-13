@@ -85,9 +85,10 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
 
   if (shape::strideDescendingCAscendingF(input->shapeInfo()))
     helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
-  else
-    helpers::batchToSpaceND(block.launchContext(), input->dup(), *blockShape, *crop, *output);
-
+  else {
+    auto dupped = input->dup();
+    helpers::batchToSpaceND(block.launchContext(), dupped, *blockShape, *crop, *output);
+  }
   return sd::Status::OK;
 }
 

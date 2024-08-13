@@ -57,9 +57,10 @@ void SD_INLINE cross(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o)
 }
 
 void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
-  auto a_ = a->reshape(a->ordering(), {-1, 3});
-  auto b_ = b->reshape(b->ordering(), {-1, 3});
-  auto o_ = o->reshape(o->ordering(), {-1, 3}, false);
+  std::vector<sd::LongType> reshape = {-1,3};
+  auto a_ = a->reshape(a->ordering(), reshape);
+  auto b_ = b->reshape(b->ordering(), reshape);
+  auto o_ = o->reshape(o->ordering(),reshape, false);
 
   auto tadsA = a_.allTensorsAlongDimension({1});
   auto tadsB = b_.allTensorsAlongDimension({1});

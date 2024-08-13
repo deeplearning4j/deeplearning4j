@@ -357,8 +357,9 @@ Status segmentMinFunctorBP_(LaunchContext* context, NDArray* input, NDArray* ind
 
   // if input is a vector: (as if in doc sample)
   auto stream = context->getCudaStream();
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
-                  context);  //->shapeInfo(), context);
+  auto outShape = gradOut->getShapeAsVector();
+  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(),
+                  context);
   segmentMinFunctor_<T, I>(context, input, indices, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});
   if (input->isVector()  || input->isScalar()) {
@@ -415,7 +416,9 @@ static Status unsortedSegmentMinFunctorBP_(LaunchContext* context, NDArray* inpu
                                            LongType numOfClasses, NDArray* output) {
   // if input is a vector: (as if in doc sample)
   auto stream = context->getCudaStream();
-  NDArray tempRes(gradOut->ordering(), gradOut->getShapeAsVector(), DataTypeUtils::fromT<T>(),
+  auto outShape = gradOut->getShapeAsVector();
+
+  NDArray tempRes(gradOut->ordering(), outShape, DataTypeUtils::fromT<T>(),
                   context);
   unsortedSegmentMinFunctor_<T, I>(context, input, indices, numOfClasses, &tempRes);
   NDArray::prepareSpecialUse({output}, {input, indices, gradOut, &tempRes});

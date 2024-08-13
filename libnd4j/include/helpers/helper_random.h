@@ -40,16 +40,16 @@ namespace random {
 template <typename T>
 class RandomHelper {
  private:
-  sd::random::IGenerator *generator;
-  sd::random::RandomBuffer *buffer;
+  IGenerator *generator;
+  RandomBuffer *buffer;
 
  public:
-  SD_HOST_DEVICE RandomHelper(sd::random::IGenerator *generator) {
+  SD_HOST_DEVICE RandomHelper(IGenerator *generator) {
     this->generator = generator;
     this->buffer = generator->getBuffer();
   }
 
-  SD_HOST_DEVICE RandomHelper(sd::random::RandomBuffer *buffer) { this->buffer = buffer; }
+  SD_HOST_DEVICE RandomHelper(RandomBuffer *buffer) { this->buffer = buffer; }
 
   /**
    * This method returns random int in range [0..SD_MAX_INT]
@@ -104,7 +104,7 @@ class RandomHelper {
    * This method returns random T in range of [0..1]
    * @return
    */
-  SD_INLINE SD_DEVICE T nextT() { return (T)nextUInt() / (T)sd::DataTypeUtils::max<sd::LongType>(); }
+  SD_INLINE SD_DEVICE T nextT() { return (T)nextUInt() / (T)DataTypeUtils::max<LongType>(); }
 
   /**
    * This method returns random T in range of [0..to]
@@ -125,13 +125,13 @@ class RandomHelper {
    */
   SD_INLINE SD_DEVICE T nextT(T from, T to) { return from + (nextT() * (to - from)); }
 
-  SD_INLINE SD_DEVICE uint64_t relativeUInt(sd::LongType index) { return buffer->getElement(index); }
+  SD_INLINE SD_DEVICE uint64_t relativeUInt(LongType index) { return buffer->getElement(index); }
 
   /**
    *  relative methods are made as workaround for lock-free concurrent execution
    */
-  SD_INLINE SD_DEVICE int relativeInt(sd::LongType index) {
-    return (int)(relativeUInt(index) % (sd::DataTypeUtils::max<uint32_t>() + 1));
+  SD_INLINE SD_DEVICE int relativeInt(LongType index) {
+    return (int)(relativeUInt(index) % (DataTypeUtils::max<uint32_t>() + 1));
   }
 
   /**
@@ -141,7 +141,7 @@ class RandomHelper {
    * @param to
    * @return
    */
-  SD_INLINE SD_DEVICE int relativeInt(sd::LongType index, int to) {
+  SD_INLINE SD_DEVICE int relativeInt(LongType index, int to) {
     int rel = relativeInt(index);
     return rel % to;
   }
@@ -154,7 +154,7 @@ class RandomHelper {
    * @param from
    * @return
    */
-  inline int SD_DEVICE relativeInt(sd::LongType index, int to, int from) {
+  inline int SD_DEVICE relativeInt(LongType index, int to, int from) {
     if (from == 0) return relativeInt(index, to);
 
     return from + relativeInt(index, to - from);
@@ -167,12 +167,12 @@ class RandomHelper {
    * @return
    */
 
-  SD_INLINE SD_DEVICE T relativeT(sd::LongType index) {
+  SD_INLINE SD_DEVICE T relativeT(LongType index) {
     if (sizeof(T) < 4) {
       // FIXME: this is fast hack for short types, like fp16. This should be improved.
-      return (T)((float)relativeUInt(index) / (float)sd::DataTypeUtils::max<uint32_t>());
+      return (T)((float)relativeUInt(index) / (float)DataTypeUtils::max<uint32_t>());
     } else
-      return (T)relativeUInt(index) / (T)sd::DataTypeUtils::max<uint32_t>();
+      return (T)relativeUInt(index) / (T)DataTypeUtils::max<uint32_t>();
   }
 
   /**
@@ -182,7 +182,7 @@ class RandomHelper {
    * @param to
    * @return
    */
-  SD_INLINE SD_DEVICE T relativeT(sd::LongType index, T to) {
+  SD_INLINE SD_DEVICE T relativeT(LongType index, T to) {
     if (to == (T)1.0f) return relativeT(index);
 
     return relativeT(index, (T)0.0f, to);
@@ -196,14 +196,14 @@ class RandomHelper {
    * @param to
    * @return
    */
-  SD_INLINE SD_DEVICE T relativeT(sd::LongType index, T from, T to) { return from + (relativeT(index) * (to - from)); }
+  SD_INLINE SD_DEVICE T relativeT(LongType index, T from, T to) { return from + (relativeT(index) * (to - from)); }
 
   /**
    * This method skips X elements from buffer
    *
    * @param numberOfElements number of elements to skip
    */
-  SD_INLINE SD_DEVICE void rewind(sd::LongType numberOfElements) { buffer->rewindH(numberOfElements); }
+  SD_INLINE SD_DEVICE void rewind(LongType numberOfElements) { buffer->rewindH(numberOfElements); }
 };
 }  // namespace random
 }  // namespace sd

@@ -58,13 +58,13 @@ CUSTOM_OP_IMPL(confusion_matrix, 2, 1, false, 0, -2) {
 
   helpers::confusionFunctor(block.launchContext(), labels, predictions, weights, output);
 
-  return Status::OK;
+  return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(confusion_matrix) {
   auto labels = INPUT_VARIABLE(0);
   auto predictions = INPUT_VARIABLE(1);
-  auto dtype = block.numD() ? D_ARG(0) : INT64;
+  auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
   int numClasses = 0;
 
   if (block.getIArguments()->size() > 0) {
@@ -75,8 +75,8 @@ DECLARE_SHAPE_FN(confusion_matrix) {
     numClasses = (maxPrediction >= maxLabel) ? maxPrediction + 1 : maxLabel + 1;
   }
 
-  std::array<LongType, 2> shape = {{numClasses, numClasses}};
-  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 2, shape.data(), -1);
+  std::array<sd::LongType, 2> shape = {{numClasses, numClasses}};
+  auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 2, shape.data(),0);
   return SHAPELIST(newShape);
 }
 

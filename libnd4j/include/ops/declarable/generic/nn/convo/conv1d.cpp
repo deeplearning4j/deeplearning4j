@@ -75,9 +75,10 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
 
   auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,false));
   auto outputReshaped = new NDArray(output->reshape(output->ordering(), reshapeForOutput, false));
+  std::vector<LongType> weightsShape = {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)};
   auto weightsReshaped = new NDArray(weights->reshape(
       weights->ordering(),
-      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},false));  // [kW, iC, oC] -> [1, kW, iC, oC]
+      weightsShape,false));  // [kW, iC, oC] -> [1, kW, iC, oC]
 
 
 
@@ -243,11 +244,13 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   auto inputReshaped = new NDArray(input->reshape(input->ordering(), reshapeForInput,false));
   auto gradIReshaped = !gradO->isScalar() ? new NDArray(gradI->reshape(gradI->ordering(), reshapeForInput, false)) : gradI;
   auto gradOReshaped = !gradO->isScalar() ? new NDArray(gradO->reshape(gradO->ordering(), reshapeForGradO,false)) : gradO;
+  std::vector<LongType> weightsShape = {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)};
+
   auto weightsReshaped =  new NDArray(weights->reshape(
       weights->ordering(),
-      {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},false));  // [kW, iC, oC] -> [1, kW, iC, oC]
+      weightsShape,false));  // [kW, iC, oC] -> [1, kW, iC, oC]
   auto gradWReshaped =
-      !gradO->isScalar() ? new NDArray(gradW->reshape(gradW->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)},
+      !gradO->isScalar() ? new NDArray(gradW->reshape(gradW->ordering(), weightsShape,
                                                       false)) : gradW;  // [kW, iC, oC] -> [1, kW, iC, oC]
   Status ret = Status::OK;
 

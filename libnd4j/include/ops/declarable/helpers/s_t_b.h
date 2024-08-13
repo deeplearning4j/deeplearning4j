@@ -39,8 +39,8 @@ SD_LIB_HIDDEN void spaceToBatch(LaunchContext* context, const NDArray& input, ND
 SD_LIB_HIDDEN void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray& blockShape,
                                   const NDArray& padding, NDArray& output);
 
-SD_LIB_HIDDEN void batchToSpaceND(sd::LaunchContext* context, NDArray input, const NDArray& blockShape,
-                                  const NDArray& crop, NDArray& output);
+SD_LIB_HIDDEN void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
+                                  NDArray& output);
 
 }  // namespace helpers
 }  // namespace ops

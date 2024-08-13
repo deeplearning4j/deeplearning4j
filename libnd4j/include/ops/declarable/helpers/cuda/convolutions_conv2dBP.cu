@@ -21,116 +21,143 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
+#include <array/NDArrayFactory.h>
+#include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
-#include <helpers/PointersManager.h>
 #include <ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 
+#include "helpers/ShapeUtils.h"
+#if NOT_EXCLUDED(OP_col2im) && NOT_EXCLUDED(OP_im2col)
 
 namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
+
+
 template <typename X, typename Y>
-static void conv2dBP_(graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias,
-                      const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
-                      const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW, const int paddingMode,
-                      const int isNCHW, const int wFormat) {
+static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weights, NDArray* bias,
+                      NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH, const LongType kW,
+                      const LongType sH, const LongType sW, LongType pH, LongType pW, const LongType dH, const LongType dW,
+                      const int paddingMode, const int isNCHW, const int wFormat) {
+
   // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
   // weights [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
   // bias    [oC]
   // gradO   [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+  // gradI   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+  // gradW   [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
+  // gradB   [oC]
 
-  // gradI    [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-  // gradW    [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
-  // gradB    [oC]
+  const LongType bS = input->sizeAt(0);  // batch size
+  const LongType iC = isNCHW ? input->sizeAt(1) : input->sizeAt(3);  // input channels
+  const LongType iH = isNCHW ? input->sizeAt(2) : input->sizeAt(1);  // input height
+  const LongType iW = isNCHW ? input->sizeAt(3) : input->sizeAt(2);  // input width
 
-  // kH         filter(kernel) height
-  // kW         filter(kernel) width
-  // sH         strides height
-  // sW         strides width
-  // pH         paddings height
-  // pW         paddings width
-  // dH         dilations height
-  // dW         dilations width
-  // paddingMode 0-VALID, 1-SAME
-  // isNCHW     0-NHWC, 1-NCHW
-
-  LongType bS, iC, iH, iW, oC, oH,
-      oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
-  ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
-                                             indIiH, indWiC, indWoC, indWkH, indOoH);
-
-  ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
-
-  std::vector<LongType> gradOaxesForDot;
-
+  const LongType oC = isNCHW ? gradO->sizeAt(1) : gradO->sizeAt(3);  // output channels
+  const LongType oH = isNCHW ? gradO->sizeAt(2) : gradO->sizeAt(1);  // output height
+  const LongType oW = isNCHW ? gradO->sizeAt(3) : gradO->sizeAt(2);  // output width
+  NDArray *inputPermuted, *gradOPermuted, *gradIPermuted;
   if (!isNCHW) {
-    gradOaxesForDot = {0, 1, 2};                        // bS, oH, oW
-    input = new NDArray(input->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    std::vector<sd::LongType> permute = {0, 3, 1, 2};
+    inputPermuted = new NDArray(input->permute(permute));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradOPermuted = new NDArray(gradO->permute(permute));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradIPermuted = new NDArray(gradI->permute(permute));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
   } else {
-    gradOaxesForDot = {0, 2, 3};  // bS, oH, oW
+    inputPermuted = input;
+    gradOPermuted = gradO;
+    gradIPermuted = gradI;
   }
 
-  std::vector<LongType> wPermut, colPermut;
-  if (0 == wFormat) {
-    wPermut = {2, 0, 1, 3};
-    colPermut = {2, 3, 1, 0, 4, 5};
-  } else if (1 == wFormat) {
-    wPermut = {1, 2, 3, 0};
-    colPermut = {1, 2, 3, 0, 4, 5};
+  std::vector<sd::LongType> reshape = {oC,bS * oH * oW};
+  // Reshape gradO to 2D: [oC, bS * oH * oW]
+  NDArray gradO2d = gradOPermuted->reshape(gradOPermuted->ordering(), reshape,false);
+
+  // Perform im2col
+  NDArray* columns;
+  if (block.hasIntermediateResults()) {
+    columns = block.intermediateResult(0);
+    if (columns->rankOf() < 6) {
+      columns->reshapei({bS, iC, kH, kW, oH, oW});
+    }
   } else {
-    wPermut = {3, 1, 2, 0};
-    colPermut = {2, 3, 1, 0, 4, 5};
-  }
-
-  NDArray *columns = new NDArray(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-
-  // ----- calculation of gradW ----- //
-  if (gradW) {
+    std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
+    columns = new NDArray(inputPermuted->ordering(), colShape, inputPermuted->dataType(), inputPermuted->getContext());
     auto ctx = block.launchContext();
-    helpers::im2col(*ctx, *input, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(
-                        0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    MmulHelper::tensorDot(
-        columns, gradO, gradW, {0, 4, 5}, gradOaxesForDot,
-        wPermut);  // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+    helpers::im2col(*ctx, *inputPermuted, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
+                    NDArrayFactory::create<double>(0., inputPermuted->getContext()));
   }
 
-  // ----- calculation of gradB ----- //
+  // Calculate gradW
+  if (gradW) {
+    std::vector<sd::LongType> columnsShape = {bS * oH * oW, iC * kH * kW};
+    std::vector<sd::LongType> wShape = {oC, iC * kH * kW};
+    NDArray columns2d = columns->reshape('c', columnsShape,false);
+    NDArray gradW2d = gradW->reshape('f', wShape,false).permute({1, 0},false);
+
+    MmulHelper::matmul( &columns2d,&gradO2d, &gradW2d, true, true, 1.0, 0.0, &gradW2d);
+    gradW->assign(gradW2d);
+
+  }
+
+  // Calculate gradB
   if (gradB) {
-    NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}));
-    gradO->reduceAlongDimension(reduce::Sum, *gradBR, &gradOaxesForDot, false);  // sum over bS, oH, oW
-    if (gradBR != gradB) delete gradBR;
+    std::vector<LongType> axes = {1};  // Sum over bS, oH, oW
+    gradO2d.reduceAlongDimension(reduce::Sum, *gradB, &axes);
   }
 
-  //----- calculation of gradI -----//
-  // [kH, kW, iC, oC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
-  // [oC, iC, kH, kW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, bS, oH, oW]
-  // [oC, kH, kW, iC] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
-  MmulHelper::tensorDot(
-      weights, gradO, columns, {indWoC}, {indIOioC},
-      colPermut);  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
+  // Calculate gradI
+  NDArray weights2d;
+  if (wFormat == 0) {
+    std::vector<sd::LongType> permute = {3,2,1,0};
+    std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
+    weights2d = weights->permute(permute,false).reshape('f', shape2);
+  } else if (wFormat == 1) {
+    std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
+    weights2d = weights->reshape('f', shape2);
+  } else {
+    std::vector<sd::LongType> shape2 = {iC * kH * kW, oC};
+    std::vector<sd::LongType> permute3 = {0, 2, 3, 1};
+    weights2d = weights->permute(permute3,false).reshape('f', shape2);
+  }
 
-  helpers::col2im(*block.launchContext(), *columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
-                  dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
+  std::vector<sd::LongType> colShape2 = {iC * kH * kW, bS * oH * oW};
+  NDArray columns2d('c', colShape2, columns->dataType(), columns->getContext());
 
+
+  MmulHelper::matmul(&weights2d, &gradO2d, &columns2d, false, false, 1.0, 0.0);
+  //Calculate epsilonNext by doing im2col reduction.
+  //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
+  //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
+  auto eps6d = columns2d.newShapeNoCopy({kH, kW,iC, oW, oH, bS }, 'f');
+  std::vector<sd::LongType> epsPerm = {5,2,1,0,4,3};
+  auto permuted = eps6d->permute(epsPerm,false);
+
+  // Perform col2im
+  auto ctx = block.launchContext();
+  helpers::col2im(*ctx, permuted, *gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
+  // Handle NHWC format if necessary
   if (!isNCHW) {
-    delete input;
-    delete gradI;
+    std::vector<sd::LongType> permute = {0, 2,3,1};
+    gradI->assign(gradIPermuted->permute(permute));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
   }
 
-  delete columns;
+  // Clean up
+  if (!isNCHW) {
+    delete inputPermuted;
+    delete gradOPermuted;
+    delete gradIPermuted;
+  }
+  if (!block.hasIntermediateResults()) {
+    delete columns;
+  }
 }
 
-//////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::conv2dBP(graph::Context& block, const NDArray* input, const NDArray* weights,
-                                const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW,
+void ConvolutionUtils::conv2dBP(sd::graph::Context& block, NDArray* input, NDArray* weights,
+                                NDArray* bias, NDArray* gradO, NDArray* gradI, NDArray* gradW,
                                 NDArray* gradB, const LongType kH, const LongType kW, const LongType sH, const LongType sW, LongType pH, LongType pW,
                                 const LongType dH, const LongType dW, const int paddingMode, const int isNCHW,
                                 const int wFormat) {
@@ -142,3 +169,5 @@ void ConvolutionUtils::conv2dBP(graph::Context& block, const NDArray* input, con
 
 }  // namespace ops
 }  // namespace sd
+
+#endif

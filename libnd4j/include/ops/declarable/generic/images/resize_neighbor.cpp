@@ -76,12 +76,14 @@ CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
                "resize_nearest_neighbor: Wrong input or output size to resize (width = %d, height = %d)", width,
                height);
 
+  std::vector<sd::LongType> imageShape = {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
   auto source = inRank == 4
                     ? *image
-                    : image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
+                    : image->reshape(image->ordering(), imageShape);
+  std::vector<sd::LongType> outputShape = {1, output->sizeAt(0), output->sizeAt(1),output->sizeAt(2)};
   auto target = inRank == 4 ? *output
                             : output->reshape(output->ordering(),
-                                              {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
+                                              outputShape, false);
 
   helpers::NearestMode nearestMode = helpers::NearestMode::FLOOR;
   if (alignCorners) {

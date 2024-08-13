@@ -34,7 +34,8 @@ static NDArray DefaultColorTable(int depth, LaunchContext* context) {
   // std::vector<std::vector<float>> colorTable;
   const LongType kDefaultTableLength = 10;
   const LongType kDefaultChannelLength = 4;
-  NDArray colorTable('c', {kDefaultTableLength, kDefaultChannelLength},
+  std::vector<sd::LongType> shape = {kDefaultTableLength, kDefaultChannelLength};
+  NDArray colorTable('c', shape,
                      {
                          1,   1,   0,   1,  // yellow
                          0,   0,   1,   1,  // 1: blue

@@ -57,7 +57,8 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   // multiply x to y
   MmulHelper::mmul(x, w, z, 1.0, 0.0);
   if(bTranspose && b->rankOf() == 1) {
-    b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{INPUT_VARIABLE(2)->lengthOf(),1}));
+    std::vector<sd::LongType> bShape = {INPUT_VARIABLE(2)->lengthOf(), 1};
+    b = new NDArray(INPUT_VARIABLE(2)->reshape('c', bShape));
     if(z->isMatrix()) {
       z->addiColumnVector(*b);
     } else {
@@ -66,7 +67,8 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
   } else {
 
     if(b->rankOf() == 1) {
-      b = new NDArray(INPUT_VARIABLE(2)->reshape('c',{1,INPUT_VARIABLE(2)->lengthOf()}));
+      std::vector<sd::LongType> bShape = {1, INPUT_VARIABLE(2)->lengthOf()};
+      b = new NDArray(INPUT_VARIABLE(2)->reshape('c', bShape));
     }
 
     if(z->isMatrix()) {

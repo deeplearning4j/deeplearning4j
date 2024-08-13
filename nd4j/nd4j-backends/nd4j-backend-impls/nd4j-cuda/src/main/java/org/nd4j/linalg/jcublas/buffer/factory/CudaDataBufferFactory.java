@@ -35,6 +35,7 @@ import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Creates cuda buffers
@@ -182,6 +183,25 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return createHalf(buffer.length(), init, workspace);
             default:
                 throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+        }
+    }
+
+    @Override
+    public DataBuffer createBuffer(String[] data) {
+        return new CudaUtf8Buffer(Arrays.asList(data));
+    }
+
+    @Override
+    public DataBuffer createTypedBuffer(String[] data, DataType dataType) {
+        switch(dataType) {
+            case UTF8:
+                return new CudaUtf8Buffer(Arrays.asList(data));
+            case UTF16:
+                return new CudaUtf16Buffer(Arrays.asList(data));
+            case UTF32:
+                return new CudaUtf32Buffer(Arrays.asList(data));
+            default:
+                throw new UnsupportedOperationException("Cannot create buffer of type " + dataType);
         }
     }
 

@@ -45,8 +45,8 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
                "Dilation2D: number of input channels doesn't match number of channels in weights: %i vs %i",
                input->sizeAt(3), weights->sizeAt(2));
 
-  std::vector<LongType> strides(4);
-  std::vector<LongType> rates(4);
+  std::vector<sd::LongType> strides(4);
+  std::vector<sd::LongType> rates(4);
 
   if (block.width() > 2) {
     REQUIRE_TRUE(block.width() >= 4, 0, "Dilation2D: number of input arrays should be 4 at least");
@@ -54,8 +54,8 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
     auto r = INPUT_VARIABLE(2);
     auto s = INPUT_VARIABLE(3);
 
-    strides = s->template asVectorT<LongType>();
-    rates = r->template asVectorT<LongType>();
+    strides = s->template asVectorT<sd::LongType>();
+    rates = r->template asVectorT<sd::LongType>();
   } else {
     REQUIRE_TRUE(block.numI() >= 9, 0, "Dilation2D: number of Int arguments should be 9 at least");
 
@@ -65,10 +65,10 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
     for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
   }
 
-  LongType sH = 0, sW = 0;
-  LongType dH = 0, dW = 0;
-  LongType pH = 0, pW = 0;
-  LongType oH = 0, oW = 0;
+  sd::LongType sH = 0, sW = 0;
+  sd::LongType dH = 0, dW = 0;
+  sd::LongType pH = 0, pW = 0;
+  sd::LongType oH = 0, oW = 0;
 
   helpers::dilation_hw(block.launchContext(), input->shapeInfo(), weights->shapeInfo(), strides, rates, isSameShape,
                        &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
@@ -78,30 +78,30 @@ CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
 
   helpers::dilation2d(block.launchContext(), input, weights, output, sH, sW, pH, pW, dH, dW);
 
-  return Status::OK;
+  return sd::Status::OK;
 }
 
 DECLARE_TYPES(dilation2d) {
-  getOpDescriptor()->setAllowedInputTypes(ANY)->setAllowedOutputTypes({ALL_FLOATS});
+  getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(dilation2d) {
   auto input = inputShape->at(0);
   auto weights = inputShape->at(1);
 
-  const int bS = shape::sizeAt(input, static_cast<LongType>(0));
-  const int iC = shape::sizeAt(input, static_cast<LongType>(3));
+  const int bS = shape::sizeAt(input, static_cast<sd::LongType>(0));
+  const int iC = shape::sizeAt(input, static_cast<sd::LongType>(3));
   const bool isSameShape = INT_ARG(0) == 1;
 
-  std::vector<LongType> strides(4);
-  std::vector<LongType> rates(4);
+  std::vector<sd::LongType> strides(4);
+  std::vector<sd::LongType> rates(4);
 
   if (block.width() > 2) {
     auto r = INPUT_VARIABLE(2);
     auto s = INPUT_VARIABLE(3);
 
-    strides = s->template asVectorT<LongType>();
-    rates = r->template asVectorT<LongType>();
+    strides = s->template asVectorT<sd::LongType>();
+    rates = r->template asVectorT<sd::LongType>();
   } else {
     if (block.numI() < 9) {
       auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
@@ -114,17 +114,17 @@ DECLARE_SHAPE_FN(dilation2d) {
     for (int cnt = 0; cnt < 4; cnt++) strides[cnt] = INT_ARG(e++);
   }
 
-  LongType sH = 0, sW = 0;
-  LongType dH = 0, dW = 0;
-  LongType pH = 0, pW = 0;
-  LongType oH = 0, oW = 0;
+  sd::LongType sH = 0, sW = 0;
+  sd::LongType dH = 0, dW = 0;
+  sd::LongType pH = 0, pW = 0;
+  sd::LongType oH = 0, oW = 0;
 
   helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW,
                        &oH, &oW);
 
-  std::array<LongType, 4> shape = {{bS, oH, oW, iC}};
+  std::array<sd::LongType, 4> shape = {{bS, oH, oW, iC}};
   auto newShape =
-      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(), -1);
+      ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data(),0);
   return SHAPELIST(newShape);
 }
 }  // namespace ops

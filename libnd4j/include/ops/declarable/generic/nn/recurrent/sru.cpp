@@ -189,17 +189,27 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   const int K = x->shapeOf()[1];
   const int N = x->shapeOf()[2];  // N - number of time steps
 
-  auto gradBias = NDArrayFactory::create_(x->ordering(), {bS, 2 * K, N}, gradX->dataType(), block.launchContext());
-  auto gradU = NDArrayFactory::create_(x->ordering(), {bS, 3 * K, N}, gradX->dataType(), block.launchContext());
-  auto gradHX = NDArrayFactory::create_(x->ordering(), {bS, K, N}, gradX->dataType(), block.launchContext());
-  auto gct = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto gradTanh = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto gradCt = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto ftMinus = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto rtMinus = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto temp1 = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
-  auto temp2 = NDArrayFactory::create_(c->ordering(), {bS, K}, gradX->dataType(), block.launchContext());
+  std::vector<sd::LongType> gradBiasShape = {bS, 2 * K, N};
+  std::vector<sd::LongType> gradUShape = {bS, 3 * K, N};
+  std::vector<sd::LongType> gradHXShape = {bS, K, N};
+  std::vector<sd::LongType> gctShape = {bS, K};
+  std::vector<sd::LongType> gradTanhShape = {bS, K};
+  std::vector<sd::LongType> gradCtShape = {bS, K};
+  std::vector<sd::LongType> ftMinusShape = {bS, K};
+  std::vector<sd::LongType> rtMinusShape = {bS, K};
+  std::vector<sd::LongType> temp1Shape = {bS, K};
+  std::vector<sd::LongType> temp2Shape = {bS, K};
 
+  auto gradBias = NDArrayFactory::create_(x->ordering(), gradBiasShape, gradX->dataType(), block.launchContext());
+  auto gradU = NDArrayFactory::create_(x->ordering(), gradUShape, gradX->dataType(), block.launchContext());
+  auto gradHX = NDArrayFactory::create_(x->ordering(), gradHXShape, gradX->dataType(), block.launchContext());
+  auto gct = NDArrayFactory::create_(c->ordering(), gctShape, gradX->dataType(), block.launchContext());
+  auto gradTanh = NDArrayFactory::create_(c->ordering(), gradTanhShape, gradX->dataType(), block.launchContext());
+  auto gradCt = NDArrayFactory::create_(c->ordering(), gradCtShape, gradX->dataType(), block.launchContext());
+  auto ftMinus = NDArrayFactory::create_(c->ordering(), ftMinusShape, gradX->dataType(), block.launchContext());
+  auto rtMinus = NDArrayFactory::create_(c->ordering(), rtMinusShape, gradX->dataType(), block.launchContext());
+  auto temp1 = NDArrayFactory::create_(c->ordering(), temp1Shape, gradX->dataType(), block.launchContext());
+  auto temp2 = NDArrayFactory::create_(c->ordering(), temp2Shape, gradX->dataType(), block.launchContext());
   std::vector<LongType> axes = {0, 1};
   //  x = x * mask
   if (applyMask) x->applyBroadcast(broadcast::Multiply, &axes, *mask, *x);  // apply mask
@@ -312,7 +322,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   if (applyMask) gradX->applyBroadcast(broadcast::Multiply, &axes3, *mask, *gradX);  // apply mask
 
   // gradB
-  auto gradB2 = gradB->reshape(gradB->ordering(), {2 * K});
+  std::vector<sd::LongType> gradBShape = { 2 * K};
+  auto gradB2 = gradB->reshape(gradB->ordering(), gradBShape);
   std::vector<LongType> axes2;
   axes.push_back(0);
   axes.push_back(2);

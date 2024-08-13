@@ -141,9 +141,9 @@ static void vol2col_(NDArray* volume, NDArray* columns, const int sD, const int 
   }
 }
 
-void ConvolutionUtils::vol2col(graph::Context& block, NDArray* vol, NDArray* col, const int sD,
-                               const int sH, const int sW, const int pD, const int pH, const int pW, const int dD,
-                               const int dH, const int dW) {
+void ConvolutionUtils::vol2col(graph::Context& block, NDArray* vol, NDArray* col, const LongType sD, const LongType sH,
+                               const LongType sW, const LongType pD, const LongType pH, const LongType pW,
+                               const LongType dD, const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(vol->dataType(), vol2col_, (vol, col, sD, sH, sW, pD, pH, pW, dD, dH, dW),
                         SD_FLOAT_TYPES);
 }

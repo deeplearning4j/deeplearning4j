@@ -70,16 +70,23 @@ CUSTOM_OP_IMPL(resize_bicubic, 2, 1, false, 0, 0) {
   }
   REQUIRE_TRUE(!halfPixelAlign || (halfPixelAlign && !alignCorners), 0,
                "resize_bicubic: `half_pixel_centers' should be false or true only when `align_corners' is false");
+  std::vector<sd::LongType> imageShape1 = {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2),image->sizeAt(3)};
+  std::vector<sd::LongType> imageShape2 = {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)};
 
   auto source =
       inRank == 4
-          ? image->reshape(image->ordering(), {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)})
-          : image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
+          ? image->reshape(image->ordering(), imageShape1)
+          : image->reshape(image->ordering(), imageShape2);
+
+
+  std::vector<sd::LongType> outputShape1 = {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2),output->sizeAt(3)};
+  std::vector<sd::LongType> outputShape2 = {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)};
+
   auto target =
       inRank == 4
           ? output->reshape(output->ordering(),
-                            {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}, false)
-          : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
+                            outputShape1, false)
+          : output->reshape(output->ordering(), outputShape2, false);
 
   // retain old behaviour
   helpers::CoordinateTransformationMode coorMode = halfPixelAlign ? helpers::CoordinateTransformationMode::HALF_PIXEL

@@ -136,10 +136,12 @@ void gather(LaunchContext* context, const NDArray* input, const NDArray* indices
     }
   } else {
     NDArray* pIndices = const_cast<NDArray*>(indices);
-    if (indices == nullptr)
-      pIndices =
-          new NDArray(input->ordering(), {numOfIntArgs - 1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()), INT64, input->getContext());
-
+    if (indices == nullptr) {
+      std::vector<LongType> firstShape = {numOfIntArgs - 1};
+      std::vector<double> data =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
+      pIndices = new NDArray(input->ordering(),firstShape,
+                             std::vector<double>(intArgs.begin() + 1, intArgs.end()), INT64, input->getContext());
+    }
     std::vector<LongType> dimsOut(pIndices->rankOf());
     std::iota(dimsOut.begin(), dimsOut.end(), axis);  // fill with axis, axis+1, ... axis+pIndices->rankOf()-1
 

@@ -96,20 +96,20 @@ static void vol2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::vol2col(graph::Context& block, const NDArray& vol, NDArray& col, const LongType sD, const LongType sH,
+void ConvolutionUtils::vol2col(graph::Context& block, NDArray* vol, NDArray* col, const LongType sD, const LongType sH,
                                const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                                const LongType dW) {
   PointersManager manager(block.launchContext(), "vol2col");
 
-  dim3 vol2ColDims = getVol2ColDims(col.lengthOf(),col.rankOf());
+  dim3 vol2ColDims = getVol2ColDims(col->lengthOf(),col->rankOf());
 
-  NDArray::prepareSpecialUse({&col}, {&vol});
+  NDArray::prepareSpecialUse({col}, {vol});
   BUILD_SINGLE_SELECTOR(
-      vol.dataType(), vol2colCudaLauncher,
-      (vol2ColDims.x, vol2ColDims.y, vol2ColDims.z, block.launchContext()->getCudaStream(), vol.specialBuffer(),
-       vol.specialShapeInfo(), col.specialBuffer(), col.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW),
+      vol->dataType(), vol2colCudaLauncher,
+      (vol2ColDims.x, vol2ColDims.y, vol2ColDims.z, block.launchContext()->getCudaStream(), vol->specialBuffer(),
+       vol->specialShapeInfo(), col->specialBuffer(), col->specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({&col}, {&vol});
+  NDArray::registerSpecialUse({col}, {vol});
 
   manager.synchronize();
 }

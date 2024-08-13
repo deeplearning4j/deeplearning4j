@@ -53,7 +53,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
       if (input->rankOf() == 0) {
-        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
+        std::vector<sd::LongType> shape = {1};
+        auto vec = new NDArray('c',shape, input->dataType(), block.launchContext());
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);

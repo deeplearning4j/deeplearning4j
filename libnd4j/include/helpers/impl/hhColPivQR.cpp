@@ -29,10 +29,12 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
   _qr = matrix.dup(false);
+  std::vector<LongType> coeffsShape = {1,_diagSize};
   _diagSize = math::sd_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));
-  _coeffs = NDArray(matrix.ordering(), {1, _diagSize}, matrix.dataType(), matrix.getContext());
+  std::vector<LongType> permShape = {matrix.sizeAt(1), matrix.sizeAt(1)};
+  _coeffs = NDArray(matrix.ordering(),coeffsShape, matrix.dataType(), matrix.getContext());
 
-  _permut = NDArray(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext());
+  _permut = NDArray(matrix.ordering(), permShape, matrix.dataType(), matrix.getContext());
 
   evalData();
 }
@@ -45,9 +47,10 @@ void HHcolPivQR::_evalData() {
   const int rows = _qr.sizeAt(0);
   const int cols = _qr.sizeAt(1);
 
-  NDArray transp(_qr.ordering(), {cols} /*{1, cols}*/, _qr.dataType(), _qr.getContext());
-  NDArray normsUpd(_qr.ordering(), {cols} /*{1, cols}*/, _qr.dataType(), _qr.getContext());
-  NDArray normsDir(_qr.ordering(), {cols} /*{1, cols}*/, _qr.dataType(), _qr.getContext());
+  std::vector<LongType> colsShape = {cols};
+  NDArray transp(_qr.ordering(), colsShape, _qr.dataType(), _qr.getContext());
+  NDArray normsUpd(_qr.ordering(), colsShape , _qr.dataType(), _qr.getContext());
+  NDArray normsDir(_qr.ordering(),colsShape , _qr.dataType(), _qr.getContext());
 
   int transpNum = 0;
 

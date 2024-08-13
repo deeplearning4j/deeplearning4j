@@ -26,6 +26,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
@@ -33,10 +34,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.profiler.OpContextTracker;
 import org.nd4j.nativeblas.*;
 
 import java.util.List;
@@ -51,15 +52,12 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     private OpaqueContext context = nativeOps.createGraphContext(1);
     private final transient long id = Nd4j.getDeallocatorService().nextValue();
     public final static long BASE_CUDA_OP_CONTEXT_OFFSET = RandomUtils.nextLong();
-   private long deallocationId;
+    private long deallocationId;
 
 
 
     public CudaOpContext() {
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().allocateOpContext(this);
-        }
     }
 
     @Override
@@ -119,9 +117,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_in.put(i,array.isEmpty() ? null : array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateInput(array,this);
-            }
         }
 
         PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
@@ -140,9 +135,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
             shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
             fastpath_out.put(i,array);
-            if(OpContextTracker.getInstance().isEnabled()) {
-                OpContextTracker.getInstance().associateOutput(array,this);
-            }
         }
 
         PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
@@ -215,6 +207,48 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     }
 
     @Override
+    public int numIntermediateResults() {
+        return Nd4j.getNativeOps().numIntermediateResults(context);
+    }
+
+    @Override
+    public void setIntermediateResult(int index, INDArray arr) {
+        if(arr == null) {
+            throw new IllegalArgumentException("Unable to set intermediate result for index " + index + " with null array");
+        }
+        Nd4j.getNativeOps().setIntermediateResult(context,
+                index, arr.data().opaqueBuffer(),
+                arr.shapeInfoDataBuffer().opaqueBuffer());
+    }
+
+    @Override
+    public INDArray getIntermediateResult(int index) {
+        LongPointer shapeInfo = nativeOps.intermediateResultShapeInfoAt(index,context);
+        long rank = shapeInfo.get(0);
+        shapeInfo.capacity(Shape.shapeInfoLength(rank));
+        DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
+        OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
+        long numElements = nativeOps.dbBufferLength(buffer);
+        /**
+         * TODO: figure out why the buffer is the wrong length.
+         * The shape buffer works but the normal databuffer doesn't.
+         */
+        Pointer pointer = buffer.primaryBuffer();
+        pointer.capacity(numElements);
+        DataBuffer firstBuffer = Nd4j.createBuffer(pointer,null,
+                Shape.length(shapeInfoBuffer), Shape.dataType(shapeInfoBuffer));
+        INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
+        return result;
+    }
+
+    @Override
+    public void addIntermediateResult(INDArray arr) {
+        Nd4j.getNativeOps().pushIntermediateResult(context,
+                arr.data().opaqueBuffer(),
+                arr.shapeInfoDataBuffer().opaqueBuffer());
+    }
+
+    @Override
     public void setBArguments(Pointer arguments, int length) {
         BooleanPointer bArgs = arguments instanceof BooleanPointer ?(BooleanPointer) arguments : new BooleanPointer(arguments);
         nativeOps.setGraphContextBArguments(context, bArgs,length);
@@ -280,11 +314,6 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void purge() {
         super.purge();
         nativeOps.ctxPurge(context);
-
-        if(OpContextTracker.getInstance().isEnabled()) {
-            OpContextTracker.getInstance().deallocateContext(this);
-            Nd4j.getDeallocatorService().updateDeallocationCount(this.deallocationId);
-        }
         Nd4j.getDeallocatorService().getReferenceMap().remove(this.deallocationId);
 
 
