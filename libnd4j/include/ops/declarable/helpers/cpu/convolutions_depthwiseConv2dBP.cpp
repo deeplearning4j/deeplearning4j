@@ -71,8 +71,9 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
     modifGradO1 = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};                // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     modifGradO2 = {{3, 0, 1, 2}, {iC, mC, bS * oH * oW}};  // [bS,oH,oW,iC*mC] -> [iC*mC,bS,oH,oW] -> [iC,mC,bS*oH*oW]
-    input = new NDArray(input->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
-    gradI = new NDArray(gradI->permute({0, 3, 1, 2}));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    std::vector<sd::LongType> perm = {0,3,1,2};
+    input = new NDArray(input->permute(perm));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    gradI = new NDArray(gradI->permute(perm));     // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     gradOreShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifGradO1 = {{1, 0, 3, 4, 2},
@@ -90,7 +91,8 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   if (paddingMode == 1)  // SAME
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  std::vector<LongType> colShape = {bS, iC, kH, kW, oH, oW};
+  NDArray columns(input->ordering(), colShape, input->dataType(), input->getContext());
   NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
   // ----- calculation of gradW and gradB ----- //
@@ -104,7 +106,8 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   // ----- calculation of gradB ----- //
   if (gradB) {
     NDArray* gradBR = gradB;
-    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
+    std::vector<LongType> shape = {gradB->lengthOf()};
+    if (gradB->rankOf() == 2) gradBR = new NDArray(gradB->reshape(gradB->ordering(), shape, false));
     std::vector<sd::LongType> axes = {0, indOoH, indOoH + 1};
     gradO->reduceAlongDimension(reduce::Sum, *gradBR, &axes);  // sum over bS, oH, oW
 
@@ -114,7 +117,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   //----- calculation of gradI -----//
   sd::MmulHelper::tensorDot(weights, gradO, &columns, modifWeights, modifGradO2,
                             modifColumns);  // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
-  helpers::col2im(*input->getContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
+  helpers::col2im(*input->getContext(), &columns, gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   if (!isNCHW) {

@@ -41,13 +41,13 @@ namespace helpers {
 template <typename T>
 T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
   auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
-  auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
+  auto a = math::p_pow(T(2.f), alpha) * math::p_pow<T>(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
   auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
   auto c = a + b;
   T rawX;
   static auto index = 0LL;
   const T underAlpha = T(1.f) / alpha;
-  const T powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
+  const T powerAlpha = math::p_pow<T>(T(2.f), alpha - T(1.f));
 
   for (;;) {
     auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));
@@ -64,7 +64,7 @@ T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
       if (testVal < v) continue;
       break;
     } else {
-      if (v <= math::p_pow(d / rawX, T(1.f) - alpha)) break;
+      if (v <= math::p_pow<T>(d / rawX, T(1.f) - alpha)) break;
       continue;
     }
   }

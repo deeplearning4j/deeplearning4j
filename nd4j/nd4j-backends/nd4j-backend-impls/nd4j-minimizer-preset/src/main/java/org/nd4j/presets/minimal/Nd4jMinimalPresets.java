@@ -231,7 +231,9 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
-                .put(new Info("sd::IndicesList").purify());
+                .put(new Info("sd::IndicesList").purify())
+                .put(new Info("shape::cuMalloc").skip())
+                .put(new Info("ErrorResult").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
 

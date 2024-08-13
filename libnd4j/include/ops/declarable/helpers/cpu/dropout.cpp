@@ -34,9 +34,10 @@ template <typename T>
 static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int seed, NDArray* mask) {
   sd::graph::RandomGenerator nodeRng(3019L, seed);
   int inLen = input->lengthOf();
-
-  auto flattenedInput = input->reshape('c',{inLen},false);
-  auto flattenedOutput = output->reshape('c',{output->lengthOf()},false);
+  std::vector<sd::LongType> inShape = {inLen};
+  std::vector<sd::LongType> outShape = {output->lengthOf()};
+  auto flattenedInput = input->reshape('c',inShape,false);
+  auto flattenedOutput = output->reshape('c',outShape,false);
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));

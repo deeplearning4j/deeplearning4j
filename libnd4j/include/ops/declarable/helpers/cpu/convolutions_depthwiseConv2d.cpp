@@ -69,7 +69,8 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
     outReShape = {bS, oH, oW, iC, mC};  // [bS,oH,oW,iC*mC] -> [bS,oH,oW,iC,mC]
     modifOutput = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};             // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
-    input = new NDArray(input->permute({0, 3, 1, 2}, false));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    std::vector<sd::LongType> perm = {0, 3, 1, 2};  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    input = new NDArray(input->permute(perm, false));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     outReShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifOutput = {{1, 0, 3, 4, 2},
@@ -86,7 +87,8 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   if (paddingMode == 1)  // SAME
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-  NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
+  std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
+  NDArray columns(input->ordering(),colShape, input->dataType(), input->getContext());
   NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
 
   helpers::im2col(

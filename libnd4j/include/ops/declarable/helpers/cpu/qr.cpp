@@ -42,7 +42,8 @@ NDArray matrixMinor(NDArray& in, sd::LongType col) {
 /* m = I - v v^T */
 template <typename T>
 NDArray vmul(NDArray const& v, int n) {
-  NDArray res('c', {n, n}, v.dataType(), v.getContext());  // x = matrix_new(n, n);
+  std::vector<sd::LongType> nShape = {n,n};
+  NDArray res('c', nShape, v.dataType(), v.getContext());  // x = matrix_new(n, n);
   T const* vBuf = v.getDataBuffer()->primaryAsT<T>();
   T* resBuf = res.dataBuffer()->primaryAsT<T>();
   auto interloop = PRAGMA_THREADS_FOR_2D {
@@ -62,8 +63,9 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
   auto resR = fullMatricies ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
 
+  std::vector<sd::LongType> mShape = {M};
   NDArray z = *matrix;
-  NDArray e('c', {M}, DataTypeUtils::fromT<T>(), Q->getContext());  // two internal buffers and scalar for squared norm
+  NDArray e('c', mShape, DataTypeUtils::fromT<T>(), Q->getContext());  // two internal buffers and scalar for squared norm
 
   for (sd::LongType k = 0; k < N && k < M - 1; k++) {  // loop for columns, but not further then row number
     e.nullify();

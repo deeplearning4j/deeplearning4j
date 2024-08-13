@@ -64,8 +64,8 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
   }
 }
 
-void tileBP(sd::LaunchContext* context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/,
-            const std::vector<sd::LongType> reps) {
+void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*output*/,
+            const std::vector<LongType> reps) {
   BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), SD_FLOAT_TYPES);
 }
 

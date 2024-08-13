@@ -22,6 +22,8 @@
 
 #ifndef LIBND4J_RANDOM_OPS_H
 #define LIBND4J_RANDOM_OPS_H
+#include <type_traits>
+
 
 // since we can't inherit/overwrite static methods - we just define default impls
 #define method_idx                                                                                             \
@@ -278,7 +280,7 @@ class ExponentialDistributionInv {  // inverse exponential distribution
       op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *helper, T *extraParams) {
     T lambda = extraParams[0];
 
-    if constexpr (std::is_same_v<T, float16>) {
+    if constexpr (std::is_same<float16,T>::value) {
       // For float16, delegate to float
       float x = helper->relativeT(idx,
                                   static_cast<float>(sd::DataTypeUtils::min_positive<float16>()),

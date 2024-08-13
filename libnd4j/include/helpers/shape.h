@@ -205,9 +205,9 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool reshapeC(const sd::LongType *oldShapeInfo, sd:
 * Get the shape info buffer
 * for the given rank and shape.
 */
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType const *shape);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType  *shape);
 
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType const *shape,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType  *shape,
                                                       sd::LongType *buffer);
 
 SD_LIB_EXPORT SD_HOST_DEVICE void transposeInplace(sd::LongType *shapeBuffer);
@@ -3537,30 +3537,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *shapeBuffer(sd::LongType rank, sd:
 }
 
 
-/**
-* Get the shape info buffer
-* for the given rank and shape.
- */
-SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType const *shape) {
-  auto stride = calcStrides(shape, rank);
 
-  auto shapeInfo = new ShapeInformation();
-  shapeInfo->shape = const_cast<sd::LongType *>(shape);
-  shapeInfo->stride = stride;
-  shapeInfo->offset = 0;
-  shapeInfo->rank = rank;
-  sd::LongType elementWiseStride = computeElementWiseStride(rank, shape, stride, 0);
 
-  shapeInfo->order = 'c';
-  shapeInfo->elementWiseStride = elementWiseStride;
-  auto shapeInfoBuffer = toShapeBuffer(shapeInfo);
-  delete[] stride;
-  delete shapeInfo;
-  sd::ArrayOptions::setDataType(shapeInfoBuffer, dtype);
-  return shapeInfoBuffer;
-}
-
-SD_LIB_EXPORT SD_HOST SD_INLINE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType const *shape,
+SD_LIB_EXPORT SD_HOST SD_INLINE sd::LongType *shapeBuffer(sd::LongType rank, sd::DataType dtype, sd::LongType  *shape,
                                                           sd::LongType *output) {
   sd::LongType stride[SD_MAX_RANK];
   calcStrides(shape, rank, stride);

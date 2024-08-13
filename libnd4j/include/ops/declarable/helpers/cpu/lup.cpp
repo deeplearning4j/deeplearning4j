@@ -513,9 +513,10 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
   auto totalCount = output->lengthOf() / n2;
   if (!inplace) output->assign(0.f);  // fill up output tensor with zeros only inplace=false
 
+  std::vector<sd::LongType> shape = {n,n};
   std::unique_ptr<NDArray> matrix(
-      NDArrayFactory::create_('c', {n, n}, input->dataType(), context));  //, block.getWorkspace());
-  std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c', {n, n}, input->dataType(), context));
+      NDArrayFactory::create_('c', shape, input->dataType(), context));  //, block.getWorkspace());
+  std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',shape, input->dataType(), context));
 
   for (sd::LongType e = 0; e < totalCount; e++) {
     // fill up matrix

@@ -272,9 +272,14 @@ void dbPrintAllocationTrace(OpaqueDataBuffer *db) {
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
   OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
   OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
-  const DataBuffer *targetBuf = copyFrom->dataBuffer();
-  const DataBuffer *srcBuf = targetView->dataBuffer();
-  DataBuffer::memcpy(*targetBuf,*srcBuf);
+  DataBuffer *targetBuf = copyFrom->dataBuffer();
+  DataBuffer *srcBuf = targetView->dataBuffer();
+  DataBuffer::memcpy(targetBuf,srcBuf);
+}
+
+OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
+                                       char order, LongType ews, bool empty) {
+  return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
 }
 
 /**
@@ -1296,31 +1301,31 @@ void pullRowsGeneric(void *vx, LongType const *hXShapeInfo, void *vz, LongType c
   _threads = math::sd_min<int>(_threads, Environment::getInstance().maxThreads());
 
   auto func = PRAGMA_THREADS_FOR {
-      for (auto idx = start; idx < stop; idx++) {
-        auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
-        auto zTadOffsetForBlock = zTadOffsets[idx];
+    for (auto idx = start; idx < stop; idx++) {
+      auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
+      auto zTadOffsetForBlock = zTadOffsets[idx];
 
-        auto rX = hX + xTadOffsetForBlock;
-        auto rZ = hZ + zTadOffsetForBlock;
+      auto rX = hX + xTadOffsetForBlock;
+      auto rZ = hZ + zTadOffsetForBlock;
 
-        if (xEWS == 1 && zEWS == 1) {
-          PRAGMA_OMP_SIMD
-          for (LongType i = 0; i < tadLength; i++) {
-            rZ[i] = rX[i];
-          }
-        } else if (xEWS >= 1 && zEWS >= 1) {
-          PRAGMA_OMP_SIMD
-          for (LongType i = 0; i < tadLength; i++) {
-            rZ[i * zEWS] = rX[i * xEWS];
-          }
-        } else {
-          for (LongType i = 0; i < tadLength; i++) {
-            auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
-            auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
-            hZ[zOffset] = hX[xOffset];
-          }
+      if (xEWS == 1 && zEWS == 1) {
+        PRAGMA_OMP_SIMD
+        for (LongType i = 0; i < tadLength; i++) {
+          rZ[i] = rX[i];
+        }
+      } else if (xEWS >= 1 && zEWS >= 1) {
+        PRAGMA_OMP_SIMD
+        for (LongType i = 0; i < tadLength; i++) {
+          rZ[i * zEWS] = rX[i * xEWS];
+        }
+      } else {
+        for (LongType i = 0; i < tadLength; i++) {
+          auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+          auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
+          hZ[zOffset] = hX[xOffset];
         }
       }
+    }
   };
 
   samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
@@ -1354,25 +1359,25 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
   auto numTads = shape::length(hXShapeInfo) / tadLength;
 
   auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto hZ = reinterpret_cast<T *>(targets[i]);
-        auto s = hX + tadOffsets[i];
+    for (auto i = start; i < stop; i++) {
+      auto hZ = reinterpret_cast<T *>(targets[i]);
+      auto s = hX + tadOffsets[i];
 
-        if (zEWS == 1 && tadEWS == 1) {
-          PRAGMA_OMP_SIMD
-          for (LongType j = 0; j < tadLength; j++) {
-            hZ[j] = s[j];
-          }
-        } else if (zEWS > 0 && tadEWS > 0) {
-          PRAGMA_OMP_SIMD
-          for (LongType j = 0; j < tadLength; j++) {
-            hZ[j * zEWS] = s[j * tadEWS];
-          }
-        } else {
-          for (LongType j = 0; j < tadLength; j++)
-            hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
+      if (zEWS == 1 && tadEWS == 1) {
+        PRAGMA_OMP_SIMD
+        for (LongType j = 0; j < tadLength; j++) {
+          hZ[j] = s[j];
         }
+      } else if (zEWS > 0 && tadEWS > 0) {
+        PRAGMA_OMP_SIMD
+        for (LongType j = 0; j < tadLength; j++) {
+          hZ[j * zEWS] = s[j * tadEWS];
+        }
+      } else {
+        for (LongType j = 0; j < tadLength; j++)
+          hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
       }
+    }
   };
 
   samediff::Threads::parallel_tad(func, 0, numTads);
@@ -1443,50 +1448,50 @@ void shuffleGeneric(void **hX, LongType *const *hXShapeInfo, void **dz, LongType
   auto dZ = reinterpret_cast<T **>(dz);
 
   auto func = PRAGMA_THREADS_FOR {
-      for (auto f = start; f < stop; f++) {
-        auto hX = reinterpret_cast<T *>(dX[f]);
+    for (auto f = start; f < stop; f++) {
+      auto hX = reinterpret_cast<T *>(dX[f]);
 
-        auto xShapeInfo = hXShapeInfo[f];
-        auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
+      auto xShapeInfo = hXShapeInfo[f];
+      auto tadOffset = reinterpret_cast<LongType *>(tadOffsets[f]);
 
-        const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
-        auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-        auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
+      const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
+      auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+      auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
+      auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
 
-        if (shape::rank(xShapeInfo) == 1) {
-          auto xLength = shape::length(xShapeInfo);
-          auto ews = shape::elementWiseStride(xShapeInfo);
-          for (LongType r = 0; r < xLength; r++) {
-            auto swapIdx = shuffleMap[r];
-            if (swapIdx < 0) continue;
+      if (shape::rank(xShapeInfo) == 1) {
+        auto xLength = shape::length(xShapeInfo);
+        auto ews = shape::elementWiseStride(xShapeInfo);
+        for (LongType r = 0; r < xLength; r++) {
+          auto swapIdx = shuffleMap[r];
+          if (swapIdx < 0) continue;
 
-            math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
-          }
-        } else {
-          for (LongType r = 0; r < numTads; r++) {
-            if (shuffleMap[r] < 0) continue;
+          math::sd_swap<T>(hX[r * ews], hX[swapIdx * ews]);
+        }
+      } else {
+        for (LongType r = 0; r < numTads; r++) {
+          if (shuffleMap[r] < 0) continue;
 
-            auto oldOffset = tadOffset[r];
-            auto newOffset = tadOffset[shuffleMap[r]];
+          auto oldOffset = tadOffset[r];
+          auto newOffset = tadOffset[shuffleMap[r]];
 
-            auto rX = hX + oldOffset;
-            auto rY = hX + newOffset;
+          auto rX = hX + oldOffset;
+          auto rY = hX + newOffset;
 
-            if (tadEWS == 1) {
-              for (LongType i = 0; i < tadLength; i++) {
-                math::sd_swap<T>(rX[i], rY[i]);
-              }
-            } else {
-              for (LongType i = 0; i < tadLength; i++) {
-                auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-                math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
-              }
+          if (tadEWS == 1) {
+            for (LongType i = 0; i < tadLength; i++) {
+              math::sd_swap<T>(rX[i], rY[i]);
+            }
+          } else {
+            for (LongType i = 0; i < tadLength; i++) {
+              auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
+              math::sd_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
             }
           }
         }
       }
+    }
   };
 
   samediff::Threads::parallel_tad(func, 0, N);
@@ -1801,14 +1806,14 @@ SD_INLINE int estimateThresholdGeneric(Pointer *extraPointers, Pointer hX, int N
   int span = (N / 6) + 8;
 
   auto func = PRAGMA_REDUCE_LONG {
-      int64_t cnt = 0;
-      PRAGMA_OMP_SIMD
-      for (auto e = start; e < stop; e++) {
-        auto v = math::sd_abs<T>(buffer[e]);
-        if (v >= threshold) cnt++;
-      }
+    int64_t cnt = 0;
+    PRAGMA_OMP_SIMD
+    for (auto e = start; e < stop; e++) {
+      auto v = math::sd_abs<T>(buffer[e]);
+      if (v >= threshold) cnt++;
+    }
 
-      return cnt;
+    return cnt;
   };
 
   return samediff::Threads::parallel_long(
@@ -2677,48 +2682,48 @@ static void _scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs,
                            const LongType *dIndicesShapeInfo) {
   auto hIindexes = reinterpret_cast<I *>(vIindexes);
   auto func = PRAGMA_THREADS_DO {
-      for (int i = 0; i < numOfSubArrs; ++i) {
-        int threadIndex = thread_id;
-        const auto xIndex = hIindexes[i];
-        const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+    for (int i = 0; i < numOfSubArrs; ++i) {
+      int threadIndex = thread_id;
+      const auto xIndex = hIindexes[i];
+      const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
-        if (!isOwner) continue;
+      if (!isOwner) continue;
 
-        NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                         hXShapeInfo);
-        NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                          hYShapeInfo);
+      NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                       hXShapeInfo);
+      NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                        hYShapeInfo);
 
-        if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
-          continue;
-        }
-
-        switch (opCode) {
-          case 0:
-            inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
-            break;
-          case 1:
-            inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
-            break;
-          case 2:
-            inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
-            break;
-          case 3:
-            inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
-            break;
-          case 4:
-            inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
-            break;
-          case 5:
-            inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
-            break;
-          case 6:
-            inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
-            break;
-          default:
-            continue;
-        }
+      if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
+        continue;
       }
+
+      switch (opCode) {
+        case 0:
+          inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
+          break;
+        case 1:
+          inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
+          break;
+        case 2:
+          inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
+          break;
+        case 3:
+          inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
+          break;
+        case 4:
+          inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
+          break;
+        case 5:
+          inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
+          break;
+        case 6:
+          inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
+          break;
+        default:
+          continue;
+      }
+    }
   };
 
   samediff::Threads::parallel_do(func);
@@ -3397,14 +3402,14 @@ void dbClose(OpaqueDataBuffer *dataBuffer) {
 
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
-(void *, LongType const *, void *, LongType const *, const int, LongType const *,
-LongType const *, LongType const *, LongType const *, LongType const *),
-SD_COMMON_TYPES);
+                      (void *, LongType const *, void *, LongType const *, const int, LongType const *,
+                          LongType const *, LongType const *, LongType const *, LongType const *),
+                      SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric,
-(void *, LongType const *, Pointer *, LongType const *, LongType const *,
-LongType const *),
-SD_COMMON_TYPES);
+                      (void *, LongType const *, Pointer *, LongType const *, LongType const *,
+                          LongType const *),
+                      SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
-(void **, LongType *const *, void **, LongType *const *, int, int *,
-LongType *const *, LongType *const *),
-SD_COMMON_TYPES);
+                      (void **, LongType *const *, void **, LongType *const *, int, int *,
+                          LongType *const *, LongType *const *),
+                      SD_COMMON_TYPES);

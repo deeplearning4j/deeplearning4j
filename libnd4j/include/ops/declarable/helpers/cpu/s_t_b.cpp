@@ -86,16 +86,18 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output, co
   // oH = H - cropTop  - cropBottom
   // oW = W - cropLeft - cropRight
 
+  std::vector<sd::LongType> shape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
   NDArray inputRearranged0 = input.reshape(
-      input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)});
+      input.ordering(),shape);
   inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
 
   if (input.lengthOf() == output.lengthOf())
     output.assign(inputRearranged0);
   else {
+    std::vector<sd::LongType> temp = {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
     NDArray inputRearranged1 = inputRearranged0.reshape(
         input.ordering(),
-        {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)});
+        temp);
     BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpace_,
                           (inputRearranged1, output, cropBottom, cropTop, cropLeft, cropRight), SD_COMMON_TYPES);
   }
@@ -148,8 +150,8 @@ BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_,
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(sd::LaunchContext* context, NDArray input, const NDArray& blockShape, const NDArray& crop,
-                    NDArray& output) {
+void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
+                    NDArray& output){
   // 4D example, numOfSpatialDims = 2 - two spatial dimensions
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
   // cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
@@ -260,17 +262,19 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
   // padLeft + padRight)/blockSize, iC]
 
+  std::vector<sd::LongType> shape1 = {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)};
   NDArray outputRearranged0 = output.reshape(
-      output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)},
+      output.ordering(), shape1,
       false);
   outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
   } else {
+    std::vector<sd::LongType> shape2 = {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)};
     NDArray outputRearranged1 = outputRearranged0.reshape(
         output.ordering(),
-        {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)}, false);
+        shape2, false);
     BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatch_,
                           (input, outputRearranged1, padBottom, padTop, padLeft, padRight), SD_COMMON_TYPES);
 
