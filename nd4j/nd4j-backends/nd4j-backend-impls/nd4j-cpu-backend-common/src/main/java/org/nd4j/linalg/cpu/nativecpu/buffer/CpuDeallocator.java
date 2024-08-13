@@ -72,10 +72,6 @@ public class CpuDeallocator implements Deallocator {
             NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 
-    @Override
-    public LogEvent logEvent() {
-        return logEvent;
-    }
 
     @Override
     public boolean isConstant() {

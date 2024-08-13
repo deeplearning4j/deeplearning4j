@@ -211,8 +211,10 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  [time x bS x 2*K] * [2*K x 6*K] = [time x bS x 6*K]
-  NDArray gradBias(x->ordering(), {bS, 4 * K}, x->dataType(), x->getContext());
-  NDArray gradWi(x->ordering(), {time, bS, 6 * K}, x->dataType(), x->getContext());
+  std::vector<sd::LongType> biasShape = {bS, 4 * K};
+  std::vector<sd::LongType> wShape = {time, bS, 6 * K};
+  NDArray gradBias(x->ordering(), biasShape, x->dataType(), x->getContext());
+  NDArray gradWi(x->ordering(), wShape, x->dataType(), x->getContext());
 
   const sd::LongType d2 = 2 * K;
   const sd::LongType ncols = bS * d2;

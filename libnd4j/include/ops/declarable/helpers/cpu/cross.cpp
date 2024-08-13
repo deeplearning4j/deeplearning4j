@@ -29,9 +29,10 @@ namespace ops {
 namespace helpers {
 
 void crossBatched(sd::LaunchContext *context, NDArray *a, NDArray *b, NDArray *o) {
-  auto _a = a->reshape(a->ordering(), {-1, 3});
-  auto _b = b->reshape(b->ordering(), {-1, 3});
-  auto _o = o->reshape(o->ordering(), {-1, 3}, false);
+  std::vector<sd::LongType> shape2= {-1,3};
+  auto _a = a->reshape(a->ordering(), shape2);
+  auto _b = b->reshape(b->ordering(), shape2);
+  auto _o = o->reshape(o->ordering(), shape2, false);
 
   auto tadsA = _a.allTensorsAlongDimension({1});
   auto tadsB = _b.allTensorsAlongDimension({1});

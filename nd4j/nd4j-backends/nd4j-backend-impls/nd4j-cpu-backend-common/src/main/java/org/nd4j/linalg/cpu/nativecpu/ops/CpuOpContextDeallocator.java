@@ -67,10 +67,6 @@ public class CpuOpContextDeallocator implements Deallocator {
         //NativeOpsHolder.getInstance().getDeviceNativeOps().deleteGraphContext(context);
     }
 
-    @Override
-    public LogEvent logEvent() {
-        return logEvent;
-    }
 
     @Override
     public boolean isConstant() {

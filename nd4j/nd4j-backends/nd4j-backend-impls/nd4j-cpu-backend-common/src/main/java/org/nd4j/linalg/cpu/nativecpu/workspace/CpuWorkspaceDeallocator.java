@@ -126,10 +126,6 @@ public class CpuWorkspaceDeallocator implements Deallocator {
 
     }
 
-    @Override
-    public LogEvent logEvent() {
-        return logEvent;
-    }
 
     @Override
     public boolean isConstant() {

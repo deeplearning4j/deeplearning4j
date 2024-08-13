@@ -51,17 +51,20 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
-
-  _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
-  _m = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.dataType(), matrix.getContext());
-
+  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
+  _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
+  _m = NDArray(matrix.ordering(), mShape, matrix.dataType(), matrix.getContext());
+  std::vector<sd::LongType> uShapeOne = {_diagSize + 1, _diagSize + 1};
+  std::vector<sd::LongType> uShapeTwo = {2, _diagSize + 1};
   if (_calcU)
-    _u = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.dataType(), matrix.getContext());
+    _u = NDArray(matrix.ordering(), uShapeOne, matrix.dataType(), matrix.getContext());
   else
-    _u = NDArray(matrix.ordering(), {2, _diagSize + 1}, matrix.dataType(), matrix.getContext());
+    _u = NDArray(matrix.ordering(), uShapeTwo, matrix.dataType(), matrix.getContext());
 
   if (_calcV) {
-    _v = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
+    std::vector<sd::LongType> vShape = {_diagSize, _diagSize};
+    _v = NDArray(matrix.ordering(),vShape, matrix.dataType(), matrix.getContext());
   }
 
 
@@ -92,17 +95,22 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
   _fullUV = fullUV;
 
   if (_transp) math::sd_swap<bool>(_calcU, _calcV);
+  std::vector<sd::LongType> sShape = {_diagSize, 1};
+  std::vector<sd::LongType> mShape = {_diagSize + 1, _diagSize};
 
-  _s = NDArray(matrix.ordering(), {_diagSize, 1}, matrix.dataType(), matrix.getContext());
-  _m = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.dataType(), matrix.getContext());
+  _s = NDArray(matrix.ordering(), sShape, matrix.dataType(), matrix.getContext());
+  _m = NDArray(matrix.ordering(), mShape, matrix.dataType(), matrix.getContext());
+  std::vector<sd::LongType> uShapeOne = {_diagSize + 1, _diagSize + 1};
+  std::vector<sd::LongType> uShapeTwo = {2, _diagSize + 1};
 
   if (_calcU)
-    _u = NDArray(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.dataType(), matrix.getContext());
+    _u = NDArray(matrix.ordering(), uShapeOne, matrix.dataType(), matrix.getContext());
   else
-    _u = NDArray(matrix.ordering(), {2, _diagSize + 1}, matrix.dataType(), matrix.getContext());
+    _u = NDArray(matrix.ordering(), uShapeTwo, matrix.dataType(), matrix.getContext());
 
   if (_calcV) {
-    _v = NDArray(matrix.ordering(), {_diagSize, _diagSize}, matrix.dataType(), matrix.getContext());
+    std::vector<sd::LongType> vShape = {_diagSize, _diagSize};
+    _v = NDArray(matrix.ordering(),vShape, matrix.dataType(), matrix.getContext());
   }
 }
 
@@ -129,7 +137,8 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
   _m.template r<T>(first + ind, first) = (T)0;
   _m.template r<T>(first + ind, first + ind) = (T)0;
 
-  NDArray rotation(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
+  std::vector<sd::LongType> rotShape = {2, 2};
+  NDArray rotation(_m.ordering(), rotShape, _m.dataType(), _m.getContext());
 
   rotation.template r<T>(0, 0) = rotation.template r<T>(1, 1) = cos;
   rotation.template r<T>(0, 1) = -sin;
@@ -166,7 +175,8 @@ void SVD<T>::deflation2(int col1U, int col1M, int row1W, int col1W, int ind1, in
   _m.template r<T>(col1M + ind2, col1M + ind2) = _m.t<T>(col1M + ind1, col1M + ind1);
   _m.template r<T>(col1M + ind2, col1M) = (T)0;
 
-  NDArray rotation(_m.ordering(), {2, 2}, _m.dataType(), _m.getContext());
+  std::vector<sd::LongType> rotShape = {2, 2};
+  NDArray rotation(_m.ordering(), rotShape, _m.dataType(), _m.getContext());
 
   rotation.template r<T>(0, 0) = rotation.template r<T>(1, 1) = cos;
   rotation.template r<T>(0, 1) = -sin;
@@ -519,7 +529,7 @@ void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArra
         for (int l = 1; l < m; ++l) {
           int i = perm.t<T>(l);
           V.template r<T>(i, k) = diag.t<T>(i) * zhat.t<T>(i) / (((diag.t<T>(i) - shifts.t<T>(k)) - mus.t<T>(k))) /
-                         ((diag.t<T>(i) + singVals.t<T>(k)));
+                                  ((diag.t<T>(i) + singVals.t<T>(k)));
         }
         V.template r<T>(0, k) = (T)-1;
         colV /= colV.reduceNumber(reduce::Norm2);
@@ -542,9 +552,12 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   auto view = _m({col1, end, col1, end}, true);
   auto diag = view.diagonal('c');
   diag.template r<T>(0) = (T)0;
-  singVals = NDArray(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
-  U = NDArray(_u.ordering(), {size + 1, size + 1}, _u.dataType(), _u.getContext());
-  if (_calcV) V = NDArray(_v.ordering(), {size, size}, _v.dataType(), _v.getContext());
+  std::vector<sd::LongType> shape2 = {size, 1};
+  std::vector<sd::LongType> shape3 = {size + 1, size + 1};
+  singVals = NDArray(_m.ordering(), shape2, _m.dataType(), _m.getContext());
+  U = NDArray(_u.ordering(), shape3, _u.dataType(), _u.getContext());
+  std::vector<sd::LongType> sizeShape = {size, size};
+  if (_calcV) V = NDArray(_v.ordering(), sizeShape, _v.dataType(), _v.getContext());
 
   int curSize = size;
   while (curSize > 1 && diag.template t<T>(curSize - 1) == (T)0.f) --curSize;
@@ -554,12 +567,14 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   for (int k = 0; k < curSize; ++k)
     if (math::sd_abs<T>(col0.template t<T>(k)) > almostZero) indices.push_back(k);
 
-  NDArray permut(_m.ordering(), {(int)indices.size()}, _m.dataType(), _m.getContext());
+  std::vector<sd::LongType> permutShape = {(int)indices.size()};
+  NDArray permut(_m.ordering(), permutShape, _m.dataType(), _m.getContext());
   for (int k = 0; k < indices.size(); ++k) permut.template r<T>(k) = (T)indices[k];
 
-  NDArray shifts(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
-  NDArray mus(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
-  NDArray zhat(_m.ordering(), {size, 1}, _m.dataType(), _m.getContext());
+  std::vector<sd::LongType> shape = {size,1};
+  NDArray shifts(_m.ordering(), shape, _m.dataType(), _m.getContext());
+  NDArray mus(_m.ordering(), shape, _m.dataType(), _m.getContext());
+  NDArray zhat(_m.ordering(),shape, _m.dataType(), _m.getContext());
 
   calcSingVals(col0, diag, permut, singVals, shifts, mus);
   perturb(col0, diag, permut, singVals, shifts, mus, zhat);
@@ -612,8 +627,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   const T almostZero = DataTypeUtils::min_positive<T>();
   T alphaK, betaK, r0, lambda, phi, c0, s0;
 
-  NDArray l(_u.ordering(), {1, k}, _u.dataType(), _u.getContext());
-  NDArray f(_u.ordering(), {1, n - k - 1}, _u.dataType(), _u.getContext());
+  std::vector<sd::LongType> lShape = {1, k};
+  std::vector<sd::LongType> fShape = {1, n - k - 1};
+  NDArray l(_u.ordering(),lShape, _u.dataType(), _u.getContext());
+  NDArray f(_u.ordering(), fShape, _u.dataType(), _u.getContext());
 
   if (n < _switchSize) {
     JacobiSVD<T> jac(_m({col1, col1 + n + 1, col1, col1 + n}, true), _calcU, _calcV, _fullUV);
@@ -734,7 +751,8 @@ template <typename T>
 void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V) {
   if (_calcU) {
     int colsU = _fullUV ? hhU.rows() : _diagSize;
-    NDArray temp1(_u.ordering(), {hhU.rows(), colsU}, _u.dataType(), _u.getContext());
+    std::vector<sd::LongType> tempShape = {hhU.rows(), colsU};
+    NDArray temp1(_u.ordering(), tempShape, _u.dataType(), _u.getContext());
     temp1.setIdentity();
     _u = temp1;
 
@@ -744,7 +762,8 @@ void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDAr
 
   if (_calcV) {
     int colsV = _fullUV ? hhV.rows() : _diagSize;
-    NDArray temp1(_v.ordering(), {hhV.rows(), colsV}, _v.dataType(), _v.getContext());
+    std::vector<sd::LongType> tempShape = {hhV.rows(), colsV};
+    NDArray temp1(_v.ordering(), tempShape, _v.dataType(), _v.getContext());
     temp1.setIdentity();
     _v = temp1;
 
@@ -771,8 +790,8 @@ void SVD<T>::evalData(const NDArray& matrix) {
   T scale = matrix.reduceNumber(reduce::AMax).t<T>(0);
 
   if (scale == (T)0.) scale = 1.;
-
-  BiDiagonalUp biDiag(_transp ? matrix.transpose() : matrix / scale);
+  NDArray input = _transp ? matrix.transpose() : matrix / scale;
+  BiDiagonalUp biDiag(input);
 
   _u.nullify();
   _v.nullify();

@@ -96,11 +96,12 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
 
 
     } else {
-      const auto shapeInfo =
-          ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo());
-      const sd::LongType rank = shape::rank(shapeInfo);
-      const sd::LongType subArrRank = rank;
-      shape::copyTo(shape::shapeInfoLength(subArrRank),shapeInfo,sPtr->pointerAsT<sd::LongType>());
+       sd::LongType *shapeInfo =
+          const_cast<sd::LongType *>(ConstantShapeHelper::getInstance().createFromExisting(descriptor->originalShape().toShapeInfo()));
+       sd::LongType rank = shape::rank(shapeInfo);
+       sd::LongType subArrRank = rank;
+       sd::LongType *sPtrInfo = sPtr->pointerAsT<sd::LongType>();
+      shape::copyTo(shape::shapeInfoLength(subArrRank),shapeInfo,sPtrInfo);
     }
 
 

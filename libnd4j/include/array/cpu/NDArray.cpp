@@ -518,7 +518,9 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<Lon
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
 NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) const {
-  NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(), getContext());
+  NDArray *thisArr = const_cast<NDArray*>(this);
+  std::vector<sd::LongType> repeatShape = ShapeUtils::evalRepeatShape(axis, repeats, *thisArr);
+  NDArray output('c',repeatShape, dataType(), getContext());
 
   BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeat_, (*this, output, repeats, axis), SD_COMMON_TYPES);
 
@@ -528,7 +530,8 @@ NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) co
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by reps
 void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
-  if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
+  NDArray *thisArr = const_cast<NDArray*>(this);
+  if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *thisArr)))
     THROW_EXCEPTION(
         "NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of "
         "target array!");

@@ -196,8 +196,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of rows as A. ";
     errorMessage += "A rows: " + std::to_string(M) + ", ";
     errorMessage += "C rows: " + std::to_string(C->sizeAt(0));
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
+    THROW_EXCEPTION(errorMessage.c_str());}
 
   if (C != nullptr && C->sizeAt(1) != N) {
     std::string errorMessage = "MmulHelper::mmulMxM: C array should have the same number of columns as B. ";
@@ -207,7 +206,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
   }
 
   if (C == nullptr) {
-    C = new NDArray(outOrder, {M, N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
+    std::vector<sd::LongType> shape = {M,N};
+    C = new NDArray(outOrder, shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()),
                     A->getContext());
   }
   if (C->isEmpty()) return C;
@@ -318,10 +318,11 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
   if (X->lengthOf() != N) THROW_EXCEPTION("MmulHelper::mmulMxV: X vector has wrong length !");
   if (Y != nullptr && Y->lengthOf() != M) THROW_EXCEPTION("MmulHelper::mmulMxV: Y array has wrong length !");
 
-  if (Y == nullptr)
-    Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
+  if (Y == nullptr) {
+    std::vector<sd::LongType> shape = {M};
+    Y = new NDArray(outOrder,shape, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()),
                     A->getContext());
-
+  }
   if (Y->isEmpty()) return Y;
 
   const int incx = X->stridesOf()[xLenDim];
@@ -505,7 +506,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
+NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
   const sd::LongType aRank = A->rankOf();
   const sd::LongType bRank = B->rankOf();

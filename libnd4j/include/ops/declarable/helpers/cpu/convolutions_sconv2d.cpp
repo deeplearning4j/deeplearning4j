@@ -56,12 +56,11 @@ static void sconv2d_(graph::Context& block, NDArray* input, NDArray* weightsDept
   mC = weightsDepth->sizeAt(indWmC);  // channels multiplier
 
   NDArray* outputDepth = output;
-  if (weightsPoint)  // if pointwise convolution is expected
-    outputDepth = new NDArray(
-        output->ordering(),
-        !isNCHW ? std::vector<sd::LongType>({bS, oH, oW, iC * mC}) : std::vector<sd::LongType>({bS, iC * mC, oH, oW}),
-        input->dataType(), input->getContext());
-
+  if (weightsPoint) {  // if pointwise convolution is expected
+    std::vector<sd::LongType> shape3 =
+        !isNCHW ? std::vector<sd::LongType>({bS, oH, oW, iC * mC}) : std::vector<sd::LongType>({bS, iC * mC, oH, oW});
+    outputDepth = new NDArray(output->ordering(), shape3, input->dataType(), input->getContext());
+  }
   // ----- perform depthwise convolution (if weightsPoint is absent then oC = iC*mC) ----- //
   ConvolutionUtils::depthwiseConv2d(block, input, weightsDepth, weightsPoint ? nullptr : bias, outputDepth, kH, kW, sH,
                                     sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
