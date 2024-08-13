@@ -120,7 +120,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   //----- calculation of gradI -----//
   MmulHelper::tensorDot(weights, gradO, &columns, modifWeights, modifGradO2,
                             modifColumns);  // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
-  helpers::col2im(*input->getContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH,
+  helpers::col2im(*input->getContext(), &columns, gradI, sH, sW, pH, pW, iH, iW, dH,
                   dW);  // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
   if (!isNCHW) {

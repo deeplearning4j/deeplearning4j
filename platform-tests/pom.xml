@@ -598,9 +598,9 @@
                 </property>
             </activation>
             <properties>
-                <cuda.version>12.1</cuda.version>
+                <cuda.version>12.3</cuda.version>
                 <cudnn.version>8.9</cudnn.version>
-                <javacpp-presets.cuda.version>1.5.9</javacpp-presets.cuda.version>
+                <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
                 <test.heap.size>14g</test.heap.size>
                 <test.offheap.size>14g</test.offheap.size>
                 <surefire.threads>4</surefire.threads>
@@ -619,7 +619,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-12.1</artifactId>
+                    <artifactId>nd4j-cuda-12.3</artifactId>
                     <version>${dl4j.version}</version>
                     <classifier>${platform.classifier}</classifier>
                 </dependency>

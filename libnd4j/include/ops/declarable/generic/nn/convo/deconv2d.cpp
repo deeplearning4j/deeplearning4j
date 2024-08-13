@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
   std::vector<LongType> secondDims = {indIOioC};
   sd::MmulHelper::tensorDot(weights, input, &columns, firstDims, secondDims, colPermut);
   LaunchContext* ctx = block.launchContext();
-  helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH,
+  helpers::col2im(*ctx, &columns, output, sH, sW, pH, pW, oH, oW, dH,
                   dW);  // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
 
   //----- add biases if required -----//

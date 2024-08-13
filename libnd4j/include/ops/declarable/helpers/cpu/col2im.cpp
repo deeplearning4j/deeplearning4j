@@ -102,7 +102,7 @@ static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* o
 
   samediff::Threads::parallel_tad(func, 0, bS);
 }
-void col2im(LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
+void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
             const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(input->dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW),
                         SD_FLOAT_TYPES);

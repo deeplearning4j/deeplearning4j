@@ -107,17 +107,17 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(LaunchContext& context, const NDArray& col, NDArray& im, const LongType sH, const LongType sW, const LongType pH,
-            const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
+void col2im(LaunchContext& context,  NDArray* input, NDArray* output, const LongType sH, const LongType sW, const LongType pH,
+            const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW){
   PointersManager manager(&context, "col2im");
-  dim3 dims = getCol2imLaunchParams(im,col);
+  dim3 dims = getCol2imLaunchParams(*input,*output);
 
-  NDArray::prepareSpecialUse({&im}, {&col});
-  BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher,
-                        (dims.x, dims.y, dims.z, context.getCudaStream(), col.specialBuffer(),
-                         col.specialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW),
+  NDArray::prepareSpecialUse({input}, {output});
+  BUILD_SINGLE_SELECTOR(input->dataType(), col2imCudaLauncher,
+                        (dims.x, dims.y, dims.z, context.getCudaStream(), output->specialBuffer(),
+                         output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), sH, sW, pH, pW, dH, dW),
                         SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({&im}, {&col});
+  NDArray::registerSpecialUse({input}, {output});
 
   manager.synchronize();
 }

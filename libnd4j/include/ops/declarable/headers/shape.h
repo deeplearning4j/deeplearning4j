@@ -43,9 +43,7 @@ DECLARE_CUSTOM_OP(linear_copy, 2, 1, false, 0, 0);
 DECLARE_CUSTOM_OP(transpose, 1, 1, false, 0, 0);
 #endif
 
-#if NOT_EXCLUDED(OP_linear_copy)
-DECLARE_CUSTOM_OP(linear_copy, 2, 1, false, 0, 0);
-#endif
+
 
 
 #if NOT_EXCLUDED(OP_shape_of)
