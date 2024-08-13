@@ -138,7 +138,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
 
   // Perform col2im
   auto ctx = block.launchContext();
-  helpers::col2im(*ctx, permuted, *gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
+  helpers::col2im(*ctx, &permuted, gradIPermuted, sH, sW, pH, pW, iH, iW, dH, dW);
   // Handle NHWC format if necessary
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 2,3,1};
