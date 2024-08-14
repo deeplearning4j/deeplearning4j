@@ -764,7 +764,6 @@ public class BasicWorkspaceTests extends BaseNd4jTestWithBackends {
 
         INDArray dup = array.dup();
 
-        System.out.println(Nd4j.getProfiler().printCurrentStats());
         //execution allocations (1 for each x,y,z shape info data buffer calls), data buffer allocations, dup allocations
         /**
          * -------------Workspace: testAllocation5--------------
