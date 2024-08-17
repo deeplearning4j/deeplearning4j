@@ -74,9 +74,14 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
 
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
+      printf("a offset %lld, b offset %lld\n", aOffset, bOffset);
+      shape::printShapeInfoLinear(aShapeInfo);
+      shape::printShapeInfoLinear(bShapeInfo);
+      fflush(stdout);
 
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
+      T3 aVal= A[aOffset];
+      T3 bVal= B[bOffset];
+      T3 val = aVal * bVal;  // first iteration
 
       for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];
@@ -99,7 +104,7 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
 //////////////////////////////////////////////////////////////////////////////
 // MXN x N = M  -> actual sequence of {M,N} axes doesn't matter
 template <typename T1, typename T2, typename T3>
-static void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const int incx, const int incy,
+static void usualGemv(const NDArray* vA, NDArray* vX, NDArray* vY, const int incx, const int incy,
                       const int aMaxis, const double alpha, const double beta) {
   const T1* A = vA->bufferAsT<T1>();
   const T2* X = vX->bufferAsT<T2>();
@@ -172,9 +177,6 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 // MXK x KxN = MxN
 NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
                              const char outOrder) {
-  A->printBufferRaw("mmulMXM A");
-  B->printBufferRaw("mmulMXM B");
-  C->printBufferRaw("mmulMXM C");
 
   const auto M = A->sizeAt(0);
   const auto K = A->sizeAt(1);
@@ -288,7 +290,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
-NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
+NDArray* MmulHelper::mmulMxV(const NDArray* A, NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
                              const char outOrder) {
   if (X->dataType() != A->dataType()) {
     std::string errorMessage;
@@ -370,7 +372,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
-NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
+NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
   if (X->dataType() != Y->dataType()) {
     std::string errorMessage = "Dot expects all data types to be the same. ";
     errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
@@ -437,11 +439,11 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 //    [M,K] x [bS,K,N] = [bS,M,N]
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
-static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const LongType* aBatchDims,
+static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchDims,
                         const LongType* bBatchDims, const LongType* cBatchDims, LongType aMaxis, LongType aKaxis,
                         LongType bKaxis, LongType bNaxis, LongType cMaxis, LongType cNaxis, const double alpha, const double beta) {
-  const T1* A = vA->bufferAsT<T1>();
-  const T2* B = vB->bufferAsT<T2>();
+   T1* A = vA->bufferAsT<T1>();
+   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
 
   const T3 alphaZ = alpha;
@@ -507,7 +509,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
-                             const char outOrder) {
+                              const char outOrder) {
   const sd::LongType aRank = A->rankOf();
   const sd::LongType bRank = B->rankOf();
 

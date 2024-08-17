@@ -153,7 +153,6 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
     ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType);
     RELEASE(outShapeInfo, workspace);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-    if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
     return ret;
   }
 
@@ -189,7 +188,6 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
   ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType);
   RELEASE(outShapeInfo, workspace);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 
@@ -347,7 +345,7 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType rank, const NDArray* arr,
+LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType rank, NDArray* arr,
                                         memory::Workspace* workspace, const bool setContigStrides) {
   if (rank != arr->rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
@@ -367,13 +365,12 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType ran
   if (setContigStrides) {
     shape::updateStrides(shapeInfoNew, arr->ordering());
   }
+  ArrayOptions::setDataType(shapeInfoNew, arr->dataType());
 
 
   ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfoNew);
 
   auto ret = descriptor->toShapeInfo();
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
-
   return ret;
 }
 
@@ -382,7 +379,7 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType ran
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-const LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, memory::Workspace* workspace,
+const LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
                                                    const bool setContigStrides) {
   LongType rank = arr.rankOf();
 
@@ -1040,7 +1037,7 @@ void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, cons
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {
+std::vector<LongType> ShapeUtils::tadAxesForSimpleBroadcast(NDArray max, NDArray min) {
   const LongType maxRank = max.rankOf();
   const LongType minRank = min.rankOf();
   const LongType diff = maxRank - minRank;

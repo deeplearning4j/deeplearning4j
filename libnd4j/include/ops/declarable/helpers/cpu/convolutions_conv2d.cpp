@@ -89,13 +89,13 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   block.pushIntermediateResult(col);
 
   std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
-  auto im2colReshape = col->reshape('c',shape, true);
+  auto im2colReshape = new NDArray(col->reshape('c',shape, true));
 
   std::vector<sd::LongType> perm2 = {3,2,1,0};
-  auto weightsPermuted = weights->permute(perm2);
+  auto weightsPermuted = weights->permute(perm2,true);
   std::vector<sd::LongType> wShape = {iC * kH * kW, oC};
   auto reshapedW = weightsPermuted.reshape('f',wShape, false);
-  MmulHelper::matmul(&im2colReshape, &reshapedW, &mmulResult, false, false, 1.0, 0.0);
+  MmulHelper::matmul(im2colReshape, &reshapedW, &mmulResult, false, false, 1.0, 0.0);
 
 
   std::vector<sd::LongType>lastShape = {oH,oW,bS,oC};

@@ -34,7 +34,7 @@ class SD_LIB_EXPORT MmulHelper {
                               const double beta = 0.0, const char outOrder = 'f');
 
   // dot product of vectors (X * Y) = Z[0]
-  static NDArray* dot(const NDArray* X, const NDArray* Y, NDArray* Z, const double alpha = 1.0,
+  static NDArray* dot(NDArray* X, NDArray* Y, NDArray* Z, const double alpha = 1.0,
                           const double beta = 0.0);
 
   // multiptication Matrix to Matrix
@@ -42,7 +42,7 @@ class SD_LIB_EXPORT MmulHelper {
                               double beta = 0.0, const char outOrder = 'f');
 
   // multiptication Matrix to vector
-  static NDArray* mmulMxV(const NDArray* A, const NDArray* B, NDArray* C, double alpha = 1.0,
+  static NDArray* mmulMxV(const NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
                               double beta = 0.0, const char outOrder = 'f');
 
  public:

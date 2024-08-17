@@ -61,16 +61,16 @@ class SVD {
   void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);
 
   // FIXME: proper T support required here
-  T secularEq(const T diff, const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& diagShifted,
+  T secularEq(const T diff, const NDArray& col0, const NDArray& diag, NDArray permut, const NDArray& diagShifted,
               const T shift);
 
-  void calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts,
+  void calcSingVals(NDArray col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts,
                     NDArray& mus);
 
-  void perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,
+  void perturb(NDArray col0, const NDArray& diag, NDArray permut, const NDArray& singVals,
                const NDArray& shifts, const NDArray& mus, NDArray& zhat);
 
-  void calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals,
+  void calcSingVecs(NDArray zhat, const NDArray& diag, NDArray perm, const NDArray& singVals,
                     const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V);
 
   void calcBlockSVD(int firstCol, int size, NDArray& U, NDArray& singVals, NDArray& V);

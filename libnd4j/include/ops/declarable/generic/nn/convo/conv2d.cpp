@@ -133,8 +133,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
   }
 
-  LongType* outputShapeInfo = nullptr;
-  ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), sd::LongType);
+  LongType* outputShapeInfo = new LongType[shape::shapeInfoLength(rank)];
 
   outputShapeInfo[0] = 4;
   LongType    oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
@@ -151,7 +150,8 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-
+  printf("stride calc shape oW oH bS oC %lld %lld %lld %lld\n",strideCalcShape[0],strideCalcShape[1],strideCalcShape[2],strideCalcShape[3]);
+  fflush(stdout);
   sd::LongType *permute = new sd::LongType[4];
   permute[0] = 2;
   permute[1] = 3;
@@ -178,21 +178,25 @@ DECLARE_SHAPE_FN(conv2d) {
     shape::setShape(outputShapeInfo, strideCalcShape);
     shape::setStride(outputShapeInfo,second);
     shape::setOrder(outputShapeInfo, 'f');
-    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+    ArrayOptions::setExtra(outputShapeInfo,ArrayOptions::defaultFlag());
+    ArrayOptions::setDataType(outputShapeInfo,ArrayOptions::dataType(inputShapeInfo));
     delete[] second2;
 
   } else {
     shape::setShape(outputShapeInfo, strideCalcShape);
     shape::setStride(outputShapeInfo,second);
     shape::setOrder(outputShapeInfo, 'f');
-    ArrayOptions::setDataType(outputShapeInfo, ArrayOptions::dataType(inputShapeInfo));
+    ArrayOptions::setExtra(outputShapeInfo,ArrayOptions::defaultFlag());
+    ArrayOptions::setDataType(outputShapeInfo,ArrayOptions::dataType(inputShapeInfo));
   }
 
 
 
   delete[] second;
   delete[] permute;
-  return SHAPELIST(CONSTANT(outputShapeInfo));
+  auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo, block.workspace());
+  delete[] outputShapeInfo;
+  return SHAPELIST(ret);
 }
 
 

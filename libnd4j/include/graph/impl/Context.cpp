@@ -402,7 +402,7 @@ void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void
     errorMessage += std::string(" Offset: ");
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
+  auto array = new NDArray(buffer, specialBuffer, shapeInfoCast);
 
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
@@ -586,6 +586,10 @@ void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo
 
   NDArray *array;
   if (dataBuffer != nullptr) {
+    printf("Setting output, shape info:");
+    fflush(stdout);
+    shape::printShapeInfo(newShapeCast2);
+    fflush(stdout);
     array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2, LaunchContext::defaultContext(),
                         dataBuffer->byteOffset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
                             newShapeCast2)));

@@ -74,13 +74,13 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static LongType* evalPermShapeInfo(const LongType* dimensions, LongType rank, const NDArray* arr,
+  static LongType* evalPermShapeInfo(const LongType* dimensions, LongType rank, NDArray* arr,
                                      memory::Workspace* workspace, const bool setContigStrides = false);
 
 
   // evaluate shapeInfo of transposed array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const LongType* evalTransposeShapeInfo(const NDArray& arr, memory::Workspace* workspace,
+  static const LongType* evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
                                                  const bool setContigStrides = false);
 
   static bool copyVectorPart(std::vector<LongType>& target, std::vector<LongType>& source, LongType rank,
@@ -105,7 +105,7 @@ class SD_LIB_EXPORT ShapeUtils {
   // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
   // if simple broadcast is not possible then empty vector is returned
   // PLEASE NOTE: condition (rank_max >= rank_min) should be satisfied !
-  static std::vector<LongType> tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min);
+  static std::vector<LongType> tadAxesForSimpleBroadcast(NDArray max, NDArray min);
 
   // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
   static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, LongType*& resultShapeInfo,

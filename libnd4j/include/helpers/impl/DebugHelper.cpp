@@ -29,10 +29,10 @@
 namespace sd {
 DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
   DebugInfo info;
-  retrieveDebugStatistics(&info, input);
+  retrieveDebugStatistics(&info, const_cast<NDArray*>(input));
   return info;
 }
-void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray const* input) {
+void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray* input) {
   if (nullptr == info) return;
 
   info->_minValue = 0.;

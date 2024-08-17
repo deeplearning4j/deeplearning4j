@@ -331,7 +331,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, const NDArray& permut,
+T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, NDArray permut,
                     const NDArray& diagShifted, const T shift) {
   auto len = permut.lengthOf();
   T res = 1.;
@@ -347,7 +347,7 @@ T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, cons
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals,
+void SVD<T>::calcSingVals(NDArray col0, const NDArray& diag, const NDArray& permut, NDArray& singVals,
                           NDArray& shifts, NDArray& mus) {
   auto len = col0.lengthOf();
   auto curLen = len;
@@ -462,7 +462,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,
+void SVD<T>::perturb(NDArray col0, const NDArray& diag, NDArray permut, const NDArray& singVals,
                      const NDArray& shifts, const NDArray& mus, NDArray& zhat) {
   int n = col0.lengthOf();
   int m = permut.lengthOf();
@@ -496,7 +496,7 @@ void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& pe
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals,
+void SVD<T>::calcSingVecs(NDArray zhat, const NDArray& diag, NDArray perm, const NDArray& singVals,
                           const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V) {
   int n = zhat.lengthOf();
   int m = perm.lengthOf();

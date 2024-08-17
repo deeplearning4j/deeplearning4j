@@ -35,8 +35,9 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor &other) const {
   if (_rank != other._rank) return false;
   if (_order != other._order) return false;
   if (_dataType != other._dataType) return false;
-  if (_ews != other._ews) return false;
-
+  if(_shape_strides == nullptr && other._shape_strides == nullptr) {
+    return true;
+  }
   if (_shape_strides != other._shape_strides) return false;
 
   return true;
@@ -263,7 +264,6 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     _shape_strides = new LongType[2 * rankVal];
     auto _strides = _shape_strides + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
-    auto stridePtr = shape::stride(shapeInfo);
     for (LongType e = 0; e < _rank; e++) {
       _shape_strides[e] = shapePtr[e];
       _strides[e] = 0;
@@ -714,7 +714,7 @@ size_t hash<sd::ShapeDescriptor>::operator()(sd::ShapeDescriptor k) const {
   sd::LongType * shape_strides = k.shape_strides();
   auto ptr = shape_strides;
   //dont include strides if its' ews==1
-  int stop = k.ews() == 1 ? k.rank() / 2 : k.rank();
+  int stop =  k.rank() * 2;
   for (int j = 0; j < stop; j++) {
     res ^= std::hash<sd::LongType>()(ptr[j]) + 0x9e3779b9 + (res << 6) + (res >> 2);
   }

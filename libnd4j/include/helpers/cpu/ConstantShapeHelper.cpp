@@ -64,7 +64,6 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(sd::DataType dataTy
   auto descriptor = new ShapeDescriptor(dataType, order, shape);
 
   auto ret =  bufferForShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 
@@ -83,9 +82,6 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
     THROW_EXCEPTION("Unable to create and store a shape buffer with null descriptor.");
 
   auto buffer = descriptor->toShapeInfo();
-
-
-
   if(descriptor->dataType() == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
@@ -105,15 +101,15 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
     auto hPtr =
         std::make_shared<PointerWrapper>(buffer, std::make_shared<PrimaryPointerDeallocator>());
     ConstantShapeBuffer *constantShapeBuffer2 = new ConstantShapeBuffer(hPtr);
+
     //validate
     if(Environment::getInstance().isVerbose() || Environment::getInstance().isDebug()) {
-      auto descBuffer = descriptor->toShapeInfo();
       auto constBuffer = constantShapeBuffer2->primary();
-      if(!shape::haveSameShapeAndStrides(descBuffer, constBuffer)) {
+      if(!shape::haveSameShapeAndStrides(buffer, constBuffer)) {
         std::string errorMessage;
         errorMessage += "Attempting to store Shape info and cache buffer shape info that do not match: \n";
         errorMessage += "Shape info:\n";
-        errorMessage += shape::shapeToString(descBuffer,"\n");
+        errorMessage += shape::shapeToString(buffer,"\n");
         errorMessage += "\nCache buffer shape info:\n";
         errorMessage += shape::shapeToString(constBuffer,"\n");
         THROW_EXCEPTION(errorMessage.c_str());
@@ -137,15 +133,17 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
         Printer p;
         std::ostringstream oss;
         p.print(cacheBuff->st, oss);
-        errorMessage += "=======================================================Stack trace when written.============================\n";
+        errorMessage += "\n=======================================================Stack trace when written.============================\n";
         errorMessage += oss.str();
         errorMessage += "=======================================================End of stack trace when written.============================\n";
+        fflush(stdout);
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }
 
     }
     auto ret =  _cache[deviceId].at(*descriptor);
+    delete descriptor;
     return ret;
   }
 }
@@ -172,7 +170,23 @@ ShapeDescriptor* ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *de
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
   auto descriptor = new ShapeDescriptor(shapeInfo);
-  return bufferForShapeInfo(descriptor);
+  if(descriptor->dataType() == sd::DataType::UNKNOWN) {
+    THROW_EXCEPTION("Unable to create array with unknown data type.");
+  }
+  auto toShapeInfo = descriptor->toShapeInfo();
+  auto ret =  bufferForShapeInfo(descriptor);
+  auto retTest = ret->primary();
+  if(!shape::haveSameShapeAndStrides(toShapeInfo, retTest)) {
+    std::string errorMessage;
+    errorMessage += "Attempting to store Shape info and cache buffer shape info that do not match: \n";
+    errorMessage += "Shape info:\n";
+    errorMessage += shape::shapeToString(toShapeInfo,"\n");
+    errorMessage += "\nCache buffer shape info:\n";
+    errorMessage += shape::shapeToString(retTest,"\n");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+  return ret;
 }
 
 bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor) {

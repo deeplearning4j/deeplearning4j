@@ -61,7 +61,7 @@ class Householder {
    *  normX - this scalar is the first non-zero element in vector resulting from Householder transformation -> (P*x)
    *  coeff - scalar, scaling factor in Householder matrix formula
    */
-  static void evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX);
+  static void evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& normX);
 
   static void evalHHmatrixDataI(NDArray& x, T& coeff, T& normX);  // in-place, x to be affected
 

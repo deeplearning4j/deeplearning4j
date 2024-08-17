@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX) {
+void Householder<T>::evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& normX) {
   // input validation
   if (x.rankOf() != 1 && !x.isScalar())
     THROW_EXCEPTION(
