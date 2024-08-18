@@ -1524,7 +1524,7 @@ NDArray &NDArray::operator=(NDArray &other) {
 
   if (_shapeInfo != nullptr && shape::equalsTypesAndShapesSoft(_shapeInfo, other._shapeInfo)) {
     if (!other.isEmpty()) {
-      this->assign(&other);
+      this->assign(other);
     }
   } else {
     _context = other._context;
@@ -1785,7 +1785,7 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray &NDArray::operator=(const T scalar) {
+NDArray &NDArray::operator=( T scalar) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::operator=(NDArray &&other) - move assignment operator\n");
     fflush(stdout);
@@ -1822,7 +1822,7 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
-void NDArray::assign(NDArray &other, bool allowParallelism) {
+void NDArray::assign(NDArray other, bool allowParallelism) {
   if (this == &other) {
     sd_print("NDArray::assign: this == &other\n");
     return;
@@ -1907,12 +1907,10 @@ void NDArray::assign(NDArray &other, bool allowParallelism) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-// This method assigns values of given NDArray to this one, wrt order
-void NDArray::assign(NDArray *other, bool allowParallelism) { assign(*other, allowParallelism); }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-void NDArray::assign(const T &value, bool allowParallelism) {
+void NDArray::assign(T &value, bool allowParallelism) {
   // just fire scalar
   auto temp = new NDArray(NDArrayFactory::create(dataType(), value, this->getContext()));
 
@@ -1923,19 +1921,19 @@ void NDArray::assign(const T &value, bool allowParallelism) {
                                   nullptr, allowParallelism);
   registerUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
 }
-template SD_LIB_EXPORT void NDArray::assign(const double &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const float &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const float16 &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const bfloat16 &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const sd::LongType &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const int &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const int8_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const int16_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const uint8_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const uint16_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const uint32_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const uint64_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign(const bool &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( double &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( float &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( float16 &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( bfloat16 &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( sd::LongType &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( int &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( int8_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( int16_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( uint8_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( uint16_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( uint32_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( uint64_t &value, bool allowParallelism);
+template SD_LIB_EXPORT void NDArray::assign( bool &value, bool allowParallelism);
 
 //////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::detach() {
@@ -2385,7 +2383,7 @@ NDArray NDArray::transpose()  & {
   auto desc = new ShapeDescriptor(shapeInfo());
   NDArray newArr(getDataBuffer(), desc, getContext(), offset());
   newArr.transposei();
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  delete desc;
   return newArr;
 }
 
@@ -3249,7 +3247,7 @@ NDArray NDArray::cast(DataType dtype)  {
 void NDArray::cast(NDArray &target, DataType dtype) {
   if (isS()) THROW_EXCEPTION("NDArray::cast: you can't use this method on String array!");
   // TODO: to be implemented properly
-  target.assign(this);
+  target.assign(*this);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4454,9 +4452,9 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 //////////////////////////////////////////////////////////////////////////
 void NDArray::nullify() {
   if (isEmpty()) return;
-
+  int baseAssign = 0;
   if (isView() || ews() != 1)
-    assign(0);
+    assign(baseAssign);
   else
     _buffer->setToZeroBuffers();
 }
@@ -5270,7 +5268,7 @@ template SD_LIB_EXPORT void NDArray::applyScalar(sd::scalar::Ops op, const bool 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::applyScalar(sd::scalar::BoolOps op, const T scalar, NDArray &target, ExtraArguments *extraParams)  {
-  NDArray scalarArr = NDArrayFactory::create<T>(dataType(), scalar, getContext());
+  NDArray &scalarArr = NDArrayFactory::create<T>(dataType(), scalar, getContext());
   applyScalarArr(op, scalarArr, target, extraParams);
 }
 
@@ -6122,10 +6120,16 @@ sd::LongType NDArray::getOffset(const sd::LongType i)  {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::like() { return NDArray(shapeInfo(), this->dataType(), false, getContext()); }
+NDArray &NDArray::like() {
+  NDArray *ret = new  NDArray(shapeInfo(), this->dataType(), false, getContext());
+  return *ret;
+}
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::ulike()  { return NDArray(this, false, getContext()); }
+NDArray &NDArray::ulike()  {
+  NDArray * ret = new  NDArray(this, false, getContext());
+  return *ret;
+}
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::diagonal(const char type)  {
@@ -6246,7 +6250,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 
 ////////////////////////////////////////////////////////////////////////
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
-NDArray NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
+NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
                             const bool isStrided)  {
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
@@ -6441,7 +6445,7 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
 ///////////////////////////////////////////////////////////////////////
 // addition operator array + scalar
 template <typename T, typename>
-NDArray operator+(NDArray &&arr,  T &scalar) {
+NDArray operator+(NDArray &&arr,  T scalar) {
   if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
     return std::move(arr + scalar);  // arr is lvalue inside function body
 
@@ -6461,15 +6465,15 @@ NDArray operator+(NDArray &&arr,  T &scalar) {
 
   return std::move(arr);
 }
-template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  double &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float16 &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  bfloat16 &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  int &scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  double scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float16 scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  bfloat16 scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  int scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator+(NDArray &arr,  T &scalar) {
+NDArray operator+(NDArray &arr,  T scalar) {
   if (arr.isS())
     THROW_EXCEPTION("operator+(NDArray& arr, const T& scalar): you can't use this method on String array!");
 
@@ -6486,36 +6490,38 @@ NDArray operator+(NDArray &arr,  T &scalar) {
 
   return result;
 }
-template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  double &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  float &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  float16 &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  bfloat16 &scalar);
-template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  int &scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  double scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  float scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  float16 scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  bfloat16 scalar);
+template SD_LIB_EXPORT NDArray operator+(NDArray &arr,  int scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator+( T &scalar, NDArray &&arr) {
+NDArray operator+( T scalar, NDArray &&arr) {
   return std::move(arr) + scalar;
 }
-template SD_LIB_EXPORT NDArray operator+( double &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator+( float &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator+( float16 &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator+( bfloat16 &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator+( int &scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator+( double scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator+( float scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator+( float16 scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator+( bfloat16 scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator+( int scalar, NDArray &&arr);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator+( T &scalar, NDArray &arr)  {
+NDArray operator+( T scalar, NDArray &arr)  {
   return arr + scalar;
 }
-template SD_LIB_EXPORT NDArray operator+( double &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator+( float &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator+( int &scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator+( double scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator+( float scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator+( float16 scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator+( bfloat16 scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator+( int scalar, NDArray &arr);
 
 ///////////////////////////////////////////////////////////////////////
 // addition operator array - scalar
 template <typename T, typename>
-NDArray operator-(NDArray &&arr,  T &scalar) {
+NDArray operator-(NDArray &&arr,  T scalar) {
   if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
     return std::move(arr - scalar);  // arr is lvalue inside function body
 
@@ -6535,12 +6541,12 @@ NDArray operator-(NDArray &&arr,  T &scalar) {
 
   return std::move(arr);
 }
-template SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  double &scalar);
-template SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  float &scalar);
+template SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  double scalar);
+template SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  float scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator-(NDArray &arr,  T &scalar) {
+NDArray operator-(NDArray &arr,  T scalar) {
   if (arr.isS())
     THROW_EXCEPTION("operator-(NDArray& arr, const T& scalar): you can't use this method on String array!");
 
@@ -6557,11 +6563,11 @@ NDArray operator-(NDArray &arr,  T &scalar) {
 
   return result;
 }
-template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  double &scalar);
-template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  float &scalar);
-template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  float16 &scalar);
-template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  bfloat16 &scalar);
-template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  int &scalar);
+template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  double scalar);
+template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  float scalar);
+template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  float16 scalar);
+template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  bfloat16 scalar);
+template SD_LIB_EXPORT NDArray operator-( NDArray &arr,  int scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
@@ -6591,7 +6597,7 @@ template SD_LIB_EXPORT NDArray operator-( int scalar, NDArray &&arr);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator-(const T &scalar, NDArray &arr) {
+NDArray operator-(const T scalar, NDArray &arr) {
   if (arr.isS())
     THROW_EXCEPTION("operator-(const T& scalar, NDArray& arr): you can't use this method on String array!");
 
@@ -6615,7 +6621,7 @@ template SD_LIB_EXPORT NDArray operator-( int scalar, NDArray &arr);
 ///////////////////////////////////////////////////////////////////////
 // addition operator array + scalar
 template <typename T, typename>
-NDArray operator*(NDArray &&arr,  T &scalar) {
+NDArray operator*(NDArray &&arr,  T scalar) {
   if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
     return std::move(arr * scalar);  // arr is lvalue inside function body
 
@@ -6644,7 +6650,7 @@ template SD_LIB_EXPORT NDArray operator*(NDArray &&arr,  long long scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator*(NDArray &arr,  T &scalar) {
+NDArray operator*(NDArray &arr,  T scalar) {
   if (arr.isS())
     THROW_EXCEPTION("operator*(NDArray& arr, const T& scalar): you can't use this method on String array!");
 
@@ -6671,31 +6677,31 @@ template SD_LIB_EXPORT NDArray operator*(NDArray &arr,  long long scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator*( T &scalar, NDArray &&arr) {
+NDArray operator*( T scalar, NDArray &&arr) {
   return std::move(arr) * scalar;
 }
-template SD_LIB_EXPORT NDArray operator*( double &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator*( float &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator*( float16 &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator*( bfloat16 &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator*( int &scalar, NDArray &&arr);
-template SD_LIB_EXPORT NDArray operator*( long long &scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( double scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( float scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( float16 scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( bfloat16 scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( int scalar, NDArray &&arr);
+template SD_LIB_EXPORT NDArray operator*( long long scalar, NDArray &&arr);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator*( T &scalar, NDArray &arr) {
+NDArray operator*( T scalar, NDArray &arr) {
   return arr * scalar;
 }
-template SD_LIB_EXPORT NDArray operator*( double &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator*( float &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator*( float16 &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator*( bfloat16 &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator*( int &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator*( long long &scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( double scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( float scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( float16 scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( bfloat16 scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( int scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator*( long long scalar, NDArray &arr);
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator/(NDArray &&arr,  T &scalar) {
+NDArray operator/(NDArray &&arr,  T scalar) {
   if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
     return std::move(arr / scalar);  // arr is lvalue inside function body
 
@@ -6723,7 +6729,7 @@ template SD_LIB_EXPORT NDArray operator/(NDArray &&arr,  long long scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator/(NDArray &arr, const T &scalar) {
+NDArray operator/(NDArray &arr, const T scalar) {
   if (arr.isS())
     THROW_EXCEPTION("operator/(NDArray& arr, const T& scalar): you can't use this method on String array!");
 
@@ -6749,7 +6755,7 @@ template SD_LIB_EXPORT NDArray operator/(NDArray &arr,  long long scalar);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator/( T &scalar, NDArray &&arr) {
+NDArray operator/( T scalar, NDArray &&arr) {
   if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
     return std::move(scalar / arr);  // arr is lvalue inside function body
 
@@ -6775,7 +6781,7 @@ template SD_LIB_EXPORT NDArray operator/( int scalar, NDArray &&arr);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
-NDArray operator/( T &scalar, NDArray &arr) {
+NDArray operator/( T scalar, NDArray &arr) {
   if (arr.isS())
     THROW_EXCEPTION("operator/(const T& scalar, NDArray& arr): you can't use this method on String array!");
 
@@ -6792,9 +6798,9 @@ NDArray operator/( T &scalar, NDArray &arr) {
 
   return result;
 }
-template SD_LIB_EXPORT NDArray operator/( double &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator/( float &scalar, NDArray &arr);
-template SD_LIB_EXPORT NDArray operator/( int &scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator/( double scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator/( float scalar, NDArray &arr);
+template SD_LIB_EXPORT NDArray operator/( int scalar, NDArray &arr);
 
 ////////////////////////////////////////////////////////////////////////
 // addition operator array + array

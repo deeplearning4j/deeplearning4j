@@ -57,18 +57,18 @@ SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  NDArray& arr);
 void PrintTo(NDArray &arr, std::ostream *os);
 #endif
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+(NDArray &arr,  T &scalar);
+SD_LIB_EXPORT NDArray operator+(NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  T &scalar);
+SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+( T &scalar,  NDArray &arr);
+SD_LIB_EXPORT NDArray operator+( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator+( T &scalar, NDArray &&arr);
+SD_LIB_EXPORT NDArray operator+( T scalar, NDArray &&arr);
 
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-( NDArray &arr,  T &scalar);
+SD_LIB_EXPORT NDArray operator-( NDArray &arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  T &scalar);
+SD_LIB_EXPORT NDArray operator-(NDArray &&arr,  T scalar);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator-( T scalar,  NDArray &arr);
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
@@ -351,13 +351,13 @@ class SD_LIB_EXPORT NDArray {
    * This method returns new array with the same shape & data type
    * @return
    */
-  NDArray like();
+  NDArray &like();
 
   /**
    * This method returns new uninitialized array with the same shape & data type
    * @return
    */
-  NDArray ulike();
+  NDArray &ulike();
 
   /**
    *  this constructor creates new NDArray with shape matching "other" array,
@@ -623,18 +623,15 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  this method assigns values of given array to this one
    */
-  void assign(NDArray *other, bool allowParallelism = true);
+  void assign(NDArray other, bool allowParallelism = true);
 
-  /**
-   *  this method assigns values of given array to this one
-   */
-  void assign(NDArray &other, bool allowParallelism = true);
+
 
   /**
    *  this method assigns given value to all elements in array
    */
   template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
-  void assign(const T &value, bool allowParallelism = true);
+  void assign( T &value, bool allowParallelism = true);
 
   /**
    *  returns new copy of this array, optionally in different order
@@ -1157,7 +1154,7 @@ class SD_LIB_EXPORT NDArray {
    * numbers which correspond to stride between dimStart and dimEnd, so structure of idx is like
    * {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
    */
-  NDArray operator()(const std::vector<LongType> &idx, const bool keepUnitiesInShape = false,
+  NDArray& operator()(const std::vector<LongType> &idx, const bool keepUnitiesInShape = false,
                      const bool isStrided = false);
 
   /**
@@ -1341,7 +1338,7 @@ class SD_LIB_EXPORT NDArray {
    *  returns reference on array element with given index
    */
   template <typename T>
-  SD_INLINE T &r(const LongType index);
+  SD_INLINE T &r(LongType i);
   template <typename T>
   SD_INLINE T &r(const LongType i, const LongType j);
   template <typename T>
@@ -1449,8 +1446,6 @@ class SD_LIB_EXPORT NDArray {
    */
   SD_INLINE bool nonNull();
 
-  template <typename T>
-  T r(const LongType i);
 
   /**
    *  returns array element with given index from linear buffer
@@ -1918,7 +1913,7 @@ DataType NDArray::dataType()  {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T &NDArray::r(const LongType i) {
+T &NDArray::r(LongType i) {
   auto inputDtype = DataTypeUtils::fromT<T>();
   if (inputDtype != _dataType) {
     sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);

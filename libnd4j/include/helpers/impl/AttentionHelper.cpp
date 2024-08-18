@@ -89,7 +89,8 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     auto vSeqLength = value != nullptr ? value->sizeAt(1) : qSeqLength;
     ops::matrix_band_part matrixBandPart;
     auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, INT32);
-    ones.assign(1);
+    int assignVal = 1;
+    ones.assign(assignVal);
     auto lower = matrixBandPart.evaluate({&ones},{},{-1,0});
     auto ret = new NDArray(lower.at(0)->cast(BOOL));
     return ret;

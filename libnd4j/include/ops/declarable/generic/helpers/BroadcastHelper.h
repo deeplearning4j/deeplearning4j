@@ -42,7 +42,7 @@ class BroadcastHelper {
     if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
       x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
     } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
@@ -63,9 +63,9 @@ class BroadcastHelper {
                    op.s == scalar::AMinPairwise) {
           y->applyScalarArr(op.s, *x, *z);
         } else if (op.s == scalar::CopyPws) {
-          z->assign(y);
+          z->assign(*y);
         } else {
-          z->assign(x);
+          z->assign(*x);
           z->applyPairwiseTransform(op.p, *y, extraArgs);
         }
         return z;
@@ -76,7 +76,7 @@ class BroadcastHelper {
         return tZ;
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
       return z;
@@ -113,7 +113,7 @@ class BroadcastHelper {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
       return z;
     } else if (!x->isScalar() && y->isScalar()) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (x->isScalar() && !y->isScalar()) {
       if (z->isSameShape(y)) {
         x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
@@ -124,7 +124,7 @@ class BroadcastHelper {
         return tZ;
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
       return z;

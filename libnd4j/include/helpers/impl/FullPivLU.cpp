@@ -32,7 +32,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // A{M,K} * x{K,N} = b{M,N}
 template <typename T>
-void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
+void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   if (A.rankOf() != 2) THROW_EXCEPTION("FullPivLU::solve: input matrix A must be 2D !");
 
   if (A.sizeAt(0) != b.sizeAt(0))
@@ -96,11 +96,13 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
 
     if (k < rows - 1) LU({k + 1, rows, k, k + 1}, true) /= LU.t<T>(k, k);
 
-    if (k < diagLen - 1)
+    if (k < diagLen - 1) {
+      NDArray left = LU({k + 1, rows, k, k + 1}, true);
+      NDArray right = LU({k, k + 1, k + 1, cols}, true);
       LU({k + 1, rows, k + 1, cols}, true) -=
-          mmul(LU({k + 1, rows, k, k + 1}, true), LU({k, k + 1, k + 1, cols}, true));
+          mmul(left,right);
+    }
   }
-
   //***************************************************//
 
   const T threshold = maxPivot * DataTypeUtils::eps<T>() * (T)diagLen;
@@ -141,10 +143,12 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
   helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
 
-  if (rows > cols) c({cols, -1, 0, 0}, true) -= mmul(LU({cols, -1, 0, 0}, true), c({0, cols, 0, 0}, true));
-
+  if (rows > cols) {
+    NDArray left = LU({cols, -1, 0, 0}, true);
+    NDArray right = c({0, cols, 0, 0}, true);
+    c({cols, -1, 0, 0}, true) -= mmul(left, right);
+  }
   NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
-  // TriangularSolver<T>::solve(LU({0,nonZeroPivots2, 0,nonZeroPivots2}, true), cTopRows2, false, false, cTopRows2);
   helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
                                      cTopRows2);
 

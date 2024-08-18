@@ -28,7 +28,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
+EigenValsAndVecs<T>::EigenValsAndVecs(NDArray& matrix) {
   if (matrix.rankOf() != 2)
     THROW_EXCEPTION("ops::helpers::EigenValsAndVecs constructor: input matrix must be 2D !");
 
@@ -54,7 +54,7 @@ EigenValsAndVecs<T>::EigenValsAndVecs(const NDArray& matrix) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void calcEigenVals_(const NDArray& schurMatrixT, NDArray& _Vals) {
+void calcEigenVals_(NDArray& schurMatrixT, NDArray& _Vals) {
   const int numOfCols = schurMatrixT.sizeAt(1);
 
   // calculate eigenvalues _Vals
@@ -100,7 +100,7 @@ void calcEigenVals_(const NDArray& schurMatrixT, NDArray& _Vals) {
 }
 
 template <typename T>
-void EigenValsAndVecs<T>::calcEigenVals(const NDArray& schurMatrixT) {
+void EigenValsAndVecs<T>::calcEigenVals(NDArray& schurMatrixT) {
   calcEigenVals_<T>(schurMatrixT, _Vals);
 }
 //////////////////////////////////////////////////////////////////////////
@@ -239,7 +239,7 @@ void EigenValsAndVecs<T>::calcPseudoEigenVecs(NDArray& schurMatrixT, NDArray& sc
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void calcEigenVecs_(const NDArray& schurMatrixU, const NDArray& _Vals, NDArray& _Vecs) {
+void calcEigenVecs_(NDArray& schurMatrixU, NDArray& _Vals, NDArray& _Vecs) {
   const T precision = T(2) * DataTypeUtils::eps<T>();
 
   const int numOfCols = schurMatrixU.sizeAt(1);
@@ -277,12 +277,12 @@ void calcEigenVecs_(const NDArray& schurMatrixU, const NDArray& _Vals, NDArray& 
 }
 
 template <typename T>
-void EigenValsAndVecs<T>::calcEigenVecs(const NDArray& schurMatrixU) {
+void EigenValsAndVecs<T>::calcEigenVecs(NDArray& schurMatrixU) {
   calcEigenVecs_<T>(schurMatrixU, _Vals, _Vecs);
 }
 
 template <typename T>
-void eig_(const NDArray& input, NDArray& vals, NDArray& vecs) {
+void eig_(NDArray& input, NDArray& vals, NDArray& vecs) {
   assert(input.rankOf() == 2 && "input is not a matrix");
   assert(input.sizeAt(0) == input.sizeAt(1) && "input is not a square matrix");
   assert(vals.rankOf() == 2 && vals.sizeAt(0) == input.sizeAt(0) && vals.sizeAt(1) == 2 &&
@@ -298,11 +298,11 @@ void eig_(const NDArray& input, NDArray& vals, NDArray& vecs) {
   calcEigenVecs_<T>(schurMatrixU, vals, vecs);
 }
 
-void eig(const NDArray& input, NDArray& vals, NDArray& vecs) {
+void eig(NDArray& input, NDArray& vals, NDArray& vecs) {
   BUILD_SINGLE_SELECTOR(input.dataType(), eig_, (input, vals, vecs), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void eig_, (const NDArray& input, NDArray& vals, NDArray& vecs), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void eig_, (NDArray& input, NDArray& vals, NDArray& vecs), SD_FLOAT_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template class EigenValsAndVecs, , SD_FLOAT_TYPES);
 

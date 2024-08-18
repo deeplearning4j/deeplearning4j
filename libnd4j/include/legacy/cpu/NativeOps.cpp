@@ -2380,7 +2380,7 @@ Status execCustomOpWithScope_(Pointer *extraPointers, graph::GraphState *state, 
     // varSpace->putVariable(0, e, array);
 
     auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(t);
+    array.assign(*t);
   }
 
   // removing input variables

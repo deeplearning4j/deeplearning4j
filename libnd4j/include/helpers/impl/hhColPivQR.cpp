@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-HHcolPivQR::HHcolPivQR(const NDArray& matrix) {
+HHcolPivQR::HHcolPivQR(NDArray &matrix) {
   _qr = matrix.dup(false);
   std::vector<LongType> coeffsShape = {1,_diagSize};
   _diagSize = math::sd_min<int>(matrix.sizeAt(0), matrix.sizeAt(1));

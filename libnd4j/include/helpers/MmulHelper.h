@@ -38,11 +38,11 @@ class SD_LIB_EXPORT MmulHelper {
                           const double beta = 0.0);
 
   // multiptication Matrix to Matrix
-  static NDArray* mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, double alpha = 1.0,
+  static NDArray* mmulMxM( NDArray* A,  NDArray* B, NDArray* C, double alpha = 1.0,
                               double beta = 0.0, const char outOrder = 'f');
 
   // multiptication Matrix to vector
-  static NDArray* mmulMxV(const NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
+  static NDArray* mmulMxV( NDArray* A, NDArray* B, NDArray* C, double alpha = 1.0,
                               double beta = 0.0, const char outOrder = 'f');
 
  public:
@@ -86,7 +86,7 @@ class SD_LIB_EXPORT MmulHelper {
   static void matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY, double alpha,
                      double beta, NDArray* realFinalResult = nullptr);
 
-  static bool resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB);
+  static bool resolveTranspose(sd::NDArray& a, sd::NDArray& b, bool& transA, bool& transB);
 };
 }  // namespace sd
 

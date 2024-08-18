@@ -50,9 +50,9 @@ class SVD {
   /**
    *  constructor
    */
-  SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
+  SVD(NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV);
 
-  SVD(const NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
+  SVD(NDArray& matrix, const int switchSize, const bool calcV, const bool calcU, const bool fullUV, const char t);
 
   void deflation1(int col1, int shift, int ind, int size);
 
@@ -61,25 +61,25 @@ class SVD {
   void deflation(int col1, int col2, int ind, int row1W, int col1W, int shift);
 
   // FIXME: proper T support required here
-  T secularEq(const T diff, const NDArray& col0, const NDArray& diag, NDArray permut, const NDArray& diagShifted,
+  T secularEq(const T diff, NDArray& col0, NDArray& diag, NDArray permut, NDArray& diagShifted,
               const T shift);
 
-  void calcSingVals(NDArray col0, const NDArray& diag, const NDArray& permut, NDArray& singVals, NDArray& shifts,
+  void calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray& singVals, NDArray& shifts,
                     NDArray& mus);
 
-  void perturb(NDArray col0, const NDArray& diag, NDArray permut, const NDArray& singVals,
-               const NDArray& shifts, const NDArray& mus, NDArray& zhat);
+  void perturb(NDArray col0, NDArray& diag, NDArray permut, NDArray& singVals,
+               NDArray& shifts, NDArray& mus, NDArray& zhat);
 
-  void calcSingVecs(NDArray zhat, const NDArray& diag, NDArray perm, const NDArray& singVals,
-                    const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V);
+  void calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& singVals,
+                    NDArray& shifts, NDArray& mus, NDArray& U, NDArray& V);
 
   void calcBlockSVD(int firstCol, int size, NDArray& U, NDArray& singVals, NDArray& V);
 
   void DivideAndConquer(int col1, int col2, int row1W, int col1W, int shift);
 
-  void exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V);
+  void exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V);
 
-  void evalData(const NDArray& matrix);
+  void evalData(NDArray& matrix);
 
   SD_INLINE NDArray& getS();
   SD_INLINE NDArray& getU();
