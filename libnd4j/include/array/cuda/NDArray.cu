@@ -58,7 +58,6 @@ namespace sd {
 void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 
-LongType const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
 
 
 void NDArray::syncToDevice() const {

@@ -329,7 +329,9 @@ void* NDArray::specialBuffer() {
 }
 
 
-
+const void* NDArray::specialBufferWithOffset(LongType offset) {
+  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
+}
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<sd::LongType>& reps)  {

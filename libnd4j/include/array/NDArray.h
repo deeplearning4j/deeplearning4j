@@ -537,6 +537,8 @@ class SD_LIB_EXPORT NDArray {
    *   returns _shapeInfo
    */
   SD_INLINE const LongType *shapeInfo();
+
+
   /**
    *   returns _shapeInfo
    */
@@ -553,9 +555,8 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
    */
-  SD_INLINE const LongType *specialShapeInfo();
+  SD_INLINE  const LongType *specialShapeInfo();
 
-  const LongType *platformShapeInfo();
 
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -2056,7 +2057,9 @@ void *NDArray::buffer() {
 }
 
 //////////////////////////////////////////////////////////////////////////
-const LongType *NDArray::shapeInfo()  { return _shapeInfo; }
+ const LongType *NDArray::shapeInfo()  { return _shapeInfo; }
+
+
 
 ConstantShapeBuffer * NDArray::shapeInfoConstBuffer()   { return _shapeInfoBuffer; }
 
