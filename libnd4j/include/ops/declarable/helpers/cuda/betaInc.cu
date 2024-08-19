@@ -180,7 +180,7 @@ static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threa
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDArray& output) {
   dim3 launchDims = getBetaInc(maxIter,output.lengthOf(),output.sizeOfT());
 
   const auto xType = x.dataType();

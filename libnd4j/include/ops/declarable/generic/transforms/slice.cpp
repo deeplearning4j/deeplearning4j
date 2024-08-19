@@ -200,7 +200,8 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
   auto epsNext = block.width() == 4 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(1);
 
   auto output = OUTPUT_VARIABLE(0);
-  output->assign(0.);
+  double zero = 0.;
+  output->assign(zero);
   int x_rank = input->rankOf();
 
   std::vector<LongType> begin;
@@ -239,7 +240,7 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
     indices[2 * e + 1] = start + size;
   }
   auto sub = (*output)(indices, true);
-  sub.assign(epsNext);
+  sub.assign(*epsNext);
 
   return Status::OK;
 }

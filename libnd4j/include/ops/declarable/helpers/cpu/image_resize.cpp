@@ -71,7 +71,7 @@ static inline void computeInterpolationWeights(const Scaler scaler, sd::LongType
  * and the linear interpolation weights.
  */
 //    static void
-//    resizeImage(NDArray const *images, sd::LongType batchSize, sd::LongType inHeight, sd::LongType inWidth,
+//    resizeImage(NDArray *images, sd::LongType batchSize, sd::LongType inHeight, sd::LongType inWidth,
 //    sd::LongType outHeight,
 //                sd::LongType outWidth, sd::LongType channels,
 //                std::vector<BilinearInterpolationData> const& xs,
@@ -123,7 +123,7 @@ static void resizeImage_(T const* pInputBuf, sd::LongType batchSize, sd::LongTyp
 }
 
 template <typename X, typename Z>
-static sd::Status resizeBilinearFunctor_(NDArray const* images, int const width, int const height,
+static sd::Status resizeBilinearFunctor_(NDArray * images, int const width, int const height,
                                          bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
   ImageResizerState st(alignCorners, halfPixelCenter);
   st.validateAndCalculateOutputSize(images, width, height);
@@ -138,7 +138,7 @@ static sd::Status resizeBilinearFunctor_(NDArray const* images, int const width,
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(images);
+    output->assign(*images);
     return sd::Status::OK;
   }
 
@@ -169,7 +169,7 @@ static sd::Status resizeBilinearFunctor_(NDArray const* images, int const width,
 }
 
 template <class Scaler, typename T>
-void resizeNeighborImpl(ImageResizerState const& st, NDArray const* images, NearestMode nearestMode, NDArray* output) {
+void resizeNeighborImpl(ImageResizerState const& st, NDArray * images, NearestMode nearestMode, NDArray* output) {
   const sd::LongType batchSize = st.batchSize;
   const sd::LongType inHeight = st.inHeight;
   const sd::LongType inWidth = st.inWidth;
@@ -223,7 +223,7 @@ void resizeNeighborImpl(ImageResizerState const& st, NDArray const* images, Near
 }
 
 template <typename T>
-sd::Status resizeNeighborFunctor_(NDArray const* images, int const width, int const height,
+sd::Status resizeNeighborFunctor_(NDArray * images, int const width, int const height,
                                   CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner,
                                   NDArray* output) {
   ImageResizerState st(alignCorner, (coorMode == HALF_PIXEL_NN));
@@ -231,7 +231,7 @@ sd::Status resizeNeighborFunctor_(NDArray const* images, int const width, int co
 
   // Handle no-op resizes efficiently.
   if (output->sizeAt(1) == images->sizeAt(1) && output->sizeAt(2) == images->sizeAt(2)) {
-    output->assign(images);
+    output->assign(*images);
     return sd::Status::OK;
   }
 
@@ -252,7 +252,7 @@ sd::Status resizeNeighborFunctor_(NDArray const* images, int const width, int co
   return sd::Status::OK;
 }
 
-//    void resizeImage(NDArray const *images, sd::LongType batchSize, sd::LongType inHeight, sd::LongType inWidth,
+//    void resizeImage(NDArray *images, sd::LongType batchSize, sd::LongType inHeight, sd::LongType inWidth,
 //    sd::LongType outHeight,
 //                     sd::LongType outWidth, sd::LongType channels,
 //                     std::vector<BilinearInterpolationData> const &xs,
@@ -263,7 +263,7 @@ sd::Status resizeNeighborFunctor_(NDArray const* images, int const width, int co
 //                              SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 //    }
 
-sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray const* images, int const width, int const height,
+sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray * images, int const width, int const height,
                                  bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
                         (images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
@@ -271,7 +271,7 @@ sd::Status resizeBilinearFunctor(sd::LaunchContext* context, NDArray const* imag
   return sd::Status::OK;
 }
 
-sd::Status resizeNeighborFunctor(sd::LaunchContext* context, NDArray const* images, int const width, int const height,
+sd::Status resizeNeighborFunctor(sd::LaunchContext* context, NDArray * images, int const width, int const height,
                                  CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner,
                                  NDArray* output) {
   BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
@@ -304,12 +304,12 @@ std::unique_ptr<T[]> initCoeffsTable(const double a) {
 }
 
 template <typename T>
-sd::Status resizeBicubicFunctor_(sd::LaunchContext* context, NDArray const* image, int width, int height,
+sd::Status resizeBicubicFunctor_(sd::LaunchContext* context, NDArray * image, int width, int height,
                                  bool preserveAspectRatio, bool antialias, NDArray* output) {
   return sd::Status::OK;
 }
 
-sd::Status resizeBicubicFunctor(sd::LaunchContext* context, NDArray const* image, int width, int height,
+sd::Status resizeBicubicFunctor(sd::LaunchContext* context, NDArray * image, int width, int height,
                                 bool preserveAspectRatio, bool antialias, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
                         (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
@@ -334,7 +334,7 @@ static void computeXWeightsAndIndices(const ImageResizerState& resizer_state, co
 }
 
 template <typename T, typename F, typename Scaler>
-static void bicubicInterpolateWithCaching(NDArray const* image, ImageResizerState const& resizerState,
+static void bicubicInterpolateWithCaching(NDArray * image, ImageResizerState const& resizerState,
                                           const double coefficient, bool exclude_outside, NDArray* output) {
   std::vector<WeightsAndIndices> xWais(resizerState.outWidth);
   auto coeffs_table_uniq = initCoeffsTable<float>(coefficient);
@@ -503,7 +503,7 @@ static void bicubicInterpolateWithCaching(NDArray const* image, ImageResizerStat
 // simplified bicubic resize without antialiasing
 //
 template <typename T>
-sd::Status resizeBicubicFunctorA_(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeBicubicFunctorA_(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                   bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
                                   double coefficient, NDArray* output) {
   ImageResizerState st(alignCorners, coorMode == HALF_PIXEL);  // align_corners, half_pixel_align
@@ -526,7 +526,7 @@ sd::Status resizeBicubicFunctorA_(sd::LaunchContext* context, NDArray const* ima
 
   return res;
 }
-sd::Status resizeBicubicFunctorA(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeBicubicFunctorA(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
                                  double coefficient, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_,
@@ -537,7 +537,7 @@ sd::Status resizeBicubicFunctorA(sd::LaunchContext* context, NDArray const* imag
 
 template <typename T>
 static void resizeArea(ImageResizerState const& st, std::vector<CachedInterpolation> const& caches,
-                       NDArray const* input, NDArray* output) {
+                       NDArray * input, NDArray* output) {
   T const* inputPtr = input->bufferAsT<T>();
   float scale = 1.f / (st.heightScale * st.widthScale);
   auto outputPtr = output->bufferAsT<float>();  // output is always float. TO DO: provide another float types also with
@@ -592,7 +592,7 @@ static void resizeArea(ImageResizerState const& st, std::vector<CachedInterpolat
 }
 
 template <typename X>
-sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
   ImageResizerState st(alignCorners, false);  // Create resize info
   auto res = st.validateAndCalculateOutputSize(image, width, height);
@@ -622,7 +622,7 @@ sd::Status resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, 
   return res;
 }
 
-sd::Status resizeAreaFunctor(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeAreaFunctor(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                              bool const alignCorners, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_,
                         (context, image, width, height, alignCorners, output), SD_NUMERIC_TYPES);
@@ -701,9 +701,9 @@ static sd::Status computeSpans(IKernelFunc<float>* kernel, sd::LongType const ou
 }
 
 template <typename X, typename Z>
-static void gatherSpans(int const rowSpanSize, NDArray const& rowStarts, NDArray const& rowWeights,
-                        int const colSpanSize, NDArray const& columnStarts, NDArray const& columnWeights,
-                        NDArray const* images, NDArray& intermediate, NDArray* output) {
+static void gatherSpans(int const rowSpanSize, NDArray& rowStarts, NDArray& rowWeights,
+                        int const colSpanSize, NDArray& columnStarts, NDArray& columnWeights,
+                        NDArray * images, NDArray& intermediate, NDArray* output) {
   auto batchSize = images->sizeAt(0);
   auto inputHeight = images->sizeAt(1);
   auto inputWidth = images->sizeAt(2);
@@ -733,7 +733,7 @@ static void gatherSpans(int const rowSpanSize, NDArray const& rowStarts, NDArray
 }
 
 template <typename X, typename Z>
-static sd::Status resizeKernel(IKernelFunc<float>* transformationKernel, NDArray const* input, sd::LongType outWidth,
+static sd::Status resizeKernel(IKernelFunc<float>* transformationKernel, NDArray * input, sd::LongType outWidth,
                                sd::LongType outHeight, bool antialias, NDArray* output) {
   sd::LongType const batchSize = input->sizeAt(0);
   sd::LongType const inputHeight = input->sizeAt(1);
@@ -768,7 +768,7 @@ static sd::Status resizeKernel(IKernelFunc<float>* transformationKernel, NDArray
   return res;
 }
 #if defined(HAS_FLOAT32)
-static sd::Status resizeBilinear(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeBilinear(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new TriangleKernelFunc());
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
@@ -777,7 +777,7 @@ static sd::Status resizeBilinear(sd::LaunchContext* context, NDArray const* imag
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeBilinear: Unknown error occured.");
 }
 
-static sd::Status resizeBicubicA(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeBicubicA(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient,
                                  NDArray* output) {
   constexpr bool alignCorners = false;
@@ -785,7 +785,7 @@ static sd::Status resizeBicubicA(sd::LaunchContext* context, NDArray const* imag
                                output);
 }
 
-static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray const* image, int const width,
+static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray * image, int const width,
                                          int const height, bool const antialias, double coefficient, NDArray* output) {
   // coorMode is HALF_PIXEL exlude_outside is True
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new KeysCubicKernelFunc<float>(coefficient));
@@ -796,12 +796,12 @@ static sd::Status resizeBicubicAntialias(sd::LaunchContext* context, NDArray con
 }
 #endif
 
-static sd::Status resizeArea(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeArea(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                              bool const antialias, NDArray* output) {
   return resizeAreaFunctor(context, image, width, height, false, output);
 }
 #if defined(HAS_FLOAT32)
-static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(3.f));
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
@@ -810,7 +810,7 @@ static sd::Status resizeLanczos3(sd::LaunchContext* context, NDArray const* imag
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeLanczos3: Unknown error occured.");
 }
 
-static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new LanczosKernelFunc(5.f));
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
@@ -819,7 +819,7 @@ static sd::Status resizeLanczos5(sd::LaunchContext* context, NDArray const* imag
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeLanczos5: Unknown error occured.");
 }
 
-static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new GaussianKernelFunc());
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
@@ -828,7 +828,7 @@ static sd::Status resizeGaussian(sd::LaunchContext* context, NDArray const* imag
   return Logger::logStatusMsg(Status::VALIDATION, "helpers::resizeGaussian: Unknown error occured.");
 }
 
-static sd::Status resizeMitchellcubic(sd::LaunchContext* context, NDArray const* image, int const width,
+static sd::Status resizeMitchellcubic(sd::LaunchContext* context, NDArray * image, int const width,
                                       int const height, bool const antialias, NDArray* output) {
   auto kernel = std::unique_ptr<IKernelFunc<float>>(new MitchellCubicKernelFunc());
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
@@ -838,7 +838,7 @@ static sd::Status resizeMitchellcubic(sd::LaunchContext* context, NDArray const*
 }
 #endif
 // ------------------------------------------------------------------------------------------------------------------ //
-sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                                ImageResizeMethods method, bool alignCorners, NDArray* output) {
   switch (method) {
     case kResizeBilinear:
@@ -856,7 +856,7 @@ sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray const* image,
   return Logger::logStatusMsg(Status::BAD_INPUT, "helper::resizeImagesFunctor: Wrong resize method");
 }
 // ------------------------------------------------------------------------------------------------------------------ //
-sd::Status resizeFunctor(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
+sd::Status resizeFunctor(sd::LaunchContext* context, NDArray * image, int const width, int const height,
                          ImageResizeMethods method, CoordinateTransformationMode coorMode, bool exclude_outside,
                          NearestMode nearestMode, double coefficient, bool antialias, NDArray* output) {
   switch (method) {

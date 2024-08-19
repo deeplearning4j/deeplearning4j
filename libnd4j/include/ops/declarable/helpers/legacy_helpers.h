@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 /*
-    SD_INLINE void reluDerivative(NDArray* theFirst, NDArray const* theSecond);
+    SD_INLINE void reluDerivative(NDArray* theFirst, NDArray * theSecond);
     SD_INLINE void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     SD_INLINE void relu6Derivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
     SD_INLINE void leakyReluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
@@ -81,8 +81,8 @@ SD_LIB_HIDDEN void hardSigmoidDerivative(LaunchContext* context, NDArray* theFir
 SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output);
 SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray* axis,
                              NDArray* output);
-SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray const* targets,
-                                                         NDArray const* input, NDArray const* weights, NDArray* output);
+SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray * targets,
+                                                         NDArray * input, NDArray * weights, NDArray* output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

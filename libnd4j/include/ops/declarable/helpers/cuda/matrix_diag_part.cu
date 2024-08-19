@@ -68,7 +68,7 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 //
 template <typename T>
-static Status _matrixDiagPart(LaunchContext* context, const NDArray* input, NDArray* output) {
+static Status _matrixDiagPart(LaunchContext* context, NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
   auto listOut = output->allTensorsAlongDimension({output->rankOf() - 1});
   auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
@@ -107,12 +107,12 @@ static Status _matrixDiagPart(LaunchContext* context, const NDArray* input, NDAr
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // caller for _matrixDiagPart
 //
-Status matrixDiagPart(LaunchContext* context, const NDArray* input, NDArray* output) {
+Status matrixDiagPart(LaunchContext* context, NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (context, input, output), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart,
-                      (sd::LaunchContext * context, const NDArray* input, NDArray* output), SD_COMMON_TYPES);
+                      (sd::LaunchContext * context, NDArray* input, NDArray* output), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

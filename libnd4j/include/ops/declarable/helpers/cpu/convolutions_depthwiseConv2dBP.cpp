@@ -55,7 +55,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   //  isNCHW      0-NHWC, 1-NCHW
 
   LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
-                                       // iC*mC), output channels, output height/width
+  // iC*mC), output channels, output height/width
   LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
@@ -96,10 +96,10 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
   NDArray gradOreshaped = gradO->reshape(gradO->ordering(), gradOreShape);
 
   // ----- calculation of gradW and gradB ----- //
-
+  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+  zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
   sd::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1,
                             modifWeights);  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 

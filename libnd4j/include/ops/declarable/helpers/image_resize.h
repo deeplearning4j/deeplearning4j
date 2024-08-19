@@ -279,7 +279,7 @@ struct ImageResizerStateCommon {
   // heightScale and widthScale, and calculates the output size.
   // If any of these operations fails, it sets an error status in
   // the context, which the caller must check.
-  Status validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
+  Status validateAndCalculateOutputSize(NDArray * input, int const width, int const height) {
     //
     batchSize = input->sizeAt(0);  //.dim_size(0);
     outHeight = static_cast<I>(height);
@@ -308,7 +308,7 @@ struct ImageResizerStateCommon {
   }
 
   // Calculates all the required variables, and allocates the output.
-  Status validateAndCreateOutput(NDArray const* input, int const width, int const height) {
+  Status validateAndCreateOutput(NDArray * input, int const width, int const height) {
     return validateAndCalculateOutputSize(input, width, height);
   }
 
@@ -733,28 +733,28 @@ SD_HOST_DEVICE void gatherColumns(int const spanSize, int const* starts, Z const
   }
 }
 
-SD_LIB_HIDDEN Status resizeBilinearFunctor(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBilinearFunctor(LaunchContext* context, NDArray * image, int const width,
                                                int const height, bool const alignCorners, bool const halfPixelCenter,
                                                NDArray* output);
-SD_LIB_HIDDEN Status resizeNeighborFunctor(LaunchContext* context, NDArray const* images, int const width,
+SD_LIB_HIDDEN Status resizeNeighborFunctor(LaunchContext* context, NDArray * images, int const width,
                                                int const height, CoordinateTransformationMode coorMode,
                                                NearestMode nearestMode, bool alignCorner, NDArray* output);
-SD_LIB_HIDDEN Status resizeBicubicFunctor(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int const width,
                                               int const height, bool preserveAspectRatio, bool antialias,
                                               NDArray* output);
-SD_LIB_HIDDEN Status resizeBicubicFunctorA(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeBicubicFunctorA(LaunchContext* context, NDArray * image, int const width,
                                                int const height, bool const alignCorners,
                                                CoordinateTransformationMode coorMode, bool exclude_outside,
                                                double coefficient, NDArray* output);
-SD_LIB_HIDDEN Status resizeAreaFunctor(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeAreaFunctor(LaunchContext* context, NDArray * image, int const width,
                                            int const height, bool const alignCorners, NDArray* output);
 
-SD_LIB_HIDDEN Status resizeFunctor(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeFunctor(LaunchContext* context, NDArray * image, int const width,
                                        int const height, ImageResizeMethods method,
                                        CoordinateTransformationMode coorMode, bool exclude_outside,
                                        NearestMode nearestMode, double coefficient, bool antialias, NDArray* output);
 
-SD_LIB_HIDDEN Status resizeImagesFunctor(LaunchContext* context, NDArray const* image, int const width,
+SD_LIB_HIDDEN Status resizeImagesFunctor(LaunchContext* context, NDArray * image, int const width,
                                              int const height, ImageResizeMethods method, bool alignCorners,
                                              NDArray* output);
 }  // namespace helpers

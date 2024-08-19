@@ -374,7 +374,7 @@ SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, NDA
 }
 
 template <typename T>
-NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, const T value, const char order,
+NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape,  T value, const char order,
                                  LaunchContext* context) {
   auto result = create_(order, shape, DataTypeUtils::fromT<T>());
   result->assign(value);
@@ -383,7 +383,7 @@ NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, const T value, co
 
 #define TMPL_INSTANTIATE_VALUEOF(TYPE) \
 template SD_LIB_EXPORT NDArray* \
-NDArrayFactory::valueOf<TYPE>(std::vector<sd::LongType>& shape, const TYPE value, \
+NDArrayFactory::valueOf<TYPE>(std::vector<sd::LongType>& shape,  TYPE value, \
                                                         const char order, sd::LaunchContext* context);
 
 TMPL_INSTANTIATE_VALUEOF(double)
@@ -432,7 +432,7 @@ TMPL_INSTANTIATE_LINSPACE(bool)
 #undef TMPL_INSTANTIATE_LINSPACE
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray* NDArrayFactory::vector(LongType length, const T value, LaunchContext* context) {
+NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
   auto desc = ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>());
@@ -590,7 +590,7 @@ NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, const NDArray& value, const char order,
+NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, NDArray& value, const char order,
                                  LaunchContext* context) {
   auto res = create_(order, shape, value.dataType(), context);
   res->assign(const_cast<NDArray&>(value));

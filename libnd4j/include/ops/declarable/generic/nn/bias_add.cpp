@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
   const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
   const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
 
-  gradI->assign(gradO);
+  gradI->assign(*gradO);
 
   std::vector<sd::LongType> channel;
   channel.push_back(channelDim);

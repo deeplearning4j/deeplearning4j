@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-HHsequence::HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type)
+HHsequence::HHsequence(NDArray& vectors, NDArray& coeffs, const char type)
     : _vectors(vectors), _coeffs(coeffs) {
   _diagSize = math::sd_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
   _shift = 0;
@@ -77,7 +77,8 @@ void HHsequence::applyTo_(NDArray& dest) {
     if (curNum < 1 || (k + 1 + _shift) >= size) continue;
     auto block = dest({dest.sizeAt(0) - curNum, dest.sizeAt(0), dest.sizeAt(1) - curNum, dest.sizeAt(1)}, true);
 
-    Householder<T>::mulLeft(block, getTail(k), _coeffs.t<T>(k));
+    NDArray tailK = getTail(k);
+    Householder<T>::mulLeft(block,tailK , _coeffs.t<T>(k));
   }
 }
 

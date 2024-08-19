@@ -26,7 +26,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kH, const LongType kW,
+static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType kH, const LongType kW,
                        const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                        const int poolingMode, const int extraParam0) {
   // input is  [bS, iC, iH, iW]
@@ -238,7 +238,7 @@ static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray&
   }
 }
 
-void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kH,
+void ConvolutionUtils::pooling2d(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType kH,
                                  const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
                                  const LongType dW, const PoolingType poolingMode, const int extraParam0) {
   BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_,

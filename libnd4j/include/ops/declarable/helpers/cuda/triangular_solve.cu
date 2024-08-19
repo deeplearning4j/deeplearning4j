@@ -50,7 +50,7 @@ namespace helpers {
  *
  * */
 template <typename T>
-static void lowerTriangularSolve(LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+static void lowerTriangularSolve(LaunchContext* context, NDArray * leftInput, NDArray * rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
 
   //TODO: note: this is the cpu implementation.
@@ -98,7 +98,7 @@ static void lowerTriangularSolve(LaunchContext* context, NDArray const* leftInpu
  * */
 
 template <typename T>
-static void upperTriangularSolve(LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+static void upperTriangularSolve(LaunchContext* context, NDArray * leftInput, NDArray * rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
 
   auto rows = leftInput->rows();
@@ -151,7 +151,7 @@ static Status triangularSolveFunctor_(LaunchContext* context, NDArray* leftInput
 /// \param output - output vector (x on equation Tx = b)
 ///
 template <typename T>
-void triangularSolve2D(LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput,
+void triangularSolve2D(LaunchContext* context, NDArray& leftInput, NDArray& rightInput,
                        bool const lower, bool const unitsOnDiag, NDArray& output) {
   triangularSolveFunctor_<T>(context, const_cast<NDArray*>(&leftInput), const_cast<NDArray*>(&rightInput), lower,
                              unitsOnDiag, &output);
@@ -159,7 +159,7 @@ void triangularSolve2D(LaunchContext* context, const NDArray& leftInput, const N
 
 }
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
-                      (sd::LaunchContext * context, NDArray const& leftInput, NDArray const& rightInput,
+                      (sd::LaunchContext * context, NDArray& leftInput, NDArray& rightInput,
                           bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
 
@@ -208,7 +208,7 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
 }
 
 template <typename T>
-static void adjointTriangularMatrix_(LaunchContext* context, NDArray const* input, bool const lower,
+static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bool const lower,
                                      NDArray* output) {
   NDArray::prepareSpecialUse({input}, {output});
   std::vector<LongType> dims = {-2, -1};
@@ -237,7 +237,7 @@ static void adjointTriangularMatrix_(LaunchContext* context, NDArray const* inpu
   NDArray::registerSpecialUse({input}, {output});
 }
 
-void adjointMatrix(LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+void adjointMatrix(LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), SD_FLOAT_NATIVE);
 }
 

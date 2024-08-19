@@ -355,8 +355,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   // evaluates sizes values and indexes using input and output arrays depending on data format
-  static inline void getSizesAndIndexesConv2d(const bool isNCHW, const int wFormat, const NDArray& input,
-                                              const NDArray& output, LongType& bS, LongType& iC, LongType& iH, LongType& iW, LongType& oC,
+  static inline void getSizesAndIndexesConv2d(const bool isNCHW, const int wFormat, NDArray& input,
+                                              NDArray& output, LongType& bS, LongType& iC, LongType& iH, LongType& iW, LongType& oC,
                                               LongType& oH, LongType& oW, LongType& indIOioC, LongType& indIiH, LongType& indWiC, LongType& indWoC,
                                               LongType& indWkH, LongType& indOoH) {
     getSizesAndIndexesConv2d(isNCHW, wFormat, input.shapeInfo(), output.shapeInfo(), bS, iC, iH, iW, oC, oH, oW,
@@ -405,8 +405,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
   }
 
   // evaluates sizes values and indexes using input and output arrays depending on data format
-  static inline void getSizesAndIndexesConv3d(const bool isNCDHW, const int wFormat, const NDArray& input,
-                                              const NDArray& output, LongType& bS, LongType& iC, LongType& iD, LongType& iH, LongType& iW,
+  static inline void getSizesAndIndexesConv3d(const bool isNCDHW, const int wFormat, NDArray& input,
+                                              NDArray& output, LongType& bS, LongType& iC, LongType& iD, LongType& iH, LongType& iW,
                                               LongType& oC, LongType& oD, LongType& oH, LongType& oW, LongType& indIOioC, LongType& indIOioD,
                                               LongType& indWiC, LongType& indWoC, LongType& indWkD) {
     // input   [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
@@ -504,33 +504,33 @@ class SD_LIB_HIDDEN ConvolutionUtils {
                       const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD,
                       const LongType dH, const LongType dW);
 
-  static void col2vol(graph::Context& block, const NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
+  static void col2vol(graph::Context& block, NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
                       const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW);
 
-  static void upsampling2d(graph::Context& block, const NDArray& input, NDArray& output, const LongType factorH,
+  static void upsampling2d(graph::Context& block, NDArray& input, NDArray& output, const LongType factorH,
                            const LongType factorW, const bool isNCHW);
 
-  static void upsampling3d(graph::Context& block, const NDArray& input, NDArray& output, const LongType factorD,
+  static void upsampling3d(graph::Context& block, NDArray& input, NDArray& output, const LongType factorD,
                            const LongType factorH, const LongType factorW, const bool isNCDHW);
 
-  static void upsampling2dBP(graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW);
+  static void upsampling2dBP(graph::Context& block, NDArray& gradO, NDArray& gradI, const bool isNCHW);
 
-  static void upsampling3dBP(graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW);
+  static void upsampling3dBP(graph::Context& block, NDArray& gradO, NDArray& gradI, const bool isNCDHW);
 
-  static void pooling2d(graph::Context& block, const NDArray& input, NDArray& output, const LongType kH, const LongType kW,
+  static void pooling2d(graph::Context& block, NDArray& input, NDArray& output, const LongType kH, const LongType kW,
                         const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                         const PoolingType poolingMode, const int extraParam0);
 
-  static void pooling3d(graph::Context& block, const NDArray& input, NDArray& output, const LongType kD, const LongType kH,
+  static void pooling3d(graph::Context& block, NDArray& input, NDArray& output, const LongType kD, const LongType kH,
                         const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD, const LongType pH,
                         const LongType pW, const LongType dD, const LongType dH, const LongType dW, const int poolingMode,
                         const int extraParam0);
 
-  static void pooling2dBP(graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+  static void pooling2dBP(graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI,
                           const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW,
                           const LongType dH, const LongType dW, const int poolingMode, const int extraParam0);
 
-  static void pooling3dBP(graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+  static void pooling3dBP(graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI,
                           const LongType kD, const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW,
                           const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW,
                           const int poolingMode, const int extraParam0);

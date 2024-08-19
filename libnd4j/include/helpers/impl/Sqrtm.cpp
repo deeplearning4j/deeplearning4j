@@ -251,8 +251,8 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
 
   Schur<T> schur(in);
 
-  const NDArray& t1 = schur.t;
-  const NDArray& t2 = schur.u;
+  NDArray& t1 = schur.t;
+  NDArray& t2 = schur.u;
 
   NDArray sqrtT = in.ulike();
   sqrtT.nullify();

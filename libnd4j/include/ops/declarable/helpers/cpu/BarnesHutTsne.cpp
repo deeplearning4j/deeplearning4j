@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::LongType N, NDArray& rowCounts) {
+sd::LongType barnes_row_count(NDArray* rowP, NDArray* colP, sd::LongType N, NDArray& rowCounts) {
   int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
   int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
   int const* pCols = reinterpret_cast<int const*>(colP->buffer());
@@ -52,7 +52,7 @@ sd::LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, sd::Long
 }
 
 template <typename T>
-static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+static void barnes_symmetrize_(NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType N,
                                NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
 
   int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
@@ -104,7 +104,7 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
     }
   }
 }
-void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+void barnes_symmetrize(NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
   // Divide the result by two
   BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_,
@@ -113,13 +113,13 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
   *outputVals /= 2.0;
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_,
-                      (const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+                      (NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts),
                       SD_NUMERIC_TYPES);
 
 template <typename T>
-static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N,
-                                NDArray const* data, NDArray* output) {
+static void barnes_edge_forces_(NDArray* rowP, NDArray * colP, NDArray * valP, int N,
+                                NDArray * data, NDArray* output) {
   T const* dataP = reinterpret_cast<T const*>(data->buffer());
   T const* vals = reinterpret_cast<T const*>(valP->buffer());
   T* outputP = reinterpret_cast<T*>(output->buffer());
@@ -150,13 +150,13 @@ static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArra
   samediff::Threads::parallel_tad(func, 0, N);
 }
 
-void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output,
-                        NDArray const& data) {
+void barnes_edge_forces(NDArray* rowP, NDArray * colP, NDArray * valP, int N, NDArray* output,
+                        NDArray& data) {
   // Loop over all edges in the graph
   BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), SD_FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_,
-                      (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data,
+                      (NDArray* rowP, NDArray * colP, NDArray * valP, int N, NDArray * data,
                        NDArray* output),
                       SD_FLOAT_TYPES);
 

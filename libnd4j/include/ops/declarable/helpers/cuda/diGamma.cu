@@ -64,7 +64,7 @@ static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void diGamma(LaunchContext *context, const NDArray &x, NDArray &z) {
+void diGamma(LaunchContext *context, NDArray&x, NDArray &z) {
   dim3 digammaDims2 = digammaDims(z.lengthOf());
   NDArray::prepareSpecialUse({&z}, {&x});
   BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher,

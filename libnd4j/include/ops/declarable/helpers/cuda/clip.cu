@@ -85,7 +85,7 @@ SD_HOST static void clipByNormCudaLauncher(const int blocksPerGrid, const int th
 
 //////////////////////////////////////////////////////////////////////////
 void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output, const std::vector<LongType>& dims,
-                const NDArray& clipNorm, const bool isInplace, const bool useAverage) {
+                NDArray& clipNorm, const bool isInplace, const bool useAverage) {
   NDArray* z = nullptr;
 
   if (isInplace) {
@@ -194,8 +194,8 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void clipByNormBp_(LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                   const std::vector<LongType>& dims, const NDArray& clipNorm, const bool useAverage) {
+void clipByNormBp_(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
+                   const std::vector<LongType>& dims, NDArray& clipNorm, const bool useAverage) {
   const int rank = input.rankOf();
 
   auto actualNorms = input.reduceAlongDimension(reduce::Norm2, &dims);
@@ -245,14 +245,14 @@ void clipByNormBp_(LaunchContext* context, const NDArray& input, const NDArray& 
   }
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
-                      (sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                          const std::vector<sd::LongType>& dimensions, const NDArray& clipNorm, const bool useAverage),
+                      (sd::LaunchContext * context, NDArray& input, NDArray& gradO, NDArray& gradI,
+                          const std::vector<sd::LongType>& dimensions, NDArray& clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNormBp(LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
-                  const std::vector<LongType>& dimensions, const NDArray& clipNorm, const bool useAverage) {
-  const NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
+void clipByNormBp(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
+                  const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool useAverage) {
+  NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
   BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_,
                         (context, castedInput, gradO, gradI, dimensions, clipNorm, useAverage), SD_FLOAT_TYPES);
 }

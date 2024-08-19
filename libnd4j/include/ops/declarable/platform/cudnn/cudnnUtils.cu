@@ -30,7 +30,7 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNPadAsymmetric(
-    const NDArray* input, const NDArray* gradI, const int iH, const int iW, const int oH, const int oW, const int kH,
+    NDArray* input, NDArray* gradI, const int iH, const int iW, const int oH, const int oW, const int kH,
     const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
     const bool isNCHW) {
   const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
@@ -63,7 +63,7 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv2dCUDNNP
 
 //////////////////////////////////////////////////////////////////////////
 std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNPadAsymmetric(
-    const NDArray* input, const NDArray* gradI, const int iD, const int iH, const int iW, const int oD, const int oH,
+    NDArray* input, NDArray* gradI, const int iD, const int iH, const int iW, const int oD, const int oH,
     const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD,
     const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW) {
   const auto pDsum = ((oD - 1) * sD + ((kD - 1) * dD + 1) - iD);
@@ -97,7 +97,7 @@ std::tuple<std::unique_ptr<NDArray>, std::unique_ptr<NDArray>> checkConv3dCUDNNP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling2dCUDNN(const LaunchContext* context, const NDArray* input, NDArray* output, const int kH, const int kW,
+void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, const int kH, const int kW,
                     const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
                     const bool isNCHW, const cudnnPoolingMode_t mode) {
   LongType bS, iC, iH, iW, oC, oH,
@@ -151,7 +151,7 @@ void pooling2dCUDNN(const LaunchContext* context, const NDArray* input, NDArray*
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* gradO, NDArray* gradI,
+void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gradO, NDArray* gradI,
                       const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH,
                       const int dW, const bool isNCHW, const cudnnPoolingMode_t mode) {
   LongType bS, iC, iH, iW, oC, oH,
@@ -209,7 +209,7 @@ void pooling2dBpCUDNN(const LaunchContext* context, const NDArray* input, const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling3dCUDNN(const LaunchContext* context, const NDArray* input, NDArray* output, const int kD, const int kH,
+void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* output, const int kD, const int kH,
                     const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
                     const int dD, const int dH, const int dW, const bool isNCDHW, const cudnnPoolingMode_t mode) {
   auto handle = reinterpret_cast<cudnnHandle_t*>(context->getCuDnnHandle());
@@ -306,7 +306,7 @@ void pooling3dCUDNN(const LaunchContext* context, const NDArray* input, NDArray*
 }
 
 //////////////////////////////////////////////////////////////////////////
-void pooling3dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* gradO, NDArray* gradI,
+void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gradO, NDArray* gradI,
                       const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD,
                       const int pH, const int pW, const int dD, const int dH, const int dW, const bool isNCDHW,
                       const cudnnPoolingMode_t mode) {

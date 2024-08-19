@@ -97,7 +97,7 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const LongType* 
 // for detailed explanations please take a look on web page:
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-static void _diagFunctor(LaunchContext* context, const NDArray* input, NDArray* output) {
+static void _diagFunctor(LaunchContext* context, NDArray* input, NDArray* output) {
   auto stream = context->getCudaStream();
   auto inputLength = input->isScalar() ? 1 : input->lengthOf();
   dim3 launchDims = getLaunchDims("diagPart");
@@ -111,19 +111,19 @@ static void _diagFunctor(LaunchContext* context, const NDArray* input, NDArray* 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagFunctor - caller for diag functor processor
-void diagFunctor(LaunchContext* context, const NDArray* input, NDArray* output) {
+void diagFunctor(LaunchContext* context, NDArray* input, NDArray* output) {
   auto xType = input->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (context, input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, const NDArray* input, NDArray* output);
+BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (sd::LaunchContext * context, NDArray* input, NDArray* output);
                       , SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor kernel
 template <typename T>
-void _diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* output) {
+void _diagPartFunctor(LaunchContext* context, NDArray * input, NDArray* output) {
   const int outLen = output->lengthOf();
   const int inLen = input->isScalar() ? 1 : input->lengthOf();
   auto stream = context->getCudaStream();
@@ -140,7 +140,7 @@ void _diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* out
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diagPartFunctor - caller for diag part functor processor
-void diagPartFunctor(LaunchContext* context, NDArray const* input, NDArray* output) {
+void diagPartFunctor(LaunchContext* context, NDArray * input, NDArray* output) {
   auto zType = output->dataType();
   BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), SD_NUMERIC_TYPES);
 }

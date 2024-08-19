@@ -85,8 +85,9 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
     columns = new NDArray(inputPermuted->ordering(), colShape, inputPermuted->dataType(), inputPermuted->getContext());
     auto ctx = block.launchContext();
+    NDArray zeroVal = NDArrayFactory::create<double>(0., inputPermuted->getContext());
     helpers::im2col(*ctx, *inputPermuted, *columns, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create<double>(0., inputPermuted->getContext()));
+                    zeroVal);
   }
 
   // Calculate gradW

@@ -37,7 +37,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray* weights,
+static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray* weights,
                             NDArray* z, const float epsilon, const bool isNCHW) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for x
 
@@ -140,8 +140,8 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormBpMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray& dLdO,
-                              const NDArray* weights, NDArray* dLdI, NDArray* dLdW, const float epsilon,
+static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray& dLdO,
+                              NDArray* weights, NDArray* dLdI, NDArray* dLdW, const float epsilon,
                               const bool isNCHW) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for x
 

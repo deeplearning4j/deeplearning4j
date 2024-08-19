@@ -337,7 +337,7 @@ static void maxPooling2dCudaLauncher(LaunchContext &block, const void *vx, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2d(graph::Context &block, const NDArray &input, NDArray &output, const LongType kH,
+void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &output, const LongType kH,
                                  const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW, const PoolingType poolingMode,
                                  const int extraParam0) {

@@ -684,7 +684,8 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
-  output->assign(0.f);
+  float zero = 0.f;
+  output->assign(zero);
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -770,11 +771,11 @@ static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) 
 
     lower.tickWriteDevice();
     upper.tickWriteDevice();
-
-    matrix.assign(0);
+    int zero = 0;
+    matrix.assign(zero);
     invertUpperMatrix(context, &upper, &matrix);  // U^{-1}
     matrix.tickWriteDevice();
-    compound.assign(0);
+    compound.assign(zero);
     invertLowerMatrix(context, &lower, &compound);  // L{-1}
     compound.tickWriteDevice();
 
@@ -793,7 +794,7 @@ Status inverse(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::registerSpecialUse({output}, {input});
 }
 
-bool checkCholeskyInput(LaunchContext *context, NDArray const *input) { return true; }
+bool checkCholeskyInput(LaunchContext *context, NDArray *input) { return true; }
 
 template <typename F>
 SD_KERNEL void fillBatchKernel(F **dArrayBatch, F *buf, const LongType *offsets, LongType batchSize) {

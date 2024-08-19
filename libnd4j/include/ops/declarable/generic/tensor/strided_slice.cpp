@@ -624,7 +624,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     output->p(indices[0], *epsNext);
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);
-    sub.assign(epsNext);
+    sub.assign(*epsNext);
   }
 
   return Status::OK;

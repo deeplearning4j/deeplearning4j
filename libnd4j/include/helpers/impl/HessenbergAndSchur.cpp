@@ -37,14 +37,14 @@ Hessenberg<T>::Hessenberg(NDArray& matrix) {
     std::vector<LongType> qShape = {1, 1};
     _Q = NDArray(matrix.ordering(),qShape, matrix.dataType(), matrix.getContext());
     _Q = 1;
-    _H = matrix.dup(false);
+    _H = matrix.dup(matrix.ordering());
     return;
   }
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
     THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
 
-  _H = matrix.dup(false);
+  _H = matrix.dup(matrix.ordering());
   _Q = matrix.ulike();
 
   evalData();
@@ -72,9 +72,9 @@ void Hessenberg<T>::evalData() {
 
     NDArray bottomRightCorner = _H({i + 1, -1, i + 1, -1}, true);
     Householder<T>::mulLeft(bottomRightCorner, tail2, coeff);
-
+    NDArray tail2Trans = tail2.transpose();
     NDArray rightCols = _H({0, 0, i + 1, -1}, true);
-    Householder<T>::mulRight(rightCols, tail2.transpose(), coeff);
+    Householder<T>::mulRight(rightCols, tail2Trans, coeff);
   }
 
   // calculate _Q
@@ -151,7 +151,8 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
       JacobiSVD<T>::createJacobiRotationGivens(p - z, t.t<T>(ind, ind - 1), rotation);
 
     NDArray rightCols = t({0, 0, ind - 1, -1});
-    JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, rotation.transpose());
+    NDArray rotT = rotation.transpose();
+    JacobiSVD<T>::mulRotationOnLeft(ind - 1, ind, rightCols, rotT);
 
     NDArray topRows = t({0, ind + 1, 0, 0});
     JacobiSVD<T>::mulRotationOnRight(ind - 1, ind, topRows, rotation);

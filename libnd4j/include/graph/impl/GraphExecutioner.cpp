@@ -130,20 +130,17 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
         if (variableSpace->hasVariable(v->getName())) {
           // symbolic feeder
           auto array = variableSpace->getVariable(v->getName())->getNDArray();
-          auto vr = new NDArray(array->dup(false));
-          //                    deletables.push_back(vr);
+          auto vr = new NDArray(array->dup(array->ordering()));
           v->setNDArray(vr);
         } else {
           sd_debug("Can't find variable [%s] in parent graph...", v->getName()->c_str());
           return Status::BAD_INPUT;
-          // throw "Can't find desired variable";
         }
       } else {
         // if we're not using symbolic lookup - we'll use sequential approach then
         auto p = node->input()->at(cnt);
         auto array = variableSpace->getVariable(p)->getNDArray();
-        auto vr = new NDArray(array->dup(false));
-        // deletables.push_back(vr);
+        auto vr = new NDArray(array->dup(array->ordering()));
         v->setNDArray(vr);
       }
 
@@ -183,7 +180,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
       for (auto v : *node->output()) {
         if (variableSpace->hasExternalVariable(v.first)) {
           variableSpace->getVariable(v.first)->getNDArray()->assign(
-              variableSpace->getVariable(node->id())->getNDArray());
+              *variableSpace->getVariable(node->id())->getNDArray());
         }
       }
     }

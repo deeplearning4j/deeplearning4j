@@ -323,7 +323,7 @@ void logSumExp(sd::LaunchContext* context, NDArray* input, NDArray* subtrah, NDA
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights,
+static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, NDArray * weights,
                                                    NDArray* output) {
   T posWeight = weights->e<T>(0);
 
@@ -352,8 +352,8 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
   }
 }
 
-void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext* context, NDArray const* targets, NDArray const* input,
-                                           NDArray const* weights, NDArray* output) {
+void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext* context, NDArray * targets, NDArray * input,
+                                           NDArray * weights, NDArray* output) {
   BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output),
                         SD_FLOAT_TYPES);
 }

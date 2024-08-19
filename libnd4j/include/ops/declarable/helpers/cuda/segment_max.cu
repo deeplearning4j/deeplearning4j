@@ -166,8 +166,10 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   LongType numOfClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  int zero2 = 0;
+  classesRangesLens.assign(zero2);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
@@ -219,8 +221,10 @@ static void unsortedSegmentMaxFunctor_(LaunchContext* context, NDArray* input, N
 
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  int zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero2);
 
   dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);

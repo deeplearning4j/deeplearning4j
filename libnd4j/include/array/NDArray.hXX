@@ -2883,20 +2883,8 @@ NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool 
   }
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
   if(copyToNewBuff) {
-    printf("copying from buffer with creation trace:\n");
-    Printer p;
-    p.print(this->creationTrace);
-    fflush(stdout);
-    printf("creating new buffer in permute with length %lld with legnth %lld and size %lld\n",
-           shape::length(shapeInfoPermuted) * DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted)),
-           shape::length(shapeInfoPermuted),DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted)));
-    fflush(stdout);
     DataBuffer *db = new DataBuffer(shape::length(shapeInfoPermuted) * DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted)),
                                     ArrayOptions::dataType(shapeInfoPermuted), getContext()->getWorkspace());
-    printf("created new buffer in permute with length %lld with length of %lld  and size of %lld\n",
-           shape::length(shapeInfoPermuted) * DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted))
-           ,shape::length(shapeInfoPermuted),DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted)));
-    fflush(stdout);
     NDArray *ret = new NDArray(db, const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
     this->applyTransform(transform::Assign, *ret, nullptr);
     return *ret;
@@ -3186,7 +3174,7 @@ NDArray NDArray::asS()  {
 
   // If the data types are the same, then simply duplicate the array
   if (dtype == dataType()) {
-    return dup(false);
+    return dup(ordering());
   }
 
   // Calculate buffer length requirements

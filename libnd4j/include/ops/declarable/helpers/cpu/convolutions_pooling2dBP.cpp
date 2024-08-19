@@ -27,7 +27,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+static void pooling2dBP_(sd::graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI,
                          const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW,
                          const LongType dH, const LongType dW, const int poolingMode, const int extraParam0) {
   // input [bS, iC, iH, iW]
@@ -304,7 +304,7 @@ static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const 
   }
 }
 
-void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO,
+void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, NDArray& input, NDArray& gradO,
                                    NDArray& gradI, const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                    const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                    const int extraParam0) {

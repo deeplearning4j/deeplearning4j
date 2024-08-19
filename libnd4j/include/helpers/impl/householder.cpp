@@ -43,7 +43,7 @@ void Householder<T>::evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& no
 
   const auto xLen = x.lengthOf();
 
-  const NDArray xTail = xLen > 1 ? x({1, -1}) : NDArray();
+  NDArray xTail = xLen > 1 ? x({1, -1}) : NDArray();
 
   T tailXnorm = xLen > 1 ? xTail.reduceNumber(reduce::SquaredNorm).t<T>(0) : (T)0;
 
@@ -87,18 +87,15 @@ void Householder<T>::evalHHmatrixDataI(NDArray& x, T& coeff, T& normX) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff) {
-  // if(matrix.rankOf() != 2)
-  //     throw "ops::helpers::Householder::mulLeft method: input array must be 2D matrix !";
-
+void Householder<T>::mulLeft(NDArray& matrix, NDArray& tail, const T coeff) {
   if (matrix.sizeAt(0) == 1 && coeff != (T)0) {
     matrix *= (T)1.f - coeff;
   } else if (coeff != (T)0.f) {
     NDArray bottomPart = matrix({1, matrix.sizeAt(0), 0, 0}, true);
     NDArray fistRow = matrix({0, 1, 0, 0}, true);
-
+    NDArray tailTranspose = tail.transpose();
     if (tail.isColumnVector()) {
-      auto resultingRow = mmul(tail.transpose(), bottomPart);
+      auto resultingRow = mmul(tailTranspose, bottomPart);
       resultingRow += fistRow;
       resultingRow *= coeff;
       fistRow -= resultingRow;
@@ -108,28 +105,29 @@ void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff
       resultingRow += fistRow;
       resultingRow *= coeff;
       fistRow -= resultingRow;
-      bottomPart -= mmul(tail.transpose(), resultingRow);
+      bottomPart -= mmul(tailTranspose, resultingRow);
     }
   }
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Householder<T>::mulRight(NDArray& matrix, const NDArray& tail, const T coeff) {
+void Householder<T>::mulRight(NDArray& matrix, NDArray& tail, const T coeff) {
   if (matrix.sizeAt(1) == 1 && coeff != (T)0) {
     matrix *= (T)1.f - coeff;
   } else if (coeff != (T)0.f) {
     NDArray rightPart = matrix({0, 0, 1, matrix.sizeAt(1)}, true);
     NDArray fistCol = matrix({0, 0, 0, 1}, true);
 
+    NDArray transposedTail = tail.transpose();
     if (tail.isColumnVector()) {
       auto resultingCol = mmul(rightPart, tail);
       resultingCol += fistCol;
       resultingCol *= coeff;
       fistCol -= resultingCol;
-      rightPart -= mmul(resultingCol, tail.transpose());
+      rightPart -= mmul(resultingCol,transposedTail);
     } else {
-      auto resultingCol = mmul(rightPart, tail.transpose());
+      auto resultingCol = mmul(rightPart, transposedTail);
       resultingCol += fistCol;
       resultingCol *= coeff;
       fistCol -= resultingCol;

@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray activation(const NDArray& arr) {
+static SD_INLINE NDArray activation(NDArray& arr) {
   // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();
   auto result = NDArray(&arr, false, arr.getContext());
   (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, result);
@@ -42,12 +42,12 @@ static SD_INLINE NDArray activation(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(const NDArray& arr) {
+static SD_INLINE NDArray sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruCell(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
              NDArray* h, NDArray* c) {
   // x   input [bS x inSize], bS - batch size, inSize - number of features
   // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -78,7 +78,7 @@ void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
                  NDArray* h, NDArray* c) {
   // x   input [bS x inSize x time]
   // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -229,8 +229,8 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruBI(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-           const NDArray* mask, NDArray* ht, NDArray* ct) {
+void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+           NDArray* mask, NDArray* ht, NDArray* ct) {
   //  x = x * mask
   std::vector<LongType> dims = {1,2};
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
@@ -449,8 +449,8 @@ BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher,
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-             const NDArray* ct, const NDArray* gradCt, const NDArray* gradHt, const NDArray* mask, NDArray* gradI,
+void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+             NDArray* ct, NDArray* gradCt, NDArray* gradHt, NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   //  x = x * mask
   std::vector<LongType> dims = {1, 2};

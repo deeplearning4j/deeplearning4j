@@ -29,8 +29,8 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
-static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI,
-                            const NDArray* cI, const std::vector<float>& params, NDArray* h, NDArray* hL, NDArray* cL) {
+static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI,
+                            NDArray* cI, const std::vector<float>& params, NDArray* h, NDArray* hL, NDArray* cL) {
   // equations (no peephole connections)
   // it  = σ(Wxi * xt  +  Wri * ht-1  +  bi)
   // ft  = σ(Wxf * xt  +  Wrf * ht-1  +  bf)

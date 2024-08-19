@@ -68,7 +68,7 @@ DECLARE_PLATFORM_TRANSFORM_STRICT(Sigmoid, ENGINE_CPU);
 DECLARE_PLATFORM_SCALAR_OP(LeakyRELU, ENGINE_CPU);
 #endif
 
-SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = true) {
+SD_INLINE vednnTensorParam_t getTensorFormat(NDArray&in, bool isNCHW = true) {
   vednnTensorParam_t param;
   param.dtype = DTYPE_FLOAT;
   if (isNCHW) {
@@ -85,7 +85,7 @@ SD_INLINE vednnTensorParam_t getTensorFormat(const NDArray &in, bool isNCHW = tr
   return param;
 }
 
-SD_INLINE vednnFilterParam_t getFilterParam(const NDArray &weights, int wFormat) {
+SD_INLINE vednnFilterParam_t getFilterParam(NDArray&weights, int wFormat) {
   //// 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
   vednnFilterParam_t paramFilter;
   paramFilter.dtype = DTYPE_FLOAT;

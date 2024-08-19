@@ -300,8 +300,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     temp1->applyPairwiseTransform(pairwise::Add, *inGradCt, *temp1);  // temp1 = inGradHt * rt * grad_tanh + inGradCt
     temp1->applyPairwiseTransform(pairwise::Multiply, *ftMinus,
                                   gradUZt);  // gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
-    gradUFt.assign(&gradBFt);
-    gradURt.assign(&gradBRt);
+    gradUFt.assign(gradBFt);
+    gradURt.assign(gradBRt);
 
     // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
     gradCt->applyPairwiseTransform(pairwise::Add, *inGradCt, *temp1);  // temp1 = (gradCt + inGradCt)
@@ -311,7 +311,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   }
 
   // gradInit
-  gradInit->assign(inGradCt);
+  gradInit->assign(*inGradCt);
 
   // gradX
   auto weightsT = w->transpose();                                                    // [K x 3K]

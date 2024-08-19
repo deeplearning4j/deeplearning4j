@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
+static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
   T* gradIBuff = reinterpret_cast<T*>(gradI.buffer());
   auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
   const sd::LongType gradILen = gradI.lengthOf();
@@ -70,7 +70,7 @@ void tileBP(LaunchContext* context, NDArray gradO /*input*/, NDArray& gradI /*ou
 }
 
 BUILD_SINGLE_TEMPLATE(template void tileBP_,
-                      (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps),
+                      (NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

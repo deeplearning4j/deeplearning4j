@@ -27,7 +27,7 @@
 #include <ops/declarable/headers/parity_ops.h>
 
 namespace sd {
-DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
+DebugInfo DebugHelper::debugStatistics(NDArray * input) {
   DebugInfo info;
   retrieveDebugStatistics(&info, const_cast<NDArray*>(input));
   return info;

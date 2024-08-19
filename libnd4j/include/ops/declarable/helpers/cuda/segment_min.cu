@@ -170,9 +170,10 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
-
+  sd::LongType zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(zero2);
+  classesRangesLens.assign(len);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());

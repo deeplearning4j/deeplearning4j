@@ -27,7 +27,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message = {});
+SD_LIB_HIDDEN void print_special(LaunchContext &ctx, NDArray&array, const std::string &message = {});
 }
 }  // namespace ops
 }  // namespace sd

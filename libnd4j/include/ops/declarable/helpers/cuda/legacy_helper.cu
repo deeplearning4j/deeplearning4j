@@ -196,7 +196,7 @@ void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights,
+void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, NDArray * weights,
                                             NDArray* output) {
   T posWeight = weights->e<T>(0);
 
@@ -224,8 +224,8 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray cons
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray const* targets, NDArray const* input,
-                                           NDArray const* weights, NDArray* output) {
+void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray * targets, NDArray * input,
+                                           NDArray * weights, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {targets, input, weights});
 
   BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output),

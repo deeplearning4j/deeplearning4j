@@ -27,7 +27,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kD, const LongType kH,
+static void pooling3d_(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType kD, const LongType kH,
                        const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD, const LongType pH, const LongType pW,
                        const LongType dD, const LongType dH, const LongType dW, const LongType poolingMode, const int extraParam0) {
   // input is  [bS, iC, iD, iH, iW]
@@ -238,7 +238,7 @@ static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray&
   }
 }
 
-void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType kD,
+void ConvolutionUtils::pooling3d(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType kD,
                                  const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
                                  const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW,
                                  const int poolingMode, const int extraParam0) {

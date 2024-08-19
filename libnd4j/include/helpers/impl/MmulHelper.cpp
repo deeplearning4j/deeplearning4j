@@ -482,7 +482,7 @@ void MmulHelper::matmul(NDArray* x, NDArray* y, NDArray* z, const bool transX, c
       //note we dup to avoid mutating input data
       std::vector<sd::LongType> xShape = {1, xT->lengthOf()};
       std::vector<sd::LongType> zShape = {1, z->lengthOf()};
-      NDArray xReshape = x->dup(false).reshape(xT->ordering(), xShape,false);
+      NDArray xReshape = x->dup(x->ordering()).reshape(xT->ordering(), xShape,false);
       xT = new NDArray(xReshape);  // please note x is not transposed in this case (since xRank=1)
       zT = new NDArray(z->reshape(z->ordering(), zShape));
     }

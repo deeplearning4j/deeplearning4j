@@ -155,7 +155,7 @@ static void pooling3dCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling3d(graph::Context& block, const NDArray& input, NDArray& output, const LongType kD,
+void ConvolutionUtils::pooling3d(graph::Context& block, NDArray& input, NDArray& output, const LongType kD,
                                  const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
                                  const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW,
                                  const int poolingMode, const int extraParam0) {

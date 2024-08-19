@@ -33,7 +33,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY,
+static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, const bool transY,
                          float alpha = 1.f, float beta = 0.f) {
   // mkl works with following
   // [M,K]     x [K,N]     = [M,N]
@@ -60,14 +60,14 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     permut[rank - 1] = rank - 2;
   }
 
-  const NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut)) : x;
-  const NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut)) : y;
+  NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut)) : x;
+  NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut)) : y;
 
-  const NDArray* xTR =
+  NDArray* xTR =
       xRank <= 3 ? xT
                  : new NDArray(xT->reshape(xT->ordering(), {xT->lengthOf() / (xT->sizeAt(-2) * xT->sizeAt(-1)),
                                                             xT->sizeAt(-2), xT->sizeAt(-1)}));
-  const NDArray* yTR =
+  NDArray* yTR =
       xRank <= 3 ? yT
                  : new NDArray(yT->reshape(yT->ordering(), {yT->lengthOf() / (yT->sizeAt(-2) * yT->sizeAt(-1)),
                                                             yT->sizeAt(-2), yT->sizeAt(-1)}));

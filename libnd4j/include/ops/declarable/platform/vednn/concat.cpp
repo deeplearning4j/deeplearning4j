@@ -34,7 +34,7 @@ namespace platforms {
 PLATFORM_IMPL(concat, ENGINE_CPU) {
   auto output = OUTPUT_VARIABLE(0);
 
-  std::vector<const NDArray *> nonEmptyArrs;
+  std::vector<NDArray *> nonEmptyArrs;
   const bool isAxisInLastArr = block.getBArguments()->size() == 0 ? false : B_ARG(0);
   const int numOfInArrs = isAxisInLastArr ? block.width() - 1 : block.width();
   for (int i = 0; i < numOfInArrs; ++i) {
@@ -71,7 +71,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
  * @param axis
  * @return int
  */
-SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, int axis) {
+SD_INLINE int isShapeExtendedWithOnes(NDArray&input, int axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();

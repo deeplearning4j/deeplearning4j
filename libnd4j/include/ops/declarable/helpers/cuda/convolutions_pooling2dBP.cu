@@ -170,7 +170,7 @@ static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2dBP(graph::Context& block, const NDArray& input, const NDArray& gradO,
+void ConvolutionUtils::pooling2dBP(graph::Context& block, NDArray& input, NDArray& gradO,
                                    NDArray& gradI, const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                    const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                    const int extraParam0) {

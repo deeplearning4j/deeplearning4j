@@ -49,10 +49,10 @@ namespace ops {
 namespace helpers {
 
 /////////////////////////////////////////////////////////////////////////////
-void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0, const NDArray* y0,
-                       const NDArray* W, const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
-                       const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq,
-                       const NDArray* zSeq, const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params,
+void lstmBlockTimeLoop(NDArray* maxSeqLength, NDArray* xSeq, NDArray* c0, NDArray* y0,
+                       NDArray* W, NDArray* Wci, NDArray* Wcf, NDArray* Wco, NDArray* b,
+                       NDArray* iSeq, NDArray* cSeq, NDArray* fSeq, NDArray* oSeq,
+                       NDArray* zSeq, NDArray* hSeq, NDArray* ySeq, const std::vector<double>& params,
                        const int dataFormat) {
   int seqLen, bS, nIn, nOut;
 
@@ -106,8 +106,8 @@ void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx,
-                  const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b, NDArray* h, NDArray* c,
+void lstmTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* h0, NDArray* c0, NDArray* Wx,
+                  NDArray* Wh, NDArray* Wc, NDArray* Wp, NDArray* b, NDArray* h, NDArray* c,
                   const std::vector<double>& params) {
   // x  input [time x bS x nIn]
   // h0 initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!

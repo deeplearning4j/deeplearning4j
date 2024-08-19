@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
-std::unique_ptr<NDArray> newWeight_3x3(const NDArray &w, int weightFormat) {
+std::unique_ptr<NDArray> newWeight_3x3(NDArray&w, int weightFormat) {
   sd::LongType oC, iC, kH, kW, oStride2, iStride2, hStride2, wStride2;
 
   // [kH, kW, iC, oC] -> [oC, iC, kH, kW]

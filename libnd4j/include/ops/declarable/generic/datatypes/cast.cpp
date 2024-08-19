@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) output->assign(*input);
 
   STORE_RESULT(output);
   return sd::Status::OK;

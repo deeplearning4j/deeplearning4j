@@ -75,7 +75,7 @@ void rgbToYuvCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, co
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbYuv(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbYuv(LaunchContext* context, NDArray& input, NDArray& output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimC});
 
@@ -138,7 +138,7 @@ void yuvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, co
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformYuvRgb(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformYuvRgb(LaunchContext* context, NDArray& input, NDArray& output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimC});
 
@@ -211,7 +211,7 @@ void rgbToGrsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, co
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbGrs(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbGrs(LaunchContext* context, NDArray& input, NDArray& output, const int dimC) {
   PointersManager manager(context, "rgbToGrs");
 
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
@@ -310,7 +310,7 @@ static SD_HOST void rgbToHsvCudaLauncher(const int blocksPerGrid, const int thre
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformHsvRgb(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformHsvRgb(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
@@ -331,7 +331,7 @@ void transformHsvRgb(LaunchContext* context, const NDArray* input, NDArray* outp
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbHsv(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformRgbHsv(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
@@ -412,7 +412,7 @@ static SD_KERNEL void tripleTransformerCuda(const void* vx, const LongType* xSha
 }
 
 template <typename T>
-static void rgbYiq(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+static void rgbYiq(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
@@ -428,7 +428,7 @@ static void rgbYiq(LaunchContext* context, const NDArray* input, NDArray* output
 }
 
 template <typename T>
-SD_INLINE static void yiqRgb(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+SD_INLINE static void yiqRgb(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
@@ -443,11 +443,11 @@ SD_INLINE static void yiqRgb(LaunchContext* context, const NDArray* input, NDArr
   NDArray::registerSpecialUse({output}, {input});
 }
 
-void transformYiqRgb(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformYiqRgb(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   BUILD_SINGLE_SELECTOR(input->dataType(), yiqRgb, (context, input, output, dimC), SD_FLOAT_TYPES);
 }
 
-void transformRgbYiq(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformRgbYiq(LaunchContext* context, NDArray* input, NDArray* output, const int dimC) {
   BUILD_SINGLE_SELECTOR(input->dataType(), rgbYiq, (context, input, output, dimC), SD_FLOAT_TYPES);
 }
 

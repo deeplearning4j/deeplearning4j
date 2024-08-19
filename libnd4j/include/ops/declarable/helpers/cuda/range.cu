@@ -42,7 +42,7 @@ static SD_KERNEL void global_range(void* output, LongType length, T start, T del
 //////////////////////////////////////////////////////////////////////////
 // be careful: outVector must have c-order and ews = 1 !!!
 template <typename T>
-static void _range(LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+static void _range(LaunchContext* context, NDArray& start, NDArray& delta, NDArray& outVector) {
  dim3 launchDims = getLaunchDims("range");
   global_range<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(outVector.specialBuffer(), outVector.lengthOf(),
                                                                  start.e<T>(0), delta.e<T>(0));
@@ -50,7 +50,7 @@ static void _range(LaunchContext* context, const NDArray& start, const NDArray& 
 
 }
 
-void range(LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+void range(LaunchContext* context, NDArray& start, NDArray& delta, NDArray& outVector) {
   NDArray::prepareSpecialUse({&outVector}, {&start, &delta});
   BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (context, start, delta, outVector), SD_COMMON_TYPES);
   NDArray::registerSpecialUse({&outVector}, {&start, &delta});

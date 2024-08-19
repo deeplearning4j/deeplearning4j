@@ -40,7 +40,7 @@ OP_IMPL(mergemax, -1, 1, false) {
   for (int i = 0; i < block.width(); i++)
     if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
-  std::vector<const NDArray*> inArrs(nonEmpty);
+  std::vector<NDArray*> inArrs(nonEmpty);
 
   int numNonEmptyAdded = 0;
   if(nonEmpty > 0)
@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(mergemax_bp, 2, 1, false, 0, 0) {
 
   REQUIRE_OK(this->validateInputDimensionsMatch(block));
 
-  std::vector<const NDArray*> inArrs(inSize);
+  std::vector<NDArray*> inArrs(inSize);
   std::vector<NDArray*> outArrs(inSize - 1);
 
   for (int i = 0; i < inSize; ++i) inArrs[i] = INPUT_VARIABLE(i);

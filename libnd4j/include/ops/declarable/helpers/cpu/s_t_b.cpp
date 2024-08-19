@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchToSpace_(const NDArray& input, NDArray& output, const sd::LongType cropBottom,
+static void batchToSpace_(NDArray& input, NDArray& output, const sd::LongType cropBottom,
                           const sd::LongType cropTop, const sd::LongType cropLeft, const sd::LongType cropRight) {
   // input [bS, H * blockSize, W * blockSize, iC]
   // output [bS, H * blockSize - cropBottom - cropTop, W * blockSize - cropLeft - cropRight, iC]
@@ -74,7 +74,7 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const sd::LongT
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpace_,
-                      (const NDArray& input, NDArray& output, const sd::LongType cropBottom, const sd::LongType cropTop,
+                      (NDArray& input, NDArray& output, const sd::LongType cropBottom, const sd::LongType cropTop,
                        const sd::LongType cropLeft, const sd::LongType cropRight),
                       SD_COMMON_TYPES);
 
@@ -105,7 +105,7 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output, co
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& output,
+static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
                             const LongType numOfSpatialDims) {
   // input [bS, H * blockShape[0], W * blockShape[1], iC]
   // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
@@ -146,11 +146,11 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_,
-                      (const NDArray& input, const NDArray& crop, NDArray& output, const sd::LongType numOfSpatialDims),
+                      (NDArray& input, NDArray& crop, NDArray& output, const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
+void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockShape, NDArray& crop,
                     NDArray& output){
   // 4D example, numOfSpatialDims = 2 - two spatial dimensions
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
@@ -203,7 +203,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& b
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::LongType padBottom,
+static void spaceToBatch_(NDArray& input, NDArray& output, const sd::LongType padBottom,
                           const sd::LongType padTop, const sd::LongType padLeft, const sd::LongType padRight) {
   // input [bS, H * blockSize - padBottom - padTop, W * blockSize - padLeft - padRight, iC]
   // output [bS, H * blockSize, W * blockSize, iC]
@@ -251,12 +251,12 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const sd::LongT
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatch_,
-                      (const NDArray& input, NDArray& output, const sd::LongType padBottom, const sd::LongType padTop,
+                      (NDArray& input, NDArray& output, const sd::LongType padBottom, const sd::LongType padTop,
                        const sd::LongType padLeft, const sd::LongType padRight),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const sd::LongType padBottom,
+void spaceToBatch(sd::LaunchContext* context, NDArray& input, NDArray& output, const sd::LongType padBottom,
                   const sd::LongType padTop, const sd::LongType padLeft, const sd::LongType padRight,
                   const sd::LongType blockSize) {
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
@@ -284,7 +284,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArray& output,
+static void spaceToBatchND_(NDArray& input, NDArray& padding, NDArray& output,
                             const LongType numOfSpatialDims) {
   // 4D example
   // input [bS, H * blockShape[0] - padBottom - padTop, W * blockShape[1] - padLeft - padRight, iC]
@@ -337,12 +337,12 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_,
-                      (const NDArray& input, const NDArray& padding, NDArray& output,
+                      (NDArray& input, NDArray& padding, NDArray& output,
                        const sd::LongType numOfSpatialDims),
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding,
+void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockShape, NDArray& padding,
                     NDArray& output) {
   // 4D example with two spatial dimensions
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom +

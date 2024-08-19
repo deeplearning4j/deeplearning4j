@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void softmaxMKLDNN(const NDArray* x, NDArray* z, const sd::LongType axis) {
+static void softmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
   dnnl::memory::dims shape = x->getShapeAsFlatVector();
 
   const sd::LongType xRank = x->rankOf();
@@ -139,7 +139,7 @@ PLATFORM_CHECK(softmax, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx, const sd::LongType axis) {
+static void softmaxBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx, const sd::LongType axis) {
   dnnl::memory::desc x_user_md, x_mkl_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;
 
   // x

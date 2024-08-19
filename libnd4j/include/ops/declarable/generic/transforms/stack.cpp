@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
       "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !",
       input->shapeOf(), dim);
 
-  std::vector<const NDArray*> inArrs(block.width());
+  std::vector<NDArray*> inArrs(block.width());
   for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
 
   //empty arrays are a no op

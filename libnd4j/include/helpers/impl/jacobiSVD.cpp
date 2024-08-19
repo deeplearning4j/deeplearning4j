@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-JacobiSVD<T>::JacobiSVD(const NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
+JacobiSVD<T>::JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::JacobiSVD constructor: input array must be 2D matrix !");
 
@@ -77,7 +77,7 @@ JacobiSVD<T>::JacobiSVD(const NDArray& matrix, const bool calcU, const bool calc
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation) {
+void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, NDArray& rotation) {
   if (i < j) {
     if (j + 1 > block.sizeAt(0))
       THROW_EXCEPTION(
@@ -107,7 +107,7 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, c
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, const NDArray& rotation) {
+void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, NDArray& rotation) {
   if (i < j) {
     if (j + 1 > block.sizeAt(1))
       THROW_EXCEPTION(
@@ -158,8 +158,8 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
 
     rotation.r<T>(1, 0) = -rotation.template t<T>(0, 1);
     mulRotationOnLeft(p, q, block, rotation);
-
-    if (_calcU) mulRotationOnRight(p, q, _u, rotation.transpose());
+    NDArray rotT = rotation.transpose();
+    if (_calcU) mulRotationOnRight(p, q, _u, rotT);
   }
 
   maxElem =
@@ -234,7 +234,7 @@ void JacobiSVD<T>::createJacobiRotationGivens(const T& p, const T& q, NDArray& r
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right) {
+void JacobiSVD<T>::svd2x2(NDArray& block, int p, int q, NDArray& left, NDArray& right) {
   std::vector<LongType> shape = {2, 2};
   NDArray m(block.ordering(), shape, block.dataType(), block.getContext());
   m.r<T>(0, 0) = block.t<T>(p, p);
@@ -260,13 +260,13 @@ void JacobiSVD<T>::svd2x2(const NDArray& block, int p, int q, NDArray& left, NDA
   m.assign(mmul(rotation, m));
 
   createJacobiRotation(m.t<T>(0, 0), m.t<T>(0, 1), m.t<T>(1, 1), right);
-
-  left.assign(mmul(rotation, right.transpose()));
+  NDArray rightT = right.transpose();
+  left.assign(mmul(rotation, rightT));
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void JacobiSVD<T>::evalData(const NDArray& matrix) {
+void JacobiSVD<T>::evalData(NDArray& matrix) {
   const T precision = (T)2.f * DataTypeUtils::eps<T>();
   const T almostZero = DataTypeUtils::min_positive<T>();
 
@@ -274,7 +274,8 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
   if (scale <   (T)1.f) scale = (T)1.f;
 
   if (_rows > _cols) {
-    HHcolPivQR qr(matrix / scale);
+    NDArray scaled = matrix / scale;
+    HHcolPivQR qr(scaled);
 
     _m.assign(qr._qr({0, _cols, 0, _cols}));
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
@@ -291,7 +292,8 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
     if (_calcV) _v.assign(qr._permut);
   } else if (_rows < _cols) {
-    HHcolPivQR qr(matrix.transpose() / scale);
+    NDArray scaled = matrix.transpose() / scale;
+    HHcolPivQR qr(scaled);
     _m.assign(qr._qr({0, _rows, 0, _rows}));
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
     _m.transposei();
@@ -340,8 +342,8 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
           svd2x2(_m, p, q, rotLeft, rotRight);
 
           mulRotationOnLeft(p, q, _m, rotLeft);
-
-          if (_calcU) mulRotationOnRight(p, q, _u, rotLeft.transpose());
+          NDArray rotLeftTranspose = rotLeft.transpose();
+          if (_calcU) mulRotationOnRight(p, q, _u, rotLeftTranspose);
 
           mulRotationOnRight(p, q, _m, rotRight);
 

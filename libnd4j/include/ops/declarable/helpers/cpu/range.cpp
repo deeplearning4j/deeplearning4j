@@ -30,7 +30,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // be careful: outVector must have c-order and ews = 1 !!!
 template <typename T>
-static void _range(const NDArray& start, const NDArray& delta, NDArray& outVector) {
+static void _range(NDArray& start, NDArray& delta, NDArray& outVector) {
   const sd::LongType len = outVector.lengthOf();
 
   auto buff = reinterpret_cast<T*>(outVector.buffer());
@@ -44,11 +44,11 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
   samediff::Threads::parallel_for(func, 0, len);
 }
 
-void range(sd::LaunchContext* context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+void range(sd::LaunchContext* context, NDArray& start, NDArray& delta, NDArray& outVector) {
   BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _range, (const NDArray& start, const NDArray& delta, NDArray& outVector),
+BUILD_SINGLE_TEMPLATE(template void _range, (NDArray& start, NDArray& delta, NDArray& outVector),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

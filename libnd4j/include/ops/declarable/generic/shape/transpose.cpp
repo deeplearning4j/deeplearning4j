@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
     }
   }
   if(!isPermuteNecessary) {
-    z->assign(x);
+    z->assign(*x);
     return Status::OK;
   }
 

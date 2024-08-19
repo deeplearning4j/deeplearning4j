@@ -44,7 +44,7 @@ class Householder {
    *
    *  x - input vector, remains unaffected
    */
-  // static NDArray evalHHmatrix(const NDArray& x);
+  // static NDArray evalHHmatrix(NDArray& x);
 
   /**
    *  this method evaluates data required for calculation of Householder matrix P = identity_matrix - coeff * w * w^T
@@ -72,7 +72,7 @@ class Householder {
    *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
    *  coeff - scalar, scaling factor in Householder matrix formula
    */
-  static void mulLeft(NDArray& matrix, const NDArray& tail, const T coeff);
+  static void mulLeft(NDArray& matrix, NDArray& tail, const T coeff);
 
   /**
    *  this method mathematically multiplies input matrix on Householder from the right matrix * P
@@ -81,7 +81,7 @@ class Householder {
    *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
    *  coeff - scalar, scaling factor in Householder matrix formula
    */
-  static void mulRight(NDArray& matrix, const NDArray& tail, const T coeff);
+  static void mulRight(NDArray& matrix, NDArray& tail, const T coeff);
 };
 
 // /**
@@ -108,7 +108,7 @@ class Householder {
 // dimensions in this case are [m, p] and [n, p]
 // *
 // */
-// void svd(const NDArray& matrix, NDArray& u, NDArray& s, NDArray& v, const bool calcUV = false, const bool fullUV =
+// void svd(NDArray& matrix, NDArray& u, NDArray& s, NDArray& v, const bool calcUV = false, const bool fullUV =
 // false)
 
 }  // namespace helpers

@@ -81,8 +81,8 @@ void SD_INLINE _crossBatched(LaunchContext *context, NDArray *a, NDArray *b, NDA
   samediff::Threads::parallel_tad(func, 0, tads);
 }
 
-void weightedCrossEntropyWithLogitsFunctor(LaunchContext *context, NDArray const *targets, NDArray const *input,
-                                           NDArray const *weights, NDArray *output);
+void weightedCrossEntropyWithLogitsFunctor(LaunchContext *context, NDArray *targets, NDArray *input,
+                                           NDArray *weights, NDArray *output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
