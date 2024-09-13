@@ -54,11 +54,6 @@ DECLARE_SHAPE_FN(cast) {
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
     DataType secondComp = block.getDArguments()->at(0);
-    printf("new type is %s block d args size is %d other data type is %s\n",
-           DataTypeUtils::asString(newType).c_str(),
-           block.getDArguments()->size(),
-           DataTypeUtils::asString(secondComp).c_str());
-    fflush(stdout);
     auto desc = new ShapeDescriptor(inShape, newType, true);
     auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
@@ -72,10 +67,6 @@ DECLARE_SHAPE_FN(cast) {
       THROW_EXCEPTION(errorMessage.c_str());
     }
     auto ret =  SHAPELIST(newShapeInfo);
-    printf("cast new data type is : %s data type from new constant created data type %s\n",
-           DataTypeUtils::asString(newType).c_str(),
-           DataTypeUtils::asString(compDataType).c_str());
-    fflush(stdout);
     return ret;
 
   } else {

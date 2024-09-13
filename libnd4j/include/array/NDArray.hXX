@@ -2891,14 +2891,10 @@ bool NDArray::permutei(std::vector<LongType> &dimensions, const bool copyToNewBu
 NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) & {
   if(copyToNewBuff) {
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),resetStrides);
-    printf("permuted with  copy\n");
-    shape::printShapeInfo(shapeInfoPermuted);
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
     auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
-    printf("permuted with  copy after constants\n");
-    shape::printShapeInfo(buff);
     DataBuffer *db = new DataBuffer(shape::length(buff) *
                                     DataTypeUtils::sizeOf(ArrayOptions::dataType(buff)),
                                     ArrayOptions::dataType(buff), getContext()->getWorkspace());
@@ -2906,27 +2902,21 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
                                buff,
                                getContext());
 
-    printShapeInfo("input shape info to permute");
     this->applyTransform(transform::Assign, *ret, nullptr);
     NDArray &ret2 =  *ret;
-    ret2.printShapeInfo("permuted shape info after de ref");
     return ret2;
 
   } else {
     // evaluate shapeInfo for output (permuted) array ret
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),resetStrides);
-    printf("permuted without no copy\n");
-    shape::printShapeInfo(shapeInfoPermuted);
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
     auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
-    printf("permuted without  copy after constants\n");
-    shape::printShapeInfo(buff);
+    p
 
     NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
     NDArray ret2 =  *ret;
-    ret2.printShapeInfo("permuted shape info after de ref");
 
     return *ret;
   }

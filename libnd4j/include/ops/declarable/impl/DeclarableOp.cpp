@@ -394,8 +394,6 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     if (!canUseFastPath) ctx.forbidFastPath(true);
 
-    printf("deleted output shape\n");
-    fflush(stdout);
     delete outSha;
 
     // saving arrayTime
@@ -679,16 +677,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // ensure number of IArgs, TArgs match our expectations
   REQUIRE_OK(this->validateArguments(*block));
-  printf("validated arguments\n");
-  fflush(stdout);
   // validating data types for inputs and (optionally) outputs
   REQUIRE_OK(this->validateDataTypes(*block));
-  printf("validated data types\n");
-  fflush(stdout);
+
   // this method will allocate output NDArrays for this op
   auto numOutputs = this->prepareOutputs(*block);
-  printf("prepared outputs: %i\n", numOutputs);
-  fflush(stdout);
+
 
   if (Environment::getInstance().isProfiling()) {
     timeStart = std::chrono::system_clock::now();
@@ -710,8 +704,6 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     }
   }
 
-  printf("executing op: %s\n", this->getOpName()->c_str());
-  fflush(stdout);
 
   if (!hasHelper) status = this->validateAndExecute(*block);
   // optionally saving execution time
@@ -935,10 +927,6 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
     sd_printf("%s: no operands provided for the op", this->getOpName()->c_str());
     return sd::Status::BAD_INPUT;
   }
-
-
-  printf("validating non empty input: %i\n", block.width());
-  fflush(stdout);
 
   int cnt = 0;
   for (auto p : *block.inputs()) {

@@ -38,7 +38,6 @@ static void _range(NDArray& start, NDArray& delta, NDArray& outVector) {
   auto d = delta.e<T>(0);
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
-      fflush(stdout);
       buff[i] = s + i * d;
     }
   };

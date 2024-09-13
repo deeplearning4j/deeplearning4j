@@ -1035,16 +1035,8 @@ void ShapeUtils::updateStridesAndType(LongType* dest, const LongType* source, co
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, const char order) {
-  printf("updating strides in updateStridesAndType\n");
-  fflush(stdout);
   shape::updateStrides(dest, order, true);
-  printf("updated strides in updateStridesAndType\n");
-  fflush(stdout);
-  printf("setting data type in updateStridesAndType\n");
-  fflush(stdout);
   ArrayOptions::setDataType(dest, dtype);
-  printf("set data type in updateStridesAndType\n");
-  fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

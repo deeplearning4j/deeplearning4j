@@ -39,8 +39,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   }
 
   DataType dtype = ArrayOptions::dataType(inShape);
-  printf("data type attempting to reshape from: %s\n", DataTypeUtils::asString(dtype).c_str());
-  fflush(stdout);
   char order = shape::order(inShape);  // Default to input order
   std::vector<sd::LongType> newShape;
 

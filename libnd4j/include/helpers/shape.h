@@ -3849,8 +3849,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo,
     }
   }
   if (!isPermuteNecessary) {
-    printf("shape::doPermuteShapeInfo function: no permute is necessary\n", 0);
-    fflush(stdout);
     return;
   }
 
@@ -4157,8 +4155,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
   if(rank < 0 || rank > SD_MAX_RANK) {
     THROW_EXCEPTION("Invalid rank value. Ensure a rank has been assigned.");
   }
-  printf("rank in updateStrides: %lld\n", rank);
-  fflush(stdout);
+
   sd::LongType doubleRank = 2 * rank;
   if (isEmpty(shapeInfo)) {
     auto strides = stride(shapeInfo);
@@ -4166,9 +4163,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
       strides[i] = 0;
     }
   }
-
-  printf("passed isEmpty check\n");
-  fflush(stdout);
 
   //strides from views can be strange, we provide a knob here
   //for times where we just need new strides when copying
@@ -4186,12 +4180,8 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
       shape::calcStridesFortran(shape::shapeOf(shapeInfo), rank, strides);
     }
   } else {
-    printf("rreset strides else\n");
-    fflush(stdout);
     if (rank > 0) {
       if (order == 'c') {
-        printf("set unity as last stride for c order\n");
-        fflush(stdout);
         shapeInfo[doubleRank] = 1;  // set unity as last stride for c order
         for (sd::LongType j = 1; j < rank; j++) {
           shapeInfo[doubleRank - j] = shapeInfo[doubleRank - j + 1] * shapeInfo[rank + 1 - j];
@@ -4199,8 +4189,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
 
 
       } else {
-        printf("set unity as last stride for f order\n");
-        fflush(stdout);
         shapeInfo[rank + 1] = 1;  // set unity as first stride for f order
         for (sd::LongType j = rank + 1; j < doubleRank; j++) {
           shapeInfo[j + 1] = shapeInfo[j] * shapeInfo[j - rank];

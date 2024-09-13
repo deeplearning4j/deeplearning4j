@@ -175,7 +175,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
   SD_INLINE void fillStrides() {
     if(_rank == 0) {
-      printf("No strides to be filled for rank 0\n");
       return;
     }
 

@@ -142,8 +142,6 @@ class BroadcastHelper {
     } else {
       auto sx = ShapeUtils::shapeAsString(x);
       auto sy = ShapeUtils::shapeAsString(y);
-      sd_printf("Broadcast: shapes should be equal, or broadcastable. But got %s vs %s instead\n", sx.c_str(),
-                sy.c_str());
       return nullptr;
     }
 

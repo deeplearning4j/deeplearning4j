@@ -106,8 +106,6 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW);
   LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
-  printf("iH: %lld, iW: %lld, iC: %lld, oC: %lld\n", iH, iW, iC, oC);
-  fflush(stdout);
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
     std::string errorMessage;
