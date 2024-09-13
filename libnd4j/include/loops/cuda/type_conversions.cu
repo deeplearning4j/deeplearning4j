@@ -220,7 +220,7 @@ SD_KERNEL static void execEncoderKernelP1(const void *dx, LongType N, void *dz, 
   // data
   LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  int pass = tid < N && math::sd_abs<T>(x[tid]) >= static_cast<T>(threshold) ? static_cast<LongType>(1)   : static_cast<LongType>(0) ;
+  int pass = tid < N && math::sd_abs<T,T>(x[tid]) >= static_cast<T>(threshold) ? static_cast<LongType>(1)   : static_cast<LongType>(0) ;
   int bp = __syncthreads_count(pass);
 
   if (threadIdx.x == 0) {
@@ -275,7 +275,7 @@ SD_KERNEL static void execEncoderKernelP3(void *dx, int *offsets, LongType N, vo
   auto value = tid < N ? x[tid] : (T)0.f;
 
   // out-of-limit threads just declare they have no changes
-  auto pred = tid >= N ? static_cast<LongType>(0)  : math::sd_abs<T>(value) >= static_cast<T>(threshold) ? static_cast<LongType>(1)   : static_cast<LongType>(0) ;
+  auto pred = tid >= N ? static_cast<LongType>(0)  : math::sd_abs<T,T>(value) >= static_cast<T>(threshold) ? static_cast<LongType>(1)   : static_cast<LongType>(0) ;
   auto w_i = threadIdx.x / warpSize;  // warp index (or, warp number) - index of the Warp within TOTAL_WARPS
   auto t_i = threadIdx.x % warpSize;  // thread index within a warp
   unsigned int t_m = INT_MAX >> (warpSize - t_i - 1);  // thread mask (ERROR IN THE PAPER minus one is required)
@@ -346,7 +346,7 @@ SD_KERNEL static void execDecoderKernel(const void *dx, LongType N, void *dz) {
 
   for (int e = tid; e < limit; e += blockDim.x * gridDim.x) {
     int el = x[e + 4];
-    int ael = sd::math::sd_abs<int>(el) - 1;
+    int ael = sd::math::sd_abs<int,int>(el) - 1;
 
     // TODO: investigate, if += would work better here, as in "decoded accumulation"
     z[ael] += el > 0 ? threshold : -threshold;
@@ -388,7 +388,7 @@ SD_KERNEL static void execCudaEncodeBitmapKernel(void *vdx, LongType N, int *dz,
   for (LongType i = tid; i < loopLimit; i += blockDim.x * gridDim.x) {
     // all threads in block reading stuff
     T val = i < N ? dx[i] : off;
-    T abs = math::sd_abs<T>(val);
+    T abs = math::sd_abs<T,T>(val);
 
     int byteId = i / 16 + 4;
     int bitId = i % 16;

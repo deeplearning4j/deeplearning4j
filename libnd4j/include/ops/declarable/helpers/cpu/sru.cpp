@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray activation(const NDArray& arr) {
+static SD_INLINE NDArray activation(NDArray& arr) {
   // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();
   auto result = NDArray(&arr, false, arr.getContext());
   (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, result);
@@ -39,12 +39,12 @@ static SD_INLINE NDArray activation(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(const NDArray& arr) {
+static SD_INLINE NDArray sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruCell(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
              NDArray* h, NDArray* c) {
   // x   input [bS x inSize], bS - batch size, inSize - number of features
   // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -59,10 +59,12 @@ void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, co
   auto z = mmul(*x, *w);  //  [bS x 3*inSize]
 
   // forget gate = sigmoid(x*Wf + bf)
-  auto f = sigmoid(z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize}));
+  NDArray result = z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize});
+  auto f = sigmoid(result);
 
   // reset gate = sigmoid(x*Wr + br)
-  auto r = sigmoid(z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize}));
+  NDArray sigmoidIn = z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize});
+  auto r = sigmoid(sigmoidIn);
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
@@ -75,7 +77,7 @@ void sruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
                  NDArray* h, NDArray* c) {
   // x   input [bS x inSize x time]
   // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -104,7 +106,7 @@ void sruTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* c0
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht,
+static void sruBI_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask, NDArray* ht,
                    NDArray* ct) {
   // x     input 3d tensor [time x bS x 2*K], time - number of time steps, bS - batch size, K - number of features
   // w     2d tensor of weights [2*K x 6*K]
@@ -184,8 +186,8 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct,
-                     const NDArray* inGradC0, const NDArray* inGradHt, const NDArray* mask, NDArray* gradI,
+static void sruBIBP_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
+                     NDArray* inGradC0, NDArray* inGradHt, NDArray* mask, NDArray* gradI,
                      NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   // x  input 3d tensor [time x bS x 2*K], time - number of time steps, bS - batch size, K - number of features
   // w  2d tensor of weights [2*K x 6*K]
@@ -308,28 +310,28 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
   gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims);  // [4*K]
 
   // gradW
-  x->permutei({0, 2, 1});                       // [time x bS x 2*K] -> [time x 2*K x bS]
+  x->permutei({0, 2, 1}, 0, false);                       // [time x bS x 2*K] -> [time x 2*K x bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time x 2*K x bS ] * [time x bS x 6*K] = [time x 2*K x 6*K]
 }
 
-void sruBI(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-           const NDArray* mask, NDArray* ht, NDArray* ct) {
+void sruBI(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+           NDArray* mask, NDArray* ht, NDArray* ct) {
   BUILD_SINGLE_SELECTOR(x->dataType(), sruBI_, (x, w, b, c0, mask, ht, ct), SD_FLOAT_TYPES);
 }
-void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-             const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI,
+void sruBIBP(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+             NDArray* ct, NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   BUILD_SINGLE_SELECTOR(x->dataType(), sruBIBP_,
                         (x, w, b, c0, ct, inGradC0, inGradH, mask, gradI, gradW, gradB, gradC0), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void sruBI_,
-                      (NDArray * x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask,
+                      (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask,
                        NDArray* ht, NDArray* ct),
                       SD_FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void sruBIBP_,
-                      (NDArray * x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct,
-                       const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI,
+                      (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
+                       NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
                        NDArray* gradW, NDArray* gradB, NDArray* gradC0),
                       SD_FLOAT_TYPES);
 

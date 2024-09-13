@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
+static void depthwiseConv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArray* output,
                                   const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
                                   const sd::LongType dH, const sd::LongType dW, const int paddingMode, const bool isNCHW,
                                   const int wFormat) {
@@ -183,7 +183,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI,
+static void depthwiseConv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, NDArray* gradI,
                                     NDArray* gradW, NDArray* gradB, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH,
                                     const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW,
                                     const int paddingMode, const bool isNCHW, const int wFormat) {

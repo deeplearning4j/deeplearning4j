@@ -42,7 +42,7 @@ OP_IMPL(mergeadd, -1, 1, false) {
     if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
 
-  std::vector<const NDArray*> inArrs(nonEmpty);
+  std::vector<NDArray*> inArrs(nonEmpty);
   int numNonEmptyAdded = 0;
   if(nonEmpty > 0)
   for (int i = 0; i < block.width(); ++i) {

@@ -37,7 +37,7 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
 
     REQUIRE_TRUE(idx->isScalar(), 0, "Index should be Scalar");
 
-    Status result = list->write(idx->e<int>(0), new NDArray(input->dup(false)));
+    Status result = list->write(idx->e<int>(0), new NDArray(input->dup(input->ordering())));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
 
@@ -49,7 +49,7 @@ LIST_OP_IMPL(write_list, 2, 1, 0, -2) {
     auto input = INPUT_VARIABLE(1);
     auto idx = INT_ARG(0);
 
-    Status result = list->write(idx, new NDArray(input->dup(false)));
+    Status result = list->write(idx, new NDArray(input->dup(input->ordering())));
 
     auto res = NDArrayFactory::create_(list->counter(), block.launchContext());
     setupResult(res, block);

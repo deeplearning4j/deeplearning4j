@@ -1696,9 +1696,9 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
 
@@ -1740,9 +1740,9 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
 
@@ -1784,9 +1784,9 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
 
@@ -1828,9 +1828,9 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
 
@@ -1872,9 +1872,9 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
 
@@ -1936,9 +1936,9 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5f);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5f);
   }
 }
 
@@ -2041,9 +2041,9 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
   }
 }
 
@@ -2118,9 +2118,9 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs<float,float>(u->e<float>(i)), 1e-5);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs<float,float>(v->e<float>(i)), 1e-5);
   }
 }
 
@@ -2165,9 +2165,9 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
     ASSERT_TRUE(expV.equalsTo(v));
   } else {
     for (LongType i = 0; i < expU.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expU.e<float>(i)), sd::math::sd_abs(u->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expU.e<float>(i)), sd::math::sd_abs<float,float>(u->e<float>(i)), 1e-5);
     for (LongType i = 0; i < expV.lengthOf(); ++i)
-      ASSERT_NEAR(sd::math::sd_abs(expV.e<float>(i)), sd::math::sd_abs(v->e<float>(i)), 1e-5);
+      ASSERT_NEAR(sd::math::sd_abs<float,float>(expV.e<float>(i)), sd::math::sd_abs<float,float>(v->e<float>(i)), 1e-5);
   }
 }
 

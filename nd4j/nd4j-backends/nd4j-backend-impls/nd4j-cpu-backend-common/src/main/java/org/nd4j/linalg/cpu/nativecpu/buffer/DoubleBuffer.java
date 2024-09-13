@@ -46,10 +46,6 @@ public class DoubleBuffer extends BaseCpuDataBuffer {
         super(pointer, indexer, length);
     }
 
-    public DoubleBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
-
     public DoubleBuffer(long length) {
         super(length);
     }
@@ -63,12 +59,9 @@ public class DoubleBuffer extends BaseCpuDataBuffer {
     }
 
     public DoubleBuffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
     }
 
-    public DoubleBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
 
     public DoubleBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, initialize, workspace);
@@ -94,9 +87,6 @@ public class DoubleBuffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public DoubleBuffer(float[] data) {
         this(data, true);
@@ -107,20 +97,17 @@ public class DoubleBuffer extends BaseCpuDataBuffer {
     }
 
     public DoubleBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public DoubleBuffer(double[] doubles, boolean copy) {
         super(doubles, copy);
     }
 
-    public DoubleBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+    public DoubleBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
-    public DoubleBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
 
     @Override
     public float getFloat(long i) {

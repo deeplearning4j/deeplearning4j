@@ -176,7 +176,7 @@ public class ArrowConverter {
         buffer1.rewind();
         switch(type) {
             case Integer:
-                buffer = Nd4j.createBuffer(direct, DataType.INT,cols,0);
+                buffer = Nd4j.createBuffer(direct, DataType.INT,cols);
                 break;
             case Float:
                 buffer = Nd4j.createBuffer(direct, DataType.FLOAT,cols);

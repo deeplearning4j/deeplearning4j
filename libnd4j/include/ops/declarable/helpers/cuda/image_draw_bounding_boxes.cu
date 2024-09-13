@@ -137,7 +137,7 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
 }
 
 template <typename T>
-void drawBoundingBoxesH(LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors,
+void drawBoundingBoxesH(LaunchContext* context, NDArray * images, NDArray * boxes, NDArray * colors,
                         NDArray* output) {
   auto batchSize = images->sizeAt(0);
   auto height = images->sizeAt(1);

@@ -51,7 +51,7 @@ DECLARE_SHAPE_FN(test_scalar) {
   newShape[7] = 99;
 
   ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
-  auto desc = new ShapeDescriptor(newShape);
+  auto desc = new ShapeDescriptor(newShape, false);
   auto shape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(newShape, block.getWorkspace());
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;

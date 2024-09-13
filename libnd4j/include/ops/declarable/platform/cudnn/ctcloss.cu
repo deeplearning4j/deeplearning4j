@@ -27,7 +27,7 @@ namespace sd {
 namespace ops {
 namespace platforms {
 
-std::vector<int> getConcatTargets(const NDArray &targetLabels, const NDArray &targetLabelLengths) {
+std::vector<int> getConcatTargets(NDArray&targetLabels, NDArray&targetLabelLengths) {
   // concatenate target labels
   const int32_t *tlabels = bufferInHost<int32_t>(targetLabels);
   const int32_t *tlens = bufferInHost<int32_t>(targetLabelLengths);
@@ -59,8 +59,8 @@ std::vector<int> getConcatTargets(const NDArray &targetLabels, const NDArray &ta
   return labels;
 }
 
-void cudnnCtcLoss(const LaunchContext &context, const NDArray &probs, const int32_t *targetLabelsPtr,
-                  const NDArray &probInputLengthes, const NDArray &targetLabelLengths, NDArray &ctcLosses,
+void cudnnCtcLoss(const LaunchContext &context, NDArray&probs, const int32_t *targetLabelsPtr,
+                  NDArray&probInputLengthes, NDArray&targetLabelLengths, NDArray &ctcLosses,
                   NDArray &grads) {
   const int dims[] = {(int)probs.sizeAt(0), (int)probs.sizeAt(1), (int)probs.sizeAt(2)};
   const int strides[] = {(int)probs.strideAt(0), (int)probs.strideAt(1), (int)probs.strideAt(2)};
@@ -122,7 +122,7 @@ PLATFORM_IMPL(ctc_loss, ENGINE_CUDA) {
 }
 
 template <typename T>
-bool checkLabelLength(const NDArray &labelLengthArr) {
+bool checkLabelLength(NDArray&labelLengthArr) {
   // check label lengths
   auto lenBatch = labelLengthArr.lengthOf();
   for (int i = 0; i < lenBatch; i++) {

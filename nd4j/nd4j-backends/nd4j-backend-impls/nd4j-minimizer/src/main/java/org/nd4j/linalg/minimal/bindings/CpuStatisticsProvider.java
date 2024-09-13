@@ -14,7 +14,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 public class CpuStatisticsProvider implements INDArrayStatisticsProvider {
 
-    private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private NativeOps loop =Nd4j.getNativeOps();
 
     @Override
     public INDArrayStatistics inspectArray(INDArray arr) {

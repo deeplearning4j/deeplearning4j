@@ -96,7 +96,7 @@ static SD_KERNEL void spaceToDepthKernel(const void *vx, const LongType *xShapeI
 }
 
 template <typename T>
-static void _spaceTodepth_(LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+static void _spaceTodepth_(LaunchContext *context, NDArray&input, NDArray *output, int block_size,
                            bool isNHWC) {
   dim3 launchDims = getLaunchDims("space_to_depth");
   spaceToDepthKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
@@ -106,7 +106,7 @@ static void _spaceTodepth_(LaunchContext *context, const NDArray &input, NDArray
 
 }
 
-void _spaceTodepth(LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _spaceTodepth(LaunchContext *context, NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   NDArray::prepareSpecialUse({output}, {&input});
   BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (context, input, output, block_size, isNHWC),
                         SD_COMMON_TYPES);

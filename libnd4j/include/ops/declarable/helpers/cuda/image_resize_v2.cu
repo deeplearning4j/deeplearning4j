@@ -59,7 +59,7 @@ static SD_KERNEL void computeSpansKernel(TKernelFunc* kernel, int* startsVec, fl
       tempWeights[actualWeights++] = weight;
     }
     maxSpanSize = math::sd_max(maxSpanSize, spanSize);
-    if (math::sd_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
+    if (math::sd_abs<float,float>(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
       auto totalWeightSumInverted = 1.0f / totalWeightSum;
       auto outIndex = spanSize * x;
       for (auto weightIndex = 0; weightIndex < actualWeights; ++weightIndex) {
@@ -127,7 +127,7 @@ static Status computeSpans(LaunchContext* context, TKernelFunc& kernel, LongType
       tempWeights.push_back(weight);
     }
     maxSpanSize = math::sd_max(maxSpanSize, spanSize);
-    if (math::sd_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
+    if (math::sd_abs<float,float>(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
       auto totalWeightSumInverted = 1.0f / totalWeightSum;
       auto outIndex = spans._spanSize * x;
       for (auto weightIndex = 0; weightIndex < tempWeights.size(); ++weightIndex) {
@@ -175,9 +175,9 @@ static SD_KERNEL void batchedGatherSpan(LongType outputWidth, LongType outputHei
 }
 
 template <typename X, typename Z>
-static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray const& rowStarts,
-                        NDArray const& rowWeights, int const colSpanSize, NDArray const& columnStarts,
-                        NDArray const& columnWeights, NDArray const* images, NDArray& intermediate, NDArray* output) {
+static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray& rowStarts,
+                        NDArray& rowWeights, int const colSpanSize, NDArray& columnStarts,
+                        NDArray& columnWeights, NDArray * images, NDArray& intermediate, NDArray* output) {
   const auto imageSpecialShapeInfo = images->specialShapeInfo();
   auto outputHeight = output->sizeAt(1);
   auto outputWidth = output->sizeAt(2);
@@ -199,7 +199,7 @@ static void gatherSpans(LaunchContext* context, int const rowSpanSize, NDArray c
 }
 
 template <typename X, typename Z>
-static Status resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArray const* input, LongType outWidth,
+static Status resizeKernel(LaunchContext* context, ImageResizeMethods method, NDArray * input, LongType outWidth,
                            LongType outHeight, bool antialias, double coefficient,
                                NDArray* output) {
   LongType const batchSize = input->sizeAt(0);
@@ -281,7 +281,7 @@ static Status resizeKernel(LaunchContext* context, ImageResizeMethods method, ND
 #if defined(HAS_FLOAT32)
 #define SD_FLOAT_TYPES_FLOAT32 SKIP_FIRST_COMMA(TTYPE_FLOAT32)
 
-static Status resizeTriangle(LaunchContext* context, NDArray const* image, int const width, int const height,
+static Status resizeTriangle(LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeBilinear, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
@@ -290,7 +290,7 @@ static Status resizeTriangle(LaunchContext* context, NDArray const* image, int c
                               "helpers::resizeTriangle: This resize method is avaliable in future versions");
 }
 
-static Status resizeLanczos3(LaunchContext* context, NDArray const* image, int const width, int const height,
+static Status resizeLanczos3(LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeLanczos3, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
@@ -299,7 +299,7 @@ static Status resizeLanczos3(LaunchContext* context, NDArray const* image, int c
                               "helpers::resizeLanczos3: This resize method is avaliable in future versions");
 }
 
-static Status resizeLanczos5(LaunchContext* context, NDArray const* image, int const width, int const height,
+static Status resizeLanczos5(LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeLanczos5, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
@@ -308,7 +308,7 @@ static Status resizeLanczos5(LaunchContext* context, NDArray const* image, int c
                               "helpers::resizeLanczos5: This resize method is avaliable in future versions");
 }
 
-static Status resizeGaussian(LaunchContext* context, NDArray const* image, int const width, int const height,
+static Status resizeGaussian(LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const antialias, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeGaussian, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
@@ -316,7 +316,7 @@ static Status resizeGaussian(LaunchContext* context, NDArray const* image, int c
   return Logger::logStatusMsg(Status::VALIDATION,
                               "helpers::resizeGaussian: This resize method is avaliable in future versions");
 }
-static Status resizeMitchellcubic(LaunchContext* context, NDArray const* image, int const width,
+static Status resizeMitchellcubic(LaunchContext* context, NDArray * image, int const width,
                                       int const height, bool const antialias, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeMitchellcubic, image, width, height, antialias, 0, output), SD_NUMERIC_TYPES,
@@ -325,7 +325,7 @@ static Status resizeMitchellcubic(LaunchContext* context, NDArray const* image, 
                               "helpers::ResizeMitchellcubic: This resize method is avaliable in future versions");
 }
 
-static Status resizeBicubicA(LaunchContext* context, NDArray const* image, int const width, int const height,
+static Status resizeBicubicA(LaunchContext* context, NDArray * image, int const width, int const height,
                                  CoordinateTransformationMode coorMode, bool exclude_outside, double coefficient,
                                  NDArray* output) {
   constexpr bool alignCorners = false;
@@ -333,7 +333,7 @@ static Status resizeBicubicA(LaunchContext* context, NDArray const* image, int c
                                output);
 }
 
-static Status resizeBicubicAntialias(LaunchContext* context, NDArray const* image, int const width,
+static Status resizeBicubicAntialias(LaunchContext* context, NDArray * image, int const width,
                                          int const height, bool const antialias, double coefficient, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(image->dataType(), output->dataType(), return resizeKernel,
                         (context, kResizeBicubic, image, width, height, antialias, coefficient, output),
@@ -344,7 +344,7 @@ static Status resizeBicubicAntialias(LaunchContext* context, NDArray const* imag
 
 #endif
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Status resizeFunctor(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeFunctor(LaunchContext* context, NDArray * image, int const width, int const height,
                          ImageResizeMethods method, CoordinateTransformationMode coorMode, bool exclude_outside,
                          NearestMode nearestMode, double coefficient, bool antialias, NDArray* output) {
   switch (method) {

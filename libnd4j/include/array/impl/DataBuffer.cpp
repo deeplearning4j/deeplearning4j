@@ -192,7 +192,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 }
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace,
+DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, memory::Workspace* workspace,
                        const bool allocBoth) {
 
   if(dataType == DataType::UNKNOWN) {
@@ -203,6 +203,9 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
     printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
   }
+
+
+
   _dataType = dataType;
   _workspace = workspace;
   _lenInBytes = lenInBytes;
@@ -350,8 +353,14 @@ DataType DataBuffer::getDataType() { return _dataType; }
 ////////////////////////////////////////////////////////////////////////
 size_t DataBuffer::getLenInBytes() const {
   //we need minimum 1 for scalars
-  if(_lenInBytes == 0)
+  if(_lenInBytes == 0) {
+   if(_dataType == DataType::UNKNOWN) {
+     THROW_EXCEPTION("DataBuffer getLenInBytes: dataType is UNKNOWN !");
+   }
+   printf("Getting size for %s\n", DataTypeUtils::asString(_dataType).c_str());
+   fflush(stdout);
     return DataTypeUtils::sizeOfElement(_dataType);
+  }
   return _lenInBytes;
 }
 size_t DataBuffer::getNumElements()   {

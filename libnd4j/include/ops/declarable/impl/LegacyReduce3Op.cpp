@@ -121,11 +121,8 @@ ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, Context 
     zShape[6] = 1;
     zShape[7] = 99;
   } else {
-    auto array = new NDArray(nullptr, xShape, block.launchContext());
-
-    xShape = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), *array, false, true);
-
-    delete array;
+    const sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, false, true);
+    return SHAPELIST(xShape2);
   }
 
   return SHAPELIST(zShape);

@@ -44,7 +44,7 @@ namespace helpers {
  *
  * */
 template <typename T>
-static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+static void lowerTriangularSolve(sd::LaunchContext* context, NDArray * leftInput, NDArray * rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
@@ -74,7 +74,7 @@ static void lowerTriangularSolve(sd::LaunchContext* context, NDArray const* left
  * */
 
 template <typename T>
-static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput,
+static void upperTriangularSolve(sd::LaunchContext* context, NDArray * leftInput, NDArray * rightInput,
                                  bool const unitsOnDiag, NDArray* output) {
   auto rows = leftInput->rows();
   auto cols = rightInput->columns();
@@ -99,7 +99,7 @@ static void upperTriangularSolve(sd::LaunchContext* context, NDArray const* left
 /// \param output - output vector (x on equation Tx = b)
 ///
 template <typename T>
-void triangularSolve2D(sd::LaunchContext* context, NDArray const& leftInput, NDArray const& rightInput,
+void triangularSolve2D(sd::LaunchContext* context, NDArray& leftInput, NDArray& rightInput,
                        bool const lower, bool const unitsOnDiag, NDArray& output) {
   if (lower) {
     lowerTriangularSolve<T>(context, &leftInput, &rightInput, unitsOnDiag, &output);
@@ -108,7 +108,7 @@ void triangularSolve2D(sd::LaunchContext* context, NDArray const& leftInput, NDA
   }
 }
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
-                      (sd::LaunchContext * context, NDArray const& leftInput, NDArray const& rightInput,
+                      (sd::LaunchContext * context, NDArray& leftInput, NDArray& rightInput,
                           bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
 
@@ -137,7 +137,7 @@ static sd::Status triangularSolveFunctor_(sd::LaunchContext* context, NDArray* l
   return sd::Status::OK;
 }
 template <typename T>
-static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
+static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray * input, bool const lower,
                                      NDArray* output) {
   auto inputPart = input->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
@@ -170,7 +170,7 @@ sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput
                         (context, leftInput, rightInput, lower, adjoint, output), SD_FLOAT_NATIVE);
 }
 
-void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+void adjointMatrix(sd::LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), SD_FLOAT_NATIVE);
 }
 }  // namespace helpers

@@ -155,7 +155,7 @@ DECLARE_SHAPE_FN(sru) {
   newShapeInfo1[3] = time;
 
   ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo1);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo1, false);
   RELEASE(newShapeInfo1, block.getWorkspace());
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
   if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
@@ -300,8 +300,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     temp1->applyPairwiseTransform(pairwise::Add, *inGradCt, *temp1);  // temp1 = inGradHt * rt * grad_tanh + inGradCt
     temp1->applyPairwiseTransform(pairwise::Multiply, *ftMinus,
                                   gradUZt);  // gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
-    gradUFt.assign(&gradBFt);
-    gradURt.assign(&gradBRt);
+    gradUFt.assign(gradBFt);
+    gradURt.assign(gradBRt);
 
     // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
     gradCt->applyPairwiseTransform(pairwise::Add, *inGradCt, *temp1);  // temp1 = (gradCt + inGradCt)
@@ -311,7 +311,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   }
 
   // gradInit
-  gradInit->assign(inGradCt);
+  gradInit->assign(*inGradCt);
 
   // gradX
   auto weightsT = w->transpose();                                                    // [K x 3K]
@@ -330,7 +330,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
   gradBias->reduceAlongDimension(reduce::Sum, gradB2, &axes2);  // [1 x 2K]
 
   // gradW [bS x 3K x K]
-  x->permutei({0, 2, 1}, false);                     // [bS x N x K]
+  x->permutei({0, 2, 1}, false, false);                     // [bS x N x K]
   MmulHelper::mmul(gradU, x, gradW, 1., 0.);  // [bS x 3K x K]
 
   delete gct;

@@ -21,6 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu.rng;
 
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueRandomGenerator;
@@ -43,7 +44,7 @@ public class CpuNativeRandom extends NativeRandom {
 
     @Override
     public void init() {
-        nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps = Nd4j.getNativeOps();
         statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeef);
     }
 

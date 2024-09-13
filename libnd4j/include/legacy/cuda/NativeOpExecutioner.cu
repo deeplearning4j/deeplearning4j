@@ -652,7 +652,6 @@ void NativeOpExecutioner::execReduceFloat(LaunchContext* lc, int opNum, const vo
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
-  if (Environment::getInstance().isDebugAndVerbose()) printf("F8 opType:[%i]\n", opNum);
 
   auto xType = ArrayOptions::dataType(hXShapeInfo);
   auto zType = ArrayOptions::dataType(hZShapeInfo);

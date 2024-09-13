@@ -325,7 +325,7 @@ void NDArray::applyLambda(Lambda func, NDArray &target) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyPairwiseLambda(const NDArray &other, Lambda func, NDArray &target) {
+void NDArray::applyPairwiseLambda(NDArray&other, Lambda func, NDArray &target) {
   auto dtype = this->dataType();
 
   if (dtype != target.dataType() || dtype != other.dataType())

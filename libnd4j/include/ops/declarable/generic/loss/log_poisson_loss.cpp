@@ -156,7 +156,7 @@ DECLARE_SHAPE_FN(log_poisson_loss) {
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the same shape as labels and predictions
-    auto desc = new ShapeDescriptor(labelsShapeInfo, outType);
+    auto desc = new ShapeDescriptor(labelsShapeInfo, outType, false);
     outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }

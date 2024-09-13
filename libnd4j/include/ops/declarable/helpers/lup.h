@@ -37,7 +37,7 @@ SD_LIB_HIDDEN Status inverse(LaunchContext* context, NDArray* input, NDArray* ou
 SD_LIB_HIDDEN Status upperInverseFunctor(LaunchContext* context, NDArray* input, NDArray* output);
 SD_LIB_HIDDEN Status lowerInverseFunctor(LaunchContext* context, NDArray* input, NDArray* output);
 
-SD_LIB_HIDDEN bool checkCholeskyInput(LaunchContext* context, NDArray const* input);
+SD_LIB_HIDDEN bool checkCholeskyInput(LaunchContext* context, NDArray * input);
 SD_LIB_HIDDEN Status cholesky(LaunchContext* context, NDArray* input, NDArray* output, bool inplace = false);
 SD_LIB_HIDDEN Status logdetFunctor(LaunchContext* context, NDArray* input, NDArray* output);
 }  // namespace helpers

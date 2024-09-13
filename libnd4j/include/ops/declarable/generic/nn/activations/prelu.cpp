@@ -62,9 +62,9 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
   }
 
 
-
+  NDArray alpha2 =  alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : *alpha;
   helpers::prelu(block.launchContext(), *input,
-                 alphaShape != expectedAlphaShape ? alpha->reshape(alpha->ordering(), expectedAlphaShape) : *alpha,
+                 alpha2,
                  *output);
 
   return Status::OK;
@@ -134,7 +134,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
   helpers::preluBP(block.launchContext(), *input, *alpha, *dLdO, *dLdI, *dLdA);
 
   if (alphaShape != expectedAlphaShape) {
-   delete alpha;
+    delete alpha;
     delete dLdA;
   }
 

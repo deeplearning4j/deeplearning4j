@@ -23,6 +23,7 @@ package org.nd4j.nativeblas;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.systeminfo.GPUInfo;
 import org.nd4j.systeminfo.GPUInfoProvider;
 
@@ -31,7 +32,7 @@ public class NativeOpsGPUInfoProvider implements GPUInfoProvider {
 
     @Override
     public List<GPUInfo> getGPUs() {
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps = Nd4j.getNativeOps();
 
         List<GPUInfo> gpus = new ArrayList<>();
 

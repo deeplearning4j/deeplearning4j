@@ -47,9 +47,6 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 
 void* NDArray::platformBuffer() { return buffer(); }
-void const* NDArray::platformBuffer() const { return buffer(); }
-
-sd::LongType const* NDArray::platformShapeInfo() const { return shapeInfo(); }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -249,8 +246,8 @@ void NDArray::synchronize(const char* msg) const {
 
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::preparePrimaryUse(const std::vector<NDArray*>& writeList,
+                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
   for (const auto& a : readList)
     if (a) a->syncToHost();
 
@@ -267,8 +264,8 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
+void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
+                                 const std::vector<NDArray*>& readList) {
   // as noted above for some edge cases we decided to use counters and sync inside 
   // preparePrimaryUse
   // though registerPrimaryUse will be no op, it will be called to be on par with the cuda codes
@@ -277,59 +274,52 @@ void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
 
 #else
 
-void NDArray::synchronize(const char* msg) const {
+void NDArray::synchronize(const char* msg)  {
   // no-op
 }
 
-void NDArray::syncToDevice() const {}
-void NDArray::syncToHost() const {}
-void NDArray::tickWriteHost() const {}
-void NDArray::tickWriteDevice() const {}
-void NDArray::tickReadHost() const {}
-void NDArray::tickReadDevice() const {}
-void NDArray::tickBothActual() const {}
-bool NDArray::isActualOnHostSide() const { return true; }
-bool NDArray::isActualOnDeviceSide() const { return true; }
-void NDArray::makeBothBuffersActual() const {}
+void NDArray::syncToDevice()  {}
+void NDArray::syncToHost()  {}
+void NDArray::tickWriteHost()  {}
+void NDArray::tickWriteDevice()  {}
+void NDArray::tickReadHost()  {}
+void NDArray::tickReadDevice()  {}
+void NDArray::tickBothActual()  {}
+bool NDArray::isActualOnHostSide()  { return true; }
+bool NDArray::isActualOnDeviceSide()  { return true; }
+void NDArray::makeBothBuffersActual()  {}
 
-void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::preparePrimaryUse(const std::vector<NDArray*>& writeList,
+                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
   // no-op
 }
-void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
+void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
+                                 const std::vector<NDArray*>& readList) {
   // no-op
 }
 
 #endif
 
-void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::prepareSpecialUse(const std::vector<NDArray*>& writeList,
+                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
   // no-op
 }
-void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
+void NDArray::registerSpecialUse(const std::vector<NDArray*>& writeList,
+                                 const std::vector<NDArray*>& readList) {
   // no-op
 }
 
-void NDArray::syncShape() const {
+void NDArray::syncShape()  {
   // no-op
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {}
-template void NDArray::printCurrentBuffer<int>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const char* msg, const int precision) const;
-
-
-////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBufferWithOffset(sd::LongType offset) { return nullptr; }
-
-////////////////////////////////////////////////////////////////////////
-const void* NDArray::specialBufferWithOffset(sd::LongType offset) const { return nullptr; }
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision)  {}
+template void NDArray::printCurrentBuffer<int>(const bool host, const char* msg, const int precision) ;
+template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) ;
+template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision);
+template void NDArray::printCurrentBuffer<sd::LongType>(const bool host, const char* msg, const int precision) ;
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
@@ -338,16 +328,13 @@ void* NDArray::specialBuffer() {
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
-////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBuffer() const {
-  if (_buffer == nullptr || _buffer->special() == nullptr) return nullptr;
-  // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
-}
 
+const void* NDArray::specialBufferWithOffset(LongType offset) {
+  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
+}
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
+NDArray NDArray::tile(const std::vector<sd::LongType>& reps)  {
   const int repsSize = reps.size();
 
   sd::LongType product = 1;
@@ -373,7 +360,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
   DataBuffer * newBuff =
       new DataBuffer(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
-  auto desc = new ShapeDescriptor(newShapeInfo);
+  auto desc = new ShapeDescriptor(newShapeInfo, false);
   // assign new shape and new buffer to resulting array
   NDArray result(newBuff,desc , getContext());
   // fill newBuff, loop through all elements of newBuff
@@ -409,7 +396,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const {
+void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target)  {
   auto repProd = shape::prodLong(reps.data(), reps.size());
   if (repProd < 1) THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
 
@@ -447,7 +434,7 @@ void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::tile(NDArray& target) const {
+void NDArray::tile(NDArray& target)  {
   if (rankOf() > target.rankOf())
     THROW_EXCEPTION(
         "NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
@@ -477,7 +464,7 @@ void NDArray::tile(NDArray& target) const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void repeat_(const NDArray& input, NDArray& output, const std::vector<LongType>& repeats, const LongType axis) {
+static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>& repeats, const LongType axis) {
   const X* x = input.bufferAsT<X>();
   Z* z = output.bufferAsT<Z>();
 
@@ -517,7 +504,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<Lon
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats)  {
   NDArray *thisArr = const_cast<NDArray*>(this);
   std::vector<sd::LongType> repeatShape = ShapeUtils::evalRepeatShape(axis, repeats, *thisArr);
   NDArray output('c',repeatShape, dataType(), getContext());
@@ -529,7 +516,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) co
 
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by reps
-void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
+void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target)  {
   NDArray *thisArr = const_cast<NDArray*>(this);
   if (!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *thisArr)))
     THROW_EXCEPTION(

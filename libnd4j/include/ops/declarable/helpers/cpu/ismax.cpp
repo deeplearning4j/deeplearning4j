@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 template <typename X, typename Z>
-static void ismax_(const NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
+static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   if (input->isVector()) {
     int dimensionsLength = dimensions.size();
     int length = input->lengthOf();
@@ -187,7 +187,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<Long
   }
 }
 
-void ismax(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
+void ismax(sd::LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions) {
   BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), ismax_, (input, output, dimensions), SD_COMMON_TYPES,
                         SD_COMMON_TYPES);
 }

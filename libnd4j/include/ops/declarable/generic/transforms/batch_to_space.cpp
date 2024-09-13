@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
   if (shape::strideDescendingCAscendingF(input->shapeInfo()))
     helpers::batchToSpace(block.launchContext(), *input, *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
   else
-    helpers::batchToSpace(block.launchContext(), input->dup(false), *output, cropBottom, cropTop, cropLeft, cropRight,
+    helpers::batchToSpace(block.launchContext(), input->dup(input->ordering()), *output, cropBottom, cropTop, cropLeft, cropRight,
                           blockSize);
 
   return Status::OK;

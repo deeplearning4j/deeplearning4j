@@ -39,11 +39,11 @@ namespace helpers {
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // //
 template <typename T>
-static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+static void adjointMatrix_(sd::LaunchContext* context, NDArray * input, NDArray* output) {
   auto inputPart = input->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto rows = input->sizeAt(-2);
-  output->assign(input);
+  output->assign(*input);
 
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; batch++) {
@@ -84,7 +84,7 @@ static sd::Status solveFunctor_(sd::LaunchContext* context, NDArray* leftInput, 
 
 
 
-  auto leftLower = leftOutput.dup(false);
+  auto leftLower = leftOutput.dup(leftOutput.ordering());
   auto rightOutput = rightInput->ulike();
   auto rightPart = rightInput->ulike();
   MmulHelper::matmul(&P, rightInput, &rightPart, 0.0, 0, 0, 0, &rightPart);
@@ -110,7 +110,7 @@ sd::Status solveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray*
 }
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // //
-void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+void adjointMatrix(sd::LaunchContext* context, NDArray * input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), SD_FLOAT_TYPES);
 }
 // ---------------------------------------------------------------------------------------------------------------------------------------

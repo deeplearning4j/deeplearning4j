@@ -214,7 +214,7 @@ static SD_KERNEL void pnormPooling2dCuda(const void *vx, const LongType *xShapeI
 
     for (int h = hstart; h < hend; h += dH)
       for (int w = wstart; w < wend; w += dW)
-        sum += math::sd_pow<Z, Z, Z>(static_cast<Z>(math::sd_abs<X>(inSlice[h * strideY + w * strideX])), extraParam0);
+        sum += math::sd_pow<Z, Z, Z>(static_cast<Z>(math::sd_abs<X,X>(inSlice[h * strideY + w * strideX])), extraParam0);
 
     z[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = math::sd_pow<Z, Z, Z>(sum, (Z)1.0f / extraParam0);
   }
@@ -337,7 +337,7 @@ static void maxPooling2dCudaLauncher(LaunchContext &block, const void *vx, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2d(graph::Context &block, const NDArray &input, NDArray &output, const LongType kH,
+void ConvolutionUtils::pooling2d(graph::Context &block, NDArray&input, NDArray &output, const LongType kH,
                                  const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW, const PoolingType poolingMode,
                                  const int extraParam0) {

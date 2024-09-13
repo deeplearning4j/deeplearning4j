@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.common.primitives.Pair;
@@ -128,6 +129,12 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray create(int[] shape, DataBuffer buffer) {
         return new JCublasNDArray(shape, buffer);
+    }
+
+
+    @Override
+    public INDArray create(DataBuffer buffer, LongShapeDescriptor longShapeDescriptor) {
+        return new JCublasNDArray(buffer, longShapeDescriptor);
     }
 
     /**

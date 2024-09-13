@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(segment_min_bp, 3, 2, false, 0, 0) {
   auto gradOut = INPUT_VARIABLE(2);
   auto output = OUTPUT_NULLIFIED(0);
   auto outIndices = OUTPUT_NULLIFIED(1);
-  outIndices->assign(indices);
+  outIndices->assign(*indices);
   return helpers::segmentMinFunctorBP(block.launchContext(), input, indices, gradOut, output);
 }
 DECLARE_SHAPE_FN(segment_min_bp) {

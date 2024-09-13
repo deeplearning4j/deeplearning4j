@@ -22,9 +22,7 @@ package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
-import org.bytedeco.javacpp.annotation.StdVector;
 
-import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
@@ -41,11 +39,14 @@ public interface NativeOps {
  org.nd4j.nativeblas.OpaqueDataBuffer intermediateResultDataAt(int index, OpaqueContext contextPointer);
 
  LongPointer intermediateResultShapeInfoAt(int index, OpaqueContext contextPointer);
+long getShapeInfoLength(OpaqueNDArray array);
 
 
- void setIntermediateResult(OpaqueContext contextPointer, int index, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo);
+ void setIntermediateResult(OpaqueContext contextPointer, int index, org.nd4j.nativeblas.OpaqueDataBuffer buffer, org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo,long offset);
 
- void pushIntermediateResult(OpaqueContext contextPointer, org.nd4j.nativeblas.OpaqueDataBuffer buffer,org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo);
+ void pushIntermediateResult(OpaqueContext contextPointer,
+                             org.nd4j.nativeblas.OpaqueDataBuffer buffer,
+                             org.nd4j.nativeblas.OpaqueDataBuffer shapeInfo,long offset);
 
 
  int numIntermediateResults(OpaqueContext contextPointer);
@@ -74,7 +75,7 @@ public interface NativeOps {
   * Prints device buffers.
   * @param buffer
   */
- void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
+ void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer,long offset);
 
  void copyBuffer(org.nd4j.nativeblas.OpaqueDataBuffer target, long n,  org.nd4j.nativeblas.OpaqueDataBuffer from, long fromOffset, long targetOffset);
 
@@ -159,6 +160,12 @@ public interface NativeOps {
                       LongPointer hDimensionShape,
                       LongPointer dDimensionShape);
 
+  void execIndexReduceScalar(PointerPointer extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z, Pointer extraParams);
+
+  void execIndexReduce(PointerPointer extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z, OpaqueNDArray dimension, Pointer extraParams);
+
+
+ void execBroadcast(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension);
  /**
   *
   * @param extraPointers
@@ -189,7 +196,10 @@ public interface NativeOps {
                     LongPointer dresultShapeInfo,
                     OpaqueDataBuffer hDimension,
                     LongPointer hDimensionShape,
+
                     LongPointer dDimensionShape);
+
+ void execBroadcastBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
 
  void execBroadcastBool(PointerPointer extraPointers,
                         int opNum,
@@ -208,6 +218,8 @@ public interface NativeOps {
                         LongPointer dDimensionShape);
 
 
+
+ void execPairwiseTransform(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
  /**
   *
   * @param extraPointers
@@ -236,6 +248,9 @@ public interface NativeOps {
                             LongPointer dresultShapeInfo,
                             Pointer extraParams);
 
+
+ void execPairwiseTransformBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
  void execPairwiseTransformBool(PointerPointer extraPointers,
                                 int opNum,
                                 OpaqueDataBuffer x,
@@ -249,6 +264,7 @@ public interface NativeOps {
                                 LongPointer dresultShapeInfo,
                                 Pointer extraParams);
 
+ void execReduceFloat(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
  /**
   * @param opNum
   * @param x
@@ -267,6 +283,7 @@ public interface NativeOps {
                       LongPointer resultShapeInfo,
                       LongPointer dresultShapeInfo);
 
+ void execReduceSame(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
 
  void execReduceSame(PointerPointer extraPointers,
                      int opNum,
@@ -278,7 +295,7 @@ public interface NativeOps {
                      LongPointer resultShapeInfo,
                      LongPointer dresultShapeInfo);
 
-
+ void execReduceBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
  void execReduceBool(PointerPointer extraPointers,
                      int opNum,
                      OpaqueDataBuffer x,
@@ -289,7 +306,7 @@ public interface NativeOps {
                      LongPointer resultShapeInfo,
                      LongPointer dresultShapeInfo);
 
-
+ void execReduceLong(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
  void execReduceLong(PointerPointer extraPointers,
                      int opNum,
                      OpaqueDataBuffer x,
@@ -299,6 +316,17 @@ public interface NativeOps {
                      OpaqueDataBuffer result,
                      LongPointer resultShapeInfo,
                      LongPointer dresultShapeInfo);
+
+ void execReduceFloat2(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+ void execReduceBool2(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+ void execReduceSame2(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+ void execReduceLong2(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+ void execReduce3(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
 
  /**
   * @param opNum
@@ -404,6 +432,7 @@ public interface NativeOps {
                         LongPointer zShapeInfo,
                         LongPointer dzShapeInfo);
 
+ void execReduce3Tad(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
  /**
   *
   * @param extraPointers
@@ -464,7 +493,9 @@ public interface NativeOps {
                      LongPointer yTadShape,
                      LongPointer yOffsets);
 
+ void execReduce3Scalar(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
 
+ void execReduce3All(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
  /**
   * @param opNum
   * @param x
@@ -500,6 +531,8 @@ public interface NativeOps {
                      LongPointer dscalarShapeInfo,
                      Pointer extraParams);
 
+
+ void execSummaryStatsScalar(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams, boolean biasCorrected);
  /**
   * @param opNum
   * @param x
@@ -537,6 +570,8 @@ public interface NativeOps {
                        LongPointer resultShapeInfo,
                        LongPointer dresultShapeInfo,
                        boolean biasCorrected);
+
+ void execSummaryStatsTad(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams, boolean biasCorrected);
 
  /**
   *
@@ -595,6 +630,15 @@ public interface NativeOps {
                          LongPointer dresultShapeInfo,
                          Pointer extraParams);
 
+ void execTransformFloat(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
+
+ void execTransformAny(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
+ void execTransformStrict(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
+ void execTransformSame(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
  void execTransformSame(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
@@ -615,6 +659,8 @@ public interface NativeOps {
                           LongPointer dresultShapeInfo,
                           Pointer extraParams);
 
+ void execTransformBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
+
  void execTransformBool(PointerPointer extraPointers,
                         int opNum,
                         OpaqueDataBuffer x,
@@ -634,6 +680,20 @@ public interface NativeOps {
                        LongPointer resultShapeInfo,
                        LongPointer dresultShapeInfo,
                        Pointer extraParams);
+
+
+
+ void execScalarTad(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray scalar, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+ void execScalarBoolTad(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray scalar, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
+
+
+ void execScalar(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams);
+
+ void execScalarBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray scalar, Pointer extraParams);
+
+
+
 
  /**
   *
@@ -877,24 +937,6 @@ public interface NativeOps {
 
  boolean isExperimentalEnabled();
 
- // GridOps
-
-/*
-    // MetaOps
-    void execMetaPredicateShape(PointerPointer extras,
-                                                int opTypeA, int opNumA,
-                                                int opTypeB, int opNumB,
-                                                long N,
-                                                Pointer x,  LongPointer xShape,
-                                                Pointer dx,  LongPointer dxShape,
-                                                Pointer y,  LongPointer yShape,
-                                                Pointer dy,  LongPointer dyShape,
-                                                Pointer z,  LongPointer zShape,
-                                                Pointer dz,  LongPointer dzShape,
-                                                Pointer extraA, Pointer extraB, double scalarA,
-                                                double scalarB);
-
-*/
  /////////////////////////
 
  void execAggregate(PointerPointer extras, int opNum,
@@ -915,6 +957,8 @@ public interface NativeOps {
                          Pointer ptrToArguments, @Cast("nd4j::DataType") int dataType);
 
 
+ void execRandom(PointerPointer extraPointers, int opNum, Pointer state, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);;
+
  //////////////
  void execRandom(PointerPointer extraPointers,
                  int opNum,
@@ -923,6 +967,9 @@ public interface NativeOps {
                  LongPointer zShapeBuffer,
                  LongPointer dzShapeBuffer,
                  Pointer extraArguments);
+
+
+ void execRandom3(PointerPointer extraPointers, int opNum, Pointer state, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);
 
  void execRandom3(PointerPointer extraPointers,
                   int opNum,
@@ -937,6 +984,9 @@ public interface NativeOps {
                   LongPointer zShapeBuffer,
                   LongPointer dzShapeBuffer,
                   Pointer extraArguments);
+
+
+ void execRandom2(PointerPointer extraPointers, int opNum, Pointer state, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraArguments);
 
  void execRandom2(PointerPointer extraPointers,
                   int opNum,
@@ -1238,7 +1288,7 @@ public interface NativeOps {
 
  OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs);
 
- OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs,  IntPointer dArgs, int numDArgs);
+ OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs,  LongPointer iArgs, int numIArgs,  BooleanPointer bArgs, int numBArgs,  IntPointer dArgs, int numDArgs,LongPointer offsets);
 
 
 
@@ -1318,6 +1368,10 @@ public interface NativeOps {
   */
  int dataTypeFromNpyHeader(Pointer numpyHeader);
 
+ OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(LongPointer shapeInfo);
+ OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(LongBuffer shapeInfo);
+ OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer( long[] shapeInfo);
+
  OpaqueConstantShapeBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
 
  OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
@@ -1340,22 +1394,41 @@ public interface NativeOps {
  OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
  void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
  void setGraphContextCudaContext(OpaqueContext ptr, Pointer stream, Pointer reductionPointer, Pointer allocationPointer);
- void setGraphContextInputBuffer(OpaqueContext ptr, int index, OpaqueDataBuffer databuffer, OpaqueDataBuffer shapeInfo, OpaqueDataBuffer specialShapeInfo);
- void setGraphContextOutputBuffer(OpaqueContext ptr, int index, OpaqueDataBuffer databuffer, OpaqueDataBuffer shapeInfo, OpaqueDataBuffer specialShapeInfo);
+
+ void setGraphContextInputArray(org.nd4j.nativeblas.OpaqueContext ptr, int index, org.nd4j.nativeblas.OpaqueNDArray arr);
+
+ void setGraphContextOutputArray(org.nd4j.nativeblas.OpaqueContext ptr, int index, org.nd4j.nativeblas.OpaqueNDArray arr);
+
+ void setGraphContextInputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, OpaqueNDArrayArr arr);
+
+ void setGraphContextOutputArraysArr(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, OpaqueNDArrayArr arr);
 
 
 
- void setGraphContextInputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                 PointerPointer specialBuffer, PointerPointer specialShapeInfo);
- void setGraphContextOutputArrays(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                  PointerPointer specialBuffer, PointerPointer specialShapeInfo);
- void setGraphContextInputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                  PointerPointer specialShapeInfo);
+ OpaqueNDArray getOutputArrayNative(OpaqueContext ptr, int idx);
 
- void setGraphContextOutputBuffers(org.nd4j.nativeblas.OpaqueContext ptr, int numArrays, PointerPointer buffer, PointerPointer shapeInfo,
-                                   PointerPointer specialShapeInfo);
+ OpaqueNDArray getInputArrayNative(OpaqueContext ptr, int idx);
+
+ long dataTypeNativeAt(OpaqueContext ptr, int idx);
 
 
+ boolean bArgAtNative(OpaqueContext ptr, int idx);
+
+ long iArgumentAtNative(OpaqueContext ptr, int idx);
+
+ long numDNative(OpaqueContext ptr);
+
+ long numBNative(OpaqueContext ptr);
+
+ long numOutputsNative(OpaqueContext ptr);
+
+ long numInputsNative(OpaqueContext ptr);
+
+ double tArgumentNative(OpaqueContext ptr, int idx);
+
+ long numIArgumentsNative(org.nd4j.nativeblas.OpaqueContext ptr);
+
+ long numTArgumentsNative(OpaqueContext ptr);
  void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/,@Cast("bool") boolean isEmpty/*=false*/,@Cast("bool") boolean isView/*=false*/);
  void setShapeBuffer(@Cast("sd::LongType*") LongPointer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongPointer bufferToSet);
  void setShapeBuffer(@Cast("sd::LongType*") LongBuffer inputShapeData,@Cast("sd::DataType") int dt,@Cast("sd::LongType*") LongBuffer bufferToSet,char order/*='c'*/,int elementWiseStride/*=1*/,@Cast("bool") boolean isEmpty/*=false*/,@Cast("bool") boolean isView/*=false*/);
@@ -1389,6 +1462,21 @@ public interface NativeOps {
 
 
 
+
+ OpaqueNDArray create(OpaqueDataBuffer shapeInfo, OpaqueDataBuffer buffer, OpaqueDataBuffer specialBuffer, long offset);
+
+
+ void deleteNDArray(OpaqueNDArray array);
+
+ long getOpaqueNDArrayOffset(OpaqueNDArray array);
+
+ LongPointer getOpaqueNDArrayShapeInfo(OpaqueNDArray array);
+
+ Pointer getOpaqueNDArrayBuffer(OpaqueNDArray array);
+ Pointer getOpaqueNDArraySpecialBuffer( OpaqueNDArray array);
+
+ long getOpaqueNDArrayLength(OpaqueNDArray array);
+
  long getCachedMemory(int deviceId);
 
  OpaqueLaunchContext defaultLaunchContext();
@@ -1416,7 +1504,7 @@ public interface NativeOps {
  OpaqueDataBuffer allocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  OpaqueDataBuffer dbAllocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  OpaqueDataBuffer dbCreateExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
- OpaqueDataBuffer dbCreateView(OpaqueDataBuffer dataBuffer, long length, long offset);
+ OpaqueDataBuffer dbCreateView(OpaqueDataBuffer dataBuffer, long length);
  Pointer dbPrimaryBuffer(OpaqueDataBuffer dataBuffer);
  Pointer dbSpecialBuffer(OpaqueDataBuffer dataBuffer);
  long dbBufferLength(org.nd4j.nativeblas.OpaqueDataBuffer dataBuffer);

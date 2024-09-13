@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void __depthToSpace(const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+static void __depthToSpace(NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   T const *input_ptr = reinterpret_cast<T const *>(input.buffer());
   T *output_ptr = reinterpret_cast<T *>(output->buffer());
 
@@ -95,14 +95,14 @@ static void __depthToSpace(const NDArray &input, NDArray *output, int block_size
   }
 }
 
-void _depthToSpace(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _depthToSpace(sd::LaunchContext *context, NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   auto xType = input.dataType();
 
   BUILD_SINGLE_SELECTOR(xType, __depthToSpace, (input, output, block_size, isNHWC), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void __depthToSpace,
-                      (const NDArray &input, NDArray *output, int block_size, bool isNHWC);
+                      (NDArray&input, NDArray *output, int block_size, bool isNHWC);
                       , SD_COMMON_TYPES);
 
 }  // namespace helpers

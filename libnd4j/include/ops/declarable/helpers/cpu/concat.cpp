@@ -28,16 +28,16 @@ namespace ops {
 namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void concat_(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
   sd::SpecialMethods<T>::concatCpuGeneric(inArrs, output, axis);
 }
 
-void concat(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
   BUILD_SINGLE_SELECTOR(output.dataType(), concat_, (inArrs, output, axis), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void concat_,
-                      (const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis), SD_COMMON_TYPES);
+                      (const std::vector<NDArray*>& inArrs, NDArray& output, const int axis), SD_COMMON_TYPES);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

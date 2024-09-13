@@ -140,9 +140,9 @@ static void SD_KERNEL cmpBitpackEws(const void* vx, void* vz, int len, const Lon
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, const NDArray& input,
+static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, NDArray& input,
 
-                                           const NDArray& thresholdScalar, NDArray& output) {
+                                           NDArray& thresholdScalar, NDArray& output) {
   T threshold = thresholdScalar.e<T>(0);
 
   auto inStrides = input.stridesOf();
@@ -186,7 +186,7 @@ static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, const NDArray&
   manager.synchronize();
 }
 
-void compareAndBitpack(graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output) {
+void compareAndBitpack(graph::Context& block, NDArray& input, NDArray& threshold, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), cmpBitpackCudaLauncher, (block, input, threshold, output), SD_COMMON_TYPES);
 }
 

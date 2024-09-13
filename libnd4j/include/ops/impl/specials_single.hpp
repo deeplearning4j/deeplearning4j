@@ -38,7 +38,7 @@ namespace sd {
  * @param axis
  * @return int
  */
-SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, LongType axis) {
+SD_INLINE int isShapeExtendedWithOnes(NDArray&input, LongType axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();
@@ -67,7 +67,7 @@ struct InputArgsCase2 {
 };
 
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output,
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, NDArray &output,
                                          const LongType axis) {
   const sd::LongType numOfInArrs = inArrs.size();
   const auto sizeofT = output.sizeOfT();
@@ -124,7 +124,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
 
   // for one Array
   if (numOfInArrs < 2) {
-    output.assign(inArrs[0]);
+    output.assign(*inArrs[0]);
     return;
   }
   bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
@@ -215,12 +215,13 @@ template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
                                          void *vresult, sd::LongType const *resultShapeInfo) {
   auto result = reinterpret_cast<T *>(vresult);
-  std::vector<const NDArray *> inputs(numArrays);
+  std::vector<NDArray *> inputs(numArrays);
 
-  NDArray output(static_cast<void *>(result), resultShapeInfo);
+  NDArray output(static_cast<void *>(result), resultShapeInfo, nullptr, 0, 0);
 
   for (sd::LongType i = 0; i < numArrays; ++i)
-    inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]));
+    inputs[i] =
+        new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]), nullptr, 0, 0);
 
   sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
@@ -228,7 +229,7 @@ void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::
 }
 
 template <typename T>
-void SpecialMethods<T>::splitCpuGeneric(const NDArray &input, const std::vector<NDArray *> &outArrs,
+void SpecialMethods<T>::splitCpuGeneric(NDArray&input, const std::vector<NDArray *> &outArrs,
                                         const LongType axis) {
   int numSplits = outArrs.size();
 
@@ -556,7 +557,7 @@ sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const
       if (e >= N) continue;
 
       T val = dx[e];
-      T abs = sd::math::sd_abs<T>(val);
+      T abs = sd::math::sd_abs<T,T>(val);
 
       int bitId = e % 16;
 

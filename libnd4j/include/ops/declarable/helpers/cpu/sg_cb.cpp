@@ -195,7 +195,7 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
           // target is known in advance
         } else {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<sd::LongType,sd::LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
           if (irow == nsStarter) continue;
@@ -281,7 +281,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
           // target is known in advance
         } else {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<sd::LongType,sd::LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -336,16 +336,16 @@ int binarySearch(const int *haystack, const int needle, const int totalElements)
 
 
 template <typename T>
-void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
-                     const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
-                     const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, NDArray&targets,
+                     NDArray&negStarters, NDArray&indices, NDArray&codes, NDArray&lr,
+                     NDArray&nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                      const int expLength, const int negLength, T *const expTable, const T *negTable,
                      const LongType hsRounds, int t);
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArray &targets,
-                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
-                              const double lr, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&targets,
+                              NDArray&negStarters, NDArray&indices, NDArray&codes,
+                              const double lr, NDArray&nextRandom, const int nsRounds, const int vocabSize,
                               const int vectorLength, const int expLength, const int negLength, T *const expTable,
                               const T *negTable, const LongType hsRounds, int t, T *neu1e);
 
@@ -539,9 +539,9 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTab
 
 
 template <typename T>
-void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArray &targets,
-                              const NDArray &negStarters, const NDArray &indices, const NDArray &codes,
-                              const double alpha, const NDArray &nextRandom, const int nsRounds, const int vocabSize,
+void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&targets,
+                              NDArray&negStarters, NDArray&indices, NDArray&codes,
+                              const double alpha, NDArray&nextRandom, const int nsRounds, const int vocabSize,
                               const int vectorLength, const int expLength, const int negLength, T *const expTable,
                               const T *negTable, const LongType hsRounds, int t, T *neu1e) {
 
@@ -585,7 +585,7 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
 #pragma omp for nowait
       for (int r = 1; r < nsRounds + 1; r++) {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irows[r] = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irows[r] < 0 || irows[r] >= vocabSize) irows[r] = randomValue % (vocabSize - 1) + 1;
@@ -621,9 +621,9 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, const NDArr
 
 
 template <typename T>
-void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, const NDArray &targets,
-                     const NDArray &negStarters, const NDArray &indices, const NDArray &codes, const NDArray &lr,
-                     const NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
+void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector, NDArray&targets,
+                     NDArray&negStarters, NDArray&indices, NDArray&codes, NDArray&lr,
+                     NDArray&nextRandom, const int nsRounds, const int vocabSize, const int vectorLength,
                      const int expLength, const int negLength, T *const expTable, const T *negTable,
                      const LongType hsRounds, int t) {
 
@@ -678,7 +678,7 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
         // target is known in advance
       } else {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -705,8 +705,8 @@ BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_,
                       SD_NATIVE_FLOAT_TYPES);
 
 template <typename T>
-void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStarters, const NDArray &indices,
-                 const NDArray &codes, const NDArray &lr, const NDArray &nextRandom, const NDArray &nLabels,
+void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray&negStarters, NDArray&indices,
+                 NDArray&codes, NDArray&lr, NDArray&nextRandom, NDArray&nLabels,
                  const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                  const int negLength, const bool trainWords, T *const expTable, const T *negTable, const T *infVector,
                  const int contextWidth, const int *bContext, const int *bLocker, const int *bStarters,
@@ -776,8 +776,8 @@ void cbowBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vexpTable, 
 
 }
 template <typename T>
-void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStarters, const NDArray &indices,
-                 const NDArray &codes, const NDArray &lr, const NDArray &nextRandom, const NDArray &nLabels,
+void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray&negStarters, NDArray&indices,
+                 NDArray&codes, NDArray&lr, NDArray&nextRandom, NDArray&nLabels,
                  const int nsRounds, const int vocabSize, const int vectorLength, const int expLength,
                  const int negLength, const bool trainWords, T *const expTable, const T *negTable, const T *infVector,
                  const int contextWidth, const int *bContext, const int *bLocker, const int *bStarters,
@@ -844,7 +844,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, const NDArray &negStart
       // we're skipping rng on 0 step
       if (r != 0) {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;

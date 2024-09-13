@@ -101,7 +101,7 @@ void rmsPropUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterRmsProp(LaunchContext *context, const NDArray &gradient, const NDArray &initState, NDArray &update,
+void updaterRmsProp(LaunchContext *context, NDArray&gradient, NDArray&initState, NDArray &update,
                     NDArray &stateG, const double dLr, const double dRmsDecay, const double dEpsilon) {
   PointersManager manager(context, "rmsPropUpdater");
 

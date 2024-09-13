@@ -119,7 +119,7 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
 }
 
 template <typename X, typename Z>
-static void lrnBP_(graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+static void lrnBP_(graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI,
                    const int depth, const float bias, const float alpha, const float beta) {
   auto rank = input.rankOf();
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {rank - 1});
@@ -141,7 +141,7 @@ static void lrnBP_(graph::Context& block, const NDArray& input, const NDArray& g
   gradI *= gradO;
 }
 
-void lrnBP(graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth,
+void lrnBP(graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI, const int depth,
            const float bias, const float alpha, const float beta) {
   input.syncToDevice();
   gradO.syncToDevice();

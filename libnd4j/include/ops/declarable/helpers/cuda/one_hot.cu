@@ -91,7 +91,7 @@ static void onehotCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void onehot(const LaunchContext *context, const NDArray *indices, NDArray *output, const LongType axis,
+void onehot(const LaunchContext *context, NDArray *indices, NDArray *output, const LongType axis,
             const LongType depth, const double on, const double off) {
   const auto xType = indices->dataType();
   const auto zType = output->dataType();

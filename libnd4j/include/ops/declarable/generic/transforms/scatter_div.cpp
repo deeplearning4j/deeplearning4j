@@ -38,7 +38,7 @@ OP_IMPL(scatter_div, 3, 1, true) {
 
   auto output = OUTPUT_VARIABLE(0);
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) output->assign(*input);
 
   const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
   const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);

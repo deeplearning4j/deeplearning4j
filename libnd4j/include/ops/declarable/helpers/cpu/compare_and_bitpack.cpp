@@ -96,7 +96,7 @@ uint8_t pack<bool>(const bool* buff, int stride, const bool& threshold) {
 }
 
 template <typename X>
-void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, NDArray& output) {
+void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& output) {
   auto rank = input.rankOf();
   X threshold = thresholdScalar.e<X>(0);
   auto buff = input.bufferAsT<X>();
@@ -172,12 +172,12 @@ void compareAndBitpack_(const NDArray& input, const NDArray& thresholdScalar, ND
 }
 
 /////////////////////////////////////////////////////////////
-void compareAndBitpack(sd::graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output) {
+void compareAndBitpack(sd::graph::Context& block, NDArray& input, NDArray& threshold, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), compareAndBitpack_, (input, threshold, output), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void compareAndBitpack_,
-                      (const NDArray& input, const NDArray& threshold, NDArray& output), SD_COMMON_TYPES);
+                      (NDArray& input, NDArray& threshold, NDArray& output), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

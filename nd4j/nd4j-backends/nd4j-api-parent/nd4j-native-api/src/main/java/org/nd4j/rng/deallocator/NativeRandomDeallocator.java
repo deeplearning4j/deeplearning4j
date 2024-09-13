@@ -22,6 +22,7 @@ package org.nd4j.rng.deallocator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.lang.ref.ReferenceQueue;
@@ -96,7 +97,7 @@ public class NativeRandomDeallocator {
                     if (reference != null) {
                         if (reference.getStatePointer() != null) {
                             referenceMap.remove(reference.getStatePointer().address());
-                            NativeOpsHolder.getInstance().getDeviceNativeOps()
+                           Nd4j.getNativeOps()
                                             .destroyRandom(reference.getStatePointer());
                         }
                     } else {

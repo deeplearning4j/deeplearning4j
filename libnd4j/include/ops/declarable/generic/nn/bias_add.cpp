@@ -64,7 +64,7 @@ DECLARE_SHAPE_FN(biasadd) {
   auto yShape = inputShape->at(1);
 
   auto dtype = ArrayOptions::dataType(yShape);
-  auto desc = new ShapeDescriptor(xShape, dtype);
+  auto desc = new ShapeDescriptor(xShape, dtype, false);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   delete desc;
   return ret;
@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
   const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
   const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
 
-  gradI->assign(gradO);
+  gradI->assign(*gradO);
 
   std::vector<sd::LongType> channel;
   channel.push_back(channelDim);

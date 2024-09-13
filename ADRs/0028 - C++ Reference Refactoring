@@ -1,0 +1,70 @@
+# Convert C++ Dereferences to In-Place References
+
+## Status
+**Proposed**
+
+Proposed by: Adam Gibson (Sep 13,2024)
+
+## Context
+
+Our C++ codebase currently uses a mix of pointer dereferencing and reference syntax. This inconsistency can lead to readability issues and potential performance implications. There's a need to standardize our approach to accessing object members and methods, particularly in performance-critical sections of our code.
+
+## Proposal
+
+Implement a codebase-wide conversion of pointer dereferences to in-place references in C++. The key features of this proposal include:
+
+1. Convert all instances of pointer dereferencing (e.g., `*ptr`) to reference syntax (e.g., `Type& ref = *ptr`).
+2. Update function parameters to use reference types where appropriate.
+3. Maintain pointer syntax (`->`) for method calls on pointers.
+4. Update documentation and coding standards to reflect this change.
+
+Example of the proposed change:
+
+```cpp
+// Before
+if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
+  x->applyScalarArr(op.s, *y, *z);
+}
+
+// After
+if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
+  NDArray &yRef = *y;
+  NDArray &zRef = *z;
+  x->applyScalarArr(op.s, yRef, zRef);
+}
+```
+
+## Consequences
+
+### Advantages
+
+* Improves code readability by making object access more explicit.
+* Potentially reduces the risk of null pointer dereferences.
+* May lead to minor performance improvements in some cases.
+* Standardizes the codebase, making it easier for developers to understand and maintain.
+
+### Disadvantages
+
+* Requires a significant refactoring effort across the entire codebase.
+* May introduce temporary bugs during the transition if not done carefully.
+* Slightly increases verbosity in some parts of the code.
+* Could potentially impact compile times due to increased template instantiations.
+
+### Risks
+
+* Risk of introducing bugs during the refactoring process.
+* Potential for merge conflicts in long-lived feature branches.
+* May cause confusion for developers who are more accustomed to pointer syntax.
+
+## Action Items
+
+1. Develop a comprehensive guide for converting dereferences to references.
+2. Create an automated tool or script to assist in the conversion process.
+3. Update the team's C++ style guide to reflect the new standards.
+4. Conduct a pilot conversion on a small, isolated part of the codebase.
+5. Schedule the refactoring process, possibly dividing it into manageable chunks.
+6. Update all relevant documentation, including comments in the code.
+7. Implement additional unit tests to ensure functionality remains intact after the changes.
+8. Conduct thorough code reviews and testing for each refactored section.
+9. Plan for a grace period to allow developers to adapt to the new style.
+10. Monitor performance metrics before and after the change to quantify any impacts.

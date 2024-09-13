@@ -31,7 +31,7 @@ namespace helpers {
 template <typename T>
 class Sqrtm {
  public:
-  static void calc(const NDArray& in, NDArray& out);
+  static void calc(NDArray& in, NDArray& out);
 };
 
 }  // namespace helpers

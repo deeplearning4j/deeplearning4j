@@ -61,7 +61,7 @@ void reduceNorm1(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, 
 template <typename T>
 void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
-    return math::sd_max<T>(x, (T)0.f) - x * y + math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs(x)));
+    return math::sd_max<T>(x, (T)0.f) - x * y + math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(x)));
   };
 
   logits->applyPairwiseLambda(*labels, functor, *output);
@@ -90,14 +90,10 @@ void sigmCrossEntropyGrad(LaunchContext* context, NDArray* logits, NDArray* labe
   BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), SD_FLOAT_TYPES);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//            X f = (X) 1.0f + sd::math::sd_abs<X>(d1);
-//            return (X) d2 * ((X) 1.0f / (f * f));
-//
 template <typename T>
 void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
-    T ss = (T)1.f + math::sd_abs<T>(x);
+    T ss = (T)1.f + math::sd_abs<T,T>(x);
     return y * ((T)1.0f / (ss * ss));
   };
 
@@ -196,19 +192,19 @@ void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights,
+void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, NDArray * weights,
                                             NDArray* output) {
   T posWeight = weights->e<T>(0);
 
   auto mainRoutineT1 = LAMBDA_TT(_x, _z, posWeight) {
     T targetWeight = (1. + (posWeight - (T)1.f) * _z);
     return (1. - _z) * _x +
-           targetWeight * (math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs(_x))) +
+           targetWeight * (math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) +
                                             math::sd_max(-_x, T(0.f)));
   };
 
   auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
-    return (((T)1.0 - _z) * _x) + _w * (math::sd_log<T, T>(T(1.) + math::sd_exp<T, T>(-math::sd_abs(_x))) + math::sd_max(-_x, T(0.f)));
+    return (((T)1.0 - _z) * _x) + _w * (math::sd_log<T, T>(T(1.) + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) + math::sd_max(-_x, T(0.f)));
   };
 
   if (weights->isScalar()) {
@@ -224,8 +220,8 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray cons
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray const* targets, NDArray const* input,
-                                           NDArray const* weights, NDArray* output) {
+void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray * targets, NDArray * input,
+                                           NDArray * weights, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {targets, input, weights});
 
   BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output),

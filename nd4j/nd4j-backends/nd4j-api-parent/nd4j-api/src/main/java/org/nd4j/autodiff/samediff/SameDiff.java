@@ -224,7 +224,7 @@ public class SameDiff extends SDBaseOps {
      *  was toggled to true.
      */
     public static SameDiff collectTrace() {
-        NativeOps deviceNativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps deviceNativeOps =Nd4j.getNativeOps();
         PointerPointer opExecTraceVector = deviceNativeOps.listOpTraces();
         OpExecTraceVector opExecTraceVector1 = new OpExecTraceVector(opExecTraceVector);
         SameDiff sameDiff = create();
@@ -242,11 +242,15 @@ public class SameDiff extends SDBaseOps {
 
             for(int j = 0; j < numInputs; j++) {
                 LongPointer longPointer = inputShapeBuffers.get(LongPointer.class,j);
-                longPointer.capacity(Shape.shapeInfoLength(longPointer.get(0)));
+                long[] pointerData = new long[Shape.shapeInfoLength(longPointer.get(0))];
+                longPointer.get(pointerData);
+                longPointer.capacity(Shape.shapeInfoLength(pointerData[0]));
                 DataBuffer dataBuffer = Nd4j.createBuffer(longPointer, longPointer.capacity(),DataType.LONG);
 
 
-                SDVariable create = sameDiff.create(sameDiff.constant(Nd4j.createFromArray(Shape.shape(dataBuffer))),Shape.dataType(dataBuffer));
+                SDVariable create = sameDiff.create(sameDiff.constant(
+                        Nd4j.createFromArray(pointerData)),
+                        Shape.dataType(pointerData));
                 variables.add(create);
             }
 

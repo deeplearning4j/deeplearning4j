@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
                input->rankOf());
 
   if (output->isSameShape(input))
-    output->assign(input);
+    output->assign(*input);
   else {
     output->nullify();
     helpers::extractPatches(block.launchContext(), input, output, ksizeRows, ksizeCols, kstrideRows, kstrideCols,

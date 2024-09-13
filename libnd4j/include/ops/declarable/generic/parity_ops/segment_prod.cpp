@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
   auto gradOut = INPUT_VARIABLE(2);
   auto output = OUTPUT_NULLIFIED(0);
   auto outIndices = OUTPUT_NULLIFIED(1);
-  outIndices->assign(indices);
+  outIndices->assign(*indices);
   helpers::segmentProdFunctorBP(block.launchContext(), input, indices, gradOut, output);
 
   return Status::OK;

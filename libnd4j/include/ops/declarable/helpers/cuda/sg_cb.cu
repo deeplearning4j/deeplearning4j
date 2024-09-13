@@ -211,7 +211,7 @@ void skipgram_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTableV, NDArr
         // target is known in advance
       } else {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = sd::math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = sd::math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : negTableV.e<int>(idx);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -316,7 +316,7 @@ void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &expTabl
           // target is known in advance
         } else {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -521,7 +521,7 @@ void cbow_(LaunchContext *lc, void *vsyn0, void *vsyn1, void *vsyn1Neg, void *ve
         // target is known in advance
       } else {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = sd::math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = sd::math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -727,7 +727,7 @@ void cbowBatchExec_(LaunchContext *lc, NDArray &s0, NDArray &s1, NDArray &s1n, v
         // we're skipping rng on 0 step
         if (r != 0) {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;

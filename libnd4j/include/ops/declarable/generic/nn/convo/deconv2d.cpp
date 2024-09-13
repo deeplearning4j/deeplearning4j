@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
                oC, bias->rankOf(), bias->lengthOf());
 
   std::vector<LongType> outputPermute = {0,3,1,2};
-  if (!isNCHW) output = new NDArray(output->permute(outputPermute));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+  if (!isNCHW) output = new NDArray(output->permute(outputPermute, false, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
   std::vector<LongType> colPermut;
   if (1 == wFormat)
@@ -274,7 +274,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
   if (!isNCHW) {
     std::vector<LongType> permuteDims = {0,3,1,2};
-    gradO = new NDArray(gradO->permute(permuteDims));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradO = new NDArray(gradO->permute(permuteDims, false, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     inputAxes = {0, 1, 2};                              // bS, iH, iW
   } else
     inputAxes = {0, 2, 3};  // bS, iH, iW
@@ -290,9 +290,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   NDArray columns(input->ordering(), colShape, input->dataType(), block.launchContext());
 
   LaunchContext* ctx = block.launchContext();
+  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+     zero );  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
   std::vector<LongType> mulDims = {0,4,5};
   MmulHelper::tensorDot(input, &columns, gradW, inputAxes, mulDims,
                         gradWAxes);  // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]

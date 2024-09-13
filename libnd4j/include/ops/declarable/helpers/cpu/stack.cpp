@@ -31,7 +31,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+static void stack_(const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   const int numOfSubArrs = inArrs.size();
 
   //no op on empty
@@ -65,15 +65,15 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
 }
 
 ////////////////////////////////////////////////////////////////////////
-void stack(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+void stack(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (inArrs, output, dim), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void stack_, (const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim),
+BUILD_SINGLE_TEMPLATE(template void stack_, (const std::vector<NDArray*>& inArrs, NDArray& output, const int dim),
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+static void unstack_(NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
   const int numOfSubArrs = outArrs.size();
 
   if (outArrs[0]->rankOf() == 0) {
@@ -105,11 +105,11 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void unstack(sd::LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+void unstack(sd::LaunchContext* context, NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
   BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (input, outArrs, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void unstack_,
-                      (const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), SD_COMMON_TYPES);
+                      (NDArray& input, const std::vector<NDArray*>& outArrs, const int dim), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

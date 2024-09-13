@@ -99,7 +99,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTestWithBackends {
 
         assertEquals(requiredMemory , workspace.getSpilledSize());
         //+ 192 is for shape buffers and alignment padding
-        System.out.println(Nd4j.getProfiler().printCurrentStats());
         MemoryKind memoryKindTest = backend.getEnvironment().isCPU() ? MemoryKind.HOST : MemoryKind.DEVICE;
        long trackedMem = AllocationsTracker.getInstance().getTracker("WS1").currentPinnedBytes(memoryKindTest);
        long pinned = workspace.getPinnedSize();

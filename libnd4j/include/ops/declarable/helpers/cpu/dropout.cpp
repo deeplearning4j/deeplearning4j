@@ -78,10 +78,11 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
     std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), output->getContext()));
-    chunk->assign(1.f);
+    float assign = 1.f;
+    chunk->assign(assign);
     dropoutSimple<T>(chunk.get(), chunk.get(), probValue, seed, nullptr);
     // broadcast chunk to full matrix
-    mask->assign(1.f);
+    mask->assign(assign);
 
     *mask += *chunk;
 

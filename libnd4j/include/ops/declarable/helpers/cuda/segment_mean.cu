@@ -168,8 +168,10 @@ static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray*
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
 
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  int zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero2);
   NDArray::prepareSpecialUse({output}, {input, indices});
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
@@ -218,8 +220,10 @@ static void unsortedSegmentMeanFunctor_(LaunchContext* context, NDArray* input, 
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
 
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  int zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero2);
   dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -232,8 +236,8 @@ static void unsortedSegmentMeanFunctor_(LaunchContext* context, NDArray* input, 
     sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentMeanLinearKernel failed");
 
   } else {
-    output->assign(0);
     LongType zero = 0;
+    output->assign(zero);
     std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), 1,&zero);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
@@ -344,9 +348,10 @@ Status segmentMeanFunctorBP_(LaunchContext* context, NDArray* input, NDArray* in
   auto numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
-
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(zero2);
+  classesRangesLens.assign(len);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
@@ -408,8 +413,10 @@ static Status unsortedSegmentMeanFunctorBP_(LaunchContext* context, NDArray* inp
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
 
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(zero2);
+  classesRangesLens.assign(len);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());

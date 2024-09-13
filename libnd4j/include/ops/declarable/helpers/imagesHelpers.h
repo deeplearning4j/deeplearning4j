@@ -33,17 +33,17 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void transformRgbGrs(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
+SD_LIB_HIDDEN void transformRgbGrs(LaunchContext* context, NDArray& input, NDArray& output, const int dimC);
 
-SD_LIB_HIDDEN void transformHsvRgb(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+SD_LIB_HIDDEN void transformHsvRgb(LaunchContext* context, NDArray* input, NDArray* output, const int dimC);
 
-SD_LIB_HIDDEN void transformRgbHsv(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
-SD_LIB_HIDDEN void transformYuvRgb(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
-SD_LIB_HIDDEN void transformRgbYuv(LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
+SD_LIB_HIDDEN void transformRgbHsv(LaunchContext* context, NDArray* input, NDArray* output, const int dimC);
+SD_LIB_HIDDEN void transformYuvRgb(LaunchContext* context, NDArray& input, NDArray& output, const int dimC);
+SD_LIB_HIDDEN void transformRgbYuv(LaunchContext* context, NDArray& input, NDArray& output, const int dimC);
 
-SD_LIB_HIDDEN void transformYiqRgb(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+SD_LIB_HIDDEN void transformYiqRgb(LaunchContext* context, NDArray* input, NDArray* output, const int dimC);
 
-SD_LIB_HIDDEN void transformRgbYiq(LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+SD_LIB_HIDDEN void transformRgbYiq(LaunchContext* context, NDArray* input, NDArray* output, const int dimC);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

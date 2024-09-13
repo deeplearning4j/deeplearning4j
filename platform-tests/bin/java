@@ -24,7 +24,6 @@ set -exo pipefail
 
 #JAVA_CALL="java -DsourceCodeIndexerPath=/home/agibsonccc/Documents/GitHub/deeplearning4j -javaagent:/home/agibsonccc/.m2/repository/org/nd4j/nd4j-log-analyzer/1.0-SNAPSHOT/nd4j-log-analyzer-1.0-SNAPSHOT.jar "
 JAVA_CALL="java "
-
 # Find libjvm.so
 if [[ -n $LIBJVM_SO ]]; then
     LIBJVM_PATH=$LIBJVM_SO

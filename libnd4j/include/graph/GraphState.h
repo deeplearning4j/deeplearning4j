@@ -85,7 +85,6 @@ class SD_LIB_EXPORT GraphState {
    */
   Status forgetScope(int scopeId);
 
-#ifndef __JAVACPP_HACK__
   /**
    * This method adds given op to the end of specified scope
    * PLEASE NOTE: This method is used for tests mostly
@@ -104,7 +103,7 @@ class SD_LIB_EXPORT GraphState {
   Scope* getScope(int scopeId);
 
   Graph* graph();
-#endif
+
   /**
    * This method adds given op to the end of specified scope
    *

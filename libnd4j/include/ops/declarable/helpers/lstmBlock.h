@@ -30,16 +30,16 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast, const NDArray* W,
-                                 const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+SD_LIB_HIDDEN void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W,
+                                 NDArray* Wci, NDArray* Wcf, NDArray* Wco, NDArray* b,
                                  NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y,
                                  const std::vector<double>& params);
 
-SD_LIB_HIDDEN void lstmBlockTimeLoop(const NDArray* maxSeqLength, const NDArray* xSeq, const NDArray* c0,
-                                     const NDArray* y0, const NDArray* W, const NDArray* Wci, const NDArray* Wcf,
-                                     const NDArray* Wco, const NDArray* b, const NDArray* iSeq, const NDArray* cSeq,
-                                     const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq, const NDArray* hSeq,
-                                     const NDArray* ySeq, const std::vector<double>& params, const int dataFormat);
+SD_LIB_HIDDEN void lstmBlockTimeLoop(NDArray* maxSeqLength, NDArray* xSeq, NDArray* c0,
+                                     NDArray* y0, NDArray* W, NDArray* Wci, NDArray* Wcf,
+                                     NDArray* Wco, NDArray* b, NDArray* iSeq, NDArray* cSeq,
+                                     NDArray* fSeq, NDArray* oSeq, NDArray* zSeq, NDArray* hSeq,
+                                     NDArray* ySeq, const std::vector<double>& params, const int dataFormat);
 
 }  // namespace helpers
 }  // namespace ops

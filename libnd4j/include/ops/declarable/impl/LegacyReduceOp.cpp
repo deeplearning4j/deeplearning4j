@@ -158,16 +158,12 @@ ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph
       newShape[5] = 0;
       newShape[6] = 1;
       newShape[7] = 99;
-      // ArrayOptions::setDataType(newShape, block.dataType() ==
-      // DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
     } else {
       ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), sd::LongType);
       newShape[0] = 0;
       newShape[1] = 0;
       newShape[2] = 1;
       newShape[3] = 99;
-      // ArrayOptions::setDataType(newShape, block.dataType() ==
-      // DataType::BOOL?block.dataType():ArrayOptions::dataType(inShape));
     }
   } else {
     // in this case we're building proper shape for reduction

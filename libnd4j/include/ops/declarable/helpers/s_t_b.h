@@ -32,14 +32,14 @@ SD_LIB_HIDDEN void batchToSpace(sd::LaunchContext* context, NDArray input, NDArr
                                 const sd::LongType cropBottom, const sd::LongType cropTop, const sd::LongType cropLeft,
                                 const sd::LongType cropRight, const sd::LongType blockSize);
 
-SD_LIB_HIDDEN void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output,
+SD_LIB_HIDDEN void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output,
                                 const LongType padBottom, const LongType padTop, const LongType padLeft,
                                 const LongType padRight, const LongType blockSize);
 
-SD_LIB_HIDDEN void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray& blockShape,
-                                  const NDArray& padding, NDArray& output);
+SD_LIB_HIDDEN void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
+                                  NDArray& padding, NDArray& output);
 
-SD_LIB_HIDDEN void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
+SD_LIB_HIDDEN void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockShape, NDArray& crop,
                                   NDArray& output);
 
 }  // namespace helpers

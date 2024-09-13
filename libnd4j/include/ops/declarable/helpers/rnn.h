@@ -28,11 +28,11 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void rnnCell(LaunchContext* context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh,
-                           const NDArray* b, const NDArray* ht_1, NDArray* ht);
+SD_LIB_HIDDEN void rnnCell(LaunchContext* context, NDArray* xt, NDArray* Wx, NDArray* Wh,
+                           NDArray* b, NDArray* ht_1, NDArray* ht);
 
-SD_LIB_HIDDEN void rnnTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* Wx, const NDArray* Wh,
-                               const NDArray* b, const NDArray* h0, const NDArray* maxTimeStep, NDArray* h,
+SD_LIB_HIDDEN void rnnTimeLoop(LaunchContext* context, NDArray* x, NDArray* Wx, NDArray* Wh,
+                               NDArray* b, NDArray* h0, NDArray* maxTimeStep, NDArray* h,
                                NDArray* hFinal);
 
 }  // namespace helpers

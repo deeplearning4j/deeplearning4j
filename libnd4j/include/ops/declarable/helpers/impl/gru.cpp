@@ -42,8 +42,8 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* W, const NDArray* Wc,
-             const NDArray* b, const NDArray* bc, NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
+void gruCell(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* W, NDArray* Wc,
+             NDArray* b, NDArray* bc, NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
   // Inputs:
   // x        input [bS, nIn], nIn - input size
   // hI       previous cell output [bS, nOut],  that is at previous time step t-1, nOut - number of units
@@ -90,8 +90,9 @@ void gruCell(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, co
             bu);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
   u->applyTransform(transform::Sigmoid, *u);
 
+  NDArray rTimeHi = *r * *hI;
   // cell gate c = activation(x × Wcx + (r * hlast) × Wch + bc)
-  c->assign(mmul(*x, Wcx) + mmul(*r * *hI, Wch) +
+  c->assign(mmul(*x, Wcx) + mmul(rTimeHi, Wch) +
             *bc);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
   c->applyTransform(transform::Tanh, *c);
 
@@ -197,9 +198,9 @@ void gruTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* W
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
-               const NDArray* b, const NDArray* bc, const NDArray* dLdr, const NDArray* dLdu, const NDArray* dLdc,
-               const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb,
+void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* W, NDArray* Wc,
+               NDArray* b, NDArray* bc, NDArray* dLdr, NDArray* dLdu, NDArray* dLdc,
+               NDArray* dLdh, NDArray* dLdx, NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb,
                NDArray* dLdbc) {
   // Inputs:
   // x              input [bS, iS]
@@ -276,8 +277,8 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
   u.applyTransform(transform::Sigmoid, u);
 
   // cell gate c = activation(x×Wcx + (r*hlast)×Wcu + bc)
-  NDArray c =
-      mmul(*x, Wcx) + mmul(r * *hLast, Wch) + *bc;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+  NDArray rTimesHLast2 =r * *hLast;
+  NDArray c =  mmul(*x, Wcx) + mmul(rTimesHLast2, Wch) + *bc;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
   c.applyTransform(transform::Tanh, c);
 
   // h = (1 - u) * c + u * hPrev
@@ -368,8 +369,8 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
   // NDArray dLdr  = mmul(dLdc * dcdZc * *hLast, WchT);  // [bS, nU]
 
   dLdx->assign(mmul(dLdZu, WuxT) + mmul(dLdZc, WcxT) + mmul(dLdZr, WrxT));  // [bS, iS]
-
-  dLdhLast->assign(*dLdh * u + mmul(dLdZu, WuhT) + mmul(dLdZc * r, WchT) + mmul(dLdZr, WrhT));  // [bS, nU]
+  NDArray dldZTimeR = dLdZc * r;
+  dLdhLast->assign(*dLdh * u + mmul(dLdZu, WuhT) + mmul(dldZTimeR, WchT) + mmul(dLdZr, WrhT));  // [bS, nU]
 
   dLdWrx.assign(mmul(xT, dLdZr));      // [iS, bS] × [bS, nU] = [iS, nU]
   dLdWrh.assign(mmul(hLastT, dLdZr));  // [nU, bS] × [bS, nU] = [nU, nU]
@@ -377,7 +378,8 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
   dLdWuh.assign(mmul(hLastT, dLdZu));  // [nU, bS] × [bS, nU] = [nU, nU]
 
   dLdWcx.assign(mmul(xT, dLdZc));                        // [iS, bS] × [bS, nU] = [iS, nU]
-  dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));  // [nU, bS] × [bS, nU] = [nU, nU]
+  NDArray rTimesHLast = (r * *hLast).transpose();
+  dLdWch.assign(mmul(rTimesHLast, dLdZc));  // [nU, bS] × [bS, nU] = [nU, nU]
 
   std::vector<sd::LongType> zeroVec = {0};
   dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, &zeroVec));  // [nU]
@@ -387,8 +389,8 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hLas
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh,
-               const NDArray* b, const NDArray* dLdh, const NDArray* gates, NDArray* dLdx, NDArray* dLdhI,
+void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh,
+               NDArray* b, NDArray* dLdh, NDArray* gates, NDArray* dLdx, NDArray* dLdhI,
                NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
   // Inputs:
   // x              input [bS, nIn]
@@ -486,8 +488,9 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, 
   NDArray WxT = Wx->transpose();
   MmulHelper::mmul(&dLdz, &WxT, dLdx);  // [bS, 3*nOut] x [3*nOut, nIn] = [bS, nIn]
 
+  NDArray xT = x->transpose();
   // dLdWx
-  *dLdWx += mmul(x->transpose(), dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
+  *dLdWx += mmul(xT, dLdz);  // [nIn, bS] x [bS, 3*nOut] = [nIn, 3*nOut]
 
   std::vector<sd::LongType> zeroVec = {0};
   // dLdb
@@ -499,8 +502,9 @@ void gruCellBp(sd::LaunchContext* context, const NDArray* x, const NDArray* hI, 
   NDArray WhT = Wh->transpose();
   dLdhI->assign(*dLdhI * u + mmul(dLdz, WhT));  // [bS, 3*nOut] x [3*nOut, nOut] = [bS, nOut]
 
+  NDArray hITranspose = hI->transpose();
   // dLdWr
-  *dLdWh += mmul(hI->transpose(), dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
+  *dLdWh += mmul(hITranspose, dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -537,7 +541,7 @@ void gruTimeLoopBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray*
   auto gatesSet = gates.allTensorsAlongDimension({1, 2});  // sub-arrays with shape [bS, nOut]
   auto dLdxSet = dLdx->allTensorsAlongDimension({1, 2});   // sub-arrays with shape [bS, nIn]
 
-  hSet.at(0)->assign(hI);
+  hSet.at(0)->assign(*hI);
 
   // forward time loop
   for (int t = 0; t < sL; ++t) gruCell(xSet.at(t), hSet.at(t), Wx, Wh, b, gatesSet.at(t), hSet.at(t + 1), false);

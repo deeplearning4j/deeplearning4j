@@ -39,7 +39,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-static void svdQR(LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV,
+static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV,
                   const bool calcUV) {
   // since cusa api cusolverDnDgesvd/cusolverDnSgesvd have following constrain on input matrix A: A_rows >= A_columns &&
   // A_order = 'f' we make this function to have deal with 2 valid cases only: 1) A_rows >= A_columns and A_corder = 'f'
@@ -196,7 +196,7 @@ static void svdQR(LaunchContext* context, const NDArray* A, NDArray* S, NDArray*
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdJcb(LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV,
+static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV,
                    const bool calcUV) {
   // A [m, n]
   // S [n]
@@ -381,7 +381,7 @@ static void svdJcb(LaunchContext* context, const NDArray* A, NDArray* S, NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdBatched(LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V,
+static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, NDArray* V,
                        const bool fullUV, const bool calcUV) {
   // A [..., m, n]
   // S [..., n]
@@ -542,7 +542,7 @@ static void svdBatched(LaunchContext* context, const NDArray* A, NDArray* S, NDA
 }
 
 ////////////////////////////////////////////////////////////////////
-void svd(LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV,
+void svd(LaunchContext* context, NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV,
          const bool calcUV, const int switchNum) {
   NDArray* S = outArrs[0];
   NDArray* U = outArrs[1];

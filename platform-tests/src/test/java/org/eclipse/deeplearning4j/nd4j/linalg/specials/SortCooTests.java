@@ -88,7 +88,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
             DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
             DataBuffer val = Nd4j.createTypedBuffer(values, dataType);
             DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{2, 2, 2}, val.dataType()).getFirst();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+           Nd4j.getNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                     val.addressPointer(), 4, (LongPointer) shapeInfo.addressPointer());
 
             assertArrayEquals(expIndices, idx.asLong());
@@ -122,7 +122,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
             DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
             DataBuffer val = Nd4j.createTypedBuffer(values, dataType);
             DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{2, 2, 2}, val.dataType()).getFirst();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+           Nd4j.getNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                     val.addressPointer(), 3, (LongPointer) shapeInfo.addressPointer());
 
             assertArrayEquals(expIndices, idx.asLong());
@@ -165,7 +165,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{3,3,3}, valueBuffer.dataType()).getFirst();
         INDArray indMatrix = Nd4j.create(indiceBuffer).reshape(new long[]{nnz, shape.length});
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) indiceBuffer.addressPointer(),
+       Nd4j.getNativeOps().sortCooIndices(null, (LongPointer) indiceBuffer.addressPointer(),
                 valueBuffer.addressPointer(), nnz, (LongPointer) shapeInfo.addressPointer());
 
         for (long i = 1; i < nnz; ++i){
@@ -284,7 +284,7 @@ public class SortCooTests extends BaseNd4jTestWithBackends {
         DataBuffer val = Nd4j.createBuffer(values);
         DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(new long[]{3,3,3}, val.dataType()).getFirst();
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
+       Nd4j.getNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                 val.addressPointer(), 40, (LongPointer) shapeInfo.addressPointer());
 
         // just check the indices. sortSparseCooIndicesSort1 and sortSparseCooIndicesSort2 checks that

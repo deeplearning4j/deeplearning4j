@@ -23,6 +23,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.factory.Environment;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
@@ -71,7 +72,7 @@ public class CpuBackend extends Nd4jBackend {
 
     @Override
     public String buildInfo() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+        return Nd4j.getNativeOps().buildInfo();
     }
 
     @Override

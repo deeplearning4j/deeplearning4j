@@ -52,7 +52,7 @@ class SD_LIB_EXPORT StringUtils {
 
   static void broadcastStringAssign(NDArray* x, NDArray* z);
 
-  static std::vector<LongType>* determineOffsetsAndLengths(const NDArray& array, DataType dtype);
+  static std::vector<LongType>* determineOffsetsAndLengths(NDArray& array, DataType dtype);
 
   static void convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<LongType>& offsets, DataType inType, DataType outType);
 
@@ -61,10 +61,10 @@ class SD_LIB_EXPORT StringUtils {
   static NDArray createStringNDArray(NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
 
   template <typename T>
-  static void convertStringsForDifferentDataType(const NDArray* sourceArray, NDArray* targetArray);
+  static void convertStringsForDifferentDataType(NDArray* sourceArray, NDArray* targetArray);
 
   template <typename T>
-  static std::vector<LongType> calculateOffsetsForTargetDataType(const NDArray* sourceArray);
+  static std::vector<LongType> calculateOffsetsForTargetDataType(NDArray* sourceArray);
 
   std::vector<LongType> determineOffsets(const std::string& input, const std::vector<LongType>& lengths);
 
@@ -72,7 +72,7 @@ class SD_LIB_EXPORT StringUtils {
 
   static void setValueForDifferentDataType(NDArray* arr, LongType idx, NDArray* input, DataType zType);
 
-  static void assignStringData(NDArray& dest, const NDArray& src, const std::vector<LongType>& offsets, DataType dtype);
+  static void assignStringData(NDArray& dest, NDArray& src, const std::vector<LongType>& offsets, DataType dtype);
 
 
   /**
@@ -118,7 +118,7 @@ class SD_LIB_EXPORT StringUtils {
    * @param array
    * @return
    */
-  static LongType byteLength(const NDArray& array);
+  static LongType byteLength(NDArray& array);
 
   /**
    * This method splits a string into substring by delimiter

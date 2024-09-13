@@ -68,7 +68,7 @@ public class BytesWritable extends ArrayWritable {
      */
     public DataBuffer asNd4jBuffer(DataType type, int elementSize) {
         int length = content.length / elementSize;
-        DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(content.length),type,length,0);
+        DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(content.length),type,length);
         for(int i = 0; i < length; i++) {
             switch(type) {
                 case DOUBLE:

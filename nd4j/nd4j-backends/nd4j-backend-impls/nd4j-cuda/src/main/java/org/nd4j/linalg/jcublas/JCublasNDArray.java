@@ -103,6 +103,11 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, shape, offset, ordering);
     }
 
+
+    public JCublasNDArray(DataBuffer buffer, LongShapeDescriptor longShapeDescriptor) {
+        super(buffer, longShapeDescriptor);
+    }
+
     /**
      * Construct an JCublasNDArray of the specified shape
      * with an empty data array

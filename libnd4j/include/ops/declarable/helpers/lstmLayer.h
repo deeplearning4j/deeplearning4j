@@ -29,14 +29,14 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-SD_LIB_HIDDEN void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                                 const NDArray* hI, const NDArray* cI, const NDArray* Wp,
+SD_LIB_HIDDEN void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                                 NDArray* hI, NDArray* cI, NDArray* Wp,
                                  const std::vector<float>& params, NDArray* h, NDArray* c);
 
 //////////////////////////////////////////////////////////////////////////
 // this auxiliary ff should be running before backprop
-SD_LIB_HIDDEN void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                                 const NDArray* hI, const NDArray* cI, const NDArray* Wp,
+SD_LIB_HIDDEN void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                                 NDArray* hI, NDArray* cI, NDArray* Wp,
                                  const std::vector<float>& params, NDArray* z, NDArray* a, NDArray* h, NDArray* c);
 
 //////////////////////////////////////////////////////////////////////////
@@ -47,8 +47,8 @@ SD_LIB_HIDDEN void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray
                                    NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp);
 
 //////////////////////////////////////////////////////////////////////////
-SD_LIB_HIDDEN void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b,
-                                     const NDArray* seqLen, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
+SD_LIB_HIDDEN void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b,
+                                     NDArray* seqLen, NDArray* hI, NDArray* cI, NDArray* Wp,
                                      const std::vector<float>& params, const bool forward, NDArray* h, NDArray* hL,
                                      NDArray* cL);
 

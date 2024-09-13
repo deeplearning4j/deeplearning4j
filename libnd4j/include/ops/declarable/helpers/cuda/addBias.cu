@@ -117,7 +117,7 @@ static void addBias2DCudaLauncher(const cudaStream_t* stream, const void* vx, co
 }
 
 //////////////////////////////////////////////////////////////////////////
-void addBias(graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+void addBias(graph::Context& block, NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW) {
   PointersManager manager(block.launchContext(), "addBias");
   NDArray::prepareSpecialUse({&output}, {&input, &bias});
 

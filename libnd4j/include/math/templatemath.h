@@ -51,20 +51,99 @@
 namespace sd {
 
 namespace math {
+
+#include <type_traits>
+
+// C++11 compatible implementation of disjunction
+template<typename...> struct disjunction : std::false_type {};
+template<typename B1> struct disjunction<B1> : B1 {};
+template<typename B1, typename... Bn>
+struct disjunction<B1, Bn...>
+    : std::conditional<bool(B1::value), B1, disjunction<Bn...>>::type {};
+
+// Type trait to check if a type is any floating-point type, including custom types
 template <typename T>
-SD_HOST_DEVICE SD_INLINE T sd_abs(T value);
+struct is_any_float : disjunction<
+    std::is_floating_point<T>,
+    std::is_same<T, float16>,
+    std::is_same<T, bfloat16>
+> {};
+
+// Helper to choose between two types of the same size, preferring float
+template <typename T, typename U>
+struct prefer_float {
+  typedef typename std::conditional<
+      is_any_float<T>::value && !is_any_float<U>::value, T,
+      typename std::conditional<
+          !is_any_float<T>::value && is_any_float<U>::value, U,
+          T  // If both or neither are float, default to T
+      >::type
+  >::type type;
+};
+
+template<typename T, typename U, typename V = void>
+struct highest_precision {
+ private:
+  typedef typename prefer_float<T, U>::type TU;
+  typedef typename prefer_float<TU, V>::type TUV;
+
+  typedef typename std::conditional<sizeof(T) >= sizeof(U), T, U>::type largest_TU;
+  typedef typename std::conditional<sizeof(largest_TU) >= sizeof(V), largest_TU, V>::type largest_TUV;
+
+ public:
+  typedef typename std::conditional<
+      sizeof(TUV) == sizeof(largest_TUV),
+      TUV,
+      largest_TUV
+  >::type type;
+};
+
+// Wrapper to ensure we always have a nested ::type
+template<typename T>
+struct type_wrapper {
+  typedef T type;
+};
+
+// Helper alias template (C++11 compatible version)
+template<typename T, typename U, typename V = void>
+struct highest_precision_t : type_wrapper<typename highest_precision<T, U, V>::type> {};
+
+// Macro for creating functions with advanced type promotion
+#define SD_PROMOTE_FUNC(FUNC_NAME, BODY) \
+template<typename T, typename U = T, typename Z = T> \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) { \
+    typedef typename highest_precision_t<T, U, Z>::type calc_type; \
+    calc_type promoted_val1 = static_cast<calc_type>(val1); \
+    calc_type promoted_val2 = static_cast<calc_type>(val2); \
+    calc_type result = BODY;             \
+     printf("Adding value %f and %f with int versions %d %d\n",    \
+           promoted_val1,promoted_val2,promoted_val1,promoted_val2);\
+    return static_cast<Z>(result); \
+}
+
+
+
+template <typename T,typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_abs(T value);
+
+template <typename T,typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_eq(T value,T value2, double eps) {
+  return sd_abs<T,Z>(value - value2) <= eps;
+}
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE void sd_swap(T& val1, T& val2);
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE T sd_max(T val1, T val2);
+SD_PROMOTE_FUNC(sd_max, (promoted_val1 > promoted_val2 ? promoted_val1 : promoted_val2))
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE T sd_min(T val1, T val2);
+SD_PROMOTE_FUNC(sd_min, (promoted_val1 < promoted_val2 ? promoted_val1 : promoted_val2))
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE bool sd_eq(T val1, T val2, double eps);
+SD_PROMOTE_FUNC(sd_add, (promoted_val1 + promoted_val2))
+SD_PROMOTE_FUNC(sd_subtract, (promoted_val1 + promoted_val2))
+SD_PROMOTE_FUNC(sd_multiply, (promoted_val1 + promoted_val2))
+SD_PROMOTE_FUNC(sd_divide, (promoted_val1 + promoted_val2))
+
+
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_re(T val1, T val2);
@@ -141,55 +220,54 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erfc(T num);
 
 SD_HOST_DEVICE SD_INLINE int32_t floatToRawIntBits(float d) {
- union {
-   float f;
-   int32_t i;
- } tmp;
- tmp.f = d;
- return tmp.i;
+  union {
+    float f;
+    int32_t i;
+  } tmp;
+  tmp.f = d;
+  return tmp.i;
 }
 
 SD_HOST_DEVICE SD_INLINE float intBitsToFloat(int32_t i) {
- union {
-   float f;
-   int32_t i;
- } tmp;
- tmp.i = i;
- return tmp.f;
+  union {
+    float f;
+    int32_t i;
+  } tmp;
+  tmp.i = i;
+  return tmp.f;
 }
 
 SD_HOST_DEVICE SD_INLINE float mulsignf(float x, float y) {
- return intBitsToFloat(floatToRawIntBits(x) ^ (floatToRawIntBits(y) & (1 << 31)));
+  return intBitsToFloat(floatToRawIntBits(x) ^ (floatToRawIntBits(y) & (1 << 31)));
 }
 
 SD_HOST_DEVICE SD_INLINE float copysignfk(float x, float y) {
- return intBitsToFloat((floatToRawIntBits(x) & ~(1 << 31)) ^ (floatToRawIntBits(y) & (1 << 31)));
+  return intBitsToFloat((floatToRawIntBits(x) & ~(1 << 31)) ^ (floatToRawIntBits(y) & (1 << 31)));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sigmoid(T val) {
- return (Z)1.0f / ((Z)1.0f + sd_exp<T, Z>(-val));
+  return (Z)1.0f / ((Z)1.0f + sd_exp<T, Z>(-val));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_elu(T val, T alpha) {
- if (val >= (T)0.f) return val;
- return static_cast<Z>(alpha) * (sd_exp<T, Z>(val) - static_cast<Z>(1.0f));
+  if (val >= (T)0.f) return val;
+  return static_cast<Z>(alpha) * (sd_exp<T, Z>(val) - static_cast<Z>(1.0f));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_leakyrelu(T val, T alpha) {
- if (val < (T)0.0f)
-   return alpha * val;
- else
-   return val;
+  if (val < (T)0.0f)
+    return alpha * val;
+  else
+    return val;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_eluderivative(T val, T alpha) {
- if (val >= static_cast<T>(0.0f)) return static_cast<Z>(1.0f);
- return static_cast<Z>(alpha) * sd_exp<T, Z>(val);
- // return val >= 0.0 ? 1.0 : sd_exp(val);
+  if (val >= static_cast<T>(0.0f)) return static_cast<Z>(1.0f);
+  return static_cast<Z>(alpha) * sd_exp<T, Z>(val);
 }
 
 template <typename T, typename Z>
@@ -200,12 +278,12 @@ SD_HOST_DEVICE SD_INLINE Z sd_sinh(T val);
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
- return sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
+  return sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softsign(T val) {
- return val / ((T)1.0f + sd::math::sd_abs<T>(val));
+  return val / ((T)1.0f + sd::math::sd_abs<T,T>(val));
 }
 
 template <typename X, typename Z>
@@ -222,44 +300,44 @@ SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2);
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2) {
- return p_atan2<Z>(static_cast<Z>(val1), static_cast<Z>(val2));
+  return p_atan2<Z>(static_cast<Z>(val1), static_cast<Z>(val2));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tan(T tval) {
- return p_tan<Z>(static_cast<Z>(tval));
+  return p_tan<Z>(static_cast<Z>(tval));
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tanhderivative(T val) {
- Z tanh = sd_tanh<T, Z>(val);
- return (Z)1.0f - tanh * tanh;
+  Z tanh = sd_tanh<T, Z>(val);
+  return (Z)1.0f - tanh * tanh;
 }
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sigmoidderivative(T val) {
- Z sigmoid = sd_sigmoid<T, Z>(val);
- return sigmoid * ((Z)1.0f - sigmoid);
+  Z sigmoid = sd_sigmoid<T, Z>(val);
+  return sigmoid * ((Z)1.0f - sigmoid);
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_softsignderivative(T val) {
- T y = (T)1.0f + sd_abs(val);
- return (Z)1.0f / (y * y);
+  T y = (T)1.0f + sd_abs<T,T>(val);
+  return (Z)1.0f / (y * y);
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sgn(T val) {
- return val < (T)0.0f ? (Z)-1.0f : val > (T)0.0f ? (Z)1.0f : (Z)0.0f;
+  return val < (T)0.0f ? (Z)-1.0f : val > (T)0.0f ? (Z)1.0f : (Z)0.0f;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sign(T val) {
- return sd_sgn<T, Z>(val);
+  return sd_sgn<T, Z>(val);
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_signum(T val) {
- return sd_sgn<T, Z>(val);
+  return sd_sgn<T, Z>(val);
 }
 
 template <typename X, typename Z>
@@ -271,13 +349,13 @@ SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x);
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_dot(X* x, Y* y, int length) {
- Z dot = (Z)0.0f;
+  Z dot = (Z)0.0f;
 
- for (int e = 0; e < length; e++) {
-   dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
- }
+  for (int e = 0; e < length; e++) {
+    dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
+  }
 
- return dot;
+  return dot;
 }
 
 template <typename T, typename Z>
@@ -297,8 +375,8 @@ SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val);
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val) {
- // Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
- return sd_log<Z, Z>(sd_sqrt<Z, Z>(sd_pow<T, T, Z>(val, (T)2) + (Z)1.f) + (Z)val);
+  // Math.log(Math.sqrt(Math.pow(x, 2) + 1) + x)
+  return sd_log<Z, Z>(sd_sqrt<Z, Z>(sd_pow<T, T, Z>(val, (T)2) + (Z)1.f) + (Z)val);
 }
 
 template <typename T, typename Z>
@@ -308,138 +386,138 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atanh(T val);
 
 template <>
-SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16>(float16 value) {
+SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16,float16>(float16 value) {
 #ifdef SD_NATIVE_HALFS
- if (value < (float16)0.f) {
+  if (value < (float16)0.f) {
    return float16(__hneg(value.data));
  } else
    return value;
 #else
- return (float16)fabsf((float)value);
+  return (float16)fabsf((float)value);
 #endif
 }
 template <>
-SD_HOST_DEVICE SD_INLINE bfloat16 sd_abs<bfloat16>(bfloat16 value) {
- return (bfloat16)fabsf((float)value);
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_abs<bfloat16,bfloat16>(bfloat16 value) {
+  return (bfloat16)fabsf((float)value);
 }
 template <>
-SD_HOST_DEVICE SD_INLINE float sd_abs<float>(float value) {
- return fabsf(value);
-}
-
-template <>
-SD_HOST_DEVICE SD_INLINE double sd_abs<double>(double value) {
- return fabs(value);
+SD_HOST_DEVICE SD_INLINE float sd_abs<float,float>(float value) {
+  return fabsf(value);
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE int sd_abs<int>(int value) {
- return abs(value);
+SD_HOST_DEVICE SD_INLINE double sd_abs<double,double>(double value) {
+  return fabs(value);
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType>(sd::LongType value) {
- return llabs(value);
+SD_HOST_DEVICE SD_INLINE int sd_abs<int,int>(int value) {
+  return abs(value);
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType,sd::LongType>(sd::LongType value) {
+  return llabs(value);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_abs<bool>(bool value) {
- return value;
+  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint8_t sd_abs<uint8_t>(uint8_t value) {
- return value;
+  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
- return value;
+  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
- return value;
+  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- return value;
+  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int8_t sd_abs<int8_t>(int8_t value) {
- return value < 0 ? -value : value;
+  return value < 0 ? -value : value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
- return value < 0 ? -value : value;
+  return value < 0 ? -value : value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float16>(float16 value) {
- return (value) == 0x7fffU;
+  return (value) == 0x7fffU;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bfloat16>(bfloat16 value) {
- return value == bfloat16::nan();  // 0x7fffU;
+  return value == bfloat16::nan();  // 0x7fffU;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float>(float value) {
- return value != value;
+  return value != value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<double>(double value) {
- return value != value;
+  return value != value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int>(int value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint8_t>(uint8_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
- return false;
+  return false;
 }
 
 template <>
@@ -454,233 +532,201 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
 }
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
- return value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
+  return value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
 #ifdef __CUDACC__
- return isinf(value);
+  return isinf(value);
 #else
- return std::isinf(value);
+  return std::isinf(value);
 #endif
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
 #ifdef __CUDACC__
- return isinf(value);
+  return isinf(value);
 #else
- return std::isinf(value);
+  return std::isinf(value);
 #endif
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int>(int value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
- return false;
+  return false;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
- return false;
+  return false;
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
- return !sd_isnan<T>(value) && !sd_isinf<T>(value);
+  return !sd_isnan<T>(value) && !sd_isinf<T>(value);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_copysign<float16>(float16 val1, float16 val2) {
- return (float16)copysignf((float)val1, (float)val2);
+  return (float16)copysignf((float)val1, (float)val2);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_copysign<float>(float val1, float val2) {
- return copysignf(val1, val2);
+  return copysignf(val1, val2);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE double sd_copysign<double>(double val1, double val2) {
- return copysign(val1, val2);
+  return copysign(val1, val2);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
- if (val2 < 0)
-   return -(sd_abs<int>(val1));
- else
-   return sd_abs<int>(val1);
+  if (val2 < 0)
+    return -(sd_abs<int,int>(val1));
+  else
+    return sd_abs<int,int>(val1);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
- if (val2 < 0)
-   return -(sd_abs<sd::LongType>(val1));
- else
-   return sd_abs<sd::LongType>(val1);
+  if (val2 < 0)
+    return -(sd_abs<sd::LongType,sd::LongType>(val1));
+  else
+    return sd_abs<sd::LongType,sd::LongType>(val1);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_max(bool val1, bool val2) {
- return (val1 || val2) ? true : false;
+  return (val1 || val2) ? true : false;
 }
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE T sd_max(T val1, T val2) {
- return val1 > val2 ? val1 : val2;
-}
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_min(bool val1, bool val2) {
- return (val1 && val2) ? true : false;
+  return (val1 && val2) ? true : false;
 }
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE T sd_min(T val1, T val2) {
- return val1 < val2 ? val1 : val2;
-}
 
-template <typename T>
-SD_HOST_DEVICE SD_INLINE bool sd_eq(T d1, T d2, double eps) {
- if (sd::math::sd_isinf<T>(d1) && sd::math::sd_isinf<T>(d2)) {
-   if (d1 > 0 && d2 > 0)
-     return true;
-   else if (d1 < 0 && d2 < 0)
-     return true;
-   else
-     return false;
- }
-
- auto diff = static_cast<double>(sd::math::sd_abs<T>(d1 - d2));
- // works well except in the range of very large numbers
- if (diff <= eps) return true;
-
- // Knuth approach
- // works well except in the range of very small numbers
- if (diff <= sd::math::sd_max<double>(sd::math::sd_abs<double>(static_cast<double>(d1)),
-                                      sd::math::sd_abs<double>(static_cast<double>(d2))) *
-                 eps)
-   return true;
-
- return false;
-}
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_ceil(X val) {
- return static_cast<Z>(p_ceil<X>(val));
+  return static_cast<Z>(p_ceil<X>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_round(X val) {
- return static_cast<Z>(p_round<X>(val));
+  return static_cast<Z>(p_round<X>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_asin(X val) {
- return p_asin<Z>(static_cast<Z>(val));
+  return p_asin<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atan(X val) {
- return p_atan<Z>(static_cast<Z>(val));
+  return p_atan<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atanh(X val) {
- return p_atanh<Z>(static_cast<Z>(val));
+  return p_atanh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_cosh(X val) {
- return p_cosh<Z>(static_cast<Z>(val));
+  return p_cosh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_rint(X val) {
- return p_rint<X>(val);
+  return p_rint<X>(val);
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sinh(X val) {
- return p_sinh<Z>(static_cast<Z>(val));
+  return p_sinh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_acos(X val) {
- return p_acos<Z>(static_cast<Z>(val));
+  return p_acos<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sech(X val) {
- return static_cast<Z>(1) / sd_cosh<X, Z>(val);
+  return static_cast<Z>(1) / sd_cosh<X, Z>(val);
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_acosh(X val) {
- return p_acosh<Z>(static_cast<Z>(val));
+  return p_acosh<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
- return p_cos<Z>(static_cast<Z>(val));
+  return p_cos<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
- return p_exp<X>(val);
+  return p_exp<X>(val);
 }
 
 
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_floor(X val) {
- return static_cast<Z>(p_floor<X>(val));
+  return static_cast<Z>(p_floor<X>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log(X val) {
- return static_cast<Z>(p_log<X>(val));
+  return static_cast<Z>(p_log<X>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
- return static_cast<Z>(p_log2<X>(val));
+  return static_cast<Z>(p_log2<X>(val));
 }
 
 /**
@@ -694,17 +740,17 @@ SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
 */
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_pow(float val, float val2) {
- return p_pow<float>(val, val2);
+  return p_pow<float>(val, val2);
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
- return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
+  return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
- return static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
+  return static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
 }
 
 /**
@@ -712,226 +758,231 @@ SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
 **/
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x) {
- if (x < X(12.0)) {
-   return sd_log<Z, Z>(sd_gamma<X, Z>(x));
- }
+  if (x < X(12.0)) {
+    return sd_log<Z, Z>(sd_gamma<X, Z>(x));
+  }
 
- // Abramowitz and Stegun 6.1.41
- // Asymptotic series should be good to at least 11 or 12 figures
- // For error analysis, see Whittiker and Watson
- // A Course in Modern Analysis (1927), page 252
+  // Abramowitz and Stegun 6.1.41
+  // Asymptotic series should be good to at least 11 or 12 figures
+  // For error analysis, see Whittiker and Watson
+  // A Course in Modern Analysis (1927), page 252
 
- static const double c[8] = {1.0 / 12.0,   -1.0 / 360.0,      1.0 / 1260.0, -1.0 / 1680.0,
-                             1.0 / 1188.0, -691.0 / 360360.0, 1.0 / 156.0,  -3617.0 / 122400.0};
+  static const double c[8] = {1.0 / 12.0,   -1.0 / 360.0,      1.0 / 1260.0, -1.0 / 1680.0,
+                              1.0 / 1188.0, -691.0 / 360360.0, 1.0 / 156.0,  -3617.0 / 122400.0};
 
- double z = Z(1.0 / Z(x * x));
- double sum = c[7];
+  double z = Z(1.0 / Z(x * x));
+  double sum = c[7];
 
- for (int i = 6; i >= 0; i--) {
-   sum *= z;
-   sum += c[i];
- }
+  for (int i = 6; i >= 0; i--) {
+    sum *= z;
+    sum += c[i];
+  }
 
- double series = sum / Z(x);
+  double series = sum / Z(x);
 
- static const double halfLogTwoPi = 0.91893853320467274178032973640562;
+  static const double halfLogTwoPi = 0.91893853320467274178032973640562;
 
- return Z((double(x) - 0.5) * sd_log<X, double>(x) - double(x) + halfLogTwoPi + series);
+  return Z((double(x) - 0.5) * sd_log<X, double>(x) - double(x) + halfLogTwoPi + series);
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T sd_re(T val1, T val2) {
- if (val1 == (T)0.0f && val2 == (T)0.0f) return (T)0.0f;
+  if (val1 == (T)0.0f && val2 == (T)0.0f) return (T)0.0f;
 
- return sd_abs<T>(val1 - val2) / (sd_abs<T>(val1) + sd_abs<T>(val2));
+  return sd_abs<T,T>(val1 - val2) / (sd_abs<T,T>(val1) + sd_abs<T,T>(val2));
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_remainder(X val, Y val2) {
- return p_remainder<Z>(static_cast<Z>(val), static_cast<Z>(val2));
+  return p_remainder<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
- return p_fmod<Z>(static_cast<Z>(val), static_cast<Z>(val2));
+  return p_fmod<Z>(static_cast<Z>(val), static_cast<Z>(val2));
 }
+
+
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sin(X val) {
- return p_sin<Z>(static_cast<Z>(val));
+  return p_sin<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sqrt(X val) {
- return p_sqrt<Z>(static_cast<Z>(val));
+  return p_sqrt<Z>(static_cast<Z>(val));
 }
 
 template <typename X>
 SD_HOST_DEVICE SD_INLINE X neg_tanh(X val) {
- X o = static_cast<X>(1.0f);
- X t = static_cast<X>(2.0f);
- X e = static_cast<X>(M_E);
+  X o = static_cast<X>(1.0f);
+  X t = static_cast<X>(2.0f);
+  X e = static_cast<X>(M_E);
 
- auto p = sd::math::sd_pow<X, X, X>(e, val * t);
- return (p - o) / (p + o);
+  auto p = sd::math::sd_pow<X, X, X>(e, val * t);
+  return (p - o) / (p + o);
 }
 
 template <typename X>
 SD_HOST_DEVICE SD_INLINE X pos_tanh(X val) {
- X o = static_cast<X>(1.0f);
- X t = static_cast<X>(-2.0f);
- X e = static_cast<X>(M_E);
+  X o = static_cast<X>(1.0f);
+  X t = static_cast<X>(-2.0f);
+  X e = static_cast<X>(M_E);
 
- auto p = sd::math::sd_pow<X, X, X>(e, val * t);
- return (o - p) / (o + p);
+  auto p = sd::math::sd_pow<X, X, X>(e, val * t);
+  return (o - p) / (o + p);
 }
 
 SD_HOST_DEVICE SD_INLINE float neu_tanh(float val, float sign) {
- float e(M_E);
- float av = sign * val;
- auto p = sd::math::sd_pow<float, float, float>(e, -av * 2.f);
- return (1 - p) / (1 + p);
+  float e(M_E);
+  float av = sign * val;
+  auto p = sd::math::sd_pow<float, float, float>(e, -av * 2.f);
+  return (1 - p) / (1 + p);
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_tanh(float val) {
- float sign = copysignfk(1.0f, val);
- return sign * neu_tanh(val, sign);
+  float sign = copysignfk(1.0f, val);
+  return sign * neu_tanh(val, sign);
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tanh(X val) {
- return val <= 0 ? neg_tanh(val) : pos_tanh(val);
+  return val <= 0 ? neg_tanh(val) : pos_tanh(val);
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T sd_rotl(T val, T shift) {
- return p_rotl<T>(val, shift);
+  return p_rotl<T>(val, shift);
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T sd_rotr(T val, T shift) {
- return p_rotr<T>(val, shift);
+  return p_rotr<T>(val, shift);
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erf(X val) {
- return p_erf<Z>(static_cast<Z>(val));
+  return p_erf<Z>(static_cast<Z>(val));
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erfc(X val) {
- return p_erfc<Z>(static_cast<Z>(val));
+  return p_erfc<Z>(static_cast<Z>(val));
 }
+
+
+
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE void sd_swap(T& val1, T& val2) {
- T temp = val1;
- val1 = val2;
- val2 = temp;
+  T temp = val1;
+  val1 = val2;
+  val2 = temp;
 };
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
- // Split the function domain into three intervals:
- // (0, 0.001), [0.001, 12), and (12, infinity)
+  // Split the function domain into three intervals:
+  // (0, 0.001), [0.001, 12), and (12, infinity)
 
- ///////////////////////////////////////////////////////////////////////////
- // First interval: (0, 0.001)
- //
- // For small a, 1/Gamma(a) has power series a + gamma a^2  - ...
- // So in this range, 1/Gamma(a) = a + gamma a^2 with error on the order of a^3.
- // The relative error over this interval is less than 6e-7.
+  ///////////////////////////////////////////////////////////////////////////
+  // First interval: (0, 0.001)
+  //
+  // For small a, 1/Gamma(a) has power series a + gamma a^2  - ...
+  // So in this range, 1/Gamma(a) = a + gamma a^2 with error on the order of a^3.
+  // The relative error over this interval is less than 6e-7.
 
- const double eulerGamma = 0.577215664901532860606512090;  // Euler's gamma constant
+  const double eulerGamma = 0.577215664901532860606512090;  // Euler's gamma constant
 
- if (a < X(0.001)) return Z(1.0 / ((double)a * (1.0 + eulerGamma * (double)a)));
+  if (a < X(0.001)) return Z(1.0 / ((double)a * (1.0 + eulerGamma * (double)a)));
 
- ///////////////////////////////////////////////////////////////////////////
- // Second interval: [0.001, 12)
+  ///////////////////////////////////////////////////////////////////////////
+  // Second interval: [0.001, 12)
 
- if (a < X(12.0)) {
-   // The algorithm directly approximates gamma over (1,2) and uses
-   // reduction identities to reduce other arguments to this interval.
+  if (a < X(12.0)) {
+    // The algorithm directly approximates gamma over (1,2) and uses
+    // reduction identities to reduce other arguments to this interval.
 
-   double y = (double)a;
-   int n = 0;
-   bool argWasLessThanOne = y < 1.0;
+    double y = (double)a;
+    int n = 0;
+    bool argWasLessThanOne = y < 1.0;
 
-   // Add or subtract integers as necessary to bring y into (1,2)
-   // Will correct for this below
-   if (argWasLessThanOne) {
-     y += 1.0;
-   } else {
-     n = static_cast<int>(floor(y)) - 1;  // will use n later
-     y -= n;
-   }
+    // Add or subtract integers as necessary to bring y into (1,2)
+    // Will correct for this below
+    if (argWasLessThanOne) {
+      y += 1.0;
+    } else {
+      n = static_cast<int>(floor(y)) - 1;  // will use n later
+      y -= n;
+    }
 
-   // numerator coefficients for approximation over the interval (1,2)
-   static const double p[] = {-1.71618513886549492533811E+0, 2.47656508055759199108314E+1,
-                              -3.79804256470945635097577E+2, 6.29331155312818442661052E+2,
-                              8.66966202790413211295064E+2,  -3.14512729688483675254357E+4,
-                              -3.61444134186911729807069E+4, 6.64561438202405440627855E+4};
+    // numerator coefficients for approximation over the interval (1,2)
+    static const double p[] = {-1.71618513886549492533811E+0, 2.47656508055759199108314E+1,
+                               -3.79804256470945635097577E+2, 6.29331155312818442661052E+2,
+                               8.66966202790413211295064E+2,  -3.14512729688483675254357E+4,
+                               -3.61444134186911729807069E+4, 6.64561438202405440627855E+4};
 
-   // denominator coefficients for approximation over the interval (1,2)
-   static const double q[] = {-3.08402300119738975254353E+1, 3.15350626979604161529144E+2,
-                              -1.01515636749021914166146E+3, -3.10777167157231109440444E+3,
-                              2.25381184209801510330112E+4,  4.75584627752788110767815E+3,
-                              -1.34659959864969306392456E+5, -1.15132259675553483497211E+5};
+    // denominator coefficients for approximation over the interval (1,2)
+    static const double q[] = {-3.08402300119738975254353E+1, 3.15350626979604161529144E+2,
+                               -1.01515636749021914166146E+3, -3.10777167157231109440444E+3,
+                               2.25381184209801510330112E+4,  4.75584627752788110767815E+3,
+                               -1.34659959864969306392456E+5, -1.15132259675553483497211E+5};
 
-   double num = 0.0;
-   double den = 1.0;
+    double num = 0.0;
+    double den = 1.0;
 
-   double z = y - 1;
-   for (auto i = 0; i < 8; i++) {
-     num = (num + p[i]) * z;
-     den = den * z + q[i];
-   }
-   double result = num / den + 1.0;
+    double z = y - 1;
+    for (auto i = 0; i < 8; i++) {
+      num = (num + p[i]) * z;
+      den = den * z + q[i];
+    }
+    double result = num / den + 1.0;
 
-   // Apply correction if argument was not initially in (1,2)
-   if (argWasLessThanOne) {
-     // Use identity gamma(z) = gamma(z+1)/z
-     // The variable "result" now holds gamma of the original y + 1
-     // Thus we use y-1 to get back the orginal y.
-     result /= (y - 1.0);
-   } else {
-     // Use the identity gamma(z+n) = z*(z+1)* ... *(z+n-1)*gamma(z)
-     for (auto i = 0; i < n; i++) result *= y++;
-   }
+    // Apply correction if argument was not initially in (1,2)
+    if (argWasLessThanOne) {
+      // Use identity gamma(z) = gamma(z+1)/z
+      // The variable "result" now holds gamma of the original y + 1
+      // Thus we use y-1 to get back the orginal y.
+      result /= (y - 1.0);
+    } else {
+      // Use the identity gamma(z+n) = z*(z+1)* ... *(z+n-1)*gamma(z)
+      for (auto i = 0; i < n; i++) result *= y++;
+    }
 
-   return Z(result);
- }
+    return Z(result);
+  }
 
- ///////////////////////////////////////////////////////////////////////////
- // Third interval: [12, infinity)
+  ///////////////////////////////////////////////////////////////////////////
+  // Third interval: [12, infinity)
 
- if (a > 171.624) {
-   // Correct answer too large to display. Force +infinity.
-   return Z(DOUBLE_MAX_VALUE);
- }
+  if (a > 171.624) {
+    // Correct answer too large to display. Force +infinity.
+    return Z(DOUBLE_MAX_VALUE);
+  }
 
- return sd::math::sd_exp<Z, Z>(sd::math::sd_lgamma<X, Z>(a));
+  return sd::math::sd_exp<Z, Z>(sd::math::sd_lgamma<X, Z>(a));
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
- Z aim = sd_pow<X, X, Z>(x, a) / (sd_exp<X, Z>(x) * sd_gamma<Y, Z>(a));
- auto sum = Z(0.);
- auto denom = Z(1.);
- if (a <= X(0.000001))
-   return Z(0);
+  Z aim = sd_pow<X, X, Z>(x, a) / (sd_exp<X, Z>(x) * sd_gamma<Y, Z>(a));
+  auto sum = Z(0.);
+  auto denom = Z(1.);
+  if (a <= X(0.000001))
+    return Z(0);
 
- for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {
-   denom *= (a + i);
-   sum += sd_pow<X, int, Z>(x, i) / denom;
- }
- return aim * sum;
+  for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {
+    denom *= (a + i);
+    sum += sd_pow<X, int, Z>(x, i) / denom;
+  }
+  return aim * sum;
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
- return Z(1.) - sd_igamma<X, Y, Z>(a, x);
+  return Z(1.) - sd_igamma<X, Y, Z>(a, x);
 }
 
 #if defined(__CUDACC__)
@@ -1087,7 +1138,7 @@ SD_DEVICE SD_INLINE int atomicMin(int* address, int val) {
  return old;
 }
 
-__device__ __forceinline__ unsigned int atomicMin(unsigned int* address, unsigned int val) {
+SD_DEVICE SD_INLINE unsigned int atomicMin(unsigned int* address, unsigned int val) {
  unsigned int old = *address, assumed;
  do {
    assumed = old;
@@ -1096,7 +1147,7 @@ __device__ __forceinline__ unsigned int atomicMin(unsigned int* address, unsigne
  return old;
 }
 
-__device__ __forceinline__ unsigned long long int atomicMin(unsigned long long int* address, unsigned long long int val) {
+SD_DEVICE SD_INLINE unsigned long long int atomicMin(unsigned long long int* address, unsigned long long int val) {
  unsigned long long int old = *address, assumed;
  do {
    assumed = old;
@@ -1329,12 +1380,12 @@ inline SD_DEVICE bfloat16 sd_atomicCAS<bfloat16>(bfloat16* address, bfloat16 com
 
 
 // Fallback implementation for __half_as_ushort
-__device__ __forceinline__ unsigned short __half_as_ushort(float16 h) {
+SD_DEVICE SD_INLINE unsigned short __half_as_ushort(float16 h) {
  return *reinterpret_cast<unsigned short*>(&h);
 }
 
 // Fallback implementation for __ushort_as_half
-__device__ __forceinline__ float16 __ushort_as_half(unsigned short u) {
+SD_DEVICE SD_INLINE float16 __ushort_as_half(unsigned short u) {
  return *reinterpret_cast<float16*>(&u);
 }
 
@@ -1403,11 +1454,11 @@ inline SD_DEVICE float16 sd_atomicMin<float16>(float16* address, float16 val) {
  return float16(sd_atomicMin<int16_t>(reinterpret_cast<int16_t*>(&address->data), (int16_t)val.data));
 }
 // Custom max functions
-__device__ __forceinline__ int32_t sd_max(int32_t a, int32_t b) {
+SD_DEVICE SD_INLINE int32_t sd_max(int32_t a, int32_t b) {
  return a > b ? a : b;
 }
 
-__device__ __forceinline__ uint32_t sd_max(uint32_t a, uint32_t b) {
+SD_DEVICE SD_INLINE uint32_t sd_max(uint32_t a, uint32_t b) {
  return a > b ? a : b;
 }
 
@@ -1422,7 +1473,7 @@ inline SD_DEVICE int32_t sd_atomicMax<int32_t>(int32_t* address, int32_t val) {
 }
 
 template <>
-inline SD_DEVICE uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val) {
+SD_DEVICE SD_INLINE  uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val) {
   uint32_t old = *address, assumed;
   do {
     assumed = old;
@@ -1433,7 +1484,7 @@ inline SD_DEVICE uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val
 
 
 template <>
-inline SD_DEVICE unsigned long sd_atomicMax<unsigned long>(unsigned long* address, unsigned long val) {
+SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* address, unsigned long val) {
  uint32_t old = *address, assumed;
  do {
    assumed = old;
@@ -1443,7 +1494,7 @@ inline SD_DEVICE unsigned long sd_atomicMax<unsigned long>(unsigned long* addres
 }
 
 template <>
-inline SD_DEVICE double sd_atomicMax<double>(double* address, double val) {
+SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
  unsigned long long int* address_as_ull = (unsigned long long int*)address;
  unsigned long long int old = __double_as_longlong(val), assumed;
  do {
@@ -1454,7 +1505,7 @@ inline SD_DEVICE double sd_atomicMax<double>(double* address, double val) {
  return __longlong_as_double(old);
 }
 template <>
-inline SD_DEVICE float sd_atomicMax<float>(float* address, float val) {
+SD_DEVICE SD_INLINE  float sd_atomicMax<float>(float* address, float val) {
  int* address_as_ull = (int*)address;
  int old = __float_as_int(val), assumed;
  do {
@@ -1464,36 +1515,36 @@ inline SD_DEVICE float sd_atomicMax<float>(float* address, float val) {
  return __int_as_float(old);
 }
 template <>
-inline SD_DEVICE uint8_t sd_atomicMin<uint8_t>(uint8_t* address, uint8_t val) {
+SD_DEVICE SD_INLINE  uint8_t sd_atomicMin<uint8_t>(uint8_t* address, uint8_t val) {
  uint32_t temp = *address;
  *address = atomicMin(&temp, (uint32_t)val);
  return *address;
 }
 
 template <>
-inline SD_DEVICE int8_t sd_atomicMin<int8_t>(int8_t* address, int8_t val) {
+SD_DEVICE SD_INLINE  int8_t sd_atomicMin<int8_t>(int8_t* address, int8_t val) {
  int32_t temp = *address;
  *address = atomicMin(&temp, (int)val);
  return *address;
 }
 
 template <>
-inline SD_DEVICE uint16_t sd_atomicMin<uint16_t>(uint16_t* address, uint16_t val) {
+SD_DEVICE SD_INLINE uint16_t sd_atomicMin<uint16_t>(uint16_t* address, uint16_t val) {
  uint32_t temp = *address;
  *address = atomicMin(&temp, (uint32_t)val);
  return *address;
 }
 
 // Custom max functions
-__device__ __forceinline__ uint8_t sd_max(uint8_t a, uint8_t b) {
+SD_DEVICE SD_INLINE  uint8_t sd_max(uint8_t a, uint8_t b) {
  return a > b ? a : b;
 }
 
-__device__ __forceinline__ int8_t sd_max(int8_t a, int8_t b) {
+SD_DEVICE SD_INLINE int8_t sd_max(int8_t a, int8_t b) {
  return a > b ? a : b;
 }
 // Simplified __byte_perm for uint8_t operations
-__device__ __forceinline__ unsigned int __byte_perm_uint8(unsigned int a, unsigned int b, unsigned int selector) {
+SD_DEVICE SD_INLINE unsigned int __byte_perm_uint8(unsigned int a, unsigned int b, unsigned int selector) {
  unsigned int result;
  unsigned int byte_index = selector & 0x3;
 
@@ -1527,7 +1578,7 @@ inline SD_DEVICE uint8_t sd_atomicMax<uint8_t>(uint8_t* address, uint8_t val) {
 }
 
 // Custom implementation of __byte_perm
-__device__ __forceinline__ unsigned int __byte_perm(unsigned int a, unsigned int b, unsigned int selector) {
+SD_DEVICE SD_INLINE unsigned int __byte_perm(unsigned int a, unsigned int b, unsigned int selector) {
  unsigned int result = 0;
  for (int i = 0; i < 4; ++i) {
    unsigned int byteSel = (selector >> (i * 4)) & 0xF;
@@ -1564,12 +1615,12 @@ inline SD_DEVICE int8_t sd_atomicMax<int8_t>(int8_t* address, int8_t val) {
 
 
 // AtomicMax signatures
-__device__ __forceinline__ int atomicMax(int* address, int val);
-__device__ __forceinline__ unsigned int atomicMax(unsigned int* address, unsigned int val);
-__device__ __forceinline__ unsigned long long int atomicMax(unsigned long long int* address, unsigned long long int val);
+SD_DEVICE SD_INLINE int atomicMax(int* address, int val);
+SD_DEVICE SD_INLINE unsigned int atomicMax(unsigned int* address, unsigned int val);
+SD_DEVICE SD_INLINE unsigned long long int atomicMax(unsigned long long int* address, unsigned long long int val);
 
 // Custom atomicMax for 16-bit types
-__device__ __forceinline__ uint16_t atomicMax(uint16_t* address, uint16_t val) {
+SD_DEVICE SD_INLINE uint16_t atomicMax(uint16_t* address, uint16_t val) {
  unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
  unsigned int offset = ((size_t)address & 2) << 3;
  unsigned int mask = 0xFFFF << offset;
@@ -1586,7 +1637,7 @@ __device__ __forceinline__ uint16_t atomicMax(uint16_t* address, uint16_t val) {
  return (old & mask) >> offset;
 }
 
-__device__ __forceinline__ int16_t atomicMax(int16_t* address, int16_t val) {
+SD_DEVICE SD_INLINE int16_t atomicMax(int16_t* address, int16_t val) {
  unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
  unsigned int offset = ((size_t)address & 2) << 3;
  unsigned int mask = 0xFFFF << offset;
@@ -1724,7 +1775,7 @@ inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
 }
 
 // Custom atomicAdd for uint32_t
-__device__ __forceinline__ uint32_t atomicAdd(uint32_t* address, uint32_t val) {
+SD_DEVICE SD_INLINE uint32_t atomicAdd(uint32_t* address, uint32_t val) {
  uint32_t old = *address, assumed;
  do {
    assumed = old;
@@ -1734,7 +1785,7 @@ __device__ __forceinline__ uint32_t atomicAdd(uint32_t* address, uint32_t val) {
 }
 
 // Custom atomicAdd for uint64_t
-__device__ __forceinline__ uint64_t atomicAdd(uint64_t* address, uint64_t val) {
+SD_DEVICE SD_INLINE uint64_t atomicAdd(uint64_t* address, uint64_t val) {
  unsigned long long int* address_as_ull = (unsigned long long int*)address;
  unsigned long long int old = *address_as_ull, assumed;
  do {
@@ -1886,7 +1937,7 @@ inline SD_DEVICE uint16_t sd_atomicAdd<uint16_t>(uint16_t* address, uint16_t val
 }
 
 // Custom atomicAdd for int8_t
-__device__ __forceinline__ int8_t atomicAdd(int8_t* address, int8_t val) {
+SD_DEVICE SD_INLINE int8_t atomicAdd(int8_t* address, int8_t val) {
  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
  unsigned int shift = ((size_t)address & 3) * 8;
  unsigned int mask = 0xFF << shift;
@@ -1905,7 +1956,7 @@ __device__ __forceinline__ int8_t atomicAdd(int8_t* address, int8_t val) {
 }
 
 // Custom atomicAdd for uint8_t
-__device__ __forceinline__ uint8_t atomicAdd(uint8_t* address, uint8_t val) {
+SD_DEVICE SD_INLINE uint8_t atomicAdd(uint8_t* address, uint8_t val) {
  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
  unsigned int shift = ((size_t)address & 3) * 8;
  unsigned int mask = 0xFF << shift;
@@ -1964,17 +2015,17 @@ inline SD_DEVICE double sd_atomicDiv<double>(double* address, double val) {
 
 
 // Helper functions for float-int conversions
-__device__ __forceinline__ unsigned int __float_as_uint(float f) {
+SD_DEVICE SD_INLINE unsigned int __float_as_uint(float f) {
  return *reinterpret_cast<unsigned int*>(&f);
 }
 
-__device__ __forceinline__ float __uint_as_float(unsigned int u) {
+SD_DEVICE SD_INLINE float __uint_as_float(unsigned int u) {
  return *reinterpret_cast<float*>(&u);
 }
 
 
 // Custom atomicAdd for float
-__device__ __forceinline__ float atomicAdd(float* address, float val) {
+SD_DEVICE SD_INLINE float atomicAdd(float* address, float val) {
  unsigned int* address_as_uint = (unsigned int*)address;
  unsigned int old = *address_as_uint, assumed;
 
@@ -1988,7 +2039,7 @@ __device__ __forceinline__ float atomicAdd(float* address, float val) {
 }
 
 // Custom atomicAdd for int32_t
-__device__ __forceinline__ int32_t atomicAdd(int32_t* address, int32_t val) {
+SD_DEVICE SD_INLINE int32_t atomicAdd(int32_t* address, int32_t val) {
  unsigned int* address_as_uint = (unsigned int*)address;
  unsigned int old = *address_as_uint, assumed;
 
@@ -2224,8 +2275,174 @@ inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val
 
 }  // namespace atomics
 #endif
-}  // namespace math
-}  // namespace sd
+
+
+
+
+// Type promotion for three types
+template <typename T, typename U, typename V>
+struct promoted_type3 {
+  using type = decltype(T() + U() + V());
+};
+
+// Helper alias
+template <typename T, typename U, typename V>
+using promoted_type3_t = typename promoted_type3<T, U, V>::type;
+
+// Macro for defining ternary functions
+#define SD_DEFINE_TERNARY_FUNC(func_name, body)                                        \
+template <typename T, typename U, typename V>                                          \
+SD_HOST_DEVICE SD_INLINE                                                               \
+typename promoted_type3<T, U, V>::type func_name(T a, U b, V c) {                      \
+    using promoted_type = typename promoted_type3<T, U, V>::type;                      \
+    promoted_type promoted_a = static_cast<promoted_type>(a);                          \
+    promoted_type promoted_b = static_cast<promoted_type>(b);                          \
+    promoted_type promoted_c = static_cast<promoted_type>(c);                          \
+    body                                                                               \
+}
+
+// Ternary function implementations
+
+// Basic arithmetic and comparison functions
+SD_DEFINE_TERNARY_FUNC(sd_max,
+                       return sd::math::sd_max(sd::math::sd_max(promoted_a, promoted_b), promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_min,
+                       return sd::math::sd_min(sd::math::sd_min(promoted_a, promoted_b), promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_pow,
+                       return p_pow(promoted_a, promoted_b) * promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_atan2,
+                       return p_atan2(promoted_a, promoted_b) + promoted_c;
+)
+
+
+
+
+// Specialized mathematical functions
+SD_DEFINE_TERNARY_FUNC(sd_remainder,
+                       return p_remainder(p_remainder(promoted_a, promoted_b), promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_fmod,
+                       return p_fmod(p_fmod(promoted_a, promoted_b), promoted_c);
+)
+
+// Trigonometric functions
+SD_DEFINE_TERNARY_FUNC(sd_acos,
+                       return p_acos(promoted_a) * promoted_b + promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_asin,
+                       return p_asin(promoted_a) * promoted_b + promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_atan,
+                       return p_atan(promoted_a) * promoted_b + promoted_c;
+)
+
+// Hyperbolic functions
+SD_DEFINE_TERNARY_FUNC(sd_acosh,
+                       return p_acosh(promoted_a) * promoted_b + promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_asinh,
+                       return p_asinh(promoted_a) * promoted_b + promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_atanh,
+                       return p_atanh(promoted_a) * promoted_b + promoted_c;
+)
+
+// Exponential and logarithmic functions
+SD_DEFINE_TERNARY_FUNC(sd_exp,
+                       return p_exp(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_log,
+                       return p_log(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_log2,
+                       return p_log2(promoted_a * promoted_b + promoted_c);
+)
+
+// Rounding functions
+SD_DEFINE_TERNARY_FUNC(sd_round,
+                       return p_round(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_ceil,
+                       return p_ceil(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_floor,
+                       return p_floor(promoted_a * promoted_b + promoted_c);
+)
+
+// Special functions
+SD_DEFINE_TERNARY_FUNC(sd_erf,
+                       return p_erf(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_erfc,
+                       return p_erfc(promoted_a * promoted_b + promoted_c);
+)
+
+// Activation functions
+SD_DEFINE_TERNARY_FUNC(sd_sigmoid,
+                       return (promoted_type)1.0 / ((promoted_type)1.0 + p_exp(-(promoted_a * promoted_b + promoted_c)));
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_tanh,
+                       return p_tanh(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_softplus,
+                       return p_log((promoted_type)1.0 + p_exp(promoted_a * promoted_b + promoted_c));
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_elu,
+                       promoted_type x = promoted_a * promoted_b + promoted_c;
+                           return x >= (promoted_type)0.0 ? x : promoted_a * (p_exp(x) - (promoted_type)1.0);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_leakyrelu,
+                       promoted_type x = promoted_a * promoted_b + promoted_c;
+                           return x >= (promoted_type)0.0 ? x : promoted_a * x;
+)
+
+// Gamma and related functions
+SD_DEFINE_TERNARY_FUNC(sd_lgamma,
+                       return sd_lgamma(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_gamma,
+                       return sd_gamma(promoted_a * promoted_b + promoted_c);
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_igamma,
+// Note: This is a placeholder. Actual implementation would require a more complex function.
+                       return sd_gamma(promoted_a) * promoted_b * promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_igammac,
+// Note: This is a placeholder. Actual implementation would require a more complex function.
+                       return (promoted_type)1.0 - sd_gamma(promoted_a) * promoted_b * promoted_c;
+)
+
+// Bit manipulation (for integral types)
+SD_DEFINE_TERNARY_FUNC(sd_rotl,
+                       return p_rotl(promoted_a, promoted_b) + promoted_c;
+)
+
+SD_DEFINE_TERNARY_FUNC(sd_rotr,
+                       return p_rotr(promoted_a, promoted_b) + promoted_c;
+)
 
 #ifdef _OPENMP
 
@@ -2278,5 +2495,11 @@ inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val
                              : omp_out = omp_in * omp_out) initializer(omp_priv = 1)
 
 #endif
+
+
+}  // namespace math
+}  // namespace sd
+
+
 
 #endif /* TEMPLATEMATH_H_ */

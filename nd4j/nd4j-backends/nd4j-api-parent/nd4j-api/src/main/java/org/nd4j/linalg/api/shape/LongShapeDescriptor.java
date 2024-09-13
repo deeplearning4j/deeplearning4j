@@ -29,13 +29,18 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
 
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class LongShapeDescriptor {
 
     @Getter
     private char order;
 
+    @Getter
     private long offset;
 
+    @Getter
     private long ews;
 
 
@@ -49,16 +54,16 @@ public class LongShapeDescriptor {
     private long extras;
 
     public LongShapeDescriptor(long[] shape, long[] stride, long offset, long ews, char order, long extras) {
-     if(shape != null) {
-         this.shape = Arrays.copyOf(shape, shape.length);
-         this.stride = Arrays.copyOf(stride, stride.length);
+        if(shape != null) {
+            this.shape = Arrays.copyOf(shape, shape.length);
+            this.stride = Arrays.copyOf(stride, stride.length);
 
-         this.offset = offset;
-         this.ews = ews;
-         this.order = order;
+            this.offset = offset;
+            this.ews = ews;
+            this.order = order;
 
-         this.extras = extras;
-     }
+            this.extras = extras;
+        }
 
     }
 
@@ -115,8 +120,8 @@ public class LongShapeDescriptor {
         StringBuilder builder = new StringBuilder();
 
         builder.append(shape.length).append(",").append(Arrays.toString(shape)).append(",")
-                        .append(Arrays.toString(stride)).append(",").append(extras).append(",").append(ews).append(",")
-                        .append(order);
+                .append(Arrays.toString(stride)).append(",").append(extras).append(",").append(ews).append(",")
+                .append(order);
 
         String result = builder.toString().replaceAll("\\]", "").replaceAll("\\[", "");
         result = "[" + result + "]";
@@ -151,7 +156,7 @@ public class LongShapeDescriptor {
         return fromShape(l, l, 1, 'c', dataType, true);
     }
 
-    public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty){
+    public static LongShapeDescriptor fromShape(@NonNull long[] shape, @NonNull long[] strides, long ews, char order, @NonNull DataType dataType, boolean empty) {
         long extras = 0L;
         extras = ArrayOptionsHelper.setOptionBit(extras, dataType);
         if (empty)
@@ -184,6 +189,30 @@ public class LongShapeDescriptor {
 
     public boolean isScalar() {
         return !isEmpty() && rank() < 1;
+    }
+
+
+    /**
+     * Convert this LongShapeDescriptor to a shape descriptor
+     * @return ShapeDescriptor
+     */
+    public long[] toShapeInfo() {
+        long[] ret = new long[Shape.shapeInfoLength(rank())];
+        ret[0] = rank();
+
+        for(int i = 0; i < rank(); i++) {
+            ret[i + 1] = shape[i];
+        }
+
+        for(int i = 0; i < rank(); i++) {
+            ret[i + 1 + rank()] = stride[i];
+        }
+
+        Shape.setElementWiseStride(ret, (int) ews);
+        Shape.setOrder(ret, order);
+        Shape.setExtras(ret, extras);
+        return ret;
+
     }
 
 }

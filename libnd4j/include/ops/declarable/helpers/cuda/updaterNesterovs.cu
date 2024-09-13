@@ -98,7 +98,7 @@ void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterNesterovs(LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+void updaterNesterovs(LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,
                       NDArray& stateV, const double dLr, const double dMomentum) {
   PointersManager manager(context, "nesterovsUpdater");
 

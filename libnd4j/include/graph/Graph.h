@@ -26,7 +26,6 @@
 #include <list>
 #include <map>
 #include <unordered_map>
-//#include <NDArray.h>
 #include <graph/ExecutorConfiguration.h>
 #include <graph/Node.h>
 #include <graph/Scope.h>

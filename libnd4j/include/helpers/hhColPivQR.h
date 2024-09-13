@@ -37,7 +37,7 @@ class HHcolPivQR {
   int _diagSize;
 
   HHcolPivQR() = delete;
-  HHcolPivQR(const NDArray& matrix);
+  HHcolPivQR(NDArray &matrix);
 
   template <typename T>
   void _evalData();

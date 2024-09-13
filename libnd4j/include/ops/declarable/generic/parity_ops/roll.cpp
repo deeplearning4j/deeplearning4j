@@ -102,7 +102,7 @@ CONFIGURABLE_OP_IMPL(roll, -2, 1, true, 0, 0) {
   if (shiftSum < 1) {
     sd_debug("Roll: No shift needed. Shift total was %d\n", shiftSum);
     if (!block.isInplace()) {
-      output->assign(input);
+      output->assign(*input);
     }
     return Status::OK;
   }

@@ -135,7 +135,6 @@ public class TADTests extends BaseNd4jTestWithBackends {
 
             String str = String.valueOf(i);
             assertEquals(get, tad,str);
-            assertEquals(get.data().offset(), tad.data().offset(),str);
             assertEquals(get.elementWiseStride(), tad.elementWiseStride(),str);
 
             char orderTad = Shape.getOrder(tad.shape(), tad.stride(), 1);

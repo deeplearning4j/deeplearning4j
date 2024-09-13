@@ -107,8 +107,8 @@ class SD_LIB_EXPORT DebugHelper {
     }
   }
 #endif
-  static DebugInfo debugStatistics(NDArray const* input);
-  static void retrieveDebugStatistics(DebugInfo* statistics, NDArray const* input);
+  static DebugInfo debugStatistics(NDArray * input);
+  static void retrieveDebugStatistics(DebugInfo* statistics, NDArray* input);
 };
 }  // namespace sd
 

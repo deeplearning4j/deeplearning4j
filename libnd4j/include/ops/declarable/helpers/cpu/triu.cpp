@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void triuBP_(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+static void triuBP_(sd::LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
                     const int diagonal) {
   if(gradO.isScalar()) {
     auto firstElement = gradO.e(0);
@@ -55,7 +55,7 @@ static void triuBP_(sd::LaunchContext* context, const NDArray& input, const NDAr
 
 }
 
-void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+void triuBP(sd::LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
             const int diagonal) {
   BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), SD_COMMON_TYPES);
 }

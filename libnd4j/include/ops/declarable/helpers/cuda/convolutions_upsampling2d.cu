@@ -86,7 +86,7 @@ static void upsampling2dCudaLauncher(const int blocksPerGrid, const int threadsP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling2d(graph::Context& block, const NDArray& input, NDArray& output, const LongType factorH,
+void ConvolutionUtils::upsampling2d(graph::Context& block, NDArray& input, NDArray& output, const LongType factorH,
                                     const LongType factorW, const bool isNCHW) {
   PointersManager manager(block.launchContext(), "upsampling2d");
 

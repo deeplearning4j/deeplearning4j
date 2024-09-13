@@ -55,7 +55,7 @@ static SD_INLINE T zetaScalarSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static void zeta_(sd::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z) {
+static void zeta_(sd::LaunchContext* context, NDArray& x, NDArray& q, NDArray& z) {
   // auto result = NDArray(&x, false, context);
   int xLen = x.lengthOf();
 
@@ -66,12 +66,12 @@ static void zeta_(sd::LaunchContext* context, const NDArray& x, const NDArray& q
   samediff::Threads::parallel_for(func, 0, xLen);
 }
 
-void zeta(sd::LaunchContext* context, const NDArray& x, const NDArray& q, NDArray& z) {
+void zeta(sd::LaunchContext* context, NDArray& x, NDArray& q, NDArray& z) {
   BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (context, x, q, z), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void zeta_,
-                      (sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), SD_FLOAT_TYPES);
+                      (sd::LaunchContext * context, NDArray& x, NDArray& q, NDArray& z), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

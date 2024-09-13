@@ -63,7 +63,7 @@ static void zetaCudaLauncher(const int blocksPerGrid, const int sharedMemory, co
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "zetaCuda failed");
 }
 
-void zeta(LaunchContext *context, const NDArray &x, const NDArray &q, NDArray &z) {
+void zeta(LaunchContext *context, NDArray&x, NDArray&q, NDArray &z) {
   if (!x.isActualOnDeviceSide()) x.syncToDevice();
   if (!q.isActualOnDeviceSide()) q.syncToDevice();
 

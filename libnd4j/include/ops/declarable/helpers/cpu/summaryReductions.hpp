@@ -1071,7 +1071,7 @@ static void reductionCaseNonScalar(const int& first_rank, const int& output_rank
 }
 
 template <typename X, typename Z, typename DeviationOp>
-static void reduction_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
+static void reduction_(NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions, bool biasCorrected) {
   char input_order = input.ordering();
   bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
   auto input_shapeInfo = input.shapeInfo();
@@ -1119,13 +1119,13 @@ static void reduction_(const NDArray& input, NDArray& output, const std::vector<
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void variance_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
+SD_LIB_HIDDEN void variance_(NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
                              bool biasCorrected) {
   return reduction_<X, Z, Deviation<X, Z>>(input, output, dimensions, biasCorrected);
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void standardDeviation_(const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
+SD_LIB_HIDDEN void standardDeviation_(NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions,
                                       bool biasCorrected) {
   return reduction_<X, Z, Deviation<X, Z, true>>(input, output, dimensions, biasCorrected);
 }

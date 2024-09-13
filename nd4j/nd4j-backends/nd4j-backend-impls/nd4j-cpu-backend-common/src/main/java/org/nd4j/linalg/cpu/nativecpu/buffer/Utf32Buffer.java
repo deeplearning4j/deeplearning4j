@@ -79,8 +79,8 @@ public class Utf32Buffer extends BaseCpuDataBuffer {
         numWords = length;
     }
 
-    public Utf32Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
+    public Utf32Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     public Utf32Buffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
@@ -99,9 +99,6 @@ public class Utf32Buffer extends BaseCpuDataBuffer {
         super(data, copy);
     }
 
-    public Utf32Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf32Buffer(float[] data, boolean copy) {
         super(data, copy);
@@ -116,25 +113,19 @@ public class Utf32Buffer extends BaseCpuDataBuffer {
     }
 
     public Utf32Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
-    public Utf32Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf32Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
     public Utf32Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
     }
 
-    public Utf32Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
-    }
+
 
     public Utf32Buffer(@NonNull Collection<String> strings) {
         super(Utf32Buffer.stringBufferRequiredLength(strings), false);

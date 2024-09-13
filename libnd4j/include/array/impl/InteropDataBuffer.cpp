@@ -25,23 +25,32 @@
 #include <helpers/logger.h>
 
 namespace sd {
-InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t length, uint64_t offset) {
+InteropDataBuffer::InteropDataBuffer(InteropDataBuffer* dataBuffer, uint64_t length) {
+ if(dataBuffer == nullptr) {
+        THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer is nullptr");
+ }
   if(dataBuffer->_dataBuffer->getDataType() == DataType::UNKNOWN)
-        THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer has unknown data type");
+    THROW_EXCEPTION("InteropDataBuffer::InteropDataBuffer(InteropDataBuffer& dataBuffer, uint64_t length, uint64_t offset) - dataBuffer has unknown data type");
   _dataBuffer = dataBuffer->dataBuffer();
+  _dataType = dataBuffer->_dataType;
 
-  // offset is always absolute to the original buffer
-  _offset = offset;
+}
 
-  if (_dataBuffer != nullptr && _offset + length > _dataBuffer->getLenInBytes()) {
-    this->expand(length);
-    sd_debug("Expanding data buffer length by %d\n", length);
+InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) {
+  _dataBuffer = databuffer;
+  _dataType = databuffer->getDataType();
+  if(_dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION(
+        "InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) - data type is unknown");
   }
 }
 
-InteropDataBuffer::InteropDataBuffer(DataBuffer * databuffer) { _dataBuffer = databuffer; }
-
 InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) {
+  if(dtype == DataType::UNKNOWN) {
+    THROW_EXCEPTION(
+        "InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth) - data type is unknown");
+  }
+
   if (lenInBytes == 0) {
     _dataBuffer = nullptr;
     this->_dataType = dtype;
@@ -49,7 +58,7 @@ InteropDataBuffer::InteropDataBuffer(size_t lenInBytes, DataType dtype, bool all
   } else {
     //note this should be size in bytes hence why we multiply the number of elements by the size of the data type
     _dataBuffer = new DataBuffer(lenInBytes, dtype, nullptr, allocateBoth);
-
+    this->_dataType = dtype;
   }
 }
 
@@ -69,8 +78,9 @@ void InteropDataBuffer::markOwner(bool owner) {
 DataBuffer * InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }
 
 DataBuffer * InteropDataBuffer::dataBuffer() {
-  if(_dataBuffer == nullptr || _dataBuffer == nullptr)
+  if(_dataBuffer == nullptr || _dataBuffer == nullptr) {
     return nullptr;
+  }
   return _dataBuffer;
 }
 
@@ -80,7 +90,7 @@ void* InteropDataBuffer::primary() const {
   if(_dataBuffer->primary() == nullptr) {
     return nullptr;
   }
-  return reinterpret_cast<int8_t*>(_dataBuffer->primary()) + _offset;
+  return reinterpret_cast<int8_t*>(_dataBuffer->primary());
 }
 
 void* InteropDataBuffer::special() const {
@@ -89,7 +99,7 @@ void* InteropDataBuffer::special() const {
   if(_dataBuffer->special() == nullptr) {
     return nullptr;
   }
-  return reinterpret_cast<int8_t*>(_dataBuffer->special()) + _offset;
+  return reinterpret_cast<int8_t*>(_dataBuffer->special());
 }
 
 void InteropDataBuffer::setPrimary(void* ptr, size_t length) {
@@ -104,12 +114,7 @@ void InteropDataBuffer::setSpecial(void* ptr, size_t length) {
   _dataBuffer->setSpecialBuffer(ptr, length);
 }
 
-uint64_t InteropDataBuffer::offset() const { return _offset / DataTypeUtils::sizeOf(this->_dataType); }
 
-
-uint64_t InteropDataBuffer::byteOffset() const { return _offset; }
-
-void InteropDataBuffer::setByteOffset(uint64_t offset) { _offset = offset; }
 
 int InteropDataBuffer::deviceId() const { return _dataBuffer->deviceId(); }
 

@@ -84,7 +84,8 @@ CUSTOM_OP_IMPL(cumsum_bp, 2, -1, true, 0, 2) {
 
   if (block.width() > 2) {
     dims = axis->template asVectorT<sd::LongType>();
-    OUTPUT_VARIABLE(1)->assign(1.0f);
+    float one = 1.f;
+    OUTPUT_VARIABLE(1)->assign(one);
   } else if (int newSize = (block.numI() - 2)) {
     dims.resize(newSize);
 

@@ -35,7 +35,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, NDArray *output,
+static void conv3dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArray *output,
                          const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW,
                          const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                          const int paddingMode, const int isNCDHW, const int wFormat) {
@@ -136,7 +136,7 @@ static void conv3dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////
-static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
+static void conv3dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArray *gradO,
                            NDArray *gradI, NDArray *gradW, NDArray *gradB, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
                            const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
                            const sd::LongType dD, const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCDHW,

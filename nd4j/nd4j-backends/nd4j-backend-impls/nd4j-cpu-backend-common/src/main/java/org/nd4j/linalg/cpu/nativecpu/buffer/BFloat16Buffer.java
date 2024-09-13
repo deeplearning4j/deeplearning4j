@@ -21,9 +21,7 @@
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 
-import lombok.val;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.common.util.ArrayUtil;
@@ -60,9 +58,6 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
 
     }
 
-    public BFloat16Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
 
     public BFloat16Buffer(long length, boolean initialize) {
         super(length, initialize);
@@ -77,7 +72,11 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
     }
 
     public BFloat16Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
+    }
+
+    public BFloat16Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -87,10 +86,6 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
     protected void initTypeAndSize() {
         type = DataType.BFLOAT16;
         elementSize = 2;
-    }
-
-    public BFloat16Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
     }
 
 
@@ -116,17 +111,11 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public BFloat16Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public BFloat16Buffer(double[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public BFloat16Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public BFloat16Buffer(float[] floats, boolean copy) {
         super(floats, copy);
@@ -137,11 +126,11 @@ public class BFloat16Buffer extends BaseCpuDataBuffer {
     }
 
     public BFloat16Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public BFloat16Buffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(data, copy, workspace);
     }
 
 

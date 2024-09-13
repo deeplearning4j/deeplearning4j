@@ -55,7 +55,7 @@ static SD_KERNEL void countRowsKernel(int* pRowCounts, int const* pRows, int con
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // row counter caller
-LongType barnes_row_count(const NDArray* rowP, const NDArray* colP, LongType N, NDArray& rowCounts) {
+LongType barnes_row_count(NDArray* rowP, NDArray* colP, LongType N, NDArray& rowCounts) {
   int* pRowCounts = reinterpret_cast<int*>(rowCounts.specialBuffer());
   int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
   int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
@@ -144,7 +144,7 @@ static SD_KERNEL void symmetrizeKernel(int const* pRows, int const* pCols, T con
 // symmetrize algorithm itself
 //
 template <typename T>
-static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, LongType N,
+static void barnes_symmetrize_(NDArray* rowP, NDArray* colP, NDArray* valP, LongType N,
                                NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
   int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
   int* symRowP = reinterpret_cast<int*>(outputRows->specialBuffer());
@@ -170,7 +170,7 @@ static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const N
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // symmetrize caller and adoption
 //
-void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* valP, LongType N,
+void barnes_symmetrize(NDArray* rowP, NDArray* colP, NDArray* valP, LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
   BUILD_SINGLE_SELECTOR(valP->dataType(), barnes_symmetrize_,
                         (rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCounts), SD_NUMERIC_TYPES);
@@ -178,7 +178,7 @@ void barnes_symmetrize(const NDArray* rowP, const NDArray* colP, const NDArray* 
   *outputVals /= 2.0;
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_symmetrize_,
-                      (const NDArray* rowP, const NDArray* colP, const NDArray* valP, sd::LongType N,
+                      (NDArray* rowP, NDArray* colP, NDArray* valP, sd::LongType N,
                        NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts),
                       SD_NUMERIC_TYPES);
 
@@ -217,8 +217,8 @@ static SD_KERNEL void edgeForcesKernel(int const* pRows, int const* pCols, T con
 //
 
 template <typename T>
-static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N,
-                                NDArray const* data, NDArray* output) {
+static void barnes_edge_forces_(NDArray* rowP, NDArray * colP, NDArray * valP, int N,
+                                NDArray * data, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {data, rowP, colP, valP, valP});
   T const* dataP = reinterpret_cast<T const*>(data->specialBuffer());
   T const* vals = reinterpret_cast<T const*>(valP->specialBuffer());
@@ -237,13 +237,13 @@ static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArra
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // edge forces caller
 //
-void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output,
-                        NDArray const& data) {
+void barnes_edge_forces(NDArray* rowP, NDArray * colP, NDArray * valP, int N, NDArray* output,
+                        NDArray& data) {
   // Loop over all edges in the graph
   BUILD_SINGLE_SELECTOR(output->dataType(), barnes_edge_forces_, (rowP, colP, valP, N, &data, output), SD_FLOAT_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_,
-                      (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data,
+                      (NDArray* rowP, NDArray * colP, NDArray * valP, int N, NDArray * data,
                        NDArray* output),
                       SD_FLOAT_TYPES);
 

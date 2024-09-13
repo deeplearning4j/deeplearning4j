@@ -61,8 +61,8 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,3,1,2};
-    input = new NDArray(input->permute(perm, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    output = new NDArray(output->permute(perm, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = new NDArray(input->permute(perm, false, false));    // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    output = new NDArray(output->permute(perm, false, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
@@ -188,9 +188,9 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
 
   if (!isNCHW) {
     std::vector<sd::LongType> perm = {0,3,1,2};
-    input = new NDArray(input->permute(perm, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradI = new NDArray(gradI->permute(perm, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-    gradO = new NDArray(gradO->permute(perm, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    input = new NDArray(input->permute(perm, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradI = new NDArray(gradI->permute(perm, false, false));  // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+    gradO = new NDArray(gradO->permute(perm, false, false));  // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -216,7 +216,7 @@ DECLARE_SHAPE_FN(avgpool2d_bp) {
                "AVGPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!",
                inputShape->at(1)[0]);
 
-  auto desc = new  ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
+  auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)), false);
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 

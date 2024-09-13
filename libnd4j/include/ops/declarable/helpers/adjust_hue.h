@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void adjustHue(LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr,
+SD_LIB_HIDDEN void adjustHue(LaunchContext* context, NDArray* input, NDArray* deltaScalarArr,
                              NDArray* output, const LongType dimC);
 
 ////////////////////////////////////////////////////////////////////////////////

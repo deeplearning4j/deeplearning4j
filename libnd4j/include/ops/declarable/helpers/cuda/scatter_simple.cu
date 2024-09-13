@@ -55,8 +55,8 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, c
 }
 
 template <typename X, typename Y>
-void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                    const NDArray& indices, const std::vector<LongType>& dimensions) {
+void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
+                    NDArray& indices, const std::vector<LongType>& dimensions) {
   auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(),dimensions.size(),dimensions.data());
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
 
@@ -74,8 +74,8 @@ void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, cons
 
 }
 
-void scatterSimple(LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                   const NDArray& indices, const std::vector<LongType>& dimensions) {
+void scatterSimple(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
+                   NDArray& indices, const std::vector<LongType>& dimensions) {
   auto xType = input.dataType();
   auto yType = indices.dataType();
 

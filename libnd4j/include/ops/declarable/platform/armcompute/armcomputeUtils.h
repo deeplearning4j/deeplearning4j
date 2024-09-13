@@ -87,14 +87,14 @@ Arm_DataType getArmType(const sd::DataType& dType);
 Arm_TensorInfo getArmTensorInfo(int rank, sd::LongType* bases, sd::DataType ndArrayType,
                                 Arm_DataLayout layout = Arm_DataLayout::UNKNOWN);
 
-Arm_TensorInfo getArmTensorInfo(const NDArray& arr, Arm_DataLayout layout = Arm_DataLayout::UNKNOWN);
+Arm_TensorInfo getArmTensorInfo(NDArray& arr, Arm_DataLayout layout = Arm_DataLayout::UNKNOWN);
 
-Arm_Tensor getArmTensor(const NDArray& arr, Arm_DataLayout layout = Arm_DataLayout::UNKNOWN);
+Arm_Tensor getArmTensor(NDArray& arr, Arm_DataLayout layout = Arm_DataLayout::UNKNOWN);
 
 void copyFromTensor(const Arm_Tensor& inTensor, NDArray& output);
-void copyToTensor(const NDArray& input, Arm_Tensor& outTensor);
+void copyToTensor(NDArray& input, Arm_Tensor& outTensor);
 void print_tensor(Arm_ITensor& tensor, const char* msg);
-bool isArmcomputeFriendly(const NDArray& arr);
+bool isArmcomputeFriendly(NDArray& arr);
 
 template <typename F>
 class ArmFunction {

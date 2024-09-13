@@ -37,7 +37,12 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) {
+    NDArray& deRef = *input;
+    output->assign(deRef);
+    output->printIndexedBuffer("OUTPUT INDEXED OUTPUT AFTER CAST:");
+    fflush(stdout);
+  }
 
   STORE_RESULT(output);
   return sd::Status::OK;
@@ -48,15 +53,26 @@ DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
-    auto desc = new ShapeDescriptor(inShape, newType);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    DataType secondComp = block.getDArguments()->at(0);
+    auto desc = new ShapeDescriptor(inShape, newType, true);
+    auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    auto compDataType = ArrayOptions::dataType(newShapeInfo);
+    if(compDataType != newType) {
+      std::string errorMessage;
+      errorMessage += "cast: new data type is ";
+      errorMessage += DataTypeUtils::asString(newType);
+      errorMessage += " data type from new constant created data type ";
+      errorMessage += DataTypeUtils::asString(compDataType);
+      errorMessage += "\n";
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+    auto ret =  SHAPELIST(newShapeInfo);
     return ret;
 
   } else {
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
-    auto desc = new ShapeDescriptor(inShape, newType);
+    auto desc = new ShapeDescriptor(inShape, newType, false);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
     return ret;

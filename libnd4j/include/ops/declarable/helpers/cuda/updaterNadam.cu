@@ -128,8 +128,8 @@ void nadamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterNadam(LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
-                  const NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM, const double dLr,
+void updaterNadam(LaunchContext* context, NDArray& gradient, NDArray& initStateV,
+                  NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM, const double dLr,
                   const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "nadamUpdater");
 

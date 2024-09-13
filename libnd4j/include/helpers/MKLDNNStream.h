@@ -53,7 +53,7 @@ class ONEDNNStream {
     return typeid(X) == typeid(float) && typeid(Y) == typeid(float);
   }
 
-  static bool isSupported(const std::vector<const NDArray *> &arrays) {
+  static bool isSupported(const std::vector<NDArray *> &arrays) {
     // FIXME: strict float support doesn't work anymore
     for (auto v : arrays) {
       if (v != nullptr && v->dataType() != sd::DataType::FLOAT32) {

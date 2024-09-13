@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void rmsPropUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateG,
+static void rmsPropUpdater_(NDArray& gradient, NDArray& initState, NDArray& update, NDArray& stateG,
                             const double dLr, const double dRmsDecay, const double dEpsilon) {
   const T* grad = gradient.bufferAsT<T>();
   const T* init = initState.bufferAsT<T>();
@@ -81,7 +81,7 @@ static void rmsPropUpdater_(const NDArray& gradient, const NDArray& initState, N
   return;
 }
 
-void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+void updaterRmsProp(sd::LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,
                     NDArray& stateG, const double dLr, const double dRmsDecay, const double dEpsilon) {
   BUILD_SINGLE_SELECTOR(gradient.dataType(), rmsPropUpdater_,
                         (gradient, initState, update, stateG, dLr, dRmsDecay, dEpsilon), SD_FLOAT_TYPES);

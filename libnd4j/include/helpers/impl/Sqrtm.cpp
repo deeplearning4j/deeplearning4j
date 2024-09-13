@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void sqrtmQuasiTrianDiag(const NDArray& matrixT, NDArray& sqrtT) {
+static void sqrtmQuasiTrianDiag(NDArray& matrixT, NDArray& sqrtT) {
   const int rows = matrixT.sizeAt(0);
 
   for (int i = 0; i < rows; i++) {
@@ -45,8 +45,8 @@ static void sqrtmQuasiTrianDiag(const NDArray& matrixT, NDArray& sqrtT) {
     } else {
       EigenValsAndVecs<T> es(matrixT({i, i + 2, i, i + 2}, true));  // es._Vecs {2,2,2}, es._Vals{2,2}
 
-      const NDArray& vecs = es._Vecs;
-      const NDArray& vals = es._Vals;
+       NDArray& vecs = es._Vecs;
+       NDArray& vals = es._Vals;
 
       const T& vecsReal00 = vecs.t<T>(0, 0, 0);
       const T& vecsImag00 = vecs.t<T>(0, 0, 1);
@@ -136,7 +136,7 @@ static void sqrtmQuasiTrianDiag(const NDArray& matrixT, NDArray& sqrtT) {
 //////////////////////////////////////////////////////////////////////////
 // all matrices are {2,2} here
 template <typename T>
-static void sqrtmQuasiTrianAuxEq(const NDArray& A, const NDArray& B, const NDArray& C, NDArray& X) {
+static void sqrtmQuasiTrianAuxEq(NDArray& A, NDArray& B, NDArray& C, NDArray& X) {
   std::vector<LongType> tempShape = {4,4};
   NDArray tempMatrix(A.ordering(),tempShape, A.dataType(), A.getContext());
 
@@ -174,7 +174,7 @@ static void sqrtmQuasiTrianAuxEq(const NDArray& A, const NDArray& B, const NDArr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void sqrtmQuasiTrianOffDiag(const NDArray& matrixT, NDArray& sqrtT) {
+static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
   const int rows = matrixT.sizeAt(0);
 
   for (int j = 1; j < rows; j++) {
@@ -238,7 +238,7 @@ static void sqrtmQuasiTrianOffDiag(const NDArray& matrixT, NDArray& sqrtT) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
+void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   if (in.rankOf() != 2 || in.sizeAt(0) != in.sizeAt(1))
     THROW_EXCEPTION("ops::helpers::Sqrtm::calc: input matrix must have rank 2 and be square !");
   if (!out.isSameShape(in))
@@ -251,8 +251,8 @@ void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
 
   Schur<T> schur(in);
 
-  const NDArray& t1 = schur.t;
-  const NDArray& t2 = schur.u;
+  NDArray& t1 = schur.t;
+  NDArray& t2 = schur.u;
 
   NDArray sqrtT = in.ulike();
   sqrtT.nullify();
@@ -260,8 +260,9 @@ void Sqrtm<T>::calc(const NDArray& in, NDArray& out) {
   sqrtmQuasiTrianDiag<T>(schur.t, sqrtT);
   sqrtmQuasiTrianOffDiag<T>(schur.t, sqrtT);
 
+  NDArray second = schur.u.transpose();
   // out = U * sqrtT * U^T;
-  NDArray temp = mmul(sqrtT, schur.u.transpose());
+  NDArray temp = mmul(sqrtT, second);
   MmulHelper::mmul(&schur.u, &temp, &out);
 }
 

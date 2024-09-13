@@ -37,6 +37,8 @@ SD_HOST void ArrayOptions::setExtra(sd::LongType *shapeInfo, sd::LongType value)
 
 SD_HOST LongType ArrayOptions::extra(const LongType *shapeInfo) {
   sd::LongType  idx = ArrayOptions::extraIndex(shapeInfo);
+  if(idx >  shape::shapeInfoLength(shape::rank(shapeInfo)))
+    THROW_EXCEPTION("Extra index is out of bounds!");
   return shapeInfo[idx];
 }
 
@@ -367,6 +369,15 @@ SD_HOST bool ArrayOptions::isEmpty(sd::LongType *shapeInfo) {
   return hasPropertyBitSet(shapeInfo, EMPTY);
 }
 
+
+ bool ArrayOptions::arrayNeedsCopy(LongType *shapeInfo) {
+  return hasPropertyBitSetForFlags(shapeInfo[ArrayOptions::extraIndex(shapeInfo)], ARRAY_NEEDS_COPY);
+}
+
+ void ArrayOptions::toggleArrayNeedsCopy(LongType *shapeInfo) {
+    togglePropertyBit(shapeInfo, ARRAY_NEEDS_COPY);
+}
+
 SD_HOST void ArrayOptions::toggleIsEmpty(sd::LongType *shapeInfo) {
   togglePropertyBit(shapeInfo, EMPTY);
 }
@@ -561,6 +572,7 @@ SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataTy
       printf("Can't set unknown data type");
 #endif
 
+      validateSingleDataType(shapeInfo[ArrayOptions::extraIndex(shapeInfo)]);
 
   }
 
@@ -581,9 +593,6 @@ SD_HOST void ArrayOptions::setDataType(sd::LongType *shapeInfo, const sd::DataTy
 }
 
 SD_HOST sd::LongType ArrayOptions::setDataTypeValue(sd::LongType extraStorage, const sd::DataType dataType) {
-  //data type is already set. Don't do it again.
-  if(ArrayOptions::hasPropertyBitSet(extraStorage, flagForDataType(dataType)))
-    return extraStorage;
   sd::LongType  ret = extraStorage;
   if (dataType == sd::DataType::UINT8
       || dataType == sd::DataType::UINT16

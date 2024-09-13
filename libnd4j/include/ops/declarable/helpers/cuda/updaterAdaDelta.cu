@@ -120,8 +120,8 @@ void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaDelta(LaunchContext* context, const NDArray& gradient, const NDArray& initStateMsg,
-                     const NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
+void updaterAdaDelta(LaunchContext* context, NDArray& gradient, NDArray& initStateMsg,
+                     NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
                      const double dRho, const double dEpsilon) {
   PointersManager manager(context, "adaDeltaUpdater");
   dim3 updater2Dims = updaterDims(gradient.lengthOf());

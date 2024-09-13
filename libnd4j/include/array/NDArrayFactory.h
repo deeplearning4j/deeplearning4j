@@ -59,7 +59,7 @@ class SD_LIB_EXPORT NDArrayFactory {
   static NDArray *valueOf(std::vector<LongType> &shape, T value, const char order = 'c',
                           LaunchContext *context = LaunchContext ::defaultContext());
 
-  static NDArray *valueOf(std::vector<LongType> &shape, const NDArray &value, const char order = 'c',
+  static NDArray *valueOf(std::vector<LongType> &shape, NDArray&value, const char order = 'c',
                           LaunchContext *context = LaunchContext ::defaultContext());
 
   template <typename T>

@@ -370,7 +370,7 @@ if(SD_NATIVE)
         set(SD_X86_BUILD false)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
     ELSE()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=generic64")
     ENDIF()
 endif()
 

@@ -224,14 +224,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         Nd4j.getExecutioner().clearOpContext();
-        long outH = im2col.size(1);
-        long outW = im2col.size(2);
+        long outH = im2col.size(-1);
+        long outW = im2col.size(-2);
         INDArray im2col2d = im2col.reshape(miniBatch * outH * outW, inDepth * kH * kW);
         try(MemoryWorkspace ws1 = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            /**
-             * TODO: dup seems to change underlyuing buffer here.
-             * We need to preserve  everything about the buffer.
-             */
             this.lastZ = z.dup();
             this.im2col2d = im2col2d.dup();
         }

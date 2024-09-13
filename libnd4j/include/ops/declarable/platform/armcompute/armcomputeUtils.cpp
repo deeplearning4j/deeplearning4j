@@ -80,7 +80,7 @@ Arm_DataType getArmType(const DataType& dType) {
   return ret;
 }
 
-bool isArmcomputeFriendly(const NDArray& arr) {
+bool isArmcomputeFriendly(NDArray& arr) {
   auto dType = getArmType(arr.dataType());
   int rank = (int)(arr.rankOf());
   int ind = arr.ordering() == 'c' ? rank - 1 : 0;
@@ -107,7 +107,7 @@ Arm_TensorInfo getArmTensorInfo(int rank, sd::LongType* bases, sd::DataType ndAr
   return Arm_TensorInfo(shape, numChannels, dType, layout);
 }
 
-Arm_TensorInfo getArmTensorInfo(const NDArray& arr, arm_compute::DataLayout layout) {
+Arm_TensorInfo getArmTensorInfo(NDArray& arr, arm_compute::DataLayout layout) {
   auto dType = getArmType(arr.dataType());
 
   internal_print_nd_shape(arr, "shape");
@@ -155,7 +155,7 @@ Arm_TensorInfo getArmTensorInfo(const NDArray& arr, arm_compute::DataLayout layo
   return info;
 }
 
-Arm_Tensor getArmTensor(const NDArray& arr, arm_compute::DataLayout layout) {
+Arm_Tensor getArmTensor(NDArray& arr, arm_compute::DataLayout layout) {
   // - Ownership of the backing memory is not transferred to the tensor itself.
   // - The tensor mustn't be memory managed.
   // - Padding requirements should be accounted by the client code.

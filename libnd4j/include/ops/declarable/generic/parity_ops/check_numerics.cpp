@@ -36,13 +36,13 @@ CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
   auto allFinite = input->reduceNumber(reduce::BoolOps::IsFinite);
   REQUIRE_TRUE(allFinite.e<bool>(0), 0, "CheckNumerics: %s", message->e<std::string>(0).c_str());
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) output->assign(*input);
 
   return sd::Status::OK;
 }
 
 DECLARE_SHAPE_FN(check_numerics) {
-  auto desc = new ShapeDescriptor(inputShape->at(0));
+  auto desc = new ShapeDescriptor(inputShape->at(0), false);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   delete desc;
   return ret;

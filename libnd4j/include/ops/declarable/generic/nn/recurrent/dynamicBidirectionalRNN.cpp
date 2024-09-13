@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
                WxBW->rankOf());
 
   const int inRank = x->rankOf();
-  const int time = timeMajor ? x->sizeAt(0) : x->sizeAt(1);
+  int time = timeMajor ? x->sizeAt(0) : x->sizeAt(1);
   const int bS = timeMajor ? x->sizeAt(1) : x->sizeAt(0);
   const int numUnitsFW = WxFW->sizeAt(1);
   const int numUnitsBW = WxBW->sizeAt(1);
@@ -130,8 +130,8 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
   // forward steps
   dynamic_rnn dynamicRnn;
   auto resultsFW = dynamicRnn.evaluate({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {timeMajor});
-  hFW->assign(resultsFW.at(0));  // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
-  hFWFinal->assign(resultsFW.at(1));
+  hFW->assign(*resultsFW.at(0));  // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
+  hFWFinal->assign(*resultsFW.at(1));
 
   auto seqLen = maxTimeStep;
   if (seqLen == nullptr) {
@@ -151,12 +151,12 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
   // backward steps
   auto resultsBW = dynamicRnn.evaluate({revInput, WxBW, WhBW, bBW, h0BW, maxTimeStep}, {timeMajor});
   auto hBWtemp = resultsBW.at(0);  // [time x bS x numUnitsBW] or [ bS x time xnumUnitsBW]
-  hBWFinal->assign(resultsBW.at(1));
+  hBWFinal->assign(*resultsBW.at(1));
 
   // reverse hBWtemp
   auto resultsOut =
       timeMajor ? reverse.evaluate({hBWtemp, seqLen}, {0, 1}) : reverse.evaluate({hBWtemp, seqLen}, {1, 0});
-  hBW->assign(resultsOut.at(0));
+  hBW->assign(*resultsOut.at(0));
 
   if (seqLen != maxTimeStep) delete seqLen;
 

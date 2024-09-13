@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void nesterovsUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateV,
+static void nesterovsUpdater_(NDArray& gradient, NDArray& initState, NDArray& update, NDArray& stateV,
                               const double dLr, const double dMomentum) {
   const T* grad = gradient.bufferAsT<T>();
   const T* init = initState.bufferAsT<T>();
@@ -84,7 +84,7 @@ static void nesterovsUpdater_(const NDArray& gradient, const NDArray& initState,
   return;
 }
 
-void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+void updaterNesterovs(sd::LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,
                       NDArray& stateV, const double dLr, const double dMomentum) {
   BUILD_SINGLE_SELECTOR(gradient.dataType(), nesterovsUpdater_, (gradient, initState, update, stateV, dLr, dMomentum),
                         SD_FLOAT_TYPES);

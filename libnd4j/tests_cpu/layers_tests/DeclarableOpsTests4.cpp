@@ -821,22 +821,7 @@ TEST_F(DeclarableOpsTests4, Test_Fill_1) {
 ASSERT_EQ(exp,*z);
 }
 
-TEST_F(DeclarableOpsTests4, Test_FirasSparce_1) {
-  auto x = NDArrayFactory::create<double>('c', {1, 81});
-  auto exp = NDArrayFactory::create<double>('c', {1, 2}, {0, 1});
 
-  x.p(51, 1);
-  x.p(52, 0);
-  x.p(60, 1);
-  x.p(61, 0);
-  ops::firas_sparse op;
-  auto result = op.evaluate({&x}, {0, 1});
-
-  ASSERT_EQ(sd::Status::OK, result.status());
-
-  auto z = result.at(0);
-  ASSERT_TRUE(exp.equalsTo(z));
-}
 
 TEST_F(DeclarableOpsTests4, Test_FlattenTests_1) {
   auto x = NDArrayFactory::create<double>('c', {3, 3, 3, 3});

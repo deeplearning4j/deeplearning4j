@@ -27,7 +27,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void upsampling2d_(const NDArray& input, NDArray& output, const LongType factorH, const LongType factorW,
+static void upsampling2d_(NDArray& input, NDArray& output, const LongType factorH, const LongType factorW,
                           const bool isNCHW) {
   // input  has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
   // output has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
@@ -74,7 +74,7 @@ static void upsampling2d_(const NDArray& input, NDArray& output, const LongType 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oH, 1);
 }
 
-void ConvolutionUtils::upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const LongType factorH,
+void ConvolutionUtils::upsampling2d(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType factorH,
                                     const LongType factorW, const bool isNCHW) {
   BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), SD_FLOAT_TYPES);
 }

@@ -26,9 +26,7 @@
 
 namespace sd {
 namespace ops {
-#if NOT_EXCLUDED(OP_firas_sparse)
-DECLARE_CUSTOM_OP(firas_sparse, 1, 1, false, 0, -1);
-#endif
+
 }  // namespace ops
 }  // namespace sd
 

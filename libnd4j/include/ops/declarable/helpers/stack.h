@@ -29,9 +29,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void stack(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& outArr,
+SD_LIB_HIDDEN void stack(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& outArr,
                          const int dim);
-SD_LIB_HIDDEN void unstack(LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs,
+SD_LIB_HIDDEN void unstack(LaunchContext* context, NDArray& input, const std::vector<NDArray*>& outArrs,
                            const int dim);
 
 }  // namespace helpers

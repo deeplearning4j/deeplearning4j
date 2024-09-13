@@ -42,7 +42,7 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
   auto projectedSize = projectionMatrix->sizeAt(1);
 
   std::vector<sd::LongType> epsPermVec = {1, 0,2};
-  auto inputPerm = input->permute(epsPermVec, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
+  auto inputPerm = input->permute(epsPermVec, false, false);  //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
   std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), (miniBatchSize * seqLength)};
   auto inputPrep = inputPerm.reshape('c', inputPermShape);  //[nIn, batch*timeSteps]
   std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
@@ -57,7 +57,7 @@ NDArray AttentionHelper::multiHeadProject(NDArray *input, NDArray *projectionMat
   mmul.execute({&projectionPrep, &inputPrep}, {&projected});
 
   projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
-  projected.permutei({2, 0, 1, 3}, false);  //[minibatch, numHeads, projectedSize, seqLength]
+  projected.permutei({2, 0, 1, 3}, false, false);  //[minibatch, numHeads, projectedSize, seqLength]
 
   return projected;
 }
@@ -89,7 +89,8 @@ NDArray *AttentionHelper::computeCasualMask(NDArray *query, NDArray *value, bool
     auto vSeqLength = value != nullptr ? value->sizeAt(1) : qSeqLength;
     ops::matrix_band_part matrixBandPart;
     auto ones = NDArrayFactory::create('c',{1,qSeqLength,vSeqLength}, INT32);
-    ones.assign(1);
+    int assignVal = 1;
+    ones.assign(assignVal);
     auto lower = matrixBandPart.evaluate({&ones},{},{-1,0});
     auto ret = new NDArray(lower.at(0)->cast(BOOL));
     return ret;
@@ -448,12 +449,12 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   auto projectedSize = projectionMatrix->sizeAt(1);
 
   std::vector<sd::LongType> epsPermVec = {1, 2, 0, 3};
-  auto epsPerm = eps->permute(epsPermVec, false);
+  auto epsPerm = eps->permute(epsPermVec, false, false);
   std::vector<sd::LongType> epsReshapeVec = {numHeads * projectedSize, miniBatchSize * seqLength};
   auto epsReshaped = epsPerm.reshape('c', epsReshapeVec);
 
   std::vector<sd::LongType> inputPermVec = {1, 0, 2};
-  auto inputPerm = input->permute(inputPermVec, false);
+  auto inputPerm = input->permute(inputPermVec, false, false);
   std::vector<sd::LongType> inputPermShape = {input->sizeAt(1), miniBatchSize * seqLength};
   auto inputPrep = inputPerm.reshape('c',inputPermShape,false);
   std::vector<sd::LongType> projectionMatrixShape = {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)};
@@ -470,7 +471,7 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
   dLdProjectionMatrix->assign(dLdProjectionPrep);
 
   dLdInputPrep.reshapei({input->sizeAt(1), miniBatchSize, seqLength});
-  dLdInputPrep.permutei({1, 0, 2}, false);
+  dLdInputPrep.permutei({1, 0, 2}, false, false);
   dLdInput->assign(dLdInputPrep);
 }
 }  // namespace sd

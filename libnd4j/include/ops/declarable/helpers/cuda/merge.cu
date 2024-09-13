@@ -66,7 +66,7 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
 }
 
 template <typename T, typename Z>
-static void mergeMaxIndex_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+static void mergeMaxIndex_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrSize = static_cast<int>(inArrs.size());
   std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize);
 
@@ -90,7 +90,7 @@ static void mergeMaxIndex_(LaunchContext* context, const std::vector<const NDArr
   manager.synchronize();
 }
 
-void mergeMaxIndex(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+void mergeMaxIndex(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (context, inArrs, output),
@@ -124,7 +124,7 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
 }
 
 template <typename T>
-static void mergeMax_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+static void mergeMax_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrsSize = static_cast<int>(inArrs.size());
 
   std::vector<const void*> inBuffers(nArrsSize), inShapes(nArrsSize);
@@ -148,7 +148,7 @@ static void mergeMax_(LaunchContext* context, const std::vector<const NDArray*>&
   manager.synchronize();
 }
 
-void mergeMax(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+void mergeMax(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (context, inArrs, output), SD_COMMON_TYPES);
@@ -206,7 +206,7 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
 }
 
 template <typename T>
-static void mergeMaxBp_(LaunchContext* context, const std::vector<const NDArray*>& inArrs,
+static void mergeMaxBp_(LaunchContext* context, const std::vector<NDArray*>& inArrs,
                         std::vector<NDArray*>& outArrs, int nArrSize, bool bSameOrderAndEws1) {
   std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize), outBuffers(nArrSize), outShapes(nArrSize);
 
@@ -240,11 +240,11 @@ static void mergeMaxBp_(LaunchContext* context, const std::vector<const NDArray*
   manager.synchronize();
 }
 
-void mergeMaxBp(LaunchContext* context, const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs) {
+void mergeMaxBp(LaunchContext* context, const std::vector<NDArray*>& inArrs, std::vector<NDArray*>& outArrs) {
   // not use gradient
   int nArrSize = static_cast<int>(inArrs.size() - 1);
 
-  const std::vector<const NDArray*>& out = reinterpret_cast<const std::vector<const NDArray*>&>(outArrs);
+  const std::vector<NDArray*>& out = reinterpret_cast<const std::vector<NDArray*>&>(outArrs);
 
   NDArray::prepareSpecialUse(out, inArrs);
 
@@ -289,7 +289,7 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
 }
 
 template <typename T>
-static void mergeAvg_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+static void mergeAvg_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   std::vector<const void*> inBuffers(inArrs.size()), inShapes(inArrs.size());
 
   for (int e = 0; e < inArrs.size(); e++) {
@@ -313,7 +313,7 @@ static void mergeAvg_(LaunchContext* context, const std::vector<const NDArray*>&
   manager.synchronize();
 }
 
-void mergeAvg(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+void mergeAvg(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (context, inArrs, output), SD_FLOAT_TYPES);
@@ -353,7 +353,7 @@ static SD_KERNEL void mergeAvgBpCudaLauncher(const void* vgradient, const LongTy
 }
 
 template <typename T>
-static void mergeAvgBp_(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs,
+static void mergeAvgBp_(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs,
                         bool bSameOrderAndEws1) {
   int nArrSize = static_cast<int>(outArrs.size());
 
@@ -383,8 +383,8 @@ static void mergeAvgBp_(LaunchContext* context, const NDArray& gradient, std::ve
   manager.synchronize();
 }
 
-void mergeAvgBp(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
-  const std::vector<const NDArray*>& out = reinterpret_cast<const std::vector<const NDArray*>&>(outArrs);
+void mergeAvgBp(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs) {
+  const std::vector<NDArray*>& out = reinterpret_cast<const std::vector<NDArray*>&>(outArrs);
 
   NDArray::prepareSpecialUse(out, {&gradient});
 
@@ -426,7 +426,7 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
 }
 
 template <typename T>
-static void mergeAdd_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+static void mergeAdd_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrSize = static_cast<int>(inArrs.size());
   std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize);
 
@@ -451,10 +451,10 @@ static void mergeAdd_(LaunchContext* context, const std::vector<const NDArray*>&
   manager.synchronize();
 }
 BUILD_SINGLE_TEMPLATE(template void mergeAdd_,
-                      (sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output),
+                      (sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output),
                       SD_NUMERIC_TYPES);
 
-void mergeAdd(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
+void mergeAdd(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (context, inArrs, output), SD_NUMERIC_TYPES);
@@ -495,7 +495,7 @@ static SD_KERNEL void mergeAddBpCudaLauncher(const void* vgradient, const LongTy
 }
 
 template <typename T>
-static void mergeAddBp_(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs,
+static void mergeAddBp_(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs,
                         bool bSameOrderAndEws1) {
   int nArrSize = static_cast<int>(outArrs.size());
 
@@ -526,8 +526,8 @@ static void mergeAddBp_(LaunchContext* context, const NDArray& gradient, std::ve
   manager.synchronize();
 }
 
-void mergeAddBp(LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs) {
-  const std::vector<const NDArray*>& out = reinterpret_cast<const std::vector<const NDArray*>&>(outArrs);
+void mergeAddBp(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs) {
+  const std::vector<NDArray*>& out = reinterpret_cast<const std::vector<NDArray*>&>(outArrs);
   NDArray::prepareSpecialUse(out, {&gradient});
 
   bool bSameOrderAndEws1 = (1 == gradient.ews());

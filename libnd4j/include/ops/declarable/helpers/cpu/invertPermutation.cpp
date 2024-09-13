@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void invertPermutation(sd::LaunchContext* context, NDArray& input, NDArray& output) {
   std::set<int> uniqueElems;
   const int length = input.lengthOf();
 

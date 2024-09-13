@@ -65,9 +65,6 @@ public class LongBuffer extends BaseCpuDataBuffer {
         super(length, initialize, workspace);
     }
 
-    public LongBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
 
     public LongBuffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
         super(ints, copy, workspace);
@@ -78,9 +75,6 @@ public class LongBuffer extends BaseCpuDataBuffer {
         super(data, copy);
     }
 
-    public LongBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public LongBuffer(float[] data, boolean copy) {
         super(data, copy);
@@ -95,29 +89,21 @@ public class LongBuffer extends BaseCpuDataBuffer {
     }
 
     public LongBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
-    public LongBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public LongBuffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
     public LongBuffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
     }
 
-    public LongBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
 
     public LongBuffer(@NonNull Pointer hostPointer, long numberOfElements) {
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        this.offset = 0;
-        this.originalOffset = 0;
         this.underlyingLength = numberOfElements;
         this.length = numberOfElements;
         initTypeAndSize();
@@ -130,6 +116,10 @@ public class LongBuffer extends BaseCpuDataBuffer {
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(numberOfElements, DataType.INT64, this.pointer, null);
 
         Nd4j.getDeallocatorService().pickObject(this);
+    }
+
+    public LongBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     @Override

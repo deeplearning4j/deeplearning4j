@@ -69,7 +69,7 @@ public class CpuDeallocator implements Deallocator {
         }
 
         if(!opaqueDataBuffer.isNull())
-            NativeOpsHolder.getInstance().getDeviceNativeOps().deleteDataBuffer(opaqueDataBuffer);
+           Nd4j.getNativeOps().deleteDataBuffer(opaqueDataBuffer);
     }
 
 

@@ -93,10 +93,7 @@ public class BinarySerde {
         //after the rank,data opType, shape buffer (of length shape buffer length) * sizeof(int)
         if (type != DataType.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
-            //wrap the data buffer for the last bit
-            if (Shape.length(shapeBuff) > Integer.MAX_VALUE)
-                throw new ND4JArraySizeException();
-            DataBuffer buff = Nd4j.createBuffer(slice, type, (int) Shape.length(shapeBuff));
+            DataBuffer buff = Nd4j.createBuffer(slice, type, shapeBufferLength);
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());
             byteBuffer.position(position);

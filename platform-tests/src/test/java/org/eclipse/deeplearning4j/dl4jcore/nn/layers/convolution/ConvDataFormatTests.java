@@ -72,7 +72,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     public static Stream<Arguments> params() {
         List<Arguments> args = new ArrayList<>();
         for(Nd4jBackend nd4jBackend : BaseNd4jTestWithBackends.BACKENDS) {
-            for(DataType dataType : Arrays.asList(DataType.FLOAT, DataType.DOUBLE)) {
+            for(DataType dataType : Arrays.asList( DataType.DOUBLE,DataType.FLOAT)) {
                 args.add(Arguments.of(dataType,nd4jBackend));
             }
         }
@@ -89,33 +89,30 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     @ParameterizedTest
     public void testConv2d(DataType dataType,Nd4jBackend backend) {
         try {
-            for (boolean helpers : new boolean[]{false}) {
-                for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
-                    Nd4j.getRandom().setSeed(12345);
-                    Nd4j.getEnvironment().allowHelpers(helpers);
-                    String msg = helpers ? "With helpers (" + cm + ")" : "No helpers (" + cm + ")";
-                    System.out.println(" --- " + msg + " ---");
+            for (ConvolutionMode     cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
+                Nd4j.getRandom().setSeed(12345);
+                String msg = " + cm + " + cm;
+                System.out.println(" --- " + msg + " ---");
+                Nd4j.getEnvironment().setFuncTracePrintJavaOnly(true);
+                INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
+                INDArray labels = TestUtils.randomOneHot(2, 10);
 
-                    INDArray inNCHW = Nd4j.rand(dataType, 2, 3, 12, 12);
-                    INDArray labels = TestUtils.randomOneHot(2, 10);
+                TestCase tc = TestCase.builder()
+                        .msg(msg)
+                        .net1(getConv2dNet(dataType,CNN2DFormat.NCHW, true, cm))
+                        .net2(getConv2dNet(dataType,CNN2DFormat.NCHW, false, cm))
+                        .net3(getConv2dNet(dataType,CNN2DFormat.NHWC, true, cm))
+                        .net4(getConv2dNet(dataType,CNN2DFormat.NHWC, false, cm))
+                        .inNCHW(inNCHW)
+                        .labelsNCHW(labels)
+                        .labelsNHWC(labels)
+                        .testLayerIdx(1)
+                        .build();
 
-                    TestCase tc = TestCase.builder()
-                            .msg(msg)
-                            .net1(getConv2dNet(dataType,CNN2DFormat.NCHW, true, cm))
-                            .net2(getConv2dNet(dataType,CNN2DFormat.NCHW, false, cm))
-                            .net3(getConv2dNet(dataType,CNN2DFormat.NHWC, true, cm))
-                            .net4(getConv2dNet(dataType,CNN2DFormat.NHWC, false, cm))
-                            .inNCHW(inNCHW)
-                            .labelsNCHW(labels)
-                            .labelsNHWC(labels)
-                            .testLayerIdx(1)
-                            .build();
-
-                    testHelper(tc);
-                }
+                testHelper(tc);
             }
+
         } finally {
-            Nd4j.getEnvironment().allowHelpers(true);
         }
     }
 

@@ -111,8 +111,8 @@ Type softmax_normalization_term(const Type *log_p, const uint64_t len_c, const u
  * @param gradients NDArray {BATCH_LEN, MAX_FRAME_LEN, CLASS_LEN } or EMPTY. gradients
  * @param blankIndex index of the blank label in logits
  */
-SD_LIB_HIDDEN void ctcLoss(sd::graph::Context &block, const NDArray &logitsInput, const NDArray &targetLabels,
-                           const NDArray &logitsLengths, const NDArray &targetLabelLengths, NDArray &logLosses,
+SD_LIB_HIDDEN void ctcLoss(sd::graph::Context &block, NDArray&logitsInput, NDArray&targetLabels,
+                           NDArray&logitsLengths, NDArray&targetLabelLengths, NDArray &logLosses,
                            NDArray &gradients, int blankIndex);
 
 /**
@@ -135,7 +135,7 @@ SD_LIB_HIDDEN void ctcLoss(sd::graph::Context &block, const NDArray &logitsInput
  * normalized log-probabilities NOTE: maximum value of integer type  should be >= CLASS_LEN to make sense. And also user
  * should consider frame lengthes as well.
  */
-SD_LIB_HIDDEN void beamSearch(const NDArray &logit, const NDArray &sequence_length, NDArray &result_sequences,
+SD_LIB_HIDDEN void beamSearch(NDArray&logit, NDArray&sequence_length, NDArray &result_sequences,
                               NDArray &result_probs, NDArray &result_sequences_length, int blank_index, int beam_width,
                               int nbest_len, bool normalize_logits);
 }  // namespace helpers
