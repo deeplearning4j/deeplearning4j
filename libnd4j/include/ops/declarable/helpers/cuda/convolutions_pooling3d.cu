@@ -131,7 +131,7 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-            sum += math::sd_pow<T, T, T>(math::sd_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+            sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
       sum = math::sd_pow<T, T, T>(sum, (T)1.f / extraParam0);
 

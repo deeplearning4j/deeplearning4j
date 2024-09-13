@@ -301,7 +301,7 @@ static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const LongT
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -346,7 +346,7 @@ static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const LongType
     auto outGrad = gradOut + gradOutOffsets[segment];
 
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      if (math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
+      if (math::sd_abs<T,T>(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
     }
   }
 }

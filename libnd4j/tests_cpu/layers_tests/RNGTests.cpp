@@ -313,7 +313,7 @@ TEST_F(RNGTests, Test_Gaussian_21) {
   auto mean = result.at(0);
   auto variance = result.at(1);
 
-  ASSERT_NEAR(sd::math::sd_abs(mean->e<float>(0)), 0.f, 0.2f);
+  ASSERT_NEAR(sd::math::sd_abs<float,float>(mean->e<float>(0)), 0.f, 0.2f);
   ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
 }
 
@@ -337,7 +337,7 @@ TEST_F(RNGTests, Test_Gaussian_22) {
   auto mean0 = result.at(0);
   auto variance0 = result.at(1);
 
-  ASSERT_NEAR(sd::math::sd_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
+  ASSERT_NEAR(sd::math::sd_abs<float,float>(mean0->e<float>(0)), 0.f, 1.0e-3f);
   ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
 }
 

@@ -30,7 +30,9 @@ public class WeightInitXavier implements IWeightInit {
 
     @Override
     public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
-        Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
-        return paramView.reshape(order, shape);
+        INDArray out = Nd4j.randn(paramView);
+        out.muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+        INDArray ret =  paramView.reshape(order, shape);
+        return ret;
     }
 }

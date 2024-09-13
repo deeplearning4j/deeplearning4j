@@ -72,48 +72,7 @@ public class Indices {
         return test;
     }
 
-    /**
-     * Compute the linear offset
-     * for an index in an ndarray.
-     *
-     * For c ordering this is just the index itself.
-     * For fortran ordering, the following algorithm is used.
-     *
-     * Assuming an ndarray is a list of vectors.
-     * The index of the vector relative to the given index is calculated.
-     *
-     * vectorAlongDimension is then used along the last dimension
-     * using the computed index.
-     *
-     * The offset + the computed column wrt the index: (index % the size of the last dimension)
-     * will render the given index in fortran ordering
-     * @param index the index
-     * @param arr the array
-     * @return the linear offset
-     */
-    public static long linearOffset(int index, INDArray arr) {
-        if (arr.ordering() == NDArrayFactory.C) {
-            double otherTest = ((double) index) % arr.size(-1);
-            int test = (int) Math.floor(otherTest);
-            INDArray vec = arr.vectorAlongDimension(test, -1);
-            long otherDim = arr.vectorAlongDimension(test, -1).offset() + index;
-            return otherDim;
-        } else {
-            int majorStride = arr.stride(-2);
-            long vectorsAlongDimension = arr.vectorsAlongDimension(-1);
-            double rowCalc = (double) (index * majorStride) / (double) arr.length();
-            int floor = (int) Math.floor(rowCalc);
 
-            INDArray arrVector = arr.vectorAlongDimension(floor, -1);
-
-            long columnIndex = index % arr.size(-1);
-            long retOffset = arrVector.linearIndex(columnIndex);
-            return retOffset;
-
-
-
-        }
-    }
 
 
 

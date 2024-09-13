@@ -51,7 +51,7 @@ For the CPU backend, use the following code:
 
 java
 ```Copy code
-Nd4jCpu nd4jCpu = (Nd4jCpu) NativeOpsHolder.getInstance().getDeviceNativeOps();
+Nd4jCpu nd4jCpu = (Nd4jCpu)Nd4j.getNativeOps();
 nd4jCpu.setInstrumentOut("profilerout.txt");
 ```
 
@@ -60,7 +60,7 @@ For the CUDA backend, use the following code:
 
 java
 ```
-Nd4jCuda nd4jCuda = (Nd4jCuda) NativeOpsHolder.getInstance().getDeviceNativeOps();
+Nd4jCuda nd4jCuda = (Nd4jCuda)Nd4j.getNativeOps();
 nd4jCuda.setInstrumentOut("profilerout.txt");
 ```
 These calls set the appropriate file to use for each backend. Note that we don't put this in NativeOps (the parent backend agnostic interface for this) because this normally should not be included in any builds due to overhead.

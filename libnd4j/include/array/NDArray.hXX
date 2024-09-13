@@ -43,6 +43,9 @@
 //controls precision when printing to strings on floats see:
 //https://stackoverflow.com/questions/11989374/floating-point-format-for-stdostream
 #include <iomanip>
+
+#include "execution/Threads.h"
+#include "helpers/ShapeUtils.h"
 namespace sd {
 
 template <>
@@ -186,9 +189,21 @@ SD_INLINE void registerUse(const std::vector<NDArray *> &writeList,
 
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
+NDArray::NDArray(const NDArray &other): NDArray(const_cast<NDArray&>(other)) {
+}
 NDArray::NDArray(NDArray &other) {
+  if(&other == nullptr) {
+    THROW_EXCEPTION("Illegal copy: trying to copy null reference.");
+  }
+
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(NDArray &other) - copy constructor \n");
+#if defined(SD_GCC_FUNCTRACE)
+    Printer p;
+    StackTrace st;
+    st.load_here();
+    p.print(st);
+#endif
     fflush(stdout);
   }
 
@@ -199,25 +214,41 @@ NDArray::NDArray(NDArray &other) {
 #endif
 #endif
   _context = other._context;
-  _offset = other._offset;
   //we should always set an array as a view with the copy constructor
   if(!shape::isViewConst(other.shapeInfo())) {
-    auto copyedInfo = ShapeBuilders::setAsView(other.shapeInfo());
-    auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(copyedInfo,false);
-    setShapeInfo(shapeInfo);
+    auto copyInfo = ShapeBuilders::copyShapeInfo(other.shapeInfo(), true, getContext() == nullptr ? nullptr : getContext()->getWorkspace());
+    auto copiedInfo = ShapeBuilders::setAsView(copyInfo);
+    auto shapeInfo = ConstantShapeHelper::getInstance().createConstBuffFromExisting(copiedInfo,nullptr);
+    if(shapeInfo == nullptr) {
+      THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - shapeInfo is nullptr");
+    }
+    _shapeInfo = shapeInfo->primary();
+    _shapeInfoD = shapeInfo->special();
   } else {
-    setShapeInfo(other.shapeInfo());
+    if(other._shapeInfo == nullptr) {
+#if defined(SD_GCC_FUNCTRACE)
+      printf("Other shape info is nullptr\n");
+      Printer p;
+      p.print(other.creationTrace);
+      printf("End creation trace of other\n");
+#endif
+      THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - other shapeInfo is nullptr");
+    }
+
+
+    _shapeInfo = other._shapeInfo;
+    _shapeInfoD = other._shapeInfoD;
   }
 
 
-  _dataType = other._dataType;
-  _isView = true;
   //scalar can be length 0
   if (!isEmpty() && other.isScalar() || other.lengthOf() > 0) {
     _buffer = other._buffer;
   } else {
     _buffer = new DataBuffer();
   }
+
+  _offset = other._offset;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -237,7 +268,6 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
 
   _context = context;
   _isAttached = _context->getWorkspace() != nullptr;
-  _offset = 0;
 
   if (shape.empty()) {
     //scalar
@@ -282,7 +312,6 @@ NDArray::NDArray(char order, std::vector<LongType> &shape,  std::vector<double> 
   }
 
   _context = context;
-  _offset = 0;
 
   if (shape.size() == 0) {
     if (data.size() == 0) {
@@ -330,7 +359,6 @@ NDArray::NDArray(NDArray *other, const bool copyStrides, sd::LaunchContext *cont
 #endif
 
   _context = context;
-  _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
 
   if (copyStrides) {
@@ -370,7 +398,6 @@ NDArray::NDArray(void *buffer, char order, std::vector<LongType> &shape, DataTyp
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
-  _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto desc = new ShapeDescriptor(dtype, order, shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
@@ -390,9 +417,7 @@ NDArray::NDArray(void *buffer, const char order, const std::vector<sd::LongType>
   creationTrace.load_here();
 #endif
   _context = context;
-  _offset = offset;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  _isView = isView;
   auto desc = ShapeBuilders::createShapeInfo(dtype, order, shape.size(), shape.data(), getContext()->getWorkspace(),
                                              false);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
@@ -428,10 +453,9 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
   }
 
   _context = context;
-  _offset = 0;
 
   if (copyStrides) {
-    auto desc = new ShapeDescriptor(shapeInfo, dtype);
+    auto desc = new ShapeDescriptor(shapeInfo, dtype, false);
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
@@ -451,9 +475,8 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
 
   if (!isEmpty()) {
     _length = shape::length(_shapeInfo);
-    _dataType = dtype;
     LongType len = isScalar() ? 1 : lengthOf();
-    _buffer = new DataBuffer(len * DataTypeUtils::sizeOf(_dataType), dtype, getContext()->getWorkspace());
+    _buffer = new DataBuffer(len * DataTypeUtils::sizeOf(ArrayOptions::dataType(_shapeInfo)), dtype, getContext()->getWorkspace());
 
     if (nullify) _buffer->setToZeroBuffers();
   }
@@ -468,7 +491,6 @@ NDArray::NDArray(sd::DataType dtype, sd::LaunchContext *context, const bool isSc
   }
 
   _context = context;
-  _offset = 0;
   _isAttached = getContext()->getWorkspace() != nullptr;
 #if defined(SD_GCC_FUNCTRACE)
   creationTrace = StackTrace();
@@ -496,15 +518,16 @@ NDArray::NDArray(NDArray &&other) noexcept {
   }
 
 
-  _isView = other._isView;
   _buffer = other._buffer;
   _shapeInfoBuffer = other._shapeInfoBuffer;
+  if(other._shapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::NDArray(NDArray &&other) - other._shapeInfo is nullptr");
+  }
+
   _shapeInfo = other._shapeInfo;
   _shapeInfoD = other._shapeInfoD;
   _context = other._context;
-  _dataType = other._dataType;
   _length = other._length;
-  _offset = other._offset;
 
   other._buffer = new DataBuffer();
   other._shapeInfo = other._shapeInfoD = nullptr;
@@ -526,7 +549,6 @@ NDArray::NDArray(sd::LaunchContext *context) {
   _shapeInfoBuffer = nullptr;
   _shapeInfo = nullptr;
   _shapeInfoD = nullptr;
-  _offset = 0;
   _context = context;
   _length = 0;
 
@@ -559,13 +581,14 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const bool copyStrides, sd::Laun
  */
 NDArray::~NDArray() {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray::~NDArray() - destructor\n");
+    sd_print("NDArray::~NDArray() - destructor printing creation trace:\n");
     fflush(stdout);
   }
-  //delete the buffer ONLY if we own it
-
-  //note we don't delete shape buffers here, as they are managed by constant shape buffers
-
+  this->_shapeInfo = nullptr;
+  this->_buffer = nullptr;
+  this->_context = nullptr;
+  this->_shapeInfoBuffer = nullptr;
+  this->_shapeInfoBuffer = nullptr;
 }
 
 NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::LongType> &shape,
@@ -585,9 +608,7 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("Rank of NDArray can't exceed 32");
 
   _context = context;
-  _offset = offset;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  _isView = isView;
   auto newDesc = ShapeBuilders::createShapeInfo(dtype, order, shape.size(), shape.data(), getContext()->getWorkspace(), false);
   auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(newDesc);
   this->_shapeInfo = constShapeInfo->primary();
@@ -597,9 +618,11 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
 
 ////////////////////////////////////////////////////////////////////////
 
-NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context,
+NDArray::NDArray(DataBuffer *buffer,
+                 const sd::LongType *shapeInfo,
+                 sd::LaunchContext *context,
                  const sd::LongType offset) {
-  if(!shape::isEmpty(shapeInfo) && buffer == nullptr) {
+  if(!shape::isEmptyConst(shapeInfo) && buffer == nullptr) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
@@ -612,17 +635,26 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
 
   }
 
+  if(buffer->getNumElements() < 1 && !shape::isEmptyConst(shapeInfo)) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
+  }
 
   _context = context;
-  _offset = offset;
   _buffer = buffer;
+  _length = shape::length(shapeInfo);
+  _offset = offset;
   auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+  if(!shape::strideEquals(shapeInfo, constShapeInfo->primary())) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - strideEquals failed !");
+  }
+
+  this->_shapeInfoBuffer = constShapeInfo;
   this->_shapeInfo = constShapeInfo->primary();
   this->_shapeInfoD = constShapeInfo->special();
-  if(buffer != nullptr) {
-    _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
-  } else {
-    _isView = false;
+  if(this->_shapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - shapeInfo is nullptr");
+  }
+  if(buffer == nullptr) {
     _length = 0;
   }
 }
@@ -639,7 +671,6 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   creationTrace.load_here();
 #endif
   _context = context;
-  _offset = offset;
   if(descriptor->dataType() == DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
@@ -648,34 +679,15 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
-  _dataType = descriptor->dataType();
   _length = shape::length(_shapeInfo);
-  if(buffer != nullptr)
-    _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
-  else {
-    _isView = false;
-    _length = 0;
-  }
-}
-
-
-NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
-    : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 15\n");
-    fflush(stdout);
-
-  }
-#if defined(SD_GCC_FUNCTRACE)
-  creationTrace = StackTrace();
-  creationTrace.load_here();
-#endif
 
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
+NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+                 sd::LongType offset) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 16\n");
     fflush(stdout);
@@ -691,10 +703,10 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
 
   if ((int)shapeInfo[0] > SD_MAX_RANK) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32 !");
 
+  _offset = offset;
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
   auto constShapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-  _offset = 0;
   this->_shapeInfo = constShapeBuffer->primary();
   this->_shapeInfoD = constShapeBuffer->special();
 
@@ -712,29 +724,26 @@ NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext 
 // do not allocate memory, memory for array is passed from outside
 // we suppose the content of both (device and host) buffers is identical
 NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
-                 const bool isBuffAlloc, const bool isBuffDAlloc) {
+                 const bool isBuffAlloc, const bool isBuffDAlloc, sd::LongType offset) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc, const bool isBuffDAlloc) - constructor 17\n");
     fflush(stdout);
   }
+
+  _offset = offset;
 
 
   if (shapeInfo == nullptr) THROW_EXCEPTION("NDArray constructor cuda: can't be initialized without shapeinfo");
 
   sd::LongType rank = shapeInfo[0];
   if (rank > SD_MAX_RANK || rank < 0) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
-
   _context = context;
-  _offset = 0;
   _length = shape::length(shapeInfo);
-  _dataType = ArrayOptions::dataType(shapeInfo);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  int len = isScalar() ? 1 : lengthOf();
-  _buffer = new DataBuffer(buffer,bufferD, len * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
-                           getContext()->getWorkspace());
-  this->_isView = true;
+  _buffer = new DataBuffer(buffer,bufferD, _length * sizeOfT(), dataType(), isBuffAlloc, isBuffDAlloc,
+                           _context == nullptr ? nullptr : getContext()->getWorkspace());
 
 
 }
@@ -752,7 +761,6 @@ NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, L
   if ((int)shape.size() > SD_MAX_RANK) THROW_EXCEPTION("NDArray constructor: rank of NDArray can't exceed 32");
 
   _context = context;
-  _offset = 0;
 
   auto desc = ShapeBuilders::createShapeInfo(buffer->getDataType(), order, shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
@@ -760,7 +768,6 @@ NDArray::NDArray(DataBuffer *buffer, char order, std::vector<LongType> &shape, L
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
 
-  _isView = _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
 /////////////////////////////////////////////////////////////////////////
 // u16 string constructors
@@ -798,7 +805,6 @@ NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::Launch
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  _offset = 0;
   auto desc = ShapeDescriptor::scalarDescriptor(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
@@ -853,7 +859,6 @@ NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::Launch
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  _offset = 0;
   auto desc = ShapeDescriptor::scalarDescriptor(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
@@ -909,7 +914,6 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  _offset = 0;
   auto desc = ShapeDescriptor::scalarDescriptor(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
@@ -980,14 +984,12 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char *> &
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
 
   auto desc = new ShapeDescriptor(dtype, 'c', shape);
   //note we don't delete this because this can get stored in the cache.
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = false;
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1050,13 +1052,11 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string
   _buffer = new DataBuffer(headerLength + dataLength, dataType, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
 
   auto desc = new ShapeDescriptor(dataType, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = false;
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1118,13 +1118,11 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<std::u16string>
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
   int len = isScalar() ? 1 : lengthOf();
   auto desc = new ShapeDescriptor(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = false;
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1190,13 +1188,11 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char16_t 
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
 
   auto desc = new ShapeDescriptor(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = false;
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1260,12 +1256,10 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32str
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
   auto desc = new ShapeDescriptor(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = false;
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1331,13 +1325,11 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char32_t 
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  _offset = 0;
 
   auto desc = new ShapeDescriptor(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
-  _isView = _length * DataTypeUtils::sizeOf(_dataType) < _buffer->getLenInBytes();
 
   setAttached(context->getWorkspace() != nullptr);
 
@@ -1402,7 +1394,7 @@ static void sd_printformatted(std::ostream& os, sd::NDArray &arr, sd::LongType d
     os << "]\n";
   } else if (arr.rankOf() == 2) {
     sd::LongType rows = arr.rows();
-    sd::LongType cols = limit < 0  || limit >= arr.columns() ? arr.columns() : sd::math::sd_min<sd::LongType>(limit, cols);
+    sd::LongType cols = limit < 0  || limit >= arr.columns() ? arr.columns() : sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(limit, cols);
 
     char *padding = new char[depth + 1];
     memset(padding, ' ', depth);
@@ -1451,6 +1443,7 @@ static void sd_printformatted(std::ostream& os, sd::NDArray &arr, sd::LongType d
         for (sd::LongType i = 1; i < arr.rankOf(); ++i) os << "\n";
         for (sd::LongType i = 0; i < depth - 2; ++i) os << " ";
       }
+
     }
     os << "]";
   }
@@ -1512,6 +1505,9 @@ std::ostream& NDArray::operator<<(std::ostream &os) {
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 NDArray &NDArray::operator=(NDArray &other) {
+  if(&other == nullptr) {
+    THROW_EXCEPTION("NDArray::operator= - other is nullptr");
+  }
 
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray &NDArray::operator=(NDArray &other) - move assignment operator\n");
@@ -1528,7 +1524,6 @@ NDArray &NDArray::operator=(NDArray &other) {
     }
   } else {
     _context = other._context;
-    _offset = 0;
     auto desc = new ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf());
     auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     _shapeInfo = constDesc->primary();
@@ -1616,22 +1611,8 @@ std::string * NDArray::asIndexedString(sd::LongType limit) {
 std::string * NDArray::asString(sd::LongType limit) {
   if (this->dataBuffer()->primary() == nullptr) return new std::string("nullptr");
   std::ostringstream *os = new std::ostringstream();
-  *os << "[";
-  if (limit < 1 || limit > this->lengthOf()) limit = this->lengthOf();
-  for (sd::LongType e = 0; e < limit; e++) {
-    if (this->isR()) {
-      *os << *toStringValue(this->e<double>(e));
-    } else if (this->isZ()) {
-      *os << *toStringValue(this->e<sd::LongType>(e));
-    } else if (this->isB())
-      *os << *toStringValue(this->e<bool>(e));
-    else if (this->isS()) {  // todo add utf16 and utf32
-      if(this->dataType() == DataType::UTF8)
-        *os << this->e<std::string>(e);
-
-    }if (e < limit - 1) *os << ", ";
-  }
-  *os << "]";
+  NDArray &array = *this;
+  *os << array;
   return new std::string(os->str());
 }
 
@@ -1754,7 +1735,6 @@ void NDArray::streamline(char o) {
   _shapeInfo = shapeBuffer->primary();
   _shapeInfoD = shapeBuffer->special();
   _buffer = newBuffer;
-  _offset = 0;
   tickWriteDevice();
 }
 
@@ -1764,17 +1744,19 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::operator=(NDArray &&other) - move assignment operator\n");
     fflush(stdout);
+
   }
   if (this == &other) return *this;
 
-  _isView = other._isView;
+  if(other._shapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::operator= - trying to move from empty NDArray");
+  }
+
   _buffer = other._buffer;
   _shapeInfo = other._shapeInfo;
   _shapeInfoD = other._shapeInfoD;
   _context = other._context;
-  _dataType = other._dataType;
   _length = other._length;
-  _offset = other._offset;
 
   other._buffer = nullptr;
   other._shapeInfo = other._shapeInfoD = nullptr;
@@ -2330,21 +2312,18 @@ void NDArray::printShapeInfo(const char *msg)  {
   sd_printf("%lld,", shape::elementWiseStride(_shapeInfo));
   sd_printf("%lld]\n", (sd::LongType)shape::order(_shapeInfo));
 
-  fflush(stdout);
 }
 
 void NDArray::printBufferRaw(const char *msg, sd::LongType limit, const bool sync)  {
   if (sync) syncToHost();
 
-  auto constThis = const_cast<NDArray *>(this);
-  if (limit == -1   || limit >= constThis->lengthOf()) {
-    limit = constThis->lengthOf();
+  if (limit == -1   || limit >= this->lengthOf()) {
+    limit = this->lengthOf();
   }
 
-  auto begin = this->offset() / this->sizeOfT();
 
   if (msg != nullptr) {
-    sd_printf("%s: ", msg);
+    sd_printf("\n%s: ", msg);
   }
 
   this->getDataBuffer()->printHostDevice(offset());
@@ -2358,7 +2337,8 @@ void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit)  {
 
   if (msg) sd_printf("\n%s:\n  ", msg);
   //uses the << operator instead which is used in gtest as well
-  std::cout << *this;
+  NDArray &reffed = *this;
+  std::cout << reffed;
 
   if (msg) sd_printf("\n%s end: ", msg);
 
@@ -2380,7 +2360,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void *NDArray::templatedPointerShif
 //////////////////////////////////////////////////////////////////////////
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
 NDArray NDArray::transpose()  & {
-  auto desc = new ShapeDescriptor(shapeInfo());
+  auto desc = new ShapeDescriptor(shapeInfo(), false);
   NDArray newArr(getDataBuffer(), desc, getContext(), offset());
   newArr.transposei();
   delete desc;
@@ -2402,8 +2382,6 @@ void NDArray::transpose(NDArray &target)  {
     THROW_EXCEPTION("NDArray::transpose method: the shapeInfo of target array is wrong !");
 
   target._buffer = _buffer;
-  target._offset = _offset;
-  target._isView = true;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2412,7 +2390,7 @@ void NDArray::transposei() {
   std::vector<sd::LongType> perm;
   for (int e = this->rankOf() - 1; e >= 0; e--) perm.emplace_back(e);
 
-  this->permutei(perm, false);
+  this->permutei(perm, false, false);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2545,7 +2523,7 @@ NDArray * NDArray::newShapeNoCopy(const std::vector<sd::LongType> &newShape, con
   delete oldstrides;
 
   auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo,true);
-  auto ret =  new NDArray(this->getDataBuffer(), const_cast<sd::LongType *>(retShapeInfo), getContext(), this->offset());
+  auto ret =  new NDArray(this->getDataBuffer(), retShapeInfo, getContext(), this->offset());
   return ret;
 }
 
@@ -2614,26 +2592,60 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
       }
     }
     return max;
-  } else
+  } else {
     THROW_EXCEPTION("Not implemented yet");
+  }
 }
-
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff) & {
+NDArray &NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff) & {
   if(order != 'c' && order != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
     errorMessage += order;
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  auto desc = new ShapeDescriptor(shapeInfo(),true);
+  auto desc = new ShapeDescriptor(shapeInfo(), true, false);
   if(!DataTypeUtils::validDataType(desc->dataType()))
     THROW_EXCEPTION("Array created with unknown data type!");
-  if(!DataTypeUtils::validDataType(_dataType))
-    THROW_EXCEPTION("Array created with unknown data type!");
-  if(desc->dataType() != _dataType)
-    THROW_EXCEPTION("New shape descriptor didn't have matching data type");
+  if(!DataTypeUtils::validDataType(ArrayOptions::dataType(_shapeInfo))) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: unknown data type, received: ";
+    errorMessage += std::to_string(ArrayOptions::dataType(_shapeInfo));
+#if defined(SD_GCC_FUNCTRACE)
+    Printer p;
+    std::ostringstream oss;
+    p.print(creationTrace, oss);
+    errorMessage += "\n=======================================================Stack trace when written.============================\n";
+    errorMessage += oss.str();
+    errorMessage += "=======================================================End of stack trace when written.============================\n";
+#endif
+
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+  if(desc->dataType() != ArrayOptions::dataType(_shapeInfo)) {
+    std::string errorMessage;
+    errorMessage += "NDArray::reshape: new shape descriptor didn't have matching data type";
+    errorMessage += " Array data type: ";
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(_shapeInfo));
+    errorMessage += " shape info data type: ";
+    errorMessage += DataTypeUtils::asString(desc->dataType());
+
+#if defined(SD_GCC_FUNCTRACE)
+    Printer p;
+    std::ostringstream oss;
+    p.print(creationTrace, oss);
+    errorMessage += "\n=======================================================Stack trace when written.============================\n";
+    errorMessage += oss.str();
+    errorMessage += "=======================================================End of stack trace when written.============================\n";
+#endif
+
+
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+
   if(desc->order() != 'c' && desc->order() != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
@@ -2701,7 +2713,7 @@ NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copy
       for (sd::LongType j = 0; j < shape.size(); j++)
         if (i != j) shapeLength *= shape[j];
 
-      sd::LongType realShape = sd::math::sd_abs<sd::LongType>(lengthOf() / shapeLength);
+      sd::LongType realShape = sd::math::sd_abs<sd::LongType,sd::LongType>(lengthOf() / shapeLength);
 
       for (sd::LongType j = 0; j < shape.size(); j++) {
         if (i != j)
@@ -2755,8 +2767,8 @@ NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copy
   ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(static_cast<LongType>(shape_vector.size())), sd::LongType);
 
   bool canReshape = shape::reshapeC(shapeInfo(), order, shape_vector.size(),shape_vector.data(), shapeInfoNew);
-
-  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(_dataType))) {
+  ArrayOptions::setDataType(shapeInfoNew, ArrayOptions::dataType(_shapeInfo));
+  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(ArrayOptions::dataType(_shapeInfo)))) {
     std::string errorMessage;
     errorMessage += "NDArray::reshapei: bad data type of new shape !\n";
     errorMessage += "Shape: ";
@@ -2775,7 +2787,7 @@ NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copy
     errorMessage += std::to_string(this->lengthOf());
     errorMessage += "\n";
     errorMessage += "Original data type: ";
-    errorMessage += DataTypeUtils::asString(_dataType);
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(_shapeInfo));
     //add what the expected flag is and what the extra property flag is
     errorMessage += "\n";
     errorMessage += "Expected data type: ";
@@ -2787,17 +2799,16 @@ NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copy
   }
 
   if (canReshape) {
-    printf("can reshape copy to new buff %d\n",copyToNewBuff);
-    fflush(stdout);
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     if(copyToNewBuff) {
-      NDArray *ret = new NDArray(newShape->primary(), true, getContext());
+      NDArray *ret = new NDArray(newShape->primary(),true, getContext(), false);
       this->applyTransform(transform::Assign, *ret, nullptr);
-      return *ret;
+      NDArray& retDeRef = *ret;
+      return retDeRef;
     } else {
       NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), offset());
-      ret->_isView = true;
-      return *ret;
+      NDArray& retDeRef = *ret;
+      return retDeRef;
     }
 
   } else {
@@ -2805,15 +2816,16 @@ NDArray NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copy
     auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
     NDArray *ret = new NDArray(newShape->primary(), true, getContext(), false);
     this->applyTransform(transform::Assign, *ret, nullptr);
-    return *ret;
-
+    NDArray& retDeRef = *ret;
+    return retDeRef;
   }
 
-  return *this;
+  NDArray& retDeRef = *this;
+  return retDeRef;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reshape(const char order,  std::vector<sd::LongType> &shape, const bool copyToNewBuff) && {
+NDArray &NDArray::reshape(const char order,  std::vector<sd::LongType> &shape, const bool copyToNewBuff) && {
   if(order != 'c' && order != 'f') {
     std::string errorMessage;
     errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
@@ -2821,7 +2833,7 @@ NDArray NDArray::reshape(const char order,  std::vector<sd::LongType> &shape, co
     THROW_EXCEPTION(errorMessage.c_str());
   }
   this->reshapei(order, shape);
-  return std::move(*this);
+  return (NDArray &)std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2862,75 +2874,99 @@ sd::LongType NDArray::strideAt(const int dim)  {
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff) {
+bool NDArray::permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff,
+                       const bool resetStrides) {
   std::vector<sd::LongType> vec(dimensions);
-  return permutei(vec, copyToNewBuff);
+  return permutei(vec, copyToNewBuff, resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::permutei(const std::vector<LongType> &dimensions, const bool copyToNewBuff) {
+bool NDArray::permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) {
   return permutei(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) & {
-  // evaluate shapeInfo for output (permuted) array ret
-  auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),false);
-  if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
-    THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
-  }
-  auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoPermuted);
+NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) & {
   if(copyToNewBuff) {
-    DataBuffer *db = new DataBuffer(shape::length(shapeInfoPermuted) * DataTypeUtils::sizeOf(ArrayOptions::dataType(shapeInfoPermuted)),
-                                    ArrayOptions::dataType(shapeInfoPermuted), getContext()->getWorkspace());
-    NDArray *ret = new NDArray(db, const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
+    auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),resetStrides);
+    printf("permuted with  copy\n");
+    shape::printShapeInfo(shapeInfoPermuted);
+    if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
+      THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
+    }
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    printf("permuted with  copy after constants\n");
+    shape::printShapeInfo(buff);
+    DataBuffer *db = new DataBuffer(shape::length(buff) *
+                                    DataTypeUtils::sizeOf(ArrayOptions::dataType(buff)),
+                                    ArrayOptions::dataType(buff), getContext()->getWorkspace());
+    NDArray *ret = new NDArray(db,
+                               buff,
+                               getContext());
+
+    printShapeInfo("input shape info to permute");
     this->applyTransform(transform::Assign, *ret, nullptr);
-    return *ret;
+    NDArray &ret2 =  *ret;
+    ret2.printShapeInfo("permuted shape info after de ref");
+    return ret2;
+
   } else {
-    NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
-    ret->_isView = true;
+    // evaluate shapeInfo for output (permuted) array ret
+    auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),resetStrides);
+    printf("permuted without no copy\n");
+    shape::printShapeInfo(shapeInfoPermuted);
+    if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
+      THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
+    }
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    printf("permuted without  copy after constants\n");
+    shape::printShapeInfo(buff);
+
+    NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
+    NDArray ret2 =  *ret;
+    ret2.printShapeInfo("permuted shape info after de ref");
+
     return *ret;
   }
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const LongType *dimensions, const int rank, const bool copyToNewBuff) && {
-  this->permutei(dimensions, rank);
-  return std::move(*this);
+NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) && {
+  return permute(dimensions, rankOf(), copyToNewBuff, resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(std::vector<LongType> &dimensions, bool copyToNewBuff) & {
+NDArray &NDArray::permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) & {
   if(dimensions.size() < 1)
     return *this;
-  return permute(dimensions.data(), rankOf(), copyToNewBuff);
+  return permute(dimensions.data(), rankOf(), copyToNewBuff, resetStrides);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff) && {
+NDArray &NDArray::permute(std::vector<LongType> &dimensions,
+                          const bool copyToNewBuff,
+                          const bool resetStrides) && {
   if(dimensions.size() < 1)
     return *this;
-  this->permutei(dimensions, false);
-  return std::move(*this);
+  return permute(dimensions.data(), rankOf(), copyToNewBuff, false);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::permute(const LongType *dimensions, const int rank, NDArray &target)  {
+void NDArray::permute(LongType *dimensions, const int rank, NDArray &target, const bool resetStrides) {
   if (!nonNull() || !target.nonNull() || rank != rankOf() || rank != target.rankOf())
     THROW_EXCEPTION("NDArray<T>::permute method: either arrays are nullptr or ranks are not suitable!");
 
-  auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, target.getContext()->getWorkspace(),true);
+  auto shapeInfoNew = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, target.getContext()->getWorkspace(),resetStrides);
   target._buffer = _buffer;
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
   target._shapeInfo = constDesc->primary();
   target._shapeInfoD = constDesc->special();
-  target._offset = _offset;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2947,12 +2983,12 @@ bool NDArray::isIdentityMatrix() {
 
   const double eps = 1e-5f;
   for (sd::LongType i = 0; i < rows(); ++i)
-    if (sd::math::sd_abs(e<double>(i, i) - 1.f) > eps) return false;
+    if (sd::math::sd_abs<double,double>(e<double>(i, i) - 1.f) > eps) return false;
 
   for (sd::LongType i = 0; i < rows(); ++i) {
     for (sd::LongType j = 0; j < columns(); ++j) {
       if (i == j) continue;
-      if (sd::math::sd_abs(e<double>(i, j)) > eps) return false;
+      if (sd::math::sd_abs<double,double>(e<double>(i, j)) > eps) return false;
     }
   }
   return true;
@@ -3629,7 +3665,7 @@ NDArray NDArray::quantize(NDArray &array) {
   DataBuffer *  buffer = new DataBuffer(TypeCast::estimateQuantizedSize(len),
                                         ArrayOptions::dataType(shapeInfo), ws);
 
-  auto desc = new ShapeDescriptor(shapeInfo);
+  auto desc = new ShapeDescriptor(shapeInfo, false);
   NDArray result(buffer, desc, array.getContext());
 
   return result;
@@ -4109,7 +4145,7 @@ void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<LongTy
     errorMessage += ShapeUtils::shapeAsString(target.shapeInfo());
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (_dataType != tad._dataType) {
+  if (ArrayOptions::dataType(_shapeInfo) != ArrayOptions::dataType(tad._shapeInfo)) {
     std::string errorMessage;
     errorMessage += "NDArray::applyBroadcast BoolOps: this and other arrays must have the same type !";
     errorMessage += " this array type is ";
@@ -4189,7 +4225,7 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<LongTyp
     errorMessage += ShapeUtils::shapeAsString(target.shapeInfo());
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  if (_dataType != tad._dataType) {
+  if (ArrayOptions::dataType(_shapeInfo) != ArrayOptions::dataType(tad._shapeInfo)) {
     std::string errorMessage;
     errorMessage += "NDArray::applyBroadcast IntOps: this and other arrays must have the same type !";
     errorMessage += " this array type is ";
@@ -4344,7 +4380,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
       for (sd::LongType j = 0; j < shape.size(); j++)
         if (i != j) shapeLength *= shape_[j];
 
-      sd::LongType realShape = sd::math::sd_abs<sd::LongType>(lengthOf() / shapeLength);
+      sd::LongType realShape = sd::math::sd_abs<sd::LongType,sd::LongType>(lengthOf() / shapeLength);
       auto thisNewShape = new sd::LongType[shape.size()];
 
       for (sd::LongType j = 0; j < shape.size(); j++)
@@ -4396,7 +4432,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
 
   bool canReshape = shape::reshapeC(shapeInfo(), order, shape.size(), shape.data(), shapeInfoNew);
 
-  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(_dataType))) {
+  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(ArrayOptions::dataType(_shapeInfo)))) {
     std::string errorMessage;
     errorMessage += "NDArray::reshapei: bad data type of new shape !\n";
     errorMessage += "Shape: ";
@@ -4415,7 +4451,7 @@ bool NDArray::reshapei(const char order, const std::vector<sd::LongType> &cshape
     errorMessage += std::to_string(this->lengthOf());
     errorMessage += "\n";
     errorMessage += "Original data type: ";
-    errorMessage += DataTypeUtils::asString(_dataType);
+    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(_shapeInfo));
     //add what the expected flag is and what the extra property flag is
     errorMessage += "\n";
     errorMessage += "Expected data type: ";
@@ -4460,12 +4496,8 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedSet,
 void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, NDArray &other, NDArray &target,
                                      ExtraArguments *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::applyPairwiseTransform: you can't use this method on String array!");
-  if (target.dataType() != this->dataType() && target.dataType() != other.dataType())
-    THROW_EXCEPTION(
-        "NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array "
-        "!");
-
   NDArray::prepareSpecialUse({&target}, {this, &other});
+  printf("NDArray::applyPairwiseTransform: with array offsets: %lld, %lld, %lld\n", this->offset(), other.offset(), target.offset());
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op,
       buffer(),
@@ -4525,7 +4557,7 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, NDArray &other, Extra
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void NDArray::templatedDoubleAssign(void *xBuffer,  sd::LongType xOffset,  void *yBuffer,
-                                     sd::LongType yOffset)  {
+                                    sd::LongType yOffset)  {
   auto x = reinterpret_cast<X *>(xBuffer);
   const auto y = reinterpret_cast<const Y *>(yBuffer);
   if(x == nullptr)
@@ -4611,7 +4643,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
     NDArray *result = new NDArray(ordering(), shape, dataType(), getContext());
     DataBuffer *thisBuff = this->getDataBuffer();
     DataBuffer *otherBuff = result->getDataBuffer();
-    DataBuffer::memcpy(otherBuff,thisBuff);
+    DataBuffer::memcpy(otherBuff, thisBuff, 0, 0);
     return *result;
   }
 
@@ -4676,7 +4708,7 @@ bool NDArray::equalsTo(NDArray *other, double eps)  {
   if(isScalar()) {
     auto thisVal = e<double>(0);
     auto otherVal = other->e<double>(0);
-    return sd::math::sd_abs<double>(thisVal - otherVal) <= eps;
+    return sd::math::sd_abs<double,double>(thisVal - otherVal) <= eps;
   }
 
 
@@ -4797,7 +4829,6 @@ T NDArray::e( sd::LongType i,  sd::LongType j)  {
     errorMessage += ordering();
     THROW_EXCEPTION(errorMessage.c_str());
   }
-
   sd::LongType indices[2] = {i,j};
   const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
   if(xOffset >= this->getDataBuffer()->getNumElements()) {
@@ -4820,6 +4851,8 @@ T NDArray::e( sd::LongType i,  sd::LongType j)  {
     auto shapeInfoString = shape::shapeInfoString(this->shapeInfo());
     errorMessage += ", shapeInfo: ";
     errorMessage += shapeInfoString;
+    errorMessage += "data buffer num elements: ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(this->getDataBuffer()->getNumElements());
     THROW_EXCEPTION(errorMessage.c_str());
   }
   NDArray::preparePrimaryUse({}, {this});
@@ -4857,7 +4890,8 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k)  
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
+  sd::LongType indices[3] = {i,j,k};
+  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
   if (xOffset >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::e: index is out of array length !";
@@ -4893,7 +4927,8 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
   if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
     THROW_EXCEPTION("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
-  const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
+  sd::LongType indices[4] = {i,j,k,l};
+  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
   if (xOffset >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::e: index is out of array length !";
@@ -4918,15 +4953,15 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
 }
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT,
                                 NDArray::e( sd::LongType,  sd::LongType,  sd::LongType,
-                                     sd::LongType),
+                                            sd::LongType),
                                 SD_COMMON_TYPES_ALL);
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::e(const sd::LongType i)  {
   const auto offset = getOffset(i);
   NDArray scalar(dataType(), getContext());
-
-  scalar.copyBuffersContinuouslyFrom(*this, sizeOfT(), 0, this->offset() + offset);
+  NDArray &dereffed = *this;
+  scalar.copyBuffersContinuouslyFrom(dereffed, sizeOfT(), 0, this->offset() + offset);
 
   return scalar;
 }
@@ -6031,7 +6066,7 @@ void NDArray::muliColumnVector(NDArray &column) {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::templatedAssign(void *xBuffer, sd::LongType xOffset,  void *yBuffer,
-                               sd::LongType yOffset)  {
+                              sd::LongType yOffset)  {
   if (xBuffer != nullptr && yBuffer != nullptr)
     *(reinterpret_cast<T *>(xBuffer) + xOffset) = *(reinterpret_cast<const T *>(yBuffer) + yOffset);
 }
@@ -6042,7 +6077,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::templatedAssign,
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::permutei(const sd::LongType *dimensions, const int rank) {
+bool NDArray::permutei(sd::LongType *dimensions, const int rank) {
   auto shapeInfo = ShapeUtils::evalPermShapeInfo(dimensions, rank, this, getContext()->getWorkspace(),true);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
   _shapeInfo = constDesc->primary();
@@ -6152,7 +6187,7 @@ NDArray NDArray::diagonal(const char type)  {
       outShapeInfo[1] = 1;
       outShapeInfo[2] = diagSize;
     }
-    shape::updateStrides(outShapeInfo, order);
+    shape::updateStrides(outShapeInfo, order, false);
 
     outShapeInfo[3] *= step;
     outShapeInfo[4] *= step;
@@ -6161,7 +6196,7 @@ NDArray NDArray::diagonal(const char type)  {
 
   ArrayOptions::setDataType(outShapeInfo, this->dataType());
   auto buff = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
-  NDArray result(_buffer, const_cast<sd::LongType *>(buff->primary()), getContext(), offset());
+  NDArray result(_buffer, buff->primary(), getContext(), offset());
 
   RELEASE(outShapeInfo, getContext()->getWorkspace());
 
@@ -6202,7 +6237,6 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
   if (isScalar() && dimensions.size() == 1 && dimensions[0] == 0) {
     auto newShapeInfoCast = const_cast<sd::LongType *const>(this->shapeInfo());
     auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), offset());
-    array->_isView = true;
     result.push_back(array);
     sd_debug("NDArray::allTensorsAlongDimension: Dimensions were equal %d with this rank of %d\n", dimensions.back(),
              rankOf());
@@ -6227,7 +6261,6 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 
   for (sd::LongType idx = 0; idx < numTads; idx++) {
     auto array = new NDArray(_buffer, newShapeInfoCast, getContext(), pack->primaryOffsets()[idx] + offset());
-    array->_isView = true;
     if(Environment::getInstance().isDebug() && Environment::getInstance().isVerbose())
       sd_printf("TAD %lld has primary offsets at %lld\n",idx, pack->primaryOffsets()[idx]);
     result.push_back(array);
@@ -6239,7 +6272,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<LongType> &dimensi
 ////////////////////////////////////////////////////////////////////////
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool keepUnitiesInShape,
-                            const bool isStrided)  {
+                             const bool isStrided)  {
   if (isEmpty()) THROW_EXCEPTION("NDArray::operator(sub-arrays): array is empty !");
 
   sd::LongType numOfUntiesInSubArrShape = 0;
@@ -6270,17 +6303,17 @@ NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
                                       numOfUntiesInSubArrShape);
 
   auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
-  NDArray result(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + this->offset());
-  result._isView = true;
-  ShapeDescriptor descriptor(newShapeInfo);
+  NDArray *result = new NDArray(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + this->offset());
+  ShapeDescriptor descriptor(newShapeInfo, false);
   descriptor.validate();
 
-  return result;
+  return *result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::LongType> &dimsToExclude,
-                            bool keepUnitiesInShape)  {
+NDArray& NDArray::operator()(const sd::LongType subArrIdx,
+                             const std::vector<sd::LongType> &dimsToExclude,
+                             bool keepUnitiesInShape)  {
   std::vector<sd::LongType> idxRanges(2 * rankOf());
 
   const sd::LongType rank = rankOf();
@@ -6307,7 +6340,8 @@ NDArray NDArray::operator()(const sd::LongType subArrIdx, const std::vector<sd::
     }
   }
 
-  return (*this)(idxRanges, keepUnitiesInShape);
+  NDArray *ret =  new NDArray((*this)(idxRanges, keepUnitiesInShape));
+  return *ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -6331,7 +6365,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclud
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
-    ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+    ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
     descriptor->validate();
     auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
     _shapeInfoBuffer = shapeBuffer;
@@ -6353,36 +6387,7 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
       _length = 0;
     else
       _length = shape::length(_shapeInfo);
-
-    _dataType = ArrayOptions::dataType(_shapeInfo);
   } else {
-    _dataType = sd::DataType::INHERIT;
-    _shapeInfoD = _shapeInfo = nullptr;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::setShapeInfo(const sd::LongType *shapeInfo, const sd::DataType dtype) {
-  if (shapeInfo != nullptr) {
-    sd::LongType *shapeInfoTemp =
-        ShapeBuilders::copyShapeInfoAndType(shapeInfo, dtype, true, getContext()->getWorkspace());
-    ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfoTemp);
-    auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
-    _shapeInfoBuffer = shapeBuffer;
-    _shapeInfo = shapeBuffer->primary();
-#ifdef __CUDABLAS__
-    _shapeInfoD = shapeBuffer->special();
-#endif
-
-    if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
-    if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
-      _length = 0;
-    else
-      _length = shape::length(_shapeInfo);
-
-    _dataType = dtype;
-  } else {
-    _dataType = sd::DataType::INHERIT;
     _shapeInfoD = _shapeInfo = nullptr;
   }
 }
@@ -6411,7 +6416,6 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
   else
     _length = shape::length(_shapeInfo);
 
-  _dataType = ArrayOptions::dataType(_shapeInfo);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6427,7 +6431,6 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
   else
     _length = shape::length(_shapeInfo);
 
-  _dataType = ArrayOptions::dataType(_shapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////////

@@ -137,7 +137,7 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
 
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
-          sum += math::sd_pow<T, T, T>(math::sd_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+          sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
       val *= math::sd_pow<T, T, T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
@@ -146,7 +146,7 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
           const auto xOffset = shape::getOffset(xShapeInfo, coords);
           const auto zOffset = shape::getOffset(zShapeInfo, coords);
           math::atomics::sd_atomicAdd<T>(
-              &z[zOffset], val * math::sd_pow<T, T, T>(math::sd_abs<T>(x[xOffset]), extraParam0 - 1.f) *
+              &z[zOffset], val * math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[xOffset]), extraParam0 - 1.f) *
                                              math::sd_sgn<T, T>(x[xOffset]));
         }
       }

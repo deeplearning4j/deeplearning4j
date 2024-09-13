@@ -302,7 +302,7 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, LongType const* i
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -363,7 +363,7 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inpu
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
       auto comp = gradIn2[shape::getIndexOffset(e, gradInTadShapeInfo)];
       auto currValue = current2[shape::getIndexOffset(e, inputTadShapeInfo)];
-      if (math::sd_abs<T>(comp - currValue) <= T(1.e-6)) {
+      if (math::sd_abs<T,T>(comp - currValue) <= T(1.e-6)) {
         auto setValueOffset = shape::getIndexOffset(e, outTadShapeInfo);
         auto gradOutValueOffset =  shape::getIndexOffset(e, gradOutTadShapeInfo);
         auto testCurrent2 = currentOut2[setValueOffset];

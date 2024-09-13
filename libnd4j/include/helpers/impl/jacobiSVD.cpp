@@ -163,16 +163,16 @@ bool JacobiSVD<T>::isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem) {
   }
 
   maxElem =
-      math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T>(block.t<T>(p, p)), math::sd_abs<T>(block.t<T>(q, q))));
+      math::sd_max<T>(maxElem, math::sd_max<T>(math::sd_abs<T,T>(block.t<T>(p, p)), math::sd_abs<T,T>(block.t<T>(q, q))));
   T threshold = math::sd_max<T>(almostZero, precision * maxElem);
 
-  return math::sd_abs<T>(block.t<T>(p, q)) > threshold || math::sd_abs<T>(block.t<T>(q, p)) > threshold;
+  return math::sd_abs<T,T>(block.t<T>(p, q)) > threshold || math::sd_abs<T,T>(block.t<T>(q, p)) > threshold;
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDArray& rotation) {
-  T denom = (T)(2.f) * math::sd_abs<T>(y);
+  T denom = (T)(2.f) * math::sd_abs<T,T>(y);
 
   if (denom < DataTypeUtils::min_positive<T>()) {
     rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1.f;
@@ -192,7 +192,7 @@ bool JacobiSVD<T>::createJacobiRotation(const T& x, const T& y, const T& z, NDAr
     T sign = t > (T)0. ? (T)1.f : (T)-1.f;
 
     T cos = (T)1.f / math::sd_sqrt<T, T>(t * t + (T)1.f);
-    T sin = -sign * (y / math::sd_abs<T>(y)) * math::sd_abs<T>(t) * cos;
+    T sin = -sign * (y / math::sd_abs<T,T>(y)) * math::sd_abs<T,T>(t) * cos;
 
     rotation.r<T>(0, 1) = sin;
     rotation.r<T>(1, 0) = -sin;
@@ -213,7 +213,7 @@ void JacobiSVD<T>::createJacobiRotationGivens(const T& p, const T& q, NDArray& r
   } else if (p == (T)0) {
     cos = (T)0;
     sin = q < (T)0 ? (T)1 : (T)-1;
-  } else if (math::sd_abs<T>(p) > math::sd_abs<T>(q)) {
+  } else if (math::sd_abs<T,T>(p) > math::sd_abs<T,T>(q)) {
     T t = q / p;
     T u = math::sd_sqrt<T, T>((T)1 + t * t);
     if (p < (T)0) u = -u;
@@ -246,7 +246,7 @@ void JacobiSVD<T>::svd2x2(NDArray& block, int p, int q, NDArray& left, NDArray& 
   T t = m.t<T>(0, 0) + m.t<T>(1, 1);
   T d = m.t<T>(1, 0) - m.t<T>(0, 1);
 
-  if (math::sd_abs<T>(d) < DataTypeUtils::min<T>()) {
+  if (math::sd_abs<T,T>(d) < DataTypeUtils::min<T>()) {
     rotation.r<T>(0, 0) = rotation.r<T>(1, 1) = (T)1;
     rotation.r<T>(0, 1) = rotation.r<T>(1, 0) = (T)0;
   } else {
@@ -320,7 +320,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
   T maxDiagElem = 0.;
   for (int i = 0; i < _diagSize; ++i) {
-    T current = math::sd_abs<T>(_m.t<T>(i, i));
+    T current = math::sd_abs<T,T>(_m.t<T>(i, i));
     if (maxDiagElem < current) maxDiagElem = current;
   }
 
@@ -333,7 +333,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
       for (int q = 0; q < p; ++q) {
         T threshold = math::sd_max<T>(almostZero, precision * maxDiagElem);
 
-        if (math::sd_abs<T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T>(_m.t<T>(q, p)) > threshold) {
+        if (math::sd_abs<T,T>(_m.t<T>(p, q)) > threshold || math::sd_abs<T,T>(_m.t<T>(q, p)) > threshold) {
           stop = false;
 
           std::vector<LongType> shape = {2, 2};
@@ -350,7 +350,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
           if (_calcV) mulRotationOnRight(p, q, _v, rotRight);
 
           maxDiagElem = math::sd_max<T>(
-              maxDiagElem, math::sd_max<T>(math::sd_abs<T>(_m.t<T>(p, p)), math::sd_abs<T>(_m.t<T>(q, q))));
+              maxDiagElem, math::sd_max<T>(math::sd_abs<T,T>(_m.t<T>(p, p)), math::sd_abs<T,T>(_m.t<T>(q, q))));
 
         }
       }
@@ -359,7 +359,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
 
   for (int i = 0; i < _diagSize; ++i) {
-    _s.r<T>(i) = math::sd_abs<T>(_m.t<T>(i, i));
+    _s.r<T>(i) = math::sd_abs<T,T>(_m.t<T>(i, i));
 
     if (_calcU && _m.t<T>(i, i) < (T)0.) {
       auto temp = _u({0, 0, i, i + 1}, true);

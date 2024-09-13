@@ -49,7 +49,7 @@ void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray* input) {
     info->_maxValue = info->_minValue;
     info->_meanValue = info->_minValue;
     info->_stdDevValue = info->_minValue;
-    info->_zeroCount = math::sd_abs(input->e<double>(0)) > 0.00001 ? 0 : 1;
+    info->_zeroCount = math::sd_abs<double,double>(input->e<double>(0)) > 0.00001 ? 0 : 1;
     info->_positiveCount = input->e<double>(0) > 0 ? 1 : 0;
     info->_negativeCount = input->e<double>(0) < 0 ? 1 : 0;
     info->_infCount = math::sd_isinf(input->e<double>(0));
@@ -60,7 +60,7 @@ void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray* input) {
     auto _maxValue = input->e<double>(0);
     auto _meanValue = input->e<double>(0);
     auto _stdDevValue = 0.;  // info->_minValue;
-    auto _zeroCount = math::sd_abs(input->e<double>(0)) > 0.00001 ? 0L : 1L;
+    auto _zeroCount = math::sd_abs<double,double>(input->e<double>(0)) > 0.00001 ? 0L : 1L;
     auto _positiveCount = input->e<double>(0) > 0 ? 1L : 0L;
     auto _negativeCount = input->e<double>(0) < 0 ? 1L : 0L;
     auto _infCount = math::sd_isinf(input->e<double>(0)) ? 1L : 0L;
@@ -79,7 +79,7 @@ void DebugHelper::retrieveDebugStatistics(DebugInfo* info, NDArray* input) {
       //_meanValue += delta / n; // this is a perfect formula but not working with omp in this notation
       //_stdDevValue += delta2 * e / n;
 
-      _zeroCount += math::sd_abs(current) > 0.00001 ? 0 : 1;
+      _zeroCount += math::sd_abs<double,double>(current) > 0.00001 ? 0 : 1;
       _positiveCount += current > 0 ? 1 : 0;
       _negativeCount += current < 0 ? 1 : 0;
       _infCount += math::sd_isinf(current);

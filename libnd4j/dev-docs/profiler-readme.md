@@ -32,7 +32,7 @@ We have used the following compiler flags to enable function tracing:
 We have implemented a method in each backend to set the output file for tracing results. For example, in the Nd4jCpu class:
 
 ```java
-Nd4jCpu nd4jCpu = (Nd4jCpu) NativeOpsHolder.getInstance().getDeviceNativeOps();
+Nd4jCpu nd4jCpu = (Nd4jCpu)Nd4j.getNativeOps();
 nd4jCpu.setInstrumentOut("profilerout.txt");
 ```
 

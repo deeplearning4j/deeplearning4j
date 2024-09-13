@@ -71,7 +71,7 @@ SD_LIB_HIDDEN SD_HOST_DEVICE T zetaScalar(const T x, const T q) {
     a += (T)1.0;
     b = math::sd_pow<T, T, T>(a, -x);
     s += b;
-    if (math::sd_abs(b / s) < (T)machep) return s;
+    if (math::sd_abs<double,double>(b / s) < (T)machep) return s;
   }
 
   w = a;
@@ -84,7 +84,7 @@ SD_LIB_HIDDEN SD_HOST_DEVICE T zetaScalar(const T x, const T q) {
     b /= w;
     t = a * b / coeffZeta[i];
     s += t;
-    t = math::sd_abs(t / s);
+    t = math::sd_abs<T,T>(t / s);
 
     if (t < (T)machep) return s;
 

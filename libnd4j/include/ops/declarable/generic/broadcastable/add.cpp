@@ -29,12 +29,19 @@
 namespace sd {
 namespace ops {
 BROADCASTABLE_OP_IMPL(add, 0, 0) {
+  printf("ENTERING ADD\n");
+  fflush(stdout);
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
+  x->printIndexedBuffer("X in add");
+  x->printBufferRaw("RAW X in add");
+  y->printIndexedBuffer("Y in add");
+  y->printBufferRaw("RAW Y in add");
   auto z = OUTPUT_VARIABLE(0);
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-
+  printf("DONE WITH X YZ IN ADD\n");
+  fflush(stdout);
 
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)

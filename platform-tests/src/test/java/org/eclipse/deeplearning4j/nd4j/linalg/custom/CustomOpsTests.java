@@ -122,8 +122,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray clusters = Nd4j.createFromArray(new long[]{0, 0, 0, 1, 1, 1});
         classes.data().opaqueBuffer().syncToSpecial();
         clusters.data().opaqueBuffer().syncToSpecial();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(clusters.data().opaqueBuffer());
-        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(classes.data().opaqueBuffer());
+       Nd4j.getNativeOps().printDeviceBuffer(clusters.data().opaqueBuffer(),0);
+       Nd4j.getNativeOps().printDeviceBuffer(classes.data().opaqueBuffer(),0);
 
         INDArray confMatrix = Nd4j.math().confusionMatrix(
                 classes,clusters,3
@@ -200,7 +200,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test
     @Disabled // it's noop, we dont care anymore
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -524,7 +523,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         context.setOutputArray(0, arrayZ);
 
         val addOp = new AddOp();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp2(null, addOp.opHash(), context.contextPointer());
+       Nd4j.getNativeOps().execCustomOp2(null, addOp.opHash(), context.contextPointer());
 
         assertEquals(exp, arrayZ);
     }

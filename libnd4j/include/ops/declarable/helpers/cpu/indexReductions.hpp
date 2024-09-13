@@ -854,7 +854,7 @@ struct IndexMin {
 template <typename X, typename Z>
 struct IndexAbsMax {
   static SD_INLINE void update(X& current, Z& currentIndex, const X& candidate, const Z& candidateIndex) {
-    auto absCandidate = sd::math::sd_abs<X>(candidate);
+    auto absCandidate = sd::math::sd_abs<X,X>(candidate);
     if (absCandidate > current) {
       current = absCandidate;
       currentIndex = candidateIndex;
@@ -865,7 +865,7 @@ struct IndexAbsMax {
 template <typename X, typename Z>
 struct IndexAbsMin {
   static SD_INLINE void update(X& current, Z& currentIndex, const X& candidate, const Z& candidateIndex) {
-    auto absCandidate = sd::math::sd_abs<X>(candidate);
+    auto absCandidate = sd::math::sd_abs<X,X>(candidate);
     if (absCandidate < current) {
       current = absCandidate;
       currentIndex = candidateIndex;

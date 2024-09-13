@@ -140,7 +140,7 @@ void Schur<T>::splitTwoRows(const int ind, const T shift) {
   t.r<T>(ind - 1, ind - 1) += shift;
 
   if (q >= (T)0) {
-    T z = math::sd_sqrt<T, T>(math::sd_abs<T>(q));
+    T z = math::sd_sqrt<T, T>(math::sd_abs<T,T>(q));
 
     std::vector<LongType> rotShape = {2, 2};
     NDArray rotation(t.ordering(), rotShape, t.dataType(), t.getContext());
@@ -179,7 +179,7 @@ void Schur<T>::calcShift(const int ind, const int iter, T& shift, NDArray& shift
 
     for (int i = 0; i <= ind; ++i) t.r<T>(i, i) -= shiftVec.t<T>(0);
 
-    T s = math::sd_abs<T>(t.t<T>(ind, ind - 1)) + math::sd_abs<T>(t.t<T>(ind - 1, ind - 2));
+    T s = math::sd_abs<T,T>(t.t<T>(ind, ind - 1)) + math::sd_abs<T,T>(t.t<T>(ind - 1, ind - 2));
 
     shiftVec.r<T>(0) = T(0.75) * s;
     shiftVec.r<T>(1) = T(0.75) * s;
@@ -224,11 +224,11 @@ void Schur<T>::initFrancisQR(const int ind1, const int ind2, NDArray& shiftVec, 
     if (ind3 == ind1) break;
 
     const T lhs =
-        t.t<T>(ind3, ind3 - 1) * (math::sd_abs<T>(householderVec.t<T>(1)) + math::sd_abs<T>(householderVec.t<T>(2)));
-    const T rhs = householderVec.t<T>(0) * (math::sd_abs<T>(t.t<T>(ind3 - 1, ind3 - 1)) + math::sd_abs<T>(mm) +
-                                            math::sd_abs<T>(t.t<T>(ind3 + 1, ind3 + 1)));
+        t.t<T>(ind3, ind3 - 1) * (math::sd_abs<T,T>(householderVec.t<T>(1)) + math::sd_abs<T,T>(householderVec.t<T>(2)));
+    const T rhs = householderVec.t<T>(0) * (math::sd_abs<T,T>(t.t<T>(ind3 - 1, ind3 - 1)) + math::sd_abs<T,T>(mm) +
+                                            math::sd_abs<T,T>(t.t<T>(ind3 + 1, ind3 + 1)));
 
-    if (math::sd_abs<T>(lhs) < DataTypeUtils::eps<T>() * rhs) break;
+    if (math::sd_abs<T,T>(lhs) < DataTypeUtils::eps<T>() * rhs) break;
   }
 }
 

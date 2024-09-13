@@ -393,7 +393,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     ctx.setIArguments(iArguments);
                     ctx.setDArguments(dArguments);
                     ctx.setTArguments(tArguments);
-                    ctx.setBAArguments(bArguments);
+                    ctx.setBArguments(bArguments);
                     ctx.setInputArrays(inputArguments);
                     ctx.setOutputArrays(outputArguments);
 
@@ -627,7 +627,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void setOutputArgument(int index, INDArray output) {
-        while(index >= outputArguments.size()){
+        while(index >= outputArguments.size()) {
             //Resize list, in case we want to specify arrays not in order they are defined
             //For example, index 1 on empty list, then index 0
             outputArguments.add(null);

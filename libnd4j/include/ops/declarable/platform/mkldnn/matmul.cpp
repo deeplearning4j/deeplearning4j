@@ -60,8 +60,8 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
     permut[rank - 1] = rank - 2;
   }
 
-  NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut)) : x;
-  NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut)) : y;
+  NDArray* xT = (transX && xRank > 1) ? new NDArray(x->permute(permut, false, false)) : x;
+  NDArray* yT = (transY && yRank > 1) ? new NDArray(y->permute(permut, false, false)) : y;
 
   NDArray* xTR =
       xRank <= 3 ? xT

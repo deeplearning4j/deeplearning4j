@@ -56,12 +56,12 @@ void HHsequence::mulLeft_(NDArray& matrix) {
 NDArray HHsequence::getTail(const int idx) const {
   int first = idx + 1 + _shift;
 
-  if (_type == 'u')
+  if (_type == 'u') {
     return _vectors({first, -1, idx, idx + 1}, true);
-  else
+  } else {
     return _vectors({idx, idx + 1, first, -1}, true);
+  }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void HHsequence::applyTo_(NDArray& dest) {

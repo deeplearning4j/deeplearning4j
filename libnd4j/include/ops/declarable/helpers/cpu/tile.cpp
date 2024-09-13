@@ -35,7 +35,7 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
   const sd::LongType gradILen = gradI.lengthOf();
   const sd::LongType gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
-  const sd::LongType gradIEWS = sd::math::sd_abs<sd::LongType>(gradI.ews());
+  const sd::LongType gradIEWS = sd::math::sd_abs<sd::LongType,sd::LongType>(gradI.ews());
   const sd::LongType gradOEWS = gradO.ews();
 
   // initial zeroing of gradI content

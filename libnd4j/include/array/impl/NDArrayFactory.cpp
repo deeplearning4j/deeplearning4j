@@ -231,14 +231,18 @@ template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, co
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
+  sd::LongType  size = DataTypeUtils::sizeOfElement(DataTypeUtils::fromT<T>());
   DataBuffer *  buffer =
-      new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+      new DataBuffer(size,
+                     DataTypeUtils::fromT<T>(),
+                     context->getWorkspace(),
+                     true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
-  res->bufferAsT<T>()[0] = scalar;
+  res->p<T>(0,scalar);
 
   res->tickWriteHost();
   res->syncToDevice();
@@ -549,7 +553,7 @@ template <typename T>
 NDArray* NDArrayFactory::empty_(LaunchContext* context) {
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  auto result = new NDArray(nullptr, shapeInfo, context, false);
+  auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -563,7 +567,7 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
 
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  auto result = new NDArray(nullptr, shapeInfo, context, false);
+  auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -582,7 +586,7 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT NDArray NDArrayFactory::empty, (sd:
 NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  NDArray result(nullptr, shapeInfo, context, false);
+  NDArray result(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -617,8 +621,8 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
- // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
- // ShapeHelpoer
+  // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
+  // ShapeHelpoer
   return result;
 }
 
@@ -843,6 +847,6 @@ NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
 
   free(pNPY);
 
-  return NDArray(buffer, shape, LaunchContext::defaultContext(), true);
+  return NDArray(buffer, shape, LaunchContext::defaultContext(), true, 0);
 }
 }  // namespace sd

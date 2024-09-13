@@ -62,7 +62,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
     int colPivot = indPivot % (cols - k);
     int rowPivot = indPivot / (cols - k);
 
-    T currentMax = math::sd_abs<T>(bottomRightCorner.t<T>(rowPivot, colPivot));
+    T currentMax = math::sd_abs<T,T>(bottomRightCorner.t<T>(rowPivot, colPivot));
 
     // take into account that this was calculated in corner, not in whole LU
     rowPivot += k;
@@ -109,7 +109,7 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   int nonZeroPivots2 = 0;
   for (int i = 0; i < nonZeroPivots1; ++i)
-    nonZeroPivots2 += static_cast<int>(math::sd_abs<T>(LU.t<T>(i, i)) > threshold);
+    nonZeroPivots2 += static_cast<int>(math::sd_abs<T,T>(LU.t<T>(i, i)) > threshold);
 
   if (nonZeroPivots2 == 0) {
     x.nullify();

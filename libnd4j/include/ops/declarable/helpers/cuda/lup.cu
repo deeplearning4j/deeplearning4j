@@ -263,7 +263,7 @@ static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len)
   for (auto i = start; i < len; i += step) {
     auto pos = i * len + i;  // shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), di, 2);
     // sum logs of all diagonal elements
-    math::atomics::sd_atomicAdd(result, math::sd_log<T, T>(math::sd_abs(compound[pos])));
+    math::atomics::sd_atomicAdd(result, math::sd_log<T, T>(math::sd_abs<T,T>(compound[pos])));
   }
 }
 
@@ -538,7 +538,7 @@ static I argmaxCol(I column, T *compoundBuffer, LongType const *compoundShape) {
     LongType xPos[] = {rowCounter, column};
     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
 
-    if (math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
+    if (math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
       maxValue = math::sd_max(maxValue, math::sd_abs(compoundBuffer[xIndex]));
       result = rowCounter;
     }

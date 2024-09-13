@@ -27,6 +27,8 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.shade.guava.primitives.Booleans;
 import org.nd4j.shade.guava.primitives.Doubles;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -40,6 +42,7 @@ public abstract class BaseOpContext implements OpContext {
     protected List<Double> fastpath_t = new ArrayList<>();
     protected List<Boolean> fastpath_b = new ArrayList<>();
     protected List<Long> fastpath_i = new ArrayList<>();
+
     protected List<DataType> fastpath_d = new ArrayList<>();
 
     @Setter()
@@ -54,6 +57,67 @@ public abstract class BaseOpContext implements OpContext {
         setDArguments(customOp.dArgs());
         setInputArrays(customOp.inputArguments());
         setOutputArrays(customOp.outputArguments());
+    }
+
+
+    @Override
+    public boolean bArgumentAtNative(int index) {
+        return false;
+    }
+
+    @Override
+    public INDArray getInputArrayNative(int idx) {
+        return OpaqueNDArray.toINDArray(Nd4j.getNativeOps().getInputArrayNative(contextPointer(), idx));
+    }
+
+    @Override
+    public INDArray getOutputArrayNative(int idx) {
+        return OpaqueNDArray.toINDArray(Nd4j.getNativeOps().getOutputArrayNative(contextPointer(), idx));
+    }
+
+    @Override
+    public DataType dataTypeNativeAt(int index) {
+        return DataType.fromInt((int) Nd4j.getNativeOps().dataTypeNativeAt(contextPointer(), index));
+    }
+
+    @Override
+    public int iArgumentAtNative(int index) {
+        return (int) Nd4j.getNativeOps().iArgumentAtNative(contextPointer(), index);
+    }
+
+    @Override
+    public int numDNative() {
+        return (int) Nd4j.getNativeOps().numDNative(contextPointer());
+    }
+
+    @Override
+    public int numInputsNative() {
+        return (int) Nd4j.getNativeOps().numInputsNative(contextPointer());
+    }
+
+    @Override
+    public int numTArgumentsNative() {
+        return (int) Nd4j.getNativeOps().numTArgumentsNative(contextPointer());
+    }
+
+    @Override
+    public Double tArgumentNative(int index) {
+        return Nd4j.getNativeOps().tArgumentNative(contextPointer(), index);
+    }
+
+    @Override
+    public int numOutArgumentsNative() {
+        return (int) Nd4j.getNativeOps().numOutputsNative(contextPointer());
+    }
+
+
+    @Override
+    public int numIArgumentsNative() {
+        return (int) Nd4j.getNativeOps().numIArgumentsNative(contextPointer());
+    }
+    @Override
+    public int numBArgumentsNative() {
+        return (int) Nd4j.getNativeOps().numBNative(contextPointer());
     }
 
     @Override
@@ -81,7 +145,7 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
-    public void setBAArguments(List<Boolean> arguments) {
+    public void setBArguments(List<Boolean> arguments) {
         setBArguments(Booleans.toArray(arguments));
     }
 

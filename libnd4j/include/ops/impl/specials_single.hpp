@@ -217,10 +217,11 @@ void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::
   auto result = reinterpret_cast<T *>(vresult);
   std::vector<NDArray *> inputs(numArrays);
 
-  NDArray output(static_cast<void *>(result), resultShapeInfo);
+  NDArray output(static_cast<void *>(result), resultShapeInfo, nullptr, 0, 0);
 
   for (sd::LongType i = 0; i < numArrays; ++i)
-    inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]));
+    inputs[i] =
+        new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]), nullptr, 0, 0);
 
   sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
@@ -556,7 +557,7 @@ sd::LongType SpecialMethods<T>::encodeBitmapGeneric(void *vx, sd::LongType const
       if (e >= N) continue;
 
       T val = dx[e];
-      T abs = sd::math::sd_abs<T>(val);
+      T abs = sd::math::sd_abs<T,T>(val);
 
       int bitId = e % 16;
 

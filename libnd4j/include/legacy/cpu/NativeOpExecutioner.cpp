@@ -129,15 +129,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
-
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength,
-                                 tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
-
   auto loopKind = sd::LoopKind::deduceKindOfLoopBroadcast(hXShapeInfo, hYShapeInfo, hZShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
@@ -174,8 +165,6 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
   }
 
   samediff::Threads::parallel_tad(func, 0, numTads);
-
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -190,14 +179,10 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, const int opNum, 
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), SD_COMMON_TYPES,
-                          SD_COMMON_TYPES);
-#else
+
   BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast,
                                ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), SD_COMMON_TYPES);
-#endif
+
 }
 
 void NativeOpExecutioner::execInverseBroadcast(
@@ -216,12 +201,7 @@ void NativeOpExecutioner::execInverseBroadcast(
       throw sd::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType,
                                           yType);
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast,
-                          ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension,
-                                        dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
+
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::broadcast::Broadcast,
@@ -235,7 +215,6 @@ void NativeOpExecutioner::execInverseBroadcast(
   auto numTads = yLen / xLen;
 
   samediff::Threads::parallel_tad(func, 0, numTads);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -425,21 +404,23 @@ bool isViewOf(const void* ptr1, size_t size1, const void* ptr2, size_t size2) {
  * @param extraParams
  * @param n
  */
-void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum, const void *hX,
-                                                const sd::LongType *hXShapeInfo, const void *dX,
-                                                const sd::LongType *dXShapeInfo, const void *hY,
-                                                const sd::LongType *hYShapeInfo, const void *dY,
-                                                const sd::LongType *dYShapeInfo, void *hZ,
-                                                const sd::LongType *hZShapeInfo, void *dZ,
-                                                const sd::LongType *dZShapeInfo, void *extraParams) {
+void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum,
+                                                const void *hX,
+                                                const sd::LongType *hXShapeInfo,
+                                                const void *dX,
+                                                const sd::LongType *dXShapeInfo,
+                                                const void *hY,
+                                                const sd::LongType *hYShapeInfo,
+                                                const void *dY,
+                                                const sd::LongType *dYShapeInfo,
+                                                void *hZ,
+                                                const sd::LongType *hZShapeInfo,
+                                                void *dZ,
+                                                const sd::LongType *dZShapeInfo,
+                                                void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
-                          ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
   auto func = PRAGMA_THREADS_FOR {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::pairwise_transforms::PairWiseTransform,
@@ -455,7 +436,6 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
 
 
 
-#endif
 
 }
 
@@ -815,12 +795,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
-                          ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), SD_COMMON_TYPES,
-                          SD_COMMON_TYPES_ALL);
-
-#else
   if (xType != yType || xType != zType) {
     std::string errorMessage;
     errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
@@ -848,8 +822,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
       : sd::math::sd_max<int>(
           1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
-
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -864,12 +836,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform,
-                          ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension,
-                                      dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
+
   if (xType != yType || xType != zType) {
     std::string errorMessage;
     errorMessage += "NativeOpExecutioner::execScalar requires both X & Y to have same data type";
@@ -894,7 +861,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, void cons
   samediff::Threads::parallel_tad(func, 0, yLen, 1,
                                   sd::math::sd_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
 
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1252,7 +1218,8 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
     };
 
     samediff::Threads::parallel_do(
-        func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
+        func, sd::math::sd_max<sd::LongType,sd::LongType,sd::LongType>(1,
+                                                                         sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(shape::length(hZShapeInfo) / 1024,
                                                              sd::Environment::getInstance().maxMasterThreads())));
   }
 

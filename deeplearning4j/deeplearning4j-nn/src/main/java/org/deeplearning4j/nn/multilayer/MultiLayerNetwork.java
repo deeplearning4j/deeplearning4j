@@ -730,7 +730,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
         for (int i = 0; i < layers.length; i++) {
-            if(layers[i] == null){
+            if(layers[i] == null) {
                 throw new IllegalStateException("Encountered null layer during initialization for layer " + i +
                         ": " + layerWiseConfigurations.getConf(i).getLayer().getClass().getSimpleName() + " initialization " +
                         "returned null layer?");
@@ -753,7 +753,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Mark that input modification is allowed.
         //TODO When is it safe to NOT skip the very first layer? It's not always safe...
         // For example dropout + iterating over List<DataSet> that is used for multiple epochs...
-        for( int i=1; i<layers.length; i++ ){
+        for( int i = 1; i < layers.length; i++) {
             layers[i].allowInputModification(true);
         }
 

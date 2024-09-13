@@ -150,7 +150,7 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
                                                      const bool keepDims, memory::Workspace* workspace) {
   if (dimsToExclude->size() == 0) {  // return copy of input shape
     LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
-    ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType);
+    ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType, false);
     RELEASE(outShapeInfo, workspace);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     return ret;
@@ -185,7 +185,7 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
     outShapeInfo = ShapeBuilders::createShapeInfo(dataType, order, outShape, workspace);
   }
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(outShapeInfo, dataType, false);
   RELEASE(outShapeInfo, workspace);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   return ret;
@@ -205,7 +205,8 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 }
 
 //////////////////////////////////////////////////////////////////////////
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
+const LongType* ShapeUtils::evalReduceShapeInfo(const char order,
+                                                std::vector<LongType>* dimsToExclude,
                                                 NDArray& arr,
                                                 const DataType dataType, const bool keepDims,
                                                 const bool supportOldShapes, memory::Workspace* workspace) {
@@ -215,8 +216,11 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
 const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const LongType* shapeInfo, const DataType dataType, const bool keepDims,
-                                                const bool supportOldShapes, memory::Workspace* workspace) {
+                                                const LongType* shapeInfo,
+                                                const DataType dataType,
+                                                const bool keepDims,
+                                                const bool supportOldShapes,
+                                                memory::Workspace* workspace) {
   if (ArrayOptions::arrayType(shapeInfo) == EMPTY)
     return evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
 
@@ -231,20 +235,20 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
       for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
       updateStridesAndType(newShapeInfo, shapeInfo, order);
       ArrayOptions::setDataType(newShapeInfo, dataType);
-      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
       RELEASE(newShapeInfo, workspace);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       return ret;
     } else if (supportOldShapes) {
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(dataType, newShapeInfo, 'c');
-      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
       RELEASE(newShapeInfo, workspace);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       return ret;
     } else {
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
-      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
       descriptor->validate();
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       return ret;
@@ -267,7 +271,7 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
         newShapeInfo[i + 1] = shapeInfo[i + 1];
     }
     updateStridesAndType(newShapeInfo, shapeInfo, order);
-    ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+    ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
     return ret;
   }
@@ -280,14 +284,14 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
     if (supportOldShapes) {
       ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
       shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
-      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
       return ret;
     } else {
 
       newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
-      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+      ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
       auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
       RELEASE(newShapeInfo, workspace);
       return ret;
@@ -319,7 +323,7 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 
   updateStridesAndType(newShapeInfo, shapeInfo, order);
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, dataType, false);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   return ret;
 }
@@ -346,7 +350,7 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType rank, NDArray* arr,
+LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDArray* arr,
                                         memory::Workspace* workspace, const bool setContigStrides) {
   if (rank != arr->rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
@@ -361,18 +365,16 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType ran
   memcpy(shapeInfoNew, arr->shapeInfo(), shape::shapeInfoByteLength(rank));
 
   // perform buffer permutation
-  shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr->lengthOf());
+  shape::doPermuteShapeInfo(shapeInfoNew, dimensions, rank);
 
   if (setContigStrides) {
-    shape::updateStrides(shapeInfoNew, arr->ordering());
+    shape::updateStrides(shapeInfoNew, arr->ordering(), true);
   }
+
+
+  shape::setOrder(shapeInfoNew, arr->ordering());
   ArrayOptions::setDataType(shapeInfoNew, arr->dataType());
-
-
-  ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfoNew);
-
-  auto ret = descriptor->toShapeInfo();
-  return ret;
+  return shapeInfoNew;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -482,7 +484,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
     for (int i = 0; i < len; i++) {
       constCast[i] = max[i];
     }
-    ShapeDescriptor* descriptor = new ShapeDescriptor(resultShapeInfo);
+    ShapeDescriptor* descriptor = new ShapeDescriptor(resultShapeInfo, false);
     resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
     return true;
   }
@@ -534,7 +536,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
     memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(LongType));
   }
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo, false);
   resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
   return true;
 }
@@ -566,10 +568,10 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<NDArray*>& array
       if (tmpShapeInfo[i + 1 + maxRank] < item->sizeAt(i)) tmpShapeInfo[i + 1 + maxRank] = item->sizeAt(i);
   }
 
-  shape::updateStrides(tmpShapeInfo, arrays[0]->ordering());
+  shape::updateStrides(tmpShapeInfo, arrays[0]->ordering(), false);
   ArrayOptions::setDataType(tmpShapeInfo, arrays[0]->dataType());
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo, false);
   auto bufferForSHape = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
   resultShapeInfo = const_cast<LongType*>(bufferForSHape->primary());
   return true;
@@ -632,10 +634,10 @@ const LongType* ShapeUtils::evalTileShapeInfo(NDArray& arr, const std::vector<Lo
       newShapeInfo[rankOld + 1 - i] *=
           reps[repsSize - i];  // set new shape by multiplying old dimensions by corresponding numbers from reps
   }
-  shape::updateStrides(newShapeInfo, arr.ordering());
+  shape::updateStrides(newShapeInfo, arr.ordering(), false);
   ArrayOptions::setDataType(newShapeInfo, arr.dataType());
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor* descriptor = new ShapeDescriptor(newShapeInfo, false);
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
   return ret;
 }
@@ -1026,15 +1028,23 @@ std::vector<LongType> ShapeUtils::evalDimsWithoutUnities(const LongType* shapeIn
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(LongType* dest, const LongType* source, const char order) {
-  shape::updateStrides(dest, order);
+  shape::updateStrides(dest, order, false);
   dest[2 * dest[0] + 1] = 0;  // zero extra
   ArrayOptions::copyDataType(dest, source);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, const char order) {
-  shape::updateStrides(dest, order);
+  printf("updating strides in updateStridesAndType\n");
+  fflush(stdout);
+  shape::updateStrides(dest, order, true);
+  printf("updated strides in updateStridesAndType\n");
+  fflush(stdout);
+  printf("setting data type in updateStridesAndType\n");
+  fflush(stdout);
   ArrayOptions::setDataType(dest, dtype);
+  printf("set data type in updateStridesAndType\n");
+  fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

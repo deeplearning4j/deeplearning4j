@@ -114,7 +114,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
       if (input->rankOf() == 0) {
-        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
+        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext(), 0, 0, 0);
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);

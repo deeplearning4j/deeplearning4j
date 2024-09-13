@@ -59,7 +59,7 @@ static SD_KERNEL void computeSpansKernel(TKernelFunc* kernel, int* startsVec, fl
       tempWeights[actualWeights++] = weight;
     }
     maxSpanSize = math::sd_max(maxSpanSize, spanSize);
-    if (math::sd_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
+    if (math::sd_abs<float,float>(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
       auto totalWeightSumInverted = 1.0f / totalWeightSum;
       auto outIndex = spanSize * x;
       for (auto weightIndex = 0; weightIndex < actualWeights; ++weightIndex) {
@@ -127,7 +127,7 @@ static Status computeSpans(LaunchContext* context, TKernelFunc& kernel, LongType
       tempWeights.push_back(weight);
     }
     maxSpanSize = math::sd_max(maxSpanSize, spanSize);
-    if (math::sd_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
+    if (math::sd_abs<float,float>(totalWeightSum) >= 1000.f * DataTypeUtils::min<float>()) {  //
       auto totalWeightSumInverted = 1.0f / totalWeightSum;
       auto outIndex = spans._spanSize * x;
       for (auto weightIndex = 0; weightIndex < tempWeights.size(); ++weightIndex) {

@@ -195,7 +195,7 @@ void cbow_(NDArray &vsyn0, NDArray &vsyn1, NDArray &vsyn1Neg, NDArray &vexpTable
           // target is known in advance
         } else {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<sd::LongType,sd::LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
           if (irow == nsStarter) continue;
@@ -281,7 +281,7 @@ void skipgram_(void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *
           // target is known in advance
         } else {
           randomValue = randomValue * (unsigned long long)25214903917 + 11;
-          auto idx = sd::math::sd_abs<sd::LongType>((randomValue >> 16) % negLength);
+          auto idx = sd::math::sd_abs<sd::LongType,sd::LongType>((randomValue >> 16) % negLength);
           irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
           if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -585,7 +585,7 @@ void doSkipGramInferenceLoop_(NDArray &s1, NDArray &s1n, T *syn0row, NDArray&tar
 #pragma omp for nowait
       for (int r = 1; r < nsRounds + 1; r++) {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irows[r] = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irows[r] < 0 || irows[r] >= vocabSize) irows[r] = randomValue % (vocabSize - 1) + 1;
@@ -678,7 +678,7 @@ void doSkipGramLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray &vinfVector
         // target is known in advance
       } else {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -844,7 +844,7 @@ void doCbowLoop_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray&negStarters, ND
       // we're skipping rng on 0 step
       if (r != 0) {
         randomValue = randomValue * (unsigned long long)25214903917 + 11;
-        auto idx = math::sd_abs<LongType>((randomValue >> 16) % negLength);
+        auto idx = math::sd_abs<LongType,LongType>((randomValue >> 16) % negLength);
         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
         if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;

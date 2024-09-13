@@ -214,7 +214,7 @@ static SD_KERNEL void pnormPooling2dCuda(const void *vx, const LongType *xShapeI
 
     for (int h = hstart; h < hend; h += dH)
       for (int w = wstart; w < wend; w += dW)
-        sum += math::sd_pow<Z, Z, Z>(static_cast<Z>(math::sd_abs<X>(inSlice[h * strideY + w * strideX])), extraParam0);
+        sum += math::sd_pow<Z, Z, Z>(static_cast<Z>(math::sd_abs<X,X>(inSlice[h * strideY + w * strideX])), extraParam0);
 
     z[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = math::sd_pow<Z, Z, Z>(sum, (Z)1.0f / extraParam0);
   }

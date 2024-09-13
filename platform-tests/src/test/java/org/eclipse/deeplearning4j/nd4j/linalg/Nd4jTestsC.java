@@ -8826,23 +8826,18 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         for(DataType dt : DataType.values()){
             if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
                 continue;
-//            System.out.println(dt);
 
             int lengthBytes = 256;
             int lengthElements = lengthBytes / dt.width();
             ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
 
-            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements);
             INDArray arr = Nd4j.create(db, new long[]{lengthElements});
-
-            arr.toStringFull();
-            arr.toString();
 
             for(DataType dt2 : DataType.values()) {
                 if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
                     continue;
                 INDArray a2 = arr.castTo(dt2);
-                a2.toStringFull();
             }
         }
     }
@@ -8854,13 +8849,12 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         for(DataType dt : DataType.values()){
             if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
                 continue;
-//            System.out.println(dt);
 
             int lengthBytes = 256;
             int lengthElements = lengthBytes / dt.width();
             ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
 
-            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements);
             INDArray arr = Nd4j.create(db, new long[]{lengthElements/2, 2});
 
             arr.toStringFull();

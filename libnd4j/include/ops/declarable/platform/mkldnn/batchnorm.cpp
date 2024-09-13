@@ -383,7 +383,7 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
   NDArray* weights = nullptr;
 
   if (applyScale || applyOffset) {
-    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType());
+    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
 
     if (applyScale)
       (*weights)({0, 1, 0, 0}).assign(gamma);
@@ -525,8 +525,8 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
   NDArray *weights = nullptr, *dLdW = nullptr;
 
   if (applyScale || applyOffset) {
-    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType());
-    dLdW = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType());
+    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
+    dLdW = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
     if (applyScale)
       (*weights)({0, 1, 0, 0}).assign(gamma);
     else

@@ -106,6 +106,8 @@ DECLARE_SHAPE_FN(conv2d) {
   LongType   iH = ConvolutionUtils::inputHeight(inputShapeInfo, isNCHW);
   LongType    iW = ConvolutionUtils::inputWidth(inputShapeInfo, isNCHW);
   LongType    oC = ConvolutionUtils::outChannels(weightsShapeInfo, wFormat);
+  printf("iH: %lld, iW: %lld, iC: %lld, oC: %lld\n", iH, iW, iC, oC);
+  fflush(stdout);
   std::vector<LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   if(!ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape)) {
     std::string errorMessage;
@@ -150,8 +152,6 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-  printf("stride calc shape oW oH bS oC %lld %lld %lld %lld\n",strideCalcShape[0],strideCalcShape[1],strideCalcShape[2],strideCalcShape[3]);
-  fflush(stdout);
   sd::LongType *permute = new sd::LongType[4];
   permute[0] = 2;
   permute[1] = 3;
@@ -195,7 +195,6 @@ DECLARE_SHAPE_FN(conv2d) {
   delete[] second;
   delete[] permute;
   auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo, block.workspace());
-  delete[] outputShapeInfo;
   return SHAPELIST(ret);
 }
 

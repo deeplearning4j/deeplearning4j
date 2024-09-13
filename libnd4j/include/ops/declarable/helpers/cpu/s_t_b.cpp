@@ -89,7 +89,7 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output, co
   std::vector<sd::LongType> shape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
   NDArray inputRearranged0 = input.reshape(
       input.ordering(),shape);
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
+  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf())
     output.assign(inputRearranged0);
@@ -180,7 +180,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   }
   for (i = 2 * numOfSpatialDims + 1; i < static_cast<sd::LongType>(temp.size()); ++i) temp[i] = i;
 
-  inputRearranged0.permutei(temp, false);
+  inputRearranged0.permutei(temp, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
@@ -266,7 +266,7 @@ void spaceToBatch(sd::LaunchContext* context, NDArray& input, NDArray& output, c
   NDArray outputRearranged0 = output.reshape(
       output.ordering(), shape1,
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false);
+  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
@@ -372,7 +372,7 @@ void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp, false);
+  outputRearranged0.permutei(temp, false, false);
 
   // ****** //
 

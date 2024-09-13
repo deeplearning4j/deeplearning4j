@@ -42,6 +42,7 @@ static void im2col_(sd::LaunchContext& context, NDArray& input, NDArray& output,
 
 
 
+
   auto imBuff = static_cast<T const*>(input.buffer());
   auto colBuff = static_cast<T*>(output.buffer());
   auto imShapeBuffer = input.shapeInfo();
@@ -107,6 +108,9 @@ static void im2col_(sd::LaunchContext& context, NDArray& input, NDArray& output,
   };
 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
+
+  input.printBufferRaw("INPUT BUFFER RAW IM2COL");
+  output.printBufferRaw("OUTPUT BUFFER RAW IM2COL");
 }
 
 void im2col(sd::LaunchContext& context, NDArray& im, NDArray& col, const LongType kH, const LongType kW,

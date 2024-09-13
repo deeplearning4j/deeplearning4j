@@ -75,7 +75,7 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // evaluate shapeInfo of permuted array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static LongType* evalPermShapeInfo(const LongType* dimensions, LongType rank, NDArray* arr,
+  static LongType* evalPermShapeInfo(LongType* dimensions, LongType rank, NDArray* arr,
                                      memory::Workspace* workspace, const bool setContigStrides = false);
 
 

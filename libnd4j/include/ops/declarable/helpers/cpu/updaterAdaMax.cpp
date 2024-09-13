@@ -68,7 +68,7 @@ static void adaMaxUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& init
         // m = B_1 * m + (1-B_1)*grad
         stM[i] = beta1 * initM[i] + grad[i] * (1 - beta1);
         // u = max(B_2 * u, |grad|)
-        stU[i] = sd::math::sd_max((beta2 * initU[i]), sd::math::sd_abs(grad[i])) + 1e-32;
+        stU[i] = sd::math::sd_max((beta2 * initU[i]), sd::math::sd_abs<T,T>(grad[i])) + 1e-32;
 
         up[i] = stM[i] * epsilonT / stU[i];
       }
@@ -98,7 +98,7 @@ static void adaMaxUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& init
       // m = B_1 * m + (1-B_1)*grad
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
       // u = max(B_2 * u, |grad|)
-      stU[stUOffset] = sd::math::sd_max((beta2 * initU[initUOffset]), sd::math::sd_abs(grad[xOffset])) + 1e-32;
+      stU[stUOffset] = sd::math::sd_max((beta2 * initU[initUOffset]), sd::math::sd_abs<T,T>(grad[xOffset])) + 1e-32;
 
       up[zOffset] = stM[stMOffset] * epsilonT / stU[stUOffset];
     }

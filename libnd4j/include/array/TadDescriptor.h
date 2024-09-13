@@ -50,11 +50,6 @@ class SD_LIB_EXPORT TadDescriptor {
   explicit TadDescriptor(const TadDescriptor &other);
 #endif
 
-#ifdef __NEC__
-  TadDescriptor(TadDescriptor &&rhs) = default;                  // move constructor
-  TadDescriptor(const TadDescriptor &rhs) = default;             // copy constructor
-  TadDescriptor &operator=(const TadDescriptor &rhs) = default;  // copy assignment operator
-#endif
 
   // equal to operator
   bool operator==(const TadDescriptor &other) const;

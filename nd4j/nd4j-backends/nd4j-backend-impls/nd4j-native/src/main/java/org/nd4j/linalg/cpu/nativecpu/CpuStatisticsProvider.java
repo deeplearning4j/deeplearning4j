@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ndarray.INDArrayStatisticsProvider;
 import org.nd4j.linalg.cpu.nativecpu.bindings.Nd4jCpu;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -14,7 +15,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 public class CpuStatisticsProvider implements INDArrayStatisticsProvider {
 
-    private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private NativeOps loop = Nd4j.getNativeOps();
 
     @Override
     public INDArrayStatistics inspectArray(INDArray arr) {

@@ -35,6 +35,7 @@ bool ShapeDescriptor::operator==(const ShapeDescriptor &other) const {
   if (_rank != other._rank) return false;
   if (_order != other._order) return false;
   if (_dataType != other._dataType) return false;
+  if(_offset != other._offset) return false;
   if(_shape_strides == nullptr && other._shape_strides == nullptr) {
     return true;
   }
@@ -62,6 +63,10 @@ ShapeDescriptor::~ShapeDescriptor() {
     _shape_strides = nullptr;
   }
 
+}
+
+LongType ShapeDescriptor::offset() {
+  return _offset;
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const LongType *shape, const LongType rank)
@@ -212,7 +217,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
 #endif
 }
 
-ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataType) {
+ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataType, bool overrideStrides) {
   if(shapeInfo == nullptr) {
     THROW_EXCEPTION("ShapeDescriptor constructor: Shape info cannot be null!");
   }
@@ -257,11 +262,12 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   }
 
   _ews = shape::elementWiseStride(shapeInfo);
-  _rank = rankVal;
+  _rank = static_cast<sd::LongType >(rankVal);
   _extraProperties = shape::extra(shapeInfo);
+  _dataType = ArrayOptions::dataType(shapeInfo);
 
   if(_rank > 0 && shape::isEmptyConst(shapeInfo)) {
-    _shape_strides = new LongType[2 * rankVal];
+    _shape_strides = new LongType[2 * _rank];
     auto _strides = _shape_strides + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
     for (LongType e = 0; e < _rank; e++) {
@@ -276,10 +282,27 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     auto _strides = _shape_strides + _rank;
     auto shapePtr = shape::shapeOf(shapeInfo);
     auto stridePtr = shape::stride(shapeInfo);
-    for (LongType e = 0; e < _rank; e++) {
-      _shape_strides[e] = shapePtr[e];
-      _shape_strides[e + _rank] = stridePtr[e];
+    if(overrideStrides) {
+      printf("overriding strides\n");
+      LongType  *stridesNew = shape::order(shapeInfo) == 'c' ? shape::calcStrides(shapePtr, rankVal) : shape::calcStridesFortran(shapePtr, rankVal);
+      for (LongType e = 0; e < _rank; e++) {
+        _shape_strides[e] = shapePtr[e];
+        _shape_strides[e + _rank] = stridesNew[e];
+      }
+      for(int i = 0; i < _rank; i++) {
+        printf("stride %d is %lld\n", i, _shape_strides[i + _rank]);
+      }
+      fflush(stdout);
+
+      delete[] stridesNew;
+
+    } else {
+      for (LongType e = 0; e < _rank; e++) {
+        _shape_strides[e] = shapePtr[e];
+        _shape_strides[e + _rank] = stridePtr[e];
+      }
     }
+
 
 
     //validate construction of the shape descriptor. This is to prevent flag regressions when modifying
@@ -346,10 +369,8 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
 
 }
 
-
-
-ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtypeOverride)
-    : ShapeDescriptor(shapeInfo, false) {
+ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtypeOverride, const bool overrideStrides)
+    : ShapeDescriptor(shapeInfo, false, overrideStrides) {
   if(dtypeOverride == UNKNOWN)
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   _dataType = dtypeOverride;
@@ -372,7 +393,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtype
 }
 
 ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride)
-    : ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
+    : ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride), false) {
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
@@ -384,7 +405,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
 
 ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride,
                                  const LongType *orderOverride)
-    : ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride)) {
+    : ShapeDescriptor(shapeInfo, ArrayOptions::dataType(dtypeOverride), false) {
   _order = shape::order(orderOverride);
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
@@ -612,7 +633,7 @@ ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
   descriptor->_shape_strides = new LongType [2];
   descriptor->_shape_strides[0] = 0;
   descriptor->_shape_strides[1] = 1;
-
+  descriptor->_offset = 0;
   return descriptor;
 }
 
@@ -626,7 +647,7 @@ ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const LongType length, const
   descriptor->_shape_strides[0] = length;
   descriptor->_shape_strides[1] = 0;
   descriptor->ownsShapeStrides = true;
-
+  descriptor->_offset = 0;
   if (length > 0) {
     descriptor->_shape_strides[1] = 1;
     descriptor->_extraProperties = ArrayOptions::flagForDataType(type);

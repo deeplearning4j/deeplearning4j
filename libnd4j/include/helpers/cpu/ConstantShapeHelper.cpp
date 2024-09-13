@@ -169,7 +169,7 @@ ShapeDescriptor* ConstantShapeHelper::findBufferForShapeInfo(ShapeDescriptor *de
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(const sd::LongType* shapeInfo) {
-  auto descriptor = new ShapeDescriptor(shapeInfo);
+  auto descriptor = new ShapeDescriptor(shapeInfo, false);
   if(descriptor->dataType() == sd::DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
@@ -253,20 +253,26 @@ const sd::LongType* ConstantShapeHelper::createShapeInfo(ShapeDescriptor* descri
 }
 
 const LongType* ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, bool destroyOriginal) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
   auto result = createShapeInfo(descriptor);
   return result;
 }
 
+ConstantShapeBuffer* ConstantShapeHelper::createConstBuffFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
+  auto result = bufferForShapeInfo(descriptor);
+  return result;
+}
+
 const LongType* ConstantShapeHelper::createFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
   auto result = createShapeInfo(descriptor);
 
   return result;
 }
 
 const LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
   auto result = createShapeInfo(descriptor);
   if(destroyOriginal) {
     RELEASE(const_cast<sd::LongType*>(shapeInfo), nullptr);
@@ -275,7 +281,7 @@ const LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo,
 }
 
 const LongType* ConstantShapeHelper::createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
   auto result = createShapeInfo(descriptor);
   return result;
 }
@@ -319,7 +325,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
     }
   }
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, false);
 
 
   auto ret = bufferForShapeInfo(descriptor);
@@ -341,7 +347,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
     shape::excludeUnitiesFromShapeInfo(maxShapeInfo, dimsWithUnities->data(), dimsWithUnities->size(), newShapeInfo);
   }
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, false);
 
 
   auto ret =  bufferForShapeInfo(descriptor);
@@ -353,7 +359,7 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const sd::LongTy
                                                                 const sd::LongType dimsSize, sd::memory::Workspace* workspace) {
   sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo, false);
 
   RELEASE(newShapeInfo, workspace);
 

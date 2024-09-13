@@ -609,7 +609,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs(tempRes.e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
+        if (sd::math::sd_abs<T,T>(tempRes.e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
           output->p(e, gradOut->e<T>(classNum));
       }
     };
@@ -633,7 +633,7 @@ sd::Status segmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDAr
         auto currentGradOut = listOfGradOuts.at(classNum);
 
         for (sd::LongType e = 0; e < current->lengthOf(); e++) {
-          if (sd::math::sd_abs(listOfBPTensors.at(classNum)->e<T>(e) - current->e<T>(e)) <= T(1.e-6))
+          if (sd::math::sd_abs<T,T>(listOfBPTensors.at(classNum)->e<T>(e) - current->e<T>(e)) <= T(1.e-6))
             currentOut->p(e, currentGradOut->e<T>(e));
         }
       }
@@ -664,7 +664,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+        if (sd::math::sd_abs<double,double>(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
           output->p(e, gradOut->e<double>(classNum));
       }
     };
@@ -689,7 +689,7 @@ sd::Status segmentMinFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
         auto currentGradOut = listOfGradOuts.at(classNum);
 
         for (sd::LongType e = 0; e < current->lengthOf(); e++) {
-          if (sd::math::sd_abs(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
+          if (sd::math::sd_abs<double,double>(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
             currentOut->p(e, currentGradOut->e<double>(e));
         }
       }
@@ -818,7 +818,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
   if (input->isVector() || input->isScalar()) {
     for (sd::LongType e = 0; e < input->lengthOf(); ++e) {
       sd::LongType classNum = indices->e<sd::LongType>(e);
-      if (sd::math::sd_abs(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+      if (sd::math::sd_abs<double,double>(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
         output->p(e, gradOut->e<T>(classNum));
     }
   } else {
@@ -835,7 +835,7 @@ static sd::Status unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArr
       NDArray* currentOut = listOfOutTensors.at(i);
       NDArray* currentGradOut = listOfGradOuts.at(classNum);
       for (int e = 0; e < current->lengthOf(); e++) {
-        if (sd::math::sd_abs(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
+        if (sd::math::sd_abs<double,double>(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
           currentOut->p(e, currentGradOut->e<T>(e));
       }
     }
@@ -865,7 +865,7 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         auto classNum = indices->e<sd::LongType>(e);
-        if (sd::math::sd_abs(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
+        if (sd::math::sd_abs<T,T>(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
           output->r<T>(e) = gradOut->t<T>(classNum);
       }
     };
@@ -886,7 +886,7 @@ static sd::Status unsortedSegmentMinFunctorBP_(sd::LaunchContext* context, NDArr
       auto currentGradOut = listOfGradOuts.at(classNum);
 
       for (sd::LongType e = 0; e < current->lengthOf(); e++) {
-        if (sd::math::sd_abs(listOfBPTensors.at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
+        if (sd::math::sd_abs<T,T>(listOfBPTensors.at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
           currentOut->r<T>(e) = currentGradOut->t<T>(e);
       }
     }

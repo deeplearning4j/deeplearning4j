@@ -116,6 +116,7 @@ SD_LIB_EXPORT NDArray mmul(NDArray &, NDArray &);
 
 class SD_LIB_EXPORT NDArray {
  private:
+  NDArray(const NDArray &other);
   /**
    * This method applies given value to the buffer, wrt templates
    * @tparam T
@@ -135,11 +136,11 @@ class SD_LIB_EXPORT NDArray {
 
   template <typename T>
   void templatedAssign(void *xBuffer,  LongType xOffset,  void *yBuffer,
-                        LongType yOffset);
+                       LongType yOffset);
 
   template <typename X, typename Y>
   void templatedDoubleAssign(void *xBuffer,  LongType xOffset,  void *yBuffer,
-                              LongType yOffset);
+                             LongType yOffset);
 
   template <typename T, typename R>
   SD_INLINE R templatedGet(void  *buffer, const LongType index);
@@ -152,19 +153,11 @@ class SD_LIB_EXPORT NDArray {
  protected:
 
   /**
-   *  if true then array doesn't own buffer and simply points to another's buffer
-   */
-  bool _isView = false;
-
-  /**
    *  pointer on DataBuffer buffers in cpu/device memory
    */
   DataBuffer *_buffer = nullptr;
 
-  /**
-   *  buffers offset, it is the same both for cpu and device buffers
-   */
-  LongType _offset = 0L;
+
 
   /**
    *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides,
@@ -189,10 +182,8 @@ class SD_LIB_EXPORT NDArray {
    */
   LongType _length = -1L;
 
-  /**
-   *  type of array elements
-   */
-  DataType _dataType = FLOAT32;
+  LongType _offset = 0L;
+
 
   /**
    * deviceID where this NDArray belongs to
@@ -217,8 +208,8 @@ class SD_LIB_EXPORT NDArray {
   NDArray(DataBuffer *  buffer,  ShapeDescriptor *descriptor,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(DataBuffer *  buffer, LongType *shapeInfo,
-          LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
+  NDArray(DataBuffer *  buffer, const sd::LongType *shapeInfo,
+          sd::LaunchContext *context = LaunchContext::defaultContext(), const sd::LongType offset = 0);
 
   NDArray(DataBuffer *  buffer, char order, std::vector<LongType> &shape,
           LaunchContext *context = LaunchContext::defaultContext());
@@ -283,18 +274,15 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  do not allocate memory, memory for array is passed from outside
    */
-  NDArray(void *buffer, LongType *shapeInfo, LaunchContext *context = LaunchContext::defaultContext(),
-          bool isBuffAlloc = false);
-  NDArray(void *buffer, const LongType *shapeInfo, LaunchContext *context = LaunchContext::defaultContext(),
-          bool isBuffAlloc = false);
+  NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+          sd::LongType offset);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
    *  we suppose the content of both (device and host) buffers is identical
    */
-  NDArray(void *buffer, void *bufferD, const LongType *shapeInfo,
-          LaunchContext *context = LaunchContext::defaultContext(), bool isBuffAlloc = false,
-          bool isBuffDAlloc = false);
+  NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
+          const bool isBuffAlloc, const bool isBuffDAlloc, sd::LongType offset);
 
   /**
    *  copy constructor
@@ -422,8 +410,8 @@ class SD_LIB_EXPORT NDArray {
   void const *specialBufferWithOffset(LongType offset);
   /**
    *  copy assignment operator
-   *  in particular, when _dataType != other._dataType and both shapes are the same, there will be allocation of new
-   * _buffer and _dataType acquires other._dataType
+   *  in particular, when dataType() != other.dataType() and both shapes are the same, there will be allocation of new
+   * _buffer and dataType() acquires other.dataType()
    */
   NDArray &operator=(NDArray &other);
 
@@ -561,9 +549,9 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
    */
-  bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff = false);
-  bool permutei(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false);
-  bool permutei(const sd::LongType *dimensions, const int rank);
+  bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
+  bool permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
+  bool permutei(sd::LongType *dimensions, const int rank);
 
 
   bool isFinite();
@@ -576,13 +564,13 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(std::vector<LongType> &dimensions, bool copyToNewBuff = false) &;
+  NDArray &permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) &;
 
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &;
-  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &&;
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &&;
+  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &;
+  NDArray &permute(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) &&;
+  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &&;
 
-  void permute(const LongType *dimensions, const int rank, NDArray &target);
+  void permute(LongType *dimensions, const int rank, NDArray &target, const bool resetStrides);
 
   /**
 * This method streamlines given view or permuted array, and reallocates buffer
@@ -1097,8 +1085,8 @@ class SD_LIB_EXPORT NDArray {
    *
    * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
    */
-  NDArray reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff = true) &;
-  NDArray reshape(char order,  std::vector<LongType> &shape, bool copyToNewBuff = true) &&;
+  NDArray &reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff = true) &;
+  NDArray &reshape(const char order, std::vector<sd::LongType> &shape, const bool copyToNewBuff = true) &&;
 
   /**
    *  calculate strides and set given order
@@ -1156,7 +1144,7 @@ class SD_LIB_EXPORT NDArray {
    * {dim0Start,dim0End,dim0Stride,    dim1Start,dim1End,dim1Stride, ....}
    */
   NDArray& operator()(const std::vector<LongType> &idx, const bool keepUnitiesInShape = false,
-                     const bool isStrided = false);
+                      const bool isStrided = false);
 
   /**
    *  evaluates subarray with buffer pointing at this->_buffer and offset defined by given sequential index subArrIdx
@@ -1166,8 +1154,8 @@ class SD_LIB_EXPORT NDArray {
    * zeros (means whole array) will be returned. keepUnitiesInShape - if false then eliminate unities from resulting
    * array shape, for example {1,a,1,b} -> {a,b}
    */
-  NDArray operator()(const LongType subArrIdx, const std::vector<LongType> &dimsToExclude,
-                     bool keepUnitiesInShape = false);
+  NDArray& operator()(const LongType subArrIdx, const std::vector<LongType> &dimsToExclude,
+                      bool keepUnitiesInShape = false);
 
   /**
    * processes whole set of sub-arrays
@@ -1326,7 +1314,6 @@ class SD_LIB_EXPORT NDArray {
    *  set _shapeInfo
    */
   void setShapeInfo(const LongType *shapeInfo);
-  void setShapeInfo(const LongType *shapeInfo, const DataType dtype);
   void setShapeInfo(ShapeDescriptor *descriptor);
   void setShapeInfo(const ConstantShapeBuffer *shapeBuffer);
 
@@ -1367,8 +1354,6 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  set _shapeInfo
    */
-  SD_INLINE void setShapeInfo(LongType *shapeInfo);
-  SD_INLINE void setShapeInfo(LongType *shapeInfo, const DataType dtype);
 
   /**
    *  returns the value of "dim" dimension
@@ -1641,73 +1626,6 @@ SD_INLINE R NDArray::templatedGet(void  *buffer, LongType index)  {
   return TemplatedGetter<T, R>::get(buffer, index);
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::setShapeInfo(LongType *shapeInfo) {
-  if (shapeInfo != nullptr) {
-
-    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-    if(buffer == nullptr) {
-      THROW_EXCEPTION("Returned buffer from cache was null!");
-    }
-    _shapeInfoBuffer = buffer;
-    _shapeInfo = buffer->primary();
-    _shapeInfoD = buffer->special();
-
-    if(!shape::strideEquals(_shapeInfo, shapeInfo)) {
-      _shapeInfoD = nullptr;
-    }
-
-    if(!shape::shapeEquals(_shapeInfo, shapeInfo)) {
-      _shapeInfo = nullptr;
-    }
-
-    if(_shapeInfo == nullptr) {
-      THROW_EXCEPTION("Set shape info was null in setsShapeInfo for long long");
-    }
-
-    if(_shapeInfo[0] > SD_MAX_RANK || _shapeInfo[0] < 0)
-      THROW_EXCEPTION("Set shape info buffer was corrupt. Please check for deallocation.");
-
-    _dataType = ArrayOptions::dataType(_shapeInfo);
-    if (ArrayOptions::arrayType(_shapeInfo) == EMPTY) {
-      _length = 0;
-    }
-    else {
-      _length = shape::length(_shapeInfo);
-    }
-
-  } else {
-    //note this used to be a silent fall back. This is a silent source of bugs.
-    THROW_EXCEPTION("Unable to create ndarray. Shape info must always be specified");
-  }
-
-
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::setShapeInfo(LongType *shapeInfo, const DataType dtype) {
-
-
-  if (shapeInfo != nullptr) {
-    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-    _shapeInfoBuffer = buffer;
-    _shapeInfo = buffer->primary();
-    _shapeInfoD = buffer->special();
-
-    _dataType = dtype;
-    if (ArrayOptions::arrayType(_shapeInfo) == EMPTY)
-      _length = 0;
-    else
-      _length = shape::length(_shapeInfo);
-  } else {
-    //note this used to be a silent fall back. This is a silent source of bugs.
-    THROW_EXCEPTION("Unable to create ndarray. Shape info must always be specified");
-  }
-}
-
 //////////////////////////////////////////////////////////////////////////
 char NDArray::ordering()  { return shape::order(_shapeInfo); }
 
@@ -1755,7 +1673,7 @@ LongType NDArray::columns()  {
 
 //////////////////////////////////////////////////////////////////////////
 
-size_t NDArray::sizeOfT()  { return DataTypeUtils::sizeOfElement(_dataType); }
+size_t NDArray::sizeOfT()  { return DataTypeUtils::sizeOfElement(dataType()); }
 
 //////////////////////////////////////////////////////////////////////////
 LongType NDArray::ews()  {
@@ -1849,7 +1767,7 @@ bool NDArray::isSameShape(const std::initializer_list<LongType> &other)  {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::areSameShapeAndType(NDArray &other)  {
-  if (rankOf() != other.rankOf() || _dataType != other._dataType) return false;
+  if (rankOf() != other.rankOf() || dataType() != other.dataType()) return false;
 
   for (int i = 0; i < rankOf(); ++i)
     if (sizeAt(i) != other.sizeAt(i)) return false;
@@ -1908,7 +1826,10 @@ bool NDArray::operator!=(NDArray &other)  {
 
 //////////////////////////////////////////////////////////////////////////
 DataType NDArray::dataType()  {
-  return _dataType;
+  if(_shapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::dataType: shapeInfo is nullptr!");
+  }
+  return ArrayOptions::dataType(_shapeInfo);
 }
 
 
@@ -1916,8 +1837,8 @@ DataType NDArray::dataType()  {
 template <typename T>
 T &NDArray::r(LongType i) {
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
+  if (inputDtype != dataType()) {
+    sd_printf("Expected data type was %d but was %d\n", dataType(), inputDtype);
     THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
   syncToHost();
@@ -1932,8 +1853,8 @@ T &NDArray::r(const LongType i, const LongType j) {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
     THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
+  if (inputDtype != dataType()) {
+    sd_printf("Expected data type was %d but was %d\n", dataType(), inputDtype);
     THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
@@ -1947,7 +1868,7 @@ template <typename T>
 T &NDArray::r(const LongType i, const LongType j, const LongType k) {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
     THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
-  if (DataTypeUtils::fromT<T>() != _dataType)
+  if (DataTypeUtils::fromT<T>() != dataType())
     THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
 
   syncToHost();
@@ -1960,7 +1881,7 @@ template <typename T>
 T &NDArray::r(const LongType i, const LongType j, const LongType k, const LongType w) {
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
     THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
-  if (DataTypeUtils::fromT<T>() != _dataType)
+  if (DataTypeUtils::fromT<T>() != dataType())
     THROW_EXCEPTION("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
 
   syncToHost();
@@ -1974,8 +1895,8 @@ T &NDArray::r(const LongType i, const LongType j, const LongType k, const LongTy
 template <typename T>
 T NDArray::t(const LongType i)  {
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
+  if (inputDtype != dataType()) {
+    sd_printf("Expected data type was %d but was %d\n", dataType(), inputDtype);
     THROW_EXCEPTION("NDArray::t(i): type of array is not equal to template type T!");
   }
 
@@ -1991,8 +1912,8 @@ T NDArray::t(const LongType i, const LongType j)  {
   if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
     THROW_EXCEPTION("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
+  if (inputDtype != dataType()) {
+    sd_printf("Expected data type was %d but was %d\n", dataType(), inputDtype);
     THROW_EXCEPTION("NDArray::t(i,j): type of array is not equal to template type T!");
   }
   syncToHost();
@@ -2006,8 +1927,8 @@ T NDArray::t(const LongType i, const LongType j, const LongType k)  {
   if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
     THROW_EXCEPTION("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
-    sd_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
+  if (inputDtype != dataType()) {
+    sd_printf("Expected data type was %d but was %d\n", dataType(), inputDtype);
     THROW_EXCEPTION("NDArray::t(i,j,k): type of array is not equal to template type T!");
   }
   syncToHost();
@@ -2021,12 +1942,12 @@ T NDArray::t(const LongType i, const LongType j, const LongType k, const LongTyp
   if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
     THROW_EXCEPTION("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
   auto inputDtype = DataTypeUtils::fromT<T>();
-  if (inputDtype != _dataType) {
+  if (inputDtype != dataType()) {
     std::string errorMessage;
     errorMessage += "Expected data type was ";
     errorMessage += DataTypeUtils::asString(inputDtype);
     errorMessage += " but was ";
-    errorMessage += DataTypeUtils::asString(_dataType);
+    errorMessage += DataTypeUtils::asString(dataType());
     THROW_EXCEPTION(errorMessage.c_str());
   }
   syncToHost();
@@ -2046,18 +1967,20 @@ DataBuffer * NDArray::dataBuffer() { return _buffer; }
 ////////////////////////////////////////////////////////////////////////
 
 
+
 //////////////////////////////////////////////////////////////////////////
+template <typename T>
+void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
+ return  static_cast<int8_t *>(buffer->primary()) + offset * DataTypeUtils::sizeOfElement(buffer->getDataType());
+}
+
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 void *NDArray::buffer() {
-  if(_buffer == nullptr || _buffer->primary() == nullptr) {
-    return nullptr;
-  }
-
-  return  static_cast<int8_t *>(_buffer->primary()) + (offset() * sizeOfT());
+  BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
- const LongType *NDArray::shapeInfo()  { return _shapeInfo; }
+const LongType *NDArray::shapeInfo()  { return _shapeInfo; }
 
 
 

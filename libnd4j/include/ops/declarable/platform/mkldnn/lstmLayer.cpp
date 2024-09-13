@@ -421,8 +421,8 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   // permut x and h to tnc format if they have ntc format
   NDArray *xP(const_cast<NDArray*>(x)), *hP(h);
   if (dataFormat == 1) {
-    xP = new NDArray(x->permute({1, 0, 2}));  // [bS, sL, nIn] -> [sL, bS, nIn]
-    hP = new NDArray(h->permute({1, 0, 2}));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
+    xP = new NDArray(x->permute({1, 0, 2}, 0, false, false));  // [bS, sL, nIn] -> [sL, bS, nIn]
+    hP = new NDArray(h->permute({1, 0, 2}, 0, false, false));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
   }
 
   // reshape arrays in accordance to mkl allowed formats
@@ -434,7 +434,8 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   if (b)
     bR = new NDArray(b->reshape(b->ordering(), {1, dirDim, 4, nOut}));
   else
-    bR = new NDArray(x->ordering(), {1, dirDim, 4, nOut}, x->dataType(), x->getContext());  // already nullified
+    bR =
+        new NDArray(x->ordering(), {1, dirDim, 4, nOut}, x->dataType(), x->getContext(), 0, 0, 0);  // already nullified
 
   if (hI) hIR = new NDArray(hI->reshape(hI->ordering(), {1, dirDim, bS, nOut}));
 

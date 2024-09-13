@@ -54,6 +54,7 @@ template <typename OpType>
 void PairWiseTransform<X, Y, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
                                       sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
                                       sd::LongType stop) {
+
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
@@ -83,9 +84,16 @@ void PairWiseTransform<X, Y, Z>::exec(int opNum, const void *x, const sd::LongTy
 
 template <typename X, typename Y, typename Z>
 template <typename OpType>
-void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                                      const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                      void *vextraParams, sd::LongType start, sd::LongType stop) {
+void PairWiseTransform<X, Y, Z>::exec(const void *vx,
+                                      const sd::LongType *xShapeInfo,
+                                      const void *vy,
+                                      const sd::LongType *yShapeInfo,
+                                      void *vz,
+                                      const sd::LongType *zShapeInfo,
+                                      void *vextraParams,
+                                      sd::LongType start,
+                                      sd::LongType stop) {
+
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
@@ -135,7 +143,7 @@ void PairWiseTransform<X, Y, Z>::exec(const void *vx, const sd::LongType *xShape
       && !shape::isViewConst(xShapeInfo) && !shape::isViewConst(yShapeInfo)
       && !shape::isViewConst(zShapeInfo)
       && allSameOrder
-       && shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
+      && shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
       && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&

@@ -36,9 +36,23 @@ template <typename T1, typename T2, typename T3>
 static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
                        const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
                        const double beta) {
+  vA->printBufferRaw("usualGemm A");
+  vB->printBufferRaw("usualGemm B");
+  vC->printBufferRaw("usualGemm C");
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
+  if(A == nullptr) {
+    THROW_EXCEPTION("usualGemm: A is nullptr");
+  }
+  if(B == nullptr) {
+    THROW_EXCEPTION("usualGemm: B is nullptr");
+  }
+  if(C == nullptr) {
+    THROW_EXCEPTION("usualGemm: C is nullptr");
+
+  }
+
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
 
@@ -74,10 +88,6 @@ static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis,
 
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
-      printf("a offset %lld, b offset %lld\n", aOffset, bOffset);
-      shape::printShapeInfoLinear(aShapeInfo);
-      shape::printShapeInfoLinear(bShapeInfo);
-      fflush(stdout);
 
       T3 aVal= A[aOffset];
       T3 bVal= B[bOffset];
@@ -291,7 +301,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
 NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
-                             const char outOrder) {
+                              const char outOrder) {
   if (X->dataType() != A->dataType()) {
     std::string errorMessage;
     errorMessage = "mmulMxV expects all data types to be the same";

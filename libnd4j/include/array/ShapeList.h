@@ -30,12 +30,8 @@
 namespace sd {
 class SD_LIB_EXPORT ShapeList {
  protected:
-#if defined(__NEC__)
-  const sd::LongType *_shapes[SD_MAX_INPUT_SIZE];
-  int size_x = 0;
-#else
+
   std::vector<const sd::LongType *> _shapes;
-#endif
   bool _destroyed = false;
   bool _autoremovable = false;
   bool _workspace = false;

@@ -40,45 +40,56 @@ class BroadcastHelper {
     }
 
     if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
-      x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
+      NDArray &xRef = *x;
+      NDArray &yRef = *y;
+      x->applyPairwiseTransform(op.p, xRef, yRef, extraArgs);
     } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, *y, *z);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyScalarArr(op.s, yRef, zRef);
     } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
+      NDArray &xRef = *x;
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
-          y->applyScalarArr(op.s, *x, *z);
+          y->applyScalarArr(op.s, xRef, zRef);
         } else if (op.s == scalar::SquaredSubtract) {
-          y->applyScalarArr(scalar::SquaredReverseSubtract, *x, *z);
+          y->applyScalarArr(scalar::SquaredReverseSubtract, xRef, zRef);
         } else if (op.s == scalar::Subtract) {
-          y->applyScalarArr(scalar::ReverseSubtract, *x, *z);
+          y->applyScalarArr(scalar::ReverseSubtract, xRef, zRef);
         } else if (op.s == scalar::Divide) {
-          y->applyScalarArr(scalar::ReverseDivide, *x, *z);
+          y->applyScalarArr(scalar::ReverseDivide, xRef, zRef);
         } else if (op.s == scalar::Pow) {
-          y->applyScalarArr(scalar::ReversePow, *x, *z);
+          y->applyScalarArr(scalar::ReversePow, xRef, zRef);
         } else if (op.s == scalar::ReverseSubtract) {
-          y->applyScalarArr(scalar::Subtract, *x, *z);
+          y->applyScalarArr(scalar::Subtract, xRef, zRef);
         } else if (op.s == scalar::ReverseDivide) {
-          y->applyScalarArr(scalar::Divide, *x, *z);
+          y->applyScalarArr(scalar::Divide, xRef, zRef);
         } else if (op.s == scalar::MaxPairwise || op.s == scalar::MinPairwise || op.s == scalar::AMaxPairwise ||
                    op.s == scalar::AMinPairwise) {
-          y->applyScalarArr(op.s, *x, *z);
+          y->applyScalarArr(op.s, xRef, zRef);
         } else if (op.s == scalar::CopyPws) {
-          z->assign(*y);
+          z->assign(yRef);
         } else {
-          z->assign(*x);
-          z->applyPairwiseTransform(op.p, *y, extraArgs);
+          z->assign(xRef);
+          z->applyPairwiseTransform(op.p, yRef, extraArgs);
         }
         return z;
       } else {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-        tZ->applyPairwiseTransform(op.p, *y, extraArgs);
+        tZ->applyPairwiseTransform(op.p, yRef, extraArgs);
         return tZ;
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, *y, *z);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyScalarArr(op.s, yRef, zRef);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-      x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyTrueBroadcast(op, yRef, zRef, true, extraArgs);
       return z;
     } else {
       auto sx = ShapeUtils::shapeAsString(x);

@@ -192,7 +192,7 @@ DataBuffer::DataBuffer(const void* hostBuffer, const DataType dataType, const si
 }
 
 ////////////////////////////////////////////////////////////////////////
-DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace,
+DataBuffer::DataBuffer(const sd::LongType lenInBytes, const DataType dataType, memory::Workspace* workspace,
                        const bool allocBoth) {
 
   if(dataType == DataType::UNKNOWN) {
@@ -203,6 +203,9 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
     printf("DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace* workspace, const bool allocBoth) constructor\n");
     fflush(stdout);
   }
+
+
+
   _dataType = dataType;
   _workspace = workspace;
   _lenInBytes = lenInBytes;

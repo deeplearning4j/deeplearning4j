@@ -687,7 +687,7 @@ static sd::Status computeSpans(IKernelFunc<float>* kernel, sd::LongType const ou
       tempWeights.push_back(weight);
     }
     maxSpanSize = std::max(maxSpanSize, spanSize);
-    if (math::sd_abs(totalWeightSum) >= 1000.f * DataTypeUtils::min_positive<float>()) {  //
+    if (math::sd_abs<float,float>(totalWeightSum) >= 1000.f * DataTypeUtils::min_positive<float>()) {  //
       auto totalWeightSumInverted = 1.0f / totalWeightSum;
       auto outIndex = spans._spanSize * x;
       for (auto weight : tempWeights) {

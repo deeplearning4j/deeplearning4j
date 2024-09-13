@@ -360,14 +360,14 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
       if (moveAxes[dim]) continue;
 
       if (b < begin->size() && !ignoreBegin[b] && !addAxes[dim]) {
-        int first = strides->at(b) > 0 ? begin->at(b) : math::sd_abs<int>(begin->at(b)) - 1;
+        int first = strides->at(b) > 0 ? begin->at(b) : math::sd_abs<int,int>(begin->at(b)) - 1;
         REQUIRE_TRUE(first <= x->sizeAt(dim), 0,
                      "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index "
                      "= %i for dimension %i!",
                      begin->at(b), dim);
       }
       if (e < end->size() && !ignoreEnd[e] && !addAxes[dim]) {
-        int last = strides->at(e) > 0 ? end->at(e) : math::sd_abs<int>(end->at(e)) - 1;
+        int last = strides->at(e) > 0 ? end->at(e) : math::sd_abs<int,int>(end->at(e)) - 1;
         REQUIRE_TRUE(last <= x->sizeAt(dim), 0,
                      "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = "
                      "%i for dimension %i!",
@@ -585,14 +585,14 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     if (moveAxes[dim]) continue;
 
     if (b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
-      int first = strides[b] > 0 ? begin[b] : math::sd_abs<int>(begin[b]) - 1;
+      int first = strides[b] > 0 ? begin[b] : math::sd_abs<int,int>(begin[b]) - 1;
       REQUIRE_TRUE(first <= x->sizeAt(dim), 0,
                    "StridedSlice: begin index should be <= corresponding dimension of input array, but got end_index = "
                    "%i for dimension %i!",
                    begin[b], dim);
     }
     if (e < end.size() && !ignoreEnd[e] && !addAxes[dim]) {
-      int last = strides[e] > 0 ? end[e] : math::sd_abs<int>(end[e]) - 1;
+      int last = strides[e] > 0 ? end[e] : math::sd_abs<int,int>(end[e]) - 1;
       REQUIRE_TRUE(last <= x->sizeAt(dim), 0,
                    "StridedSlice: end index should be <= corresponding dimension of input array, but got end_index = "
                    "%i for dimension %i!",

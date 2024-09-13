@@ -93,7 +93,7 @@ void HHcolPivQR::_evalData() {
 
     _qr.r<T>(k, k) = normX;
 
-    T max = math::sd_abs<T>(normX);
+    T max = math::sd_abs<T,T>(normX);
     if (max > maxPivot) maxPivot = max;
 
     if (k < rows && (k + 1) < cols) {
@@ -104,7 +104,7 @@ void HHcolPivQR::_evalData() {
 
     for (int j = k + 1; j < cols; ++j) {
       if (normsUpd.t<T>(j) != (T)0.f) {
-        T temp = math::sd_abs<T>(_qr.t<T>(k, j)) / normsUpd.t<T>(j);
+        T temp = math::sd_abs<T,T>(_qr.t<T>(k, j)) / normsUpd.t<T>(j);
         temp = ((T)1. + temp) * ((T)1. - temp);
         temp = temp < (T)0. ? (T)0. : temp;
         T temp2 = temp * normsUpd.t<T>(j) * normsUpd.t<T>(j) / (normsDir.t<T>(j) * normsDir.t<T>(j));

@@ -76,11 +76,11 @@ void calcEigenVals_(NDArray& schurMatrixT, NDArray& _Vals) {
       {
         T t0 = schurMatrixT.t<T>(i + 1, i);
         T t1 = schurMatrixT.t<T>(i, i + 1);
-        T maxval = math::sd_max<T>(math::sd_abs<T>(p), math::sd_max<T>(math::sd_abs<T>(t0), math::sd_abs<T>(t1)));
+        T maxval = math::sd_max<T>(math::sd_abs<T,T>(p), math::sd_max<T>(math::sd_abs<T,T>(t0), math::sd_abs<T,T>(t1)));
         t0 /= maxval;
         t1 /= maxval;
         T p0 = p / maxval;
-        z = maxval * math::sd_sqrt<T, T>(math::sd_abs<T>(p0 * p0 + t0 * t1));
+        z = maxval * math::sd_sqrt<T, T>(math::sd_abs<T,T>(p0 * p0 + t0 * t1));
       }
 
       _Vals.r<T>(i, 0) = _Vals.r<T>(i + 1, 0) = schurMatrixT.t<T>(i + 1, i + 1) + p;
@@ -149,13 +149,13 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
             T t = (x * lastr - lastw * r) / denom;
             schurMatrixT.r<T>(i, n) = t;
 
-            if (math::sd_abs<T>(x) > math::sd_abs<T>(lastw))
+            if (math::sd_abs<T,T>(x) > math::sd_abs<T,T>(lastw))
               schurMatrixT.r<T>(i + 1, n) = (-r - w * t) / x;
             else
               schurMatrixT.r<T>(i + 1, n) = (-lastr - y * t) / lastw;
           }
 
-          T t = math::sd_abs<T>(schurMatrixT.t<T>(i, n));
+          T t = math::sd_abs<T,T>(schurMatrixT.t<T>(i, n));
           if ((DataTypeUtils::eps<T>() * t) * t > T(1))
             schurMatrixT({schurMatrixT.sizeAt(0) - numOfCols + i, -1, n, n + 1}) /= t;
         }
@@ -165,7 +165,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
       T lastra(0), lastsa(0), lastw(0);
       int l = n - 1;
 
-      if (math::sd_abs<T>(schurMatrixT.t<T>(n, n - 1)) > math::sd_abs<T>(schurMatrixT.t<T>(n - 1, n))) {
+      if (math::sd_abs<T,T>(schurMatrixT.t<T>(n, n - 1)) > math::sd_abs<T,T>(schurMatrixT.t<T>(n - 1, n))) {
         schurMatrixT.r<T>(n - 1, n - 1) = q / schurMatrixT.t<T>(n, n - 1);
         schurMatrixT.r<T>(n - 1, n) = -(schurMatrixT.t<T>(n, n) - p) / schurMatrixT.t<T>(n, n - 1);
       } else {
@@ -202,13 +202,13 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
 
             if ((vr == T(0)) && (vi == T(0)))
               vr = DataTypeUtils::eps<T>() * norm *
-                   (math::sd_abs<T>(w) + math::sd_abs<T>(q) + math::sd_abs<T>(x) + math::sd_abs<T>(y) +
-                    math::sd_abs<T>(lastw));
+                   (math::sd_abs<T,T>(w) + math::sd_abs<T,T>(q) + math::sd_abs<T,T>(x) + math::sd_abs<T,T>(y) +
+                    math::sd_abs<T,T>(lastw));
 
             EigenValsAndVecs<T>::divideComplexNums(x * lastra - lastw * ra + q * sa, x * lastsa - lastw * sa - q * ra,
                                                    vr, vi, schurMatrixT.r<T>(i, n - 1), schurMatrixT.r<T>(i, n));
 
-            if (math::sd_abs<T>(x) > (math::sd_abs<T>(lastw) + math::sd_abs<T>(q))) {
+            if (math::sd_abs<T,T>(x) > (math::sd_abs<T,T>(lastw) + math::sd_abs<T,T>(q))) {
               schurMatrixT.r<T>(i + 1, n - 1) =
                   (-ra - w * schurMatrixT.t<T>(i, n - 1) + q * schurMatrixT.t<T>(i, n)) / x;
               schurMatrixT.r<T>(i + 1, n) = (-sa - w * schurMatrixT.t<T>(i, n) - q * schurMatrixT.t<T>(i, n - 1)) / x;
@@ -218,7 +218,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
                                                      schurMatrixT.r<T>(i + 1, n - 1), schurMatrixT.r<T>(i + 1, n));
           }
 
-          T t = math::sd_max<T>(math::sd_abs<T>(schurMatrixT.t<T>(i, n - 1)), math::sd_abs<T>(schurMatrixT.t<T>(i, n)));
+          T t = math::sd_max<T>(math::sd_abs<T,T>(schurMatrixT.t<T>(i, n - 1)), math::sd_abs<T,T>(schurMatrixT.t<T>(i, n)));
           if ((DataTypeUtils::eps<T>() * t) * t > T(1)) schurMatrixT({i, numOfCols, n - 1, n + 1}) /= t;
         }
       }
@@ -245,7 +245,7 @@ void calcEigenVecs_(NDArray& schurMatrixU, NDArray& _Vals, NDArray& _Vecs) {
   const int numOfCols = schurMatrixU.sizeAt(1);
 
   for (int j = 0; j < numOfCols; ++j) {
-    if (math::sd_abs<T>(_Vals.t<T>(j, 1)) <= math::sd_abs<T>(_Vals.t<T>(j, 0)) * precision ||
+    if (math::sd_abs<T,T>(_Vals.t<T>(j, 1)) <= math::sd_abs<T,T>(_Vals.t<T>(j, 0)) * precision ||
         j + 1 == numOfCols) {  // real
 
       _Vecs.syncToDevice();

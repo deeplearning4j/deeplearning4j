@@ -265,7 +265,7 @@ static void pooling3dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
                   for (sd::LongType kd = dstart; kd < dend; kd += iStep2)
                     for (sd::LongType kh = hstart; kh < hend; kh += iStep3)
                       for (sd::LongType kw = wstart; kw < wend; kw += iStep4)
-                        sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                        sum += sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kd + kh + kw]), extraParam0);
 
                   valO *= sd::math::sd_pow<T, T, T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
@@ -274,14 +274,14 @@ static void pooling3dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
                       for (sd::LongType kw = wstart; kw < wend; kw += iStep4)
                         pgI[kd + kh + kw] +=
                             valO *
-                            sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f) *
+                            sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f) *
                             sd::math::sd_sgn<T, T>(pIn[kd + kh + kw]);
                 } else {
                   for (sd::LongType kd = dstart; kd < dend; kd += dD)
                     for (sd::LongType kh = hstart; kh < hend; kh += dH)
                       for (sd::LongType kw = wstart; kw < wend; kw += dW)
                         sum += sd::math::sd_pow<T, T, T>(
-                            sd::math::sd_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
+                            sd::math::sd_abs<T,T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
 
                   valO *= sd::math::sd_pow<T, T, T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
@@ -290,7 +290,7 @@ static void pooling3dBP_(sd::graph::Context& block, NDArray& input, NDArray& gra
                       for (sd::LongType kw = wstart; kw < wend; kw += dW) {
                         const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
                         pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] +=
-                            valO * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T>(inVal), extraParam0 - 1.f) *
+                            valO * sd::math::sd_pow<T, T, T>(sd::math::sd_abs<T,T>(inVal), extraParam0 - 1.f) *
                             sd::math::sd_sgn<T, T>(inVal);
                       }
                 }

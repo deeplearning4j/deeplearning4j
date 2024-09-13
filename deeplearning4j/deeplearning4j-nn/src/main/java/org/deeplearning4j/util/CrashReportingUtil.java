@@ -388,7 +388,7 @@ public class CrashReportingUtil {
         sb.append(f("CPU Cores - Logical", sys.getHardware().getProcessor().getLogicalProcessorCount()));
         sb.append(fBytes("Total System Memory", totalMem));
 
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps =Nd4j.getNativeOps();
         int nDevices = nativeOps.getAvailableDevices();
         if (nDevices > 0) {
             sb.append(f("Number of GPUs Detected", nDevices));

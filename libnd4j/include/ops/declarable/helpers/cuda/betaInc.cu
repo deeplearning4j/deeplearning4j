@@ -48,7 +48,7 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
 
   T t2 = coeffs[1];
   T t1 = coeffs[0];
-  if (math::sd_abs<T>(t1) < min) t1 = min;
+  if (math::sd_abs<T,T>(t1) < min) t1 = min;
   t1 = static_cast<T>(1) / t1;
   T result = t1;
 
@@ -58,26 +58,26 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
 
     // t1
     t1 = static_cast<T>(1) + coeffs[i2] * t1;
-    if (math::sd_abs<T>(t1) < min) t1 = min;
+    if (math::sd_abs<T,T>(t1) < min) t1 = min;
     t1 = static_cast<T>(1) / t1;
     // t2
     t2 = static_cast<T>(1) + coeffs[i2] / t2;
-    if (math::sd_abs<T>(t2) < min) t2 = min;
+    if (math::sd_abs<T,T>(t2) < min) t2 = min;
     // result
     result *= t2 * t1;
     // t1
     t1 = static_cast<T>(1) + coeffs[i2 + 1] * t1;
-    if (math::sd_abs<T>(t1) < min) t1 = min;
+    if (math::sd_abs<T,T>(t1) < min) t1 = min;
     t1 = static_cast<T>(1) / t1;
     // t2
     t2 = static_cast<T>(1) + coeffs[i2 + 1] / t2;
-    if (math::sd_abs<T>(t2) < min) t2 = min;
+    if (math::sd_abs<T,T>(t2) < min) t2 = min;
     // result
     val = t2 * t1;
     result *= val;
 
     // condition to stop loop
-    if (math::sd_abs<T>(val - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
+    if (math::sd_abs<T,T>(val - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
   }
 
   return DataTypeUtils::infOrMax<T>();  // no convergence, more iterations is required, return infinity

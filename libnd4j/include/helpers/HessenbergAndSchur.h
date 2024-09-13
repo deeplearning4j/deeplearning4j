@@ -80,8 +80,8 @@ class Schur {
   SD_INLINE int getSmallSubdiagEntry(const int inInd) {
     int outInd = inInd;
     while (outInd > 0) {
-      T factor = math::sd_abs<T>(t.t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T>(t.t<T>(outInd, outInd));
-      if (math::sd_abs<T>(t.t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
+      T factor = math::sd_abs<T,T>(t.t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T,T>(t.t<T>(outInd, outInd));
+      if (math::sd_abs<T,T>(t.t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
       outInd--;
     }
     return outInd;

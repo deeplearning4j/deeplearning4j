@@ -455,7 +455,7 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
         //See: https://github.com/apache/felix/pull/114
         val castBuffer = byteBuffer as Buffer
         castBuffer.rewind()
-        val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen, 0)
+        val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen)
         if(shape.isNotEmpty() && totalLen > 0) {
             if(rawDataBuffer.length() > 0)
                 return Nd4j.create(rawDataBuffer).reshape('c',*shape)

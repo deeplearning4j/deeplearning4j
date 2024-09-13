@@ -42,9 +42,14 @@
 #include <helpers/DebugHelper.h>
 
 using namespace sd;
+#include <execution/cuda/LaunchDims.h>
 #include <loops/special_kernels.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <execution/cuda/LaunchDims.h>
+
+#include "../../array/ShapeList.h"
+#include "../../ops/declarable/DeclarableOp.h"
+#include "../../system/common.h"
+#include "../NativeOps.h"
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
@@ -139,14 +144,15 @@ void dbPrintAllocationTrace(OpaqueDataBuffer *db) {
   db->printDbAllocationTrace();
 }
 
-void setIntermediateResult(OpaqueContext *contextPointer, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo) {
+void setIntermediateResult(OpaqueContext *contextPointer, int index, OpaqueDataBuffer *buffer,
+                           OpaqueDataBuffer *shapeInfo, sd::LongType dataOffset) {
   if(shapeInfo == nullptr) {
     THROW_EXCEPTION("Set Intermediate Result: shapeInfo is null");
   }
   auto casted = reinterpret_cast<LongType *>(shapeInfo->primary());
   auto desc = new ShapeDescriptor(casted);
   auto arr = new NDArray(buffer->dataBuffer(), desc);
-  contextPointer->setIntermediateResult(index, arr);
+  contextPointer->setIntermediateResult(index, arr, nullptr, nullptr, 0);
 }
 
 
@@ -174,11 +180,12 @@ int numIntermediateResults(OpaqueContext *contextPointer) {
   return contextPointer->numIntermediates();
 }
 
-void pushIntermediateResult(OpaqueContext *contextPointer, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo) {
+void pushIntermediateResult(OpaqueContext *contextPointer, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
+                            LongType offset) {
   auto shapeInfoCast = reinterpret_cast<LongType *>(shapeInfo->primary());
   auto desc = new ShapeDescriptor(shapeInfoCast);
   auto arr = new NDArray(buffer->dataBuffer(), desc);
-  contextPointer->pushIntermediateResult(arr);
+  contextPointer->pushIntermediateResult(arr, nullptr, nullptr, 0);
 }
 
 OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer) {
@@ -290,8 +297,8 @@ std::vector<ExecTrace*> * listOpTraces() {
 }
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-  OpaqueDataBuffer *copyFrom = dbCreateView(from,n,fromOffset);
-  OpaqueDataBuffer *targetView = dbCreateView(target,n,targetOffset);
+  OpaqueDataBuffer *copyFrom = dbCreateView(from, n);
+  OpaqueDataBuffer *targetView = dbCreateView(target, n);
    DataBuffer *targetBuf = copyFrom->dataBuffer();
    DataBuffer *srcBuf = targetView->dataBuffer();
   DataBuffer::memcpy(targetBuf,srcBuf);
@@ -462,7 +469,7 @@ SD_KERNEL  void _printBuffers(void* buffer, LongType bufferLength) {
 }
 
 template <typename T>
-void _printHostBuffer(InteropDataBuffer *buffer) {
+void _printHostBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
   auto xType = buffer->dataBuffer()->getDataType();
   LongType len = buffer->dataBuffer()->getNumElements();
   auto buff = buffer->dataBuffer()->template primaryAsT<T>();
@@ -503,7 +510,7 @@ void printDeviceBuffer(InteropDataBuffer *buffer) {
     sd_printf("Host pointer address: none\n",0);
   }
 
-  BUILD_SINGLE_SELECTOR(xType, _printHostBuffer,(buffer),SD_COMMON_TYPES_ALL);
+  BUILD_SINGLE_SELECTOR(xType, 0);
 
 }
 
@@ -2835,7 +2842,8 @@ const char *getAllCustomOps() { return ops::OpRegistrator::getInstance().getAllC
 
 ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputBuffers,
                                   Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs, int numDArgs) {
+                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs, int numDArgs,
+                                  sd::LongType *offsets) {
   VariableSpace varSpace;
   Context block(2, &varSpace);
   ShapeList inShapes;
@@ -2884,7 +2892,7 @@ ShapeList *calculateOutputShapes2(Pointer *extraPointers, LongType hash, Pointer
   try {
     auto op = ops::OpRegistrator::getInstance().getOperation(hash);
     return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs);
+                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -3679,22 +3687,22 @@ void setGraphContextCudaContext(Context *ptr, void *stream, void *reductionPoint
 
 void setGraphContextInputArray(Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
                                void *specialShapeInfo) {
-  ptr->setInputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
+  ptr->setInputArray(index, buffer, shapeInfo, specialBuffer, 0);
 }
 
 void setGraphContextOutputArray(Context *ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer,
                                 void *specialShapeInfo) {
-  ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
+  ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, 0);
 }
 
-void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, InteropDataBuffer *shapeInfo,
-                                InteropDataBuffer *specialShapeInfo) {
-  ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo);
+void setGraphContextInputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
+                                OpaqueDataBuffer *specialShapeInfo, sd::LongType offset) {
+  ptr->setInputArray(index, buffer, shapeInfo, specialShapeInfo, 0);
 }
 
-void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, InteropDataBuffer *shapeInfo,
-                                 InteropDataBuffer *specialShapeInfo) {
-  ptr->setOutputArray(index, buffer, shapeInfo, specialShapeInfo);
+void setGraphContextOutputBuffer(OpaqueContext *ptr, int index, OpaqueDataBuffer *buffer, OpaqueDataBuffer *shapeInfo,
+                                 OpaqueDataBuffer *specialShapeInfo, sd::LongType offset) {
+  ptr->setOutputArray(index, buffer, shapeInfo, specialShapeInfo, 0);
 }
 
 void setGraphContextTArguments(Context *ptr, double *arguments, int numberOfArguments) {
@@ -4090,7 +4098,8 @@ void setGraphContextInputArrays(OpaqueContext* ptr, int numArrays, Pointer * buf
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
-    ptr->setInputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    ptr->setInputArray(i, inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,
+                       inputShapeBuffers[i], specialBuffer != nullptr ? specialBuffer[i] : nullptr, 0);
   }
 
 }
@@ -4099,12 +4108,13 @@ void setGraphContextOutputArrays(OpaqueContext* ptr, int numArrays, void** buffe
   auto inputBuffers = (void **) buffer;
   auto inputShapeBuffers = (void **) shapeInfo;
   for(int i = 0; i < numArrays; i++) {
-    ptr->setOutputArray(i,inputBuffers != nullptr && inputBuffers[i] != nullptr  ? inputBuffers[i] : nullptr,inputShapeBuffers[i],specialBuffer != nullptr ? specialBuffer[i] : nullptr,specialShapeInfo != nullptr ? specialShapeInfo[i] : nullptr);
+    ptr->setOutputArray(i, inputBuffers != nullptr && inputBuffers[i] != nullptr ? inputBuffers[i] : nullptr,
+                        inputShapeBuffers[i], specialBuffer != nullptr ? specialBuffer[i] : nullptr, 0);
   }
 
 }
-void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffer,
-                                  void **shapeInfo, void **specialShapeInfo) {
+void setGraphContextInputBuffers(OpaqueContext *ptr, int numArrays, void **buffer, void **shapeInfo,
+                                 void **specialShapeInfo, sd::LongType *offsets) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("Input shape info was null!");
 
@@ -4119,16 +4129,18 @@ void  setGraphContextInputBuffers(OpaqueContext* ptr, int numArrays,void** buffe
 
     LongType *primary = (LongType *) shapeBuffers[i]->primary();
     if(buffer != nullptr && buffer[i] != nullptr) {
-      setGraphContextInputBuffer(ptr,i,buffers[i],shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+      setGraphContextInputBuffer(ptr, i, buffers[i], shapeBuffers[i],
+                                 specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr, 0);
     }
     else {
-      setGraphContextInputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr);
+      setGraphContextInputBuffer(ptr, i, nullptr, shapeBuffers[i],
+                                 specialShapeInfo != nullptr ? specialShapeBuffers[i] : nullptr, 0);
     }
   }
 
 }
-void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buffer,
-                                  void **shapeInfo, void **specialShapeInfo) {
+void setGraphContextOutputBuffers(OpaqueContext *ptr, int numArrays, void **buffer, void **shapeInfo,
+                                  void **specialShapeInfo, sd::LongType *offsets) {
 
   OpaqueDataBuffer **buffers = (OpaqueDataBuffer **) buffer;
   OpaqueDataBuffer **shapeBuffers = (OpaqueDataBuffer **) shapeInfo;
@@ -4137,9 +4149,10 @@ void setGraphContextOutputBuffers(OpaqueContext* ptr, int numArrays, void** buff
 
     if(buffer != nullptr && buffer[i] != nullptr) {
       setGraphContextOutputBuffer(ptr, i, buffers[i], shapeBuffers[i],
-                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr, 0);
     } else {
-      setGraphContextOutputBuffer(ptr,i, nullptr,shapeBuffers[i],specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr);
+      setGraphContextOutputBuffer(ptr, i, nullptr, shapeBuffers[i],
+                                  specialShapeBuffers != nullptr ? specialShapeBuffers[i] : nullptr, 0);
     }
 
   }

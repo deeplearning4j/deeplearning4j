@@ -546,7 +546,7 @@ void* NDArray::specialBuffer() {
     tickReadHost();
   }
   // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+  return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -556,7 +556,7 @@ void const* NDArray::specialBuffer() const {
     tickReadHost();
   }
   // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+  return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
 }
 
 //////////////////////////////////////////////////////////////////////////

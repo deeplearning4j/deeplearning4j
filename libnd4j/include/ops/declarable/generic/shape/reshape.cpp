@@ -32,13 +32,16 @@ namespace ops {
 CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
+  printf("reshape x offset %lld z offset %lld\n", x->offset(), z->offset());
+  fflush(stdout);
   // Special case: empty.reshape(<other empty shape>) -> return empty
   if (x->isEmpty()) {
     REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
     return Status::OK;  // No op
   }
   x->syncToHost();
-
+  x->printBufferRaw("X INPUT FOR RESHAPE RAW");
+  x->printIndexedBuffer("X INPUT FOR RESHAPE INDEXED");
   //scalars can either be 0 or 1
   if(!x->isScalar() && !x->isEmpty())
   REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0,
@@ -58,8 +61,16 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
     std::vector<sd::LongType> shape = z->getShapeAsVector();
-    z->assign(x->reshape(z->ordering(), shape,false));
+    NDArray &reshapedX = x->reshape(z->ordering(), shape,true);
+    reshapedX.printBufferRaw("RESHAPE X RAW:");
+    reshapedX.printIndexedBuffer("RESHAPED INDEX BUFFER:");
+    printf("before z assign call: z offset %lld\n", z->offset());
+    z->assign(reshapedX);
+  } else {
+    z->printBufferRaw("RESHAPE Z BUFFER RAW:");
+    z->printIndexedBuffer("RESHAPE Z INDEXED BUFFER:");
   }
+
   return Status::OK;
 }
 
@@ -163,8 +174,8 @@ DECLARE_SHAPE_FN(reshape) {
 
   if(newShapeEmpty) {
     for(int i = 0; i < reshapeArgs.size(); i++) {
-       if(reshapeArgs[i] < 0)
-         reshapeArgs[i] = 1;
+      if(reshapeArgs[i] < 0)
+        reshapeArgs[i] = 1;
     }
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs));
   }
