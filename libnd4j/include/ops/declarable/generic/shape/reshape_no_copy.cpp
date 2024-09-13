@@ -22,22 +22,11 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
     //deref avoiding copy
     //preserve original buffer as it does not need a copy but the buffers
     //are not the same.
-    printf("input->dataBuffer() != output->dataBuffer()\n");
-    fflush(stdout);
     NDArray &originalInput = *input;
     DataBuffer& original = *originalInput.dataBuffer();
-    printf("copying buffers with output %lld and input %lld"
-        "with input offset %lld and output offset %lld\n",
-        output->dataBuffer()->getLenInBytes(), original.getLenInBytes(),
-        input->offset(), output->offset());
-    fflush(stdout);
     output->dataBuffer()->memcpy(output->dataBuffer(),originalInput.dataBuffer(),output->offset(),input->offset());
 
-  } else {
-    printf("no copy\n");
-    fflush(stdout);
   }
-
   //the rest is no op, we don't need to copy we just needed the new shape
 
   return Status::OK;
@@ -113,8 +102,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     ArrayOptions::toggleIsEmpty(newShapeInfo);
   } else {
     bool needsCopy = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-    printf("reshape needs copy: %i\n", needsCopy);
-    fflush(stdout);
     if (!needsCopy) {
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
@@ -125,8 +112,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       ArrayOptions::setDataType(newShapeInfo, dtype);
     } else {
       // If reshape is not possible without allocation, fall back to regular reshape
-      printf("Setting data type %s\n",DataTypeUtils::asString(dtype).c_str());
-      fflush(stdout);
       shape::setElementWiseStride(newShapeInfo, 0);
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
@@ -135,8 +120,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   }
 
-  printf("reshape needs copy output data type is %s\n", DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfo)).c_str());
-  fflush(stdout);
   return SHAPELIST(CONSTANT(newShapeInfo));
 }
 
