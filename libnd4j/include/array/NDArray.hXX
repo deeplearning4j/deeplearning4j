@@ -4497,7 +4497,6 @@ void NDArray::applyPairwiseTransform(sd::pairwise::Ops op, NDArray &other, NDArr
                                      ExtraArguments *extraParams)  {
   if (isS()) THROW_EXCEPTION("NDArray::applyPairwiseTransform: you can't use this method on String array!");
   NDArray::prepareSpecialUse({&target}, {this, &other});
-  printf("NDArray::applyPairwiseTransform: with array offsets: %lld, %lld, %lld\n", this->offset(), other.offset(), target.offset());
   NativeOpExecutioner::execPairwiseTransform(
       getContext(), op,
       buffer(),

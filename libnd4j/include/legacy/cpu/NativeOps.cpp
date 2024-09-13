@@ -285,11 +285,6 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer shapeInfo,
                                      shapeInfoCast,
                                      LaunchContext::defaultContext(),
                                      offset);
-  ret->printBufferRaw("OPAQUE BUFFER RAW:");
-  ret->printShapeInfo("OPAQUE SHAPE INFO:");
-  ret->printIndexedBuffer("OPAQUE INDEXED BUFFER:");
-  ret->dataBuffer()->printHostDevice(0);
-  fflush(stdout);
   return ret;
 }
 
@@ -592,14 +587,11 @@ void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) {
 
 }
 
-
+//note here for javacpp mapping we have to use this odd type alias as a pointer
+//to make the typedef work properly.
 void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
   if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Input arrays were null!");
-  printf("num arrays to set %d\n", numArrays);
-  fflush(stdout);
   for (int i = 0; i < numArrays; i++) {
-    printf("setting array %lld for context\n", i);
-    fflush(stdout);
     if (arr[i] == nullptr) {
       std::string errorMessage;
       errorMessage += "setGraphContextOutputArraysArr: Input array at index ";
@@ -613,14 +605,12 @@ void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDAr
   }
 }
 
+//note here for javacpp mapping we have to use this odd type alias as a pointer
+//to make the typedef work properly.
 void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
   if(arr == nullptr)
     THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
-  printf("num arrays to set %d\n", numArrays);
-  fflush(stdout);
   for (int i = 0; i < numArrays; i++) {
-    printf("setting array %lld for context\n", i);
-    fflush(stdout);
     if(arr[i] == nullptr) {
       std::string errorMessage;
       errorMessage += "setGraphContextInputArraysArr: Input array at index ";
@@ -628,10 +618,7 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArr
       errorMessage += " was null!";
       THROW_EXCEPTION(errorMessage.c_str());
     }
-    printf("input array at index %d at offset 0:\n", i);
-    (*arr[i])->printBufferRaw("\nBuffer", 0);
-    (*arr[i])->printShapeInfo("\nShape info:");
-    fflush(stdout);
+
 
     ptr->setInputArray(i, *arr[i], false);
   }
