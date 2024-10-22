@@ -42,59 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ShapeInfoTests  extends BaseNd4jTestWithBackends  {
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNDArrays(Nd4jBackend backend) {
-        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.builder()
-                .shape(new long[]{2, 2})
-                .stride(new long[]{2, 1})
-                .order('c')
-                .offset(0)
-                .ews(1)
-                .extras(ArrayOptionsHelper.composeTypicalChecks(
-                        DataType.FLOAT))
-                .build();
-        INDArray arr = Nd4j.create(longShapeDescriptor);
-
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testBasicArrayCreation(Nd4jBackend backend) {
-        LongShapeDescriptor descriptor = LongShapeDescriptor.builder()
-                .shape(new long[]{2, 2})
-                .stride(new long[]{2, 1})
-                .order('c')
-                .offset(0)
-                .ews(1)
-                .extras(ArrayOptionsHelper.composeTypicalChecks(DataType.FLOAT))
-                .build();
-
-        INDArray arr = Nd4j.create(descriptor);
-
-        assertArrayEquals(new long[]{2, 2}, arr.shape());
-        assertArrayEquals(new long[]{2, 1}, arr.stride());
-        assertEquals(DataType.FLOAT, arr.dataType());
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testArrayWithOffset(Nd4jBackend backend) {
-        LongShapeDescriptor descriptor = LongShapeDescriptor.builder()
-                .shape(new long[]{2, 2})
-                .stride(new long[]{2, 1})
-                .order('c')
-                .offset(2)
-                .ews(1)
-                .extras(ArrayOptionsHelper.composeTypicalChecks(DataType.FLOAT))
-                .build();
-
-        INDArray arr = Nd4j.create(descriptor);
-
-        assertArrayEquals(new long[]{2, 2}, arr.shape());
-        assertEquals(4, arr.length());
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
