@@ -48,7 +48,7 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
-    protected NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    protected NativeOps nativeOps =Nd4j.getNativeOps();
 
     public BaseNativeNDArrayFactory(DataType dtype, Character order) {
         super(dtype, order);
@@ -63,9 +63,9 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public DataBuffer convertToNumpyBuffer(INDArray array) {
-        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
+        Pointer pointer =Nd4j.getNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
-        long len = NativeOpsHolder.getInstance().getDeviceNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
+        long len =Nd4j.getNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
         pointer.capacity(len + array.length() * array.data().getElementSize());
         pointer.limit(len + array.length() * array.data().getElementSize());
         BytePointer wrapper = new BytePointer(pointer);

@@ -388,10 +388,10 @@ public class NativeImageLoader extends BaseImageLoader {
         long[] stride = ret.stride();
         boolean done = false;
         PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels,
-                ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
+                ret.offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
 
         if (pointer instanceof FloatPointer) {
-            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(),
+            FloatIndexer retidx = FloatIndexer.create(pagedPointer.asFloatPointer(),
                     new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
@@ -753,7 +753,7 @@ public class NativeImageLoader extends BaseImageLoader {
         }
         int rank = array.rank();
         long[] stride = array.stride();
-        long offset = array.data().offset();
+        long offset = array.offset();
         Pointer pointer = array.data().pointer().position(offset);
 
         long rows = array.size(rank == 3 ? 1 : 2);

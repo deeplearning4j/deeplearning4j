@@ -374,7 +374,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             //GPU
             long[] gpuCurrentBytes = null;
             long[] gpuMaxBytes = null;
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            NativeOps nativeOps =Nd4j.getNativeOps();
             int nDevices = nativeOps.getAvailableDevices();
             if (nDevices > 0) {
                 gpuCurrentBytes = new long[nDevices];
@@ -619,7 +619,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         if (initConfig.collectHardwareInfo()) {
             int availableProcessors = Runtime.getRuntime().availableProcessors();
-            NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+            NativeOps nativeOps =Nd4j.getNativeOps();
             int nDevices = nativeOps.getAvailableDevices();
 
             long[] deviceTotalMem = null;
