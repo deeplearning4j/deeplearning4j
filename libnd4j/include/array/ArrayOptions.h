@@ -96,6 +96,9 @@
 //flags for when array has a view or not
 #define ARRAY_IS_VIEW 33554432
 
+#define ARRAY_IS_VIEW 33554432
+
+#define ARRAY_NEEDS_COPY 67108864
 
 #define DEFAULT_FLAG 0
 
@@ -165,6 +168,10 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST DataType dataTypeValue(LongType property);
   static bool isEmpty(LongType *shapeInfo);
   static void toggleIsEmpty(LongType *shapeInfo);
+
+  static bool arrayNeedsCopy(LongType *shapeInfo);
+  static void toggleArrayNeedsCopy(LongType *shapeInfo);
+
 };
 
 }
