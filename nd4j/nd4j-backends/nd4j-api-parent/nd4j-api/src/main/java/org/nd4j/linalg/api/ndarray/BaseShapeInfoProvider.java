@@ -24,14 +24,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);
+
+    @Override
+    public Pair<DataBuffer, long[]> createShapeInformation(LongShapeDescriptor descriptor) {
+        return Pair.of(Shape
+                .createShapeInformation(descriptor), descriptor.toShapeInfo());
+    }
 
     /**
      * This method creates shapeInformation buffer, based on shape being passed in
