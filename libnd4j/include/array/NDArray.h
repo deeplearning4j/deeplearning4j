@@ -1971,7 +1971,7 @@ DataBuffer * NDArray::dataBuffer() { return _buffer; }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
- return  static_cast<int8_t *>(buffer->primary()) + offset * DataTypeUtils::sizeOfElement(buffer->getDataType());
+ return reinterpret_cast<void *>(buffer->primaryAtOffset<T>(offset));
 }
 
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers

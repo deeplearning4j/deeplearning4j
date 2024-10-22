@@ -619,8 +619,8 @@ void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArr
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-
-    ptr->setInputArray(i, *arr[i], false);
+    OpaqueNDArray &ref = *arr[i];
+    ptr->setInputArray(i, ref, false);
   }
 }
 
@@ -3163,10 +3163,22 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
 void execPairwiseTransform(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
                            NDArray *z, void *extraParams) {
   try {
+    /**
+     * TODO: look in to offsets here as left over change from ndarrays being available?
+     */
     NativeOpExecutioner::execPairwiseTransform(nullptr, opNum,
-                                               x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                               y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                               z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                               x->bufferWithOffset(x->offset()),
+                                               x->shapeInfo(),
+                                               x->specialBufferWithOffset(x->offset()),
+                                               x->specialShapeInfo(),
+                                               y->bufferWithOffset(y->offset()),
+                                               y->shapeInfo(),
+                                               y->specialBufferWithOffset(y->offset()),
+                                               y->specialShapeInfo(),
+                                               z->bufferWithOffset(z->offset()),
+                                               z->shapeInfo(),
+                                               const_cast<void *>(z->specialBufferWithOffset(z->offset())),
+                                               z->specialShapeInfo(),
                                                extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

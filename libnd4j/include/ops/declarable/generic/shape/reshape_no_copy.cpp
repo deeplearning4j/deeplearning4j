@@ -13,8 +13,6 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto output = OUTPUT_VARIABLE(0);
 
   if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))) {
-    printf("needs copy with assign\n");
-    fflush(stdout);
     //deref avoiding copy
     NDArray &originalInput = *input;
     output->assign(originalInput);

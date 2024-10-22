@@ -40,9 +40,9 @@ class BroadcastHelper {
     }
 
     if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
-      NDArray &xRef = *x;
       NDArray &yRef = *y;
-      x->applyPairwiseTransform(op.p, xRef, yRef, extraArgs);
+      NDArray &zRef = *z;
+      x->applyPairwiseTransform(op.p, yRef, zRef, extraArgs);
     } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
       NDArray &yRef = *y;
       NDArray &zRef = *z;

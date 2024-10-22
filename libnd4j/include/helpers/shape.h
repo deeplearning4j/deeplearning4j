@@ -3830,8 +3830,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void doPermuteShapeInfo(sd::LongType *shapeInfo,
                                                         const sd::LongType *rearrange,
                                                         sd::LongType len) {
   if (shapeInfo == nullptr || rearrange == nullptr || rank(shapeInfo) < 1) {
-    printf("doPermuteShapeInfo: shapeInfo is nullptr or rank < 1\n");
-    fflush(stdout);
     return;
   }
 
@@ -4197,13 +4195,9 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
     }
   }
 
-  printf("before set order in update strides\n");
-  fflush(stdout);
   // set last 2 elements in shapeInfo
   shapeInfo[doubleRank + 2] = 1;
   setOrder(shapeInfo, order);
-  printf("set order in update strides\n");
-  fflush(stdout);
 }
 
 SD_LIB_EXPORT SD_INLINE SD_HOST void updateStrides(const sd::LongType rank, const sd::LongType *shapeOnly, sd::LongType *stridesOnly,

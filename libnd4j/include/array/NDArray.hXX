@@ -1805,6 +1805,8 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(NDArray other, bool allowParallelism) {
+  printf("calling normal assign\n");
+  fflush(stdout);
   if (this == &other) {
     sd_print("NDArray::assign: this == &other\n");
     return;
@@ -1824,46 +1826,22 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 
   //scalar case
   if (other.isScalar()) {
-    if (isScalar()) {
-      if (dataType() != other.dataType()) {
-        auto tmp = other.cast(dataType());
-        prepareUse({this}, {&tmp});
-        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(),
-                                        nullptr, allowParallelism);
-        registerUse({this}, {});
-      } else {
-        prepareUse({this}, {&other});
-        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws,
-                                        buffer(),
-                                        shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), buffer(),
-                                        shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        other.buffer(),
-                                        other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(),
-                                        nullptr, allowParallelism);
-        registerUse({this}, {&other});
-      }
+      if (!isScalar()) {
+          prepareUse({this}, {&other});
+          NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
+                                          specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                          other.buffer(), other.shapeInfo(), other.specialBuffer(),
+                                          other.specialShapeInfo(), nullptr, allowParallelism);
+          registerUse({this}, {&other});
 
-    } else {
-      if (dataType() != other.dataType()) {
-        auto tmp = other.cast(dataType());
-        prepareUse({this}, {&tmp});
-        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(),
-                                        nullptr, allowParallelism);
-        registerUse({this}, {});
       } else {
-        prepareUse({this}, {&other});
-        NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                        specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                        other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                        other.specialShapeInfo(), nullptr, allowParallelism);
-        registerUse({this}, {&other});
+          prepareUse({this}, {&other});
+          NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
+                                          specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                          other.buffer(), other.shapeInfo(), other.specialBuffer(),
+                                          other.specialShapeInfo(), nullptr, allowParallelism);
+          registerUse({this}, {&other});
       }
-    }
   } else {
     if (other.lengthOf() != lengthOf() && !ShapeUtils::areShapesBroadcastable(other.shapeInfo(), this->shapeInfo())) {
       auto shapeThis = ShapeUtils::shapeAsString(this);
@@ -1893,6 +1871,8 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
 void NDArray::assign(T &value, bool allowParallelism) {
+  printf("calling scalar assign\n");
+  fflush(stdout);
   // just fire scalar
   auto temp = new NDArray(NDArrayFactory::create(dataType(), value, this->getContext()));
 
@@ -2913,12 +2893,11 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
     auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
-    p
 
     NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
-    NDArray ret2 =  *ret;
+    NDArray &ret2 =  *ret;
 
-    return *ret;
+    return ret2;
   }
 
 }
@@ -3747,15 +3726,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, NDArray &other, N
       errorMessage += DataTypeUtils::asString(other.dataType());
       THROW_EXCEPTION(errorMessage.c_str());
     }
-    if (dataType() != other.dataType()) {
-      std::string errorMessage;
-      errorMessage += "NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !";
-      errorMessage += " this array type is ";
-      errorMessage += DataTypeUtils::asString(dataType());
-      errorMessage += " other array type is ";
-      errorMessage += DataTypeUtils::asString(other.dataType());
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
+
   }
 
   sd::LongType const *xShapeInfoH = shapeInfo();
@@ -3836,15 +3807,7 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, NDArray &other, ND
       errorMessage += DataTypeUtils::asString(other.dataType());
       THROW_EXCEPTION(errorMessage.c_str());
     }
-    if (dataType() != other.dataType()) {
-      std::string errorMessage;
-      errorMessage += "NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !";
-      errorMessage += " this array type is ";
-      errorMessage += DataTypeUtils::asString(dataType());
-      errorMessage += " other array type is ";
-      errorMessage += DataTypeUtils::asString(other.dataType());
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
+
   }
 
   sd::LongType const *xShapeInfoH = shapeInfo();
@@ -4509,8 +4472,6 @@ void NDArray::applyPairwiseTransform(sd::pairwise::BoolOps op, NDArray &other, N
   if (other.lengthOf() != target.lengthOf())
     THROW_EXCEPTION("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
   if (!target.isB()) THROW_EXCEPTION("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
-  if (dataType() != other.dataType())
-    THROW_EXCEPTION("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
   prepareUse({&target}, {this, &other});
   NativeOpExecutioner::execPairwiseBoolTransform(

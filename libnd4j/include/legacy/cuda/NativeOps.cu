@@ -2227,13 +2227,7 @@ void execScalarTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lon
 
     dim3 launchDims = getLaunchDims("scalarTad");
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-    BUILD_PAIRWISE_SELECTOR(
-        xType, yType, zType, functions::scalar::ScalarTransform,
-        ::executeCudaAlongDimension(launchDims, stream, opType, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                    dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-        SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
+
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
         ::executeCudaAlongDimension(
@@ -2245,7 +2239,6 @@ void execScalarTad(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, Lon
             shape::isEmptyConst(hScalarShapeInfo) ? nullptr : dbScalars->special(),
             extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_COMMON_TYPES);
-#endif
 
     DEBUG_KERNEL(stream, opNum);
 

@@ -283,16 +283,11 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
     auto shapePtr = shape::shapeOf(shapeInfo);
     auto stridePtr = shape::stride(shapeInfo);
     if(overrideStrides) {
-      printf("overriding strides\n");
       LongType  *stridesNew = shape::order(shapeInfo) == 'c' ? shape::calcStrides(shapePtr, rankVal) : shape::calcStridesFortran(shapePtr, rankVal);
       for (LongType e = 0; e < _rank; e++) {
         _shape_strides[e] = shapePtr[e];
         _shape_strides[e + _rank] = stridesNew[e];
       }
-      for(int i = 0; i < _rank; i++) {
-        printf("stride %d is %lld\n", i, _shape_strides[i + _rank]);
-      }
-      fflush(stdout);
 
       delete[] stridesNew;
 

@@ -54,72 +54,30 @@ namespace math {
 
 #include <type_traits>
 
-// C++11 compatible implementation of disjunction
-template<typename...> struct disjunction : std::false_type {};
-template<typename B1> struct disjunction<B1> : B1 {};
-template<typename B1, typename... Bn>
-struct disjunction<B1, Bn...>
-    : std::conditional<bool(B1::value), B1, disjunction<Bn...>>::type {};
-
-// Type trait to check if a type is any floating-point type, including custom types
-template <typename T>
-struct is_any_float : disjunction<
-    std::is_floating_point<T>,
-    std::is_same<T, float16>,
-    std::is_same<T, bfloat16>
-> {};
-
-// Helper to choose between two types of the same size, preferring float
-template <typename T, typename U>
-struct prefer_float {
-  typedef typename std::conditional<
-      is_any_float<T>::value && !is_any_float<U>::value, T,
-      typename std::conditional<
-          !is_any_float<T>::value && is_any_float<U>::value, U,
-          T  // If both or neither are float, default to T
-      >::type
-  >::type type;
-};
-
-template<typename T, typename U, typename V = void>
-struct highest_precision {
- private:
-  typedef typename prefer_float<T, U>::type TU;
-  typedef typename prefer_float<TU, V>::type TUV;
-
-  typedef typename std::conditional<sizeof(T) >= sizeof(U), T, U>::type largest_TU;
-  typedef typename std::conditional<sizeof(largest_TU) >= sizeof(V), largest_TU, V>::type largest_TUV;
-
- public:
-  typedef typename std::conditional<
-      sizeof(TUV) == sizeof(largest_TUV),
-      TUV,
-      largest_TUV
-  >::type type;
-};
-
-// Wrapper to ensure we always have a nested ::type
-template<typename T>
-struct type_wrapper {
-  typedef T type;
-};
-
-// Helper alias template (C++11 compatible version)
-template<typename T, typename U, typename V = void>
-struct highest_precision_t : type_wrapper<typename highest_precision<T, U, V>::type> {};
-
-// Macro for creating functions with advanced type promotion
-#define SD_PROMOTE_FUNC(FUNC_NAME, BODY) \
-template<typename T, typename U = T, typename Z = T> \
-SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) { \
-    typedef typename highest_precision_t<T, U, Z>::type calc_type; \
-    calc_type promoted_val1 = static_cast<calc_type>(val1); \
-    calc_type promoted_val2 = static_cast<calc_type>(val2); \
-    calc_type result = BODY;             \
-     printf("Adding value %f and %f with int versions %d %d\n",    \
-           promoted_val1,promoted_val2,promoted_val1,promoted_val2);\
-    return static_cast<Z>(result); \
+/*
+ *
+ *
+ * SD_PROMOTE_FUNC(FUNC_NAME, BODY): This macro takes two parameters: FUNC_NAME (the name of the function to be defined) and BODY (the body of the function).
+Template Function:
+The macro defines a template function with three template parameters: T, U (defaulting to T), and Z (defaulting to T).
+The function returns a value of type Z and takes two parameters: val1 of type T and val2 of type U.
+Type Promotion:
+Inside the function, a type alias calc_type is defined using promote_type3<T, U, Z>::type, which determines the promoted type among T, U, and Z.
+The input values val1 and val2 are cast to calc_type.
+Function Body:
+The BODY parameter is evaluated to compute the result, which is then cast to type Z before being returned.
+ * */
+// Macro to define functions with advanced type promotion and debugging
+#define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
+template<typename T, typename U = T, typename Z = T>                    \
+Z FUNC_NAME(T val1, U val2) {                                         \
+    using calc_type = typename promote_type3<T, U, Z>::type;           \
+    calc_type promoted_val1 = static_cast<calc_type>(val1);            \
+    calc_type promoted_val2 = static_cast<calc_type>(val2);            \
+    calc_type result = BODY;                                           \
+    return static_cast<Z>(result);                                     \
 }
+
 
 
 
@@ -139,9 +97,9 @@ SD_PROMOTE_FUNC(sd_max, (promoted_val1 > promoted_val2 ? promoted_val1 : promote
 SD_PROMOTE_FUNC(sd_min, (promoted_val1 < promoted_val2 ? promoted_val1 : promoted_val2))
 
 SD_PROMOTE_FUNC(sd_add, (promoted_val1 + promoted_val2))
-SD_PROMOTE_FUNC(sd_subtract, (promoted_val1 + promoted_val2))
-SD_PROMOTE_FUNC(sd_multiply, (promoted_val1 + promoted_val2))
-SD_PROMOTE_FUNC(sd_divide, (promoted_val1 + promoted_val2))
+SD_PROMOTE_FUNC(sd_subtract, (promoted_val1 - promoted_val2))
+SD_PROMOTE_FUNC(sd_multiply, (promoted_val1 * promoted_val2))
+SD_PROMOTE_FUNC(sd_divide, (promoted_val1 / promoted_val2))
 
 
 

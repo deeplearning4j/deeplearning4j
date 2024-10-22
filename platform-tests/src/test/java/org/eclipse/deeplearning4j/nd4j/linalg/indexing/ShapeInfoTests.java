@@ -261,13 +261,13 @@ public class ShapeInfoTests  extends BaseNd4jTestWithBackends  {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testMixedDatatypeOperations(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getEnvironment().setMaxMasterThreads(1);
+        Nd4j.getEnvironment().setVerbose(true);
+        Nd4j.getEnvironment().setDebug(true);
         INDArray arrFloat = Nd4j.arange(24).reshape(4, 6).castTo(DataType.FLOAT);
-        INDArray arrInt = Nd4j.arange(24).reshape(4, 6).castTo(DataType.INT);
-        INDArray arr2 = arrInt.slice(1);
-        String arr2IntString = arr2.toStringFull();
-         String arrIntString = arrInt.toStringFull();
+        INDArray arrInt = Nd4j.arange(24);
+        arrInt = arrInt.reshape(4, 6);
+        arrInt = arrInt.castTo(DataType.INT);
         INDArray viewFloat = arrFloat.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(2, 5));
         INDArray viewInt = arrInt.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(2, 5));
         INDArray castedBack = viewInt.castTo(DataType.FLOAT);

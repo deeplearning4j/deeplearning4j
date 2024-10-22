@@ -399,6 +399,7 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
     errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;

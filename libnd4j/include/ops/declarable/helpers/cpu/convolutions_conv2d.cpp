@@ -49,8 +49,6 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   LongType iW = ConvolutionUtils::inputWidth(input->shapeInfo(), isNCHW);
   LongType oH = ConvolutionUtils::calcOutDimConv(iH, kH, sH, pH, dH, paddingMode);
   LongType oW = ConvolutionUtils::calcOutDimConv(iW, kW, sW, pW, dW, paddingMode);
-  printf("oH: %lld, oW: %lld bS %lld iC %lld oC %lld iH %lld iW %lld\n", oH, oW, bS, iC, oC, iH, iW);
-  fflush(stdout);
   std::vector<LongType> wAxes;
   if (0 == wFormat)
     wAxes = {0, 1, 2};

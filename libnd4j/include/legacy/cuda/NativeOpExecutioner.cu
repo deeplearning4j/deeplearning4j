@@ -101,17 +101,11 @@ void NativeOpExecutioner::execPairwiseTransform(LaunchContext* lc, int opNum, vo
   }
   dim3 launchDims = getLaunchDims("pairwiseTransforms");
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(
-      xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
-      ::executeCudaShaped(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
-      SD_COMMON_TYPES, SD_COMMON_TYPES)
-#else
+
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::pairwise_transforms::PairWiseTransform,
       ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams),
       SD_COMMON_TYPES)
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -456,19 +450,12 @@ void NativeOpExecutioner::execBroadcast(LaunchContext* lc, int opNum, void const
   }
   dim3 launchDims = getLaunchDims("broadcast");
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(
-      xType, yType, zType, functions::broadcast::Broadcast,
-      ::execBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
-                      dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
-      SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
+
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,
       ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
                       dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -491,16 +478,10 @@ void NativeOpExecutioner::execBroadcast(LaunchContext* lc, const int opNum, cons
   dim3 launchDims = getLaunchDims("broadcast");
   // shared memory
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(
-      xType, yType, zType, functions::broadcast::Broadcast,
-      ::execBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), SD_COMMON_TYPES,
-      SD_COMMON_TYPES);
-#else
+
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,
       ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), SD_COMMON_TYPES);
-#endif
 }
 
 void NativeOpExecutioner::execInverseBroadcast(LaunchContext* lc, int opNum, void const* hX,
@@ -524,19 +505,12 @@ void NativeOpExecutioner::execInverseBroadcast(LaunchContext* lc, int opNum, voi
 
   dim3 launchDims = getLaunchDims("broadcast");
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(
-      xType, yType, zType, functions::broadcast::Broadcast,
-      ::execInverseBroadcast(launchDims, stream, opType, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
-                             dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
-      SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
+
   BUILD_SINGLE_SELECTOR_THRICE(
       xType, functions::broadcast::Broadcast,
       ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension,
                              dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ),
       SD_COMMON_TYPES);
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1368,13 +1342,6 @@ void NativeOpExecutioner::execScalar(LaunchContext* lc, int opNum, void const* h
 
   dim3 launchDims = getLaunchDims("scalarScan");
 
-#ifdef SD_EXPERIMENTAL_ENABLED
-  BUILD_PAIRWISE_SELECTOR(
-      xType, yType, zType, functions::scalar::ScalarTransform,
-      ::executeCudaAlongDimension(launchDims, stream, opType, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
-                                  dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
-      SD_COMMON_TYPES, SD_COMMON_TYPES);
-#else
 
   if (xType != yType || xType != zType) {
     std::string errorMessage;
@@ -1402,7 +1369,6 @@ void NativeOpExecutioner::execScalar(LaunchContext* lc, int opNum, void const* h
         SD_COMMON_TYPES);
   }
 
-#endif
 
   // TODO: remove after the release
   auto res = cudaStreamSynchronize(*stream);

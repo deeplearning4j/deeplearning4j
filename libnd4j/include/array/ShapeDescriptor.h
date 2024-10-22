@@ -43,7 +43,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
  private:
   int _rank = 0;
-  LongType * _shape_strides;
+  LongType * _shape_strides = nullptr;
   LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;

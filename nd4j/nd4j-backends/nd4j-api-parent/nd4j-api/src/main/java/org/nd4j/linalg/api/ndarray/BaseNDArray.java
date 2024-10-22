@@ -4174,7 +4174,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         logBeforeViewCreationIfNeccessary();
         ReshapeNoCopy reshape = new ReshapeNoCopy(this,newShape,null,order);
         INDArray ret = Arrays.stream(getExecutioner().exec(reshape)).findFirst().orElseThrow();
-        String retToString = ret.toStringFull();
         logViewCreationIfNeccessary();
 
         return ret;

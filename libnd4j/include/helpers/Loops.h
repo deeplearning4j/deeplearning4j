@@ -931,6 +931,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
                                                           const LongType* zShapeInfo,
                                                           E* extraParams,
                                                           LongType threadId, LongType numThreads) {
+  printf("deducing loop\n");
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
   if(xShapeInfo == nullptr) {
     THROW_EXCEPTION("Input x shape info was null!");
@@ -954,7 +955,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
-
+  printf("Beginning execution using loopkind %i\n", kindOfLoop);
+  fflush(stdout);
   switch (kindOfLoop) {
     //*********************************************//
     case LoopKind::EWS1: {
@@ -962,6 +964,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
       LongType start = span.startX(), stop = span.stopX();
       for (LongType i = start; i < stop; i++) {
 #if defined(PRINT_INDICES)
+        printf("loopkind ews1\n");
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
         printf("Index is %lld offset is %lld loop kind: ews1 TransformLoops<X, Z, E>::loopTransform\n", i,i);
@@ -980,6 +983,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
       LongType start = span.startX(), stop = span.stopX();
       for (auto i = start; i < stop; i++) {
 #if defined(PRINT_INDICES)
+        printf("loopkind ewsnonzero\n");
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
         printf("Index is %lld offset is %lld loop kind: EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,xEws,zEws);
@@ -1000,13 +1004,29 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
       int64_t start = span.startX(), stop = span.stopX();
 
       if (zEws > 1) {
+        sd::LongType  indices[SD_MAX_RANK];
         for (auto i = start; i < stop; i++) {
-          const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
+          shape::index2coords(i, zShapeInfo, indices);
+          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
+#if defined(PRINT_INDICES)
+          printf("loopkind Z_EWSNONZERO\n");
+          shape::printShapeInfo(xShapeInfo);
+          shape::printShapeInfo(zShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
+#endif
           z[i * zEws] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       } else {
+        sd::LongType  indices[SD_MAX_RANK];
         for (auto i = start; i < stop; i++) {
-          const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
+          shape::index2coords(i, zShapeInfo, indices);
+          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
+#if defined(PRINT_INDICES)
+          printf("loopkind Z_EWSNONZERO\n");
+          shape::printShapeInfo(xShapeInfo);
+          shape::printShapeInfo(zShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
+#endif
           z[i] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       }
@@ -1050,7 +1070,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
         }
       }
-
+      printf("completed loopkind  rank 2 execution\n");
+      fflush(stdout);
     } break;
 
       //*********************************************//
@@ -1143,6 +1164,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
       //*********************************************//
     default: {
+      printf("default case\n");
+      fflush(stdout);;
       LongType xCoords[SD_MAX_RANK];
       LongType zCoords[SD_MAX_RANK];
 
@@ -1196,6 +1219,9 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
     }
   }
+
+  printf("ending loop transform\n");
+  fflush(stdout);
 }
 
 //////////////////////////////////////////////////////////////////////////////

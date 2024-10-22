@@ -21,11 +21,12 @@
 //
 
 #include <system/op_boilerplate.h>
+
 #if NOT_EXCLUDED(OP_cast)
 
 #include <array/DataTypeUtils.h>
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/assign.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
@@ -38,10 +39,7 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
   }
 
   if (!block.isInplace()) {
-    NDArray& deRef = *input;
-    output->assign(deRef);
-    output->printIndexedBuffer("OUTPUT INDEXED OUTPUT AFTER CAST:");
-    fflush(stdout);
+    helpers::assign(block.launchContext(), output, input);
   }
 
   STORE_RESULT(output);
