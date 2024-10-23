@@ -65,21 +65,7 @@ endmacro()
 
 print_all_variables()
 
-if(SD_AURORA)
-    set(SD_CUDA false)
-    set(CMAKE_CXX_STANDARD 11)
-    if (DEFINED ENV{NEC_FTRACE})
-        SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -ftrace")
-        SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -ftrace")
-    endif()
-else()
 
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND NOT SD_CUDA)
-        SET(INFORMATIVE_FLAGS  "-fmax-errors=3")
-    endif()
-
-
-endif()
 
 if (SD_CUDA)
     message("Enabling cuda")

@@ -25,7 +25,7 @@
 #include <helpers/logger.h>
 #include <thread>
 
-#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD) || defined(__NEC__)
+#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD)
 sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #else
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();

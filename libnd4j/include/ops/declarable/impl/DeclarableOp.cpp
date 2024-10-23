@@ -489,13 +489,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
 
   // rolling over inputs first
   int cnt = 0, inT = 0;
-#if defined(__NEC__)
-  sd::DataType inputTypes[SD_MAX_INPUT_SIZE];
-  if (block.width() > SD_MAX_INPUT_SIZE) {
-    sd_printf("%s:%d Exceeded allowed input size (%d) \n", __FILE__, __LINE__, SD_MAX_INPUT_SIZE);
-    THROW_EXCEPTION("Provided inputs are more than allowed");
-  }
-#else
   std::vector<sd::DataType> inputTypes(block.width());
 #endif
   if (block.isFastPath()) {
