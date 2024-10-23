@@ -121,8 +121,8 @@ SD_HOST static void batchnormCudaLauncher2(const int blocksPerGrid, const int th
 }
 
 //////////////////////////////////////////////////////////////////////////
-void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
+void batchnorm(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+                NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
 
   dim3 batchNormDims = getBatchNormDims(input->lengthOf());
   PointersManager manager(input->getContext(), "batchnorm");

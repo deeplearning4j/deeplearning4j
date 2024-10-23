@@ -28,7 +28,7 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to [bS, iC, iD, iH, iW]
 template <typename T>
-static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
+static void col2vol_(NDArray& columns, NDArray& volume, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
                      const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW) {
   // initial zeroing of volume content
   volume.nullify();
@@ -150,7 +150,7 @@ static void col2vol_(const NDArray& columns, NDArray& volume, const LongType sD,
   }
 }
 
-void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& columns, NDArray& volume, const LongType sD,
+void ConvolutionUtils::col2vol(sd::graph::Context& block, NDArray& columns, NDArray& volume, const LongType sD,
                                const LongType sH, const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD,
                                const LongType dH, const LongType dW) {
   BUILD_SINGLE_SELECTOR(volume.dataType(), col2vol_, (columns, volume, sD, sH, sW, pD, pH, pW, dD, dH, dW),

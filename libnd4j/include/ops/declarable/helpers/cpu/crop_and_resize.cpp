@@ -55,8 +55,8 @@ namespace helpers {
 // \@param crops - output image batch (4D with given type)
 //
 
-void cropAndResizeFunctor(sd::LaunchContext *context, NDArray const *images, NDArray const *boxes,
-                          NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal,
+void cropAndResizeFunctor(sd::LaunchContext *context, NDArray *images, NDArray *boxes,
+                          NDArray *indices, NDArray *cropSize, int method, double extrapolationVal,
                           NDArray *crops) {
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,

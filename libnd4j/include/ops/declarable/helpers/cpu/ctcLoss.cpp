@@ -320,8 +320,8 @@ Type unitLossAndGrad(const Type *logP, int incP, Type *gradPtr, int incG, const 
 }
 
 template <typename Type, typename IndexType>
-void ctc_loss_(const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths,
-               const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
+void ctc_loss_(NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
+               NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
   // lenT  - input length of T
   // lenS  - lenght of sequence
   // lenSB - length with blanks
@@ -415,16 +415,16 @@ void ctc_loss_(const NDArray &logits, const NDArray &targetLabels, const NDArray
   samediff::Threads::parallel_for(func, 0, lenBatch, 1);
 }
 
-void ctcLoss(graph::Context &block, const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths,
-             const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
+void ctcLoss(graph::Context &block, NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
+             NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex) {
   BUILD_DOUBLE_SELECTOR(logits.dataType(), targetLabels.dataType(), ctc_loss_,
                         (logits, targetLabels, logitsLengths, targetLabelLengths, logLosses, gradients, blankIndex),
                         SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 }
 
 BUILD_DOUBLE_TEMPLATE(template void ctc_loss_,
-                      (const NDArray &logits, const NDArray &targetLabels, const NDArray &logitsLengths,
-                       const NDArray &targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex),
+                      (NDArray&logits, NDArray&targetLabels, NDArray&logitsLengths,
+                       NDArray&targetLabelLengths, NDArray &logLosses, NDArray &gradients, int blankIndex),
                       SD_FLOAT_TYPES, SD_INDEXING_TYPES);
 
 }  // namespace helpers

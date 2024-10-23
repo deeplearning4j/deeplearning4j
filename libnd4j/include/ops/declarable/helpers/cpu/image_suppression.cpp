@@ -94,7 +94,7 @@ static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, d
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Return intersection-over-union overlap between boxes i and j
 template <typename T>
-static inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static inline T similirityV3_(NDArray& boxes, sd::LongType i, sd::LongType j) {
   const T zero = static_cast<T>(0.f);
   const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
   const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
@@ -120,19 +120,19 @@ static inline T similirityV3_(NDArray const& boxes, sd::LongType i, sd::LongType
 }
 
 template <typename T>
-static inline T similarityOverlaps_(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static inline T similarityOverlaps_(NDArray& boxes, sd::LongType i, sd::LongType j) {
   return boxes.t<T>(i, j);
 }
 
-typedef NDArray (*SimilarityFunc)(NDArray const& boxes, sd::LongType i, sd::LongType j);
+typedef NDArray (*SimilarityFunc)(NDArray& boxes, sd::LongType i, sd::LongType j);
 
-static NDArray similiratyOverlaps(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static NDArray similiratyOverlaps(NDArray& boxes, sd::LongType i, sd::LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 
-static NDArray similarityV3(NDArray const& boxes, sd::LongType i, sd::LongType j) {
+static NDArray similarityV3(NDArray& boxes, sd::LongType i, sd::LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;

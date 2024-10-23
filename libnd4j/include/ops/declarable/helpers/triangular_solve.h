@@ -33,9 +33,9 @@ namespace helpers {
 SD_LIB_HIDDEN Status triangularSolveFunctor(LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
                                                 bool lower, bool unitsOnDiag, NDArray* output);
 template <typename T>
-SD_LIB_HIDDEN void triangularSolve2D(LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput,
+SD_LIB_HIDDEN void triangularSolve2D(LaunchContext* context, NDArray& leftInput, NDArray& rightInput,
                                      const bool lower, const bool unitsOnDiag, NDArray& output);
-SD_LIB_HIDDEN void adjointMatrix(LaunchContext* context, NDArray const* input, bool const lower, NDArray* output);
+SD_LIB_HIDDEN void adjointMatrix(LaunchContext* context, NDArray * input, bool const lower, NDArray* output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

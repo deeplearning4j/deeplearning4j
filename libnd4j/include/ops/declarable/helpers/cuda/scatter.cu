@@ -85,7 +85,7 @@ static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsP
 }
 
 ///////////////////////////////////////////////////////////////////
-LongType checkIndices(LaunchContext *context, const NDArray &indices, const NDArray &output, const int axis) {
+LongType checkIndices(LaunchContext *context, NDArray&indices, NDArray&output, const int axis) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 2;
   const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
   const int sharedMem = threadsPerBlock * sizeof(LongType) * indices.rankOf() + 256;
@@ -323,7 +323,7 @@ static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatter(LaunchContext *context, pairwise::Ops op, const NDArray &indices, const NDArray &updates, NDArray &output,
+void scatter(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updates, NDArray &output,
              const bool lock) {
   const auto xType = indices.dataType();
   const auto yType = updates.dataType();
@@ -563,7 +563,7 @@ static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(LaunchContext *context, pairwise::Ops op, const NDArray &indices, const NDArray &updates,
+void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArray&updates,
                NDArray &output, const bool lock) {
   const int xRank = indices.rankOf();
   const int yRank = updates.rankOf();
@@ -638,7 +638,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterForLoss(LaunchContext *context, const NDArray &indices, NDArray &updates, NDArray &output,
+void scatterForLoss(LaunchContext *context, NDArray&indices, NDArray &updates, NDArray &output,
                     const bool calcGrad) {
   // shapes of indices and output must be the same
   // shape of indices should be the same as updates shape with last dimension excluded, for example if updates is

@@ -76,7 +76,7 @@ static SD_HOST void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
                                           const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
                                           const LongType* xTadOffsets, void* vz, const LongType* zShapeInfo,
                                           const LongType* zTadOffsets, const LongType numOfTads,
-                                          const NDArray* deltaScalarArr, const LongType dimC) {
+                                          NDArray* deltaScalarArr, const LongType dimC) {
   adjustHueCuda<T><<<blocksPerGrid, threadsPerBlock, 512, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, deltaScalarArr->e<T>(0), dimC);
   sd::DebugHelper::checkGlobalErrorCode("sadjustHue  failed");
@@ -84,7 +84,7 @@ static SD_HOST void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustHue(LaunchContext* context, const NDArray* input, const NDArray* deltaScalarArr, NDArray* output,
+void adjustHue(LaunchContext* context, NDArray* input, NDArray* deltaScalarArr, NDArray* output,
                const LongType dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});

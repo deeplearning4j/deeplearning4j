@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  output->assign(input);
+  output->assign(*input);
 
   return Status::OK;
 }

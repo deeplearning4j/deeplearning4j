@@ -37,7 +37,8 @@ CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
   auto output = OUTPUT_VARIABLE(0);
   //numpy compat: default is 1 for 0 length arrays https://stackoverflow.com/questions/66746566/numpy-explanation-of-numpy-prod
   if(input->lengthOf() == 0) {
-    output->assign(1);
+    int one = 1;
+    output->assign(one);
     return sd::Status::OK;
   }
   std::vector<sd::LongType> dimensions = *block.getIArguments();

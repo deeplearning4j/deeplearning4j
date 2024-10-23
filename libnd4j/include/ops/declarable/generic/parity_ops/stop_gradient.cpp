@@ -33,7 +33,7 @@ OP_IMPL(stop_gradient, 1, 1, true) {
   if (!block.isInplace()) {
     auto x = INPUT_VARIABLE(0);
     // we hope for memcpy here
-    out->assign(x);
+    out->assign(*x);
   }
 
   return Status::OK;

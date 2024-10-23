@@ -118,7 +118,7 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *
 }
 
 template <typename X, typename Y>
-static void _dynamicPartitionFunctor(LaunchContext *context, NDArray const *input, NDArray const *indices,
+static void _dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *indices,
                                      std::vector<NDArray *> &outputList) {
   std::vector<std::pair<NDArray *, int>> outputs(outputList.size());
   int sourceDimsLen = input->rankOf() - indices->rankOf();
@@ -357,11 +357,11 @@ static Status _dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray 
 }
 
 template <typename T>
-static void _dynamicPartitionFunctorBP(NDArray const *input, NDArray const *indices,
+static void _dynamicPartitionFunctorBP(NDArray *input, NDArray *indices,
                                        std::vector<NDArray *> const &inputGradientList,
                                        std::vector<NDArray *> &outputList) {}
 
-void dynamicPartitionFunctor(LaunchContext *context, NDArray const *input, NDArray const *indices,
+void dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *indices,
                              std::vector<NDArray *> &outputList) {
   auto xType = input->dataType();
   auto yType = indices->dataType();
@@ -382,7 +382,7 @@ void dynamicPartitionFunctor(LaunchContext *context, NDArray const *input, NDArr
 
 template <typename T>
 static Status _dynamicStitchFunctorBP(std::vector<NDArray *> const &inputs, std::vector<NDArray *> const &indices,
-                                      NDArray const *gradInput, std::vector<NDArray *> &outputList) {
+                                      NDArray *gradInput, std::vector<NDArray *> &outputList) {
   THROW_EXCEPTION("Not implemented yet");
 }
 
@@ -412,7 +412,7 @@ Status dynamicStitchFunctor(LaunchContext *context, std::vector<NDArray *> const
 }
 
 Status dynamicStitchFunctorBP(LaunchContext *context, std::vector<NDArray *> const &inputs,
-                                  std::vector<NDArray *> const &indices, NDArray const *gradInput,
+                                  std::vector<NDArray *> const &indices, NDArray *gradInput,
                                   std::vector<NDArray *> &outputList) {
   auto xType = inputs.at(0)->dataType();
 
@@ -420,7 +420,7 @@ Status dynamicStitchFunctorBP(LaunchContext *context, std::vector<NDArray *> con
                         SD_NUMERIC_TYPES);
 }
 
-void dynamicPartitionFunctorBP(LaunchContext *context, NDArray const *input, NDArray const *indices,
+void dynamicPartitionFunctorBP(LaunchContext *context, NDArray *input, NDArray *indices,
                                std::vector<NDArray *> const &inputGradientList, std::vector<NDArray *> &outputList) {
   auto xType = input->dataType();
 

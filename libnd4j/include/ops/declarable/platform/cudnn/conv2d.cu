@@ -30,7 +30,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void conv2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights, NDArray* bias,
                         NDArray* output, const int kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                         const LongType pW, const LongType dH, const LongType dW, const int paddingMode, const bool isNCHW,
                         const int wFormat) {
@@ -123,8 +123,8 @@ static void conv2dCUDNN(const LaunchContext* context, const NDArray* input, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void conv2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH,
+static void conv2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights,
+                          NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH,
                           const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
                           const LongType dW, const LongType paddingMode, const bool isNCHW, const int wFormat) {
   LongType bS, iC, iH, iW, oC, oH,

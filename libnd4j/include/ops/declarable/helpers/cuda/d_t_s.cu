@@ -93,7 +93,7 @@ static SD_KERNEL void depthToSpaceKernel(const void *vx, const LongType *xShapeI
 }
 
 template <typename T>
-static void __depthToSpace(LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+static void __depthToSpace(LaunchContext *context, NDArray&input, NDArray *output, int block_size,
                            bool isNHWC) {
   dim3 launchDims = getLaunchDims("depth_to_space");
   depthToSpaceKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *context->getCudaStream()>>>(input.specialBuffer(), input.specialShapeInfo(),
@@ -103,7 +103,7 @@ static void __depthToSpace(LaunchContext *context, const NDArray &input, NDArray
 
 }
 
-void _depthToSpace(LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _depthToSpace(LaunchContext *context, NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   auto xType = input.dataType();
 
   NDArray::prepareSpecialUse({output}, {&input});

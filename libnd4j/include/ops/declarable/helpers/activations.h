@@ -28,23 +28,23 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void softMaxForVector(LaunchContext *context, const NDArray &input, NDArray &output);
+SD_LIB_HIDDEN void softMaxForVector(LaunchContext *context, NDArray&input, NDArray &output);
 
-SD_LIB_HIDDEN void logSoftMaxForVector(LaunchContext *context, const NDArray &input, NDArray &output);
+SD_LIB_HIDDEN void logSoftMaxForVector(LaunchContext *context, NDArray&input, NDArray &output);
 
-SD_LIB_HIDDEN void softmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension);
+SD_LIB_HIDDEN void softmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension);
 
-SD_LIB_HIDDEN void logSoftmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension);
+SD_LIB_HIDDEN void logSoftmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension);
 
-SD_LIB_HIDDEN void softmaxDerivative(LaunchContext *context, const NDArray &input, NDArray &output,
+SD_LIB_HIDDEN void softmaxDerivative(LaunchContext *context, NDArray&input, NDArray &output,
                                      const int dimension);
 
-SD_LIB_HIDDEN void prelu(LaunchContext *context, const NDArray &input, const NDArray &alpha, NDArray &output);
+SD_LIB_HIDDEN void prelu(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray &output);
 
-SD_LIB_HIDDEN void preluBP(LaunchContext *context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO,
+SD_LIB_HIDDEN void preluBP(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray&dLdO,
                            NDArray &dLdI, NDArray &dLdA);
 
-SD_LIB_HIDDEN void thresholdRelu(LaunchContext *context, const NDArray &input, double threshold, NDArray &output);
+SD_LIB_HIDDEN void thresholdRelu(LaunchContext *context, NDArray&input, double threshold, NDArray &output);
 
 SD_LIB_HIDDEN void thresholdReluDerivative(LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,
                                            NDArray *output);

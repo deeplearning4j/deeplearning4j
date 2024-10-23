@@ -31,7 +31,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // svd operation, this function is not method of SVD class, it is standalone function
 template <typename T>
-static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV,
+static void svd_(NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV,
                  const int switchNum) {
   auto s = outArrs[0];
   auto u = outArrs[1];
@@ -65,7 +65,7 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
 }
 
 //////////////////////////////////////////////////////////////////////////
-void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV,
+void svd(sd::LaunchContext* context, NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV,
          const bool calcUV, const int switchNum) {
   BUILD_SINGLE_SELECTOR(x->dataType(), svd_, (x, outArrs, fullUV, calcUV, switchNum), SD_FLOAT_TYPES);
 }

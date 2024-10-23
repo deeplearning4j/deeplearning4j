@@ -33,7 +33,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void concatMKLDNN(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
   // data type
   dnnl::memory::data_type type;
   if (output.dataType() == DataType::FLOAT32)
@@ -99,7 +99,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
 
   // first of all take into account possible presence of empty arrays
   // also if scalar is present -> copy its value to vector with length=1
-  std::vector<const NDArray*> nonEmptyArrs;
+  std::vector<NDArray*> nonEmptyArrs;
   std::vector<sd::LongType> arrsToDelete;
   int index = 0;
   bool allOfSameType = true;
@@ -114,7 +114,7 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
       if (input->rankOf() == 0) {
-        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());
+        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext(), 0, 0, 0);
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);

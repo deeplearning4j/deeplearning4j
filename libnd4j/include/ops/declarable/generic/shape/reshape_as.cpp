@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(reshapeas, 2, 1, false, 0, 0) {
   auto z = OUTPUT_VARIABLE(0);
 
   if (x->reshapei(y->ordering(), y->getShapeAsVector())) {
-    z->assign(x);
+    z->assign(*x);
     return Status::OK;
   }
 
