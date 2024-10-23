@@ -265,7 +265,7 @@ set(MSVC_RT_LIB "MultiThreadedDLL")
 
 set(SD_X86_BUILD false)
 
-if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*" AND NOT SD_AURORA)
+if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*")
     set(SD_X86_BUILD true)
 endif()
 
@@ -364,32 +364,7 @@ endif()
 if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
-    if (SD_AURORA)
-        message("In aurora using NLC ROOT $ENV{NLC_ROOT}")
-        include_directories("$ENV{NLC_ROOT}/include")
-        link_directories("$ENV{NLC_ROOT}/lib/")
-
-        # FIXME: we don't want sequential version in master
-        SET(BLAS_LIBNAME "blas_openmp")
-        SET(CBLAS_LIBNAME "cblas")
-
-        find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
-                HINTS $ENV{NLC_ROOT}
-                PATH_SUFFIXES lib)
-
-        find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
-                HINTS $ENV{NLC_ROOT}
-                PATH_SUFFIXES lib)
-
-        if (BLAS_LIBRARY)
-            set(HAVE_OPENBLAS 1)
-            set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
-            add_definitions(-D__EXTERNAL_BLAS__=true)
-        else()
-            message(FATAL_ERROR "Unable to find BLAS")
-        endif()
-        # there's a chance, we have no BLAS provided externally
-    elseif ("${OPENBLAS_PATH}" STREQUAL "")
+    if ("${OPENBLAS_PATH}" STREQUAL "")
         #we don't want OpenBLAS on Apple
         if (NOT APPLE)
             # note: this is not a typo
@@ -450,9 +425,6 @@ if (${HELPERS_vednn})
         message( FATAL_ERROR "could not locate necessary VEDNN files")
     endif()
 
-    if (SD_AURORA)
-        list(APPEND EXTERNAL_DEPENDENCY_LIBS ${VEDNN_LIBRARIES} )
-    endif()
 
 endif()
 
