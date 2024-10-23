@@ -867,7 +867,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .build();
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
         if (data != null && data.length > 0) {
-            this.data = Nd4j.createBuffer(data, offset);
+            this.data = Nd4j.createBuffer(data);
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
         }
@@ -885,9 +885,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
-        this.data = Nd4j.createBuffer(data, offset, ArrayUtil.prodLong(shape));
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),
-                Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order(), data.dataType(), false));
+        this.data = data;
+        this.offset = offset;
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.builder()
+                .order(Nd4j.order())
+                .shape(ArrayUtil.toLongArray(shape))
+                .stride(ArrayUtil.toLongArray(stride))
+                .offset(offset)
+                .extras(ArrayOptionsHelper.composeTypicalChecks(data.dataType()))
+                .extras(ArrayOptionsHelper.composeTypicalChecks(
+                        data == null,
+                        data.dataType(),
+                        false,
+                        false,
+                        false,
+                        false,
+                        false
+                ))
+                .build();
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
         init(shape, stride);
         logCreationFromConstructor();
 
@@ -924,7 +940,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param offset
      */
     public BaseNDArray(DataBuffer buffer, int[] shape, long offset) {
-        this(Nd4j.createBuffer(buffer, offset, ArrayUtil.prodLong(shape)), shape, Nd4j.getStrides(shape), offset,
+        this(buffer, shape, Nd4j.getStrides(shape), offset,
                 Nd4j.order());
     }
 
@@ -969,7 +985,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering
      */
     public BaseNDArray(double[] data, int[] shape, int[] stride, long offset, char ordering) {
-        this(internalCreateBuffer(data, offset), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(data), shape, stride, offset, ordering);
     }
 
     /**
