@@ -568,9 +568,9 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes (in-place) the dimensions in array according to "dimensions" array
    */
-  bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff = false);
-  bool permutei(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false);
-  bool permutei(const sd::LongType *dimensions, const int rank);
+  bool permutei(const std::initializer_list<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
+  bool permutei(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides);
+  bool permutei(sd::LongType *dimensions, const int rank);
 
 
   bool isFinite();
@@ -583,13 +583,13 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
    */
-  NDArray permute(std::vector<LongType> &dimensions, bool copyToNewBuff = false) &;
+  NDArray &permute(std::vector<LongType> &dimensions, bool copyToNewBuff, bool resetStrides) &;
 
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &;
-  NDArray permute(const std::vector<LongType> &dimensions, const bool copyToNewBuff = false) &&;
-  NDArray permute(const LongType *dimensions, const int rank, const bool copyToNewBuff = false) &&;
+  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &;
+  NDArray &permute(std::vector<LongType> &dimensions, const bool copyToNewBuff, const bool resetStrides) &&;
+  NDArray &permute(LongType *dimensions, const int rank, const bool copyToNewBuff, const bool resetStrides) &&;
 
-  void permute(const LongType *dimensions, const int rank, NDArray &target) const;
+  void permute(LongType *dimensions, const int rank, NDArray &target, const bool resetStrides);
 
       /**
    * This method streamlines given view or permuted array, and reallocates buffer
@@ -983,7 +983,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *   apply transpose operation to the copy of this array, that is this array remains unaffected
    */
-  NDArray transpose() const &;
+  NDArray transpose() &;
   NDArray transpose() &&;
 
   /**

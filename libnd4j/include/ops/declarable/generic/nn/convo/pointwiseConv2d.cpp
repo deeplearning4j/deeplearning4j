@@ -127,7 +127,7 @@ DECLARE_SHAPE_FN(pointwise_conv2d) {
   // do not forget to put oC instead of iC in outputShapeInfo
   outputShapeInfo[indIOioC + 1] = oC;
 
-  shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
+  shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo), false);
 
   return SHAPELIST(CONSTANT(outputShapeInfo));
 }
