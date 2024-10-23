@@ -422,11 +422,8 @@ TEST_F(DeclarableOpsTests9, concat_test17) {
 TEST_F(DeclarableOpsTests9, concat_test18) {
   Context context(1);
   LongType axis = 0;
-#if defined(__NEC__)
-  constexpr int CONCAT_SIZE = 200;
-#else
+
   constexpr int CONCAT_SIZE = 2000;
-#endif
   // we crate bunch of arrays, filled with specific values
   for (int e = 0; e < CONCAT_SIZE; e++) {
     auto array = NDArrayFactory::create_<int>('c', {1, 300});

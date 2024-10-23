@@ -36,23 +36,15 @@ ShapeList::~ShapeList() {
 }
 
 ShapeList::ShapeList(const std::vector<const LongType*>& shapes, bool isWorkspace)
-#if !defined(__NEC__)
-    : ShapeList(shapes) {
-#else
+
   {
   for (int i = 0; i < shapes.size(); i++) {
     push_back(shapes[i]);
   }
-#endif
   _workspace = isWorkspace;
 }
 
 ShapeList::ShapeList(const std::vector<const LongType*>& shapes) {
-#if defined(__NEC__)
-  for (int i = 0; i < shapes.size(); i++) {
-    push_back(shapes[i]);
-  }
-#else
   _shapes = shapes;
 #endif
 }
@@ -69,9 +61,6 @@ void ShapeList::destroy() {
 }
 
 int ShapeList::size() const {
-#if defined(__NEC__)
-  return size_x;
-#else
   return (int)_shapes.size();
 #endif
 }
@@ -89,14 +78,6 @@ const LongType* ShapeList::at(int idx) {
 }
 
 void ShapeList::push_back(const LongType* shape) {
-#if defined(__NEC__)
-  if (size_x >= SD_MAX_INPUT_SIZE) {
-    sd_printf("%s:%d Exceeded allowed limit of shapes.  ShapeList max size is (%d) \n", __FILE__, __LINE__,  SD_MAX_INPUT_SIZE);
-    THROW_EXCEPTION("Exceeded allowed limit of shapes. ShapeList container for Nec has fixed size");
-  }
-  _shapes[size_x] = shape;
-  ++size_x;
-#else
   _shapes.push_back(shape);
 #endif
 }
