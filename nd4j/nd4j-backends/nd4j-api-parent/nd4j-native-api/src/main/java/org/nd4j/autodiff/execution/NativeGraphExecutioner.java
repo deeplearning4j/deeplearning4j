@@ -99,7 +99,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         log.info("Buffer length: {}", buffer.limit());
 
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps =Nd4j.getNativeOps();
         OpaqueResultWrapper res = nativeOps.executeFlatGraph(null, bPtr);
         if (res == null)
             throw new ND4JIllegalStateException("Graph execution failed");

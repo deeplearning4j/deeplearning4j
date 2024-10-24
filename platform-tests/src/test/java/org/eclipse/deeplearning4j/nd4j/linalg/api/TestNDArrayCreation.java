@@ -105,7 +105,7 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
         assertEquals(8, arrCreate.length());
         assertEquals(3, arrCreate.rank());
 
-        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps()
+        Pointer pointer =Nd4j.getNativeOps()
                         .pointerForAddress(arrCreate.data().address());
         assertEquals(arrCreate.data().address(), pointer.address());
     }
@@ -135,7 +135,7 @@ public class TestNDArrayCreation extends BaseNd4jTestWithBackends {
         }
 
         // we want to be sure there's nothing left after exception
-        assertEquals(0, NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode());
+        assertEquals(0,Nd4j.getNativeOps().lastErrorCode());
 
         Nd4j.getEnvironment().setDeviceLimit(0, origDeviceLimit);
 
