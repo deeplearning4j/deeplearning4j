@@ -33,8 +33,8 @@ SD_HOST void TypeCast::convertFromQuantized(Pointer *extras, void *dx, LongType 
   auto z = reinterpret_cast<T *>(dz);
 
   auto fx = reinterpret_cast<float *>(dx);
-  auto amin = sd::math::sd_abs<float>(fx[0]);
-  auto amax = sd::math::sd_abs<float>(fx[1]);
+  auto amin = sd::math::sd_abs<float,float>(fx[0]);
+  auto amax = sd::math::sd_abs<float,float>(fx[1]);
 
   auto x = reinterpret_cast<char *>(dx) + 8;
 
@@ -74,8 +74,8 @@ SD_HOST void TypeCast::convertToQuantized(Pointer *extras, void *dx, LongType N,
   fz[0] = min;
   fz[1] = max;
 
-  auto amax = sd::math::sd_abs<float>(max);
-  auto amin = sd::math::sd_abs<float>(min);
+  auto amax = sd::math::sd_abs<float,float>(max);
+  auto amin = sd::math::sd_abs<float,float>(min);
 
   // now we actually apply quantization
   auto func = PRAGMA_THREADS_FOR {
@@ -179,7 +179,7 @@ void TypeCast::convertFromThreshold(Pointer *extras, const void *dx, LongType N,
   auto func = PRAGMA_THREADS_FOR {
     for (auto e = start; e < stop; e++) {
       int el = x[e];
-      int ael = sd::math::sd_abs<int>(el) - 1;
+      int ael = sd::math::sd_abs<int,int>(el) - 1;
       z[ael] += el > 0 ? static_cast<T>(threshold) : static_cast<T>(-threshold);
     }
   };
