@@ -134,7 +134,7 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(const LongType* aShapeIn
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::evalShapeForTensorDot(const NDArray* a, const NDArray* b,
+std::vector<LongType> ShapeUtils::evalShapeForTensorDot(NDArray* a, NDArray* b,
                                                         const std::vector<LongType>& axesA,
                                                         const std::vector<LongType>& axesB,
                                                         std::vector<LongType>& permutAt,
@@ -347,7 +347,7 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType rank, const NDArray* arr,
+LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDArray* arr,
                                         memory::Workspace* workspace, const bool setContigStrides) {
   if (rank != arr->rankOf())
     THROW_EXCEPTION("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
@@ -382,7 +382,7 @@ LongType* ShapeUtils::evalPermShapeInfo(const LongType* dimensions, LongType ran
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-const LongType* ShapeUtils::evalTransposeShapeInfo(const NDArray& arr, memory::Workspace* workspace,
+const LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
                                                    const bool setContigStrides) {
   LongType rank = arr.rankOf();
 
@@ -439,7 +439,7 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
 //////////////////////////////////////////////////////////////////////////
 // check whether 2 arrays have mutually broadcastable shapes
 // shape comparison starts from the end
-bool ShapeUtils::areShapesBroadcastable(const NDArray& arr1, const NDArray& arr2) {
+bool ShapeUtils::areShapesBroadcastable(NDArray& arr1, NDArray& arr2) {
   return areShapesBroadcastable(arr1.shapeInfo(), arr2.shapeInfo());
 }
 
@@ -469,7 +469,7 @@ bool ShapeUtils::areShapesBroadcastable(const std::vector<LongType>& shape1, con
 //////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
 // if evalMinMax == false the array with larger rank has to be passed as first argument
-bool ShapeUtils::evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax,
+bool ShapeUtils::evalBroadcastShapeInfo(NDArray& max, NDArray& min, const bool evalMinMax,
                                         const LongType*& resultShapeInfo, memory::Workspace* workspace) {
   return evalBroadcastShapeInfo(max.shapeInfo(), min.shapeInfo(), evalMinMax, resultShapeInfo, workspace);
 }
@@ -543,7 +543,7 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
 
 //////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
-bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, LongType*& resultShapeInfo,
+bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<NDArray*>& arrays, LongType*& resultShapeInfo,
                                               memory::Workspace* workspace) {
   if (resultShapeInfo != nullptr)
     THROW_EXCEPTION(
@@ -580,8 +580,8 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
 //////////////////////////////////////////////////////////////////////////
 // return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger
 // rank for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
-std::vector<LongType> ShapeUtils::getDimsWithSameShape(const NDArray& arr1, const NDArray& arr2) {
-  const NDArray *min, *max;
+std::vector<LongType> ShapeUtils::getDimsWithSameShape(NDArray& arr1, NDArray& arr2) {
+  NDArray *min, *max;
 
   if (arr1.rankOf() >= arr2.rankOf()) {
     max = &arr1;
@@ -603,7 +603,7 @@ std::vector<LongType> ShapeUtils::getDimsWithSameShape(const NDArray& arr1, cons
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for resulting array from tile operation
-const LongType* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<LongType>& reps,
+const LongType* ShapeUtils::evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
                                               memory::Workspace* workspace) {
   // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities
   // (then simply reshape or do nothing)
@@ -651,7 +651,7 @@ std::vector<LongType> ShapeUtils::pullShapeFromShapeInfo(const LongType* shapeIn
   return shape;
 }
 
-std::string ShapeUtils::shapeAsString(const NDArray* array) {
+std::string ShapeUtils::shapeAsString(NDArray* array) {
   if (array->rankOf() == 0 && !array->isEmpty()) return "[0]";
 
   std::string result;
@@ -666,7 +666,7 @@ std::string ShapeUtils::shapeAsString(const NDArray* array) {
   return result;
 }
 
-std::string ShapeUtils::strideAsString(const NDArray* array) {
+std::string ShapeUtils::strideAsString(NDArray* array) {
   std::string result;
 
   auto shapeBuffer = array->shapeInfo();  // sd::LongType*
