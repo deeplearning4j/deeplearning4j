@@ -482,11 +482,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType length(std::initializer_list<int> &sha
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType length(std::initializer_list<sd::LongType> &shape);
 
-/***
-* Returns the offset portion of an information buffer
-*/
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType offset(sd::LongType *buffer);
-
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType &extra(sd::LongType *buffer);
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType sizeAt(const sd::LongType *shapeInfo, const sd::LongType dim);
@@ -502,7 +497,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE void setStrideConst(sd::LongType *buffer, const sd:
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE char setOrder(sd::LongType *buffer, char c);
 
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void setOffset(sd::LongType *buffer, sd::LongType offset);
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType setElementWiseStride(sd::LongType *buffer, sd::LongType elementWiseStride);
 

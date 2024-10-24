@@ -224,7 +224,6 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
     public void testOffset(Nd4jBackend backend) {
         DataBuffer create = Nd4j.createBuffer(new double[] {1, 2, 3, 4}, 2);
         assertEquals(2, create.length());
-        assertEquals(0, create.offset());
         assertEquals(3, create.getDouble(0), 1e-1);
         assertEquals(4, create.getDouble(1), 1e-1);
 
@@ -259,26 +258,6 @@ public class DoubleDataBufferTest extends BaseNd4jTestWithBackends {
 
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAddressPointer(){
-        if( Nd4j.getExecutioner().type() !=  OpExecutioner.ExecutionerType.NATIVE_CPU ){
-            return;
-        }
-        DataBuffer buffer = Nd4j.createBuffer(new double[] {1, 2, 3, 4});
-        DataBuffer wrappedBuffer = Nd4j.createBuffer(buffer, 1, 2);
-
-        DoublePointer pointer = (DoublePointer) wrappedBuffer.addressPointer();
-        assertEquals(buffer.getDouble(1), pointer.get(0), 1e-1);
-        assertEquals(buffer.getDouble(2), pointer.get(1), 1e-1);
-
-        try {
-            pointer.asBuffer().get(3); // Try to access element outside pointer capacity.
-            fail("Accessing this address should not be allowed!");
-        } catch (IndexOutOfBoundsException e) {
-            // do nothing
-        }
-    }
 
     @Override
     public char ordering() {
