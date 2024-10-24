@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void tanhMKLDNN(const NDArray* x, NDArray* z) {
+static void tanhMKLDNN(NDArray* x, NDArray* z) {
   dnnl::memory::dims shape = x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, z_mkl_md, z_user_md;
@@ -110,7 +110,7 @@ PLATFORM_CHECK(tanh, ENGINE_CPU) {
 }
 
 //////////////////////////////////////////////////////////////////////
-static void tanhBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx) {
+static void tanhBpMKLDNN(NDArray* x, NDArray* dLdz, NDArray* dLdx) {
   dnnl::memory::dims shape = x->getShapeAsFlatVector();
 
   dnnl::memory::desc x_mkl_md, x_user_md, dLdx_mkl_md, dLdx_user_md, dLdz_mkl_md, dLdz_user_md;

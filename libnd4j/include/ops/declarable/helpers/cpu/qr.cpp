@@ -41,7 +41,7 @@ NDArray matrixMinor(NDArray& in, sd::LongType col) {
 
 /* m = I - v v^T */
 template <typename T>
-NDArray vmul(NDArray const& v, int n) {
+NDArray vmul(NDArray& v, int n) {
   std::vector<sd::LongType> nShape = {n,n};
   NDArray res('c', nShape, v.dataType(), v.getContext());  // x = matrix_new(n, n);
   T const* vBuf = v.getDataBuffer()->primaryAsT<T>();
@@ -107,7 +107,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
 }
 
 template <typename T>
-void qr_(NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+void qr_(NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
   sd::LongType lastDim = input->rankOf() - 1;
   sd::LongType preLastDim = input->rankOf() - 2;
   ResultSet listOutQ(outputQ->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
@@ -123,7 +123,7 @@ void qr_(NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fu
   samediff::Threads::parallel_tad(batching, 0, listOutQ.size(), 1);
 }
 
-void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR,
+void qr(sd::LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR,
         bool const fullMatricies) {
   BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (input, outputQ, outputR, fullMatricies), SD_FLOAT_TYPES);
 }

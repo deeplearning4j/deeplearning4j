@@ -50,7 +50,7 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   }
 
   auto s = list.stack();
-  output.assign(s);
+  output.assign(*s);
   delete s;
 }
 BUILD_SINGLE_TEMPLATE(template void __where, (NDArray & condition, NDArray &output, memory::Workspace *workspace),

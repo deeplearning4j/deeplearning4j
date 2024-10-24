@@ -548,7 +548,7 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
 }
 
 template <typename Type, typename IndexType = int>
-void beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
+void beamSearch_(NDArray& logit, NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
                  NDArray& result_sequences_length, int blank_index, int beam_width, int nbest_len,
                  bool normalize_logits) {
   const auto shapes = logit.shapeOf();
@@ -637,7 +637,7 @@ void beamSearch_(const NDArray& logit, const NDArray& sequence_length, NDArray& 
   return;
 }
 
-void beamSearch(const NDArray& logit, const NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
+void beamSearch(NDArray& logit, NDArray& sequence_length, NDArray& result_sequences, NDArray& result_probs,
                 NDArray& result_sequences_length, int blank_index, int beam_width, int nbest_len,
                 bool normalize_logits = true) {
   BUILD_DOUBLE_SELECTOR(logit.dataType(), result_sequences.dataType(), beamSearch_,
@@ -647,7 +647,7 @@ void beamSearch(const NDArray& logit, const NDArray& sequence_length, NDArray& r
 }
 
 BUILD_DOUBLE_TEMPLATE(template void beamSearch_,
-                      (const NDArray& logit, const NDArray& sequence_length, NDArray& result_sequences,
+                      (NDArray& logit, NDArray& sequence_length, NDArray& result_sequences,
                           NDArray& result_probs, NDArray& result_sequences_length, int blank_index, int beam_width,
                           int nbest_len, bool normalize_logits),
                       SD_FLOAT_TYPES, SD_INDEXING_TYPES);

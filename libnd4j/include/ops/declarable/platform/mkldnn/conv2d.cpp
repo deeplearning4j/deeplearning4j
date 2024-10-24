@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, NDArray *output,
+static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArray *output,
                          const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
                          const sd::LongType dH, const sd::LongType dW, const int paddingMode, const int isNCHW, const int wFormat) {
   // mkl support weights in [oC, iC, kH, kW] format only
@@ -148,7 +148,7 @@ static void conv2dMKLDNN(const NDArray *input, const NDArray *weights, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////
-static void conv2dBpMKLDNN(const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
+static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArray *gradO,
                            NDArray *gradI, NDArray *gradW, NDArray *gradB, const int kH, const int kW, const int sH,
                            const int sW, const int pH, const int pW, const int dH, const int dW, const int paddingMode,
                            const int isNCHW, const int wFormat) {

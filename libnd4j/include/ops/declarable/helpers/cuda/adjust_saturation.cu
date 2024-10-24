@@ -79,7 +79,7 @@ static SD_HOST void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
                                                  const LongType* xShapeInfo, const LongType* xTadOffsets,
                                                  void* vz, const LongType* zShapeInfo,
                                                  const LongType* zTadOffsets, const LongType numOfTads,
-                                                 const NDArray* factorScalarArr, const LongType dimC) {
+                                                 NDArray* factorScalarArr, const LongType dimC) {
   adjustSaturationCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, factorScalarArr->e<T>(0), dimC);
   sd::DebugHelper::checkGlobalErrorCode("adjustSaturation  failed");
@@ -87,7 +87,7 @@ static SD_HOST void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustSaturation(LaunchContext* context, const NDArray* input, const NDArray* factorScalarArr, NDArray* output,
+void adjustSaturation(LaunchContext* context, NDArray* input, NDArray* factorScalarArr, NDArray* output,
                       const LongType dimC) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimC});
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});

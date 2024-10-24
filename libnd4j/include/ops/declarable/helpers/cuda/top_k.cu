@@ -84,7 +84,7 @@ static void inTopKCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-Status inTopKFunctor(LaunchContext* context, const NDArray* predictions, const NDArray* targets,
+Status inTopKFunctor(LaunchContext* context, NDArray* predictions, NDArray* targets,
                          NDArray* output, const LongType k) {
   PointersManager manager(context, "in_top_k");
 
@@ -244,7 +244,7 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
 }
 
 template <typename X, typename Y>
-static Status topKFunctor_(LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
+static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                            const LongType k, bool needSort) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
   auto packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
@@ -279,7 +279,7 @@ static Status topKFunctor_(LaunchContext* context, const NDArray* input, NDArray
   return Status::OK;
 }
 
-Status topKFunctor(LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
+Status topKFunctor(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                        const LongType k, bool needSort) {
   input->syncToDevice();
 

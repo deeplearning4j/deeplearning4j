@@ -33,10 +33,10 @@ namespace ops {
 namespace helpers {
 
 // calculate the digamma function for each element for array
-SD_LIB_HIDDEN void diGamma(LaunchContext* context, const NDArray& x, NDArray& z);
+SD_LIB_HIDDEN void diGamma(LaunchContext* context, NDArray& x, NDArray& z);
 
 // calculate the polygamma function
-SD_LIB_HIDDEN void polyGamma(LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z);
+SD_LIB_HIDDEN void polyGamma(LaunchContext* context, NDArray& n, NDArray& x, NDArray& z);
 
 // calculate the digamma function for one element
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma =

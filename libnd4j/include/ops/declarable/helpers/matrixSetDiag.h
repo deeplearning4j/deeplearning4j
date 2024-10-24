@@ -30,7 +30,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void matrixSetDiag(LaunchContext* context, const NDArray& input, const NDArray& diagonal,
+SD_LIB_HIDDEN void matrixSetDiag(LaunchContext* context, NDArray& input, NDArray& diagonal,
                                  NDArray& output, const bool zeroPad);
 
 }

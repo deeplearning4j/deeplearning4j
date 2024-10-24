@@ -29,7 +29,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void ismax(LaunchContext* context, const NDArray* input, NDArray* output,
+SD_LIB_HIDDEN void ismax(LaunchContext* context, NDArray* input, NDArray* output,
                          const std::vector<LongType>& dimensions);
 
 }

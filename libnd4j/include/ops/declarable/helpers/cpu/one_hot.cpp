@@ -94,7 +94,7 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   }
 }
 
-void onehot(const sd::LaunchContext* context, const NDArray* indices, NDArray* output, const sd::LongType axis,
+void onehot(const sd::LaunchContext* context, NDArray* indices, NDArray* output, const sd::LongType axis,
             const sd::LongType depth, const double on, const double off) {
   auto zType = output->dataType();
   auto iType = indices->dataType();

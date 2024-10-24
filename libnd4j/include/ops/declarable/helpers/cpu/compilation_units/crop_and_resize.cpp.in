@@ -32,7 +32,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_TRIPLE_TEMPLATE(template SD_LIB_HIDDEN void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
+            BUILD_TRIPLE_TEMPLATE(template SD_LIB_HIDDEN void cropAndResizeFunctor_, (NDArray *images, NDArray *boxes, NDArray *indices, NDArray *cropSize, int method, double extrapolationVal, NDArray *crops), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
         }
     }
 }

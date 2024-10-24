@@ -90,7 +90,7 @@ SD_HOST static void concatCudaLauncher(const int blocksPerGrid, const int thread
 
 
 //////////////////////////////////////////////////////////////////////////
-void concat(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
   const int numInArrs = inArrs.size();
 
   NDArray::prepareSpecialUse({&output}, inArrs);

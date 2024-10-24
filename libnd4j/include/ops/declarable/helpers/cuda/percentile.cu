@@ -87,7 +87,7 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
 }
 
 template <typename T>
-static void _percentile(LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axis,
+static void _percentile(LaunchContext* context, NDArray& input, NDArray& output, std::vector<LongType>& axis,
                         const float q, const int interpolation) {
   const int inputRank = input.rankOf();
 
@@ -125,7 +125,7 @@ static void _percentile(LaunchContext* context, const NDArray& input, NDArray& o
   DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
 }
 
-void percentile(LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axises,
+void percentile(LaunchContext* context, NDArray& input, NDArray& output, std::vector<LongType>& axises,
                 const float q, const int interpolation) {
   NDArray::prepareSpecialUse({&output}, {&input});
 
@@ -136,7 +136,7 @@ void percentile(LaunchContext* context, const NDArray& input, NDArray& output, s
 }
 
 BUILD_SINGLE_TEMPLATE(template void _percentile,
-                      (sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<sd::LongType>& axises,
+                      (sd::LaunchContext * context, NDArray& input, NDArray& output, std::vector<sd::LongType>& axises,
                        const float q, const int interpolation),
                       SD_COMMON_TYPES);
 

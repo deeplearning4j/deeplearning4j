@@ -136,12 +136,12 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
   int posOfNonUnityDim = -1;
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim)) {
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
-      output->assign(input);
+      output->assign(*input);
     else
       helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->buffer(), const_cast<NDArray*>(input)->shapeInfo(),
                                output->buffer(), output->shapeInfo(), seqLengths->e<int>(0));
@@ -158,7 +158,7 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
       sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-        outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
+        outSubArrsSet.at(i)->assign(*inSubArrsSet.at(i));
       } else {
         auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
         auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
@@ -170,14 +170,14 @@ static void reverseSequence_(sd::LaunchContext* context, const NDArray* input, c
   }
 }
 
-void reverseSequence(sd::LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
+void reverseSequence(sd::LaunchContext* context, NDArray* input, NDArray* seqLengths, NDArray* output,
                      int seqDim, const int batchDim) {
   BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim),
                         SD_COMMON_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
+void reverse(sd::LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
   auto listOut = output->allTensorsAlongDimension(*intArgs);
   auto listIn = input->allTensorsAlongDimension(*intArgs);
 
@@ -194,7 +194,7 @@ void reverse(sd::LaunchContext* context, const NDArray* input, NDArray* output, 
 }
 
 BUILD_SINGLE_TEMPLATE(template void reverseSequence_,
-                      (sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
+                      (sd::LaunchContext * context, NDArray* input, NDArray* seqLengths, NDArray* output,
                           int seqDim, const int batchDim),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void reverseArray,

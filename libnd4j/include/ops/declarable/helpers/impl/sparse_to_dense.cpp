@@ -52,7 +52,7 @@ static void fill_(const void *vvalues, const void *vindices, void *voutput, cons
   }
 }
 
-void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output) {
+void compat_sparse_to_dense(NDArray&values, NDArray&indices, NDArray *def, NDArray &output) {
   // make sure host buffer is updated
 
 
@@ -112,7 +112,7 @@ void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArr
 
     // write out default values, if they are present
     if (def != nullptr) {
-      output.assign(def);
+      output.assign(*def);
  
     }
     NDArray::preparePrimaryUse({&output}, {&values, &indices});

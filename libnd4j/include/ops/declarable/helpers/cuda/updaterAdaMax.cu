@@ -94,7 +94,7 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, con
     // m = B_1 * m + (1-B_1)*grad
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
     // u = max(B_2 * u, |grad|)
-    stU[stUOffset] = math::sd_max((beta2 * initU[initUOffset]), math::sd_abs(grad[xOffset])) + 1e-32;
+    stU[stUOffset] = math::sd_max((beta2 * initU[initUOffset]), math::sd_abs<T,T>(grad[xOffset])) + 1e-32;
 
     up[zOffset] = (stM[stMOffset] * epsilonT) / stU[stUOffset];
   }
@@ -127,8 +127,8 @@ void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaMax(LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                   const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
+void updaterAdaMax(LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                   NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
                    const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "adaMaxUpdater");
 

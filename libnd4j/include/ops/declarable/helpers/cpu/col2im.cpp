@@ -30,7 +30,7 @@ namespace helpers {
 
 // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 template <typename T>
-static void col2im_(sd::LaunchContext& context, const NDArray* input, NDArray* output, const LongType sH, const LongType sW,
+static void col2im_(sd::LaunchContext& context, NDArray* input, NDArray* output, const LongType sH, const LongType sW,
                     const LongType pH, const LongType pW, const LongType iH, const LongType iW, const LongType dH, const LongType dW) {
   if(input->rankOf() != 6) {
     THROW_EXCEPTION("ops::helpers::col2im: input array must have rank = 6");

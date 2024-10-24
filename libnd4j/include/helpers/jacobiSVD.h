@@ -46,20 +46,20 @@ class JacobiSVD {
   bool _calcV;
   bool _fullUV;
 
-  JacobiSVD(const NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV);
+  JacobiSVD(NDArray& matrix, const bool calcU, const bool calcV, const bool fullUV);
 
   bool isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem);
 
   static bool createJacobiRotation(const T& x, const T& y, const T& z, NDArray& rotation);
   static void createJacobiRotationGivens(const T& p, const T& q, NDArray& rotation);
 
-  static void svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right);
+  static void svd2x2(NDArray& block, int p, int q, NDArray& left, NDArray& right);
 
-  static void mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation);
+  static void mulRotationOnLeft(const int i, const int j, NDArray& block, NDArray& rotation);
 
-  static void mulRotationOnRight(const int i, const int j, NDArray& block, const NDArray& rotation);
+  static void mulRotationOnRight(const int i, const int j, NDArray& block, NDArray& rotation);
 
-  void evalData(const NDArray& matrix);
+  void evalData(NDArray& matrix);
 };
 
 }  // namespace helpers

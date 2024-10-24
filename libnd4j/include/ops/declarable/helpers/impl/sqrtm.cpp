@@ -31,7 +31,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void sqrtm_(const NDArray* x, NDArray* z) {
+static void sqrtm_(NDArray* x, NDArray* z) {
   if (x->rankOf() == 2) {
     Sqrtm<T>::calc(*x, *z);
   } else {
@@ -47,7 +47,7 @@ static void sqrtm_(const NDArray* x, NDArray* z) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sqrtm(LaunchContext* context, const NDArray* x, NDArray* z) {
+void sqrtm(LaunchContext* context, NDArray* x, NDArray* z) {
   x->syncToHost();
   BUILD_SINGLE_SELECTOR(z->dataType(), sqrtm_, (x, z), SD_FLOAT_TYPES);
   z->syncToDevice();

@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
 
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
-  gradX->assign(epsNext);
+  gradX->assign(*epsNext);
 
   NDArray temp(*epsNext);
   BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
@@ -77,7 +77,8 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
       dims[d * 2 + 1] = 1;
     }
     auto tempIn((temp)(dims));
-    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, -tempIn, *gradY);
+    NDArray negTempIn = -tempIn;
+    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, negTempIn, *gradY);
   }
   return Status::OK;
 }

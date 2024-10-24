@@ -65,9 +65,9 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!condition->e<bool>(e)) {
-          tadsZ.at(e)->assign(tadsY.at(e));
+          tadsZ.at(e)->assign(*tadsY.at(e));
         } else {
-          tadsZ.at(e)->assign(tadsX.at(e));
+          tadsZ.at(e)->assign(*tadsX.at(e));
         }
       }
 

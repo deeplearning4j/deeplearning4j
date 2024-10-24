@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
-void gather(sd::LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
+void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output,
             const std::vector<LongType>& intArgs) {
   sd::LongType axis = intArgs.size() > 0 ? intArgs[0] :static_cast<LongType>(0);
   const sd::LongType inputRank = input->rankOf();

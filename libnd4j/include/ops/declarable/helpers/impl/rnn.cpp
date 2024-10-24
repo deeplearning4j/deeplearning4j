@@ -33,8 +33,8 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void rnnCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
-             const NDArray* hPrev, NDArray* ht) {
+void rnnCell(sd::LaunchContext* context, NDArray* xt, NDArray* Wx, NDArray* Wh, NDArray* b,
+             NDArray* hPrev, NDArray* ht) {
   // xt    input [bS x iS]
   // Wx    input-to-hidden weights, [iS  x nU]
   // Wh    hidden-to-hidden weights, [nU x nU]
@@ -50,8 +50,8 @@ void rnnCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* Wx, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-void rnnTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* Wx, const NDArray* Wh, const NDArray* b,
-                 const NDArray* h0, const NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
+void rnnTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* Wx, NDArray* Wh, NDArray* b,
+                 NDArray* h0, NDArray* maxTimeStep, NDArray* h, NDArray* hFinal) {
   // x   input [time x bS x iS]
   // Wx  input-to-hidden  weights, [iS  x nU]
   // Wh  hidden-to-hidden weights, [nU x nU]
@@ -66,7 +66,7 @@ void rnnTimeLoop(sd::LaunchContext* context, const NDArray* x, const NDArray* Wx
 
   // at first time step
   if (h0)
-    hFinal->assign(h0);
+    hFinal->assign(*h0);
   else
     *hFinal = 0.;
 

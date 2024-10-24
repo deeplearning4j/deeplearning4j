@@ -131,7 +131,7 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-            sum += math::sd_pow<T, T, T>(math::sd_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+            sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
       sum = math::sd_pow<T, T, T>(sum, (T)1.f / extraParam0);
 
@@ -155,7 +155,7 @@ static void pooling3dCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling3d(graph::Context& block, const NDArray& input, NDArray& output, const LongType kD,
+void ConvolutionUtils::pooling3d(graph::Context& block, NDArray& input, NDArray& output, const LongType kD,
                                  const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
                                  const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW,
                                  const int poolingMode, const int extraParam0) {

@@ -79,7 +79,7 @@ static void flatten_(LaunchContext *context, std::vector<NDArray *> &inputs, NDA
 
 void flatten(LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order) {
   // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
-  const std::vector<const NDArray *> v(inputs.begin(), inputs.end());
+  const std::vector<NDArray *> v(inputs.begin(), inputs.end());
   //prepareSpecialUse requires const
   NDArray::prepareSpecialUse({output}, v, {});
   BUILD_SINGLE_SELECTOR(output->dataType(), flatten_, (context, inputs, output, order), SD_COMMON_TYPES);

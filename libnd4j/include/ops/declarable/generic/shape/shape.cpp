@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(set_shape, 2, 1, true, 0, 0) {
   // if x and z aren't the same reference ensure the elements are the same.
   // this op should almost always be used in place and in very specific circumstances.
   if (x != z) {
-    z->assign(x, true);
+    z->assign(*x, true);
   }
   return Status::OK;
 }

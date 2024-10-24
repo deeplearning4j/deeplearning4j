@@ -32,7 +32,7 @@ namespace helpers {
 ///////////////////////////////////////////////////////////////////
 // x - indices, z - input/output
 template <typename T>
-sd::LongType checkIndices_(const NDArray& indices, const NDArray& output, const int axis) {
+sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
   std::atomic<int64_t> numOfBadIndx{0};
 
   const auto x = indices.bufferAsT<T>();
@@ -63,12 +63,12 @@ sd::LongType checkIndices_(const NDArray& indices, const NDArray& output, const 
 }
 
 ///////////////////////////////////////////////////////////////////
-sd::LongType checkIndices(sd::LaunchContext* context, const NDArray& indices, const NDArray& output, const int axis) {
+sd::LongType checkIndices(sd::LaunchContext* context, NDArray& indices, NDArray& output, const int axis) {
   BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), SD_INDEXING_TYPES);
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates,
+void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,
              NDArray& output, const bool lock) {
   const int outRank = output.rankOf();
   const int indRank = indices.rankOf();
@@ -80,8 +80,8 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indice
       for (auto i = start; i < stop; i++) {
         sd::LongType idx = indices.e<sd::LongType>(i);
         NDArray out = output({idx, idx + 1});
-
-        out.applyPairwiseTransform(op, updates.e(i));
+        NDArray updateE = updates.e(i);
+        out.applyPairwiseTransform(op, updateE);
       }
     };
 
@@ -107,7 +107,7 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indice
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates,
+void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDArray& updates,
                NDArray& output, const bool lock) {
   const sd::LongType indLen = indices.lengthOf();
   const int outRank = output.rankOf();
@@ -119,8 +119,8 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
       for (auto i = start; i < stop; i++) {
         sd::LongType idx = indices.e<sd::LongType>(i);
         NDArray out = output({idx, idx + 1});
-
-        out.applyPairwiseTransform(op, updates.e(i), nullptr);
+        NDArray updatesE = updates.e(i);
+        out.applyPairwiseTransform(op, updatesE, nullptr);
       }
     };
 
@@ -156,7 +156,7 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, const NDArray& indi
   }
 }
 
-void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output,
+void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updates, NDArray& output,
                     const bool calcGrad) {
   // shapes of indices and output must be the same
   // shape of indices should be the same as updates shape with last dimension excluded

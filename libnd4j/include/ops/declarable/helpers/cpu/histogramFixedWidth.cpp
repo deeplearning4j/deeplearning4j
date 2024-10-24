@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& output) {
+void histogramFixedWidth_(NDArray& input, NDArray& range, NDArray& output) {
   const int nbins = output.lengthOf();
 
   // firstly initialize output with zeros
@@ -56,10 +56,10 @@ void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& o
   }
 }
 
-void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+void histogramFixedWidth(sd::LaunchContext* context, NDArray& input, NDArray& range, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (input, range, output), SD_COMMON_TYPES);
 }
-BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (const NDArray& input, const NDArray& range, NDArray& output),
+BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (NDArray& input, NDArray& range, NDArray& output),
                       SD_COMMON_TYPES);
 
 }  // namespace helpers

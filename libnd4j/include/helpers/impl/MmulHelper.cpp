@@ -406,7 +406,7 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha
   return mmulNxN(A, B, C, alpha, beta, outOrder);
 }
 
-bool MmulHelper::resolveTranspose(const sd::NDArray& a, const sd::NDArray& b, bool& transA, bool& transB) {
+bool MmulHelper::resolveTranspose(sd::NDArray& a, sd::NDArray& b, bool& transA, bool& transB) {
   int rowsA = a.sizeAt(-2);
   int colsA = a.sizeAt(-1);
   int rowsB = b.sizeAt(-2);

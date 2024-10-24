@@ -27,7 +27,7 @@
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void argMin_, (const NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
+            BUILD_DOUBLE_TEMPLATE(template SD_LIB_HIDDEN void argMin_, (NDArray& input, NDArray& output, const std::vector<sd::LongType>& dimensions), SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
         }
     }
 }

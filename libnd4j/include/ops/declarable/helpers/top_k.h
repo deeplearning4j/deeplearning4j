@@ -28,10 +28,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN Status topKFunctor(LaunchContext* context, const NDArray* input, NDArray* values,
+SD_LIB_HIDDEN Status topKFunctor(LaunchContext* context, NDArray* input, NDArray* values,
                                      NDArray* indices, const LongType k, bool needSort);
 
-SD_LIB_HIDDEN Status inTopKFunctor(LaunchContext* context, const NDArray* predictions, const NDArray* targets,
+SD_LIB_HIDDEN Status inTopKFunctor(LaunchContext* context, NDArray* predictions, NDArray* targets,
                                        NDArray* output, const LongType k);
 
 }  // namespace helpers

@@ -121,7 +121,7 @@ static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::col2vol(graph::Context& block, const NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
+void ConvolutionUtils::col2vol(graph::Context& block, NDArray& col, NDArray& vol, const LongType sD, const LongType sH,
                                const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                                const LongType dW) {
   PointersManager manager(block.launchContext(), "col2vol");

@@ -97,7 +97,7 @@ static void prefix_(scalar::Ops op, const void* vx, LongType const* xShapeInfo, 
 };
 
 template <typename T>
-static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<LongType>& dims, bool exclusive,
+static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, const std::vector<LongType>& dims, bool exclusive,
                     bool reverse) {
   NDArray::preparePrimaryUse({z}, {x});
   auto xTads = x->allTensorsAlongDimension(dims);
@@ -117,15 +117,15 @@ static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, const std::vec
 ///////////////////////////////////////////////////////////////////
 
 template <typename T>
-static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
   prefix_<T>(op, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
 };
 
-void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+void prefix(LaunchContext* context, scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
   BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, exclusive, reverse), SD_COMMON_TYPES);
 }
 
-void prefix(LaunchContext* context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<LongType>& dims,
+void prefix(LaunchContext* context, scalar::Ops op, NDArray* x, NDArray* z, const std::vector<LongType>& dims,
             bool exclusive, bool reverse) {
   BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), SD_COMMON_TYPES);
 }
@@ -135,11 +135,11 @@ BUILD_SINGLE_TEMPLATE(template void prefix_,
                           sd::LongType const* zShapeInfo, bool exclusive, bool reverse),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
-                      (scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims, bool exclusive,
+                      (scalar::Ops op, NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims, bool exclusive,
                           bool reverse),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
-                      (scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse), SD_COMMON_TYPES);
+                      (scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

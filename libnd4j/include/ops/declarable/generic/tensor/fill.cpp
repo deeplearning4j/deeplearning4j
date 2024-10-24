@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
   }
 
   if (w > 1) {
-    output->assign(INPUT_VARIABLE(1));
+    output->assign(*INPUT_VARIABLE(1));
   } else {
     if (t > 0) {
       output->assign(T_ARG(0));

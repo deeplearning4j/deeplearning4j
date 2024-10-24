@@ -53,7 +53,7 @@ static SD_HOST void exec_print_device(LaunchContext &ctx, const void *special, c
 
 }
 
-void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {
+void print_special(LaunchContext &ctx, NDArray&array, const std::string &message) {
   NDArray::prepareSpecialUse({}, {&array});
 
   PointersManager pm(&ctx, "print_device");

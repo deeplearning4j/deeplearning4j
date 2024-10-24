@@ -37,7 +37,7 @@ class SD_LIB_HIDDEN EigenValsAndVecs {
   NDArray _Vals;  // {N,2} matrix of eigenvalues, 2 means real and imaginary part
   NDArray _Vecs;  // {N,N,2} matrix, whose columns are the eigenvectors (complex), 2 means real and imaginary part
 
-  explicit EigenValsAndVecs(const NDArray& matrix);
+  explicit EigenValsAndVecs(NDArray& matrix);
 
   //////////////////////////////////////////////////////////////////////////
   SD_INLINE static void divideComplexNums(const T& a1, const T& b1, const T& a2, const T& b2, T& a3, T& b3) {
@@ -65,12 +65,12 @@ class SD_LIB_HIDDEN EigenValsAndVecs {
   }
 
  private:
-  void calcEigenVals(const NDArray& schurMatrixT);  // calculates _Vals
+  void calcEigenVals(NDArray& schurMatrixT);  // calculates _Vals
   void calcPseudoEigenVecs(
       NDArray& schurMatrixT,
       NDArray& schurMatrixU);  // makes changes both in schurMatrixT(NxN) and schurMatrixU(NxN), also calculates and
                                // stores pseudo-eigenvectors (real) in schurMatrixU columns
-  void calcEigenVecs(const NDArray& schurMatrixU);  // calculates _Vecs
+  void calcEigenVecs(NDArray& schurMatrixU);  // calculates _Vecs
 };
 
 /**
@@ -80,7 +80,7 @@ class SD_LIB_HIDDEN EigenValsAndVecs {
  * @param vals eigenvalues {n,2}
  * @param vecs eigenvectors {n,n,2}
  */
-SD_LIB_HIDDEN void eig(const NDArray& input, NDArray& vals, NDArray& vecs);
+SD_LIB_HIDDEN void eig(NDArray& input, NDArray& vals, NDArray& vecs);
 
 }  // namespace helpers
 }  // namespace ops

@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
   int rank = block.width();
 
   if (rank == 1) {
-    OUTPUT_VARIABLE(0)->assign(INPUT_VARIABLE(0));
+    OUTPUT_VARIABLE(0)->assign(*INPUT_VARIABLE(0));
     return Status::OK;
   }
 

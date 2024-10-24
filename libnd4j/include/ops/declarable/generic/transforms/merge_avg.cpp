@@ -41,7 +41,7 @@ OP_IMPL(mergeavg, -1, 1, false) {
   for (int i = 0; i < block.width(); i++)
     if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
-  std::vector<const NDArray*> inArrs(nonEmpty);
+  std::vector<NDArray*> inArrs(nonEmpty);
   int numNonEmptyAdded = 0;
   if(nonEmpty > 0)
   for (int i = 0; i < block.width(); ++i) if(!INPUT_VARIABLE(i)->isEmpty())inArrs[numNonEmptyAdded++] = INPUT_VARIABLE(i);

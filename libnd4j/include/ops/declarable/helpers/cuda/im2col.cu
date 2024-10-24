@@ -93,9 +93,9 @@ static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void im2col(LaunchContext &context, const NDArray &image, NDArray &columns, const LongType kH, const LongType kW,
+void im2col(LaunchContext &context, NDArray&image, NDArray &columns, const LongType kH, const LongType kW,
             const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
-            const NDArray &arrZeroPadVal) {
+            NDArray&arrZeroPadVal) {
   PointersManager manager(&context, "im2col");
 
   dim3 im2colDevs = getim2ColLaunchParams(columns);

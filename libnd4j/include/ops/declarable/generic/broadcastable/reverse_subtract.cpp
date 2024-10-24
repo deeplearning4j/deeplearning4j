@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
   if (x->isSameShape(y)) {
     // PWT case case
     epsNext->applyTransform(transform::Neg, *gradX);
-    gradY->assign(epsNext);
+    gradY->assign(*epsNext);
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else {
-      gradY->assign(epsNext);
+      gradY->assign(*epsNext);
     }
   }
 

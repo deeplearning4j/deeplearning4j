@@ -79,10 +79,11 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
 
-  gradX->assign(0.0f);
+  float zero = 0.0f;
+  gradX->assign(zero);
 
   if (x->isSameShape(y)) {
-    gradY->assign(epsNext);
+    gradY->assign(*epsNext);
   } else if (y->isScalar()) {
     auto sum = epsNext->reduceNumber(reduce::Sum);
     gradY->assign(sum);
@@ -94,7 +95,7 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
-      gradY->assign(epsNext);
+      gradY->assign(*epsNext);
   }
 
   return Status::OK;

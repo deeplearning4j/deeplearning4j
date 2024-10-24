@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  gradI->assign(input);
+  gradI->assign(*input);
 
   bool keepDims = false;
   auto dimensions = *block.getIArguments();

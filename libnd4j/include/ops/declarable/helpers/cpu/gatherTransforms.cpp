@@ -89,7 +89,7 @@ void gatherND(sd::LaunchContext* context, NDArray& input, NDArray& indices, NDAr
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void gather_(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
   int axis = intArgs.size() > 0 ? intArgs[0] : 0;
   const int inputRank = input->rankOf();
   if (axis < 0) axis += inputRank;
@@ -118,8 +118,8 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
                                                       tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),
-                              tadPack->primaryShapeInfo(), output->getContext());
-        output->assign(&tadArr);
+                              tadPack->primaryShapeInfo(), output->getContext(), 0, 0);
+        output->assign(tadArr);
         delete dimensions;
 
       }
@@ -153,7 +153,8 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
-      output->assign((*input)(intArgs[1], {axis}));
+      NDArray view = (*input)(intArgs[1], {axis});
+      output->assign(view);
     } else {  // vector case
       const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), {axis});
 
@@ -170,7 +171,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
   }
 }
 
-void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+void gather(NDArray* input, NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
   BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (input, indices, output, intArgs), SD_COMMON_TYPES);
 }
 

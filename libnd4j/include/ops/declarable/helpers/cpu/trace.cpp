@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void trace_(const NDArray& input, NDArray& output) {
+static void trace_(NDArray& input, NDArray& output) {
   const int inRank = input.rankOf();
   auto setOfSubArrs = input.allTensorsAlongDimension({inRank - 2, inRank - 1});
 
@@ -39,7 +39,7 @@ static void trace_(const NDArray& input, NDArray& output) {
   samediff::Threads::parallel_for(func, 0, setOfSubArrs.size());
 }
 
-void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void trace(sd::LaunchContext* context, NDArray& input, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (input, output), SD_COMMON_TYPES);
 }
 }  // namespace helpers

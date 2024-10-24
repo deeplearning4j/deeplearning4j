@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void adaDeltaUpdater_(const NDArray& gradient, const NDArray& initStateMsg, const NDArray& initStateMsdx,
+static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& initStateMsdx,
                              NDArray& update, NDArray& stateMsg, NDArray& stateMsdx, const double dRho,
                              const double dEpsilon) {
   const T* grad = gradient.bufferAsT<T>();
@@ -104,8 +104,8 @@ static void adaDeltaUpdater_(const NDArray& gradient, const NDArray& initStateMs
   return;
 }
 
-void updaterAdaDelta(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateMsg,
-                     const NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
+void updaterAdaDelta(sd::LaunchContext* context, NDArray& gradient, NDArray& initStateMsg,
+                     NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
                      const double dRho, const double dEpsilon) {
   BUILD_SINGLE_SELECTOR(gradient.dataType(), adaDeltaUpdater_,
                         (gradient, initStateMsg, initStateMsdx, update, stateMsg, stateMsdx, dRho, dEpsilon),

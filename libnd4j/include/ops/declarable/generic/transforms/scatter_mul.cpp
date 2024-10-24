@@ -45,7 +45,7 @@ OP_IMPL(scatter_mul, 3, 1, true) {
   const int indRank = indices->rankOf();
   const int updRank = updates->rankOf();
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) output->assign(*input);
 
   REQUIRE_TRUE(inRank > 0, 0, "SCATTER_MUL OP: input should not be scalar !");
 

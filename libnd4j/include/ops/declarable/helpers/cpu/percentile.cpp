@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void _percentile(const NDArray& input, NDArray& output, std::vector<LongType>& axises, const float q,
+static void _percentile(NDArray& input, NDArray& output, std::vector<LongType>& axises, const float q,
                         const int interpolation) {
   const int inputRank = input.rankOf();
 
@@ -66,19 +66,19 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<LongT
   // FIXME: parallelism !
   for (int i = 0; i < listOfSubArrs.size(); ++i) {
     auto buff = reinterpret_cast<T*>(flattenedArr.buffer());
-    flattenedArr.assign(listOfSubArrs.at(i));
+    flattenedArr.assign(*listOfSubArrs.at(i));
     std::sort(buff, buff + len);
     output.p(i, flattenedArr.e<T>(position));
   }
 }
 
-void percentile(sd::LaunchContext* context, const NDArray& input, NDArray& output, std::vector<LongType>& axises,
+void percentile(sd::LaunchContext* context, NDArray& input, NDArray& output, std::vector<LongType>& axises,
                 const float q, const int interpolation) {
   BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (input, output, axises, q, interpolation), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void _percentile,
-                      (const NDArray& input, NDArray& output, std::vector<LongType>& axises, const float q,
+                      (NDArray& input, NDArray& output, std::vector<LongType>& axises, const float q,
                        const int interpolation),
                       SD_COMMON_TYPES);
 

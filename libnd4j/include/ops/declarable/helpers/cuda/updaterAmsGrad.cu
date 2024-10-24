@@ -144,8 +144,8 @@ void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAmsGrad(LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
-                    const NDArray& initStateM, const NDArray& initStateH, NDArray& update, NDArray& stateV,
+void updaterAmsGrad(LaunchContext* context, NDArray& gradient, NDArray& initStateV,
+                    NDArray& initStateM, NDArray& initStateH, NDArray& update, NDArray& stateV,
                     NDArray& stateM, NDArray& stateH, const double dLr, const double dBeta1, const double dBeta2,
                     const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "amsGradUpdater");

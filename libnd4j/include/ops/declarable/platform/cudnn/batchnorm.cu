@@ -29,8 +29,8 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* mean,
-                           const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output,
+static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray* mean,
+                           NDArray* variance, NDArray* gamma, NDArray* beta, NDArray* output,
                            const double epsilon, const bool isSpatialMode) {
   // input, output -> 4D:nchw, 5D:ncdhw
   // mean, variance, gamma, beta -> 1xCx1x1 for 4D and 1xCx1x1x1 for 5D for BATCHNORM_MODE_SPATIAL mode
@@ -118,8 +118,8 @@ static void batchnormCUDNN(const LaunchContext* context, const NDArray* input, c
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* mean,
-                             const NDArray* variance, const NDArray* gamma, const NDArray* gradO, NDArray* gradI,
+static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* mean,
+                             NDArray* variance, NDArray* gamma, NDArray* gradO, NDArray* gradI,
                              NDArray* gradG, NDArray* gradB, const double epsilon, const bool isSpatialMode) {
   // input, gradO, gradI -> 4D:nchw, 5D:ncdhw
   // mean, variance, gamma, beta, gradM, gradV, gradG, gradB -> 1xCx1x1 for 4D and 1xCx1x1x1 for 5D for

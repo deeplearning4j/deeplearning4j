@@ -40,7 +40,7 @@ class Hessenberg {
   NDArray _Q;  // {N,N}
   NDArray _H;  // {N,N}
 
-  explicit Hessenberg(const NDArray& matrix);
+  explicit Hessenberg(NDArray& matrix);
 
  private:
   void evalData();
@@ -59,29 +59,29 @@ class Schur {
   NDArray t;  // {N,N}
   NDArray u;  // {N,N}
 
-  explicit Schur(const NDArray& matrix);
+  explicit Schur(NDArray& matrix);
 
   void splitTwoRows(const int ind, const T shift);
 
   void calcShift(const int ind, const int iter, T& shift, NDArray& shiftInfo);
 
-  void initFrancisQR(const int ind1, const int ind2, const NDArray& shiftVec, int& ind3, NDArray& householderVec);
+  void initFrancisQR(const int ind1, const int ind2, NDArray& shiftVec, int& ind3, NDArray& householderVec);
 
-  void doFrancisQR(const int ind1, const int ind2, const int ind3, const NDArray& householderVec);
+  void doFrancisQR(const int ind1, const int ind2, const int ind3, NDArray& householderVec);
 
   void calcFromHessenberg();
 
  private:
   static const int _maxItersPerRow = 40;
 
-  void evalData(const NDArray& matrix);
+  void evalData(NDArray& matrix);
 
   //////////////////////////////////////////////////////////////////////////
   SD_INLINE int getSmallSubdiagEntry(const int inInd) {
     int outInd = inInd;
     while (outInd > 0) {
-      T factor = math::sd_abs<T>(t.t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T>(t.t<T>(outInd, outInd));
-      if (math::sd_abs<T>(t.t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
+      T factor = math::sd_abs<T,T>(t.t<T>(outInd - 1, outInd - 1)) + math::sd_abs<T,T>(t.t<T>(outInd, outInd));
+      if (math::sd_abs<T,T>(t.t<T>(outInd, outInd - 1)) <= DataTypeUtils::eps<T>() * factor) break;
       outInd--;
     }
     return outInd;

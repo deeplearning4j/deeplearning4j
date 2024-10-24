@@ -53,7 +53,7 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
 }
 
 template <typename T>
-static void dropoutSimple(LaunchContext* context, NDArray const* input, NDArray* output, double probValue,
+static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, double probValue,
                           int seed) {
   RandomGenerator nodeRng(3019L, seed);
   int inLen = input->lengthOf();
@@ -199,7 +199,7 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
   }
 }
 template <typename T>
-static void alphaDropoutSimple(LaunchContext* context, NDArray const* input, NDArray* output, int seed,
+static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, int seed,
                                double probValue, double alpha, double alpha1, double beta) {
   RandomGenerator nodeRng(3019L, seed), *dRandom;
   auto stream = context->getCudaStream();

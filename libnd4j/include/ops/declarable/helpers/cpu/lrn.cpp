@@ -147,7 +147,7 @@ sd::Status lrnFunctor(sd::graph::Context& block, NDArray* input, NDArray* output
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias,
+static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int depth, const float bias,
                    const float alpha, const float beta) {
   const int rank = input.rankOf();
 
@@ -310,7 +310,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
   gradI *= gradO;
 }
 
-void lrnBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth,
+void lrnBP(sd::graph::Context& block, NDArray& input, NDArray& gradO, NDArray& gradI, const int depth,
            const float bias, const float alpha, const float beta) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta),
                         SD_FLOAT_TYPES, SD_FLOAT_TYPES);

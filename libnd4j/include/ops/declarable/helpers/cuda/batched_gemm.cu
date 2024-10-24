@@ -107,9 +107,9 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
     if (pC[i]->ordering() != 'f') {
       auto temp = pA[i];
       std::vector<sd::LongType> permute = {1,0};
-      pA[i] = new NDArray(pB[i]->permute(permute,false));
-      pB[i] = new NDArray(temp->permute(permute,false));
-      pC[i] = new NDArray(pC[i]->permute(permute,false));
+      pA[i] = new NDArray(pB[i]->permute(permute, false, false));
+      pB[i] = new NDArray(temp->permute(permute, false, false));
+      pC[i] = new NDArray(pC[i]->permute(permute, false, false));
       toDelete.push_back(pA[i]);
       toDelete.push_back(pB[i]);
       toDelete.push_back(pC[i]);

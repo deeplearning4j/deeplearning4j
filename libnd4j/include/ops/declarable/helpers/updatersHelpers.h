@@ -31,35 +31,35 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void updaterRmsProp(LaunchContext* context, const NDArray& gradient, const NDArray& initState,
+SD_LIB_HIDDEN void updaterRmsProp(LaunchContext* context, NDArray& gradient, NDArray& initState,
                                   NDArray& update, NDArray& stateG, const double dLr, const double dRmsDecay,
                                   const double dEpsilon);
-SD_LIB_HIDDEN void updaterAdaGrad(LaunchContext* context, const NDArray& gradient, const NDArray& initState,
+SD_LIB_HIDDEN void updaterAdaGrad(LaunchContext* context, NDArray& gradient, NDArray& initState,
                                   NDArray& update, NDArray& stateH, const double dLr, const double dEpsilon);
-SD_LIB_HIDDEN void updaterNesterovs(LaunchContext* context, const NDArray& gradient, const NDArray& initState,
+SD_LIB_HIDDEN void updaterNesterovs(LaunchContext* context, NDArray& gradient, NDArray& initState,
                                     NDArray& update, NDArray& stateV, const double dLr, const double bMomentum);
-SD_LIB_HIDDEN void updaterAdaMax(LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                                 const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
+SD_LIB_HIDDEN void updaterAdaMax(LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                                 NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
                                  const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon,
                                  const int nIteration);
-SD_LIB_HIDDEN void updaterAdam(LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                               const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
+SD_LIB_HIDDEN void updaterAdam(LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                               NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
                                const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon,
                                const int nIteration);
-SD_LIB_HIDDEN void updaterAdaDelta(LaunchContext* context, const NDArray& gradient, const NDArray& initStateMsg,
-                                   const NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
+SD_LIB_HIDDEN void updaterAdaDelta(LaunchContext* context, NDArray& gradient, NDArray& initStateMsg,
+                                   NDArray& initStateMsdx, NDArray& update, NDArray& stateMsg, NDArray& stateMsdx,
                                    const double dRho, const double dEpsilon);
-SD_LIB_HIDDEN void updaterNadam(LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
-                                const NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM,
+SD_LIB_HIDDEN void updaterNadam(LaunchContext* context, NDArray& gradient, NDArray& initStateV,
+                                NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM,
                                 const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon,
                                 const int nIteration);
-SD_LIB_HIDDEN void updaterAmsGrad(LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
-                                  const NDArray& initStateM, const NDArray& initStateH, NDArray& update,
+SD_LIB_HIDDEN void updaterAmsGrad(LaunchContext* context, NDArray& gradient, NDArray& initStateV,
+                                  NDArray& initStateM, NDArray& initStateH, NDArray& update,
                                   NDArray& stateV, NDArray& stateM, NDArray& stateH, const double dLr,
                                   const double dBeta1, const double dBeta2, const double dEpsilon,
                                   const int nIteration);
-SD_LIB_HIDDEN void updaterAdaBelief(LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                                    const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
+SD_LIB_HIDDEN void updaterAdaBelief(LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                                    NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM,
                                     const double dLr, const double dBeta1, const double dBeta2, const double dEpsilon,
                                     const int nIteration);
 }  // namespace helpers

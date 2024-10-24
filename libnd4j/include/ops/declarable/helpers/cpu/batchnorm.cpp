@@ -32,8 +32,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                       const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
+static void batchnorm_(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+                       NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
   // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
   const T* x = input->bufferAsT<T>();
@@ -107,8 +107,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                        const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+static void batchnorm2_(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+                        NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
   // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
   const auto x = input->bufferAsT<T>();
@@ -174,16 +174,16 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-               const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
+void batchnorm(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+               NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {
   // batchnorm2_ is still slower ?
   BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon),
                         SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchnorm_,
-                      (const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                       const NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
+                      (NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+                       NDArray* beta, NDArray* output, const std::vector<sd::LongType>& axes, const double epsilon),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

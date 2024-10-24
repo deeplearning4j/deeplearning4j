@@ -100,7 +100,7 @@ void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaGrad(LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+void updaterAdaGrad(LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,
                     NDArray& stateH, const double dLr, const double dEpsilon) {
   PointersManager manager(context, "adaGradUpdater");
 

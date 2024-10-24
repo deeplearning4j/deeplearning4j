@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void qr(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR,
+SD_LIB_HIDDEN void qr(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR,
                       bool const fullMatricies);
 
 }

@@ -32,6 +32,7 @@ namespace ops {
 CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
+
   // Special case: empty.reshape(<other empty shape>) -> return empty
   if (x->isEmpty()) {
     REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
@@ -58,8 +59,10 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   //only perform assign when we aren't using a view
   if(x->dataBuffer() != z->dataBuffer()) {
     std::vector<sd::LongType> shape = z->getShapeAsVector();
-    z->assign(x->reshape(z->ordering(), shape,false));
+    NDArray &reshapedX = x->reshape(z->ordering(), shape,true);
+    z->assign(reshapedX);
   }
+
   return Status::OK;
 }
 
@@ -163,8 +166,8 @@ DECLARE_SHAPE_FN(reshape) {
 
   if(newShapeEmpty) {
     for(int i = 0; i < reshapeArgs.size(); i++) {
-       if(reshapeArgs[i] < 0)
-         reshapeArgs[i] = 1;
+      if(reshapeArgs[i] < 0)
+        reshapeArgs[i] = 1;
     }
     return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfoWithShape(x->dataType(), reshapeArgs));
   }

@@ -33,11 +33,12 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
 template <typename T1, typename T2, typename T3>
-static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
-                      const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
-                      const double beta) {
-  const T1* A = vA->bufferAsT<T1>();
-  const T2* B = vB->bufferAsT<T2>();
+static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
+                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
+                       const double beta) {
+
+  T1* A = vA->bufferAsT<T1>();
+  T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
@@ -99,10 +100,10 @@ static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const i
 //////////////////////////////////////////////////////////////////////////////
 // MXN x N = M  -> actual sequence of {M,N} axes doesn't matter
 template <typename T1, typename T2, typename T3>
-static void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const int incx, const int incy,
-                      const int aMaxis, const double alpha, const double beta) {
-  const T1* A = vA->bufferAsT<T1>();
-  const T2* X = vX->bufferAsT<T2>();
+static void usualGemv( NDArray* vA, NDArray* vX, NDArray* vY, const int incx, const int incy,
+                       const int aMaxis, const double alpha, const double beta) {
+  T1* A = vA->bufferAsT<T1>();
+  T2* X = vX->bufferAsT<T2>();
   T3* Y = vY->bufferAsT<T3>();
 
   const T3 alphaZ = alpha;
@@ -170,15 +171,12 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN
-NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta,
-                             const char outOrder) {
-  A->printBufferRaw("mmulMXM A");
-  B->printBufferRaw("mmulMXM B");
-  C->printBufferRaw("mmulMXM C");
+NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
+                              const char outOrder) {
 
-  const auto M = A->sizeAt(0);
-  const auto K = A->sizeAt(1);
-  const auto N = B->sizeAt(1);
+  auto M = A->sizeAt(0);
+  auto K = A->sizeAt(1);
+  auto N = B->sizeAt(1);
 
   if (C != nullptr && C->rankOf() != 2) {
     std::string errorMessage = "MmulHelper::mmulMxM: rank of C array should be equal to 2, but got " +
@@ -288,8 +286,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
-NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
-                             const char outOrder) {
+NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const double alpha, const double beta,
+                              const char outOrder) {
   if (X->dataType() != A->dataType()) {
     std::string errorMessage;
     errorMessage = "mmulMxV expects all data types to be the same";
@@ -370,7 +368,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
-NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
+NDArray* MmulHelper::dot(NDArray* X, NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
   if (X->dataType() != Y->dataType()) {
     std::string errorMessage = "Dot expects all data types to be the same. ";
     errorMessage += "X datatype: " + DataTypeUtils::asString(X->dataType()) + ", ";
@@ -437,11 +435,11 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 //    [M,K] x [bS,K,N] = [bS,M,N]
 // bS could stand for several axes
 template <typename T1, typename T2, typename T3>
-static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const LongType* aBatchDims,
+static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchDims,
                         const LongType* bBatchDims, const LongType* cBatchDims, LongType aMaxis, LongType aKaxis,
                         LongType bKaxis, LongType bNaxis, LongType cMaxis, LongType cNaxis, const double alpha, const double beta) {
-  const T1* A = vA->bufferAsT<T1>();
-  const T2* B = vB->bufferAsT<T2>();
+  T1* A = vA->bufferAsT<T1>();
+  T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
 
   const T3 alphaZ = alpha;
@@ -507,11 +505,11 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
-                             const char outOrder) {
+                              const char outOrder) {
   const sd::LongType aRank = A->rankOf();
   const sd::LongType bRank = B->rankOf();
 
-  auto shapeToString = [](const NDArray* arr) {
+  auto shapeToString = []( NDArray* arr) {
     std::string shape = "[";
     for (int i = 0; i < arr->rankOf(); ++i) {
       shape += std::to_string(arr->sizeAt(i));

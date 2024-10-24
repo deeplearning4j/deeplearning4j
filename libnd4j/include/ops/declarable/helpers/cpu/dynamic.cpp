@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList) {
+static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList) {
   std::vector<std::pair<NDArray*, sd::LongType>> outputs(outputList.size());
   int sourceDimsLen = input->rankOf() - indices->rankOf();
   if (sourceDimsLen) {
@@ -52,7 +52,9 @@ static void _dynamicPartitionFunctor(NDArray const* input, NDArray const* indice
       outputs[i].second = 0;
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if ((*indices).e<sd::LongType>(e) == i) listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
+        if ((*indices).e<sd::LongType>(e) == i) {
+          listOutForCurrent.at(outputs[i].second++)->assign(*listOfTensors.at(e));
+        }
     }
 
   } else {
@@ -116,7 +118,7 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
           return sd::Status::VALIDATION;
         }
 
-        listOfOutTensors.at(pos)->assign(listOfTensors.at(i));
+        listOfOutTensors.at(pos)->assign(*listOfTensors.at(i));
       }
     }
   }
@@ -124,7 +126,7 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
 }
 
 template <typename T>
-static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indices,
+static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
                                        std::vector<NDArray*> const& inputGradientList,
                                        std::vector<NDArray*>& outputList) {
   std::vector<std::pair<NDArray*, sd::LongType>> outputs(inputGradientList.size());
@@ -149,7 +151,7 @@ static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indi
       outputs[i].second = 0;
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indices->e<sd::LongType>(e) == i) listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
+        if (indices->e<sd::LongType>(e) == i) listOfTensors.at(e)->assign(*listOutForCurrent.at(outputs[i].second++));
     }
   } else {  // one-dimensional case
     auto output = outputList[0];
@@ -167,10 +169,10 @@ static void _dynamicPartitionFunctorBP(NDArray const* input, NDArray const* indi
     samediff::Threads::parallel_tad(func, 0, gradsSize);
   }
 
-  outputList[1]->assign(indices);
+  outputList[1]->assign(*indices);
 }
 
-void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray const* input, NDArray const* indices,
+void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray * input, NDArray * indices,
                              std::vector<NDArray*>& outputList) {
   auto xType = input->dataType();
 
@@ -179,7 +181,7 @@ void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray const* input, N
 
 template <typename T>
 static sd::Status _dynamicStitchFunctorBP(std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                                          NDArray const* gradInput, std::vector<NDArray*>& outputList) {
+                                          NDArray * gradInput, std::vector<NDArray*>& outputList) {
   THROW_EXCEPTION("Not implemented yet");
 }
 
@@ -191,7 +193,7 @@ sd::Status dynamicStitchFunctor(sd::LaunchContext* context, std::vector<NDArray*
 }
 
 sd::Status dynamicStitchFunctorBP(sd::LaunchContext* context, std::vector<NDArray*> const& inputs,
-                                  std::vector<NDArray*> const& indices, NDArray const* gradInput,
+                                  std::vector<NDArray*> const& indices, NDArray * gradInput,
                                   std::vector<NDArray*>& outputList) {
   auto xType = inputs.at(0)->dataType();
 
@@ -199,7 +201,7 @@ sd::Status dynamicStitchFunctorBP(sd::LaunchContext* context, std::vector<NDArra
                         SD_COMMON_TYPES);
 }
 
-void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray const* input, NDArray const* indices,
+void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray * input, NDArray * indices,
                                std::vector<NDArray*> const& inputGradientList, std::vector<NDArray*>& outputList) {
   auto xType = input->dataType();
 
@@ -208,16 +210,16 @@ void dynamicPartitionFunctorBP(sd::LaunchContext* context, NDArray const* input,
 }
 
 BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctorBP,
-                      (NDArray const* input, NDArray const* indices, std::vector<NDArray*> const& inputGradientList,
+                      (NDArray * input, NDArray * indices, std::vector<NDArray*> const& inputGradientList,
                           std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctorBP,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices,
-                          NDArray const* gradInput, std::vector<NDArray*>& outputList);
+                          NDArray * gradInput, std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template void _dynamicPartitionFunctor,
-                      (NDArray const* input, NDArray const* indices, std::vector<NDArray*>& outputList);
+                      (NDArray * input, NDArray * indices, std::vector<NDArray*>& outputList);
 , SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status _dynamicStitchFunctor,
                       (std::vector<NDArray*> const& inputs, std::vector<NDArray*> const& indices, NDArray* output);

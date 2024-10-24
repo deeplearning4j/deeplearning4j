@@ -132,8 +132,8 @@ static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, 
 }
 
 ///////////////////////////////////////////////////////////////////
-void pad(LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output,
-         const NDArray& padValue) {
+void pad(LaunchContext* context, const int mode, NDArray& input, NDArray& paddings, NDArray& output,
+         NDArray& padValue) {
   PointersManager manager(context, "pad");
 
   NDArray::prepareSpecialUse({&output}, {&input, &paddings, &padValue});
@@ -235,7 +235,7 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, vo
 }
 
 template <typename F, typename I>
-static void mirrorPad_(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+static void mirrorPad_(LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                        const int mode) {
   // mode:  0 - REFLECT, else - SYMMETRIC
   const int reflBorder = (bool)mode ? 1 : 0;
@@ -265,7 +265,7 @@ static void mirrorPad_(LaunchContext* context, const NDArray& input, const NDArr
   NDArray::registerSpecialUse({&output}, {&input, &paddings});
 }
 
-void mirrorPad(LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+void mirrorPad(LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                const int mode) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), paddings.dataType(), mirrorPad_, (context, input, paddings, output, mode),
                         SD_COMMON_TYPES, SD_INDEXING_TYPES);

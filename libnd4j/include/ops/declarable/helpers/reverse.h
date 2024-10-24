@@ -28,10 +28,10 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+SD_LIB_HIDDEN void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths,
                                    NDArray* output, int seqDim, const int batchDim);
 
-SD_LIB_HIDDEN void reverse(LaunchContext* context, const NDArray* input, NDArray* output,
+SD_LIB_HIDDEN void reverse(LaunchContext* context, NDArray* input, NDArray* output,
                            const std::vector<LongType>* intArgs);
 
 }  // namespace helpers

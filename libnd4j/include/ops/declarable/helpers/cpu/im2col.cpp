@@ -28,9 +28,9 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& output, const LongType kH,
+static void im2col_(sd::LaunchContext& context, NDArray& input, NDArray& output, const LongType kH,
                     const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW,
-                    const LongType dH, const LongType dW, const NDArray& arrZeroPadVal) {
+                    const LongType dH, const LongType dW, NDArray& arrZeroPadVal) {
   // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
   if(input.rankOf() != 4) {
     THROW_EXCEPTION("ops::helpers::im2col: input array must have rank = 4");
@@ -39,6 +39,7 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   if(output.rankOf() != 6) {
     THROW_EXCEPTION("ops::helpers::im2col: output array must have rank = 6");
   }
+
 
 
 
@@ -107,11 +108,14 @@ static void im2col_(sd::LaunchContext& context, const NDArray& input, NDArray& o
   };
 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
+
+  input.printBufferRaw("INPUT BUFFER RAW IM2COL");
+  output.printBufferRaw("OUTPUT BUFFER RAW IM2COL");
 }
 
-void im2col(sd::LaunchContext& context, const NDArray& im, NDArray& col, const LongType kH, const LongType kW,
+void im2col(sd::LaunchContext& context, NDArray& im, NDArray& col, const LongType kH, const LongType kW,
             const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
-            const LongType dW, const NDArray& arrZeroPadVal) {
+            const LongType dW, NDArray& arrZeroPadVal) {
 
   BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal),
                         SD_FLOAT_TYPES);
