@@ -19,7 +19,7 @@
         <commonsio.version>2.7</commonsio.version>
         <commons.lang.version>3.12.0</commons.lang.version>
         <commons.dbutils.version>1.7</commons.dbutils.version>
-        <lombok.version>1.18.24</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
         <logback.version>1.2.3</logback.version>
         <junit.version>5.8.0-M1</junit.version>
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
