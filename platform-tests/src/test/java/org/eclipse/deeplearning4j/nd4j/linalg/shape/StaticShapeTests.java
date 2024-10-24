@@ -122,9 +122,6 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
                     assertEquals(thisStride[j], Shape.stride(db, j));
                 }
 
-                //Check base offset
-                assertEquals(Shape.offset(ib), Shape.offset(db));
-
                 //Check offset calculation:
                 NdIndexIterator iter = new NdIndexIterator(shape);
                 while (iter.hasNext()) {

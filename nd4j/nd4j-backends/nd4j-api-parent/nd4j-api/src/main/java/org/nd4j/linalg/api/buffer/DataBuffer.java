@@ -172,21 +172,6 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
 
 
     /**
-     * Underlying buffer:
-     * This is meant for a data buffer
-     * to be a view of another data buffer
-     * @return
-     */
-    DataBuffer underlyingDataBuffer();
-
-
-    /**
-     *  Original DataBuffer.
-     *  In case if we have a view derived from another view, derived from some other view, original DataBuffer will point to the originating DataBuffer, where all views come from.
-     */
-    DataBuffer originalDataBuffer();
-
-    /**
      * Copies from
      * the given buffer
      * at the specified stride
@@ -558,20 +543,6 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
      * @return the length of the buffer
      */
     long underlyingLength();
-
-    /**
-     * Returns the offset of the buffer
-     *
-     * @return the offset of the buffer
-     */
-    long offset();
-
-    /**
-     * Returns the offset of the buffer relative to originalDataBuffer
-     *
-     * @return
-     */
-    long originalOffset();
 
     /**
      * Get the int at the specified index

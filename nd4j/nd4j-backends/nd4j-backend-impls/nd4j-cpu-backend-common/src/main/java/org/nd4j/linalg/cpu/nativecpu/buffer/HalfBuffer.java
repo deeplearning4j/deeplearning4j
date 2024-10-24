@@ -22,7 +22,6 @@ package org.nd4j.linalg.cpu.nativecpu.buffer;
 
 
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.common.util.ArrayUtil;
@@ -58,9 +57,7 @@ public class HalfBuffer extends BaseCpuDataBuffer {
         super(length);
     }
 
-    public HalfBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
+
 
     public HalfBuffer(long length, boolean initialize) {
         super(length, initialize);
@@ -75,7 +72,11 @@ public class HalfBuffer extends BaseCpuDataBuffer {
     }
 
     public HalfBuffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
+    }
+
+    public HalfBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -87,9 +88,7 @@ public class HalfBuffer extends BaseCpuDataBuffer {
         elementSize = 2;
     }
 
-    public HalfBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public HalfBuffer(float[] data) {
         this(data, true);
@@ -111,17 +110,11 @@ public class HalfBuffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public HalfBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public HalfBuffer(double[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public HalfBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public HalfBuffer(float[] floats, boolean copy) {
         super(floats, copy);
@@ -132,11 +125,11 @@ public class HalfBuffer extends BaseCpuDataBuffer {
     }
 
     public HalfBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public HalfBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(data, copy, workspace);
     }
 
     @Override
