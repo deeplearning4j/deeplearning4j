@@ -90,10 +90,10 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   std::vector<sd::LongType> colShape = {bS, iC, kH, kW, oH, oW};
   NDArray columns(input->ordering(),colShape, input->dataType(), input->getContext());
   NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
-
+  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+      zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
   MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, modifWeights,
                         modifOutput);  // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 

@@ -72,15 +72,18 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   auto ctx = block.launchContext();
 
 
+  NDArray zeroVal =  NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
+    input->printBufferRaw("im2col input:");
+    input->printShapeInfo("im2col input shape info:");
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(0.f, input->getContext()));
+                    zeroVal);
   } else {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
-    NDArray* inputNchw = new NDArray(input->permute(permute));
+    NDArray* inputNchw = new NDArray(input->permute(permute, false,false));
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(0.f, input->getContext()));
+                    zeroVal);
   }
 
 

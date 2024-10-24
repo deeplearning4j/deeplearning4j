@@ -290,9 +290,10 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
   NDArray columns(input->ordering(), colShape, input->dataType(), block.launchContext());
 
   LaunchContext* ctx = block.launchContext();
+  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
+     zero );  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
   std::vector<LongType> mulDims = {0,4,5};
   MmulHelper::tensorDot(input, &columns, gradW, inputAxes, mulDims,
                         gradWAxes);  // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]

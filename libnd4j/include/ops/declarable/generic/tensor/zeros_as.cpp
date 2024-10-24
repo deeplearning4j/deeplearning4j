@@ -29,8 +29,8 @@ namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(zeros_as, 1, 1, false, 0, 0) {
   auto out = OUTPUT_VARIABLE(0);
-
-  out->assign(0);  // output is filled by zero by default
+  int zero = 0;
+  out->assign(zero);  // output is filled by zero by default
 
   return Status::OK;
 }

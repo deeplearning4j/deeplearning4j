@@ -34,7 +34,7 @@ OP_IMPL(identity, 1, 1, true) {
     auto first = INPUT_VARIABLE(0);
 
     // we hope for memcpy here
-    z->assign(first);
+    z->assign(*first);
   }
 
   return Status::OK;
@@ -48,7 +48,7 @@ OP_IMPL(identity_bp, 2, 1, true) {
   auto epsilon = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
 
-  z->assign(epsilon);
+  z->assign(*epsilon);
 
   return Status::OK;
 }

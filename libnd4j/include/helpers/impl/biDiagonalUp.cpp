@@ -38,8 +38,9 @@ BiDiagonalUp::BiDiagonalUp(NDArray& matrix) {
   _HHmatrix = NDArray(matrix.ordering(), shape, matrix.dataType(), matrix.getContext());
   std::vector<sd::LongType> shape2 = {matrix.sizeAt(1), matrix.sizeAt(1)};
   _HHbidiag = NDArray(matrix.ordering(),shape2, matrix.dataType(), matrix.getContext());
-  _HHmatrix.assign(&matrix);
-  _HHbidiag.assign(0.);
+  _HHmatrix.assign(matrix);
+  double zeroAssign = 0.;
+  _HHbidiag.assign(zeroAssign);
 
   evalData();
 }

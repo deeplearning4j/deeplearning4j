@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       if (input->rankOf() == 0) {
         std::vector<sd::LongType> shape = {1};
         auto vec = new NDArray('c',shape, input->dataType(), block.launchContext());
-        vec->assign(input);
+        vec->assign(*input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);
       } else {
