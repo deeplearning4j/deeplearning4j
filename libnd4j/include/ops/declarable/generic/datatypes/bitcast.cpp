@@ -73,7 +73,7 @@ DECLARE_SHAPE_FN(bitcast) {
   }
   if (inputSize == outputSize) {
     // only type should be changed
-    auto desc = new ShapeDescriptor(inShape, newType);
+    auto desc = new ShapeDescriptor(inShape, newType, false);
     auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
     delete desc;
     return ret;
