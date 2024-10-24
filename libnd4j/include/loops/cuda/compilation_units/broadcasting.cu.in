@@ -24,7 +24,7 @@
 #if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace broadcast {
-        BUILD_PAIRWISE_TEMPLATE(template class SD_LIB_HIDDEN Broadcast, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
+        BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN Broadcast, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif

@@ -78,7 +78,7 @@ public class CpuWorkspaceDeallocator implements Deallocator {
                 if (location != LocationPolicy.MMAP)
                     Nd4j.getMemoryManager().release(pointersPair.getHostPointer(), MemoryKind.HOST);
                 else
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().munmapFile(null, mmapInfo.getFirst(), mmapInfo.getSecond());
+                   Nd4j.getNativeOps().munmapFile(null, mmapInfo.getFirst(), mmapInfo.getSecond());
             }
         }
 

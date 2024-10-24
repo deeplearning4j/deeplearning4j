@@ -69,7 +69,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     }
 
     @Override
-    public INDArray leverageTo(ArrayType arrayType, INDArray array){
+    public INDArray leverageTo(ArrayType arrayType, INDArray array) {
         if(noLeverageOverride != null && array.isAttached() && noLeverageOverride.contains(array.data().getParentWorkspace().getId())){
             return array;
         }

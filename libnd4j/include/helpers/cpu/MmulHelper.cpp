@@ -33,12 +33,23 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
 template <typename T1, typename T2, typename T3>
-static void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
-                      const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
-                      const double beta) {
-  const T1* A = vA->bufferAsT<T1>();
-  const T2* B = vB->bufferAsT<T2>();
+static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
+                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
+                       const double beta) {
+  T1* A = vA->bufferAsT<T1>();
+  T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
+  if(A == nullptr) {
+    THROW_EXCEPTION("usualGemm: A is nullptr");
+  }
+  if(B == nullptr) {
+    THROW_EXCEPTION("usualGemm: B is nullptr");
+  }
+  if(C == nullptr) {
+    THROW_EXCEPTION("usualGemm: C is nullptr");
+
+  }
+
   const T3 alphaZ = alpha;
   const T3 betaZ = beta;
 

@@ -21,6 +21,8 @@
 package org.nd4j.linalg.api.shape;
 
 
+import org.bytedeco.javacpp.LongPointer;
+import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -675,17 +677,17 @@ public class Shape {
      */
     public static double getDouble(INDArray arr, int[] indices) {
         long offset = getOffset(arr.shapeInfoJava(), ArrayUtil.toLongArray(indices));
-        return arr.data().getDouble(offset);
+        return arr.data().getDouble(offset + arr.offset());
     }
 
     public static double getDouble(INDArray arr, long... indices) {
         long offset = getOffset(arr.shapeInfoJava(), indices);
-        return arr.data().getDouble(offset);
+        return arr.data().getDouble(offset + arr.offset());
     }
 
     public static long getLong(INDArray arr, long... indices) {
         long offset = getOffset(arr.shapeInfoJava(), indices);
-        return arr.data().getLong(offset);
+        return arr.data().getLong(offset + arr.offset());
     }
 
     /**
@@ -1011,9 +1013,6 @@ public class Shape {
         long offset = 0;
         int size_0 = sizeUnsafe(shapeInformation, 0);
         int size_1 = sizeUnsafe(shapeInformation, 1);
-        if (row >= size_0 || col >= size_1)
-            throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
-                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * strideUnsafe(shapeInformation, 0, 2);
@@ -1138,9 +1137,6 @@ public class Shape {
         int size_0 = sizeUnsafe(shapeInformation, 0);
         int size_1 = sizeUnsafe(shapeInformation, 1);
         int size_2 = sizeUnsafe(shapeInformation, 2);
-        if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
-            throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                    + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
@@ -1229,9 +1225,6 @@ public class Shape {
         int size_1 = sizeUnsafe(shapeInformation, 1);
         int size_2 = sizeUnsafe(shapeInformation, 2);
         int size_3 = sizeUnsafe(shapeInformation, 3);
-        if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
-            throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
-                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
@@ -1290,36 +1283,7 @@ public class Shape {
         return offset;
     }
 
-    /**
-     * Output an int array for a particular dimension
-     * @param axes the axes
-     * @param shape the current shape
-     * @return
-     */
-    public static int[] sizeForAxes(int[] axes, int[] shape) {
-        int[] ret = new int[shape.length];
-        for (int i = 0; i < axes.length; i++) {
-            ret[i] = shape[axes[i]];
-        }
-        return ret;
-    }
 
-    /**
-     * Returns whether the given shape is a vector
-     *
-     * @param shapeInfo the shapeinfo to test
-     * @return whether the given shape is a vector
-     */
-    public static boolean isVector(IntBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        if (rank > 2 || rank < 1)
-            return false;
-        else {
-            int len = Shape.length(shapeInfo);
-            IntBuffer shape = Shape.shapeOf(shapeInfo);
-            return shape.get(0) == len || shape.get(1) == len;
-        }
-    }
 
     public static boolean isVector(LongBuffer shapeInfo) {
         int rank = Shape.rank(shapeInfo);
@@ -1332,22 +1296,7 @@ public class Shape {
         }
     }
 
-    /**
-     * Returns whether the given shape is a vector
-     *
-     * @param shapeInfo the shapeinfo to test
-     * @return whether the given shape is a vector
-     */
-    public static boolean isVector(DataBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        if (rank > 2 || rank < 1)
-            return false;
-        else {
-            long len = Shape.length(shapeInfo);
-            DataBuffer shape = Shape.shapeOf(shapeInfo);
-            return shape.getInt(0) == len || shape.getInt(1) == len;
-        }
-    }
+
 
     /**
      * Returns whether the given shape is a vector
@@ -1374,32 +1323,7 @@ public class Shape {
     }
 
 
-    /**
-     * Returns whether the passed in shape is a matrix
-     *
-     * @param shapeInfo whether the passed in shape is a matrix
-     * @return true if the shape is a matrix false otherwise
-     */
-    public static boolean isMatrix(IntBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        if (rank != 2)
-            return false;
-        return !isVector(shapeInfo);
-    }
 
-
-    /**
-     * Returns whether the passed in shape is a matrix
-     *
-     * @param shapeInfo whether the passed in shape is a matrix
-     * @return true if the shape is a matrix false otherwise
-     */
-    public static boolean isMatrix(DataBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        if (rank != 2)
-            return false;
-        return !isVector(shapeInfo);
-    }
 
     /**
      * Returns whether the passed in shape is a matrix
@@ -1602,33 +1526,8 @@ public class Shape {
         return false;
     }
 
-    /**
-     * Returns true if the given shape is of length 1
-     * or provided the shape length is 2:
-     * element 0 is 1
-     * @param shapeInfo the shape info to check
-     * @return true if the above conditions hold,false otherwise
-     */
-    public static boolean isRowVectorShape(DataBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        DataBuffer shape = Shape.shapeOf(shapeInfo);
-        return (rank == 2 && shape.getInt(0) == 1) || rank == 1;
 
-    }
 
-    /**
-     * Returns true if the given shape is of length 1
-     * or provided the shape length is 2:
-     * element 0 is 1
-     * @param shapeInfo the shape info to check
-     * @return true if the above conditions hold,false otherwise
-     */
-    public static boolean isRowVectorShape(IntBuffer shapeInfo) {
-        int rank = Shape.rank(shapeInfo);
-        IntBuffer shape = Shape.shapeOf(shapeInfo);
-        return (rank == 2 && shape.get(0) == 1) || rank == 1;
-
-    }
 
     /**
      * Returns true if the given shape is of length 1
@@ -2584,20 +2483,6 @@ public class Shape {
         }
     }
 
-    /**
-     * Gets the rank given the shape info buffer
-     * @param buffer the buffer to get the rank for
-     * @return the rank for the shape buffer
-     */
-    public static int length(IntBuffer buffer) {
-        int ret = 1;
-        IntBuffer shape = Shape.shapeOf(buffer);
-        int rank = Shape.rank(buffer);
-        for (int i = 0; i < rank; i++)
-            ret *= shape.get(i);
-        return ret;
-    }
-
     public static int length(LongBuffer buffer) {
         int ret = 1;
         val shape = Shape.shapeOf(buffer);
@@ -2607,21 +2492,6 @@ public class Shape {
         return ret;
     }
 
-    /**
-     * Gets the rank given the shape info buffer
-     * @param buffer the buffer to get the rank for
-     * @return the rank for the shape buffer
-     */
-    public static long length(DataBuffer buffer) {
-        long ret = 1;
-        val rr = buffer.asLong();
-        DataBuffer shape = Shape.shapeOf(buffer);
-        int rank = Shape.rank(buffer);
-        for (int i = 0; i < rank; i++)
-            ret *= shape.getLong(i);
-
-        return ret;
-    }
 
 
     public static long length(int[] buffer) {
@@ -2758,17 +2628,7 @@ public class Shape {
         return ret;
     }
 
-    /**
-     * Get array shape from the buffer, as an int[]
-     * @param buffer    Buffer to get the shape from
-     * @return          Shape array
-     */
-    public static long[] shape(DataBuffer buffer) {
-        val ret = new long[rank(buffer)];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = buffer.getInt(1 + i);
-        return ret;
-    }
+
 
     /**
      * Get array shape from an int[]
@@ -2834,18 +2694,6 @@ public class Shape {
         return buffer[1 + rank + dimension];
     }
 
-    /**
-     * Get array shape from the buffer, as an int[]
-     * @param buffer    Buffer to get the shape from
-     * @return          Shape array
-     */
-    public static long[] strideArr(DataBuffer buffer) {
-        val ret = new long[rank(buffer)];
-        DataBuffer stride = Shape.stride(buffer);
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = stride.getInt(i);
-        return ret;
-    }
 
     /**
      * Get the stride of the specified dimension, without any input validation
@@ -2874,7 +2722,7 @@ public class Shape {
      */
     public static int shapeInfoLength(long rank) {
         if(rank == 0)
-            return 1 * 2  + 4;
+            return 2 + 4;
         return (int) rank * 2 + 4;
     }
 
@@ -2882,36 +2730,8 @@ public class Shape {
         return shapeInfoLength((int) shape[0]);
     }
 
-    /**
-     * Get the stride for the given
-     * shape information buffer
-     * @param buffer
-     * @return
-     */
-    public static IntBuffer stride(IntBuffer buffer) {
-        int rank = rank(buffer);
-        val buffer2 = (Buffer) buffer;
-        val ret = (IntBuffer) buffer2.position(1 + rank);
-        return ret.slice();
-    }
 
-    public static LongBuffer stride(LongBuffer buffer) {
-        int rank = rank(buffer);
-        val buffer2 = (Buffer) buffer;
-        val ret = (LongBuffer) buffer2.position(1 + rank);
-        return ret.slice();
-    }
 
-    /**
-     * Get the shape from
-     * the given int buffer
-     * @param buffer the buffer to get the shape information for
-     * @return
-     */
-    public static DataBuffer stride(DataBuffer buffer) {
-        int rank = rank(buffer);
-        return Nd4j.createBuffer(buffer, 1 + rank, rank);
-    }
 
     public static int[] stride(int[] buffer) {
         int rank = rank(buffer);
@@ -2933,28 +2753,6 @@ public class Shape {
     }
 
 
-    /**
-     * Get the shape from
-     * the given int buffer
-     * @param buffer the buffer to get the shape information for
-     * @return
-     */
-    public static DataBuffer shapeOf(DataBuffer buffer) {
-        int rank = (int) buffer.getLong(0);
-        return Nd4j.createBuffer(buffer, 1, rank);
-    }
-
-    /**
-     * Get the shape from
-     * the given int buffer
-     * @param buffer the buffer to get the shape information for
-     * @return
-     */
-    public static IntBuffer shapeOf(IntBuffer buffer) {
-        Buffer buffer2 = (Buffer) buffer;
-        IntBuffer ret = (IntBuffer) buffer2.position(1);
-        return ret.slice();
-    }
 
     public static LongBuffer shapeOf(LongBuffer buffer) {
         Buffer buffer2 = (Buffer) buffer;
@@ -3028,55 +2826,23 @@ public class Shape {
      * @return the shape information to string
      */
     public static String shapeToString(INDArray arr) {
-        return shapeToString(arr.shapeInfo());
+        return shapeToString(arr.shapeInfoJava());
     }
 
-    /**
-     * Prints the shape
-     * for this shape information
-     * @param buffer the shape information to print
-     * @return the shape information to string
-     */
-    public static String shapeToString(IntBuffer buffer) {
-        val shapeBuff = shapeOf(buffer);
-        int rank = Shape.rank(buffer);
-        val strideBuff = stride(buffer);
-        StringBuilder sb = new StringBuilder();
-        sb.append("Rank: " + rank + ",");
-        sb.append("Offset: " + Shape.offset(buffer) + "\n");
-        sb.append(" Order: " + Shape.order(buffer));
-        sb.append(" Shape: [");
-        for (int i = 0; i < rank; i++) {
-            sb.append(shapeBuff.get(i));
-            if (i < rank - 1)
-                sb.append(",");
-        }
-        sb.append("], ");
 
-        sb.append(" stride: [");
-        for (int i = 0; i < rank; i++) {
-            sb.append(strideBuff.get(i));
-            if (i < rank - 1)
-                sb.append(",");
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    public static String shapeToString(LongBuffer buffer) {
-        int length = buffer.capacity();
-        long options = buffer.get(length -3);
+    public static String shapeToString(long[] buffer) {
+        int length = buffer.length;
+        long options = buffer[length -3];
         val shapeBuff = shapeOf(buffer);
         int rank = Shape.rank(buffer);
         val strideBuff = stride(buffer);
         StringBuilder sb = new StringBuilder();
         sb.append("Rank: ").append(rank).append(",")
                 .append(" DataType: ").append(ArrayOptionsHelper.dataType(options)).append(",")
-                .append(" Offset: ").append(Shape.offset(buffer)).append(",")
                 .append(" Order: ").append(Shape.order(buffer)).append(",")
                 .append(" Shape: [");
         for (int i = 0; i < rank; i++) {
-            sb.append(shapeBuff.get(i));
+            sb.append(shapeBuff[i]);
             if (i < rank - 1)
                 sb.append(",");
         }
@@ -3084,7 +2850,7 @@ public class Shape {
 
         sb.append(" Stride: [");
         for (int i = 0; i < rank; i++) {
-            sb.append(strideBuff.get(i));
+            sb.append(strideBuff[i]);
             if (i < rank - 1)
                 sb.append(",");
         }
@@ -3098,17 +2864,17 @@ public class Shape {
     }
 
 
-
     /**
-     * Get the offset for the buffer
-     *
-     * PLEASE NOTE: Legacy method. Will return 0 ALWAYS
-     * @param buffer the shape info buffer to get the offset for
-     * @return
+     * Set the extras/flags for this shape buffer
+     * @param buffer the buffer to set the extras for
+     * @param extras    the extras to set
      */
-    @Deprecated
-    public static int offset(DataBuffer buffer) {
-        return 0;
+    public static void setExtras(long[] buffer,long extras) {
+        long rank = rank(buffer);
+        int idx =  rank == 0 ? 3 : (int) (rank + rank + 1);
+        //follows the c++ calculation in ArrayOptions.h under extra(...)
+        buffer[idx] = extras;
+
     }
 
     public static long options(long[] buffer) {
@@ -3118,6 +2884,9 @@ public class Shape {
         long ret = buffer[idx];
         return ret;
     }
+
+
+
 
 
     /**
@@ -3133,43 +2902,17 @@ public class Shape {
         return ret;
     }
 
+    /**
+     * Returns the options for the given
+     * shape information buffer
+     * @param buffer the buffer to get the options for
+     * @return
+     */
     public static long extras(long[] buffer) {
         return options(buffer);
     }
 
-    /**
-     * Get the offset for the buffer
-     *
-     * PLEASE NOTE: Legacy method. Will return 0 ALWAYS
-     * @param buffer
-     * @return
-     */
-    @Deprecated
-    public static int offset(int[] buffer) {
-        //throw new UnsupportedOperationException("offset() method should NOT be used");
-        return 0;
-    }
 
-    @Deprecated
-    public static int offset(long[] buffer) {
-        //throw new UnsupportedOperationException("offset() method should NOT be used");
-        return 0;
-    }
-
-    /**
-     * Get the offset for the buffer
-     * @param buffer the shape info buffer to get the offset for
-     * @return
-     */
-    @Deprecated
-    public static int offset(IntBuffer buffer) {
-        return 0;
-    }
-
-    @Deprecated
-    public static long offset(LongBuffer buffer) {
-        return 0L;
-    }
 
 
 
@@ -3214,6 +2957,7 @@ public class Shape {
     }
 
 
+
     /**
      * Get the element wise stride for the
      * shape info buffer
@@ -3238,12 +2982,13 @@ public class Shape {
         buffer.put(length2 - 2, elementWiseStride);
     }
 
+
+
     /**
-     * Get the element wise stride for the
+     * Set the element wise stride for the
      * shape info buffer
      * @param shapeInfo the buffer to get the element
      *               wise stride from
-     * @return the element wise stride for the buffer
      */
     public static void setElementWiseStride(long[] shapeInfo, int elementWiseStride) {
         int length2 = shapeInfoLength(Shape.rank(shapeInfo));
@@ -3285,16 +3030,6 @@ public class Shape {
         return (char) buffer.get(length - 1);
     }
 
-    /**
-     * Returns the order given the shape information
-     * @param buffer the buffer
-     * @return
-     */
-    public static char order(DataBuffer buffer) {
-        int length = Shape.shapeInfoLength(Shape.rank(buffer));
-        return (char) buffer.getInt(length - 1);
-    }
-
     public static char order(int[] buffer) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         return (char) buffer[length - 1];
@@ -3310,12 +3045,13 @@ public class Shape {
      * @param buffer the buffer
      * @return
      */
-    @Deprecated
-    public static void setOrder(IntBuffer buffer, char order) {
+    public static void setOrder(long[] buffer, char order) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
-        buffer.put(length - 1, (int) order);
-        throw new RuntimeException("setOrder called");
+       buffer[length - 1] = (int) order;
     }
+
+
+
 
     public static DataBuffer createShapeInformation(long[] shape, long[] stride, long elementWiseStride, char order, DataType dataType, boolean empty,boolean isView) {
         boolean isEmpty = empty;
@@ -3966,10 +3702,22 @@ public class Shape {
         return true;
     }
 
-    public static DataType dataType(DataBuffer dataBuffer) {
+    public static DataType dataType(long[] dataBuffer) {
         long options = Shape.options(dataBuffer);
         return ArrayOptionsHelper.dataType(options);
     }
 
 
+    /**
+     * Create a shape information buffer
+     * @param descriptor the descriptor to create the shape information buffer for
+     * @return the created shape information buffer
+     */
+    public static DataBuffer createShapeInformation(LongShapeDescriptor descriptor) {
+        OpaqueConstantShapeBuffer opaqueConstantShapeBuffer = Nd4j.getNativeOps().cacheAndStoreShapeBuffer(descriptor.toShapeInfo());
+        LongPointer longPointer = new LongPointer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(opaqueConstantShapeBuffer));
+        longPointer.capacity(Shape.shapeInfoLength(descriptor.rank()));
+        DataBuffer ret = Nd4j.createBuffer(longPointer,Shape.shapeInfoLength(descriptor.rank()),DataType.INT64);
+        return  ret;
+    }
 }

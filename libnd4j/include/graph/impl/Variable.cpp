@@ -248,7 +248,7 @@ Variable::Variable(NDArray *array, const char *name, int id, int idx) : Variable
 Variable::~Variable() {
   if (_variableType == NDARRAY) {
     sd_debug("Removing variable <%i:%i>\n", _id, _index);
-    //if (_ndarray != nullptr && _removable && !_readOnly) delete _ndarray;
+    if (_ndarray != nullptr && _removable && !_readOnly) delete _ndarray;
   }
 }
 

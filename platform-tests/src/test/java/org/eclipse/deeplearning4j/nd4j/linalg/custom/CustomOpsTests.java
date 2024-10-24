@@ -122,8 +122,8 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         INDArray clusters = Nd4j.createFromArray(new long[]{0, 0, 0, 1, 1, 1});
         classes.data().opaqueBuffer().syncToSpecial();
         clusters.data().opaqueBuffer().syncToSpecial();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(clusters.data().opaqueBuffer());
-        NativeOpsHolder.getInstance().getDeviceNativeOps().printDeviceBuffer(classes.data().opaqueBuffer());
+       Nd4j.getNativeOps().printDeviceBuffer(clusters.data().opaqueBuffer(),0);
+       Nd4j.getNativeOps().printDeviceBuffer(classes.data().opaqueBuffer(),0);
 
         INDArray confMatrix = Nd4j.math().confusionMatrix(
                 classes,clusters,3
@@ -200,7 +200,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         assertEquals(exp, arrayX);
     }
 
-    @Test
     @Disabled // it's noop, we dont care anymore
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -655,7 +654,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                         1,  //End mask
                         0,  //New axis mask
                         0)  //Shrink axis mask
-                //.addOutputs(Nd4j.empty(DataType.INT))
                 .build();
 
         List<LongShapeDescriptor> l = op.calculateOutputShape();
@@ -689,8 +687,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                 .callInplace(false)
                 .build();
 
-        for( int i=0; i<1000; i++ ) {
-//            System.out.println(i);
+        for( int i = 0; i < 1000; i++ ) {
             Nd4j.getExecutioner().exec(op);
         }
     }
@@ -753,7 +750,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                     .build();
 
             Nd4j.exec(op);
-//        System.out.println(out);
         });
 
     }
@@ -783,14 +779,6 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
                 }
             }
         }
-
-//        System.out.println("Eps:");
-//        System.out.println(eps.shapeInfoToString());
-//        System.out.println(Arrays.toString(eps.data().asFloat()));
-
-//        System.out.println("Expected:");
-//        System.out.println(exp.shapeInfoToString());
-//        System.out.println(Arrays.toString(exp.data().asFloat()));
 
         DynamicCustomOp op = DynamicCustomOp.builder("upsampling2d_bp")
                 .addInputs(input, eps)

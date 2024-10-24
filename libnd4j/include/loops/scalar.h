@@ -118,7 +118,7 @@ class ScalarTransform {
    * @param resultStride the stride for the result
    * @param scalar the scalar to apply
    * @param extraParams the extra parameters where
-   * neccssary
+   * necessary
    * @param len the number of elements to loop over
    */
 
@@ -135,7 +135,7 @@ class ScalarTransform {
    * @param resultStride the stride for the result
    * @param scalar the scalar to apply
    * @param extraParams the extra parameters where
-   * neccssary
+   * necessary
    * @param len the number of elements to loop over
    */
 

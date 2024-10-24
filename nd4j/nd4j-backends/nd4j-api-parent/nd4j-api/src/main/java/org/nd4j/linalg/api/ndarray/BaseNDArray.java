@@ -146,20 +146,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected transient long arrayId = arrayCounter.getAndIncrement();
 
 
-    //Precalculate these arrays (like [3,2,1,0], [2,1,0], [1,0], [0] etc) for use in TAD, to avoid creating same int[]s over and over
-    private static final int[][] tadFinalPermuteDimensions;
-    static {
-        tadFinalPermuteDimensions = new int[32][0];
-        tadFinalPermuteDimensions[1] = new int[] {1, 0}; //Edge case for 1d tensors: selectively apply to column vectors
-        for (int i = 2; i < 32; i++) {
-            tadFinalPermuteDimensions[i] = new int[i];
-            for (int k = i - 1, j = 0; k >= 0; k--, j++)
-                tadFinalPermuteDimensions[i][j] = k;
-        }
-    }
-
-
-
 
     @Override
     public Nd4jEventLog log() {
@@ -2533,11 +2519,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return false;
 
         val c2 = (length() < data().length());
-        val c3 = (data().originalDataBuffer() != null && data != data.originalDataBuffer());
         //note we have a manual isView() to express arrays that might use the
         //same buffer and technically use the start of the same buffer but do not
         //actually "own" the buffer
-        return c2 || c3 || isView;
+        return c2 || isView;
     }
 
     @Override

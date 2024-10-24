@@ -77,7 +77,7 @@ import java.util.*;
 
 @Slf4j
 public class NativeOpExecutioner extends DefaultOpExecutioner {
-    private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private NativeOps loop =Nd4j.getNativeOps();
     private ConstantHandler constantHandler = Nd4j.getConstantHandler();
     @Getter
     private CpuTADManager tadManager = new CpuTADManager();

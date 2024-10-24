@@ -122,7 +122,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         val ret = new ArrayList<LongShapeDescriptor>(1);
 
         long[] s;
-        if(x != null){
+        if(x != null) {
             s = x.shape();
         } else {
             s = arg().getShape();
