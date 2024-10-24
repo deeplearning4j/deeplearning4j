@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(dynamic_partition) {
     newShape[1] = partitionSizes[e];
     for (sd::LongType i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
-    shape::updateStrides(newShape, shape::order(in));
+    shape::updateStrides(newShape, shape::order(in), false);
     ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
     shapes->push_back(CONSTANT(newShape));
   }

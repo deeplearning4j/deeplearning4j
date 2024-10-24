@@ -100,7 +100,10 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
         "CUSTOM RANGE OP: op should have inputs defined in any possible way: T_args, INT_args, or INPUT variables!");
   }
 
-  helpers::range(block.launchContext(), *s, *d, *output);
+  NDArray& start = *s;
+  NDArray& delta = *d;
+  NDArray& outputRef = *output;
+  helpers::range(block.launchContext(), start, delta, outputRef);
 
   if (localS) delete s;
 

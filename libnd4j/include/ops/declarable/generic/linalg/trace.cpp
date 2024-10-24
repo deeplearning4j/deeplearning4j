@@ -58,8 +58,8 @@ DECLARE_SHAPE_FN(trace) {
   outShapeInfo[0] = rank;
   for (int i = 1; i <= rank; ++i) outShapeInfo[i] = inShapeInfo[i];
 
-  shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
-  auto desc = new ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo));
+  shape::updateStrides(outShapeInfo, shape::order(inShapeInfo), false);
+  auto desc = new ShapeDescriptor(outShapeInfo, ArrayOptions::dataType(inShapeInfo), false);
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outShapeInfo, block.getWorkspace());
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;

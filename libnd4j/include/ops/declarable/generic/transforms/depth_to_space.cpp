@@ -50,9 +50,10 @@ namespace ops {
 
         if (shape::strideDescendingCAscendingF(input->shapeInfo()))
             helpers::_depthToSpace(block.launchContext(), *input, output, block_size, isNHWC);
-        else
-            helpers::_depthToSpace(block.launchContext(), input->dup(), output, block_size, isNHWC);
-
+        else {
+          NDArray dup = input->dup();
+          helpers::_depthToSpace(block.launchContext(), dup, output, block_size, isNHWC);
+        }
         STORE_RESULT(output);     
 
         return Status::OK;

@@ -54,8 +54,8 @@ DECLARE_TYPES(max_pool_with_argmax) {
 DECLARE_SHAPE_FN(max_pool_with_argmax) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : INT64;
-  auto desc = new ShapeDescriptor(in);
-  auto desc2 = new ShapeDescriptor(in, dtype);
+  auto desc = new ShapeDescriptor(in, false);
+  auto desc2 = new ShapeDescriptor(in, dtype, false);
   auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
   if (Environment::getInstance().isDeleteShapeInfo()) {

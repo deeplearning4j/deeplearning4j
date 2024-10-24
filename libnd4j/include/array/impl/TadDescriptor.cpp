@@ -35,7 +35,7 @@ TadDescriptor::TadDescriptor(const TadDescriptor &other) {
 #endif
 TadDescriptor::TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape);
+  ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape, false);
 
   _axis.resize(length);
   for (LongType e = 0; e < length; e++) {

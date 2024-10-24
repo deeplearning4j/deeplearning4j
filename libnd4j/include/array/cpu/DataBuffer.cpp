@@ -124,8 +124,23 @@ void DataBuffer::memcpyPointer(std::shared_ptr<DataBuffer>   dst, std::shared_pt
 }
 
 
+template <typename T>
+void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
+  if (src->getLenInBytes() > dst->getLenInBytes()) {
+    std::string errorMessage;
+    errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
+    errorMessage += std::to_string(src->getLenInBytes());
+    errorMessage += " > ";
+    errorMessage += std::to_string(dst->getLenInBytes());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
-void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src) {
+  std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), src->getLenInBytes());
+  dst->readPrimary();
+}
+
+void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
+                        sd::LongType startingOffset, sd::LongType dstOffset) {
   if (src->_lenInBytes > dst->_lenInBytes) {
     std::string errorMessage;
     errorMessage = "DataBuffer::memcpy: Source data buffer is larger than destination";
@@ -134,7 +149,10 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src) {
     errorMessage += std::to_string(dst->_lenInBytes);
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  std::memcpy(dst->_primaryBuffer, src->_primaryBuffer, src->_lenInBytes);
+
+  BUILD_SINGLE_TEMPLATE(memcpyWithT,(dst, src, startingOffset, dstOffset),
+                        SD_COMMON_TYPES);
+
   dst->readPrimary();
 }
 

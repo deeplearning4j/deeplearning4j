@@ -257,17 +257,12 @@ const LongType* ConstantShapeHelper::createFromExisting(const LongType* shapeInf
 const LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, bool destroyOriginal) {
   ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
-  //if (destroyOriginal) RELEASE(shapeInfo, nullptr);
-
   return result;
 }
 
 const LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, memory::Workspace* workspace) {
   ShapeDescriptor* descriptor = new ShapeDescriptor(shapeInfo);
   auto result = createShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo())
-  RELEASE(shapeInfo, workspace);
   return result;
 }
 
@@ -354,7 +349,6 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const LongType* 
   RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 

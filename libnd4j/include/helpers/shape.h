@@ -232,9 +232,9 @@ SD_DEVICE SD_LIB_EXPORT sd::LongType *cuMalloc(sd::LongType *buffer, long size);
 
 
 
-SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(sd::LongType *shape, const char order);
+SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(sd::LongType *shape, const char order, bool resetStridesIfView);
 SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(const sd::LongType rank, const sd::LongType *shapeOnly,
-                                               sd::LongType *stridesOnly, const char order);
+                                                sd::LongType *stridesOnly, const char order);
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
 template <typename T>

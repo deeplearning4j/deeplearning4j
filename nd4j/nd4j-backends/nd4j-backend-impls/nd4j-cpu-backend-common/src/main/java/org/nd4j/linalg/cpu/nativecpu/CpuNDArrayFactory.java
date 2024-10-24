@@ -162,6 +162,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         return new NDArray(shape, buffer);
     }
 
+    @Override
+    public INDArray create(DataBuffer buffer, LongShapeDescriptor longShapeDescriptor) {
+        return new NDArray(buffer, longShapeDescriptor);
+    }
+
     /**
      * Create an ndarray with the given data layout
      *

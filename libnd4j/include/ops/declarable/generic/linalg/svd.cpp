@@ -92,11 +92,11 @@ DECLARE_SHAPE_FN(svd) {
       vShapeInfo[rank] = diagSize;
     }
 
-    shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
-    shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
-    auto desc1 = new ShapeDescriptor(sShapeInfo);
-    auto desc2 = new ShapeDescriptor(uShapeInfo);
-    auto desc3 = new ShapeDescriptor(vShapeInfo);
+    shape::updateStrides(uShapeInfo, shape::order(inShapeInfo), false);
+    shape::updateStrides(vShapeInfo, shape::order(inShapeInfo), false);
+    auto desc1 = new ShapeDescriptor(sShapeInfo, false);
+    auto desc2 = new ShapeDescriptor(uShapeInfo, false);
+    auto desc3 = new ShapeDescriptor(vShapeInfo, false);
     auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc1),
                             ConstantShapeHelper::getInstance().createShapeInfo(desc2),
                             ConstantShapeHelper::getInstance().createShapeInfo(desc3));
