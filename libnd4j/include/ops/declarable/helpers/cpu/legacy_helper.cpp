@@ -144,7 +144,7 @@ template <typename T>
 static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     return sd::math::sd_max<T>(x, (T)0.f) - x * y +
-           sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs(x)));
+           sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(x)));
   };
 
   logits->applyPairwiseLambda<T>(*labels, functor, *output);
@@ -230,7 +230,7 @@ void rectifiedTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDAr
 template <typename T>
 static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
-    T ss = (T)1.f + sd::math::sd_abs<T>(x);
+    T ss = (T)1.f + sd::math::sd_abs<T,T>(x);
     return y * ((T)1.0f / (ss * ss));
   };
 
@@ -330,12 +330,12 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
   auto mainRoutineT1 = LAMBDA_TT(_x, _z, posWeight) {
     T targetWeight = (1. + (posWeight - (T)1.f) * _z);
     return (1. - _z) * _x +
-           targetWeight * (sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs(_x))) +
+           targetWeight * (sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
                            sd::math::sd_max(-_x, T(0.f)));
   };
 
   auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
-    return (((T)1.0 - _z) * _x) + _w * (sd::math::sd_log<T, T>(T(1.) + sd::math::sd_exp<T, T>(-sd::math::sd_abs(_x))) +
+    return (((T)1.0 - _z) * _x) + _w * (sd::math::sd_log<T, T>(T(1.) + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
                                         sd::math::sd_max(-_x, T(0.f)));
   };
 

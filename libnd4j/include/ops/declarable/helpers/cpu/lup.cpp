@@ -151,8 +151,8 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
     pivotValue = T(0.0);
     pivot = -1;
     for (sd::LongType rowCounter = i; rowCounter < rowNum; rowCounter++) {
-      if (sd::math::sd_abs(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
-        pivotValue = sd::math::sd_abs(compoundMatrix.t<T>(rowCounter, i));
+      if (sd::math::sd_abs<T,T>(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
+        pivotValue = sd::math::sd_abs<T,T>(compoundMatrix.t<T>(rowCounter, i));
         pivot = rowCounter;
       }
     }
@@ -213,8 +213,8 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
   for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
     sd::LongType xPos[] = {rowCounter, column};
     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
-    if (sd::math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
-      maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs(compoundBuffer[xIndex]));
+    if (sd::math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
+      maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs<T,T>(compoundBuffer[xIndex]));
       result = rowCounter;
     }
   }
@@ -353,7 +353,7 @@ sd::Status logAbsDeterminant_(LaunchContext* context, NDArray* input, NDArray* o
       matrix.p(row, input->e<T>(k));
     }
     NDArray det = lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-    if (det.e<T>(0) != 0.f) output->p(e, sd::math::sd_log<T, T>(sd::math::sd_abs(det.t<T>(0))));
+    if (det.e<T>(0) != 0.f) output->p(e, sd::math::sd_log<T, T>(sd::math::sd_abs<T,T>(det.t<T>(0))));
   }
 
   return sd::Status::OK;
@@ -385,7 +385,7 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
     T det = lup_<T, sd::LongType>(context, &matrix, &compound, &permutation).template e<T>(0);
 
     // FIXME: and how this is going to work on float16?
-    if (sd::math::sd_abs<T>(det) < T(0.000001)) {
+    if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
       return sd::Status::VALIDATION;
     }
@@ -436,7 +436,7 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
     }
 
     // FIXME: and how this is going to work on float16?
-    if (sd::math::sd_abs<T>(det) < T(0.000001)) {
+    if (sd::math::sd_abs<T,T>(det) < T(0.000001)) {
       sd_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quitting...\n", e, det);
       return sd::Status::VALIDATION;
     }
@@ -486,7 +486,7 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray const* input
     // check for symmetric
     for (sd::LongType r = 0; r < thisMatrix->rows(); r++)
       for (sd::LongType c = 0; c < thisMatrix->columns(); c++)
-        if (sd::math::sd_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c, r)) >
+        if (sd::math::sd_abs<T,T>(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c, r)) >
             DataTypeUtils::min_positive<T>())
           return false;
 
