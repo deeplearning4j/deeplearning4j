@@ -730,7 +730,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
         for (int i = 0; i < layers.length; i++) {
-            if(layers[i] == null){
+            if(layers[i] == null) {
                 throw new IllegalStateException("Encountered null layer during initialization for layer " + i +
                         ": " + layerWiseConfigurations.getConf(i).getLayer().getClass().getSimpleName() + " initialization " +
                         "returned null layer?");
@@ -753,7 +753,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Mark that input modification is allowed.
         //TODO When is it safe to NOT skip the very first layer? It's not always safe...
         // For example dropout + iterating over List<DataSet> that is used for multiple epochs...
-        for( int i=1; i<layers.length; i++ ){
+        for( int i = 1; i < layers.length; i++) {
             layers[i].allowInputModification(true);
         }
 
@@ -1021,39 +1021,39 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
         List<INDArray> out = new ArrayList<>();
-        input = workspaceMgr.leverageTo(ArrayType.INPUT, input);
-        out.add(input);    //Should  be unnecessary (and no op), if layer is implemented correctly
+        out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Should  be unnecessary (and no op), if layer is implemented correctly
 
         for( int i = 0; i <= layerIndex; i++) {
-            if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
-                //Validation: Exception if invalid (bad preprocessor implementation)
-                validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (inference)");
-            }
-
-            if(fwdPassType == FwdPassType.STANDARD) {
-                input = layers[i].activate(input, train, workspaceMgr);
-            } else if (fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
-                if (layers[i] instanceof RecurrentLayer) {
-                    input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
-                            storeLastForTBPTT, workspaceMgr);
-                } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
-                    RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
-                    input = rl.rnnActivateUsingStoredState(input, train,storeLastForTBPTT, workspaceMgr);
-                } else if (layers[i] instanceof MultiLayerNetwork) {
-                    List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, train, storeLastForTBPTT);
-                    input = temp.get(temp.size() - 1);
-                } else {
-                    input = layers[i].activate(input, train, workspaceMgr);
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
+                    //Validation: Exception if invalid (bad preprocessor implementation)
+                    validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (inference)");
                 }
-            } else {
-                throw new IllegalStateException("Forward pass type not supported for this method: " + fwdPassType);
+
+                if(fwdPassType == FwdPassType.STANDARD) {
+                    input = layers[i].activate(input, train, workspaceMgr);
+                } else if (fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
+                    if (layers[i] instanceof RecurrentLayer) {
+                        input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
+                                storeLastForTBPTT, workspaceMgr);
+                    } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
+                        input = rl.rnnActivateUsingStoredState(input, train,storeLastForTBPTT, workspaceMgr);
+                    } else if (layers[i] instanceof MultiLayerNetwork) {
+                        List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, train, storeLastForTBPTT);
+                        input = temp.get(temp.size() - 1);
+                    } else {
+                        input = layers[i].activate(input, train, workspaceMgr);
+                    }
+                } else {
+                    throw new IllegalStateException("Forward pass type not supported for this method: " + fwdPassType);
+                }
+
+                //Validation: Exception if invalid (bad layer implementation)
+                validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, false, "Feed forward to layer (inference)");
+                out.add(input);
             }
-
-            //Validation: Exception if invalid (bad layer implementation)
-            validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, false, "Feed forward to layer (inference)");
-            out.add(input);
-
 
             if(clearInputs) {
                 layers[i].clear();
@@ -1121,31 +1121,30 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
         }
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
-        //workspaceMgr.keepOpen(INPUT, ACTIVATIONS, FF_WORKING_MEM, RNN_FF_LOOP_WORKING_MEM);
 
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
 
         boolean traceLog = log.isTraceEnabled();
-        for( int i = 0; i <= layerIndex; i++) {
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+        try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+            for( int i = 0; i <= layerIndex; i++) {
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = workspaceMgr.dup(ArrayType.ACTIVATIONS, getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr));
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
                 }
 
-                if (traceLog) {
+                if(traceLog){
                     log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
-                if (fwdPassType == FwdPassType.STANDARD) {
+                if(fwdPassType == FwdPassType.STANDARD) {
                     input = layers[i].activate(input, true, workspaceMgr);
-                } else if (fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
+                } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
-                    } else if (layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer) layers[i]).getUnderlying() instanceof RecurrentLayer) {
-                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer) layers[i]).getUnderlying();
+                    }else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                        RecurrentLayer rl = (RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying();
                         input = rl.rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT);
@@ -1166,14 +1165,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (training)");
 
                 out.add(input);
-            }
 
-
-
-            if(traceLog) {
-                log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                if(traceLog) {
+                    log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                }
             }
         }
+
+        ArrayType[] toClose = {
+                FF_WORKING_MEM,
+                BP_WORKING_MEM,
+                RNN_FF_LOOP_WORKING_MEM,
+                RNN_BP_LOOP_WORKING_MEM,
+                UPDATER_WORKING_MEM,
+                FF_CACHE
+        };
+        workspaceMgr.closeWorkspace(toClose);
 
 
         return out;
@@ -1216,12 +1223,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
-
+        if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached", true);
+        } else {
+            Preconditions.checkState(outputWorkspace.isScopeActive(), "Workspace \"" + outputWorkspace.getId() +
+                    "\" was provided for the network/layer outputs. When provided, this workspace must be opened before " +
+                    "calling the output method; furthermore, closing the workspace is the responsibility of the user");
+        }
 
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
 
-        MemoryWorkspace old = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         WorkspaceMode wsm = train ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode();
         if(wsm == WorkspaceMode.NONE) {
@@ -1250,12 +1262,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
-        mgrEven.setHelperWorkspacePointers(helperWorkspaces);
-        mgrOdd.setHelperWorkspacePointers(helperWorkspaces);
 
         MemoryWorkspace wsActCloseNext = null;
         MemoryWorkspace temp = null;
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+
 
         boolean traceLog = log.isTraceEnabled();
 
@@ -1275,7 +1287,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //So mgrEven (WS_LAYER_ACT_1) open at start of 0, 2, 4, 8; closed at end of 1, 3, 5, 7 etc
                 //and mgrOdd (WS_LAYER_ACT_2) opened at start of 1, 3, 5, 7; closed at end of 2, 4, 6, 8 etc
 
-                try (WorkspacesCloseable wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM,ArrayType.ACTIVATIONS)) { //Working memory: opened/closed once per layer
+                try (MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) { //Working memory: opened/closed once per layer
+                    //Activations workspaces: opened/closed every second layer.
+                    //So mgrEven (WS_LAYER_ACT_1) open at start of 0, 2, 4, 8; closed at end of 1, 3, 5, 7 etc
+                    //and mgrOdd (WS_LAYER_ACT_2) opened at start of 1, 3, 5, 7; closed at end of 2, 4, 6, 8 etc
+                    temp = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+
+                    //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
+                    // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
+                    // workspace may be set to the incorrect one
+                    temp.setPreviousWorkspace(initialWorkspace);
+
 
                     if (i == 0 && input.isAttached()) {
                         //Don't leverage out of async DataSetIterator workspaces
@@ -1288,10 +1310,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }
 
+                    if (i == layerIndex) {
+                        if (outputWorkspace != null && !(outputWorkspace instanceof DummyWorkspace)) {
+                            //Place activations in user-specified workspace
+                            mgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
+                        } else {
+                            //Final activations: should be detached
+                            mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                        }
+                    }
 
                     if (fwdPassType == FwdPassType.STANDARD) {
                         //Standard feed-forward case
-                        if (i > 0 && ConvolutionUtils.layerHasConvolutionLayout(layers[i - 1].conf().getLayer())
+                        if(i > 0 && ConvolutionUtils.layerHasConvolutionLayout(layers[i - 1].conf().getLayer())
                                 && ConvolutionUtils.layerHasConvolutionLayout(layers[i].conf().getLayer())) {
 
                             CNN2DFormat preLayerFormat = ConvolutionUtils.getFormatForLayer(layers[i - 1].conf().getLayer());
@@ -1353,8 +1384,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
-
-
+                //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
+                //Hence: put inputs in working memory -> set back to default for next use of workspace mgr
+                if (i == 0 && wsm != WorkspaceMode.NONE) {
+                    mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG);            //Inputs should always be in the previous WS
+                }
             }
         } catch (Throwable t2) {
             t = t2;
@@ -1396,17 +1430,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 throw new RuntimeException("Error during neural network forward pass", t);
             }
 
-
+            if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
+                WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached", true);
+            } else {
+                Preconditions.checkState(outputWorkspace.isScopeActive(), "Expected output workspace to still be open" +
+                        "at end of outputOfLayerDetached, but it is closed. This suggests an implementation or layer workspace problem");
+            }
         }
 
-        ArrayType[] toClose = {
-                FF_WORKING_MEM, RNN_FF_LOOP_WORKING_MEM,INPUT, ACTIVATIONS
-        };
-        INDArray ret =  input.detach();
 
-
-        Nd4j.getMemoryManager().setCurrentWorkspace(old);
-        return ret;
+        return input;
     }
 
     private INDArray reshapeTimeStepInput(INDArray input) {
