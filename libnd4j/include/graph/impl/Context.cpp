@@ -50,6 +50,10 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
       this->_axis.push_back(v);
     }
 
+    for(auto v : *(prototype->getDArguments())) {
+      this->_dataTypes.push_back(v);
+    }
+
     this->_opNum = prototype->opNum();
     this->_isInplace = prototype->isInplace();
     this->_nodeId = prototype->nodeId();
@@ -59,7 +63,24 @@ Context::Context(ContextPrototype *prototype, VariableSpace *variableSpace) {
   if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
     this->_workspace = variableSpace->launchContext()->getWorkspace();
 }
-DataType Context::dataType(int index) { return _dataType; }
+DataType Context::dataType(int index) {
+  if(numD() < 1) {
+    if(width() > 0) {
+      return this->array(index)->dataType();
+    } else {
+      std::string errorMessage;
+      errorMessage += std::string("Context::dataType: Unable to determine data type. Both d args and inputs are empty.");
+      errorMessage += std::string(" Index: ");
+      errorMessage += std::to_string(index);
+      errorMessage += std::string(" Width: ");
+      errorMessage += std::to_string(width());
+      THROW_EXCEPTION(errorMessage.c_str());
+    };
+  }
+
+
+  return getDArguments()->at(index);
+}
 
 DataType Context::dataType() { return dataType(0); }
 
@@ -662,11 +683,25 @@ bool Context::isInference() { return _execMode == samediff::ExecutionMode::MODE_
 void Context::setDArguments(DataType *arguments, int numberOfArguments) {
   _dArgs.clear();
   for (int e = 0; e < numberOfArguments; e++) _dArgs.emplace_back(arguments[e]);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("data types set in context: ");
+    for (auto d : _dArgs) {
+      printf("%s\n, ", DataTypeUtils::asString(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setDArguments(const std::vector<DataType> &dArgs) {
   _dArgs.clear();
   for (auto d : dArgs) _dArgs.emplace_back(d);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("data types set in context: ");
+    for (auto d : dArgs) {
+      printf("%s\n, ", DataTypeUtils::asString(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::clearFastPath() {
