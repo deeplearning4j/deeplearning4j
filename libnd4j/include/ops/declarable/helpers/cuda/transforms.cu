@@ -265,7 +265,7 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
   for (LongType i = tid; i < zLen; i += totalThreads) {
     const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
-    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff);
+    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff,nullptr);
 
     z[zOffset] = x[xOffsets[0]];                      // first offset
     for (LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets

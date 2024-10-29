@@ -170,8 +170,8 @@ static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNo
     }
   }
 }
-void clipByGlobalNorm(sd::LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
-                      sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, double clipNorm,
+                      memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
   BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (inputs, clipNorm, workspace, outputs, isInplace),
                         SD_FLOAT_TYPES);
 }

@@ -4997,18 +4997,7 @@ public class Nd4j {
         return ret;
     }
 
-    /**
-     * Concatenate ndarrays along a dimension
-     *
-     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
-     *
-     * @param dimension dimension
-     * @param toConcat arrays to concatenate
-     * @return concatenated arrays.
-     */
-    public static INDArray specialConcat(int dimension, @NonNull INDArray... toConcat) {
-        return INSTANCE.specialConcat(dimension, toConcat);
-    }
+
 
     /**
      * Create an ndarray of zeros
@@ -5782,7 +5771,8 @@ public class Nd4j {
         if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
             throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
 
-       Nd4j.getNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),ArrayUtil.toInts(arr.shape()),arr.rank());
+       Nd4j.getNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),
+               new IntPointer(ArrayUtil.toInts(arr.shape())),arr.rank(),"w");
     }
 
 
@@ -5948,7 +5938,7 @@ public class Nd4j {
      */
     public static byte[] toNpyByteArray(INDArray input) {
         DataBuffer asNumpy = convertToNumpy(input);
-        long len =Nd4j.getNativeOps().lengthInBytes(asNumpy.opaqueBuffer()) + input.dataType().width() * input.length();
+        long len =input.length() * input.data().getElementSize();
         Pointer pointer = asNumpy.addressPointer();
         pointer.limit(len);
         ByteBuffer directBuffer = pointer.asByteBuffer();

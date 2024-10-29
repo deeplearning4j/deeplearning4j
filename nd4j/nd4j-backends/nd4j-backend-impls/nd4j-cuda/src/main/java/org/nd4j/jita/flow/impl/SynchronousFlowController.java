@@ -99,8 +99,7 @@ public class SynchronousFlowController implements FlowController {
 
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
-                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data()
-                                : operand.data().originalDataBuffer();
+                DataBuffer buffer = operand.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
             }
 
@@ -128,8 +127,7 @@ public class SynchronousFlowController implements FlowController {
             val pointShape = allocator.getAllocationPoint(result.shapeInfoDataBuffer());
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
-                DataBuffer buffer = result.data().originalDataBuffer() == null ? result.data()
-                                : result.data().originalDataBuffer();
+                DataBuffer buffer = result.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
             }
 
@@ -155,8 +153,7 @@ public class SynchronousFlowController implements FlowController {
             Nd4j.getAffinityManager().ensureLocation(operand, AffinityManager.Location.DEVICE);
 
             if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
-                DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data()
-                                : operand.data().originalDataBuffer();
+                DataBuffer buffer = operand.data();
                 allocator.getMemoryHandler().relocateObject(buffer);
             }
 

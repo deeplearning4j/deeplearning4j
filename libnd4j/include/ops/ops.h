@@ -3142,8 +3142,8 @@ class CosineDistance {
 
 #ifdef __CUDACC__
   static SD_DEVICE inline Y opAtomic(X d1, X d2, Y *extraParams) {
-    sd::math::atomics::sd_atomicAdd(&extraParams[0], sd::math::sd_abs<Y>(d1) * sd::math::sd_abs<Y>(d1));
-    sd::math::atomics::sd_atomicAdd(&extraParams[1], sd::math::sd_abs<Y>(d2) * sd::math::sd_abs<Y>(d2));
+    sd::math::atomics::sd_atomicAdd(&extraParams[0], sd::math::sd_abs<Y,Y>(d1) * sd::math::sd_abs<Y,Y>(d1));
+    sd::math::atomics::sd_atomicAdd(&extraParams[1], sd::math::sd_abs<Y,Y>(d2) * sd::math::sd_abs<Y,Y>(d2));
 
     return (d1 * d2);
   }

@@ -487,6 +487,8 @@
                                     <skip>${javacpp.parser.skip}</skip>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                                     <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets
+                                        <deleteJniFiles>false</deleteJniFiles>
+
                                     </classOrPackageName>
                                 </configuration>
                             </execution>

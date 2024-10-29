@@ -26,9 +26,9 @@
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/nth_element.h>
 
+#include "array/NDArrayFactory.h"
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
-
 
 namespace sd {
 namespace ops {
@@ -64,21 +64,24 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
   params[1] = context->getCudaStream();
   // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
   if (input->isVector()) {
-    sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
+    sort(params, &sortedVals, reverse);
 
     cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n,
                sizeof(T), cudaMemcpyDeviceToDevice);
   } else {  // rank greater than 1
     std::vector<LongType> lastDims(
         {input->rankOf() - 1});
-
+    NDArray *dimData = NDArrayFactory::create_<LongType>('c',{2},lastDims, context);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
 
     auto pTadShape = packX->specialShapeInfo();
     auto pTadShapeH = packX->primaryShapeInfo();
     auto pTadOffsets = packX->specialOffsets();
-    sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(),
-            sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
+    sortTad(params, &sortedVals,
+            dimData,
+            pTadShape,
+            pTadOffsets,
+            reverse);
     sortedVals.tickWriteDevice();
     sortedVals.syncToHost();
     auto stream = context->getCudaStream();

@@ -158,7 +158,7 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, i
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(images);
+    output->assign(*images);
     return Status::OK;
   }
 
@@ -291,7 +291,7 @@ Status resizeNeighborFunctor_(LaunchContext* context, NDArray * images, int cons
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(images);
+    output->assign(*images);
     return Status::OK;
   }
 

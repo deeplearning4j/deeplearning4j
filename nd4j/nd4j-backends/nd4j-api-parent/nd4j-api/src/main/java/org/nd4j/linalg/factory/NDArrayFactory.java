@@ -300,17 +300,6 @@ public interface NDArrayFactory {
     INDArray concat(int dimension, INDArray... toConcat);
 
     /**
-     * Concatenate ndarrays along a dimension
-     *
-     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
-     *
-     * @param dimension the dimension to concatneate along
-     * @param toConcat  the ndarrays to concateneate
-     * @return the concatneated ndarrays
-     */
-    INDArray specialConcat(int dimension, INDArray... toConcat);
-
-    /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
      *
      * @param source source tensor

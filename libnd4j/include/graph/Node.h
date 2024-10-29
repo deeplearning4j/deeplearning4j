@@ -84,7 +84,7 @@ class SD_LIB_EXPORT Node {
   // each node can be active or inactive, if used with divergents, like IF statements
   bool _active = true;
 
-  // these fields contain information about Scope these ops are related to
+  // these fields contain information about OpScope these ops are related to
   int _scope_id = 0;
   std::string _scope_name;
 

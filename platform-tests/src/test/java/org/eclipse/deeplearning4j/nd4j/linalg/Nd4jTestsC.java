@@ -4503,46 +4503,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSpecialConcat1(Nd4jBackend backend) {
-        for (int i = 0; i < 10; i++) {
-            List<INDArray> arrays = new ArrayList<>();
-            for (int x = 0; x < 10; x++) {
-                arrays.add(Nd4j.create(1, 100).assign(x).castTo(DataType.DOUBLE));
-            }
-
-            INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
-            assertEquals(10, matrix.rows());
-            assertEquals(100, matrix.columns());
-
-            for (int x = 0; x < 10; x++) {
-                assertEquals(x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
-                assertEquals(arrays.get(x), matrix.getRow(x).reshape(1,matrix.size(1)));
-            }
-        }
-    }
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testSpecialConcat2(Nd4jBackend backend) {
-        List<INDArray> arrays = new ArrayList<>();
-        for (int x = 0; x < 10; x++) {
-            arrays.add(Nd4j.create(new double[] {x, x, x, x, x, x}).reshape(1, 6));
-        }
-
-        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
-        assertEquals(10, matrix.rows());
-        assertEquals(6, matrix.columns());
-
-//        log.info("Result: {}", matrix);
-
-        for (int x = 0; x < 10; x++) {
-            assertEquals(x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
-            assertEquals(arrays.get(x), matrix.getRow(x).reshape(1, matrix.size(1)));
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -4550,7 +4510,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(10, 3, 96, 96).castTo(DataType.DOUBLE);
 
         for (int i = 0; i < 10; i++) {
-//            log.info("Trying i: {}", i);
             array.tensorAlongDimension(i, 1, 2, 3).putScalar(1, 2, 3, 1);
         }
     }

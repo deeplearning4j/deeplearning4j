@@ -107,12 +107,13 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
     std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
-    chunk->assign(1.f);
+    float one = 1.f;
+    chunk->assign(one);
 
     dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed);
     // broadcast chunk to full matrix
     std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
-    dropOutMultiplier->assign(1.f);
+    dropOutMultiplier->assign(one);
 
     *dropOutMultiplier += *chunk;
 
@@ -255,13 +256,15 @@ static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, 
     // check dims to fit input
     REQUIRE_TRUE(fit, 0, "alpha_dropout: Noise shape should fit to input rank.");
     std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
-    chunk->assign(1.f);
+    float one = 1.f;
+
+    chunk->assign(one);
 
     alphaDropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), seed, probValue, alpha, alpha1, beta);
 
     // broadcast chunk to full matrix
     std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
-    dropOutMultiplier->assign(1.f);
+    dropOutMultiplier->assign(one);
 
     *dropOutMultiplier += *chunk;
 

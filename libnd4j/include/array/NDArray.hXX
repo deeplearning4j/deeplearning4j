@@ -1767,27 +1767,26 @@ NDArray &NDArray::operator=(NDArray &&other) noexcept {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-NDArray &NDArray::operator=( T scalar) {
+NDArray &NDArray::operator=(T scalar) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::operator=(NDArray &&other) - move assignment operator\n");
     fflush(stdout);
   }
-  this->assign(scalar);
+  T &localValue = const_cast<T &>(scalar);
+  this->assign(localValue,false);
   return *this;
 }
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const double scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const float scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const float16 scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const bfloat16 scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const sd::LongType scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const int scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const int8_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const uint8_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const uint16_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const uint32_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const uint64_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const int16_t scalar);
-template SD_LIB_EXPORT NDArray &NDArray::operator=(const bool scalar);
+#define OPERATOR_TEMPLATE(T) template NDArray &NDArray::operator=(GET_SECOND(T) scalar);
+ITERATE_LIST((SD_COMMON_TYPES),OPERATOR_TEMPLATE)
+
+
+
+
+
+
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::copyBuffersContinuouslyFrom(NDArray &other, size_t sizeToCopyInBytes, sd::LongType offsetThis,
@@ -1871,8 +1870,6 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 //////////////////////////////////////////////////////////////////////////
 template <typename T, typename>
 void NDArray::assign(T &value, bool allowParallelism) {
-  printf("calling scalar assign\n");
-  fflush(stdout);
   // just fire scalar
   auto temp = new NDArray(NDArrayFactory::create(dataType(), value, this->getContext()));
 
@@ -1883,19 +1880,9 @@ void NDArray::assign(T &value, bool allowParallelism) {
                                   nullptr, allowParallelism);
   registerUse(std::vector<NDArray *>{this}, std::vector<NDArray *>{temp});
 }
-template SD_LIB_EXPORT void NDArray::assign( double &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( float &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( float16 &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( bfloat16 &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( sd::LongType &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( int &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( int8_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( int16_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( uint8_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( uint16_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( uint32_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( uint64_t &value, bool allowParallelism);
-template SD_LIB_EXPORT void NDArray::assign( bool &value, bool allowParallelism);
+
+#define ASSIGN_SCALAR(T) template SD_LIB_EXPORT void NDArray::assign( GET_SECOND(T) &value, bool allowParallelism);
+ITERATE_LIST((SD_COMMON_TYPES),ASSIGN_SCALAR)
 
 //////////////////////////////////////////////////////////////////////////
 NDArray *NDArray::detach() {

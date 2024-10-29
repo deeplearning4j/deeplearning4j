@@ -4169,8 +4169,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE SD_INLINE void updateStrides(sd::LongType *shapeInf
   //but may need a reshape or permute (view creation) where a
   //fresh array and buffer are created with new strides.
   if(resetStridesIfView && shape::isView(shapeInfo)) {
-    printf("resetStridesIfView && shape::isView(shapeInfo)\n");
-    fflush(stdout);
     auto strides = stride(shapeInfo);
     if(order == 'c') {
       shape::calcStrides(shape::shapeOf(shapeInfo), rank, strides);

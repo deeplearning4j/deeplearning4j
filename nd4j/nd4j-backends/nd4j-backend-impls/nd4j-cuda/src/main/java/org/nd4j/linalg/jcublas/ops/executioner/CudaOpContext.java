@@ -40,6 +40,7 @@ import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.*;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -107,78 +108,44 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
             nativeOps.setGraphContextDArguments(context,dArgs, arguments.length);
         }
     }
+
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.size()];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.size()];
-
-        for(int i = 0; i < arrays.size(); i++) {
+        OpaqueNDArray[] arrs = new OpaqueNDArray[arrays.size()];
+        for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array.isEmpty() ? null : array);
+            arrs[i] = OpaqueNDArray.fromINDArray(array);
+            fastpath_in.put(i, array.isEmpty() ? null : array);
         }
-
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
-        PointerPointer<OpaqueDataBuffer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-
-        nativeOps.setGraphContextInputBuffers(context,arrays.size(),buffers,shapeInfoBuffer,null);
+        if (!arrays.isEmpty()) {
+            OpaqueNDArrayArr arr = new OpaqueNDArrayArr(arrs);
+            nativeOps.setGraphContextInputArraysArr(context, arrays.size(), arr);
+        }
     }
 
     @Override
     public void setOutputArrays(@NonNull List<INDArray> arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.size()];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.size()];
-
-        for(int i = 0; i < arrays.size(); i++) {
+        OpaqueNDArray[] arrs = new OpaqueNDArray[arrays.size()];
+        for (int i = 0; i < arrays.size(); i++) {
             INDArray array = arrays.get(i);
-            buffers1[i] = array.isEmpty() ? null : array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_out.put(i,array);
+            arrs[i] = OpaqueNDArray.fromINDArray(array);
+            fastpath_out.put(i, array.isEmpty() ? null : array);
         }
 
-        PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
-        PointerPointer<OpaqueDataBuffer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.size(),outputBuffers,shapeInfoOutputBuffer,null);
+        if (!arrays.isEmpty()) {
+            OpaqueNDArrayArr arr = new OpaqueNDArrayArr(arrs);
+            nativeOps.setGraphContextOutputArraysArr(context, arrays.size(), arr);
+        }
 
     }
-
     @Override
     public void setInputArrays(INDArray... arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.length];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.length];
-        if(!fastpath_in.isEmpty())
-            fastpath_in.clear();
-        for(int i = 0; i < arrays.length; i++) {
-            INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null :  array.data().opaqueBuffer();
-            shapeInfoBufers2[i] =  array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_in.put(i,array);
-        }
-
-
-        PointerPointer<OpaqueDataBuffer> buffers = new PointerPointer<>(buffers1);
-        PointerPointer<OpaqueDataBuffer> shapeInfoBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextInputBuffers(context,arrays.length,buffers,shapeInfoBuffer,null);
+        setInputArrays(Arrays.asList(arrays));
     }
 
     @Override
     public void setOutputArrays(INDArray... arrays) {
-        OpaqueDataBuffer[] buffers1 = new OpaqueDataBuffer[arrays.length];
-        OpaqueDataBuffer[] shapeInfoBufers2 = new OpaqueDataBuffer[arrays.length];
-
-        for(int i = 0; i < arrays.length; i++) {
-            INDArray array = arrays[i];
-            buffers1[i] = array.isEmpty() ? null :  array.data().opaqueBuffer();
-            shapeInfoBufers2[i] = array.shapeInfoDataBuffer().opaqueBuffer();
-            fastpath_out.put(i,array);
-        }
-
-
-        PointerPointer<OpaqueDataBuffer> outputBuffers = new PointerPointer<>(buffers1);
-
-        PointerPointer<OpaqueDataBuffer> shapeInfoOutputBuffer = new PointerPointer<>(shapeInfoBufers2);
-        nativeOps.setGraphContextOutputBuffers(context,arrays.length,outputBuffers,shapeInfoOutputBuffer,null);
+        setOutputArrays(Arrays.asList(arrays));
     }
 
 
@@ -216,9 +183,12 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         if(arr == null) {
             throw new IllegalArgumentException("Unable to set intermediate result for index " + index + " with null array");
         }
-        Nd4j.getNativeOps().setIntermediateResult(context,
-                index, arr.data().opaqueBuffer(),
-                arr.shapeInfoDataBuffer().opaqueBuffer());
+        Nd4j.getNativeOps().setIntermediateResult(
+                context,
+                index,
+                arr.data().opaqueBuffer(),
+                arr.shapeInfoDataBuffer().opaqueBuffer(),
+                arr.offset());
     }
 
     @Override
@@ -227,16 +197,13 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
         long rank = shapeInfo.get(0);
         shapeInfo.capacity(Shape.shapeInfoLength(rank));
         DataBuffer shapeInfoBuffer = Nd4j.createBuffer(shapeInfo, shapeInfo.capacity(),DataType.LONG);
+        long[] convert = shapeInfoBuffer.asLong();
         OpaqueDataBuffer buffer = nativeOps.intermediateResultDataAt(index,context);
         long numElements = nativeOps.dbBufferLength(buffer);
-        /**
-         * TODO: figure out why the buffer is the wrong length.
-         * The shape buffer works but the normal databuffer doesn't.
-         */
         Pointer pointer = buffer.primaryBuffer();
         pointer.capacity(numElements);
         DataBuffer firstBuffer = Nd4j.createBuffer(pointer,null,
-                Shape.length(shapeInfoBuffer), Shape.dataType(shapeInfoBuffer));
+                Shape.length(convert), Shape.dataType(convert));
         INDArray result = Nd4j.createArrayFromShapeBuffer(firstBuffer,shapeInfoBuffer);
         return result;
     }
@@ -245,7 +212,8 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
     public void addIntermediateResult(INDArray arr) {
         Nd4j.getNativeOps().pushIntermediateResult(context,
                 arr.data().opaqueBuffer(),
-                arr.shapeInfoDataBuffer().opaqueBuffer());
+                arr.shapeInfoDataBuffer().opaqueBuffer(),
+                arr.offset());
     }
 
     @Override
@@ -267,20 +235,18 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        nativeOps.setGraphContextInputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().opaqueBuffer(), array.shapeInfoDataBuffer().opaqueBuffer());
-
+        nativeOps.setGraphContextInputArray(context,index,OpaqueNDArray.fromINDArray(array));
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        nativeOps.setGraphContextOutputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().opaqueBuffer(), array.shapeInfoDataBuffer().opaqueBuffer());
-
+        nativeOps.setGraphContextOutputArray(context,index,OpaqueNDArray.fromINDArray(array));
         super.setOutputArray(index, array);
     }
 
     @Override
-    public Pointer contextPointer() {
+    public OpaqueContext contextPointer() {
         return context;
     }
 

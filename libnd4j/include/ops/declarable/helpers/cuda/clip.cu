@@ -97,12 +97,12 @@ void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output, const s
 
   if (dims.empty()) {
     std::vector<LongType> empty;
-    const NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &empty) / z->lengthOf()
+    NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &empty) / z->lengthOf()
                                           : z->reduceAlongDimension(reduce::Norm2, &empty);
 
     if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
   } else {
-    const NDArray actualNorms = z->reduceAlongDimension(reduce::Norm2, &dims);
+    NDArray actualNorms = z->reduceAlongDimension(reduce::Norm2, &dims);
 
     std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(z->rankOf(), dims.size(),dims.data());
 
@@ -218,8 +218,8 @@ void clipByNormBp_(LaunchContext* context, NDArray& input, NDArray& gradO, NDArr
     } else
       gradI.assign(gradO);
   } else {
-    const NDArray actualNorms = input.reduceAlongDimension(reduce::Norm2, &dims);
-    const NDArray sums = input.reduceAlongDimension(reduce::Sum, &dims);
+    NDArray actualNorms = input.reduceAlongDimension(reduce::Norm2, &dims);
+    NDArray sums = input.reduceAlongDimension(reduce::Sum, &dims);
 
     std::vector<LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(gradI.rankOf(), dims.size(),dims.data());
 
@@ -252,13 +252,13 @@ BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
 //////////////////////////////////////////////////////////////////////////
 void clipByNormBp(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
                   const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool useAverage) {
-  NDArray& castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
+  NDArray castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
   BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_,
                         (context, castedInput, gradO, gradI, dimensions, clipNorm, useAverage), SD_FLOAT_TYPES);
 }
 
 template <typename T>
-void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
+void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*>& inputs, double clipNorm,
                        memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
   T globalNorm = static_cast<T>(0.f);
 
@@ -278,7 +278,7 @@ void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*> const& inpu
     auto output = outputs[e];
 
     if (static_cast<double>(globalNorm) <= clipNorm) {
-      output->assign(input);
+      output->assign(*input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
       input->applyLambda(lambda, *output);
@@ -286,14 +286,14 @@ void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*> const& inpu
   }
 }
 
-void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
+void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, double clipNorm,
                       memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
   BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_,
                         (context, inputs, clipNorm, workspace, outputs, isInplace), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
-                      (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm,
+                      (sd::LaunchContext * context, std::vector<NDArray*> & inputs, double clipNorm,
                           sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
 

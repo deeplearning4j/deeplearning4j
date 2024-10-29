@@ -533,11 +533,7 @@ void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArr
 
 #endif
 
-/*
-#ifndef __CLION_IDE__
-#include "NDArray.macro"
-#endif
- */
+
 }  // namespace sd
 
 #endif

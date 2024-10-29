@@ -32,14 +32,11 @@ SD_DEVICE void tearKernel(void* vx, LongType const* xShapeInfo, Pointer* targets
   __shared__ LongType tadLength;
   __shared__ int tadEWS;
   __shared__ int zEWS;
-  //        __shared__ int tadRank;
   __shared__ LongType numTads;
-  //        __shared__ int zRank;
-  //        __shared__        sd::LongType *tadShape;
-  //        __shared__        sd::LongType *tadStride;
-  //        __shared__        sd::LongType const* zShape;
-  //        __shared__        sd::LongType const* zStride;
+
   __shared__ T* x;
+  __shared__ LongType coords[32 * blockDim.x];  // Shared memory for coordinates, max rank 32
+
   if (threadIdx.x == 0) {
     tadLength = shape::length(tadShapeInfo);
     tadEWS = shape::elementWiseStride(tadShapeInfo);
@@ -49,6 +46,8 @@ SD_DEVICE void tearKernel(void* vx, LongType const* xShapeInfo, Pointer* targets
   }
   __syncthreads();
 
+  LongType* threadCoords = &coords[threadIdx.x * 32];  // Each thread gets its own space in shared memory
+
   for (LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
     T* z = (T*)targets[r];
     T* s = x + tadOffsets[r];
@@ -57,9 +56,9 @@ SD_DEVICE void tearKernel(void* vx, LongType const* xShapeInfo, Pointer* targets
       for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) z[i * zEWS] = s[i * tadEWS];
     } else {
       for (LongType j = threadIdx.x; j < tadLength; j += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(j, tadShapeInfo);
-        auto zOffset = shape::getIndexOffset(j, zShapeInfo);
-
+        shape::index2coords(j, tadShapeInfo, threadCoords);
+        auto xOffset = shape::getOffset(tadShapeInfo,threadCoords);
+        auto zOffset = shape::getOffset( zShapeInfo,threadCoords);
         z[zOffset] = s[xOffset];
       }
     }

@@ -152,9 +152,11 @@ static void segmentSumFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   LongType numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
-
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero = 0;
+  sd::LongType  one = 1;
+  sd::LongType  len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero);
 
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -200,8 +202,11 @@ static void unsortedSegmentSumFunctor_(LaunchContext* context, NDArray* input, N
   auto stream = context->getCudaStream();
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero = 0;
+  sd::LongType  one = 1;
+  sd::LongType  len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero);
   dim3 dims = getSegmentSumDims(numOfClasses,indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -214,9 +219,7 @@ static void unsortedSegmentSumFunctor_(LaunchContext* context, NDArray* input, N
         sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentSumLinearKernel failed");
 
   } else {
-
-    output->assign(0);
-    LongType zero = 0;
+    output->assign(zero);
     std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);

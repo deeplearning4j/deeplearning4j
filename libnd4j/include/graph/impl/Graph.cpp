@@ -1039,7 +1039,7 @@ void Graph::printOut() {
 
   for (int s = 0; s < _scopes.size(); s++) {
     Scope *scope = _scopes.at(s);
-    sd_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());
+    sd_printf("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
     for (int n = 0; n < scope->nodes()->size(); n++) {
       Node *node = scope->nodes()->at(n);
@@ -1141,8 +1141,8 @@ std::vector<ops::OpDescriptor> Graph::getOperations() {
 
 Scope *Graph::scopeById(int id) {
   if (_mappedScopes.count(id) == 0) {
-    sd_printf("Requested Scope [%i] doesn't exist\n", id);
-    THROW_EXCEPTION("Non-existent Scope was requested");
+    sd_printf("Requested OpScope [%i] doesn't exist\n", id);
+    THROW_EXCEPTION("Non-existent OpScope was requested");
   }
 
   return _mappedScopes.at(id);

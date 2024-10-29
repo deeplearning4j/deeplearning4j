@@ -30,7 +30,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.nio.ByteBuffer;
 
 /**
- * Cuda Short buffer
+ * Cuda Byte buffer implementation
  *
  * @author raver119@gmail.com
  */
@@ -71,16 +71,13 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaByteDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
     public CudaByteDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 1, initialize, workspace);
     }
 
-    public CudaByteDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+    public CudaByteDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -92,48 +89,22 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
         type = DataType.BYTE;
     }
 
-    public CudaByteDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
-
     public CudaByteDataBuffer(float[] buffer) {
-        super(buffer);
-    }
-
-    public CudaByteDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaByteDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaByteDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(buffer.length, 1, true);
+        setData(buffer);
     }
 
     public CudaByteDataBuffer(double[] data) {
-        super(data);
-    }
-
-    public CudaByteDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaByteDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 1, true);
+        setData(data);
     }
 
     public CudaByteDataBuffer(int[] data) {
-        super(data);
+        super(data.length, 1, true);
+        setData(data);
     }
 
-    public CudaByteDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaByteDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+    public CudaByteDataBuffer() {
     }
 
     @Override
@@ -141,23 +112,37 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
         return new CudaByteDataBuffer(length);
     }
 
-
-
     @Override
     public void setData(float[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0.0f ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0 ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
-
-
 
     @Override
     public void setData(double[] data) {
-        setData(ArrayUtil.toFloats(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0.0 ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
 
     @Override
@@ -180,12 +165,10 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toInts(asFloat());
     }
 
-
     @Override
     public double getDouble(long i) {
         return super.getFloat(i);
     }
-
 
     @Override
     public DataBuffer create(double[] data) {
@@ -204,9 +187,6 @@ public class CudaByteDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void flush() {
-
+        // No action needed for BYTE data
     }
-
-
-
 }

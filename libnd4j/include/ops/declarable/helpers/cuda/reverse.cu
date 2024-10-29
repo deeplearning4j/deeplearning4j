@@ -187,7 +187,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
     LongType numOfElemsToReverse = seqLengths->e<LongType>(0);
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
-      output->assign(input);
+      output->assign(*input);
     else
       reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
@@ -207,7 +207,7 @@ static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* se
       LongType numOfElemsToReverse = seqLengths->e<LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-        outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
+        outSubArrsSet.at(i)->assign(*inSubArrsSet.at(i));
       } else {
         auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
         auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
@@ -225,7 +225,7 @@ void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
   // if op isn't inplace - copy original data into output array
-  if (output->specialBuffer() != input->specialBuffer()) output->assign(input);
+  if (output->specialBuffer() != input->specialBuffer()) output->assign(*input);
 
   BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim),
                         SD_COMMON_TYPES);

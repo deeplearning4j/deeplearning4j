@@ -212,20 +212,21 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
  * along a particular dimension
  */
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
-                                         void *vresult, sd::LongType const *resultShapeInfo) {
+void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays,NDArray **data,
+                                         NDArray *vresult) {
   auto result = reinterpret_cast<T *>(vresult);
   std::vector<NDArray *> inputs(numArrays);
 
-  NDArray output(static_cast<void *>(result), resultShapeInfo, nullptr, 0, 0);
 
   for (sd::LongType i = 0; i < numArrays; ++i)
     inputs[i] =
-        new NDArray(static_cast<void *>(data[i]), static_cast<sd::LongType *>(inputShapeInfo[i]), nullptr, 0, 0);
+        new NDArray(static_cast<void *>(data[i]), data[i]->shapeInfo(), nullptr, false, 0);
 
-  sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
+  sd::SpecialMethods<T>::concatCpuGeneric(inputs, *vresult, dimension);
 
-  //for (sd::LongType i = 0; i < numArrays; ++i) delete inputs[i];
+  for (sd::LongType i = 0; i < numArrays; ++i) {
+    delete inputs[i];
+  }
 }
 
 template <typename T>

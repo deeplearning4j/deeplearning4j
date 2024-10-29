@@ -1,7 +1,10 @@
-#include <ops/declarable/helpers/assign.h>
+#include <exceptions/cuda_exception.h>
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/PointersManager.h>
-#include <exceptions/cuda_exception.h>
+#include <ops/declarable/helpers/assign.h>
+
+#include "helpers/DebugHelper.h"
+#include "helpers/ShapeUtils.h"
 
 namespace sd {
 namespace ops {
@@ -53,7 +56,7 @@ void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source
     errorMsg += "Target shape: " + ShapeUtils::shapeAsString(target) + ", ";
     errorMsg += "Source datatype: " + DataTypeUtils::asString(source->dataType()) + ", ";
     errorMsg += "Target datatype: " + DataTypeUtils::asString(target->dataType());
-    THROW_EXCEPTION(errorMsg);
+    THROW_EXCEPTION(errorMsg.c_str());
   }
 
   NDArray::prepareSpecialUse({target}, {source});
@@ -61,7 +64,7 @@ void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source
   auto xType = source->dataType();
   auto zType = target->dataType();
 
-  dim3 launchDims = getGridAndBlockDms(target->lengthOf());
+  dim3 launchDims = traceDims(target->lengthOf());
 
   PointersManager manager(context, "helpers::assign");
 
@@ -69,7 +72,7 @@ void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source
                         (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(),
                          source->specialBuffer(), source->specialShapeInfo(),
                          target->specialBuffer(), target->specialShapeInfo(),
-                         source->getOffset(), target->getOffset()),
+                         source->offset(), target->offset()),
                         SD_COMMON_TYPES, SD_COMMON_TYPES);
 
   manager.synchronize();

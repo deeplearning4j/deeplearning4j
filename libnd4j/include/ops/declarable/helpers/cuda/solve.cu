@@ -122,7 +122,7 @@ static void adjointMatrix_(LaunchContext* context, NDArray * input, NDArray* out
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
-  output->assign(input);
+  output->assign(*input);
   dim3 solveDims = getLaunchDims("solve");
 
   adjointKernel<T><<<solveDims.x,solveDims.y, solveDims.z, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,

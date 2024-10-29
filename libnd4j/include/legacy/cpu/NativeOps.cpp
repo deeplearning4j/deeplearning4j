@@ -1243,20 +1243,17 @@ void execReduce3All(Pointer *extraPointers, int opNum, OpaqueDataBuffer *dbX, co
  * Concatneate multi array of the same shape together
  * along a particular dimension
  */
-void specialConcat(Pointer *extraPointers, int dimension, int numArrays, Pointer *data,
-                   Pointer *inputShapeInfo, void *hZ, LongType const *hZShapeInfo, Pointer *tadPointers,
-                   Pointer *offsetPointers) {
+void specialConcat(Pointer *extraPointers, int dimension, int numArrays, OpaqueNDArray *data, OpaqueNDArray dZ) {
   try {
-    auto zType = ArrayOptions::dataType(hZShapeInfo);
-
-    BUILD_SINGLE_SELECTOR(zType, SpecialMethods,
-                          ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo),
+    BUILD_SINGLE_SELECTOR(dZ->dataType(), sd::SpecialMethods,
+                          ::concatCpuGeneric(dimension, numArrays, data, dZ),
                           SD_COMMON_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
+
 
 /**
  * This is dummy method for JNI compatibility
@@ -1999,10 +1996,10 @@ LongType const *getShape(ShapeList *list, LongType i) {
 }
 
 void deleteShapeList(Pointer shapeList) {
-  // auto list = reinterpret_cast<ShapeList *>(shapeList);
+   auto list = reinterpret_cast<ShapeList *>(shapeList);
 
-  // list->destroy();
-  // delete list;
+   list->destroy();
+   delete list;
 }
 
 ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputBuffers,
@@ -3062,15 +3059,15 @@ void sortByValue(Pointer *extraPointers, void *x, const LongType *xShapeInfo, vo
   }
 }
 
-void sortTadByKey(Pointer *extraPointers, void *x, const LongType *xShapeInfo, void *dX,
-                  const LongType *dXShapeInfo, void *y, const LongType *yShapeInfo, void *dy,
-                  const LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
+void sortTadByKey(Pointer *extraPointers,NDArray *x,NDArray *y,
+                  LongType *dimension, LongType dimensionLength, bool descending) {
   try {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
+    auto xType = x->dataType();
+    auto yType = y->dataType();
 
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods,
-                          ::sortTadByKey(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending),
+                          ::sortTadByKey(x->buffer(), x->shapeInfo(), y->buffer(),
+                                         y->shapeInfo(), dimension, dimensionLength, descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3078,21 +3075,21 @@ void sortTadByKey(Pointer *extraPointers, void *x, const LongType *xShapeInfo, v
   }
 }
 
-void sortTadByValue(Pointer *extraPointers, void *x, const LongType *xShapeInfo, void *dx,
-                    const LongType *dxShapeInfo, void *y, const LongType *yShapeInfo, void *dy,
-                    const LongType *dyShapeInfo, LongType *dimension, LongType dimensionLength, bool descending) {
-  try {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
+void sortTadByValue(Pointer *extraPointers, NDArray *x,
+                    NDArray *y, LongType *dimension,
+                    LongType dimensionLength, bool descending)
+    try {
+    auto xType = x->dataType();
+    auto yType = y->dataType();
 
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods,
-                          ::sortTadByValue(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending),
+                          ::sortTadByValue(x, x->shapeInfo(), y, y->shapeInfo(), dimension, dimensionLength, descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
-}
+
 
 
 void execIndexReduceScalar(Pointer *extraPointers, int opNum, NDArray *x,

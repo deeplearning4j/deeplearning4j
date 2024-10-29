@@ -73,7 +73,7 @@ DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
 DECLARE_LOGIC_OP(While);
 #endif
 #if NOT_EXCLUDED(OP_Scope)
-DECLARE_LOGIC_OP(Scope);
+DECLARE_LOGIC_OP(OpScope);
 #endif
 #if NOT_EXCLUDED(OP_Conditional)
 DECLARE_LOGIC_OP(Conditional);

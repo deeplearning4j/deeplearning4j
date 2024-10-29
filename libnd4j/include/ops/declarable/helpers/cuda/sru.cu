@@ -62,10 +62,12 @@ void sruCell(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArra
   auto z = mmul(*x, *w);  //  [bS x 3*inSize]
 
   // forget gate = sigmoid(x*Wf + bf)
-  auto f = sigmoid(z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize}));
+  NDArray fIn = z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize});
+  auto f = sigmoid(fIn);
 
+  NDArray rIn = z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize});
   // reset gate = sigmoid(x*Wr + br)
-  auto r = sigmoid(z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize}));
+  auto r = sigmoid(rIn);
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
