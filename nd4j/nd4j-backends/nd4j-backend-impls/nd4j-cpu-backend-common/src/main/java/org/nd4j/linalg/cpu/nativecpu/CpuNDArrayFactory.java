@@ -553,47 +553,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[matrices.size()])))[0];
     }
 
-    @Override
-    public INDArray[] tear(INDArray tensor, long... dimensions) {
-        if (tensor.isCompressed())
-            Nd4j.getCompressor().decompressi(tensor);
-
-        Arrays.sort(dimensions);
-
-        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(tensor, dimensions);
-
-        long tadLength = 1;
-        long[] shape = new long[dimensions.length];
-        for (int i = 0; i < dimensions.length; i++) {
-            tadLength *= tensor.size(dimensions[i]);
-            shape[i] = tensor.size(dimensions[i]);
-        }
-
-
-
-        int numTads = (int)(tensor.length() / tadLength);
-        INDArray[] result = new INDArray[numTads];
-
-        PointerPointer targets = new PointerPointer(numTads);
-
-        for (int x = 0; x < numTads; x++) {
-            result[x] = Nd4j.createUninitialized(shape);
-
-            targets.put(x, result[x].data().pointer());
-        }
-
-        nativeOps.tear(null,
-                ((BaseCpuDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().pointer(), null,
-                targets, (LongPointer) result[0].shapeInfoDataBuffer().pointer(),
-                (LongPointer) tadBuffers.getFirst().pointer(), new LongPointerWrapper(tadBuffers.getSecond().pointer())
-        );
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        return result;
-    }
-
     /**
      * concatenate ndarrays along a dimension
      *

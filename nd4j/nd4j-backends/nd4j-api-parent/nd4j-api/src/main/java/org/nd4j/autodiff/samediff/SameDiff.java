@@ -234,7 +234,7 @@ public class SameDiff extends SDBaseOps {
         for(int i = 0; i < opExecTraceVector1.capacity(); i++) {
             List<SDVariable> variables = new ArrayList<>();
             Pointer opExecTrace = opExecTraceVector1.get(i);
-            String opName = deviceNativeOps.opName(opExecTrace);
+            String opName = deviceNativeOps.opName(opExecTrace).getString();
 
             PointerPointer<LongPointer> inputShapeBuffers = deviceNativeOps.inputShapeBuffers(opExecTrace);
             int numInputs = deviceNativeOps.numInputs(opExecTrace);

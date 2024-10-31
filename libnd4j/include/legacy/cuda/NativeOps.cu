@@ -20,8 +20,7 @@
 #include <exceptions/cuda_exception.h>
 #include <exceptions/datatype_exception.h>
 #include <execution/AffinityManager.h>
-#include <graph/GraphExecutioner.h>
-#include <graph/GraphHolder.h>
+
 #include <helpers/BlasHelper.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/DebugHelper.h>
@@ -44,7 +43,6 @@
 using namespace sd;
 #include <execution/cuda/LaunchDims.h>
 #include <loops/special_kernels.h>
-#include <ops/declarable/OpRegistrator.h>
 
 #include "../../array/ShapeList.h"
 #include "../../ops/declarable/DeclarableOp.h"
@@ -68,66 +66,6 @@ bool supportedP2P = false;
 #include "exceptions/backward.hpp"
 #include "execution/cuda/LaunchDims.h"
 
-// note this is a c++ 17 feature
-#ifndef INSTRUMENT_FILE_DEF
-#pragma once
-#define INSTRUMENT_FILE_DEF 1
-FILE* instrumentFile = nullptr;
-#endif
-
-
-// this is mainly a c based function.
-extern "C" {
-
-
-
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
-  if(instrumentFile == nullptr) {
-    return;
-  }
-  Dl_info info;
-  if (dladdr(this_fn, &info)) {
-    int status;
-    const char *funcName;
-    char* demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
-    if (status == 0) {
-      funcName = demangled  != nullptr ? demangled : "null_demangled";
-    } else {
-      funcName = info.dli_sname ? info.dli_sname : "null_dli_sname";
-    }
-
-    printf(" %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    fprintf( instrumentFile," %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    if (demangled != nullptr) {
-      delete demangled;
-      demangled = nullptr;
-    }
-  } else {
-    printf("%s %s\n", enter ? "enter" : "exit","unknown");
-    fprintf(instrumentFile, "%s %s\n", enter ? "enter" : "exit","unknown");
-    fflush(instrumentFile);
-  }
-}
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
-                                                                                    void *call_site) {
-  writeLog(true,this_fn, call_site);
-}
-
-
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                     void *call_site) {
-  writeLog(false,this_fn, call_site);
-
-}
-
-
-}
 
 //note this is outside extern C. This is fine.
 
@@ -136,243 +74,56 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 
 
-void dbPrintAllocationTrace(OpaqueDataBuffer *db) {
-  db->printDbAllocationTrace();
-}
-
-
-
-void setIntermediateResult(OpaqueContext *contextPointer,
-                           int index,
-                           OpaqueDataBuffer *buffer,
-                           OpaqueDataBuffer *shapeInfo,
-                           sd::LongType dataOffset) {
-  if(shapeInfo == nullptr) {
-    THROW_EXCEPTION("Set Intermediate Result: shapeInfo is null");
-  }
-  auto casted = reinterpret_cast<LongType *>(shapeInfo->primary());
-  auto desc = new ShapeDescriptor(casted, false);
-  auto arr = new NDArray(buffer->dataBuffer(),
-                         desc,
-                         LaunchContext::defaultContext(),
-                         dataOffset);
-  contextPointer->setIntermediateResult(index, arr);
-}
-
-
-std::vector<const LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer) {
-  std::vector<const LongType *> intermediates;
-  for (auto v: contextPointer->intermediateResults()) {
-    const LongType *buff = v->shapeInfo();
-    intermediates.push_back(buff);
-  }
-
-  return intermediates;
-}
-
-std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer) {
-  std::vector<OpaqueDataBuffer *> intermediates;
-  for (auto v: contextPointer->intermediateResults()) {
-    OpaqueDataBuffer *buff = new OpaqueDataBuffer (v->dataBuffer());
-    intermediates.push_back(buff);
-  }
-
-  return intermediates;
-}
-
-int numIntermediateResults(OpaqueContext *contextPointer) {
-  return contextPointer->numIntermediates();
-}
-
-void pushIntermediateResult(OpaqueContext *contextPointer,
-                            OpaqueDataBuffer *buffer,
-                            OpaqueDataBuffer *shapeInfo,
-                            LongType offset) {
-  auto shapeInfoCast = reinterpret_cast<LongType *>(shapeInfo->primary());
-  auto desc = new ShapeDescriptor(shapeInfoCast, false);
-  auto arr = new NDArray(buffer->dataBuffer(), desc, LaunchContext::defaultContext(), offset);
-  contextPointer->pushIntermediateResult(arr);
-}
-
-OpaqueDataBuffer  * intermediateResultDataAt(int index, OpaqueContext *contextPointer) {
-  auto arr = contextPointer->intermediateResult(index);
-  return new OpaqueDataBuffer(arr->dataBuffer());
-}
-
-const sd::LongType * intermediateResultShapeInfoAt(int index, OpaqueContext *contextPointer) {
-  auto context = reinterpret_cast<graph::Context *>(contextPointer);
-  auto arr = context->intermediateResult(index);
-  return arr->shapeInfo();
-}
-
-
-TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, LongType *dimension, LongType dimensionLength) {
-  try {
-    auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
-    auto rankVal = buffPrim[0];
-    if(rankVal == 0) {
-      //detect when the shape buffer values are unset.
-      auto len = shape::shapeInfoLength(rankVal);
-      //min number of values in a shape info buffer
-      bool allZero = true;
-      for(int i = 0; i < len; i++) {
-        if(buffPrim[i] != 0) {
-          allZero = false;
-          break;
-        }
-      }
-
-      if(allZero) {
-        THROW_EXCEPTION("Found shape buffer with all zero values. Values likely unset.");
-      }
-    }
-
-    auto pack = ConstantTadHelper::getInstance().tadForDimensions(reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
-    return pack;
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    THROW_EXCEPTION(e.what());
-  }
-
-
-}
-
-
-OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
-                                       char order, LongType ews, bool empty) {
-  return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
-}
-
-LongType dbBufferLength(OpaqueDataBuffer *dataBuffer) {
-  return dataBuffer->dataBuffer()->getNumElements();
-}
-
 
 
 int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
-void toggleOpTrace(bool opTrace) { ops::OpRegistrator::getInstance().toggleTraceOps(opTrace);
-}
 
-void purgeOpTrace() { ops::OpRegistrator::getInstance().purgeOpExecs();
-}
-
-
-void printOpTrace() {
-  auto execTrace = *ops::OpRegistrator::getInstance().execTrace();
-  for(int i = 0; i < execTrace.size(); i++) {
-    auto curr = execTrace[i];
-    if(curr->opName != nullptr) {
-      sd_printf("Op name: %s\n", curr->opName->c_str());
-    }
-    sd_printf(" Input buffers:\n",0);
-    if(curr->inputShapeBuffers == nullptr || curr->inputShapeBuffers->size() == 0) {
-      sd_printf("No input buffers\n",0);
-      continue;
-    } else {
-      auto currInputShapeBuffers = *(curr->inputShapeBuffers);
-      for(int j = 0; j < currInputShapeBuffers.size(); j++) {
-        auto buff = currInputShapeBuffers[j];
-        shape::printShapeInfo(buff);
-        sd_printf("\n",0);
-      }
-    }
-
-    if(curr->outputShapeBuffers == nullptr || curr->outputShapeBuffers->size() == 0) {
-      sd_printf("No output buffers\n",0);
-      continue;
-    } else {
-      auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
-      for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
-        shape::printShapeInfo(currOutputShapeBuffers[j]);
-        sd_printf("\n",0);
-      }
-
-    }
-
-
-  }
-
-}
-
-
-std::vector<ExecTrace*> * listOpTraces() {
-  return ops::OpRegistrator::getInstance().execTrace();
-}
-
-void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-  OpaqueDataBuffer *copyFrom = dbCreateView(from, n);
-  OpaqueDataBuffer *targetView = dbCreateView(target, n);
-  DataBuffer *targetBuf = copyFrom->dataBuffer();
-  DataBuffer *srcBuf = targetView->dataBuffer();
-  DataBuffer::memcpy(targetBuf, srcBuf, 0, 0);
-}
-
-
-
-int contextNumInputs(void *contextPointer) {
-  Context *context = (Context *) contextPointer;
-  return context->width();
-}
-
-int contextNumOutputs(void *contextPointer) {
-  Context *context = (Context *) contextPointer;
-  return context->outputWidth();
-}
-
-
-
-int numInputs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return trace->inputShapeBuffers->size();
-}
-
-int numOutputs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return trace->outputShapeBuffers->size();
-}
-
-std::vector<bool> * bArgs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return &trace->bArgs;
-}
-
-std::vector<std::string> * sArgs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return (&trace->sArguments);
-}
-std::vector<double> * tArgs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return (&trace->tArgs);
-
-}
-
-std::vector<LongType> * iArgs(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return &(trace->iArgs);
-}
-
-std::vector<const LongType *> *inputShapeBuffers(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return trace->inputShapeBuffers;
-}
-
-std::vector<const LongType *> *outputShapeBuffers(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return trace->outputShapeBuffers;
-}
-
-char *opName(void *execTrace) {
-  ExecTrace *trace = (ExecTrace *) execTrace;
-  return const_cast<char *>(trace->opName->c_str());
-}
 
 // this method just does type conversion in fancy way
 int getDeviceId(Pointer ptrToDeviceId) { return (int)(LongType)ptrToDeviceId; }
+// Function to execute a custom operation with context
+sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context *opContext) {
+  try {
+    // Retrieve the operation based on the hash
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    if (op == nullptr) {
+      throw std::invalid_argument("Operation not found for the given hash.");
+    }
 
+    // Execute the custom operation with the provided context
+    auto result = op->execute(opContext);
+
+    // Synchronize the CUDA stream to ensure operation completion
+    auto res = cudaStreamSynchronize(*opContext->launchContext()->getCudaStream());
+    if (res != cudaSuccess) {
+      std::string errorMessage;
+      errorMessage += "CUDA stream synchronization failed with error code: ";
+      errorMessage += std::to_string(res);
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
+
+    // Synchronize fastpath inputs
+    for (auto v : opContext->fastpath_in()) {
+      if (!v->isEmpty()) v->syncToDevice();
+    }
+
+    // Synchronize fastpath outputs
+    for (auto v : opContext->fastpath_out()) {
+      if (!v->isEmpty()) v->syncToDevice();
+    }
+
+    return result;
+  }
+  catch (std::exception &e) {
+    // Handle exceptions by setting error codes and messages
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return sd::Status::KERNEL_FAILURE;
+  }
+}
 /*
  * Basic CUDA constants here: number of blocks per MP
  */
@@ -601,7 +352,7 @@ void execPairwiseTransformBool(Pointer *extraPointers, int opNum, OpaqueNDArray 
   }
 }
 
-OpaqueConstantShapeBuffer *cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
+OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
   try {
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     return buffer;
@@ -1918,10 +1669,10 @@ void accumulate(Pointer *extras, OpaqueNDArray *x,  OpaqueNDArray z, int n, Long
 
 bool isExperimentalEnabled() { return Environment::getInstance().isExperimentalBuild(); }
 void shuffle(Pointer *extras,
-             OpaqueNDArray *x,
+             OpaqueNDArrayArr x,
              OpaqueNDArray z,
              int N,
-             OpaqueNDArray *dimension,
+             OpaqueNDArray dimension,
              OpaqueNDArray shuffleMap) {
   try {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
@@ -1940,8 +1691,8 @@ void shuffle(Pointer *extras,
       xShapeInfos[i] = const_cast<LongType*>(x[i]->specialShapeInfo());
 
       // Extract dimensions for each x[i] from the array of arrays
-      LongType* dimensions = reinterpret_cast<LongType*>(dimension[i]->buffer());
-      LongType dimLength = shape::length(dimension[i]->shapeInfo());
+      LongType* dimensions = reinterpret_cast<LongType*>(dimension->buffer());
+      LongType dimLength = shape::length(dimension->shapeInfo());
 
       // Calculate TADs for each x
       auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x[i]->shapeInfo(), dimensions, dimLength);
@@ -1953,7 +1704,7 @@ void shuffle(Pointer *extras,
     LongType* zShapeInfo = const_cast<LongType*>(z->specialShapeInfo());
 
     // Calculate TADs for z
-    auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), reinterpret_cast<LongType*>(dimension[0]->buffer()), shape::length(dimension[0]->shapeInfo()));
+    auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), reinterpret_cast<LongType*>(dimension->buffer()), shape::length(dimension->shapeInfo()));
     LongType* zTadShapeInfoBuffer = const_cast<LongType*>(tadPackZ->specialShapeInfo());
     LongType* zTadOffsetsBuffer = const_cast<LongType*>(tadPackZ->specialOffsets());
 
@@ -2464,42 +2215,7 @@ int lengthForShapeBufferPointer(Pointer buffer) {
 
 Pointer pointerForAddress(LongType address) { return reinterpret_cast<Pointer>(address); }
 
-void tear(Pointer *extras, OpaqueNDArray dbX, OpaqueNDArray targets, OpaqueNDArray z, OpaqueNDArray dimension) {
-  try {
-    dbX->prepareSpecialUse({}, {dbX});
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    dim3 launchDims = getLaunchDims("tear");
-    auto xType = dbX->dataType();
-
-    // Extract dimensions
-    LongType* dimensions = reinterpret_cast<LongType*>(dimension->buffer());
-    LongType dimLength = shape::length(dimension->shapeInfo());
-
-    // Calculate TADs for dbX
-    auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(dbX->shapeInfo(), dimensions, dimLength);
-    LongType* tadShapeInfo = const_cast<LongType*>(tadPackX->specialShapeInfo());
-    LongType* tadOffsets = const_cast<LongType*>(tadPackX->specialOffsets());
-
-    BUILD_SINGLE_SELECTOR(
-        xType, tearKernelGeneric,
-        (launchDims, stream,
-         shape::isEmptyConst(dbX->shapeInfo()) ? nullptr : dbX->specialBuffer(),
-         dbX->specialShapeInfo(),
-         reinterpret_cast<Pointer*>(targets->specialBuffer()),  // Cast targets to Pointer*
-         z->specialShapeInfo(),
-         tadShapeInfo,
-         tadOffsets),
-        SD_COMMON_TYPES);
-
-    DebugHelper::checkErrorCode(stream, "tear(...) failed");
-
-    dbX->registerSpecialUse({}, {dbX});
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 void prescanArrayRecursive(Pointer *extras, int *dZ, int *dX, int numElements, int level) {
   auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
@@ -2930,8 +2646,7 @@ void sortByValue(Pointer *extraPointers,OpaqueNDArray x,
 void sortTadByKey(Pointer *extraPointers,
                   OpaqueNDArray x,
                   OpaqueNDArray y,
-                  LongType *dimension,
-                  LongType dimensionLength,
+                  OpaqueNDArray dimension,
                   bool descending) {
   try {
     // Retrieve the CUDA stream from extraPointers[1]
@@ -2953,8 +2668,12 @@ void sortTadByKey(Pointer *extraPointers,
     auto xType = ArrayOptions::dataType(xShapeInfo);
     auto yType = ArrayOptions::dataType(yShapeInfo);
 
+    // Get the dimension buffer and length
+    auto dimensionPtr = reinterpret_cast<LongType *>(dimension->buffer());
+    LongType dimensionLength = static_cast<LongType>(shape::length(dimension->shapeInfo()));
+
     // Get the TAD pack for the given dimensions
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimensionPtr, dimensionLength);
 
     // Get the number of TADs
     auto numTads = tadPack->numberOfTads();
@@ -2965,8 +2684,8 @@ void sortTadByKey(Pointer *extraPointers,
     // Execute the sortTadByKey operation based on data types
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, x->specialBuffer(),
-                              dXShapeInfo, y->specialBuffer(), dyShapeInfo,
-                              dimension, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
+                           dXShapeInfo, y->specialBuffer(), dyShapeInfo,
+                           dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
                           SD_COMMON_TYPES, SD_COMMON_TYPES);
 
     // Check for CUDA errors after sort execution
@@ -3035,9 +2754,9 @@ void sortTadByValue(Pointer *extraPointers,
 }
 
 
-void sortTad(Pointer *extraPointers, NDArray *x,
+void sortTad(Pointer *extraPointers, OpaqueNDArray  x,
              LongType *dimension, LongType dimensionLength,
-             const LongType *tadShapeInfo, const LongType *tadOffsets, bool descending) {
+              LongType *tadShapeInfo,  LongType *tadOffsets, bool descending) {
   try {
     // Retrieve the CUDA stream from extraPointers[1]
     cudaStream_t *stream = nullptr;
@@ -3067,7 +2786,7 @@ void sortTad(Pointer *extraPointers, NDArray *x,
     // Execute the sortTad operation based on data type
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,
-        (launchDims, stream, x->specialBuffer(), dXShapeInfo, nullptr, dimensionLength, tadShapeInfo, tadOffsets, descending),
+        (launchDims, stream, x->specialBuffer(), dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending),
         SD_COMMON_TYPES
     );
 
@@ -3082,8 +2801,7 @@ void sortTad(Pointer *extraPointers, NDArray *x,
 }
 
 
-void sortCooIndices(Pointer *extraPointers, LongType *indices, void *values, LongType length,
-                    const LongType *xShapeInfo) {
+void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray values) {
   THROW_EXCEPTION("sortCooIndices:: Not implemented yet");
 }
 
@@ -3113,493 +2831,6 @@ void unravelIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices
   }
 }
 
-LongType *mmapFile(Pointer *extraPointers, const char *fileName, LongType length) { return nullptr; }
-
-void munmapFile(Pointer *extraPointers, LongType *ptrMap, LongType length) {}
-
-ResultWrapper *executeFlatGraph(Pointer *extraPointers, Pointer flatBufferPointer) {
-  try {
-    return GraphExecutioner::executeFlatBuffer(flatBufferPointer);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-LongType getResultWrapperSize(ResultWrapper *ptr) { return ptr->size(); }
-Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer(); }
-
-const char *getAllCustomOps() { return ops::OpRegistrator::getInstance().getAllCustomOperations(); }
-
-ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputBuffers,
-                                  Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                  LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs, int numDArgs,
-                                  sd::LongType *offsets) {
-
-  graph::VariableSpace varSpace;
-  Context block(2, &varSpace);
-  ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
-
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back(DataTypeUtils::fromInt(dArgs[e]));
-
-  for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<LongType *>(inputShapes[e]);
-    if(shape_ == nullptr) {
-      THROW_EXCEPTION("Input shape was null!");
-    }
-
-    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
-    }
-
-
-
-    // we shouldn't copy buffer if that's empty array
-    void *buffer_ = ArrayOptions::arrayType(shape_) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-
-    auto array = new NDArray(buffer_, shape_, block.launchContext(), 0, offsets[e]);
-
-
-    // block should contain references to proper variable
-    varSpace.putVariable(1, e, array);
-    block.pickInput(1, e);
-
-    inShapes.push_back(shape_);
-  }
-
-  auto status = op->validateDataTypes(block);
-  if (status != Status::OK) THROW_EXCEPTION("Data types validation failed");
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  if (varSpace.launchContext() != nullptr) shapeList->detach();
-
-  return shapeList;
-}
-
-ShapeList *calculateOutputShapes2(Pointer *extraPointers, LongType hash, Pointer *inputBuffers, Pointer *inputShapes,
-                                  int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs,
-                                  bool *bArgs, int numBArgs, int *dArgs, int numDArgs,
-                                  sd::LongType *offsets) {
-  try {
-    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
-    return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, nullptr);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-ShapeList *_calculateOutputShapes(Pointer *extraPointers, ops::DeclarableOp *op, Pointer *inputShapes,
-                                  int numInputShapes, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs) {
-  Context block(1);
-  ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numInputShapes; e++) inShapes.push_back(reinterpret_cast<LongType *>(inputShapes[e]));
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  return shapeList;
-}
-
-ShapeList *calculateOutputShapes(Pointer *extraPointers, LongType hash, Pointer *inputShapes, int numInputShapes,
-                                 double *tArgs, int numTArgs, LongType *iArgs, int numIArgs) {
-  try {
-    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
-
-    return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-LongType getShapeListSize(ShapeList *list) { return list->size(); }
-
-LongType const *getShape(ShapeList *list, LongType i) { return list->at(i); }
-
-Status realExec(ops::DeclarableOp *op, Pointer *extraPointers, LongType hash, Pointer *inputBuffers,
-                Pointer *inputShapes, int numInputs, Pointer *outputBuffers, Pointer *outputShapes,
-                int numOutputs, double *tArgs, int numTArgs, LongType *iArgs, int numIArgs, bool *bArgs,
-                int numBArgs, bool isInplace) {
-  if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
-
-  // we're using the same fake nodeId everywhere here
-
-  std::vector<NDArray *> inputs(numInputs);
-  std::vector<NDArray *> outputs(numOutputs);
-  std::vector<double> ttArgs(numTArgs);
-  std::vector<LongType> iiArgs(numIArgs);
-  std::vector<bool> biArgs(numBArgs);
-
-  // filling block now with inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto shape = reinterpret_cast<LongType *>(inputShapes[e]);
-    void *buffer = ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[e];
-
-    inputs[e] = new NDArray(buffer, shape, nullptr, 0, 0);
-  }
-
-  // if not inplace - transferring output arrays
-
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      // we want to keep original output shape intact
-      auto shape = shape::copyShape(reinterpret_cast<LongType *>(outputShapes[e]));
-      void *buffer = ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : outputBuffers[e];
-
-      // FIXME: revisit this.
-      bool canNullify = true;
-      for (int i = 0; i < numInputs; i++) {
-        void *ibuffer = ArrayOptions::arrayType(shape) == ArrayType::EMPTY ? nullptr : inputBuffers[i];
-        if (ibuffer == buffer) {
-          canNullify = false;
-          break;
-        }
-      }
-
-      if (canNullify)
-        memset((uint8_t *)buffer, '\0',
-               shape::length(shape) * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape)));
-
-      auto array = new NDArray(buffer, shape, nullptr, 0, 0);
-      outputs[e] = array;
-
-      // and we want to release shape copy once we're done
-      delete[] shape;
-    }
-
-  for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
-
-  for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
-
-  for (int e = 0; e < numBArgs; e++) biArgs[e] = bArgs[e];
-
-  // hypothetically at this point we have everything filled
-  auto hZ = op->execute(inputs, outputs, ttArgs, iiArgs, biArgs, std::vector<DataType>(), isInplace);
-
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      if (outputs[e]->ordering() != shape::order(reinterpret_cast<LongType *>(outputShapes[e])))
-        outputs[e]->streamline(shape::order(reinterpret_cast<LongType *>(outputShapes[e])));
-    }
-
-  for (auto v : inputs) delete v;
-
-  for (auto v : outputs) delete v;
-
-  return hZ;
-}
-
-
-// Function to execute a custom operation
-Status execCustomOp(Pointer *extraPointers, LongType hash, OpaqueNDArray *inputs, int numInputs,
-                    OpaqueNDArray *outputs, int numOutputs, double *tArgs, int numTArgs,
-                    LongType *iArgs, int numIArgs, bool *bArgs, int numBArgs, bool isInplace) {
-  try {
-    // Convert NDArray** inputs and outputs to std::vector<NDArray*>
-    const std::vector<NDArray*> inputVec(inputs, inputs + numInputs);
-    const std::vector<NDArray*> outputVec(outputs, outputs + numOutputs);
-    const std::vector<double> tArgsVec(tArgs, tArgs + numTArgs);
-    const std::vector<LongType> iArgsVec(iArgs, iArgs + numIArgs);
-    const std::vector<bool> bArgsVec(bArgs, bArgs + numBArgs);
-
-    // Retrieve the operation based on the hash
-    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
-    if (op == nullptr) {
-      throw std::invalid_argument("Operation not found for the given hash.");
-    }
-
-    // Execute the custom operation
-    return op->execute(inputVec, outputVec, tArgsVec, iArgsVec, bArgsVec, {}, isInplace);
-  }
-  catch (std::exception &e) {
-    // Handle exceptions by setting error codes and messages
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::KERNEL_FAILURE;
-  }
-}
-
-// Function to execute a custom operation with context
-Status execCustomOp2(Pointer *extraPointers, LongType hash, Context *opContext) {
-  try {
-    // Retrieve the operation based on the hash
-    auto op = ops::OpRegistrator::getInstance().getOperation(hash);
-    if (op == nullptr) {
-      throw std::invalid_argument("Operation not found for the given hash.");
-    }
-
-    // Execute the custom operation with the provided context
-    auto result = op->execute(opContext);
-
-    // Synchronize the CUDA stream to ensure operation completion
-    auto res = cudaStreamSynchronize(*opContext->launchContext()->getCudaStream());
-    if (res != cudaSuccess) {
-      throw cuda_exception::build("execCustomOp2 execution failed", res);
-    }
-
-    // Synchronize fastpath inputs
-    for (auto v : opContext->fastpath_in()) {
-      if (!v->isEmpty()) v->syncToDevice();
-    }
-
-    // Synchronize fastpath outputs
-    for (auto v : opContext->fastpath_out()) {
-      if (!v->isEmpty()) v->syncToDevice();
-    }
-
-    return result;
-  }
-  catch (std::exception &e) {
-    // Handle exceptions by setting error codes and messages
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::KERNEL_FAILURE;
-  }
-}
-
-Status registerGraph(Pointer *extraPointers, LongType graphId, Pointer flatBufferPointer) {
-  try {
-    auto graph = GraphExecutioner::importFromFlatPointer(flatBufferPointer);
-
-    GraphHolder::getInstance().registerGraph(graphId, graph);
-
-    return Status::OK;
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::BAD_INPUT;
-  }
-}
-
-static VariablesSet *executeStoredGraphT(Pointer *extraPointers, LongType graphId, Pointer *inputBuffers,
-                                         Pointer *inputShapes, int *inputIndices, int numInputs) {
-  auto graph = graph::GraphHolder::getInstance().cloneGraph(graphId);
-  auto varSpace = graph->getVariableSpace();
-
-  std::vector<NDArray *> handles;
-
-  for (int e = 0; e < numInputs; e++) {
-    auto idx = inputIndices[e];
-
-    // we'll delete this array later, together with cloned VariableSpace
-    auto array = new NDArray(inputBuffers[e], reinterpret_cast<LongType *>(inputShapes[e]), nullptr, 0, 0);
-    handles.emplace_back(array);
-
-    if (varSpace->hasVariable(idx)) {
-      auto var = varSpace->getVariable(idx);
-      if (var->hasNDArray()) delete var->getNDArray();
-
-      var->setNDArray(array);
-    } else
-      varSpace->putVariable(idx, array);
-  }
-
-  auto hZ = graph::GraphExecutioner::execute(graph, varSpace);
-  auto varSet = new graph::VariablesSet(hZ);
-
-  if (hZ == Status::OK) {
-    // pull back results, and provide them
-    auto outputs = graph->fetchOutputs();
-    for (int e = 0; e < outputs->size(); e++) {
-      // we're only getting variable ID/Index from original grap. values will be taken from cloned workspace
-      std::pair<int, int> varId(outputs->at(e)->id(), outputs->at(e)->index());
-
-      auto var = varSpace->getVariable(varId);
-
-      varSet->push_back(var->clone());
-    }
-
-    delete outputs;
-  }
-
-  delete graph;
-
-  return varSet;
-}
-
-
-VariablesSet *executeStoredGraph(Pointer *extraPointers, LongType graphId, Pointer *inputBuffers, Pointer *inputShapes,
-                                 int *inputIndices, int numInputs) {
-  try {
-    return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-LongType getVariablesSetSize(VariablesSet *set) { return set->size(); }
-
-Status getVariablesSetStatus(VariablesSet *set) { return set->status(); }
-
-Variable *getVariable(VariablesSet *set, LongType i) { return set->at(i); }
-
-int getVariableId(Variable *variable) { return variable->id(); }
-
-int getVariableIndex(Variable *variable) { return variable->index(); }
-
-const char *getVariableName(Variable *variable) { return variable->getName()->c_str(); }
-
-LongType const *getVariableShape(Variable *variable) { return variable->getNDArray()->shapeInfo(); }
-
-void *getVariableBuffer(Variable *variable) { return variable->getNDArray()->buffer(); }
-
-Status unregisterGraph(Pointer *extraPointers, LongType graphId) {
-  try {
-    GraphHolder::getInstance().dropGraphAny(graphId);
-
-    return Status::OK;
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::BAD_INPUT;
-  }
-}
-
-void deletePointerArray(Pointer pointer) {
-  Pointer *ptr = reinterpret_cast<Pointer *>(pointer);
-  delete[] ptr;
-}
-
-void deleteCharArray(Pointer pointer) {
-  auto ptr = reinterpret_cast<char *>(pointer);
-  delete[] ptr;
-}
-
-void deleteIntArray(Pointer pointer) {
-  auto ptr = reinterpret_cast<int *>(pointer);
-  delete[] ptr;
-}
-
-void deleteLongArray(Pointer pointer) {
-  auto ptr = reinterpret_cast<LongType *>(pointer);
-  delete[] ptr;
-}
-
-void deleteVariablesSet(VariablesSet *pointer) {
-  delete pointer;
-}
-
-void deleteShapeList(Pointer shapeList) {
-  ShapeList *list = reinterpret_cast<ShapeList *>(shapeList);
-  delete list;
-}
-
-const char *getAllOperations() { return OpTracker::getInstance().exportOperations(); }
-
-Pointer getGraphState(LongType id) { return (Pointer) new GraphState(id); }
-
-void deleteGraphState(Pointer state) {
-  auto stateP = reinterpret_cast<GraphState *>(state);
-  delete stateP;
-}
-
-Status execCustomOpWithScope_(Pointer *extraPointers, graph::GraphState *state, LongType opHash,
-                              LongType *scopes, int numScopes, Pointer *inputBuffers,
-                              Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
-                              Pointer *outputShapes, int numOutputs) {
-  /**
-   * That's basically exec, with VariableSpace provided in GraphState:
-   * depending on operation (i.e. while of if), different logic executors could be used
-   */
-
-  auto graph = state->graph();
-  auto varSpace = state->variableSpace();
-
-  // Node is dynamically created, and has nothing beyond it: only inputs and outputs
-  // this node has id of 0, and inputs are
-  Node node(OpType_LOGIC, opHash, 0);
-
-  // mapping inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto buffer = inputBuffers[e];
-    auto shapeInfo = reinterpret_cast<LongType *>(inputShapes[e]);
-
-    auto array = new NDArray(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace
-    varSpace->putVariable(0, e, array);
-    node.pickInput(0, e);
-  }
-
-  // mapping scopes
-  for (int e = 0; e < numScopes; e++) {
-    // we should check scope existence in GraphState/Graph
-    int scopeId = (int)scopes[e];
-    if (!state->hasScope(scopeId)) {
-      return Logger::logKernelFailureMsg();
-    }
-    node.pickInput(scopeId, 0);
-  }
-
-  auto hZ = LogicExecutor::processNode(graph, &node);
-  if (hZ != Status::OK) return hZ;
-
-  // mapping outputs
-
-  for (int e = 0; e < numOutputs; e++) {
-    auto buffer = outputBuffers[e];
-    auto shapeInfo = reinterpret_cast<LongType *>(outputShapes[e]);
-
-    NDArray array(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
-
-    // now we just put array to VarSpace to the same ID
-    // varSpace->putVariable(0, e, array);
-
-    auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(*t);
-  }
-
-  // removing input variables
-  for (int e = 0; e < numInputs; e++) {
-    varSpace->dropVariable(0, e);
-  }
-
-  // after some bla-bla-bla we should have Graph and Node for current op
-  return Status::OK;
-}
-
-Status execCustomOpWithScope(Pointer *extraPointers, Pointer state, LongType opHash, LongType *scopes, int numScopes,
-                             Pointer *inputBuffers, Pointer *inputShapes, int numInputs, Pointer *outputBuffers,
-                             Pointer *outputShapes, int numOutputs) {
-  try {
-    return execCustomOpWithScope(extraPointers, reinterpret_cast<GraphState *>(state), opHash, scopes,
-                                 numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
-                                 numOutputs);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return Status::BAD_INPUT;
-  }
-}
-
-void deleteResultWrapper(Pointer ptr) {
-  // just 0 room for compiler s@!t
-  auto p = reinterpret_cast<ResultWrapper *>(ptr);
-  delete p;
-}
-
-int estimateThreshold(Pointer *extraPointers, Pointer dX, LongType const *dXShapeInfo, int N,
-                      float threshold) {
-  THROW_EXCEPTION("estimateThreshold: Not implemented yet");
-}
 
 /*
  * TypeDef:
@@ -3785,19 +3016,7 @@ void convertTypes(Pointer *extras, int srcType, Pointer dX, LongType N, int dstT
   }
 }
 
-Pointer createUtf8String(Pointer *extraPointers, const char *string, int length) {
-  auto u = new utf8string(string, length);
-  return reinterpret_cast<Pointer>(u);
-}
 
-LongType getUtf8StringLength(Pointer *extraPointers, Pointer ptr) {
-  return reinterpret_cast<utf8string *>(ptr)->_length;
-}
-char *getUtf8StringBuffer(Pointer *extraPointers, Pointer ptr) {
-  return reinterpret_cast<utf8string *>(ptr)->_buffer;
-}
-
-void deleteUtf8String(Pointer *extraPointers, Pointer ptr) { delete (reinterpret_cast<utf8string *>(ptr)); }
 
 ///////////////////////////////////////////////////////////////////
 template <typename T, typename I>
@@ -3874,16 +3093,20 @@ SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t *stream,
         tadPackY->specialShapeInfo(), yTadOffsets, indices->specialBuffer());
 }
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, LongType *axis, LongType axisLength) {
+void scatterUpdate(Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
     auto type = ArrayOptions::dataType(array->shapeInfo());
     auto iType = ArrayOptions::dataType(indices->shapeInfo());
 
+    // Extract axis data
+    LongType* axisData = reinterpret_cast<LongType*>(axis->buffer());
+    LongType axisLength = shape::length(axis->shapeInfo());
+
     BUILD_DOUBLE_SELECTOR(
         type, iType, scatterUpdateCudaLauncher,
-        (stream, opCode, array, indices, updates, axis, axisLength),
+        (stream, opCode, array, indices, updates, axisData, axisLength),
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
     DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
@@ -3933,34 +3156,7 @@ void tryPointer(Pointer extra, Pointer p, int len) {
   }
 }
 
-int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header)); }
 
-
-
-OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
-                                         char order,
-                                         LongType ews, LongType extras) {
-  try {
-
-    auto desc = new ShapeDescriptor(dtype, order, shape, strides, rank, extras);
-    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
-    return buffer;
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
-
-void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {
-  delete ptr;
-}
-
-void deleteTadPack(TadPack *ptr) {
-  delete ptr;
-}
 
 bool isBlasVersionMatches(int major, int minor, int build) {
   auto result = major == Environment::getInstance()._blasMajorVersion &&
@@ -3978,317 +3174,14 @@ bool isBlasVersionMatches(int major, int minor, int build) {
   return result;
 }
 
-ConstantDataBuffer *constantBufferLong(DataType dtype, LongType const *data, int length) {
-  return ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
-}
-
-ConstantDataBuffer *constantBufferDouble(DataType dtype, double *data, int length) {
-  return ConstantHelper::getInstance().constantBuffer(ConstantDescriptor(data, length), dtype);
-}
-
-ConstantDataBuffer *constantBuffer(DataType dtype, ConstantDescriptor *descriptor) {
-  return ConstantHelper::getInstance().constantBuffer(*descriptor, dtype);
-}
-
-Pointer getConstantDataBufferPrimary(ConstantDataBuffer *dbf) { return dbf->primary(); }
-Pointer getConstantDataBufferSpecial(ConstantDataBuffer *dbf) { return dbf->special(); }
-LongType getConstantDataBufferLength(ConstantDataBuffer *dbf) { return dbf->length(); }
-LongType getConstantDataBufferSizeOf(ConstantDataBuffer *dbf) { return dbf->sizeOf(); }
-
-Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer *dbf) { return const_cast<LongType *>(dbf->primary()); }
-
-Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer *dbf) { return const_cast<LongType *>(dbf->special()); }
-
-Context *createGraphContext(int nodeId) { return new Context(nodeId); }
-
-RandomGenerator *getGraphContextRandomGenerator(Context *ptr) { return &ptr->randomGenerator(); }
-
-void markGraphContextInplace(Context *ptr, bool reallyInplace) { ptr->markInplace(reallyInplace); }
 
 void setGraphContextCudaContext(Context *ptr, void *stream, void *reductionPointer,
                                 void *allocationPointer) {
   ptr->setCudaContext(stream, reductionPointer, allocationPointer);
 }
 
-OpaqueNDArray getOutputArrayNative(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return nullptr;
-  return ptr->outputArray(idx);
-}
 
 
-OpaqueNDArray getInputArrayNative(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return nullptr;
-  return ptr->array(idx);
-}
-
-
-sd::LongType dataTypeNativeAt(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return 0;
-  return static_cast<sd::LongType>(ptr->dataType(idx));
-
-}
-
-
-bool bArgAtNative(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return false;
-  return ptr->getBArguments()->at(idx);
-
-}
-
-sd::LongType iArgumentAtNative(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->getIArguments()->at(idx);
-
-}
-
-sd::LongType numDNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->numD();
-}
-
-sd::LongType numBNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->numB();
-}
-
-sd::LongType numOutputsNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->outputWidth();
-}
-sd::LongType numInputsNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->width();
-}
-
-double tArgumentNative(OpaqueContext* ptr, int idx) {
-  if(ptr == nullptr)
-    return 0.0;
-  return ptr->getTArguments()->at(idx);
-}
-
-sd::LongType numTArgumentsNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->numT();
-}
-
-sd::LongType numIArgumentsNative(OpaqueContext* ptr) {
-  if(ptr == nullptr)
-    return 0;
-  return ptr->numI();
-}
-
-
-
-
-void setGraphContextOutputArray(OpaqueContext* ptr, int index,OpaqueNDArray arr) {
-  if(arr == nullptr)
-    THROW_EXCEPTION("setGraphContextOutputArray: Input arrays were null!");
-
-  ptr->setOutputArray(index,arr,false);
-
-
-}
-
-void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) {
-  if(arr == nullptr)
-    THROW_EXCEPTION("setGraphContextInputArray: Input arrays were null!");
-
-  ptr->setInputArray(index, arr, false);
-
-}
-
-//note here for javacpp mapping we have to use this odd type alias as a pointer
-//to make the typedef work properly.
-void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
-  if (arr == nullptr) THROW_EXCEPTION("setGraphContextOutputArraysArr: Input arrays were null!");
-  for (int i = 0; i < numArrays; i++) {
-    if (arr[i] == nullptr) {
-      std::string errorMessage;
-      errorMessage += "setGraphContextOutputArraysArr: Input array at index ";
-      errorMessage += std::to_string(i);
-      errorMessage += " was null!";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-    for (int i = 0; i < numArrays; i++) {
-      ptr->setOutputArray(i, *arr[i], false);
-    }
-  }
-}
-
-//note here for javacpp mapping we have to use this odd type alias as a pointer
-//to make the typedef work properly.
-void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) {
-  if(arr == nullptr)
-    THROW_EXCEPTION("setGraphContextInputArraysArr: Input arrays were null!");
-  for (int i = 0; i < numArrays; i++) {
-    if(arr[i] == nullptr) {
-      std::string errorMessage;
-      errorMessage += "setGraphContextInputArraysArr: Input array at index ";
-      errorMessage += std::to_string(i);
-      errorMessage += " was null!";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    OpaqueNDArray &ref = *arr[i];
-    ptr->setInputArray(i, ref, false);
-  }
-}
-
-
-
-void setGraphContextTArguments(Context *ptr, double *arguments, int numberOfArguments) {
-  ptr->setTArguments(arguments, numberOfArguments);
-}
-
-void setGraphContextIArguments(Context *ptr, LongType *arguments, int numberOfArguments) {
-  ptr->setIArguments(arguments, numberOfArguments);
-}
-
-void setGraphContextBArguments(Context *ptr, bool *arguments, int numberOfArguments) {
-  ptr->setBArguments(arguments, numberOfArguments);
-}
-
-void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) {
-  std::vector<DataType> dtypes(numberOfArguments);
-  for (int e = 0; e < numberOfArguments; e++) dtypes[e] = (DataType)arguments[e];
-
-  ptr->setDArguments(dtypes);
-}
-
-void deleteGraphContext(Context *ptr) {}
-
-RandomGenerator *createRandomGenerator(LongType rootSeed, LongType nodeSeed) {
-  try {
-    return new RandomGenerator(rootSeed, nodeSeed);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-LongType getRandomGeneratorRootState(RandomGenerator *ptr) { return ptr->rootState(); }
-
-LongType getRandomGeneratorNodeState(RandomGenerator *ptr) { return ptr->nodeState(); }
-
-void setRandomGeneratorStates(RandomGenerator *ptr, LongType rootSeed, LongType nodeSeed) {
-  ptr->setStates(rootSeed, nodeSeed);
-}
-
-float getRandomGeneratorRelativeFloat(RandomGenerator *ptr, LongType index) {
-  return ptr->relativeT<float>(index);
-}
-
-double getRandomGeneratorRelativeDouble(RandomGenerator *ptr, LongType index) {
-  return ptr->relativeT<double>(index);
-}
-
-int getRandomGeneratorRelativeInt(RandomGenerator *ptr, LongType index) { return ptr->relativeInt(index); }
-
-LongType getRandomGeneratorRelativeLong(RandomGenerator *ptr, LongType index) {
-  return ptr->relativeLong(index);
-}
-
-int getRandomGeneratorNextInt(RandomGenerator *ptr) {
-  // to nullify  _nodeState._long ^= (steps ^ 0xdeadbeef);
-  // we will use step = 0xdeadbeef
-  auto result = ptr->relativeInt(1);
-  ptr->rewindH(0xdeadbeef);
-  return result;
-}
-
-LongType getRandomGeneratorNextLong(RandomGenerator *ptr) {
-  auto result = ptr->relativeLong(1);
-  ptr->rewindH(0xdeadbeef);
-  return result;
-}
-
-float getRandomGeneratorNextFloat(RandomGenerator *ptr) {
-  auto result = ptr->relativeT<float>(1);
-  ptr->rewindH(0xdeadbeef);
-  return result;
-}
-
-double getRandomGeneratorNextDouble(RandomGenerator *ptr) {
-  auto result = ptr->relativeT<double>(1);
-  ptr->rewindH(0xdeadbeef);
-  return result;
-}
-
-void deleteRandomGenerator(RandomGenerator *ptr) { delete ptr; }
-
-Pointer shapeBufferForNumpy(Pointer npyArray) {
-  try {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    unsigned int shapeSize = arr.shape.size();
-    std::vector<LongType> shape(shapeSize);
-    bool _empty = false;
-    for (unsigned int i = 0; i < shapeSize; i++) {
-      shape[i] = arr.shape[i];
-
-      if (arr.shape[i] == 0) _empty = true;
-    }
-
-    auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
-
-    LongType *shapeBuffer;
-    if (shape.size() == 1 && shape[0] == 0) {
-      // scalar case
-      shapeBuffer = ShapeBuilders::createScalarShapeInfo(dtype);
-    } else if (_empty) {
-      if (shapeSize > 0)
-        shapeBuffer = ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-      else
-        shapeBuffer = ShapeBuilders::emptyShapeInfo(dtype);
-    } else {
-      shapeBuffer = ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-    }
-    return (Pointer)(ConstantShapeHelper::getInstance().createFromExisting(
-        shapeBuffer, true));  // TO DO: this can lead to unpleasant crash sometimes
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-LongType getCachedMemory(int deviceId) { return ConstantHelper::getInstance().getCachedAmount(deviceId); }
-
-LaunchContext *defaultLaunchContext() { return LaunchContext::defaultContext(); }
-
-Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return lc->getScalarPointer(); }
-
-Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return lc->getReductionPointer(); }
-
-Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return lc->getAllocationPointer(); }
-
-Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return lc->getCudaStream(); }
-
-Pointer lcCopyStream(OpaqueLaunchContext *lc) { return lc->getCudaSpecialStream(); }
-
-Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return lc->getCublasHandle(); }
-
-Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return lc->getCusolverHandle(); }
-
-int lastErrorCode() { return LaunchContext::defaultContext()->errorReference()->errorCode(); }
-
-const char *lastErrorMessage() { return LaunchContext::defaultContext()->errorReference()->errorMessage(); }
-
-void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) {
-  ptr->setShapeFunctionOverride(reallyOverride);
-}
-
-void ctxPurge(OpaqueContext *ptr) { ptr->clearFastPath(); }
 
 int binaryLevel() { return 0; }
 
@@ -4298,183 +3191,9 @@ bool isMinimalRequirementsMet() { return true; }
 
 bool isOptimalRequirementsMet() { return true; }
 
-void ctxAllowHelpers(OpaqueContext *ptr, bool reallyAllow) { ptr->allowHelpers(reallyAllow); }
-
-void ctxSetExecutionMode(OpaqueContext *ptr, int execMode) {
-  if (execMode < 0 || execMode > 2) execMode = 0;
-
-  ptr->setExecutionMode((samediff::ExecutionMode)execMode);
-}
-
-OpaqueDataBuffer *dbCreateExternalDataBuffer(LongType elements, int dataType, Pointer primary, Pointer special) {
-  auto buffer = dbAllocateDataBuffer(0, dataType, false);
-  buffer->markOwner(false);
-
-  if (primary != nullptr) buffer->setPrimary(primary, elements);
-
-  if (special != nullptr) buffer->setSpecial(special, elements);
-
-  return buffer;
-}
-
-OpaqueDataBuffer *dbAllocateDataBuffer(LongType elements, int dataType, bool allocateBoth) {
-  return allocateDataBuffer(elements, dataType, allocateBoth);
-}
-
-OpaqueDataBuffer *allocateDataBuffer(LongType elements, int dataType, bool allocateBoth) {
-  try {
-    auto dtype = DataTypeUtils::fromInt(dataType);
-    LongType totalElementSize = elements == 0 ? DataTypeUtils::sizeOf(dtype) : elements * DataTypeUtils::sizeOf(dtype);
-    return new InteropDataBuffer(totalElementSize, dtype, allocateBoth);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-Pointer dbPrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
-  if (dataBuffer == nullptr) THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
-  return dataBuffer->primary();
-}
-
-Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSpecialBuffer: dataBuffer is null");
-  return dataBuffer->special();
-}
-
-void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
-  delete dataBuffer;
-}
-
-void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, Pointer primaryBuffer, LongType numBytes) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSetPrimaryBuffer: dataBuffer is null");
-  dataBuffer->setPrimary(primaryBuffer, numBytes);
-}
-
-void dbSetSpecialBuffer(OpaqueDataBuffer *dataBuffer, Pointer specialBuffer, LongType numBytes) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSetSpecialBuffer: dataBuffer is null");
-  dataBuffer->setSpecial(specialBuffer, numBytes);
-}
-
-void dbAllocatePrimaryBuffer(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbAllocatePrimaryBuffer: dataBuffer is null");
-  dataBuffer->dataBuffer()->allocatePrimary();
-}
-
-void dbAllocateSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbAllocateSpecialBuffer: dataBuffer is null");
-  dataBuffer->dataBuffer()->allocateSpecial();
-}
-
-void dbExpandBuffer(OpaqueDataBuffer *dataBuffer, LongType elements) {
-  try {
-    if(dataBuffer == nullptr)
-      THROW_EXCEPTION("dbExpandBuffer: dataBuffer is null");
-    dataBuffer->dataBuffer()->expand(elements * DataTypeUtils::sizeOf(dataBuffer->dataBuffer()->getDataType()));
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-OpaqueDataBuffer *dbCreateView(OpaqueDataBuffer *dataBuffer, LongType length) {
-  return new OpaqueDataBuffer(dataBuffer, length);
-}
 
 
-int dbUseCount(OpaqueDataBuffer* dataBuffer) {
-  if(dataBuffer) return dataBuffer->useCount();
-  return 0;
-}
 
-void dbSyncToSpecial(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSyncToSpecial: dataBuffer is null");
-  if(dataBuffer->dataBuffer() != nullptr  && dataBuffer->dataBuffer()->getNumElements() > 0)
-    dataBuffer->dataBuffer()->syncToSpecial();
-}
-
-void dbSyncToPrimary(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSyncToPrimary: dataBuffer is null");
-  if(dataBuffer->dataBuffer() != nullptr  && dataBuffer->dataBuffer()->getNumElements() > 0)
-    dataBuffer->dataBuffer()->syncToPrimary(LaunchContext::defaultContext(),false);
-
-}
-
-void dbTickHostRead(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbTickHostRead: dataBuffer is null");
-  dataBuffer->dataBuffer()->readPrimary();
-}
-
-void dbTickHostWrite(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbTickHostWrite: dataBuffer is null");
-  dataBuffer->dataBuffer()->writePrimary();
-}
-
-void dbTickDeviceRead(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbTickDeviceRead: dataBuffer is null");
-  dataBuffer->dataBuffer()->readSpecial();
-}
-
-void dbTickDeviceWrite(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbTickDeviceWrite: dataBuffer is null");
-  dataBuffer->dataBuffer()->writeSpecial();
-
-}
-
-void dbExpand(OpaqueDataBuffer *dataBuffer, LongType elements) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbExpand: dataBuffer is null");
-  dataBuffer->expand(elements);
-}
-
-void dbClose(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbClose: dataBuffer is null");
-
-  auto ret = dataBuffer->getDataBuffer();
-  if(ret != nullptr)
-    dataBuffer->getDataBuffer()->close();
-}
-
-int dbDeviceId(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbDeviceId: dataBuffer is null");
-  return dataBuffer->deviceId();
-}
-
-void dbSetDeviceId(OpaqueDataBuffer *dataBuffer, int deviceId) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbSetDeviceId: dataBuffer is null");
-  dataBuffer->setDeviceId(deviceId);
-}
-
-int dbLocality(OpaqueDataBuffer *dataBuffer) {
-  if(dataBuffer == nullptr)
-    THROW_EXCEPTION("dbLocality: dataBuffer is null");
-  auto p = dataBuffer->dataBuffer()->isPrimaryActual();
-  auto d = dataBuffer->dataBuffer()->isSpecialActual();
-
-  if (p && d)
-    return 0;
-  else if (p)
-    return -1;
-  else
-    return 1;
-}
 
 
 

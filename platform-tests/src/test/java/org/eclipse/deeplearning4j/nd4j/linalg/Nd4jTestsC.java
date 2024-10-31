@@ -7053,22 +7053,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTearPile_1(Nd4jBackend backend) {
-        val source = Nd4j.rand(new int[]{10, 15}).castTo(DataType.DOUBLE);
-
-        val list = Nd4j.tear(source, 1);
-
-        // just want to ensure that axis is right one
-        assertEquals(10, list.length);
-
-        val result = Nd4j.pile(list);
-
-        assertEquals(source.shapeInfoDataBuffer(), result.shapeInfoDataBuffer());
-        assertEquals(source, result);
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance_4D_1(Nd4jBackend backend) {
         val dtype = Nd4j.dataType();
 

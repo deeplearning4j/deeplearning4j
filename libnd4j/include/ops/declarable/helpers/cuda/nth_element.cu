@@ -78,9 +78,10 @@ void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDAr
     auto pTadShapeH = packX->primaryShapeInfo();
     auto pTadOffsets = packX->specialOffsets();
     sortTad(params, &sortedVals,
-            dimData,
-            pTadShape,
-            pTadOffsets,
+            reinterpret_cast<sd::LongType *>(lastDims.data()),
+           lastDims.size(),
+            const_cast<sd::LongType *>(pTadShape),
+            const_cast<sd::LongType *>(pTadOffsets),
             reverse);
     sortedVals.tickWriteDevice();
     sortedVals.syncToHost();

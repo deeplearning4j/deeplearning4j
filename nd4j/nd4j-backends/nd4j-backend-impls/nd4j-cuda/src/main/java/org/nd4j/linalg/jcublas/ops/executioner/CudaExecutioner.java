@@ -1987,11 +1987,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         OpaqueNDArray xb = OpaqueNDArray.fromINDArray(array);
         OpaqueNDArray yb = OpaqueNDArray.fromINDArray(updates);
         OpaqueNDArray zb = OpaqueNDArray.fromINDArray(indices);
-
+        INDArray axisArray = Nd4j.createFromArray(axis);
+        OpaqueNDArray axis2 = OpaqueNDArray.fromINDArray(axisArray);
         nativeOps.scatterUpdate(
                 stuff,
                 op.ordinal(),
-                xb,zb,yb,new LongPointer(axis),axis.length);
+                xb,zb,yb,axis2);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

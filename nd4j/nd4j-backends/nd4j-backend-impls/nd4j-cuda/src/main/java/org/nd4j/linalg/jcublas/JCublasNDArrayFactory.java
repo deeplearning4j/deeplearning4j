@@ -33,7 +33,6 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.jcublas.buffer.*;
-import org.nd4j.common.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -45,7 +44,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
@@ -691,7 +689,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
-        val shuffle = new CudaIntDataBuffer(map);
 
         // Create a long[][] array for dimensions
         long[][] dimArray = new long[dimensions.size()][];
@@ -715,7 +712,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             //we have to sync manually here as we are calling the method with raw cuda pointers
             AllocationPoint point = allocator.getAllocationPoint(array);
-            if(point.isActualOnHostSide()){
+            if(point.isActualOnHostSide()) {
                 AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
                 point.tickDeviceWrite();
             }
@@ -1046,50 +1043,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
     @Override
-    public INDArray[] tear(INDArray tensor, long... dimensions) {
-        if (tensor.isCompressed())
-            Nd4j.getCompressor().decompressi(tensor);
-
-        Arrays.sort(dimensions);
-
-        long tadLength = 1;
-        val shape = new long[dimensions.length];
-        for (int i = 0; i < dimensions.length; i++) {
-            tadLength *= tensor.size(dimensions[i]);
-            shape[i] = tensor.size(dimensions[i]);
-        }
-
-        int numTads = (int)(tensor.length() / tadLength);
-        INDArray[] result = new INDArray[numTads];
-
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = allocator.getFlowController().prepareAction(null, tensor);
-
-        for (int x = 0; x < numTads; x++) {
-            result[x] = Nd4j.createUninitialized(shape);
-            context = allocator.getFlowController().prepareAction(result[x]);
-        }
-
-        OpaqueNDArray tensorOpaque = OpaqueNDArray.fromINDArray(tensor);
-        OpaqueNDArrayArr resultOpaque = new OpaqueNDArrayArr(Arrays.stream(result).map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new));
-        OpaqueNDArray dimensionsOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimensions));
-
-        PointerPointer extras = new PointerPointer(null, // not used
-                context.getOldStream(), allocator.getDeviceIdPointer());
-
-        nativeOps.tear(extras, tensorOpaque, resultOpaque, dimensionsOpaque);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        allocator.getFlowController().registerActionAllWrite(context, result);
-        allocator.getFlowController().registerAction(context, null, result);
-
-        return result;
-    }
-
-
-    @Override
     public INDArray sort(INDArray x, boolean descending) {
         if (x.isScalar())
             return x;
@@ -1172,12 +1125,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         val dimensionPointer = AtomicAllocator.getInstance()
                 .getHostPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension));
 
-        INDArray arrDims = Nd4j.createFromArray(dimension);
         OpaqueNDArray x2 = OpaqueNDArray.fromINDArray(x);
-        OpaqueNDArray dimArr = OpaqueNDArray.fromINDArray(arrDims);
         nativeOps.sortTad(extraz,
                 x2,
-                dimArr,
+                new LongPointer(dimensionPointer),
+                dimension.length,
                 (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
                 new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)),
                 descending

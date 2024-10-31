@@ -21,6 +21,8 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.annotation.ByVal;
+import org.bytedeco.javacpp.annotation.Cast;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -32,6 +34,16 @@ import java.nio.LongBuffer;
  *
  */
 public interface NativeOps {
+
+
+ OpaqueContext createGraphContext(int nodeId);
+
+ void setGraphContextCudaContext(OpaqueContext ptr, Pointer stream, Pointer reductionPointer,
+                                 Pointer allocationPointer);
+
+
+ OpaqueRandomGenerator createRandomGenerator(long rootSeed,long nodeSeed);
+ OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
 
  void shuffle(PointerPointer extras,
               OpaqueNDArrayArr x,
@@ -59,13 +71,9 @@ public interface NativeOps {
                OpaqueNDArray indexes,
               long dimension);
 
- void tear(PointerPointer extraPointers,
-           OpaqueNDArray dbX,
-           OpaqueNDArrayArr targets,
-           OpaqueNDArray z,
-           OpaqueNDArray dimension);
+
  PointerPointer listOpTraces();
- String opName(Pointer execTrace);
+ BytePointer opName(Pointer execTrace);
  BooleanPointer  bArgs(Pointer execTrace);
  PointerPointer sArgs(Pointer execTrace);
  DoublePointer tArgs(Pointer execTrace);
@@ -88,10 +96,14 @@ public interface NativeOps {
               String mode);
 
 
- OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes,
-                                       IntPointer inputIndices, int numInputs);
 
- void scatterUpdate(PointerPointer extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, LongPointer axis, long axisLength);
+
+ void scatterUpdate(PointerPointer extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);
+ OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers,
+                                        long graphId,
+                                        PointerPointer inputBuffers,
+                                        PointerPointer inputShapes,
+                                       IntPointer inputIndices, int numInputs);
  LongPointer getShape(OpaqueShapeList list, long i);
  OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBuffers, PointerPointer inputShapes,
                                         int numInputShapes, DoublePointer tArgs, int numTArgs, LongPointer iArgs, int numIArgs,
@@ -112,9 +124,7 @@ public interface NativeOps {
  int getDeviceId(Pointer ptrToDeviceId);
  int getDeviceBlockThreshold(int deviceId);
  int getDeviceSharedThreshold(int deviceId);
- void _printHostBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer, long offset);
  void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer, long offset);
- void _printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
  void printDeviceBuffer(org.nd4j.nativeblas.OpaqueDataBuffer buffer);
  void execPairwiseTransform(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, Pointer extraParams);
  void execPairwiseTransformBool(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, Pointer extraParams, org.nd4j.nativeblas.OpaqueNDArray z);
@@ -226,19 +236,11 @@ public interface NativeOps {
  void enableVerboseMode(boolean reallyEnable);
  int getDeviceMajor(int device);
  int getDeviceMinor(int device);
- void specialConcat(PointerPointer extraPointers, int dimension, int numArrays, org.nd4j.nativeblas.OpaqueNDArray data, org.nd4j.nativeblas.OpaqueNDArray dZ);
  long getNumberOfTads(OpaqueTadPack pack);
  int getShapeInfoLength(OpaqueTadPack pack);
  int memcpyConstantAsync(long dst, Pointer src, long size, int flags, Pointer reserved);
  Pointer getConstantSpace();
- void pullRows(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, long n, LongPointer indexes, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets, org.nd4j.nativeblas.OpaqueNDArray zTadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray zTadOffsets);
- void pullRows(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, long n, LongBuffer indexes, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets, org.nd4j.nativeblas.OpaqueNDArray zTadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray zTadOffsets);
- void pullRows(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, long n, long[] indexes, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets, org.nd4j.nativeblas.OpaqueNDArray zTadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray zTadOffsets);
- void average(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray dx, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dz, int n, long length, boolean propagate);
- void accumulate(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray dx, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dz, int n, long length);
- void shuffle(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, int N, IntPointer shuffleMap, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets);
- void shuffle(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, int N, IntBuffer shuffleMap, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets);
- void shuffle(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, int N, int[] shuffleMap, org.nd4j.nativeblas.OpaqueNDArray tadShapeInfo, org.nd4j.nativeblas.OpaqueNDArray tadOffsets);
+  void average(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, int n, long length, boolean propagate);
  boolean isExperimentalEnabled();
  void setOmpMinThreads(int threads);
  int getDevice();
@@ -247,16 +249,12 @@ public interface NativeOps {
  void execReduce3(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z);
  void execReduce3Scalar(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z);
  void execReduce3Tad(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension);
- void execReduce3Tad(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, long[] xTadShapeInfo, long[] xOffsets, long[] yTadShapeInfo, long[] yOffsets);
  Pointer initRandom(PointerPointer extraPointers, long seed, long bufferSize, Pointer ptrToBuffer);
  void destroyRandom(Pointer ptrBuffer);
  void refreshBuffer(PointerPointer extraPointers, long seed, Pointer ptrRandom);
  void reSeedBuffer(PointerPointer extraPointers, long seed, Pointer ptrRandom);
  int lengthForShapeBufferPointer(Pointer buffer);
  Pointer pointerForAddress(long _address);
- void tear(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray dbX, PointerPointer targets, LongPointer zShapeInfo, LongPointer tadShapeInfo, LongPointer tadOffsets);
- void tear(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray dbX, PointerPointer targets, LongBuffer zShapeInfo, LongBuffer tadShapeInfo, LongBuffer tadOffsets);
- void tear(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray dbX, PointerPointer targets, long[] zShapeInfo, long[] tadShapeInfo, long[] tadOffsets);
  void prescanArrayRecursive(PointerPointer extras, IntPointer dZ, IntPointer dX, int numElements, int level);
  void prescanArrayRecursive(PointerPointer extras, IntBuffer dZ, IntBuffer dX, int numElements, int level);
  void prescanArrayRecursive(PointerPointer extras, int[] dZ, int[] dX, int numElements, int level);
@@ -267,16 +265,22 @@ public interface NativeOps {
  long getShapeInfoLength(org.nd4j.nativeblas.OpaqueNDArray array);
  long getOpaqueNDArrayLength(org.nd4j.nativeblas.OpaqueNDArray array);
  void sort(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, boolean descending);
- void sortTad(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray dimension, LongPointer tadShapeInfo, LongPointer tadOffsets, boolean descending);
- void sortTad(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray dimension, LongBuffer tadShapeInfo, LongBuffer tadOffsets, boolean descending);
- void sortTad(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray dimension, long[] tadShapeInfo, long[] tadOffsets, boolean descending);
+ void sortTad(PointerPointer extraPointers,  org.nd4j.nativeblas.OpaqueNDArray x,
+             LongPointer dimension,  long dimensionLength,
+             LongPointer tadShapeInfo,  LongPointer tadOffsets,  boolean descending);
+
  void sortByValue(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, boolean descending);
- void sortTadByKey(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, LongPointer dimension, long dimensionLength, boolean descending);
- void sortTadByKey(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, LongBuffer dimension, long dimensionLength, boolean descending);
- void sortTadByKey(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, long[] dimension, long dimensionLength, boolean descending);
- void sortTadByValue(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, LongPointer dimension, long dimensionLength, boolean descending);
- void sortTadByValue(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, LongBuffer dimension, long dimensionLength, boolean descending);
- void sortTadByValue(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y, long[] dimension, long dimensionLength, boolean descending);
+ void sortTadByKey(PointerPointer extraPointers,
+                   OpaqueNDArray x,
+                   OpaqueNDArray y,
+                   OpaqueNDArray dimension,
+                   boolean descending);
+
+ void sortTadByValue(PointerPointer extraPointers,
+                     OpaqueNDArray x,
+                     OpaqueNDArray y,
+                     OpaqueNDArray dimension,
+                     boolean descending);
  void sortCooIndices(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray indices, org.nd4j.nativeblas.OpaqueNDArray values);
  void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
  void munmapFile(PointerPointer extraPointers, LongBuffer ptrMap, long length);

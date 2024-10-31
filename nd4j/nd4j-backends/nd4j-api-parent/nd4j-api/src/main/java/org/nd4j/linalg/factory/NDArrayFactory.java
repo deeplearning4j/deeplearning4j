@@ -1575,14 +1575,6 @@ public interface NDArrayFactory {
 
     /**
      *
-     * @param tensor
-     * @param dimensions
-     * @return
-     */
-    INDArray[] tear(INDArray tensor, long... dimensions);
-
-    /**
-     *
      * @param x
      * @param descending
      * @return

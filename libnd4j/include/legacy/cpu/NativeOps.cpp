@@ -81,66 +81,7 @@ using namespace sd;
 #include "exceptions/backward.hpp"
 
 
-//note this is a c++ 17 feature
-#ifndef INSTRUMENT_FILE_DEF
-#pragma once
-#define INSTRUMENT_FILE_DEF 1
-FILE* instrumentFile = nullptr;
-#endif
 
-// this is mainly a c based function.
-extern "C" {
-
-
-
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT  void writeLog(bool enter,void *this_fn,void *call_site) {
-  if(instrumentFile == nullptr) {
-    return;
-  }
-  Dl_info info;
-  if (dladdr(this_fn, &info)) {
-    int status;
-    const char *funcName;
-    char* demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
-    if (status == 0) {
-      funcName = demangled  != nullptr ? demangled : "null_demangled";
-    } else {
-      funcName = info.dli_sname ? info.dli_sname : "null_dli_sname";
-    }
-
-    printf(" %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    fprintf( instrumentFile," %s %s (%s)\n",enter ? "enter" : "exit", funcName, info.dli_fname);
-    if (demangled != nullptr) {
-      delete demangled;
-      demangled = nullptr;
-    }
-  } else {
-    printf("%s %s\n", enter ? "enter" : "exit","unknown");
-    fprintf(instrumentFile, "%s %s\n", enter ? "enter" : "exit","unknown");
-    fflush(instrumentFile);
-  }
-}
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter(void *this_fn,
-                                                                                    void *call_site) {
-  writeLog(true,this_fn, call_site);
-}
-
-
-//we need to tell -finstrument-functions not to include the logger otherwise it will recursively
-// stack overflow and segfault.
-__attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_exit  (void *this_fn,
-                                                                                     void *call_site) {
-  writeLog(false,this_fn, call_site);
-
-}
-
-
-
-}
 
 //note this is outside extern C. This is fine.
 
@@ -196,6 +137,15 @@ std::vector<const LongType *> *inputShapeBuffers(void *execTrace) {
 std::vector<const LongType *> *outputShapeBuffers(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   return trace->outputShapeBuffers;
+}
+
+std::vector<int> * dArgs(void *execTrace) {
+  ExecTrace *trace = (ExecTrace *) execTrace;
+  std::vector<int> *dArgs = new std::vector<int>();
+        for (int e = 0; e < trace->dArgs.size(); e++) {
+        dArgs->push_back(trace->dArgs[e]);
+        }
+  return dArgs;
 }
 char *opName(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
@@ -324,7 +274,7 @@ sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
   return array->dataBuffer()->getNumElements();
 }
 
-OpaqueConstantShapeBuffer *shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
+OpaqueConstantShapeBuffer shapeBuffer(int rank, LongType *shape, LongType *strides, DataType dtype,
                                        char order, LongType ews, bool empty) {
   return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
 }
@@ -2785,7 +2735,7 @@ void tryPointer(Pointer extra, Pointer p, int len) {
 }
 
 
-OpaqueConstantShapeBuffer *cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
+OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
   try {
     auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     return buffer;
@@ -2796,7 +2746,7 @@ OpaqueConstantShapeBuffer *cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
   }
 }
 
-OpaqueConstantShapeBuffer *shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
+OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongType *shape, LongType *strides, DataType dtype,
                                          char order, LongType ews, LongType extras) {
   try {
 
@@ -2857,11 +2807,11 @@ ConstantDataBuffer *constantBuffer(DataType dtype, ConstantDescriptor *descripto
   }
 }
 
-Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer *dbf) {
+Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) {
   return const_cast<LongType *>(dbf->primary());
 }
 
-Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer *dbf) {
+Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) {
   return const_cast<LongType *>(dbf->special());
 }
 
@@ -3765,21 +3715,7 @@ void unravelIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices
 
 LongType getCachedMemory(int deviceId) { return ConstantHelper::getInstance().getCachedAmount(deviceId); }
 
-LaunchContext *defaultLaunchContext() { return LaunchContext::defaultContext(); }
 
-Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcCopyStream(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return nullptr; }
-
-Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return nullptr; }
 
 int lastErrorCode() {
   if( LaunchContext::defaultContext()->errorReference() != nullptr)

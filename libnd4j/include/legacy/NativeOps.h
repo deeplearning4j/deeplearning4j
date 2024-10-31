@@ -53,17 +53,19 @@ typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
 typedef Context OpaqueContext;
-typedef sd::NDArray * OpaqueNDArray;
-typedef sd::NDArray ** OpaqueNDArrayArr;
-typedef sd::LaunchContext OpaqueLaunchContext;
-typedef RandomGenerator OpaqueRandomGenerator;
+typedef sd::NDArray* OpaqueNDArray;
+typedef sd::NDArray** OpaqueNDArrayArr;
+typedef sd::LaunchContext* OpaqueLaunchContext;
+typedef RandomGenerator* OpaqueRandomGenerator;
 typedef ResultWrapper OpaqueResultWrapper;
 typedef VariablesSet OpaqueVariablesSet;
 typedef Variable OpaqueVariable;
 typedef sd::TadPack OpaqueTadPack;
-typedef sd::ConstantDataBuffer OpaqueConstantDataBuffer;
-typedef sd::ConstantShapeBuffer OpaqueConstantShapeBuffer;
+typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
+typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
 extern "C" {
+
+
 
 //this is to ensure symbol is loaded and exported from this library instead when using LD_PRELOAD.
 __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_enter (void *this_fn,void *call_site);
@@ -71,33 +73,42 @@ __attribute__((no_instrument_function)) SD_LIB_EXPORT void __cyg_profile_func_ex
 
 }
 
+
+
+SD_LIB_EXPORT const char* getAllCustomOps();
+SD_LIB_EXPORT OpaqueRandomGenerator createRandomGenerator(sd::LongType rootSeed, sd::LongType nodeSeed);
+
+SD_LIB_EXPORT OpaqueContext *createGraphContext(int nodeId);
+SD_LIB_EXPORT void setGraphContextCudaContext(OpaqueContext *ptr, void *stream, void *reductionPointer,
+                                              void *allocationPointer);
+SD_LIB_EXPORT OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext *ptr);
+
 SD_LIB_EXPORT void shuffle(sd::Pointer *extras,
-                           OpaqueNDArray *x,
+                           OpaqueNDArrayArr x,
                            OpaqueNDArray z,
                            int N,
-                           OpaqueNDArray *dimension,
+                           OpaqueNDArray dimension,
                            OpaqueNDArray shuffleMap);
 
 SD_LIB_EXPORT void average(sd::Pointer *extras,
-                           OpaqueNDArray *x,
+                           OpaqueNDArrayArr x,
                            OpaqueNDArray z,int n,
                            sd::LongType length, bool propagate);
 
 SD_LIB_EXPORT void accumulate(sd::Pointer *extras,
-                              OpaqueNDArray *x,
+                              OpaqueNDArrayArr x,
                               OpaqueNDArray z,
                               int n,
                               sd::LongType length);
 
 
 SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers,
-                            OpaqueNDArray *x,
+                            OpaqueNDArrayArr x,
                             OpaqueNDArray z,
                             sd::LongType n,
                             OpaqueNDArray indexes,
                             sd::LongType dimension);
 
-SD_LIB_EXPORT void tear(sd::Pointer *extras, OpaqueNDArray dbX, OpaqueNDArray targets, OpaqueNDArray z, OpaqueNDArray dimension);
 SD_LIB_EXPORT std::vector<ExecTrace*> * listOpTraces();
 SD_LIB_EXPORT char *opName(void *execTrace);
 SD_LIB_EXPORT std::vector<bool> * bArgs(void *execTrace);
@@ -123,14 +134,20 @@ SD_LIB_EXPORT OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer shapeInfo,
                                                 OpaqueDataBuffer specialBuffer,
                                                 sd::LongType offset);
 
+
+SD_LIB_EXPORT  sd::Pointer loadNpyFromHeader(sd::Pointer data);
 SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer  *data, const unsigned int *shape, const unsigned int ndims,
                            std::string mode);
 
 SD_LIB_EXPORT void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
                                 sd::LongType *specialShapeInfo, sd::Pointer debugInfo);
 
-SD_LIB_EXPORT void scatterUpdate(sd::Pointer *extraPointers, int opCode, int numOfSubArrs, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray indexes, OpaqueNDArray xOffsets, OpaqueNDArray yOffsets) ;
-SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
+SD_LIB_EXPORT OpaqueVariablesSet *executeStoredGraph(sd::Pointer *extraPointers,
+                                                     sd::LongType graphId,
+                                                     sd::Pointer *inputBuffers,
+                                                     sd::Pointer *inputShapes,
+                                                     int *inputIndices, int numInputs);
+SD_LIB_EXPORT void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getPrimaryOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialOffsets(OpaqueTadPack *pack);
@@ -138,8 +155,10 @@ SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack);
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack);
 
 
-SD_LIB_EXPORT OpaqueTadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, long dimensionLength);
-SD_LIB_EXPORT OpaqueConstantDataBuffer *constantBufferLong(sd::DataType dtype, sd::LongType const *data, int length);
+SD_LIB_EXPORT OpaqueTadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength);
+SD_LIB_EXPORT OpaqueConstantDataBuffer constantBufferLong(sd::DataType dtype, sd::LongType  *data, int length);
+SD_LIB_EXPORT OpaqueConstantDataBuffer constantBufferDouble(sd::DataType dtype, double  *data, int length);
+SD_LIB_EXPORT OpaqueConstantDataBuffer constantBuffer(sd::DataType dtype, sd::ConstantDescriptor *descriptor);
 
 SD_LIB_EXPORT const char *getDeviceName(int device);
 
@@ -154,7 +173,7 @@ SD_LIB_EXPORT void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointe
 SD_LIB_EXPORT sd::LongType const *getShape(OpaqueShapeList *list, sd::LongType i);
 SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
                                                       int numInputShapes, double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
-                                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs);
+                                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs,sd::LongType *offsets);
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list);
 
 SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *db) ;
@@ -171,9 +190,7 @@ SD_LIB_EXPORT int numOutputs(void *execTrace) ;
 SD_LIB_EXPORT int getDeviceId(sd::Pointer ptrToDeviceId) ;
 SD_LIB_EXPORT int getDeviceBlockThreshold(int deviceId) ;
 SD_LIB_EXPORT int getDeviceSharedThreshold(int deviceId) ;
-SD_LIB_EXPORT void _printHostBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) ;
 SD_LIB_EXPORT void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) ;
-SD_LIB_EXPORT void _printDeviceBuffer(OpaqueDataBuffer *buffer) ;
 SD_LIB_EXPORT void printDeviceBuffer(OpaqueDataBuffer *buffer) ;
 SD_LIB_EXPORT void execPairwiseTransform(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, void *extraParams) ;
 SD_LIB_EXPORT void execPairwiseTransformBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, void *extraParams, OpaqueNDArray z) ;
@@ -239,15 +256,13 @@ SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;
-SD_LIB_EXPORT void specialConcat(sd::Pointer *extraPointers, int dimension, int numArrays, OpaqueNDArray *data, OpaqueNDArray dZ) ;
 SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) ;
 SD_LIB_EXPORT sd::Pointer getConstantSpace() ;
-SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers, OpaqueNDArray *x, OpaqueNDArray z, sd::LongType n, sd::LongType *indexes, OpaqueNDArray tadShapeInfo, OpaqueNDArray tadOffsets, OpaqueNDArray zTadShapeInfo, OpaqueNDArray zTadOffsets) ;
-SD_LIB_EXPORT void average(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray dx, OpaqueNDArray z, OpaqueNDArray dz, int n, sd::LongType length, bool propagate) ;
-SD_LIB_EXPORT void accumulate(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray dx, OpaqueNDArray z, OpaqueNDArray dz, int n, sd::LongType length) ;
-SD_LIB_EXPORT void shuffle(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z, int N, int *shuffleMap, OpaqueNDArray tadShapeInfo, OpaqueNDArray tadOffsets) ;
+SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers, OpaqueNDArrayArr x, OpaqueNDArray z, sd::LongType n, OpaqueNDArray indexes, sd::LongType dimension);
+SD_LIB_EXPORT void average(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z,int n, sd::LongType length, bool propagate) ;
+SD_LIB_EXPORT void accumulate(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z, int n, sd::LongType length) ;
 SD_LIB_EXPORT bool isExperimentalEnabled() ;
 SD_LIB_EXPORT void setOmpMinThreads(int threads) ;
 SD_LIB_EXPORT int getDevice() ;
@@ -262,7 +277,6 @@ SD_LIB_EXPORT void refreshBuffer(sd::Pointer *extraPointers, long seed, sd::Poin
 SD_LIB_EXPORT void reSeedBuffer(sd::Pointer *extraPointers, long seed, sd::Pointer ptrRandom) ;
 SD_LIB_EXPORT int lengthForShapeBufferPointer(sd::Pointer buffer) ;
 SD_LIB_EXPORT sd::Pointer pointerForAddress(sd::LongType address) ;
-SD_LIB_EXPORT void tear(sd::Pointer *extras, OpaqueNDArray dbX, sd::Pointer *targets, sd::LongType const *zShapeInfo, sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets) ;
 SD_LIB_EXPORT void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElements, int level) ;
 SD_LIB_EXPORT void deleteNDArray(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) ;
@@ -271,28 +285,43 @@ SD_LIB_EXPORT void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getShapeInfoLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) ;
-SD_LIB_EXPORT void sortTad(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray dimension, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending);
-SD_LIB_EXPORT void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
+SD_LIB_EXPORT void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
+                          sd::LongType *dimension, sd::LongType dimensionLength,
+                          sd::LongType *tadShapeInfo,  sd::LongType *tadOffsets, bool descending);
+    SD_LIB_EXPORT void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
 
-SD_LIB_EXPORT void sortTadByKey(sd::Pointer *extraPointers,OpaqueNDArray x,OpaqueNDArray y, sd::LongType *dimension, sd::LongType dimensionLength, bool descending);
-SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, sd::LongType *dimension, sd::LongType dimensionLength, bool descending);
+SD_LIB_EXPORT void sortTadByKey(sd::Pointer *extraPointers,
+                                OpaqueNDArray x,
+                                OpaqueNDArray y,
+                                OpaqueNDArray dimension,
+                                bool descending);
+
+SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers,
+                                  OpaqueNDArray x,
+                                  OpaqueNDArray y,
+                                  OpaqueNDArray dimension,
+                                  bool descending);
 SD_LIB_EXPORT void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray values);
 SD_LIB_EXPORT void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) ;
 SD_LIB_EXPORT sd::LongType getResultWrapperSize(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::Pointer getResultWrapperPointer(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list) ;
-SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, Context *opContext) ;
+SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *opContext) ;
 SD_LIB_EXPORT sd::Status registerGraph(sd::Pointer *extraPointers, sd::LongType graphId, sd::Pointer flatBufferPointer) ;
 SD_LIB_EXPORT sd::LongType getVariablesSetSize(OpaqueVariablesSet *set) ;
 SD_LIB_EXPORT sd::Status getVariablesSetStatus(OpaqueVariablesSet *set) ;
+SD_LIB_EXPORT sd::LongType const *getVariableShape(OpaqueVariable *variable) ;
+SD_LIB_EXPORT OpaqueVariable *getVariable(OpaqueVariablesSet *set, sd::LongType i);
 SD_LIB_EXPORT int getVariableId(OpaqueVariable *variable) ;
 SD_LIB_EXPORT int getVariableIndex(OpaqueVariable *variable) ;
+SD_LIB_EXPORT void* getVariableBuffer(OpaqueVariable *variable) ;
+SD_LIB_EXPORT const char*  getVariableName(OpaqueVariable *variable) ;
 SD_LIB_EXPORT sd::Status unregisterGraph(sd::Pointer *extraPointers, sd::LongType graphId) ;
 SD_LIB_EXPORT void deletePointerArray(sd::Pointer pointer) ;
 SD_LIB_EXPORT void deleteCharArray(sd::Pointer pointer) ;
 SD_LIB_EXPORT void deleteIntArray(sd::Pointer pointer) ;
 SD_LIB_EXPORT void deleteLongArray(sd::Pointer pointer) ;
-SD_LIB_EXPORT void deleteVariablesSet(VariablesSet *pointer) ;
+SD_LIB_EXPORT void deleteVariablesSet(OpaqueVariablesSet *pointer) ;
 SD_LIB_EXPORT void deleteShapeList(sd::Pointer shapeList) ;
 SD_LIB_EXPORT sd::Pointer getGraphState(sd::LongType id) ;
 SD_LIB_EXPORT void deleteGraphState(sd::Pointer state) ;
@@ -302,7 +331,6 @@ SD_LIB_EXPORT sd::Pointer createUtf8String(sd::Pointer *extraPointers, const cha
 SD_LIB_EXPORT sd::LongType getUtf8StringLength(sd::Pointer *extraPointers, sd::Pointer ptr) ;
 SD_LIB_EXPORT void deleteUtf8String(sd::Pointer *extraPointers, sd::Pointer ptr) ;
 SD_LIB_EXPORT void tryPointer(sd::Pointer extra, sd::Pointer p, int len) ;
-SD_LIB_EXPORT int dataTypeFromNpyHeader(void *header) ;
 SD_LIB_EXPORT void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) ;
 SD_LIB_EXPORT void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) ;
 SD_LIB_EXPORT void deleteTadPack(OpaqueTadPack *ptr) ;
@@ -311,9 +339,9 @@ SD_LIB_EXPORT sd::Pointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer 
 SD_LIB_EXPORT sd::Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf) ;
 SD_LIB_EXPORT sd::LongType getConstantDataBufferLength(OpaqueConstantDataBuffer dbf) ;
 SD_LIB_EXPORT sd::LongType getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf) ;
-SD_LIB_EXPORT sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer *dbf) ;
-SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer *dbf) ;
-SD_LIB_EXPORT void markGraphContextInplace(Context *ptr, bool reallyInplace) ;
+SD_LIB_EXPORT sd::Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf) ;
+SD_LIB_EXPORT sd::Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf) ;
+SD_LIB_EXPORT void markGraphContextInplace(OpaqueContext *ptr, bool reallyInplace) ;
 SD_LIB_EXPORT OpaqueNDArray getOutputArrayNative(OpaqueContext* ptr, int idx) ;
 SD_LIB_EXPORT OpaqueNDArray getInputArrayNative(OpaqueContext* ptr, int idx) ;
 SD_LIB_EXPORT sd::LongType dataTypeNativeAt(OpaqueContext* ptr, int idx) ;
@@ -330,9 +358,9 @@ SD_LIB_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index,Opaq
 SD_LIB_EXPORT void setGraphContextInputArray(OpaqueContext* ptr,int index,OpaqueNDArray arr) ;
 SD_LIB_EXPORT void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
 SD_LIB_EXPORT void setGraphContextInputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDArrayArr *arr) ;
-SD_LIB_EXPORT void setGraphContextTArguments(Context *ptr, double *arguments, int numberOfArguments) ;
-SD_LIB_EXPORT void setGraphContextIArguments(Context *ptr, sd::LongType *arguments, int numberOfArguments) ;
-SD_LIB_EXPORT void setGraphContextBArguments(Context *ptr, bool *arguments, int numberOfArguments) ;
+SD_LIB_EXPORT void setGraphContextTArguments(OpaqueContext *ptr, double *arguments, int numberOfArguments) ;
+SD_LIB_EXPORT void setGraphContextIArguments(OpaqueContext *ptr, sd::LongType *arguments, int numberOfArguments) ;
+SD_LIB_EXPORT void setGraphContextBArguments(OpaqueContext *ptr, bool *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) ;
 SD_LIB_EXPORT void deleteGraphContext(OpaqueContext *ptr) ;
 SD_LIB_EXPORT sd::LongType getRandomGeneratorRootState(OpaqueRandomGenerator ptr) ;
@@ -347,7 +375,6 @@ SD_LIB_EXPORT sd::LongType getRandomGeneratorNextLong(OpaqueRandomGenerator ptr)
 SD_LIB_EXPORT float getRandomGeneratorNextFloat(OpaqueRandomGenerator ptr) ;
 SD_LIB_EXPORT double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) ;
 SD_LIB_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator ptr) ;
-SD_LIB_EXPORT sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) ;
 SD_LIB_EXPORT sd::LongType getCachedMemory(int deviceId) ;
 SD_LIB_EXPORT sd::Pointer lcScalarPointer(OpaqueLaunchContext *lc) ;
 SD_LIB_EXPORT sd::Pointer lcReductionPointer(OpaqueLaunchContext *lc) ;
@@ -356,7 +383,6 @@ SD_LIB_EXPORT sd::Pointer lcExecutionStream(OpaqueLaunchContext *lc) ;
 SD_LIB_EXPORT sd::Pointer lcCopyStream(OpaqueLaunchContext *lc) ;
 SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc) ;
 SD_LIB_EXPORT sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc) ;
-SD_LIB_EXPORT int lastErrorCode() ;
 SD_LIB_EXPORT void ctxShapeFunctionOverride(OpaqueContext *ptr, bool reallyOverride) ;
 SD_LIB_EXPORT void ctxPurge(OpaqueContext *ptr) ;
 SD_LIB_EXPORT int binaryLevel() ;
@@ -389,36 +415,63 @@ SD_LIB_EXPORT OpaqueDataBuffer* dbCreateView(OpaqueDataBuffer* dataBuffer, sd::L
 SD_LIB_EXPORT OpaqueDataBuffer* dbAllocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth) ;
 SD_LIB_EXPORT OpaqueDataBuffer* dbCreateExternalDataBuffer(sd::LongType elements, int dataType, sd::Pointer primary, sd::Pointer special) ;
 SD_LIB_EXPORT void setShapeBuffer(sd::LongType *inputShapeData,sd::DataType dt,sd::LongType *bufferToSet,char order,int elementWiseStride,bool isEmpty,bool isView) ;
-SD_LIB_EXPORT OpaqueConstantShapeBuffer* cacheAndStoreShapeBuffer(sd::LongType *shapeInfo);
-SD_LIB_EXPORT OpaqueConstantShapeBuffer* shapeBuffer(int rank, sd::LongType* shape, sd::LongType* strides,
-                                                     sd::DataType dtype, char order, sd::LongType ews, bool empty);
-SD_LIB_EXPORT OpaqueConstantShapeBuffer* shapeBufferEx(int rank, sd::LongType* shape, sd::LongType* strides,
-                                                       sd::DataType dtype, char order, sd::LongType ews,
-                                                       sd::LongType extras);
+SD_LIB_EXPORT OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo);
+SD_LIB_EXPORT OpaqueConstantShapeBuffer shapeBuffer(int rank, sd::LongType* shape, sd::LongType* strides,
+                                                    sd::DataType dtype, char order, sd::LongType ews, bool empty);
+SD_LIB_EXPORT OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType* shape, sd::LongType* strides,
+                                                      sd::DataType dtype, char order, sd::LongType ews,
+                                                      sd::LongType extras);
 
 SD_LIB_EXPORT OpaqueDataBuffer *allocateDataBuffer(sd::LongType elements, int dataType, bool allocateBoth);
 
-SD_LIB_EXPORT sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize, sd::LongType* headerSize);
-SD_LIB_EXPORT sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize);
-SD_LIB_EXPORT sd::Pointer loadNpyFromHeader(sd::Pointer data);
-SD_LIB_EXPORT sd::Pointer numpyFromFile(std::string path);
-SD_LIB_EXPORT void* mapFromNpzFile(std::string path);
-SD_LIB_EXPORT int getNumNpyArraysInMap(void* map);
-SD_LIB_EXPORT const char* getNpyArrayNameFromMap(void* map, int index, char* nameBuffer);
-SD_LIB_EXPORT void* getNpyArrayFromMap(void* map, int index);
-SD_LIB_EXPORT void* getNpyArrayData(void* npArray);
-SD_LIB_EXPORT int getNpyArrayRank(void* npArray);
-SD_LIB_EXPORT sd::LongType* getNpyArrayShape(void* npArray);
-SD_LIB_EXPORT char getNpyArrayOrder(void* npArray);
-SD_LIB_EXPORT int getNpyArrayElemSize(void* npArray);
-SD_LIB_EXPORT void deleteNPArrayStruct(void* npArray);
-SD_LIB_EXPORT void deleteNPArrayMap(void* map);
-SD_LIB_EXPORT int elementSizeForNpyArray(sd::Pointer npyArray);
-SD_LIB_EXPORT int elementSizeForNpyArrayHeader(sd::Pointer npyArray);
-SD_LIB_EXPORT void releaseNumpy(sd::Pointer npyArray);
-SD_LIB_EXPORT sd::Pointer dataPointForNumpyHeader(sd::Pointer npyArray) ;
-SD_LIB_EXPORT sd::Pointer dataPointForNumpyStruct(sd::Pointer npyArrayStruct);
-SD_LIB_EXPORT sd::Pointer dataPointForNumpy(sd::Pointer npyArray);
+
+SD_LIB_EXPORT  OpaqueLaunchContext defaultLaunchContext();
+
+SD_LIB_EXPORT sd::Pointer lcScalarPointer(OpaqueLaunchContext* lc);
+
+SD_LIB_EXPORT sd::Pointer lcReductionPointer(OpaqueLaunchContext* lc);
+
+SD_LIB_EXPORT sd::Pointer lcAllocationPointer(OpaqueLaunchContext* lc);
+
+SD_LIB_EXPORT sd::Pointer lcExecutionStream(OpaqueLaunchContext* lc);
+
+SD_LIB_EXPORT sd::Pointer lcCopyStream(OpaqueLaunchContext* lc);
+
+SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext* lc);
+
+
+SD_LIB_EXPORT  sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize,
+                                                    sd::LongType* headerSize) ;
+SD_LIB_EXPORT  sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize);
+SD_LIB_EXPORT  sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray);
+SD_LIB_EXPORT  sd::Pointer dataPointForNumpyHeader(sd::Pointer npyArray);
+SD_LIB_EXPORT  sd::Pointer dataPointForNumpyStruct(sd::Pointer npyArrayStruct);
+SD_LIB_EXPORT  sd::Pointer dataPointForNumpy(sd::Pointer npyArray);
+SD_LIB_EXPORT  sd::Pointer numpyFromFile(std::string path);
+SD_LIB_EXPORT  void *mapFromNpzFile(std::string path);
+SD_LIB_EXPORT  int getNumNpyArraysInMap(void *map);
+SD_LIB_EXPORT  const char *getNpyArrayNameFromMap(void *map, int index, char *nameBuffer);
+SD_LIB_EXPORT  void *getNpyArrayFromMap(void *map, int index);
+SD_LIB_EXPORT  int dataTypeFromNpyHeader(void *header);
+SD_LIB_EXPORT  void *getNpyArrayData(void *npArray);
+SD_LIB_EXPORT  int getNpyArrayRank(void *npArray);
+SD_LIB_EXPORT  sd::LongType *getNpyArrayShape(void *npArray);
+SD_LIB_EXPORT  char getNpyArrayOrder(void *npArray);
+SD_LIB_EXPORT  int getNpyArrayElemSize(void *npArray);
+SD_LIB_EXPORT  void deleteNPArrayStruct(void *npArray);
+SD_LIB_EXPORT  void deleteNPArrayMap(void *map);
+SD_LIB_EXPORT  int elementSizeForNpyArray(sd::Pointer npyArray);
+SD_LIB_EXPORT  int elementSizeForNpyArrayHeader(sd::Pointer npyArray);
+SD_LIB_EXPORT  void releaseNumpy(sd::Pointer npyArray);
+SD_LIB_EXPORT sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) ;
+SD_LIB_EXPORT int dataTypeFromNpyHeader(void* header);
+
+
+
+
+
+
+
 
 SD_LIB_EXPORT std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer);
 SD_LIB_EXPORT std::vector<const sd::LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer);
@@ -432,22 +485,5 @@ SD_LIB_EXPORT const char *lastErrorMessage();
 SD_LIB_EXPORT int lastErrorCode();
 
 
-SD_LIB_EXPORT sd::LongType getCachedMemory(int deviceId);
-
-SD_LIB_EXPORT OpaqueLaunchContext *defaultLaunchContext();
-
-SD_LIB_EXPORT sd::Pointer lcScalarPointer(OpaqueLaunchContext *lc);
-
-SD_LIB_EXPORT sd::Pointer lcReductionPointer(OpaqueLaunchContext *lc);
-
-SD_LIB_EXPORT sd::Pointer lcAllocationPointer(OpaqueLaunchContext *lc);
-
-SD_LIB_EXPORT sd::Pointer lcExecutionStream(OpaqueLaunchContext *lc);
-
-SD_LIB_EXPORT sd::Pointer lcCopyStream(OpaqueLaunchContext *lc) ;
-
-SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc);
-
-SD_LIB_EXPORT sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc);
 
 #endif // NATIVEOPS_H
