@@ -90,7 +90,7 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
 
 
 template <typename T>
-static  inline T similirityV3_(NDArray const& boxes, LongType i, LongType j) {
+static  inline T similirityV3_(NDArray& boxes, LongType i, LongType j) {
   const T zero = static_cast<T>(0.f);
   const T yminI = math::sd_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
   const T xminI = math::sd_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
@@ -231,22 +231,22 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {boxes, scales});
   std::vector<sd::LongType> shape = {scales->lengthOf()};
-  std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>(
+  NDArray indices (NDArrayFactory::create_<I>(
       'c', shape, context));  // - 1, scales->lengthOf()); //, scales->getContext());
 
   NDArray scores(*scales);
   Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices->dataBuffer()->specialAsT<I>();
+  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
   auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
   suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
-  indices->tickWriteDevice();
-  sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-              scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
-  indices->tickWriteDevice();
+  indices.tickWriteDevice();
+  sortByValue(extras, &indices,
+              &scores,true);
+  indices.tickWriteDevice();
   NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
   int numSelected = 0;
-  int numBoxes = boxes->sizeAt(0);
+  int numBoxes = boxes->sizeAt(0), tt(0);
   auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
 
   auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
@@ -386,19 +386,19 @@ static SD_KERNEL void suppressNonMaxOverlapKernel(T* boxes, LongType const* boxe
 }
 
 
-typedef NDArray (*SimilarityFunc)(NDArray const& boxes, LongType i, LongType j);
+typedef NDArray (*SimilarityFunc)(NDArray& boxes, LongType i, LongType j);
 template <typename T>
-static inline T similarityOverlaps_(NDArray const& boxes, LongType i, LongType j) {
+static inline T similarityOverlaps_(NDArray& boxes, LongType i, LongType j) {
   return boxes.t<T>(i, j);
 }
 
-static NDArray similiratyOverlaps(NDArray const& boxes, LongType i, LongType j) {
+static NDArray similiratyOverlaps(NDArray& boxes, LongType i, LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similarityOverlaps_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;
 }
 
-static NDArray similarityV3(NDArray const& boxes, LongType i, LongType j) {
+static NDArray similarityV3(NDArray& boxes, LongType i, LongType j) {
   NDArray res(boxes.dataType(), boxes.getContext());  // = NDArrayFactory::create(0.);
   BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j), SD_FLOAT_TYPES);
   return res;

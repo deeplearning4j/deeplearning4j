@@ -114,7 +114,7 @@ static SD_KERNEL void adjointKernel(T* output, LongType batchSize, LongType rows
 }
 
 template <typename T>
-static void adjointMatrix_(LaunchContext* context, NDArray const* input, NDArray* output) {
+static void adjointMatrix_(LaunchContext* context, NDArray * input, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input});
   const std::vector<LongType> dims1 = {-2, -1};
   auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), const_cast<LongType*>(dims1.data()), dims1.size());
@@ -122,7 +122,7 @@ static void adjointMatrix_(LaunchContext* context, NDArray const* input, NDArray
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);
   auto columns = input->sizeAt(-1);
-  output->assign(input);
+  output->assign(*input);
   dim3 solveDims = getLaunchDims("solve");
 
   adjointKernel<T><<<solveDims.x,solveDims.y, solveDims.z, *stream>>>(outputBuf, outputTads->numberOfTads(), rows, columns,
@@ -133,7 +133,7 @@ static void adjointMatrix_(LaunchContext* context, NDArray const* input, NDArray
   NDArray::registerSpecialUse({output}, {input});
 }
 
-void adjointMatrix(LaunchContext* context, NDArray const* input, NDArray* output) {
+void adjointMatrix(LaunchContext* context, NDArray * input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), SD_FLOAT_TYPES);
 }
 

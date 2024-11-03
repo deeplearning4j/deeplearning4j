@@ -114,7 +114,7 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
 }
 
 //////////////////////////////////////////////////////////////////////
-void gather(LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
+void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output,
             const std::vector<LongType>& intArgs) {
   const LongType inputRank = input->rankOf();
   const LongType numOfIntArgs = intArgs.size();
@@ -140,7 +140,7 @@ void gather(LaunchContext* context, const NDArray* input, const NDArray* indices
       std::vector<LongType> firstShape = {numOfIntArgs - 1};
       std::vector<double> data =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
       pIndices = new NDArray(input->ordering(),firstShape,
-                             std::vector<double>(intArgs.begin() + 1, intArgs.end()), INT64, input->getContext());
+                             data, INT64, input->getContext());
     }
     std::vector<LongType> dimsOut(pIndices->rankOf());
     std::iota(dimsOut.begin(), dimsOut.end(), axis);  // fill with axis, axis+1, ... axis+pIndices->rankOf()-1

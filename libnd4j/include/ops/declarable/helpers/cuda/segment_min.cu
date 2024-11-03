@@ -169,10 +169,12 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   LongType numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
-  output->assign(DataTypeUtils::infOrMax<T>());
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
-
+  T val = DataTypeUtils::infOrMax<T>();
+  output->assign(val);
+  sd::LongType zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(zero2);
+  classesRangesLens.assign(len);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -220,9 +222,12 @@ static void unsortedSegmentMinFunctor_(LaunchContext* context, NDArray* input, N
   auto stream = context->getCudaStream();
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  output->assign(DataTypeUtils::infOrMax<T>());
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  T val = DataTypeUtils::infOrMax<T>();
+  sd::LongType  len = indices->lengthOf();
+  output->assign(val);
+  sd::LongType  zero = 0;
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero);
   dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -235,7 +240,8 @@ static void unsortedSegmentMinFunctor_(LaunchContext* context, NDArray* input, N
     sd::DebugHelper::checkErrorCode(stream, "unsortedSegmentMinLinearKernel failed");
 
   } else {
-    output->assign(DataTypeUtils::max<T>());
+    T val = DataTypeUtils::max<T>();
+    output->assign(val);
     LongType zero = 0;
     std::vector<LongType> *dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,&zero);
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
@@ -300,7 +306,7 @@ static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const LongT
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -345,7 +351,7 @@ static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const LongType
     auto outGrad = gradOut + gradOutOffsets[segment];
 
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      if (math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
+      if (math::sd_abs<T,T>(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
     }
   }
 }

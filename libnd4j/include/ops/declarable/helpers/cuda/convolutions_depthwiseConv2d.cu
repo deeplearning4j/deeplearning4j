@@ -73,7 +73,7 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
     modifOutput = {{3, 0, 1, 2, 4},
                    {iC, bS * oH * oW, mC}};             // [bS,oH,oW,iC,mC] -> [iC,bS,oH,oW,mC] -> [iC,bS*oH*oW,mC]
     std::vector<sd::LongType> permuteVec = {0, 3, 1, 2};
-    input = new NDArray(input->permute(permuteVec,false));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
+    input = new NDArray(input->permute(permuteVec, false, false));  // [bS,iH,iW,iC]    -> [bS,iC,iH,iW]
   } else {
     outReShape = {bS, iC, mC, oH, oW};  // [bS,iC*mC,oH,oW] -> [bS,iC,mC,oH,oW]
     modifOutput = {{1, 0, 3, 4, 2},
@@ -95,9 +95,10 @@ static void depthwiseConv2d_(sd::graph::Context& block, NDArray* input, NDArray*
   NDArray columns(input->ordering(),colShape, input->dataType(), input->getContext());
   NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
 
+  NDArray zero = NDArrayFactory::create(0.f, input->getContext());
   helpers::im2col(
       *output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW,
-      NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
+      zero);  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
   MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, modifWeights,
                         modifOutput);  // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 

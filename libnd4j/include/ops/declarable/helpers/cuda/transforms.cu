@@ -78,7 +78,7 @@ SD_HOST static void invertPermutationCudaLauncher(const int blocksPerGrid, const
 }
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(LaunchContext* context, const NDArray& input, NDArray& output) {
+void invertPermutation(LaunchContext* context, NDArray& input, NDArray& output) {
   dim3 invertPermuteDims = invertPermutationDims(input.lengthOf());
   PointersManager manager(context, "invertPermutation");
 
@@ -151,7 +151,7 @@ static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 ///////////////////////////////////////////////////////////////////
-void trace(LaunchContext* context, const NDArray& input, NDArray& output) {
+void trace(LaunchContext* context, NDArray& input, NDArray& output) {
   PointersManager manager(context, "trace");
 
   const LongType diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
@@ -217,7 +217,7 @@ static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void triuBP(LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI,
+void triuBP(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
             const int diagonal) {
   const int threadsPerBlock = SD_MAX_NUM_THREADS / 4;
   const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -265,7 +265,7 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
   for (LongType i = tid; i < zLen; i += totalThreads) {
     const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
-    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff);
+    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff,nullptr);
 
     z[zOffset] = x[xOffsets[0]];                      // first offset
     for (LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets

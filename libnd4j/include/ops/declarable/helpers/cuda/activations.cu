@@ -84,7 +84,7 @@ void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(LaunchContext *context, const NDArray &input, const NDArray &alpha, NDArray &output) {
+void prelu(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray &output) {
   PointersManager manager(context, "prelu");
 
   dim3 launchDims = getLaunchDims("prelu");
@@ -169,7 +169,7 @@ void SD_HOST preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(LaunchContext *context, const NDArray &input, const NDArray &alpha, const NDArray &dLdO, NDArray &dLdI,
+void preluBP(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray&dLdO, NDArray &dLdI,
              NDArray &dLdA) {
   dLdA.nullify();
 
@@ -348,7 +348,7 @@ static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void softmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
   const int rank = input.rankOf();
 
   PointersManager manager(context, "helpers::softmax");
@@ -503,7 +503,7 @@ void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void logSoftmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
 
@@ -626,7 +626,7 @@ void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *v
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(LaunchContext *context, const NDArray &input, NDArray &output, const int dimension) {
+void softmaxDerivative(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
   if (!input.isActualOnDeviceSide()) input.syncToDevice();
   const int rank = input.rankOf();
   LongType temp;
@@ -659,7 +659,7 @@ void thresholdRelu_(NDArray const &input, double threshold, NDArray &output) {
   const_cast<NDArray &>(input).applyLambda(routine, output);
 }
 
-void thresholdRelu(LaunchContext *context, NDArray const &input, double threshold, NDArray &output) {
+void thresholdRelu(LaunchContext *context, NDArray &input, double threshold, NDArray &output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
 }
 

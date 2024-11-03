@@ -138,9 +138,12 @@ static void segmentProdFunctor_(LaunchContext* context, NDArray* input, NDArray*
   LongType numClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
-  output->assign(1);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero = 0;
+  sd::LongType  one = 1;
+  sd::LongType  len = indices->lengthOf();
+  output->assign(one);
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero);
 
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -186,13 +189,16 @@ static void unsortedSegmentProdFunctor_(LaunchContext* context, NDArray* input, 
   auto stream = context->getCudaStream();
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType zero = 0;
+  sd::LongType  one = 1;
+  sd::LongType  len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero);
   dim3 dims = getFillUpSegmentsDims(numOfClasses,indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
-  output->assign(1);
+  output->assign(one);
 
   dim3 launchDims = getLaunchDims("unsorted_segment_prod_2");
   if (input->isVector()) {

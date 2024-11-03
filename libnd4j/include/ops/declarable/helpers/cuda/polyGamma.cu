@@ -85,7 +85,7 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void polyGamma(LaunchContext *context, const NDArray &n, const NDArray &x, NDArray &z) {
+void polyGamma(LaunchContext *context, NDArray&n, NDArray&x, NDArray &z) {
   NDArray::prepareSpecialUse({&z}, {&n, &x});
 
   dim3 launchDims = polygammaDims(z.lengthOf());

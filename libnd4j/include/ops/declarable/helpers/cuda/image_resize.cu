@@ -78,7 +78,7 @@ static SD_KERNEL void computeInterpolationWeights(LongType outSize, LongType inS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resize image with bilinear interpolation algorithm
 //
-static void resizeImage(LaunchContext* context, NDArray const* images, LongType batchSize, LongType inHeight,
+static void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight,
                         LongType inWidth, LongType outHeight, LongType outWidth, LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
                         NDArray* output);
 
@@ -121,7 +121,7 @@ static SD_KERNEL void resizeImageKernel(T const* input, LongType const* inputSha
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resize image with
 template <typename T, typename F>
-static void resizeImage_(LaunchContext* context, NDArray const* images, LongType batchSize, LongType inHeight,
+static void resizeImage_(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight,
                          LongType inWidth, LongType outHeight, LongType outWidth, LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
                          NDArray* output) {
   LongType inRowSize = inWidth * channels;
@@ -145,7 +145,7 @@ static void resizeImage_(LaunchContext* context, NDArray const* images, LongType
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T, typename F>
-static Status resizeBilinearFunctor_(LaunchContext* context, NDArray const* images, int const width,
+static Status resizeBilinearFunctor_(LaunchContext* context, NDArray * images, int const width,
                                          int const height, bool const alignCorners, bool const halfPixelCenter,
                                          NDArray* output) {
   const LongType batchSize = images->sizeAt(0);
@@ -158,7 +158,7 @@ static Status resizeBilinearFunctor_(LaunchContext* context, NDArray const* imag
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(images);
+    output->assign(*images);
     return Status::OK;
   }
 
@@ -278,7 +278,7 @@ static SD_KERNEL void resizeNeighborKernel(T const* input, LongType const* input
 // resizeNeighborFunctor - main algorithm by nearest neighbor
 //
 template <typename T>
-Status resizeNeighborFunctor_(LaunchContext* context, NDArray const* images, int const width, int const height,
+Status resizeNeighborFunctor_(LaunchContext* context, NDArray * images, int const width, int const height,
                                   CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner,
                                   NDArray* output) {
   const LongType batchSize = images->sizeAt(0);
@@ -291,7 +291,7 @@ Status resizeNeighborFunctor_(LaunchContext* context, NDArray const* images, int
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(images);
+    output->assign(*images);
     return Status::OK;
   }
 
@@ -334,7 +334,7 @@ Status resizeNeighborFunctor_(LaunchContext* context, NDArray const* images, int
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resizeImage - resize bilinear algorithm caller
 //
-void resizeImage(LaunchContext* context, NDArray const* images, LongType batchSize, LongType inHeight, LongType inWidth,
+void resizeImage(LaunchContext* context, NDArray * images, LongType batchSize, LongType inHeight, LongType inWidth,
                  LongType outHeight, LongType outWidth, LongType channels,
                  BilinearInterpolationData* xs_, BilinearInterpolationData* ys_, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(
@@ -344,14 +344,14 @@ void resizeImage(LaunchContext* context, NDArray const* images, LongType batchSi
 }
 
 BUILD_DOUBLE_TEMPLATE(template void resizeImage_,
-                      (sd::LaunchContext * context, NDArray const* images, sd::LongType batchSize,
+                      (sd::LaunchContext * context, NDArray * images, sd::LongType batchSize,
                        sd::LongType inHeight, sd::LongType inWidth, sd::LongType outHeight, sd::LongType outWidth,
                        sd::LongType channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_,
                        NDArray* output),
                       SD_NUMERIC_TYPES, SD_FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Status resizeBilinearFunctor(LaunchContext* context, NDArray const* images, int width, int height,
+Status resizeBilinearFunctor(LaunchContext* context, NDArray * images, int width, int height,
                                  bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
   BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
                         (context, images, width, height, alignCorners, halfPixelCenter, output), SD_NUMERIC_TYPES,
@@ -360,7 +360,7 @@ Status resizeBilinearFunctor(LaunchContext* context, NDArray const* images, int 
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Status resizeNeighborFunctor(LaunchContext* context, NDArray const* images, int const width, int const height,
+Status resizeNeighborFunctor(LaunchContext* context, NDArray * images, int const width, int const height,
                                  CoordinateTransformationMode coorMode, NearestMode nearestMode, bool alignCorner,
                                  NDArray* output) {
   BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
@@ -632,7 +632,7 @@ static SD_KERNEL void bicubicInterpolateWithCachingKernel(float const* cachedTab
 }
 
 template <typename T, typename Scaler>
-static void bicubicInterpolateWithCaching(NDArray const* image, const ImageResizerState& resizerState,
+static void bicubicInterpolateWithCaching(NDArray * image, const ImageResizerState& resizerState,
                                           const double coefficient, bool exclude_outside, NDArray* output) {
   const auto numChannels = resizerState.channels;
   auto stream = resizerState.stream;  // output->getContext()->getCudaStream();
@@ -699,18 +699,18 @@ static void bicubicInterpolateWithCaching(NDArray const* image, const ImageResiz
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-Status resizeBicubicFunctor_(LaunchContext* context, NDArray const* image, int width, int height,
+Status resizeBicubicFunctor_(LaunchContext* context, NDArray * image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
   return Status::OK;
 }
 
-Status resizeBicubicFunctor(LaunchContext* context, NDArray const* image, int width, int height,
+Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int width, int height,
                                 bool preserveAspectRatio, bool antialias, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_,
                         (context, image, width, height, preserveAspectRatio, antialias, output), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template sd::Status resizeBicubicFunctor_,
-                      (sd::LaunchContext * context, NDArray const* image, int width, int height,
+                      (sd::LaunchContext * context, NDArray * image, int width, int height,
                        bool preserveAspectRatio, bool antialias, NDArray* output),
                       SD_NUMERIC_TYPES);
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -787,7 +787,7 @@ static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInter
 
 template <typename T>
 static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, CachedInterpolation* cache,
-                       NDArray const* input, NDArray* output) {
+                       NDArray * input, NDArray* output) {
   T const* inputPtr = reinterpret_cast<T const*>(input->specialBuffer());
   float scale = 1.f / (st.heightScale * st.widthScale);
   auto outputPtr =
@@ -826,7 +826,7 @@ static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, Cached
 }
 // ------------------------------------------------------------------------------------------------------------------ //
 template <typename T>
-Status resizeAreaFunctor_(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeAreaFunctor_(LaunchContext* context, NDArray * image, int const width, int const height,
                           bool const alignCorners, NDArray* output) {
   ImageResizerState st(alignCorners, false);  // Create resize info
   auto res = st.validateAndCalculateOutputSize(image, width, height);
@@ -856,7 +856,7 @@ Status resizeAreaFunctor_(LaunchContext* context, NDArray const* image, int cons
 
   return res;
 }
-Status resizeAreaFunctor(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeAreaFunctor(LaunchContext* context, NDArray * image, int const width, int const height,
                              bool const alignCorners, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_,
                         (context, image, width, height, alignCorners, output), SD_NUMERIC_TYPES);
@@ -866,7 +866,7 @@ Status resizeAreaFunctor(LaunchContext* context, NDArray const* image, int const
 // simplified bicubic resize without antialiasing
 //
 template <typename T>
-Status resizeBicubicFunctorA_(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeBicubicFunctorA_(LaunchContext* context, NDArray * image, int const width, int const height,
                               bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
                               double coefficient, NDArray* output) {
   ImageResizerState st(alignCorners, coorMode == HALF_PIXEL,
@@ -891,7 +891,7 @@ Status resizeBicubicFunctorA_(LaunchContext* context, NDArray const* image, int 
   NDArray::registerSpecialUse({output}, {image});
   return res;
 }
-Status resizeBicubicFunctorA(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeBicubicFunctorA(LaunchContext* context, NDArray * image, int const width, int const height,
                                  bool const alignCorners, CoordinateTransformationMode coorMode, bool exclude_outside,
                                  double coefficient, NDArray* output) {
   BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_,
@@ -899,7 +899,7 @@ Status resizeBicubicFunctorA(LaunchContext* context, NDArray const* image, int c
                         SD_NUMERIC_TYPES);
 }
 // ------------------------------------------------------------------------------------------------------------------ //
-Status resizeImagesFunctor(LaunchContext* context, NDArray const* image, int const width, int const height,
+Status resizeImagesFunctor(LaunchContext* context, NDArray * image, int const width, int const height,
                                ImageResizeMethods method, bool alignCorners, NDArray* output) {
   switch (method) {
     case kResizeBilinear:
@@ -1048,8 +1048,8 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
 //      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
 //
 template <typename T, typename Z, typename I>
-void cropAndResizeFunctor_(LaunchContext* context, NDArray const* images, NDArray const* boxes,
-                           NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal,
+void cropAndResizeFunctor_(LaunchContext* context, NDArray * images, NDArray * boxes,
+                           NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                            NDArray* crops) {
   const int batchSize = images->sizeAt(0);
   const int imageHeight = images->sizeAt(1);
@@ -1078,8 +1078,8 @@ void cropAndResizeFunctor_(LaunchContext* context, NDArray const* images, NDArra
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void cropAndResizeFunctor(LaunchContext* context, NDArray const* images, NDArray const* boxes,
-                          NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal,
+void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,
+                          NDArray * indices, NDArray * cropSize, int method, double extrapolationVal,
                           NDArray* crops) {
   BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                         (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), SD_NUMERIC_TYPES,
@@ -1087,8 +1087,8 @@ void cropAndResizeFunctor(LaunchContext* context, NDArray const* images, NDArray
 
 }
 BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
-                      (sd::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices,
-                       NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops),
+                      (sd::LaunchContext * context, NDArray * images, NDArray * boxes, NDArray * indices,
+                       NDArray * cropSize, int method, double extrapolationVal, NDArray* crops),
                       SD_NUMERIC_TYPES, SD_FLOAT_TYPES, SD_INTEGER_TYPES);
 }  // namespace helpers
 }  // namespace ops

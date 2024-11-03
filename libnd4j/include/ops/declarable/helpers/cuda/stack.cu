@@ -67,14 +67,14 @@ SD_HOST static void stackScalarsCudaLauncher(const int blocksPerGrid, const int 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void stack_(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output,
+static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output,
                    const int dim) {
   const int numOfSubArrs = inArrs.size();
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
-    std::vector<void const*> hInBuffers(numOfSubArrs);
+    std::vector<void *> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();
 
@@ -94,7 +94,7 @@ static void stack_(LaunchContext* context, const std::vector<const NDArray*>& in
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      void* zBuff = output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]);
+      void* zBuff = const_cast<void*>(output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]));
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
                                             inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(), nullptr,
@@ -107,11 +107,11 @@ static void stack_(LaunchContext* context, const std::vector<const NDArray*>& in
 }
 
 ////////////////////////////////////////////////////////////////////////
-void stack(LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int dim) {
+void stack(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output, const int dim) {
   BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (context, inArrs, output, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void stack_,
-                      (sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output,
+                      (sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output,
                           const int dim),
                       SD_COMMON_TYPES);
 
@@ -148,7 +148,7 @@ SD_HOST static void unstackScalarsCudaLauncher(const int blocksPerGrid, const in
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void unstack_(LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs,
+static void unstack_(LaunchContext* context, NDArray& input, const std::vector<NDArray*>& outArrs,
                      const int dim) {
   const int numOfSubArrs = outArrs.size();
 
@@ -193,11 +193,11 @@ static void unstack_(LaunchContext* context, const NDArray& input, const std::ve
 }
 
 ////////////////////////////////////////////////////////////////////////
-void unstack(LaunchContext* context, const NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
+void unstack(LaunchContext* context, NDArray& input, const std::vector<NDArray*>& outArrs, const int dim) {
   BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (context, input, outArrs, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void unstack_,
-                      (sd::LaunchContext * context, const NDArray& input, const std::vector<NDArray*>& outArrs,
+                      (sd::LaunchContext * context, NDArray& input, const std::vector<NDArray*>& outArrs,
                           const int dim),
                       SD_COMMON_TYPES);
 

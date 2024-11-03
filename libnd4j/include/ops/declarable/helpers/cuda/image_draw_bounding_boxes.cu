@@ -35,23 +35,25 @@ static NDArray DefaultColorTable(int depth, LaunchContext* context) {
   const LongType kDefaultTableLength = 10;
   const LongType kDefaultChannelLength = 4;
   std::vector<sd::LongType> shape = {kDefaultTableLength, kDefaultChannelLength};
+ std::vector<double> table =   {
+                                1,   1,   0,   1,  // yellow
+                                0,   0,   1,   1,  // 1: blue
+                                1,   0,   0,   1,  // 2: red
+                                0,   1,   0,   1,  // 3: lime
+                                0.5, 0,   0.5, 1,  // 4: purple
+                                0.5, 0.5, 0,   1,  // 5: olive
+                                0.5, 0,   0,   1,  // 6: maroon
+                                0,   0,   0.5, 1,  // 7: navy blue
+                                0,   1,   1,   1,  // 8: aqua
+                                1,   0,   1,   1   // 9: fuchsia
+                            };
   NDArray colorTable('c', shape,
-                     {
-                         1,   1,   0,   1,  // yellow
-                         0,   0,   1,   1,  // 1: blue
-                         1,   0,   0,   1,  // 2: red
-                         0,   1,   0,   1,  // 3: lime
-                         0.5, 0,   0.5, 1,  // 4: purple
-                         0.5, 0.5, 0,   1,  // 5: olive
-                         0.5, 0,   0,   1,  // 6: maroon
-                         0,   0,   0.5, 1,  // 7: navy blue
-                         0,   1,   1,   1,  // 8: aqua
-                         1,   0,   1,   1   // 9: fuchsia
-                     },
+                     table,
                      FLOAT32, context);
 
   if (depth == 1) {
-    colorTable.assign(1.f);  // all to white when black and white colors
+    float one = 1.f;
+    colorTable.assign(one);  // all to white when black and white colors
   }
   return colorTable;
 }
@@ -137,7 +139,7 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
 }
 
 template <typename T>
-void drawBoundingBoxesH(LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors,
+void drawBoundingBoxesH(LaunchContext* context, NDArray * images, NDArray * boxes, NDArray * colors,
                         NDArray* output) {
   auto batchSize = images->sizeAt(0);
   auto height = images->sizeAt(1);
@@ -171,7 +173,7 @@ void drawBoundingBoxesFunctor(LaunchContext* context, NDArray* images, NDArray* 
   // colors - colors for each box given
   // set up color for each box as frame
   NDArray::prepareSpecialUse({output}, {images, boxes, colors});
-  output->assign(images);
+  output->assign(*images);
   BUILD_SINGLE_SELECTOR(output->dataType(), drawBoundingBoxesH, (context, images, boxes, colors, output),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {images, boxes, colors});

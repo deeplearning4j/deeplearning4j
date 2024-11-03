@@ -160,14 +160,17 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
 
 template <typename T, typename I>
 static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  output->assign(-DataTypeUtils::infOrMax<T>());
+  T val = -DataTypeUtils::max<T>();
+  output->assign(val);
   auto stream = context->getCudaStream();
   indices->syncToHost();
   LongType numOfClasses = indices->e<LongType>(indices->lengthOf() - 1) + 1;
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  int zero2 = 0;
+  classesRangesLens.assign(zero2);
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
   LongType* lengths = reinterpret_cast<LongType*>(classesRangesLens.specialBuffer());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
@@ -215,12 +218,15 @@ void segmentMaxFunctor(LaunchContext* context, NDArray* input, NDArray* indices,
 template <typename T, typename I>
 static void unsortedSegmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, LongType numOfClasses, NDArray* output) {
   auto stream = context->getCudaStream();
-  output->assign(DataTypeUtils::infOrMax<T>());
+  T val = DataTypeUtils::infOrMax<T>();
+  output->assign(val);
 
   NDArray classesRangesBegs = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
   NDArray classesRangesLens = NDArrayFactory::create<LongType>('c', {numOfClasses}, context);
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
+  int zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(len);
+  classesRangesLens.assign(zero2);
 
   dim3 dims = getFillUpSegmentsDims(numOfClasses, indices->lengthOf());
   fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
@@ -243,7 +249,8 @@ static void unsortedSegmentMaxFunctor_(LaunchContext* context, NDArray* input, N
     auto outputTads = packZ->specialShapeInfo();
     auto outputTadOffsets = packZ->specialOffsets();
     dims.x = input->sizeAt(0);
-    output->assign(-DataTypeUtils::max<T>());
+    T val = -DataTypeUtils::max<T>();
+    output->assign(val);
     segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
         input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
         reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
@@ -298,7 +305,7 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, LongType const* i
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -359,7 +366,7 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inpu
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
       auto comp = gradIn2[shape::getIndexOffset(e, gradInTadShapeInfo)];
       auto currValue = current2[shape::getIndexOffset(e, inputTadShapeInfo)];
-      if (math::sd_abs<T>(comp - currValue) <= T(1.e-6)) {
+      if (math::sd_abs<T,T>(comp - currValue) <= T(1.e-6)) {
         auto setValueOffset = shape::getIndexOffset(e, outTadShapeInfo);
         auto gradOutValueOffset =  shape::getIndexOffset(e, gradOutTadShapeInfo);
         auto testCurrent2 = currentOut2[setValueOffset];

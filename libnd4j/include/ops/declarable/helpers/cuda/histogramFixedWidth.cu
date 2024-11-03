@@ -72,8 +72,8 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_HOST static void histogramFixedWidthCudaLauncher(const cudaStream_t* stream, const NDArray& input,
-                                                    const NDArray& range, NDArray& output) {
+SD_HOST static void histogramFixedWidthCudaLauncher(const cudaStream_t* stream, NDArray& input,
+                                                    NDArray& range, NDArray& output) {
   const X leftEdge = range.e<X>(0);
   const X rightEdge = range.e<X>(1);
 
@@ -86,7 +86,7 @@ SD_HOST static void histogramFixedWidthCudaLauncher(const cudaStream_t* stream, 
 }
 
 ////////////////////////////////////////////////////////////////////////
-void histogramFixedWidth(LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+void histogramFixedWidth(LaunchContext* context, NDArray& input, NDArray& range, NDArray& output) {
   // firstly initialize output with zeros
   output.nullify();
 

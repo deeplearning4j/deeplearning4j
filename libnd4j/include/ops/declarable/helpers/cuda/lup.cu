@@ -263,7 +263,7 @@ static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len)
   for (auto i = start; i < len; i += step) {
     auto pos = i * len + i;  // shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), di, 2);
     // sum logs of all diagonal elements
-    math::atomics::sd_atomicAdd(result, math::sd_log<T, T>(math::sd_abs(compound[pos])));
+    math::atomics::sd_atomicAdd(result, math::sd_log<T, T>(math::sd_abs<T,T>(compound[pos])));
   }
 }
 
@@ -406,7 +406,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
         } else {
           permutVector.tickWriteDevice();
           input->tickWriteDevice();
-          compound->assign(input);
+          compound->assign(*input);
           permutation->assign(permutVector);
         }
       }
@@ -444,7 +444,7 @@ static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDAr
           permutation->tickWriteDevice();
         } else {
           input->tickWriteDevice();
-          compound->assign(input);
+          compound->assign(*input);
           permutation->assign(permutVector);
         }
       }
@@ -538,8 +538,8 @@ static I argmaxCol(I column, T *compoundBuffer, LongType const *compoundShape) {
     LongType xPos[] = {rowCounter, column};
     auto xIndex = shape::getOffset(compoundShape, xPos, 0);
 
-    if (math::sd_abs(compoundBuffer[xIndex]) > maxValue) {
-      maxValue = math::sd_max(maxValue, math::sd_abs(compoundBuffer[xIndex]));
+    if (math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
+      maxValue = math::sd_max(maxValue, math::sd_abs<T,T>(compoundBuffer[xIndex]));
       result = rowCounter;
     }
   }
@@ -614,7 +614,7 @@ static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray
 
   auto n = input->sizeAt(-1);
 
-  output->assign(input);  // fill up output tensor with zeros
+  output->assign(*input);  // fill up output tensor with zeros
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});
@@ -645,7 +645,8 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
-  output->assign(1.f);
+  float one = 1.f;
+  output->assign(one);
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -684,7 +685,8 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
-  output->assign(0.f);
+  float zero = 0.f;
+  output->assign(zero);
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -770,11 +772,11 @@ static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) 
 
     lower.tickWriteDevice();
     upper.tickWriteDevice();
-
-    matrix.assign(0);
+    int zero = 0;
+    matrix.assign(zero);
     invertUpperMatrix(context, &upper, &matrix);  // U^{-1}
     matrix.tickWriteDevice();
-    compound.assign(0);
+    compound.assign(zero);
     invertLowerMatrix(context, &lower, &compound);  // L{-1}
     compound.tickWriteDevice();
 
@@ -793,7 +795,7 @@ Status inverse(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::registerSpecialUse({output}, {input});
 }
 
-bool checkCholeskyInput(LaunchContext *context, NDArray const *input) { return true; }
+bool checkCholeskyInput(LaunchContext *context, NDArray *input) { return true; }
 
 template <typename F>
 SD_KERNEL void fillBatchKernel(F **dArrayBatch, F *buf, const LongType *offsets, LongType batchSize) {
@@ -826,7 +828,7 @@ SD_KERNEL void adjustResultsKernel(F *dArray, const LongType *shape, const LongT
 
 template <typename F>
 Status cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
-  if (!inplace) output->assign(input);
+  if (!inplace) output->assign(*input);
   auto tempOutput = output->dup();
   cusolverDnHandle_t handle = nullptr;
   auto n = input->sizeAt(-1);
@@ -900,9 +902,9 @@ Status cholesky_(LaunchContext *context, NDArray *input, NDArray *output, bool i
   else {
     std::vector<sd::LongType> shape = input->getShapeAsVector();
     std::unique_ptr<NDArray> tempOutput(NDArrayFactory::create_('c', shape, FLOAT32, context));
-    tempOutput->assign(input);
+    tempOutput->assign(*input);
     cholesky__<float>(context, tempOutput.get(), tempOutput.get(), true);
-    output->assign(tempOutput.get());
+    output->assign(*tempOutput.get());
   }
   NDArray::registerSpecialUse({output}, {input});
   return Status::OK;

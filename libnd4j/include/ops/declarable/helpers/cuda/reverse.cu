@@ -149,7 +149,7 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
 }
 
 template <typename T>
-static void reverseTad(LaunchContext* context, const NDArray* input, NDArray* output,
+static void reverseTad(LaunchContext* context, NDArray* input, NDArray* output,
                        const LongType* inputTadShape, const LongType* inputTadOffsets,
                        const LongType* outputTadShape, const LongType* outputTadOffsets, uint64_t tadLength) {
   auto stream = context->getCudaStream();
@@ -164,7 +164,7 @@ static void reverseTad(LaunchContext* context, const NDArray* input, NDArray* ou
 }
 
 template <typename T>
-static void reverseArray(LaunchContext* context, const NDArray* input, NDArray* output, LongType numOfElemsToReverse) {
+static void reverseArray(LaunchContext* context, NDArray* input, NDArray* output, LongType numOfElemsToReverse) {
   auto stream = context->getCudaStream();
   LongType numOfReverse = numOfElemsToReverse;
   if (numOfElemsToReverse == 0) numOfReverse = input->lengthOf();
@@ -178,7 +178,7 @@ static void reverseArray(LaunchContext* context, const NDArray* input, NDArray* 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void reverseSequence_(LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
   int posOfNonUnityDim = -1;
   seqLengths->syncToHost();
@@ -187,7 +187,7 @@ static void reverseSequence_(LaunchContext* context, const NDArray* input, const
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
     LongType numOfElemsToReverse = seqLengths->e<LongType>(0);
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
-      output->assign(input);
+      output->assign(*input);
     else
       reverseArrayKernel<T><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
           input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
@@ -207,7 +207,7 @@ static void reverseSequence_(LaunchContext* context, const NDArray* input, const
       LongType numOfElemsToReverse = seqLengths->e<LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-        outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
+        outSubArrsSet.at(i)->assign(*inSubArrsSet.at(i));
       } else {
         auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
         auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
@@ -220,12 +220,12 @@ static void reverseSequence_(LaunchContext* context, const NDArray* input, const
   }
 }
 
-void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
+void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths, NDArray* output,
                      int seqDim, const int batchDim) {
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
   // if op isn't inplace - copy original data into output array
-  if (output->specialBuffer() != input->specialBuffer()) output->assign(input);
+  if (output->specialBuffer() != input->specialBuffer()) output->assign(*input);
 
   BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim),
                         SD_COMMON_TYPES);
@@ -233,7 +233,7 @@ void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
+void reverse(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
 

@@ -34,7 +34,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray activation(const NDArray& arr) {
+static SD_INLINE NDArray activation(NDArray& arr) {
   // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();
   auto result = NDArray(&arr, false, arr.getContext());
   (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, result);
@@ -42,12 +42,12 @@ static SD_INLINE NDArray activation(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(const NDArray& arr) {
+static SD_INLINE NDArray sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruCell(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
              NDArray* h, NDArray* c) {
   // x   input [bS x inSize], bS - batch size, inSize - number of features
   // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -62,10 +62,12 @@ void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const 
   auto z = mmul(*x, *w);  //  [bS x 3*inSize]
 
   // forget gate = sigmoid(x*Wf + bf)
-  auto f = sigmoid(z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize}));
+  NDArray fIn = z({0, 0, inSize, 2 * inSize}) + (*b)({0, inSize});
+  auto f = sigmoid(fIn);
 
+  NDArray rIn = z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize});
   // reset gate = sigmoid(x*Wr + br)
-  auto r = sigmoid(z({0, 0, 2 * inSize, 3 * inSize}) + (*b)({inSize, 2 * inSize}));
+  auto r = sigmoid(rIn);
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
@@ -78,7 +80,7 @@ void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b,
+void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, NDArray* b,
                  NDArray* h, NDArray* c) {
   // x   input [bS x inSize x time]
   // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -229,8 +231,8 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruBI(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-           const NDArray* mask, NDArray* ht, NDArray* ct) {
+void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+           NDArray* mask, NDArray* ht, NDArray* ct) {
   //  x = x * mask
   std::vector<LongType> dims = {1,2};
   if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
@@ -449,8 +451,8 @@ BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher,
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-             const NDArray* ct, const NDArray* gradCt, const NDArray* gradHt, const NDArray* mask, NDArray* gradI,
+void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+             NDArray* ct, NDArray* gradCt, NDArray* gradHt, NDArray* mask, NDArray* gradI,
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   //  x = x * mask
   std::vector<LongType> dims = {1, 2};
@@ -496,7 +498,7 @@ void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray
   gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims2);  // [4*K]
 
   // gradW
-  x->permutei({0, 2, 1},false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]
+  x->permutei({0, 2, 1}, false, false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]
   MmulHelper::mmul(x, &gradWi, gradW, 1., 0.);  // [time, 2*K, bS] x [time, bS , 6*K] = [time, 2*K, 6*K]
 }
 
