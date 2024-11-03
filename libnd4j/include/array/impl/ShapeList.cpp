@@ -61,7 +61,6 @@ void ShapeList::destroy() {
 
 int ShapeList::size() const {
   return (int)_shapes.size();
-#endif
 }
 
 const LongType* ShapeList::at(int idx) {
@@ -78,7 +77,6 @@ const LongType* ShapeList::at(int idx) {
 
 void ShapeList::push_back(const LongType* shape) {
   _shapes.push_back(shape);
-#endif
 }
 
 void ShapeList::detach() {
