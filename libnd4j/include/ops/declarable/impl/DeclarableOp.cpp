@@ -490,7 +490,6 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   // rolling over inputs first
   int cnt = 0, inT = 0;
   std::vector<sd::DataType> inputTypes(block.width());
-#endif
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
       if (array == nullptr) {
