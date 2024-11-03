@@ -452,19 +452,19 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                          const sd::LongType *dYShapeBuffer, void *hZ, const sd::LongType *hZShapeBuffer, void *dZ,
                          const sd::LongType *dZShapeBuffer, void *extraArguments);
 
-  inline static void execSort(void *x, const sd::LongType *xShapeInfo, bool descending) {
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+  inline static void execSort(sd::NDArray *x, bool descending) {
+    auto xType = x->dataType();
 
-    BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, xShapeInfo, descending), SD_COMMON_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, descending), SD_COMMON_TYPES);
   }
 
-  static void execSort(void *x, const sd::LongType *xShapeInfo, sd::LongType *dimension,  sd::LongType dimensionLength,
-                       const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending) {
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+  static void execSort(sd::NDArray *x, sd::LongType *dimension,  sd::LongType dimensionLength,
+                       bool descending) {
+    auto xType = x->dataType();
 
     BUILD_SINGLE_SELECTOR(
         xType, sd::SpecialMethods,
-        ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending),
+        ::sortTadGeneric(x, dimension, dimensionLength, descending),
         SD_COMMON_TYPES);
   }
 
@@ -487,18 +487,18 @@ class SD_LIB_EXPORT NativeOpExecutioner {
     sd::sparse::IndexUtils::unravelIndex(indices, flatIndices, length, shapeInfo);
   }
 
-  inline static sd::LongType encodeBitmap(void *dx, const sd::LongType *xShapeInfo, sd::LongType N, long long int *dz,
+  inline static sd::LongType encodeBitmap(sd::NDArray *x, sd::LongType N, long long int *dz,
                                           float threshold) {
-    auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+    auto xType = x->dataType();
 
-    BUILD_SINGLE_SELECTOR(xType, return sd::SpecialMethods, ::encodeBitmapGeneric(dx, xShapeInfo, N, dz, threshold),
+    BUILD_SINGLE_SELECTOR(xType, return sd::SpecialMethods, ::encodeBitmapGeneric(x, N, dz, threshold),
                           SD_FLOAT_TYPES);
   }
 
-  inline static void decodeBitmap(const void *dx, sd::LongType N, void *dz, const sd::LongType *zShapeInfo) {
-    auto zType = sd::ArrayOptions::dataType(zShapeInfo);
+  inline static void decodeBitmap(sd::NDArray *dx, sd::LongType N, sd::NDArray *z) {
+    auto zType = z->dataType();
 
-    BUILD_SINGLE_SELECTOR(zType, sd::SpecialMethods, ::decodeBitmapGeneric(dx, N, dz, zShapeInfo), SD_FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(zType, sd::SpecialMethods, ::decodeBitmapGeneric(dx,z,N), SD_FLOAT_TYPES);
   }
 };
 

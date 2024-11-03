@@ -21,7 +21,7 @@
 //
 
 #include <system/op_boilerplate.h>
-
+#include <legacy/NativeOpExecutioner.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 #if NOT_EXCLUDED(OP_slice)

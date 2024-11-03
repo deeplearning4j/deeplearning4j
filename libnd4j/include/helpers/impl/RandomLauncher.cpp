@@ -22,9 +22,8 @@
 #include <graph/RandomGenerator.h>
 #include <helpers/RandomLauncher.h>
 #include <types/float16.h>
-//#include <ops/declarable/CustomOperations.h>
 #include <helpers/PointersManager.h>
-
+#include <legacy/NativeOpExecutioner.h>
 namespace sd {
 void RandomLauncher::applyDropOut(LaunchContext* context, graph::RandomGenerator& rng, NDArray* array,
                                   double retainProb, NDArray* z) {

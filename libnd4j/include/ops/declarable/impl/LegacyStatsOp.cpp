@@ -25,6 +25,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {

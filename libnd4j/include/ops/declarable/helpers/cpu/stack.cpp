@@ -24,6 +24,8 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/stack.h>
+
+#include <legacy/NativeOpExecutioner.h>
 #if NOT_EXCLUDED(OP_stack)
 namespace sd {
 namespace ops {

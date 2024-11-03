@@ -30,6 +30,7 @@
 #include <string>
 
 #include "Context.h"
+#include "array/NDArray.h"
 
 namespace sd {
 namespace graph {
@@ -60,9 +61,7 @@ class SD_LIB_EXPORT Node {
   // many ops require extra parameters to run
   double *_extraParams = nullptr;
 
-  // optional scalar. used in scalar ops and in summary stats
-  // TODO: this field must be removed
-  NDArray _scalar;
+
 
   bool _hasExternalOutputs;
   bool _hasExternalInputs;
@@ -141,8 +140,6 @@ class SD_LIB_EXPORT Node {
   bool hasInternalOutputs();
   bool hasInternalInputs();
 
-  double scalar();
-
   std::vector<LongType> *getDimensions();
   LongType *getDimensionsPtr();
 
@@ -205,7 +202,6 @@ class SD_LIB_EXPORT Node {
 
     this->_dataType = other->dataType();
     this->_protoContext = other->protoContext()->clone();
-    this->_scalar = other->scalar();
     this->_hasExternalInputs = other->hasExternalInputs();
     this->_hasExternalOutputs = other->hasExternalOutputs();
     this->_hasInternalInputs = other->hasInternalInputs();

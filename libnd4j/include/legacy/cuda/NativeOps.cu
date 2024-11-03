@@ -1554,7 +1554,7 @@ Pointer getConstantSpace() {
   return dConstAddr;
 }
 
-void pullRows(Pointer *extraPointers, OpaqueNDArray *x, OpaqueNDArray z, LongType n, OpaqueNDArray indexes, sd::LongType dimension) {
+void pullRows(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, LongType n, OpaqueNDArray indexes, sd::LongType dimension) {
   try {
     for (int i = 0; i < n; ++i) {
       x[i]->prepareSpecialUse({z}, {x[i]});
@@ -1606,7 +1606,7 @@ void pullRows(Pointer *extraPointers, OpaqueNDArray *x, OpaqueNDArray z, LongTyp
 }
 
 void average(Pointer *extras,
-             OpaqueNDArray *x,
+             OpaqueNDArrayArr x,
              OpaqueNDArray z,int n, LongType length, bool propagate) {
   try {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
@@ -1635,7 +1635,7 @@ void average(Pointer *extras,
   }
 }
 
-void accumulate(Pointer *extras, OpaqueNDArray *x,  OpaqueNDArray z, int n, LongType length) {
+void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, LongType length) {
   try {
     auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
     int mode = getDeviceId(extras[3]);

@@ -335,11 +335,11 @@ else()
         # via JNI seems to just freeze though. The goal is to just use tools like
         # valgrind or compute-sanitizer or even address sanitizer with symbols
         # embedded in a binary but still run code from java.
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL}  -g3   -fPIC -g")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL}  -g3   -fPIC -g ")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL}  -fPIC -D_RELEASE=true")
     endif()
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g3 -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g3 -g -O${SD_OPTIMIZATION_LEVEL}  -fPIC")
     # note on ftls model: https://github.com/microsoft/mimalloc/issues/147 tsanitize sometimes throws errors
     if (SD_SANITIZE)
         set(SANITIZE_FLAGS " -Wall -Wextra -fPIE   -lpthread -ftls-model=local-dynamic -fsanitize=${SD_SANITIZERS}  -fno-sanitize-recover=all")
@@ -351,7 +351,7 @@ else()
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS}")
         endif()
         if(SD_CUDA)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -Q -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
         endif()
         # adds stack size to prevent misc errors with address sanitizer
     endif()

@@ -24,7 +24,7 @@
 #include <helpers/BitwiseUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
-
+#include <legacy/NativeOpExecutioner.h>
 #include <array>
 
 namespace sd {

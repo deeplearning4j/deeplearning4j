@@ -300,6 +300,10 @@ void* DataBuffer::primaryAtOffset(const LongType offset) {
   T *type = reinterpret_cast<T*>(_primaryBuffer);
   return reinterpret_cast<void *>(type + offset);
 }
+
+#define PRIMARYOFFSET(T) template void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(const LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+
 template <typename T>
 void* DataBuffer::specialAtOffset(const LongType offset) {
   if(_specialBuffer == nullptr)
@@ -308,4 +312,6 @@ void* DataBuffer::specialAtOffset(const LongType offset) {
   return reinterpret_cast<void *>(type + offset);
 }
 
+#define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
 }  // namespace sd

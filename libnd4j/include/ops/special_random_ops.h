@@ -358,7 +358,6 @@ class LogNormalDistribution {
     const T epsilon = static_cast<T>(1e-5);
 
     auto func = PRAGMA_THREADS_FOR {
-      PRAGMA_OMP_SIMD
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
         shape::index2coords(e, zShapeBuffer, coords);

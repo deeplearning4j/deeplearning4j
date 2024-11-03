@@ -53,7 +53,21 @@ class SD_LIB_EXPORT TadPack {
 
   LongType numberOfTads() const;
   LongType shapeInfoLength() const;
+  /**
+   * Extracts an NDArray view for the given TAD index.
+   * @param input The input NDArray.
+   * @param tadIndex The index of the TAD to extract.
+   * @return A new NDArray view representing the TAD.
+   */
+  NDArray *extractTadView(NDArray* input, sd::LongType tadIndex) const {
+    auto shapeInfo = primaryShapeInfo();
+    auto offsets = primaryOffsets();
 
+    auto tadOffset = offsets[tadIndex];
+    auto x = input->buffer();
+    NDArray *ret = new NDArray(x,shapeInfo,LaunchContext::defaultContext(),false,tadOffset);
+    return ret;
+  }
 
   /**
    * These methods return either primary or special pointers depending on platform binaries were compiled for

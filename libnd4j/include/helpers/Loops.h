@@ -282,7 +282,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
             shape::printShapeInfo(xShapeInfo);
             shape::printShapeInfo(zShapeInfo);
             printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
-#endif;
+#endif
             s = OpType::update(s, OpType::op(x1[i2], extraParams), extraParams);
           }
         else

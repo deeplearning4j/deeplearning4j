@@ -23,6 +23,8 @@
 #include <execution/Threads.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/top_k.h>
+
+#include "ops/specials.h"
 #if NOT_EXCLUDED(OP_top_k)
 namespace sd {
 namespace ops {
@@ -65,10 +67,8 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
         topIndices.r<sd::LongType>(pos) = pos;
         topValues.r<T>(pos) = trial.t<T>(pos);
       }
-      // std::vector<T> sortedVals(topValues);
-      sortedVals.assign(topValues);  // = NDArrayFactory::create<T>('c', {k});
-      // std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
-      SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
+      sortedVals.assign(topValues);
+      SpecialMethods<T>::sortGeneric(&sortedVals, false);
       for (sd::LongType i = static_cast<sd::LongType>(k); i < width; ++i) {
         T val = trial.e<T>(i);
         T minTopVal = sortedVals.t<T>(0);
@@ -85,13 +85,13 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
             topValues.r<T>(exchangePos) = val;  //*exchangeIt = val;
             topIndices.r<sd::LongType>(exchangePos) = i;
             sortedVals.r<T>(0) = val;  // suppress in sorted
-            // std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
-            SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
+            SpecialMethods<T>::sortGeneric(&sortedVals, false);
+
           }
         }
       }
       if (needSort) {
-        SpecialMethods<T>::sortGeneric(topValues.buffer(), topValues.shapeInfo(), true);
+        SpecialMethods<T>::sortGeneric(&topValues,true);
 
         for (sd::LongType j = 0; j < width; j++)
           for (sd::LongType pos = 0; pos < k; ++pos)

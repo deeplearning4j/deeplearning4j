@@ -36,9 +36,6 @@ template <typename T1, typename T2, typename T3>
 static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
                        const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
                        const double beta) {
-  vA->printBufferRaw("usualGemm A");
-  vB->printBufferRaw("usualGemm B");
-  vC->printBufferRaw("usualGemm C");
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
@@ -174,9 +171,14 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
   const bool betaPersent = beta;
 
   T3 sum = 0;
-  PRAGMA_SUM_ENV(length, sum)
-  for (sd::LongType i = 0; i < length; ++i) sum += X[i * incx] * Y[i * incy];
 
+  auto func = PRAGMA_THREADS_FOR {
+    for (sd::LongType i = start; i < stop; ++i) {
+      sum += X[i * incx] * Y[i * incy];
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, length);
   if (betaPersent)
     *Z = alphaZ * sum + betaZ * *Z;
   else

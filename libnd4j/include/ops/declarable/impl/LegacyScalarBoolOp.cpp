@@ -23,6 +23,7 @@
 #include <ops/declarable/LegacyScalarBoolOp.h>
 
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {

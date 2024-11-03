@@ -24,6 +24,8 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/nth_element.h>
+
+#include "ops/specials.h"
 #if NOT_EXCLUDED(OP_nth_element)
 namespace sd {
 namespace ops {
@@ -33,16 +35,13 @@ template <typename T>
 void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool reverse) {
   NDArray sortedVals(*input);
   if (input->isVector()) {
-    SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), reverse);
-    output->p(0, sortedVals.e<T>(n));
+    SpecialMethods<T>::sortGeneric(input, reverse);
+    output->p(0, input->e<T>(n));
   } else {  // rank greater than 1
     std::vector<sd::LongType> lastDims(
         {input->rankOf() - 1});
-
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), &lastDims);
-
-    SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(),
-                                      pack->primaryShapeInfo(), pack->primaryOffsets(), reverse);
+    SpecialMethods<T>::sortTadGeneric(&sortedVals, lastDims.data(), lastDims.size(),
+                                      reverse);
 
     ResultSet rows = sortedVals.allTensorsAlongDimension(lastDims);
     sd::LongType oL = output->lengthOf();

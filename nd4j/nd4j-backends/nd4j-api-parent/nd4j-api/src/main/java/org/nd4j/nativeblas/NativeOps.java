@@ -65,7 +65,7 @@ public interface NativeOps {
                  long length);
 
  void pullRows(PointerPointer extraPointers,
-               OpaqueNDArrayArr x,
+               OpaqueNDArray x,
                OpaqueNDArray z,
                long n,
                OpaqueNDArray indexes,

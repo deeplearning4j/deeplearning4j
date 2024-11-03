@@ -41,13 +41,11 @@
 #include <helpers/DebugInfo.h>
 #include <memory/MemoryCounter.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
 #include <types/float16.h>
 #include <unistd.h>
-
-#include "array/TadPack.h"
 
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
@@ -61,6 +59,7 @@ typedef ResultWrapper OpaqueResultWrapper;
 typedef VariablesSet OpaqueVariablesSet;
 typedef Variable OpaqueVariable;
 typedef sd::TadPack OpaqueTadPack;
+
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
 typedef sd::ConstantShapeBuffer* OpaqueConstantShapeBuffer;
 extern "C" {
@@ -103,7 +102,7 @@ SD_LIB_EXPORT void accumulate(sd::Pointer *extras,
 
 
 SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers,
-                            OpaqueNDArrayArr x,
+                            OpaqueNDArray x,
                             OpaqueNDArray z,
                             sd::LongType n,
                             OpaqueNDArray indexes,
@@ -147,7 +146,8 @@ SD_LIB_EXPORT OpaqueVariablesSet *executeStoredGraph(sd::Pointer *extraPointers,
                                                      sd::Pointer *inputBuffers,
                                                      sd::Pointer *inputShapes,
                                                      int *inputIndices, int numInputs);
-SD_LIB_EXPORT void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
+SD_LIB_EXPORT void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);
+SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getPrimaryOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialOffsets(OpaqueTadPack *pack);
@@ -260,7 +260,6 @@ SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) ;
 SD_LIB_EXPORT sd::Pointer getConstantSpace() ;
-SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers, OpaqueNDArrayArr x, OpaqueNDArray z, sd::LongType n, OpaqueNDArray indexes, sd::LongType dimension);
 SD_LIB_EXPORT void average(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z,int n, sd::LongType length, bool propagate) ;
 SD_LIB_EXPORT void accumulate(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z, int n, sd::LongType length) ;
 SD_LIB_EXPORT bool isExperimentalEnabled() ;
@@ -465,13 +464,6 @@ SD_LIB_EXPORT  int elementSizeForNpyArrayHeader(sd::Pointer npyArray);
 SD_LIB_EXPORT  void releaseNumpy(sd::Pointer npyArray);
 SD_LIB_EXPORT sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) ;
 SD_LIB_EXPORT int dataTypeFromNpyHeader(void* header);
-
-
-
-
-
-
-
 
 SD_LIB_EXPORT std::vector<OpaqueDataBuffer *> intermediateResults(OpaqueContext *contextPointer);
 SD_LIB_EXPORT std::vector<const sd::LongType *> intermediateResultsShapeInfo(OpaqueContext *contextPointer);

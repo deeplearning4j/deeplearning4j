@@ -25,7 +25,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduce3Op.h>
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
 Status LegacyReduce3Op::validateAndExecute(Context &block) {

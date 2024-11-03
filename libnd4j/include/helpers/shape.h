@@ -1972,7 +1972,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType coords2index(const sd::LongT
 
 template <typename T>
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void fill(T *buffer, T value, sd::LongType length) {
-  PRAGMA_OMP_SIMD
   for (int e = 0; e < length; e++) buffer[e] = value;
 }
 
