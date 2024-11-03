@@ -46,7 +46,6 @@ ShapeList::ShapeList(const std::vector<const LongType*>& shapes, bool isWorkspac
 
 ShapeList::ShapeList(const std::vector<const LongType*>& shapes) {
   _shapes = shapes;
-#endif
 }
 
 void ShapeList::destroy() {
@@ -54,7 +53,7 @@ void ShapeList::destroy() {
   if (_destroyed) return;
   if (!_workspace) {
     for (int i = 0; i < size(); i++){
-     // if (_shapes[i] != nullptr) delete[] _shapes[i];
+      if (_shapes[i] != nullptr) delete[] _shapes[i];
     }
   }
   _destroyed = true;
