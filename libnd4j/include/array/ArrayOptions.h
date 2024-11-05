@@ -96,7 +96,6 @@
 //flags for when array has a view or not
 #define ARRAY_IS_VIEW 33554432
 
-#define ARRAY_IS_VIEW 33554432
 
 #define ARRAY_NEEDS_COPY 67108864
 
