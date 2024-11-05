@@ -96,6 +96,7 @@ public class ShapeInfoTests  extends BaseNd4jTestWithBackends  {
         assertEquals(4, arr.length());
     }
 
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testArrayWithDifferentStrides(Nd4jBackend backend) {

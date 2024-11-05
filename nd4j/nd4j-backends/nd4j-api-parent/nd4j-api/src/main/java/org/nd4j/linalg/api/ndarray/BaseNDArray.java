@@ -33,6 +33,7 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
+import org.nd4j.nativeblas.OpaqueNDArray;
 import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -5603,6 +5604,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public long originalOffset() {
         return offset;
     }
+
 
     private void readObject(ObjectInputStream s) {
         try {

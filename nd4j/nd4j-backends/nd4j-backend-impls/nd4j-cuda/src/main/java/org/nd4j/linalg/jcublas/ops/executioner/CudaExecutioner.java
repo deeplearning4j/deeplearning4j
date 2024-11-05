@@ -1472,18 +1472,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray exec(RandomOp op, Random rng) {
-        return exec(op, null, rng);
-    }
-
     public INDArray exec(RandomOp op, OpContext oc, Random rng) {
         INDArray x = getX(op, oc);
         INDArray y = getY(op, oc);
         INDArray z = getZ(op, oc);
 
-        if(op instanceof BaseRandomOp && ((BaseRandomOp)op).isTripleArgRngOp() && z != null && x == null && y == null){
-            //Ugly hack to ensure the triple arg call occurs
-            //See GaussianDistribution.setZ etc
+        if (op instanceof BaseRandomOp && ((BaseRandomOp) op).isTripleArgRngOp() && z != null && x == null && y == null) {
+            // Ugly hack to ensure the triple arg call occurs
+            // See GaussianDistribution.setZ etc
             x = z;
             y = z;
         }
@@ -1491,7 +1487,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
-
 
         if (rng.getStatePointer() == null)
             throw new IllegalStateException(
@@ -1508,35 +1503,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         PointerPointer extraZZ = extraz.get().put(AddressRetriever.retrieveHostPointer(z.shapeInfoDataBuffer()),
                 context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
 
-        val hostXShapeInfo = x == null ? null : AddressRetriever.retrieveHostPointer(x.shapeInfoDataBuffer());
-        val hostYShapeInfo = y == null ? null : AddressRetriever.retrieveHostPointer(y.shapeInfoDataBuffer());
-        val hostZShapeInfo = z == null ? null : AddressRetriever.retrieveHostPointer(z.shapeInfoDataBuffer());
-
-        val xb = x == null ? null : ((BaseCudaDataBuffer) x.data()).getOpaqueDataBuffer();
-        val yb = y == null ? null : ((BaseCudaDataBuffer) y.data()).getOpaqueDataBuffer();
-        val zb = z == null ? null : ((BaseCudaDataBuffer) z.data()).getOpaqueDataBuffer();
+        val xb = OpaqueNDArray.fromINDArray(x);
+        val yb = OpaqueNDArray.fromINDArray(y);
+        val zb = OpaqueNDArray.fromINDArray(z);
 
         if (x != null && y != null && z != null) {
             // triple arg call
             nativeOps.execRandom3(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                    xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                    yb, (LongPointer) hostYShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(y.shapeInfoDataBuffer(), context),
-                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
-
+                    xb, yb, zb, AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
         } else if (x != null && z != null) {
-            //double arg call
+            // double arg call
             nativeOps.execRandom2(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                    xb, (LongPointer) hostXShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
-                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()),context));
-
-
+                    xb, zb, AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
         } else {
             // single arg call
             nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
-                    zb, (LongPointer) hostZShapeInfo, (LongPointer) AtomicAllocator.getInstance().getPointer(z.shapeInfoDataBuffer(), context),
-                    AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
+                    zb, AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()), context));
         }
 
         if (nativeOps.lastErrorCode() != 0)

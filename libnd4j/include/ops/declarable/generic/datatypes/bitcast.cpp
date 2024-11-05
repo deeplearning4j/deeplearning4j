@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(bitcast, 1, 1, false, 0, 1) {
   }
 
   // just memcpy data
-  DataBuffer::memcpy(output->dataBuffer(), input->dataBuffer());
+  DataBuffer::memcpy(output->dataBuffer(), input->dataBuffer(), 0, 0);
 
   return sd::Status::OK;
 }
