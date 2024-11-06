@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
 
   std::vector<LongType> outputPerm = {0, 4, 1, 2, 3};
-  if (!isNCDHW) output = new NDArray(output->permute(outputPerm));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+  if (!isNCDHW) output = new NDArray(output->permute(outputPerm, false, false));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
 
   std::vector<LongType> colPermut;
   if (1 == wFormat)
