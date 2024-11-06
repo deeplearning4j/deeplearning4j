@@ -80,7 +80,7 @@ void softMaxForVector(sd::LaunchContext* context, NDArray& input, NDArray& outpu
 template <typename T>
 void softmax_loop(const T* input, T* output, const sd::LongType* offsets, sd::LongType numOfSubArrs, uint32_t tadLen);
 
-#if defined(_OPENMP) && !defined(__NEC__)
+#if defined(_OPENMP)
 template <>
 SD_INLINE void softmax_loop(const float* input, float* output, const sd::LongType* offsets, sd::LongType numOfSubArrs,
                             uint32_t tadLen) {

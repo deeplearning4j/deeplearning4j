@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;

@@ -349,7 +349,6 @@ ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo(const LongType* 
   RELEASE(newShapeInfo, workspace);
 
   auto ret = bufferForShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return ret;
 }
 

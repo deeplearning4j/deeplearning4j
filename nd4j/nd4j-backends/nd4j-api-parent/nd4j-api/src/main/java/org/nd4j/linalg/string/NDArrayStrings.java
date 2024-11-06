@@ -264,7 +264,7 @@ public class NDArrayStrings {
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         long l = arr.length();
-        for (int i = 0; i <l; i++) {
+        for (int i = 0; i < l; i++) {
             if (summarize && i > 2 && i < l - 3) {
                 sb.append("  ...");
                 // immediately jump to the last elements so we only print ellipsis once
