@@ -47,7 +47,7 @@ valgrind --track-origins=yes -v ./blasbuild/cpu/tests_cpu/layers_tests/runtests 
 
 Here's what the flags do:
 
-- `--track-origins=yes`: This tells Valgrind to track the origin of uninitialized values. This can be useful for finding the source of unitialized value errors.
+- `--track-origins=yes`: This tells Valgrind to track the origin of uninitialized values. This can be useful for finding the source of uninitialized value errors.
 - `-v`: This increases the verbosity of Valgrind's output, giving you more information about what's happening.
 - `--gtest_filter=ListOperationsTests.BasicTest_Scatter_1`: This is telling gtest to run only the `BasicTest_Scatter_1` test from the `ListOperationsTests` test suite.
 
