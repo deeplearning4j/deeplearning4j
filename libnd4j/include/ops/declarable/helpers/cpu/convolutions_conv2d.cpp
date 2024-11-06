@@ -62,7 +62,8 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   std::vector<sd::LongType> colShape = {bS, oH, oW, kH, kW, iC};
   std::vector<sd::LongType> perm = {0, 3, 4, 5, 1, 2};
   NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
-  NDArray *colP = new NDArray(col->permute(perm, false));  // {bS, iC, kH, kW, oH, oW}
+  NDArray &colPFrom = col->permute(perm, false, false);
+  NDArray *colP = new NDArray(colPFrom);  // {bS, iC, kH, kW, oH, oW}
   std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
   NDArray mmulResult('f', mmulResultShape, output->dataType(), output->getContext());
 
@@ -72,15 +73,18 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   auto ctx = block.launchContext();
 
 
+  NDArray zeroVal =  NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
+    input->printBufferRaw("im2col input:");
+    input->printShapeInfo("im2col input shape info:");
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(0.f, input->getContext()));
+                    zeroVal);
   } else {
     std::vector<sd::LongType> permute = {0, 3, 1, 2};
     // For NHWC, we need to permute the input to NCHW before im2col
-    NDArray* inputNchw = new NDArray(input->permute(permute));
+    NDArray* inputNchw = new NDArray(input->permute(permute, false,false));
     helpers::im2col(*ctx, *inputNchw, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
-                    NDArrayFactory::create(0.f, input->getContext()));
+                    zeroVal);
   }
 
 

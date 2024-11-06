@@ -41,7 +41,6 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
     shape::setOrder(ret,'c');
   }
 
-  shape::setOffset(ret, 0);
   shape::setElementWiseStride(ret, descriptor->ews());
   shape::setExtra(ret, descriptor->extra());
   return ret;
@@ -132,7 +131,6 @@ LongType* ShapeBuilders::emptyShapeInfo(const DataType dataType, const char orde
     shapeInfo2[i + 1 + rank] = 0;
   }
 
-  shape::setOffset(shapeInfo2, 0);
   shape::setOrder(shapeInfo2, order);
 
 

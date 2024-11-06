@@ -117,6 +117,15 @@ public interface NDArrayFactory {
     INDArray create(int[] shape, DataBuffer buffer);
 
     /**
+     * Create an ndarray with the given shape
+     * and data
+     * @param buffer the buffer to use
+     * @param longShapeDescriptor the shape descriptor to use.
+     * @return the ndarray
+     */
+    INDArray create(DataBuffer buffer,LongShapeDescriptor longShapeDescriptor);
+
+    /**
      * Returns the order for this ndarray for internal data storage
      *
      * @return the order (c or f)

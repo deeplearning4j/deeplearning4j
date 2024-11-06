@@ -33,7 +33,6 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.nio.ByteBuffer;
@@ -153,33 +152,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
     }
 
-    /**
-     *
-     * @param length
-     * @param elementSize
-     */
-    public BaseCpuDataBuffer(int length, int elementSize, long offset) {
-        this(length, elementSize);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.length = length - offset;
-        this.underlyingLength = length;
-    }
 
 
-    protected BaseCpuDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-
-        // for view we need "externally managed" pointer and deallocator registration
-        ptrDataBuffer = ((BaseCpuDataBuffer) underlyingBuffer).ptrDataBuffer.createView(length * underlyingBuffer.getElementSize(), offset * underlyingBuffer.getElementSize());
-        this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-
-
-        // update pointer now
-        actualizePointerAndIndexer();
-    }
-
-    protected BaseCpuDataBuffer(ByteBuffer buffer, DataType dtype, long length, long offset) {
+    protected BaseCpuDataBuffer(ByteBuffer buffer, DataType dtype, long length) {
         this(length, Nd4j.sizeOfDataType(dtype));
 
         Pointer temp = null;
@@ -228,9 +203,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         }
 
         val ptr = ptrDataBuffer.primaryBuffer();
-
-        if (offset > 0)
-            temp = new PagedPointer(temp.address() + offset * getElementSize());
 
         Pointer.memcpy(ptr, temp, length * Nd4j.sizeOfDataType(dtype));
         temp.deallocate();
@@ -620,27 +592,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
     }
 
-    /**
-     *
-     * @param data
-     * @param copy
-     */
-    public BaseCpuDataBuffer(float[] data, boolean copy, long offset) {
-        this(data, copy);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.length = data.length - offset;
-        this.underlyingLength = data.length;
 
-    }
 
-    public BaseCpuDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        this(data, copy, workspace);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.length = data.length - offset;
-        this.underlyingLength = data.length;
-    }
+
 
     /**
      *
@@ -742,26 +696,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
 
-    /**
-     *
-     * @param data
-     * @param copy
-     */
-    public BaseCpuDataBuffer(double[] data, boolean copy, long offset) {
-        this(data, copy);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.underlyingLength = data.length;
-        this.length = underlyingLength - offset;
-    }
 
-    public BaseCpuDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        this(data, copy, workspace);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.underlyingLength = data.length;
-        this.length = underlyingLength - offset;
-    }
 
     /**
      *
@@ -785,18 +720,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
 
-    /**
-     *
-     * @param data
-     * @param copy
-     */
-    public BaseCpuDataBuffer(int[] data, boolean copy, long offset) {
-        this(data, copy);
-        this.offset = offset;
-        this.originalOffset = offset;
-        this.length = data.length - offset;
-        this.underlyingLength = data.length;
-    }
 
     /**
      *

@@ -47,9 +47,6 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 
 void* NDArray::platformBuffer() { return buffer(); }
-void const* NDArray::platformBuffer() const { return buffer(); }
-
-sd::LongType const* NDArray::platformShapeInfo() const { return shapeInfo(); }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -338,11 +335,9 @@ void* NDArray::specialBuffer() {
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
-////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBuffer() const {
-  if (_buffer == nullptr || _buffer->special() == nullptr) return nullptr;
-  // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+
+const void* NDArray::specialBufferWithOffset(LongType offset) {
+  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -373,7 +368,7 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps) const {
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
   DataBuffer * newBuff =
       new DataBuffer(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
-  auto desc = new ShapeDescriptor(newShapeInfo);
+  auto desc = new ShapeDescriptor(newShapeInfo, false);
   // assign new shape and new buffer to resulting array
   NDArray result(newBuff,desc , getContext());
   // fill newBuff, loop through all elements of newBuff
