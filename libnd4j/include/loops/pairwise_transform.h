@@ -79,7 +79,6 @@ class PairWiseTransform {
                    sd::LongType resultStride, void *vextraParams, sd::LongType len, sd::LongType start,
                    sd::LongType stop);
 };
-ITERATE_COMBINATIONS_3((SD_COMMON_TYPES),(SD_COMMON_TYPES),(SD_COMMON_TYPES),INSTANT_PROCESS_COMBINATION_CLASS_3,functions::pairwise_transforms::PairWiseTransform,;)
 
 
 

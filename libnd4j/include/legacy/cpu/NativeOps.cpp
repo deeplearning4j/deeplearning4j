@@ -22,7 +22,6 @@
 
 #define __STDC_CONSTANT_MACROS
 
-#include <array/NDArray.h>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -30,7 +29,6 @@
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
-#include <legacy/NativeOpExecutioner.h>
 #include <legacy/NativeOps.h>
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>

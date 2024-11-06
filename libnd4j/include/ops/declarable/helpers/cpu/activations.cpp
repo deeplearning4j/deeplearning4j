@@ -93,7 +93,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
 
   if (inEWS == 1) {
     for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T>(max, inBuff[i]);
-    PRAGMA_OMP_SIMD_SUM(sum)
+    PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < length; i++) {
       outBuff[i] = sd::math::sd_exp<T, T>(inBuff[i] - max);
       sum += outBuff[i];
@@ -105,11 +105,10 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
       outBuff[i] = sd::math::sd_log<T, T>(outBuff[i]);
     }
   } else if (inEWS > 1) {
-    PRAGMA_OMP_SIMD_MAX(max)
+    PRAGMA_OMP_SIMD
+    for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T,T>(max, inBuff[i * inEWS]);
 
-    for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T>(max, inBuff[i * inEWS]);
-
-    PRAGMA_OMP_SIMD_SUM(sum)
+    PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < length; i++) {
       outBuff[i * inEWS] = sd::math::sd_exp<T, T>(inBuff[i * inEWS] - max);
       sum += outBuff[i * inEWS];

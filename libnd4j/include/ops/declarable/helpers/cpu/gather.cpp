@@ -23,6 +23,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/gather.h>
+#include <legacy/NativeOpExecutioner.h>
 
 #include <numeric>
 #if NOT_EXCLUDED(OP_gather)

@@ -286,7 +286,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
 
   if (!isNCDHW) {
     std::vector<LongType> grad0Permute = {0,4,1,2,3};
-    gradO = new NDArray(gradO->permute(grad0Permute));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+    gradO = new NDArray(gradO->permute(grad0Permute, false, false));  // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
     inputAxesForDot = {0, 1, 2, 3};                        // bS, iD, iH, iW
   } else
     inputAxesForDot = {0, 2, 3, 4};  // bS, iD, iH, iW

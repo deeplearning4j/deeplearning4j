@@ -56,11 +56,10 @@ namespace sd {
 
 
 void* NDArray::platformBuffer() { return specialBuffer(); }
-void const* NDArray::platformBuffer() const { return specialBuffer(); }
 
 
 
-void NDArray::syncToDevice() const {
+void NDArray::syncToDevice()  {
   auto currentDeviceId = AffinityManager::currentDeviceId();
   if (currentDeviceId != _deviceId) {
     // first of all we update shapeInfo
@@ -73,18 +72,18 @@ void NDArray::syncToDevice() const {
   _buffer->syncToSpecial();
 }
 
-void NDArray::syncToHost() const { if(!isEmpty()) _buffer->syncToPrimary(getContext()); }
-void NDArray::tickWriteHost() const { if(!isEmpty()) _buffer->writePrimary(); }
-void NDArray::tickWriteDevice() const { if(!isEmpty()) _buffer->writeSpecial(); }
-void NDArray::tickReadHost() const { if(!isEmpty()) _buffer->readPrimary(); }
-void NDArray::tickReadDevice() const { if(!isEmpty()) _buffer->readSpecial(); }
-void NDArray::tickBothActual() const {
+void NDArray::syncToHost()  { if(!isEmpty()) _buffer->syncToPrimary(getContext()); }
+void NDArray::tickWriteHost()  { if(!isEmpty()) _buffer->writePrimary(); }
+void NDArray::tickWriteDevice()  { if(!isEmpty()) _buffer->writeSpecial(); }
+void NDArray::tickReadHost()  { if(!isEmpty()) _buffer->readPrimary(); }
+void NDArray::tickReadDevice()  { if(!isEmpty()) _buffer->readSpecial(); }
+void NDArray::tickBothActual()  {
   _buffer->writePrimary();
   _buffer->readSpecial();
 }
-bool NDArray::isActualOnHostSide() const { return _buffer->isPrimaryActual(); }
-bool NDArray::isActualOnDeviceSide() const { return _buffer->isSpecialActual(); }
-void NDArray::makeBothBuffersActual() const {
+bool NDArray::isActualOnHostSide()  { return _buffer->isPrimaryActual(); }
+bool NDArray::isActualOnDeviceSide()  { return _buffer->isSpecialActual(); }
+void NDArray::makeBothBuffersActual()  {
   if (!isActualOnHostSide()) syncToHost();
   if (!isActualOnDeviceSide()) syncToDevice();
 }
@@ -153,7 +152,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   prepareSpecialUse({&target}, {this});
   fillAsTriangularCuda<T><<<launchDims.y, launchDims.x, launchDims.z, *getContext()->getCudaStream()>>>(
-      platformBuffer(), platformShapeInfo(), target.platformBuffer(), target.platformShapeInfo(), static_cast<T>(val),
+      platformBuffer(), specialShapeInfo(), target.platformBuffer(), target.specialShapeInfo(), static_cast<T>(val),
       lower, upper, direction, includeEdges);
   registerSpecialUse({&target}, {this});
   sd::DebugHelper::checkGlobalErrorCode("fillTriangular  failed");
@@ -223,7 +222,7 @@ void NDArray::setIdentity() {
   syncToDevice();
   BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher,
                         (launchDims.y, launchDims.x,launchDims.z, getContext()->getCudaStream(), platformBuffer(),
-                            platformShapeInfo(), 1.f),
+                         specialShapeInfo(), 1.f),
                         SD_COMMON_TYPES);
   tickWriteDevice();
 
@@ -256,7 +255,7 @@ void NDArray::swapUnsafe(NDArray& other) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::synchronize(const char* msg) const {
+void NDArray::synchronize(const char* msg)  {
   auto res = cudaStreamSynchronize(*(getContext()->getCudaStream()));
   if (res != 0) {
     std::string message = msg + std::string(": synchronization failed !");
@@ -313,23 +312,20 @@ void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::syncShape() const {
+void NDArray::syncShape()  {
   cudaMemcpy(const_cast<LongType*>(specialShapeInfo()), shapeInfo(), shape::shapeInfoByteLength(shapeInfo()),
              cudaMemcpyHostToDevice);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBufferWithOffset(LongType offset) const {
+void const* NDArray::specialBufferWithOffset(LongType offset)  {
   return specialBuffer() != nullptr ? static_cast<int8_t const*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
 }
 
-void* NDArray::specialBufferWithOffset(LongType offset) {
-  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
-}
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-NDArray NDArray::tile(const std::vector<LongType>& reps) const {
+NDArray NDArray::tile(const std::vector<LongType>& reps)  {
   int dim = reps.size();
   LongType product = 1;
   for (const auto& item : reps) product *= item;
@@ -376,7 +372,7 @@ NDArray NDArray::tile(const std::vector<LongType>& reps) const {
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) const {
+void NDArray::tile(const std::vector<LongType>& reps, NDArray& target)  {
   auto repProd = shape::prodLong(reps.data(), reps.size());
   if (repProd < 1) THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
 
@@ -401,7 +397,7 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::tile(NDArray& target) const {
+void NDArray::tile(NDArray& target)  {
   if (rankOf() > target.rankOf())
     THROW_EXCEPTION(
         "NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !");
@@ -488,7 +484,7 @@ BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats)  {
   auto nonConst = const_cast<NDArray *>(this);
   std::vector<sd::LongType> shape = ShapeUtils::evalRepeatShape(axis, repeats, *nonConst);
   NDArray output('c',shape, dataType(), getContext());
@@ -513,7 +509,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<LongType>& repeats) co
 
 //////////////////////////////////////////////////////////////////////////
 // fill array by repeating it the number of times given by repeats
-void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target) const {
+void NDArray::repeat(const int axis, const std::vector<LongType>& repeats, NDArray& target)  {
   auto nonConst = const_cast<NDArray *>(this);
   std::vector<sd::LongType> shape = ShapeUtils::evalRepeatShape(axis, repeats, *nonConst);
 
@@ -549,19 +545,11 @@ void* NDArray::specialBuffer() {
   return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
 }
 
-////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBuffer() const {
-  if (_buffer->special() == nullptr) {
-    syncToDevice();
-    tickReadHost();
-  }
-  // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (offset() * sizeOfT());
-}
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision) const {
+void NDArray::printCurrentBuffer(const bool host, const char* msg, const int precision)  {
   if (!isScalar() && _length == 0) {
     printf("NDArray::printActualBuffer: array length is zero !\n");
     return;
@@ -642,11 +630,8 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
     operator delete(pHost);
   }
 }
-template void NDArray::printCurrentBuffer<int>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<float>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<double>(const bool host, const char* msg, const int precision) const;
-template void NDArray::printCurrentBuffer<LongType>(const bool host, const char* msg, const int precision) const;
-
+#define PRINT_BUFFER(T) template void NDArray::printCurrentBuffer<GET_SECOND(T)>(const bool host, const char* msg, const int precision);
+ITERATE_LIST((SD_COMMON_TYPES),PRINT_BUFFER)
 
 
 }  // end namespace sd

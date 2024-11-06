@@ -1307,19 +1307,19 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::Long
 * along the given dimension
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape, const sd::LongType *dimension,
-                                                           sd::LongType dimensionLength) {
- if (isVector(shape, rank)) {
-   // return total length for row vectors
-   if (dimensionLength == 1 && shape[0] == 1) {
-     return prodLong(shape, rank);
-   }
- } else if (rank == dimensionLength)
-   return prodLong(shape, rank);
- sd::LongType absSelta = sd::math::sd_abs<sd::LongType>(rank - dimensionLength);
- auto ret2 = shape::removeIndex<sd::LongType>(shape, dimension, rank, dimensionLength);
- auto ret = prodLong(ret2, absSelta);
- delete[] ret2;
- return ret;
+                                                            sd::LongType dimensionLength) {
+  if (isVector(shape, rank)) {
+    // return total length for row vectors
+    if (dimensionLength == 1 && shape[0] == 1) {
+      return prodLong(shape, rank);
+    }
+  } else if (rank == dimensionLength)
+    return prodLong(shape, rank);
+  sd::LongType absSelta = sd::math::sd_abs<sd::LongType,sd::LongType>(rank - dimensionLength);
+  auto ret2 = shape::removeIndex<sd::LongType>(shape, dimension, rank, dimensionLength);
+  auto ret = prodLong(ret2, absSelta);
+  delete[] ret2;
+  return ret;
 }
 
 
@@ -2203,7 +2203,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *sliceOfShapeBuffer(sd::LongType sl
    else {
      delete[] newShapeBuffer;
      sd::LongType *scalar = createScalarShapeInfo();
-     int offset = shape::offset(shapeBuffer);
+     int offset = 0;
      scalar[shapeInfoLength(2) - 3] = offset + sliceIdx;
      return scalar;
    }
@@ -2858,26 +2858,26 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool equalsTypesAndShapesSoft(const sd::L
 */
 template <typename T>
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE T *range(int from, int to, int increment) {
- int diff = sd::math::sd_abs<int>(from - to);
- int retLength = diff / increment;
- T *ret;
- if (diff / increment < 1)
-   ret = new T[1];
- else
-   ret = new T[diff / increment];
- if (from < to) {
-   int count = 0;
-   for (int i = from; i < to; i += increment) {
-     if (count >= retLength) break;
-     ret[count++] = i;
-   }
- } else if (from > to) {
-   int count = 0;
-   for (int i = from - 1; i >= to; i -= increment) {
-     if (count >= retLength) break;
-     ret[count++] = i;
-   }
- }
+  int diff = sd::math::sd_abs<int,int>(from - to);
+  int retLength = diff / increment;
+  T *ret;
+  if (diff / increment < 1)
+    ret = new T[1];
+  else
+    ret = new T[diff / increment];
+  if (from < to) {
+    int count = 0;
+    for (int i = from; i < to; i += increment) {
+      if (count >= retLength) break;
+      ret[count++] = i;
+    }
+  } else if (from > to) {
+    int count = 0;
+    for (int i = from - 1; i >= to; i -= increment) {
+      if (count >= retLength) break;
+      ret[count++] = i;
+    }
+  }
 
  return ret;
 }

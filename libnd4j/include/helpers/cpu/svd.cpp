@@ -207,7 +207,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   const T almostZero = DataTypeUtils::min_positive<T>();
   T maxElem;
   if (len == 1)
-    maxElem = math::sd_abs<T>(diagInterval.template t<T>(0));
+    maxElem = math::sd_abs<T,T>(diagInterval.template t<T>(0));
   else
     maxElem = diagInterval({1, -1, 0, 0}, true).reduceNumber(reduce::AMax).template t<T>(0);
   T maxElem0 = colVec0.reduceNumber(reduce::AMax).template t<T>(0);
@@ -218,7 +218,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   if (diagInterval.template t<T>(0) < epsBig) diagInterval.template r<T>(0) = epsBig;
 
   for (int i = 1; i < len; ++i)
-    if (math::sd_abs<T>(colVec0.template t<T>(i)) < eps) colVec0.template r<T>(i) = (T)0;
+    if (math::sd_abs<T,T>(colVec0.template t<T>(i)) < eps) colVec0.template r<T>(i) = (T)0;
 
   for (int i = 1; i < len; i++)
     if (diagInterval.template t<T>(i) < epsBig) {
@@ -241,7 +241,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
       int p = 1;
 
       for (int i = 1; i < len; ++i)
-        if (math::sd_abs<T>(diagInterval.template t<T>(i)) < almostZero) permut[p++] = i;
+        if (math::sd_abs<T,T>(diagInterval.template t<T>(i)) < almostZero) permut[p++] = i;
 
       int k = 1, m = ind + 1;
 
@@ -260,7 +260,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
     if (totDefl) {
       for (int i = 1; i < len; ++i) {
         int ki = permut[i];
-        if (math::sd_abs<T>(diagInterval.template t<T>(ki)) < almostZero ||
+        if (math::sd_abs<T,T>(diagInterval.template t<T>(ki)) < almostZero ||
             diagInterval.template t<T>(0) < diagInterval.template t<T>(ki))
           permut[i - 1] = permut[i];
         else {
@@ -315,13 +315,13 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   {
     int i = len - 1;
 
-    while (i > 0 && (math::sd_abs<T>(diagInterval.template t<T>(i)) < almostZero ||
-                     math::sd_abs<T>(colVec0.template t<T>(i)) < almostZero))
+    while (i > 0 && (math::sd_abs<T,T>(diagInterval.template t<T>(i)) < almostZero ||
+                     math::sd_abs<T,T>(colVec0.template t<T>(i)) < almostZero))
       --i;
 
     for (; i > 1; --i) {
       if ((diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) < DataTypeUtils::eps<T>() * maxElem) {
-        if (math::sd_abs<T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
+        if (math::sd_abs<T,T>(diagInterval.template t<T>(i) - diagInterval.template t<T>(i - 1)) >= epsBig)
           THROW_EXCEPTION("ops::helpers::SVD::deflation: diagonal elements are not properly sorted !");
         deflation2(col1, col1 + shift, row1W, col1W, i - 1, i, len);
       }
@@ -398,16 +398,16 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     T fPrev = secularEq(muPrev, col0, diag, permut, diagShifted, shift);
     T fCur = secularEq(muCur, col0, diag, permut, diagShifted, shift);
 
-    if (math::sd_abs<T>(fPrev) < math::sd_abs<T>(fCur)) {
+    if (math::sd_abs<T,T>(fPrev) < math::sd_abs<T,T>(fCur)) {
       math::sd_swap<T>(fPrev, fCur);
       math::sd_swap<T>(muPrev, muCur);
     }
 
     bool useBisection = fPrev * fCur > (T)0.;
     while (fCur != (T).0 &&
-           math::sd_abs<T>(muCur - muPrev) >
-           (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T>(muCur), math::sd_abs<T>(muPrev)) &&
-           math::sd_abs<T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
+           math::sd_abs<T,T>(muCur - muPrev) >
+           (T)8. * DataTypeUtils::eps<T>() * math::sd_max<T>(math::sd_abs<T,T>(muCur), math::sd_abs<T,T>(muPrev)) &&
+           math::sd_abs<T,T>(fCur - fPrev) > DataTypeUtils::eps<T>() && !useBisection) {
       T a = (fCur - fPrev) / ((T)1. / muCur - (T)1. / muPrev);
       T jac = fCur - a / muCur;
       T muZero = -a / jac;
@@ -422,8 +422,8 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
         useBisection = true;
       else if (shift == right && (muCur < -(right - left) || muCur > (T)0.))
         useBisection = true;
-      else if (math::sd_abs<T>(fCur) > math::sd_abs<T>(fPrev) &&
-               math::sd_abs<T>(fCur - fPrev) > (T)16. * DataTypeUtils::eps<T>())
+      else if (math::sd_abs<T,T>(fCur) > math::sd_abs<T,T>(fPrev) &&
+               math::sd_abs<T,T>(fCur - fPrev) > (T)16. * DataTypeUtils::eps<T>())
         useBisection = true;
     }
 
@@ -442,7 +442,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
-             math::sd_max<T>(math::sd_abs<T>(leftShifted), math::sd_abs<T>(rightShifted))) {
+             math::sd_max<T>(math::sd_abs<T,T>(leftShifted), math::sd_abs<T,T>(rightShifted))) {
         T midShifted = (leftShifted + rightShifted) / (T)2.;
         fMid = secularEq(midShifted, col0, diag, permut, diagShifted, shift);
         if (fLeft * fMid < (T)0.)
@@ -565,7 +565,7 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
   int m = 0;
   std::vector<int> indices;
   for (int k = 0; k < curSize; ++k)
-    if (math::sd_abs<T>(col0.template t<T>(k)) > almostZero) indices.push_back(k);
+    if (math::sd_abs<T,T>(col0.template t<T>(k)) > almostZero) indices.push_back(k);
 
   std::vector<sd::LongType> permutShape = {(int)indices.size()};
   NDArray permut(_m.ordering(), permutShape, _m.dataType(), _m.getContext());
@@ -646,7 +646,9 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
     _m({col1 + shift, col1 + shift + n + 1, col1 + shift, col1 + shift + n}, true).nullify();
     auto diag = _m.diagonal('c');
-    diag({col1 + shift, col1 + shift + n, 0, 0}, true).assign(jac._s({0, n, 0, 0}, true));
+    NDArray first =  diag({col1 + shift, col1 + shift + n, 0, 0}, true);
+    NDArray second = jac._s({0, n, 0, 0}, true);
+    first.assign(second);
 
     return;
   }
@@ -666,8 +668,8 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   }
 
 
-  r0 = math::sd_sqrt<T, T>((math::sd_abs<T>(alphaK * lambda) * math::sd_abs<T>(alphaK * lambda)) +
-                           math::sd_abs<T>(betaK * phi) * math::sd_abs<T>(betaK * phi));
+  r0 = math::sd_sqrt<T, T>((math::sd_abs<T,T>(alphaK * lambda) * math::sd_abs<T,T>(alphaK * lambda)) +
+                           math::sd_abs<T,T>(betaK * phi) * math::sd_abs<T,T>(betaK * phi));
 
   if (_calcU) {
     l.assign(_u({col1 + k, col1 + k + 1, col1, col1 + k}, true));
@@ -803,7 +805,7 @@ void SVD<T>::evalData(NDArray& matrix) {
   DivideAndConquer(0, _diagSize - 1, 0, 0, 0);
 
   for (int i = 0; i < _diagSize; ++i) {
-    T a = math::sd_abs<T>(_m.t<T>(i, i));
+    T a = math::sd_abs<T,T>(_m.t<T>(i, i));
     _s.template r<T>(i) = a * scale;
     if (a < almostZero) {
       _s({i + 1, _diagSize, 0, 0}).nullify();

@@ -274,7 +274,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
   if (!isNCHW) {
     std::vector<LongType> permuteDims = {0,3,1,2};
-    gradO = new NDArray(gradO->permute(permuteDims));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+    gradO = new NDArray(gradO->permute(permuteDims, false, false));  // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     inputAxes = {0, 1, 2};                              // bS, iH, iW
   } else
     inputAxes = {0, 2, 3};  // bS, iH, iW

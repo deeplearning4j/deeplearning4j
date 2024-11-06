@@ -89,7 +89,7 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
     }
 
     ArrayOptions::resetFlags(shapeInfo);
-    shape::updateStrides(shapeInfo, order);
+    shape::updateStrides(shapeInfo, order, false);
   }
 
   ArrayOptions::setDataType(shapeInfo, dataType);
@@ -174,7 +174,7 @@ LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool c
 
   memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
 
-  if (!copyStrides) shape::updateStrides(outShapeInfo, shape::order(outShapeInfo));
+  if (!copyStrides) shape::updateStrides(outShapeInfo, shape::order(outShapeInfo), false);
 
   return outShapeInfo;
 }

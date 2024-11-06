@@ -154,7 +154,7 @@ void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
   }
 }
 
-std::vector<LongType>* StringUtils::determineOffsetsAndLengths(const NDArray& array, DataType dtype) {
+std::vector<LongType>* StringUtils::determineOffsetsAndLengths(NDArray& array, DataType dtype) {
   LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(array.lengthOf());
   const auto nInputoffsets = array.bufferAsT<LongType>();
   std::vector<LongType> offsets(array.lengthOf() + 1);

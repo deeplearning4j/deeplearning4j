@@ -25,7 +25,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyReduceBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
 LegacyReduceBoolOp::LegacyReduceBoolOp() : LegacyOp(1) {

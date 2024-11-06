@@ -192,7 +192,7 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
 }
 
 const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const NDArray& arr, const bool keepDims, const bool supportOldShapes,
+                                                NDArray& arr, const bool keepDims, const bool supportOldShapes,
                                                 memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
 }
@@ -205,8 +205,10 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 }
 
 //////////////////////////////////////////////////////////////////////////
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const NDArray& arr, const DataType dataType, const bool keepDims,
+const LongType* ShapeUtils::evalReduceShapeInfo(const char order,
+                                                std::vector<LongType>* dimsToExclude,
+                                                NDArray& arr,
+                                                const DataType dataType, const bool keepDims,
                                                 const bool supportOldShapes, memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, arr.shapeInfo(), dataType, keepDims, supportOldShapes, workspace);
 }
@@ -214,8 +216,11 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<Lo
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
 const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const LongType* shapeInfo, const DataType dataType, const bool keepDims,
-                                                const bool supportOldShapes, memory::Workspace* workspace) {
+                                                const LongType* shapeInfo,
+                                                const DataType dataType,
+                                                const bool keepDims,
+                                                const bool supportOldShapes,
+                                                memory::Workspace* workspace) {
   if (ArrayOptions::arrayType(shapeInfo) == EMPTY)
     return evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
 
@@ -1035,7 +1040,7 @@ void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, cons
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const NDArray& min) {
+std::vector<LongType> ShapeUtils::tadAxesForSimpleBroadcast(NDArray max, NDArray min) {
   const LongType maxRank = max.rankOf();
   const LongType minRank = min.rankOf();
   const LongType diff = maxRank - minRank;

@@ -137,21 +137,10 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
 }
 
 #define TMPL_INSTANTIATE_CREATE_A(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
-                                                      const std::vector<TYPE>& data, sd::LaunchContext* context);
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
+                                                      const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context);
 
-TMPL_INSTANTIATE_CREATE_A(double)
-TMPL_INSTANTIATE_CREATE_A(float)
-TMPL_INSTANTIATE_CREATE_A(float16)
-TMPL_INSTANTIATE_CREATE_A(bfloat16)
-TMPL_INSTANTIATE_CREATE_A(sd::LongType)
-TMPL_INSTANTIATE_CREATE_A(int)
-TMPL_INSTANTIATE_CREATE_A(unsigned int)
-TMPL_INSTANTIATE_CREATE_A(int8_t)
-TMPL_INSTANTIATE_CREATE_A(int16_t)
-TMPL_INSTANTIATE_CREATE_A(uint8_t)
-TMPL_INSTANTIATE_CREATE_A(uint64_t)
-TMPL_INSTANTIATE_CREATE_A(bool)
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_A)
 
 #undef TMPL_INSTANTIATE_CREATE_A
 ////////////////////////////////////////////////////////////////////////
@@ -177,19 +166,9 @@ void SD_LIB_EXPORT NDArrayFactory::memcpyFromVector(void* ptr, const std::vector
 
 
 #define TMPL_INSTANTIATE_MEMCPY(TYPE) \
-template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector<TYPE>(void* ptr, const std::vector<TYPE>& vector);
+template SD_LIB_EXPORT void NDArrayFactory::memcpyFromVector<GET_SECOND(TYPE)>(void* ptr, const std::vector<GET_SECOND(TYPE)>& vector);
 
-TMPL_INSTANTIATE_MEMCPY(double)
-TMPL_INSTANTIATE_MEMCPY(float)
-TMPL_INSTANTIATE_MEMCPY(float16)
-TMPL_INSTANTIATE_MEMCPY(bfloat16)
-TMPL_INSTANTIATE_MEMCPY(sd::LongType)
-TMPL_INSTANTIATE_MEMCPY(int)
-TMPL_INSTANTIATE_MEMCPY(int16_t)
-TMPL_INSTANTIATE_MEMCPY(int8_t)
-TMPL_INSTANTIATE_MEMCPY(uint8_t)
-TMPL_INSTANTIATE_MEMCPY(bool)
-
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_MEMCPY)
 #undef TMPL_INSTANTIATE_MEMCPY
 
 #ifndef __JAVACPP_HACK__
@@ -202,29 +181,15 @@ NDArray* NDArrayFactory::valueOf(const std::initializer_list<LongType>& shape, c
 }
 
 #define TMPL_INSTANTIATE_VALUEOF_A(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf<TYPE>(const std::initializer_list<sd::LongType>& shape, \
-                                                        const TYPE value, const char order, \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf<GET_SECOND(TYPE)>(const std::initializer_list<sd::LongType>& shape, \
+                                                        const GET_SECOND(TYPE) value, const char order, \
                                                         sd::LaunchContext* context);
 
-TMPL_INSTANTIATE_VALUEOF_A(double)
-TMPL_INSTANTIATE_VALUEOF_A(float)
-TMPL_INSTANTIATE_VALUEOF_A(float16)
-TMPL_INSTANTIATE_VALUEOF_A(bfloat16)
-TMPL_INSTANTIATE_VALUEOF_A(sd::LongType)
-TMPL_INSTANTIATE_VALUEOF_A(int)
-TMPL_INSTANTIATE_VALUEOF_A(int16_t)
-TMPL_INSTANTIATE_VALUEOF_A(int8_t)
-TMPL_INSTANTIATE_VALUEOF_A(uint8_t)
-TMPL_INSTANTIATE_VALUEOF_A(bool)
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_VALUEOF_A)
 
 #undef TMPL_INSTANTIATE_VALUEOF_A
 
-#define TMPL_INSTANTIATE_CREATE_B(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
-                                                      const std::initializer_list<TYPE>& data, \
-                                                      sd::LaunchContext* context);
 
-#undef TMPL_INSTANTIATE_CREATE_B
 
 #endif
 
@@ -251,21 +216,8 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
 }
 
 #define TMPL_INSTANTIATE_CREATE_C(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<TYPE>(const TYPE scalar, sd::LaunchContext* context);
-
-TMPL_INSTANTIATE_CREATE_C(double)
-TMPL_INSTANTIATE_CREATE_C(float)
-TMPL_INSTANTIATE_CREATE_C(float16)
-TMPL_INSTANTIATE_CREATE_C(bfloat16)
-TMPL_INSTANTIATE_CREATE_C(sd::LongType)
-TMPL_INSTANTIATE_CREATE_C(int)
-TMPL_INSTANTIATE_CREATE_C(unsigned int)
-TMPL_INSTANTIATE_CREATE_C(int8_t)
-TMPL_INSTANTIATE_CREATE_C(int16_t)
-TMPL_INSTANTIATE_CREATE_C(uint8_t)
-TMPL_INSTANTIATE_CREATE_C(uint16_t)
-TMPL_INSTANTIATE_CREATE_C(uint64_t)
-TMPL_INSTANTIATE_CREATE_C(bool)
+template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_C)
 
 #undef TMPL_INSTANTIATE_CREATE_C
 
@@ -281,21 +233,9 @@ NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* con
 }
 
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(DataType type, const TYPE scalar, sd::LaunchContext* context);
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
 
-TMPL_INSTANTIATE_CREATE_D(double)
-TMPL_INSTANTIATE_CREATE_D(float)
-TMPL_INSTANTIATE_CREATE_D(float16)
-TMPL_INSTANTIATE_CREATE_D(bfloat16)
-TMPL_INSTANTIATE_CREATE_D(sd::LongType)
-TMPL_INSTANTIATE_CREATE_D(int)
-TMPL_INSTANTIATE_CREATE_D(unsigned int)
-TMPL_INSTANTIATE_CREATE_D(int8_t)
-TMPL_INSTANTIATE_CREATE_D(int16_t)
-TMPL_INSTANTIATE_CREATE_D(uint8_t)
-TMPL_INSTANTIATE_CREATE_D(uint16_t)
-TMPL_INSTANTIATE_CREATE_D(uint64_t)
-TMPL_INSTANTIATE_CREATE_D(bool)
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_D)
 
 #undef TMPL_INSTANTIATE_CREATE_D
 
@@ -315,22 +255,9 @@ NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
 }
 
 #define TMPL_INSTANTIATE_CREATE_E(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const TYPE scalar, sd::LaunchContext* context);
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
 
-TMPL_INSTANTIATE_CREATE_E(double)
-TMPL_INSTANTIATE_CREATE_E(float)
-TMPL_INSTANTIATE_CREATE_E(float16)
-TMPL_INSTANTIATE_CREATE_E(bfloat16)
-TMPL_INSTANTIATE_CREATE_E(sd::LongType)
-TMPL_INSTANTIATE_CREATE_E(int)
-TMPL_INSTANTIATE_CREATE_E(unsigned int)
-TMPL_INSTANTIATE_CREATE_E(int8_t)
-TMPL_INSTANTIATE_CREATE_E(int16_t)
-TMPL_INSTANTIATE_CREATE_E(uint8_t)
-TMPL_INSTANTIATE_CREATE_E(uint16_t)
-TMPL_INSTANTIATE_CREATE_E(uint64_t)
-TMPL_INSTANTIATE_CREATE_E(bool)
-
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_E)
 #undef TMPL_INSTANTIATE_CREATE_E
 
 ////////////////////////////////////////////////////////////////////////
@@ -341,22 +268,10 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<LongType>& 
 }
 
 #define TMPL_INSTANTIATE_CREATE_F(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<TYPE>(const char order, const std::vector<sd::LongType>& shape, \
-                                                        const std::vector<TYPE>& data, sd::LaunchContext* context);
+template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
+                                                        const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context);
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_F)
 
-TMPL_INSTANTIATE_CREATE_F(double)
-TMPL_INSTANTIATE_CREATE_F(float)
-TMPL_INSTANTIATE_CREATE_F(float16)
-TMPL_INSTANTIATE_CREATE_F(bfloat16)
-TMPL_INSTANTIATE_CREATE_F(sd::LongType)
-TMPL_INSTANTIATE_CREATE_F(int)
-TMPL_INSTANTIATE_CREATE_F(unsigned int)
-TMPL_INSTANTIATE_CREATE_F(int8_t)
-TMPL_INSTANTIATE_CREATE_F(int16_t)
-TMPL_INSTANTIATE_CREATE_F(uint8_t)
-TMPL_INSTANTIATE_CREATE_F(uint16_t)
-TMPL_INSTANTIATE_CREATE_F(uint64_t)
-TMPL_INSTANTIATE_CREATE_F(bool)
 
 #undef TMPL_INSTANTIATE_CREATE_F
 
@@ -387,19 +302,11 @@ NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape,  T value, const c
 
 #define TMPL_INSTANTIATE_VALUEOF(TYPE) \
 template SD_LIB_EXPORT NDArray* \
-NDArrayFactory::valueOf<TYPE>(std::vector<sd::LongType>& shape,  TYPE value, \
+NDArrayFactory::valueOf<GET_SECOND(TYPE)>(std::vector<sd::LongType>& shape,  GET_SECOND(TYPE) value, \
                                                         const char order, sd::LaunchContext* context);
 
-TMPL_INSTANTIATE_VALUEOF(double)
-TMPL_INSTANTIATE_VALUEOF(float)
-TMPL_INSTANTIATE_VALUEOF(float16)
-TMPL_INSTANTIATE_VALUEOF(bfloat16)
-TMPL_INSTANTIATE_VALUEOF(sd::LongType)
-TMPL_INSTANTIATE_VALUEOF(int)
-TMPL_INSTANTIATE_VALUEOF(int16_t)
-TMPL_INSTANTIATE_VALUEOF(int8_t)
-TMPL_INSTANTIATE_VALUEOF(uint8_t)
-TMPL_INSTANTIATE_VALUEOF(bool)
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_VALUEOF)
+
 
 #undef TMPL_INSTANTIATE_VALUEOF
 
@@ -418,20 +325,12 @@ NDArray* NDArrayFactory::linspace(const T from, const T to, const LongType numEl
 }
 
 #define TMPL_INSTANTIATE_LINSPACE(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace<TYPE>(const TYPE from, const TYPE to, \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::linspace<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) from, const GET_SECOND(TYPE) to, \
                                                          const sd::LongType numElements);
 
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_LINSPACE)
 
-TMPL_INSTANTIATE_LINSPACE(double)
-TMPL_INSTANTIATE_LINSPACE(float)
-TMPL_INSTANTIATE_LINSPACE(float16)
-TMPL_INSTANTIATE_LINSPACE(bfloat16)
-TMPL_INSTANTIATE_LINSPACE(sd::LongType)
-TMPL_INSTANTIATE_LINSPACE(int)
-TMPL_INSTANTIATE_LINSPACE(int16_t)
-TMPL_INSTANTIATE_LINSPACE(int8_t)
-TMPL_INSTANTIATE_LINSPACE(uint8_t)
-TMPL_INSTANTIATE_LINSPACE(bool)
+
 
 #undef TMPL_INSTANTIATE_LINSPACE
 ////////////////////////////////////////////////////////////////////////
@@ -452,21 +351,11 @@ NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* contex
 }
 
 #define TMPL_INSTANTIATE_VECTOR(TYPE) \
-template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<TYPE>(sd::LongType length, const TYPE startingValue, \
+template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<GET_SECOND(TYPE)>(sd::LongType length, const GET_SECOND(TYPE) startingValue, \
                                                        sd::LaunchContext* context);
+ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VECTOR)
 
-TMPL_INSTANTIATE_VECTOR(double)
-TMPL_INSTANTIATE_VECTOR(float)
-TMPL_INSTANTIATE_VECTOR(float16)
-TMPL_INSTANTIATE_VECTOR(bfloat16)
-TMPL_INSTANTIATE_VECTOR(sd::LongType)
-TMPL_INSTANTIATE_VECTOR(int)
-TMPL_INSTANTIATE_VECTOR(int16_t)
-TMPL_INSTANTIATE_VECTOR(int8_t)
-TMPL_INSTANTIATE_VECTOR(uint8_t)
-TMPL_INSTANTIATE_VECTOR(bool)
 
-#undef TMPL_INSTANTIATE_VECTOR
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -530,30 +419,16 @@ NDArray NDArrayFactory::create(const std::vector<T>& values, LaunchContext* cont
 }
 
 #define TMPL_INSTANTIATE_CREATE_G(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const std::vector<TYPE>& values, sd::LaunchContext* context);
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const std::vector<GET_SECOND(TYPE)>& values, sd::LaunchContext* context);
+ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_G)
 
-TMPL_INSTANTIATE_CREATE_G(double)
-TMPL_INSTANTIATE_CREATE_G(float)
-TMPL_INSTANTIATE_CREATE_G(float16)
-TMPL_INSTANTIATE_CREATE_G(bfloat16)
-TMPL_INSTANTIATE_CREATE_G(sd::LongType)
-TMPL_INSTANTIATE_CREATE_G(int)
-TMPL_INSTANTIATE_CREATE_G(unsigned int)
-TMPL_INSTANTIATE_CREATE_G(int8_t)
-TMPL_INSTANTIATE_CREATE_G(int16_t)
-TMPL_INSTANTIATE_CREATE_G(uint8_t)
-TMPL_INSTANTIATE_CREATE_G(uint16_t)
-TMPL_INSTANTIATE_CREATE_G(uint64_t)
-TMPL_INSTANTIATE_CREATE_G(bool)
-
-#undef TMPL_INSTANTIATE_CREATE_G
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::empty_(LaunchContext* context) {
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>(), context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  auto result = new NDArray(nullptr, shapeInfo, context, false);
+  auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -567,7 +442,7 @@ NDArray* NDArrayFactory::empty_(DataType dataType, LaunchContext* context) {
 
   auto shapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, context->getWorkspace());
   ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
-  auto result = new NDArray(nullptr, shapeInfo, context, false);
+  auto result = new NDArray(nullptr, shapeInfo, context, false, 0);
 
   RELEASE(shapeInfo, context->getWorkspace());
 
@@ -621,31 +496,18 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
- // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
- // ShapeHelpoer
+  // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
+  // ShapeHelpoer
   return result;
 }
 
 #define TMPL_INSTANTIATE_CREATE_H(TYPE) \
-template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(TYPE* buffer, const char order, \
+template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(GET_SECOND(TYPE)* buffer, const char order, \
                                                       const std::initializer_list<sd::LongType>& shape,  \
                                                       sd::LaunchContext* context);
+ITERATE_LIST((SD_COMMON_TYPES),TMPL_INSTANTIATE_CREATE_H)
 
-TMPL_INSTANTIATE_CREATE_H(double)
-TMPL_INSTANTIATE_CREATE_H(float)
-TMPL_INSTANTIATE_CREATE_H(float16)
-TMPL_INSTANTIATE_CREATE_H(bfloat16)
-TMPL_INSTANTIATE_CREATE_H(sd::LongType)
-TMPL_INSTANTIATE_CREATE_H(int)
-TMPL_INSTANTIATE_CREATE_H(unsigned int)
-TMPL_INSTANTIATE_CREATE_H(int8_t)
-TMPL_INSTANTIATE_CREATE_H(int16_t)
-TMPL_INSTANTIATE_CREATE_H(uint8_t)
-TMPL_INSTANTIATE_CREATE_H(uint16_t)
-TMPL_INSTANTIATE_CREATE_H(uint64_t)
-TMPL_INSTANTIATE_CREATE_H(bool)
 
-#undef TMPL_INSTANTIATE_CREATE_H
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -847,6 +709,6 @@ NDArray NDArrayFactory::fromNpyFile(const char* fileName) {
 
   free(pNPY);
 
-  return NDArray(buffer, shape, LaunchContext::defaultContext(), true);
+  return NDArray(buffer, shape, LaunchContext::defaultContext(), true, 0);
 }
 }  // namespace sd

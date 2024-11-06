@@ -30,6 +30,7 @@
 
 #include <vector>
 
+
 namespace sd {
 class NDArray;
 
@@ -49,43 +50,42 @@ template <typename T>
 class SD_LIB_EXPORT SpecialMethods {
  public:
   static void concatCpuGeneric(const std::vector<NDArray *> &inArrs, NDArray &output, const LongType axis);
-  static void concatCpuGeneric(LongType dimension, int numArrays, sd::Pointer *data, sd::Pointer *inputShapeInfo,
-                               void *result, sd::LongType const *resultShapeInfo);
+  static void concatCpuGeneric(LongType dimension, int numArrays, NDArray **inArrs,
+                               NDArray *result);
   static void splitCpuGeneric(NDArray&input, const std::vector<NDArray *> &outArrs, const LongType axis);
-  static void accumulateGeneric(void **x, void *z, const sd::LongType *zShapeInfo, int n, sd::LongType length);
-  static void averageGeneric(void **x, void *z, const sd::LongType *zShapeInfo, int n, sd::LongType length,
-                             bool propagate);
+  static void accumulateGeneric(NDArray **x, NDArray *z, int n, const sd::LongType length);
+  static void averageGeneric(NDArray **x, NDArray *z, int n, const sd::LongType length, bool propagate);
 
-  static sd::LongType getPosition(const sd::LongType *xShapeInfo, sd::LongType index);
-  static void quickSort_parallel_internal(T *array, const sd::LongType *xShapeInfo, int left, int right, int cutoff,
+  static sd::LongType getPosition(NDArray *input, sd::LongType index);
+  static void quickSort_parallel_internal(NDArray *x, int left, int right, int cutoff,
                                           bool descending);
-  static void quickSort_parallel(void *array, const sd::LongType *xShapeInfo, sd::LongType lenArray, int numThreads,
+  static void quickSort_parallel(NDArray *x, int numThreads,
                                  bool descending);
 
   static int nextPowerOf2(int number);
   static int lastPowerOf2(int number);
 
-  static void sortGeneric(void *x, const sd::LongType *xShapeInfo, bool descending);
-  static void sortTadGeneric(void *x, const sd::LongType *xShapeInfo, sd::LongType  *dimension, int dimensionLength,
-                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets, bool descending);
+  static void sortGeneric(NDArray *input, bool descending);
+  static void sortTadGeneric(NDArray *input, sd::LongType  *dimension, int dimensionLength,bool descending);
 
-  static void decodeBitmapGeneric(const void *dx, sd::LongType N, void *dz, const sd::LongType *zShapeInfo);
-  static sd::LongType encodeBitmapGeneric(void *dx, const sd::LongType *zShapeInfo, sd::LongType N, sd::LongType  *dz,
+  static void decodeBitmapGeneric(NDArray *dx, NDArray *z,sd::LongType N);
+  static sd::LongType encodeBitmapGeneric(NDArray *x, sd::LongType N,
+                                          LongType *dz,
                                           float threshold);
 };
 
 template <typename X, typename Y>
 class SD_LIB_EXPORT DoubleMethods {
  public:
-  static void sortByKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
+  static void sortByKey(NDArray *x,NDArray *y,
                         bool descending);
-  static void sortByValue(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
+  static void sortByValue(NDArray *x,NDArray *y,
                           bool descending);
 
-  static void sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                           sd::LongType  *dimension, LongType dimensionLength, bool descending);
-  static void sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
-                             sd::LongType  *dimension, LongType dimensionLength, bool descending);
+  static void sortTadByKey(NDArray *x,NDArray *y,
+                           NDArray *dimension, bool descending);
+  static void sortTadByValue(NDArray *x, NDArray *y,
+                             NDArray *dimension, bool descending);
 };
 }  // namespace sd
 

@@ -46,7 +46,6 @@
 #include <cstdlib>
 #include <types/float16.h>
 #include <unistd.h>
-
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
@@ -55,9 +54,9 @@ typedef sd::NDArray* OpaqueNDArray;
 typedef sd::NDArray** OpaqueNDArrayArr;
 typedef sd::LaunchContext* OpaqueLaunchContext;
 typedef RandomGenerator* OpaqueRandomGenerator;
-typedef ResultWrapper OpaqueResultWrapper;
-typedef VariablesSet OpaqueVariablesSet;
-typedef Variable OpaqueVariable;
+typedef sd::graph::ResultWrapper OpaqueResultWrapper;
+typedef sd::graph::VariablesSet OpaqueVariablesSet;
+typedef sd::graph::Variable OpaqueVariable;
 typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
@@ -256,7 +255,6 @@ SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;
-SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) ;
 SD_LIB_EXPORT sd::Pointer getConstantSpace() ;

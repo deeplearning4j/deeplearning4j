@@ -57,8 +57,13 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {  // always allocate pri
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const sd::LongType offsetThis,
+void DataBuffer::copyBufferFrom(const DataBuffer& other,
+                                size_t sizeToCopyinBytes,
+                                const sd::LongType offsetThis,
                                 const sd::LongType offsetOther) {
+  if(other._dataType != _dataType) {
+    THROW_EXCEPTION("DataBuffer::copyBufferFrom: data types of buffers are different");
+  }
   if (sizeToCopyinBytes == 0) {
     LongType otherBytes = other.getLenInBytes() - offsetOther;
     LongType thisBytes = getLenInBytes() - offsetThis;
@@ -155,6 +160,8 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
 
   dst->readPrimary();
 }
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -288,5 +295,23 @@ void DataBuffer::printHostDevice(long offset) {
 void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 
 }
+template <typename T>
+void* DataBuffer::primaryAtOffset(const LongType offset) {
+  T *type = reinterpret_cast<T*>(_primaryBuffer);
+  return reinterpret_cast<void *>(type + offset);
+}
 
+#define PRIMARYOFFSET(T) template void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(const LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+
+template <typename T>
+void* DataBuffer::specialAtOffset(const LongType offset) {
+  if(_specialBuffer == nullptr)
+    return nullptr;
+  T *type = reinterpret_cast<T*>(_specialBuffer);
+  return reinterpret_cast<void *>(type + offset);
+}
+
+#define SPECIALOFFSET(T) template void* DataBuffer::specialAtOffset<GET_SECOND(T)>(const LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
 }  // namespace sd

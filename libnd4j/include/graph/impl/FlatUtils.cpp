@@ -61,6 +61,9 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
     auto longPtr = reinterpret_cast<LongType *>(rawPtr);
     auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
     auto offsets = new LongType[length + 1];
+#if defined(__NEC__)
+#pragma _NEC novector
+#endif
     for (LongType e = 0; e <= length; e++) {
       auto o = longPtr[e];
       // FIXME: BE vs LE on partials
@@ -96,7 +99,7 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
                                       ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()), length),
                         SD_COMMON_TYPES);
 
-  auto array = new NDArray(newBuffer, newShape, LaunchContext::defaultContext(), true);
+  auto array = new NDArray(newBuffer, newShape, LaunchContext::defaultContext(), true, 0);
 
   delete[] newShape;
   return array;

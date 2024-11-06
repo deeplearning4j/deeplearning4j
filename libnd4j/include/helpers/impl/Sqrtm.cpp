@@ -260,8 +260,9 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   sqrtmQuasiTrianDiag<T>(schur.t, sqrtT);
   sqrtmQuasiTrianOffDiag<T>(schur.t, sqrtT);
 
+  NDArray second = schur.u.transpose();
   // out = U * sqrtT * U^T;
-  NDArray temp = mmul(sqrtT, schur.u.transpose());
+  NDArray temp = mmul(sqrtT, second);
   MmulHelper::mmul(&schur.u, &temp, &out);
 }
 

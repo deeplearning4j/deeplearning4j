@@ -170,9 +170,14 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
   const bool betaPersent = beta;
 
   T3 sum = 0;
-  PRAGMA_SUM_ENV(length, sum)
-  for (sd::LongType i = 0; i < length; ++i) sum += X[i * incx] * Y[i * incy];
 
+  auto func = PRAGMA_THREADS_FOR {
+    for (sd::LongType i = start; i < stop; ++i) {
+      sum += X[i * incx] * Y[i * incy];
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, length);
   if (betaPersent)
     *Z = alphaZ * sum + betaZ * *Z;
   else
@@ -283,7 +288,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     }
 
     if (pC != C) {
-      C->assign(pC);
+      C->assign(*pC);
     }
 
     for (auto* arr : toDelete) {
