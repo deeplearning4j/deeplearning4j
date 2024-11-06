@@ -231,14 +231,18 @@ template SD_LIB_EXPORT NDArray NDArrayFactory::create<TYPE>(const char order, co
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
+  sd::LongType  size = DataTypeUtils::sizeOfElement(DataTypeUtils::fromT<T>());
   DataBuffer *  buffer =
-      new DataBuffer(1 * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
+      new DataBuffer(size,
+                     DataTypeUtils::fromT<T>(),
+                     context->getWorkspace(),
+                     true);
 
   auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
-  res->bufferAsT<T>()[0] = scalar;
+  res->p<T>(0,scalar);
 
   res->tickWriteHost();
   res->syncToDevice();

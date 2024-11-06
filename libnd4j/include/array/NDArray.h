@@ -153,19 +153,11 @@ class SD_LIB_EXPORT NDArray {
  protected:
 
   /**
-   *  if true then array doesn't own buffer and simply points to another's buffer
-   */
-  bool _isView = false;
-
-  /**
    *  pointer on DataBuffer buffers in cpu/device memory
    */
   DataBuffer *_buffer = nullptr;
 
-  /**
-   *  buffers offset, it is the same both for cpu and device buffers
-   */
-  LongType _offset = 0L;
+
 
   /**
    *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides,
@@ -190,10 +182,8 @@ class SD_LIB_EXPORT NDArray {
    */
   LongType _length = -1L;
 
-  /**
-   *  type of array elements
-   */
-  DataType _dataType = FLOAT32;
+  LongType _offset = 0L;
+
 
   /**
    * deviceID where this NDArray belongs to

@@ -55,9 +55,7 @@ public class Int8Buffer extends BaseCpuDataBuffer {
         super(length);
     }
 
-    public Int8Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
+
 
     public Int8Buffer(long length, boolean initialize) {
         super(length, initialize);
@@ -72,7 +70,11 @@ public class Int8Buffer extends BaseCpuDataBuffer {
     }
 
     public Int8Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
+    }
+
+    public Int8Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -84,9 +86,7 @@ public class Int8Buffer extends BaseCpuDataBuffer {
         elementSize = 1;
     }
 
-    public Int8Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public Int8Buffer(float[] data) {
         this(data, true);
@@ -108,17 +108,11 @@ public class Int8Buffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public Int8Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Int8Buffer(double[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public Int8Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Int8Buffer(float[] floats, boolean copy) {
         super(floats, copy);
@@ -129,11 +123,11 @@ public class Int8Buffer extends BaseCpuDataBuffer {
     }
 
     public Int8Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public Int8Buffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(data, copy, workspace);
     }
 
     @Override

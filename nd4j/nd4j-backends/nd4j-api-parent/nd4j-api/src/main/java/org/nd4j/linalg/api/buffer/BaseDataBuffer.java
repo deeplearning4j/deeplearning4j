@@ -37,8 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.io.*;
@@ -82,9 +80,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected long deallocationId;
     protected long underlyingLength;
-    protected long offset;
     protected byte elementSize;
-    protected transient DataBuffer wrappedDataBuffer;
     protected transient long workspaceGenerationId = 0L;
 
     protected AllocationMode allocationMode;
@@ -95,9 +91,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient boolean attached = false;
     protected transient MemoryWorkspace parentWorkspace;
 
-    // Allocator-related stuff. Moved down here to avoid opType casting.
-    protected transient DataBuffer originalBuffer;
-    protected transient long originalOffset = 0;
 
     protected transient boolean constant = false;
     protected transient AtomicBoolean released = new AtomicBoolean(false);
@@ -124,9 +117,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public OpaqueDataBuffer opaqueBuffer() {
-        if(offset > 0) {
-            return ptrDataBuffer.createView(length * elementSize,offset * elementSize);
-        }
         return ptrDataBuffer;
     }
 
@@ -141,10 +131,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public long getGenerationId() {
         if(parentWorkspace != null) {
             return workspaceGenerationId;
-        } else if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached()) {
-            return wrappedDataBuffer.getGenerationId();
-        } else if(originalBuffer != null && originalBuffer.isAttached()) {
-            return originalBuffer.getGenerationId();
         }
         return workspaceGenerationId;
     }
@@ -164,7 +150,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = length;
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         this.underlyingLength = length;
-        this.wrappedDataBuffer = this;
 
         if (length > 0 || indexer != null) {
             this.pointer = pointer;
@@ -182,67 +167,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void pickReferent(BaseDataBuffer referent) {
         referenced.compareAndSet(false, true);
-    }
-
-    /**
-     *
-     * Meant for creating another view of a buffer
-     * @param underlyingBuffer the underlying buffer to create a view from
-     * @param length the length of the view
-     * @param offset the offset for the view
-     */
-    protected BaseDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        if(underlyingBuffer != null && underlyingBuffer.wasClosed()) {
-            throw new IllegalArgumentException("Unable to wrap closed buffer.");
-        }
-        if (length < 0)
-            throw new IllegalArgumentException("Length must be >= 0");
-
-        if (length == 0)
-            length = 1;
-
-
-
-        initTypeAndSize();
-        this.length = length;
-        this.offset = offset;
-        this.allocationMode = underlyingBuffer.allocationMode();
-        this.elementSize = (byte) underlyingBuffer.getElementSize();
-        this.underlyingLength = underlyingBuffer.underlyingLength();
-        this.wrappedDataBuffer = underlyingBuffer;
-
-        // we're not referencing constant buffers
-        if (!underlyingBuffer.isConstant())
-            ((BaseDataBuffer) underlyingBuffer).pickReferent(this);
-
-
-        // Adding link to original databuffer
-        if (underlyingBuffer.originalDataBuffer() == null) {
-            this.originalBuffer = underlyingBuffer;
-            this.originalOffset = offset;
-        } else {
-
-            this.originalBuffer = underlyingBuffer.originalDataBuffer();
-
-            // FIXME: please don't remove this comment, since there's probably a bug in current offset() impl,
-            // and this line will change originalOffset according to proper offset() impl
-            // FIXME: raver119@gmail.com
-            this.originalOffset = offset;
-        }
-
-        pointer = underlyingBuffer.pointer();
-        setIndexer(underlyingBuffer.indexer());
-
-
-    }
-
-    /**
-     * Original DataBuffer.
-     * In case if we have a view derived from another view, derived from some other view, original DataBuffer will point to the originating DataBuffer, where all views come from.
-     */
-    @Override
-    public DataBuffer originalDataBuffer() {
-        return originalBuffer;
     }
 
 
@@ -270,33 +194,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public Pointer pointer() {
         if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
+        if (released.get())
+            throw new IllegalStateException("This buffer was already released via close() call");
 
-        if (underlyingDataBuffer() != null && underlyingDataBuffer() != this) {
-            if (underlyingDataBuffer().wasClosed())
-                throw new IllegalStateException("You can't use DataBuffer once it was released");
-
-            return underlyingDataBuffer().pointer();
-        } else {
-            if (underlyingDataBuffer() != null)
-                if (((BaseDataBuffer) underlyingDataBuffer()).released.get())
-                    throw new IllegalStateException("Underlying buffer was released via close() call");
-
-            if (released.get())
-                throw new IllegalStateException("This buffer was already released via close() call");
-
-            return pointer;
-        }
+        return pointer;
     }
 
-    @Override
-    public DataBuffer underlyingDataBuffer() {
-        return wrappedDataBuffer;
-    }
-
-    @Override
-    public long offset() {
-        return offset;
-    }
 
     @Override
     public AllocationMode allocationMode() {
@@ -328,7 +231,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void copyAtStride(DataBuffer buf, long n, long stride, long yStride, long offset, long yOffset) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().copyBuffer(buf.opaqueBuffer(),n,this.opaqueBuffer(),offset,yOffset);
+        Nd4j.getNativeOps().copyBuffer(buf.opaqueBuffer(),n,this.opaqueBuffer(),offset,yOffset);
     }
 
     @Override
@@ -1688,48 +1591,25 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public IntBuffer asNioInt() {
-        if (offset() >= Integer.MAX_VALUE)
-            throw new IllegalStateException("Index out of bounds " + offset());
+        return wrappedBuffer().asIntBuffer();
 
-        if (offset() == 0) {
-            return wrappedBuffer().asIntBuffer();
-        } else
-            return wrappedBuffer().asIntBuffer().position((int) offset());
     }
 
     @Override
     public LongBuffer asNioLong() {
-        if (offset() >= Integer.MAX_VALUE)
-            throw new IllegalStateException("Index out of bounds " + offset());
-
-        if (offset() == 0) {
-            return wrappedBuffer().asLongBuffer();
-        } else
-            return wrappedBuffer().asLongBuffer().position((int) offset());
+        return wrappedBuffer().asLongBuffer();
     }
 
     @Override
     public DoubleBuffer asNioDouble() {
-        if (offset() >= Integer.MAX_VALUE)
-            throw new IllegalStateException("Index out of bounds " + offset());
+        return wrappedBuffer().asDoubleBuffer();
 
-        if (offset() == 0) {
-            return wrappedBuffer().asDoubleBuffer();
-        } else {
-            return wrappedBuffer().asDoubleBuffer().position((int) (offset()));
-        }
     }
 
     @Override
     public FloatBuffer asNioFloat() {
-        if (offset() >= Integer.MAX_VALUE)
-            throw new IllegalStateException("Index out of bounds " + offset());
+        return wrappedBuffer().asFloatBuffer();
 
-        if (offset() == 0) {
-            return wrappedBuffer().asFloatBuffer();
-        } else {
-            return wrappedBuffer().asFloatBuffer().position((int) (offset()));
-        }
 
     }
 
@@ -1833,8 +1713,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             if (d.length() != length())
                 return false;
 
-          if(d.dataType() != dataType())
-              return false;
+            if(d.dataType() != dataType())
+                return false;
             OpContext ctx = Nd4j.getExecutioner().buildContext();
             ctx.setInputArrays(Nd4j.create(d),Nd4j.create(this));
             INDArray exec = Nd4j.getExecutioner().exec(new Eps(Nd4j.create(d), Nd4j.create(this), Nd4j.createUninitialized(DataType.BOOL, length())));
@@ -2208,16 +2088,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
     /**
-     * Returns the offset of the buffer relative to originalDataBuffer
-     *
-     * @return
-     */
-    @Override
-    public long originalOffset() {
-        return originalOffset;
-    }
-
-    /**
      * This method returns whether this DataBuffer is constant, or not.
      * Constant buffer means that it modified only during creation time, and then it stays the same for all lifecycle. I.e. used in shape info databuffers.
      *
@@ -2284,12 +2154,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if(parentWorkspace != null) {
             return parentWorkspace;
         }
-        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null) {
-            return wrappedDataBuffer.getParentWorkspace();
-        }
-        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null) {
-            return originalBuffer.getParentWorkspace();
-        }
+
+
         return null;
     }
 
@@ -2308,8 +2174,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
         if (released.get() || isAttached() || isConstant())
             return false;
 
-        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
-            return false;
 
         return true;
     }
@@ -2339,9 +2203,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean wasClosed() {
-        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
-            return wrappedDataBuffer.wasClosed();
-
         return released.get();
     }
 
