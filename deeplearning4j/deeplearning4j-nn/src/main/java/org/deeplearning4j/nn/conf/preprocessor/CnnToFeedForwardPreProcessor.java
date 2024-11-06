@@ -116,7 +116,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return workspaceMgr.dup(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }
 
     @Override
