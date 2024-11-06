@@ -1629,10 +1629,12 @@ SD_LIB_EXPORT sd::Status execCustomOp2(sd::Pointer* extraPointers, sd::LongType 
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes(sd::Pointer* extraPointers, sd::LongType hash,
                                                      sd::Pointer* inputShapes, int numInputShapes, double* tArgs,
                                                      int numTArgs, sd::LongType* iArgs, int numIArgs);
+
 SD_LIB_EXPORT OpaqueShapeList* calculateOutputShapes2(sd::Pointer* extraPointers, sd::LongType hash, sd::Pointer* inputBuffers,
                                                 sd::Pointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs,
                                                 sd::LongType* iArgs, int numIArgs, bool* bArgs, int numBArgs,
                                                 int* dArgs, int numDArgs, sd::LongType* offsets);
+
 
 
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList* list);

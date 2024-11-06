@@ -104,17 +104,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
       for (sd::LongType i = start; i < stop; ++i) {
         const auto memAmountToCopy = inArrs[i]->lengthOf();
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
-#if defined(__NEC__)
-        auto zPtr = zPtrList[i];
-        for (int j = 0; j < memAmountToCopy; j++) {
-          zPtr[j] = inputPtr[j];
-        }
-#else
           auto zPtr = zPtrList[i];
                 for (int j = 0; j < memAmountToCopy; j++) {
                   zPtr[j] = inputPtr[j];
                 }
-#endif
       }
     };
 
