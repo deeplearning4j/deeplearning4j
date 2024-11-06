@@ -45,7 +45,7 @@ public class CpuMemoryManager extends BasicMemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+        Pointer ptr =Nd4j.getNativeOps().mallocHost(bytes, 0);
 
         if (ptr == null || ptr.address() == 0L)
             throw new OutOfMemoryError("Failed to allocate [" + bytes + "] bytes");
@@ -66,7 +66,7 @@ public class CpuMemoryManager extends BasicMemoryManager {
      */
     @Override
     public void release(@NonNull Pointer pointer, MemoryKind kind) {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
+       Nd4j.getNativeOps().freeHost(pointer);
         pointer.setNull();
     }
 

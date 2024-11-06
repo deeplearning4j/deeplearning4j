@@ -30,7 +30,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void adjustSaturation_(const NDArray *input, const NDArray *factorScalarArr, NDArray *output, const sd::LongType dimC) {
+static void adjustSaturation_(NDArray *input, NDArray *factorScalarArr, NDArray *output, const sd::LongType dimC) {
   const T factor = factorScalarArr->e<T>(0);
   const int rank = input->rankOf();
 
@@ -87,7 +87,7 @@ static void adjustSaturation_(const NDArray *input, const NDArray *factorScalarA
   }
 }
 
-void adjustSaturation(sd::LaunchContext *context, const NDArray *input, const NDArray *factorScalarArr, NDArray *output,
+void adjustSaturation(sd::LaunchContext *context, NDArray *input, NDArray *factorScalarArr, NDArray *output,
                       const sd::LongType dimC) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturation_, (input, factorScalarArr, output, dimC), SD_FLOAT_TYPES);
 }

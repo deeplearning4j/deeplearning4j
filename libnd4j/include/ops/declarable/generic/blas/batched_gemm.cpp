@@ -86,7 +86,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   if(alpha->isScalar()) {
     std::vector<sd::LongType> shape = {batchSize};
     alphaInput = new NDArray('c',shape,alpha->dataType());
-    alphaInput->assign(alpha);
+    alphaInput->assign(*alpha);
   } else {
     alphaInput = alpha;
   }
@@ -97,7 +97,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
   if(beta->isScalar()) {
     std::vector<LongType> shape = {batchSize};
     betaInput = new NDArray('c',shape,beta->dataType());
-    betaInput->assign(beta);
+    betaInput->assign(*beta);
   } else {
     betaInput = beta;
   }
@@ -242,7 +242,7 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   if(alpha->lengthOf() != batchSize) {
     std::vector<sd::LongType> shape = {batchSize};
     alphaInput = new NDArray('c',shape,alpha->dataType());
-    alphaInput->assign(alpha);
+    alphaInput->assign(*alpha);
   } else {
     alphaInput = alpha;
   }
@@ -253,7 +253,7 @@ CUSTOM_OP_IMPL(batched_gemm_bp, -1, -1, false, 0, 9) {
   if(beta->lengthOf() != batchSize) {
     std::vector<sd::LongType> shape = {batchSize};
     betaInput = new NDArray('c',shape,beta->dataType());
-    betaInput->assign(beta);
+    betaInput->assign(*beta);
   } else {
     betaInput = beta;
   }

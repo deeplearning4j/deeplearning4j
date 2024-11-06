@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void gather(LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
+SD_LIB_HIDDEN void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output,
                           const std::vector<LongType>& intArgs);
 
 }

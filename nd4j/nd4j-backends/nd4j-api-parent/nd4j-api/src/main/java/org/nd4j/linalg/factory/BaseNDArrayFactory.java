@@ -340,9 +340,9 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray arange(double begin, double end, double step) {
-        long length = (long)Math.floor((end-begin)/step);
         DynamicCustomOp op = new Range(begin, end, step, DataType.FLOAT);
-        INDArray out = Nd4j.create(op.calculateOutputShape().get(0));
+        List<LongShapeDescriptor> shape = op.calculateOutputShape();
+        INDArray out = Nd4j.create(shape.get(0));
         op.setOutputArgument(0, out);
         Nd4j.exec(op);
         return out;

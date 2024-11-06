@@ -28,18 +28,18 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void sruCell(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w,
-                           const NDArray* b, NDArray* h, NDArray* c);
+SD_LIB_HIDDEN void sruCell(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w,
+                           NDArray* b, NDArray* h, NDArray* c);
 
-SD_LIB_HIDDEN void sruTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* c0, const NDArray* w,
-                               const NDArray* b, NDArray* h, NDArray* c);
+SD_LIB_HIDDEN void sruTimeLoop(LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w,
+                               NDArray* b, NDArray* h, NDArray* c);
 
-SD_LIB_HIDDEN void sruBI(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0,
-                         const NDArray* mask, NDArray* ht, NDArray* ct);
+SD_LIB_HIDDEN void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* c0,
+                         NDArray* mask, NDArray* ht, NDArray* ct);
 
-SD_LIB_HIDDEN void sruBIBP(LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b,
-                           const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH,
-                           const NDArray* mask, NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
+SD_LIB_HIDDEN void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b,
+                           NDArray* c0, NDArray* ct, NDArray* inGradC0, NDArray* inGradH,
+                           NDArray* mask, NDArray* gradI, NDArray* gradWeights, NDArray* gradB, NDArray* gradC0);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

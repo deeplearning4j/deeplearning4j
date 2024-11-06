@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
   // first of all take into account possible presence of empty arrays
   // also if scalar is present -> copy its value to vector with length=1
-  std::vector<const NDArray*> nonEmptyArrs;
+  std::vector<NDArray*> nonEmptyArrs;
   std::vector<LongType> arrsToDelete;
   LongType index = 0;
   bool allOfSameType = true;
@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       if (input->rankOf() == 0) {
         std::vector<sd::LongType> shape = {1};
         auto vec = new NDArray('c',shape, input->dataType(), block.launchContext());
-        vec->assign(input);
+        vec->assign(*input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);
       } else {

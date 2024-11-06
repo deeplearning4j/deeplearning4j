@@ -162,7 +162,9 @@ public class NDArray extends BaseNDArray {
         super(shape, stride, offset, ordering);
     }
 
-
+    public NDArray(DataBuffer buffer, LongShapeDescriptor longShapeDescriptor) {
+        super(buffer, longShapeDescriptor);
+    }
 
     /**
      * Construct an ndarray of the specified shape, with optional initialization

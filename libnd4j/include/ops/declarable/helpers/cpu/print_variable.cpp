@@ -24,7 +24,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message) {
+void print_special(LaunchContext &ctx, NDArray&array, const std::string &message) {
   array.printIndexedBuffer(message.c_str());
 }
 }  // namespace helpers

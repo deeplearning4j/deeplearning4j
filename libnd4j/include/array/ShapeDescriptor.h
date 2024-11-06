@@ -43,13 +43,13 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
  private:
   int _rank = 0;
-  LongType * _shape_strides;
+  LongType * _shape_strides = nullptr;
   LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;
   LongType _extraProperties = 0;
   LongType _paddedAllocSize = 0;
-
+  LongType _offset = 0;
 
  public:
   bool ownsShapeStrides = false;
@@ -62,8 +62,8 @@ class SD_LIB_EXPORT ShapeDescriptor {
 #endif
   ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape, LongType extras);
   ShapeDescriptor(const ShapeDescriptor &other);
-  ShapeDescriptor(const LongType *shapeInfo, bool validateDataType = true);
-  explicit ShapeDescriptor(const LongType *shapeInfo, const DataType dtypeOverride);
+  ShapeDescriptor(const LongType *shapeInfo, bool validateDataType = true, bool overrideStrides = false);
+  explicit ShapeDescriptor(const LongType *shapeInfo, const DataType dtypeOverride, const bool overrideStrides);
   explicit ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride);
   explicit ShapeDescriptor(const LongType *shapeInfo, const LongType *dtypeOverride,
                            const LongType *orderOverride);
@@ -83,6 +83,7 @@ class SD_LIB_EXPORT ShapeDescriptor {
   int rank() const;
   LongType ews() const;
   LongType arrLength() const;
+  LongType offset();
   char order() const;
   DataType dataType() const;
   bool isEmpty() const;
@@ -139,6 +140,8 @@ class SD_LIB_EXPORT ShapeDescriptor {
     message += std::to_string(_extraProperties);
     message += " Padded Alloc Size: ";
     message += std::to_string(_paddedAllocSize);
+    message += " Offset: ";
+    message += std::to_string(_offset);
     //need this in order to avoid deallocation
     std::string *ret = new std::string(message.c_str());
     return ret->c_str();
@@ -172,7 +175,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
   SD_INLINE void fillStrides() {
     if(_rank == 0) {
-      printf("No strides to be filled for rank 0\n");
       return;
     }
 

@@ -84,8 +84,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "array/ShapeList.h",
                 "system/type_boilerplate.h",
                 "system/op_boilerplate.h",
-                //"enum_boilerplate.h",
-                //"op_enums.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",
@@ -191,6 +189,12 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
+                .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
+                .put(new Info("OpaqueNDArrayArr").pointerTypes("org.nd4j.nativeblas.OpaqueNDArrayArr"))
+
+                .put(new Info("createOpaqueNDArray").javaNames("create"))
+
+
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",
@@ -236,10 +240,6 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("ErrorResult").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
-
-
-        infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
-
     }
 
 

@@ -29,7 +29,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void compat_sparse_to_dense(const NDArray &values, const NDArray &indices, NDArray *def, NDArray &output);
+SD_LIB_HIDDEN void compat_sparse_to_dense(NDArray&values, NDArray&indices, NDArray *def, NDArray &output);
 }
 }  // namespace ops
 }  // namespace sd

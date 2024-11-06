@@ -104,7 +104,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             long flen = tempFile.length();
-            mmap = NativeOpsHolder.getInstance().getDeviceNativeOps().mmapFile(null, tempFile.getAbsolutePath(), flen);
+            mmap =Nd4j.getNativeOps().mmapFile(null, tempFile.getAbsolutePath(), flen);
 
             if (mmap == null)
                 throw new RuntimeException("MMAP failed");
@@ -138,7 +138,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             if (stepNumber + 2 < stepCurrent|| extended) {
                 pinnedAllocations.remove();
 
-                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+               Nd4j.getNativeOps().freeHost(pair.getHostPointer());
 
                 pinnedCount.decrementAndGet();
                 pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
@@ -160,7 +160,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         if (isDebug.get())
             log.info("Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);
 
-        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        NativeOps nativeOps =Nd4j.getNativeOps();
         for (PointersPair pair: externalAllocations) {
             if (pair.getHostPointer() != null)
                 nativeOps.freeHost(pair.getHostPointer());
@@ -189,12 +189,12 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
         if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.RAM) {
             if (workspace.getHostPointer() != null) {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+               Nd4j.getNativeOps().freeHost(workspace.getHostPointer());
                 AllocationsTracker.getInstance().markReleased(AllocationKind.WORKSPACE, 0, sizez);
             }
         } else if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP) {
             if (workspace.getHostPointer() != null)
-                NativeOpsHolder.getInstance().getDeviceNativeOps().munmapFile(null, mmap, tempFile.length());
+               Nd4j.getNativeOps().munmapFile(null, mmap, tempFile.length());
         }
 
         workspace.setDevicePointer(null);

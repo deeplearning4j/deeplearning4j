@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
   if (isNCDHW)
     permutForOutput = {0, 2, 3, 4, 1};  // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
   else
-    input = new NDArray(input->permute(permuteDims));
+    input = new NDArray(input->permute(permuteDims, false, false));
 
   std::vector<LongType> wAxes;
   if (0 == wFormat)

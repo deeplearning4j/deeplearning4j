@@ -200,6 +200,10 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
                 .put(new Info("OpaqueDataBuffer").pointerTypes("org.nd4j.nativeblas.OpaqueDataBuffer"))
                 .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer"))
+                .put(new Info("OpaqueNDArray").pointerTypes("org.nd4j.nativeblas.OpaqueNDArray"))
+                .put(new Info("OpaqueNDArrayArr").pointerTypes("org.nd4j.nativeblas.OpaqueNDArrayArr"))
+
+                .put(new Info("createOpaqueNDArray").javaNames("create"))
 
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
@@ -237,13 +241,13 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
-                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                 .put(new Info("std::vector<std::vector<sd::LongType> >").pointerTypes("LongVectorVector").define())
                 .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("sd::IndicesList").purify())
+
                 .put(new Info("shape::cuMalloc").skip())
                 .put(new Info("ErrorResult").skip());
 

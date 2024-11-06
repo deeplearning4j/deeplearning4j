@@ -47,13 +47,13 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
   } else if (y->isScalar()) {
     T s = y->e<T>(0);
     auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x <= s ? _e : (T)0.; };
-
+    float zero = 0.0f;
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     if (x <= y)
       gradY->assign(tmp);
     else
-      gradY->assign(0.0f);
+      gradY->assign(zero);
 
     epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
   } else {
@@ -109,10 +109,11 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
 
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
+    float zero = 0.0f;
     if (x <= y)
       gradY->assign(tmp);
     else
-      gradY->assign(0.0f);
+      gradY->assign(zero);
 
     epsNext->applyPairwiseLambda<T>(*x, lambdaS, *gradX);
   } else {

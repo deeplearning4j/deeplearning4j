@@ -38,7 +38,7 @@ namespace sd {
  * @param axis
  * @return int
  */
-SD_INLINE int isShapeExtendedWithOnes(const NDArray &input, LongType axis) {
+SD_INLINE int isShapeExtendedWithOnes(NDArray&input, LongType axis) {
   bool isAllOne = true;
   auto shapes = shape::shapeOf(input.shapeInfo());
   auto rank = input.rankOf();
@@ -67,7 +67,7 @@ struct InputArgsCase2 {
 };
 
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inArrs, NDArray &output,
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, NDArray &output,
                                          const LongType axis) {
   const sd::LongType numOfInArrs = inArrs.size();
   const auto sizeofT = output.sizeOfT();
@@ -104,17 +104,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray *> &inA
       for (sd::LongType i = start; i < stop; ++i) {
         const auto memAmountToCopy = inArrs[i]->lengthOf();
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
-#if defined(__NEC__)
-        auto zPtr = zPtrList[i];
-        for (int j = 0; j < memAmountToCopy; j++) {
-          zPtr[j] = inputPtr[j];
-        }
-#else
           auto zPtr = zPtrList[i];
                 for (int j = 0; j < memAmountToCopy; j++) {
                   zPtr[j] = inputPtr[j];
                 }
-#endif
       }
     };
 

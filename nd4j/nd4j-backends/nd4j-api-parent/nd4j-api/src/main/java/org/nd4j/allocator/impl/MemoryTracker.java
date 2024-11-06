@@ -156,7 +156,7 @@ public class MemoryTracker {
      */
     public long getPreciseFreeMemory(int deviceId) {
         // we refresh free memory on device
-        val extFree = NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceFreeMemory(deviceId);
+        val extFree =Nd4j.getNativeOps().getDeviceFreeMemory(deviceId);
         return extFree;
     }
 

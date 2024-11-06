@@ -84,8 +84,8 @@ void scatterUpdate(sd::LaunchContext* context, NDArray& input, NDArray& updates,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, const NDArray& updates,
-                   const NDArray& indices, const std::vector<LongType>& dimensions) {
+void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, NDArray& updates,
+                   NDArray& indices, const std::vector<LongType>& dimensions) {
   // updates and indices have same length
   const sd::LongType len = indices.lengthOf();
 

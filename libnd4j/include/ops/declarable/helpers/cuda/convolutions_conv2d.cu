@@ -88,7 +88,7 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
 
 
   std::vector<sd::LongType> permute = {0, 3, 4, 5, 1, 2};
-  block.pushIntermediateResult(col);
+  block.pushIntermediateResult(col, nullptr, nullptr, 0);
 
   std::vector<sd::LongType> shape = {bS * oH * oW, kW * kH * iC};
   auto im2colReshape = col->reshape('c', shape, true);

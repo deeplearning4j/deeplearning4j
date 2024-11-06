@@ -27,10 +27,10 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN int32_t thresholdEstimate(const NDArray &updates, float threshold);
+SD_LIB_HIDDEN int32_t thresholdEstimate(NDArray&updates, float threshold);
 
 SD_LIB_HIDDEN void thresholdEncode(NDArray &updates, NDArray &encoded, float threshold);
-SD_LIB_HIDDEN void thresholdDecode(const NDArray &encoded, NDArray &updates);
+SD_LIB_HIDDEN void thresholdDecode(NDArray&encoded, NDArray &updates);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
