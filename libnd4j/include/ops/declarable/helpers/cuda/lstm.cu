@@ -86,7 +86,9 @@ void lstmCell(LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* ct_1,
   }
 
   // current sell state = ft*ct_1 + it*tanh(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-  ct->assign(sigmoid(zft + forgetBias) * (*ct_1) + sigmoid(zit) * tanh(zct));
+  NDArray zftPlusForgetBias = zft + forgetBias;
+  NDArray toAssign = sigmoid(zftPlusForgetBias) * (*ct_1) + sigmoid(zit) * tanh(zct);
+  ct->assign(toAssign);
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
   if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, *ct);
@@ -102,7 +104,7 @@ void lstmCell(LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* ct_1,
     // if clipping projection is provided then projected cell output state is clipped by this value
     if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, *ht);
   } else
-    ht->assign(&htNoPeepHole);
+    ht->assign(htNoPeepHole);
 }
 
 void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDArray* Wci,

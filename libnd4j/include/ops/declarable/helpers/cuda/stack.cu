@@ -74,7 +74,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
   if (inArrs[0]->rankOf() < 1 && !inArrs[0]->isEmpty()) {
-    std::vector<void const*> hInBuffers(numOfSubArrs);
+    std::vector<void *> hInBuffers(numOfSubArrs);
 
     for (int i = 0; i < numOfSubArrs; ++i) hInBuffers[i] = inArrs[i]->specialBuffer();
 
@@ -94,7 +94,7 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
 
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      void* zBuff = output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]);
+      void* zBuff = const_cast<void*>(output.specialBufferWithOffset(zTadPack->primaryOffsets()[i]));
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
                                             inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(), nullptr,

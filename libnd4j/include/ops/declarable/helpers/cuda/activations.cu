@@ -659,7 +659,7 @@ void thresholdRelu_(NDArray const &input, double threshold, NDArray &output) {
   const_cast<NDArray &>(input).applyLambda(routine, output);
 }
 
-void thresholdRelu(LaunchContext *context, NDArray const &input, double threshold, NDArray &output) {
+void thresholdRelu(LaunchContext *context, NDArray &input, double threshold, NDArray &output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
 }
 

@@ -231,22 +231,22 @@ static void nonMaxSuppressionV2_(LaunchContext* context, NDArray* boxes, NDArray
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {boxes, scales});
   std::vector<sd::LongType> shape = {scales->lengthOf()};
-  std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>(
+  NDArray indices (NDArrayFactory::create_<I>(
       'c', shape, context));  // - 1, scales->lengthOf()); //, scales->getContext());
 
   NDArray scores(*scales);
   Pointer extras[2] = {nullptr, stream};
-  auto indexBuf = indices->dataBuffer()->specialAsT<I>();
+  auto indexBuf = indices.dataBuffer()->specialAsT<I>();
   auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
   dim3 launchDims = getLaunchDims("image_suppress_scores");
   suppressScores<T, I><<<launchDims.x, launchDims.y,launchDims.z, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
-  indices->tickWriteDevice();
-  sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(),
-              scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
-  indices->tickWriteDevice();
+  indices.tickWriteDevice();
+  sortByValue(extras, &indices,
+              &scores,true);
+  indices.tickWriteDevice();
   NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
   int numSelected = 0;
-  int numBoxes = boxes->sizeAt(0);
+  int numBoxes = boxes->sizeAt(0), tt(0);
   auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
 
   auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());

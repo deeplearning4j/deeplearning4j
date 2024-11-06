@@ -180,11 +180,11 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   NDArray::registerSpecialUse({pS, pU, pVT}, {pA});
 
-  S->assign(pS);
+  S->assign(*pS);
 
   if (calcUV) {
-    U->assign(pU);
-    VT->assign(pVT);
+    U->assign(*pU);
+    VT->assign(*pVT);
   }
 
   //for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
@@ -362,11 +362,11 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   NDArray::registerSpecialUse({pS, pU, pV}, {pA});
 
-  if (S->ews() != 1) S->assign(pS);
+  if (S->ews() != 1) S->assign(*pS);
 
   if (calcUV) {
-    if (!uForder) U->assign(transA ? pV : pU);
-    if (!vForder) V->assign(transA ? pU : pV);
+    if (!uForder) U->assign(transA ? *pV : *pU);
+    if (!vForder) V->assign(transA ? *pU : *pV);
   }
 
   if (!calcUV && m != n) delete arrToAvoidBugInAPI;
@@ -525,11 +525,11 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   NDArray::registerSpecialUse({pS, pU, pV}, {pA});
 
-  S->assign(pS);
+  S->assign(*pS);
 
   if (calcUV) {
-    U->assign(pU);
-    V->assign(pV);
+    U->assign(*pU);
+    V->assign(*pV);
   }
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];

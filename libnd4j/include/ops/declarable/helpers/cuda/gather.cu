@@ -140,7 +140,7 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
       std::vector<LongType> firstShape = {numOfIntArgs - 1};
       std::vector<double> data =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
       pIndices = new NDArray(input->ordering(),firstShape,
-                             std::vector<double>(intArgs.begin() + 1, intArgs.end()), INT64, input->getContext());
+                             data, INT64, input->getContext());
     }
     std::vector<LongType> dimsOut(pIndices->rankOf());
     std::iota(dimsOut.begin(), dimsOut.end(), axis);  // fill with axis, axis+1, ... axis+pIndices->rankOf()-1

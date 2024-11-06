@@ -205,7 +205,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   }
 
   for (int i = 0; i < bS; ++i)
-    if (vC[i]->ews() != 1) vC[i]->assign(pC[i]);
+    if (vC[i]->ews() != 1) vC[i]->assign(*pC[i]);
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 }
