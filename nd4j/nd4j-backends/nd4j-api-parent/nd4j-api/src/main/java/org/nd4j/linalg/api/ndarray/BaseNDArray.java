@@ -299,6 +299,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
     }
 
+    /**
+     *
+     * @param buffer
+     */
+    public BaseNDArray(DataBuffer buffer,LongShapeDescriptor longShapeDescriptor) {
+        this.data = buffer;
+        if (buffer.length() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
+        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor);
+        setShapeInformation(shapeInformation);
+        init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
+    }
+
 
     /**
      *
