@@ -59,9 +59,6 @@ public class IntBuffer extends BaseCpuDataBuffer {
         super(length, initialize, workspace);
     }
 
-    public IntBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
 
     public IntBuffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
         super(ints, copy, workspace);
@@ -71,33 +68,21 @@ public class IntBuffer extends BaseCpuDataBuffer {
         super(data, copy);
     }
 
-    public IntBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public IntBuffer(float[] data, boolean copy) {
         super(data, copy);
     }
 
-    public IntBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public IntBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public IntBuffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
-    public IntBuffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+    public IntBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
-    public IntBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
 
     @Override
     protected DataBuffer create(long length) {

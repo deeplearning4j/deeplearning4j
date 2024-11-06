@@ -290,10 +290,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         }
 
         INDArray ret = Nd4j.create(data,
-                Shape.shape(shapeBuffer),
-                Shape.strideArr(shapeBuffer),
+                Shape.shape(jvmShapeInfo),
+                Shape.stridesOf(jvmShapeInfo),
                 0,
-                Shape.order(shapeBuffer));
+                Shape.order(jvmShapeInfo));
 
         Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.DEVICE);
 
@@ -329,9 +329,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                 length,
                 LongIndexer.create(newPointer));
 
+        long[] jvmShapeInfo = shapeBuffer.asLong();
         dataPointer.position(0);
-        long dataNumElements =  Shape.length(shapeBuffer);
-        long dataLength = dataBufferElementSize * Shape.length(shapeBuffer);
+        long dataNumElements =  Shape.length(jvmShapeInfo);
+        long dataLength = dataBufferElementSize * Shape.length(jvmShapeInfo);
         dataPointer.limit(dataLength);
         dataPointer.capacity(dataLength);
 
@@ -344,7 +345,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         ByteIndexer.create(dPointer));
             }
             break;
@@ -354,7 +355,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         ShortIndexer.create(dPointer));
             }
             break;
@@ -364,7 +365,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         IntIndexer.create(dPointer));
             }
             break;
@@ -374,7 +375,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         LongIndexer.create(dPointer));
             }
             break;
@@ -384,7 +385,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         UByteIndexer.create(dPointer));
             }
             break;
@@ -394,7 +395,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         UShortIndexer.create(dPointer));
             }
             break;
@@ -404,7 +405,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         IntIndexer.create(dPointer));
             }
             break;
@@ -414,7 +415,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         LongIndexer.create(dPointer));
             }
             break;
@@ -424,7 +425,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         HalfIndexer.create(dPointer));
             }
             break;
@@ -435,7 +436,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         FloatIndexer.create(dPointer));
             }
             break;
@@ -446,7 +447,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
                 data = Nd4j.createBuffer(dPointer,
                         dtype,
-                        Shape.length(shapeBuffer),
+                        Shape.length(jvmShapeInfo),
                         DoubleIndexer.create(dPointer));
             }
             break;
@@ -457,10 +458,10 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
 
         INDArray ret = Nd4j.create(data,
-                Shape.shape(shapeBuffer),
-                Shape.strideArr(shapeBuffer),
+                Shape.shape(jvmShapeInfo),
+                Shape.stride(jvmShapeInfo),
                 0,
-                Shape.order(shapeBuffer));
+                Shape.order(jvmShapeInfo));
 
         return ret;
     }

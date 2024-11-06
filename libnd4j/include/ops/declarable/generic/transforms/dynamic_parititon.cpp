@@ -74,7 +74,7 @@ DECLARE_SHAPE_FN(dynamic_partition) {
     newShape[1] = partitionSizes[e];
     for (sd::LongType i = 1; i < outRank; ++i) newShape[i + 1] = shape::sizeAt(in, outRank + i - 1);
 
-    shape::updateStrides(newShape, shape::order(in));
+    shape::updateStrides(newShape, shape::order(in), false);
     ArrayOptions::setDataType(newShape, ArrayOptions::dataType(in));
     shapes->push_back(CONSTANT(newShape));
   }
@@ -114,8 +114,8 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
 
   auto result = stitchOp.evaluate(partitions, {numPartition});
   REQUIRE_TRUE(result.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  outputList[1]->assign(indices);
-  outputList[0]->assign(result.at(0));
+  outputList[1]->assign(*indices);
+  outputList[0]->assign(*result.at(0));
 
   return sd::Status::OK;
 }

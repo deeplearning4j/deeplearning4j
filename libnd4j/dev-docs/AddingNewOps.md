@@ -6,7 +6,7 @@ This kind of operations is actually split into multiple subtypes, based on eleme
 - Transform operations: These operations typically take some NDArray in, and change each element independent of others.
 - Reduction operations: These operations take some NDArray and dimensions, and return reduced NDArray (or scalar) back. I.e. sum along dimension(s).
 - Scalar operations: These operations are similar to transforms, but they only do arithmetic operations, and second operand is scalar. I.e. each element in given NDArray will add given scalar value.
-- Pairwise operations:  These operations are between regular transform opeartions and scalar operations. I.e. element-wise addition of two NDArrays.
+- Pairwise operations:  These operations are between regular transform operations and scalar operations. I.e. element-wise addition of two NDArrays.
 - Random operations: Most of these operations related to random numbers distributions: Uniform, Gauss, Bernoulli etc.
 
 Despite differences between these operations, they are all using XZ/XYZ three-operand design, where X and Y are inputs, and Z is output.
@@ -57,7 +57,7 @@ After libnd4j is recompiled, this op will become available for legacy execution 
 
 Custom operations is a new concept, added recently and mostly suits SameDiff/Graph needs.
 For CustomOps we defined universal signature, with variable number of input/output NDArrays, and variable number of floating-point and integer arguments.
-However, there are some minor difference between various CustomOp declarations:
+However, there are some minor differences between various CustomOp declarations:
 - **DECLARE_OP**(string, int, int, bool): these operations take no fp/int arguments, and output shape equals to input shape.
 - **DECLARE_CONFIGURABLE_OP**(string, int, int, bool, int, int): these operations do take fp/int output arguments, and output shape equals to input shape.
 - **DECLARE_REDUCTION_OP**(string, int, int, bool, int, int): these operations do take fp/int output arguments, and output shape is calculated as Reduction.
@@ -76,7 +76,7 @@ CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
     std::vector<int> dims(*block.getIArguments());
 
     for (auto &v: dims)
-        REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
+        REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower than input rank. Got %i instead", v);
 
     auto tads = input->allTensorsAlongDimension(dims);
     for (int e = 0; e < tads->size(); e++) {
@@ -153,7 +153,7 @@ In this simple example, each element of NDArray `x` will get values set to `x[e]
 
 ## Tests
 
-For tests libnd4j uses Google Tests suit. All tests are located at `tests_cpu/layers_tests` folder. Here's simple way to run those from command line:
+For tests libnd4j uses Google Tests suit. All tests are located at `tests_cpu/layers_tests` folder. Here's a simple way to run those from command line:
 ```
 cd tests_cpu
 cmake -G "Unix Makefiles"
@@ -175,7 +175,7 @@ We have number of utility macros, suitable for custom ops. Here they are:
 - **INPUT_VARIABLE**(int): this macro returns you NDArray at specified input index.
 - **OUTPUT_VARIABLE**(int): this macro returns you NDArray at specified output index.
 - **STORE_RESULT**(NDArray<T>): this macro stores result to VariableSpace.
-- **STORE_2_RESULTS**(NDArray<T>, NDArray<T>): this macro stores results accordingly to VariableSpace.
+- **STORE_2_RESULTS**(NDArray<T>, NDArray<T>): this macro stores results according to VariableSpace.
 - **INT_ARG**(int): this macro returns you specific Integer argument passed to the given op.
 - **T_ARG**(int): this macro returns you specific T argument passed to the given op.
 - **ALLOCATE**(...): this macro check if Workspace is available, and either uses Workspace or direct memory allocation if Workspace isn't available.
@@ -188,7 +188,7 @@ We have number of utility macros, suitable for custom ops. Here they are:
 
 
 #### Explicit template instantiations in helper methods.
-We should explicitly instantiate template methods for different data types in libraries. Furethemore, to speed up parallel compilation we need to add those template instantiations in separate source files. Besides, another reason is that: some compilers are choked when these template instantiations are many in one translation unit.
+We should explicitly instantiate template methods for different data types in libraries. Furthermore, to speed up parallel compilation we need to add those template instantiations in separate source files. Besides, another reason is that: some compilers are choked when these template instantiations are many in one translation unit.
 To ease this cumbersome operation we have Cmake helper and macros helpers.  
 Example:
 Suppose we have such function:
@@ -206,7 +206,7 @@ We should write this to explicitly instantiate it.
 - ***SD_INDEXING_TYPES*** means we will use index types ( int, int64_t) as Z type
      
 But to speed up compilation process and also helping compilers we can further separate it into different source files. Firstly we rename the original template source with ***hpp*** extension:
-Secondly we add file  with the suffix ***cpp.in*** (or ***cu.in*** for cuda) that will include that hpp header and place it  in the apropriate compilation units folder. in our case it will be in **./libnd4j/include/ops/declarable/helpers/cpu/compilation_units** folder with the name ***argmax.cpp.in*** .    
+Secondly we add file  with the suffix ***cpp.in*** (or ***cu.in*** for cuda) that will include that hpp header and place it  in the appropriate compilation units folder. in our case it will be in **./libnd4j/include/ops/declarable/helpers/cpu/compilation_units** folder with the name ***argmax.cpp.in*** .    
 Later we decide which type we want to separate into different sources. In our case we want to split ***SD_COMMON_TYPES*** (other ones: ***SD_INTEGER_TYPES , SD_FLOAT_TYPES, SD_PAIRWISE_TYPES*** ). We hint cmake that case with this (adding ***_GEN*** suffix):
 
     #cmakedefine SD_COMMON_TYPES_GEN 
@@ -215,7 +215,7 @@ Then we just add ***_@FL_TYPE_INDEX@***  as suffix in type name and it will spli
 
     LIBND4J_TYPE_@FL_TYPE_INDEX@ 
 
-Here how the complete cpp.in file will look like:
+Here is how the complete cpp.in file will look like:
 
     #cmakedefine SD_COMMON_TYPES_GEN 
     //this header is where our template functions resides

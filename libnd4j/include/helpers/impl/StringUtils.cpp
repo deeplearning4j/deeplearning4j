@@ -123,7 +123,7 @@ NDArray* StringUtils::createDataBufferFromVector(const std::vector<LongType>& ve
 }
 
 void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
-  if (!x->isBroadcastableTo(z->shapeInfo())) {
+  if (!x->isBroadcastableTo(*z)) {
     THROW_EXCEPTION("Shapes of x and z are not broadcastable.");
   }
 
