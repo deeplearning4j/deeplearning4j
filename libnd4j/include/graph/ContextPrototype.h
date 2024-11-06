@@ -51,8 +51,6 @@ class SD_LIB_EXPORT ContextPrototype {
 #ifndef __JAVACPP_HACK__
   std::vector<std::string> _sArgs;
 #endif
-  // TODO: remove this field
-  DataType _dataType = FLOAT32;
   bool _isInplace;
 
   // opNum for legacy XYZ ops

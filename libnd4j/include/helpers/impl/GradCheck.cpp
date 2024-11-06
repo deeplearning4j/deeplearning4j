@@ -129,12 +129,12 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
       if (numericalGrad == 0. && analyticGrad == 0.)
         relError = 0.;
       else
-        relError = math::sd_abs<double>(analyticGrad - numericalGrad) /
-                   (math::sd_abs<double>(analyticGrad) + math::sd_abs<double>(numericalGrad));
+        relError = math::sd_abs<double,double>(analyticGrad - numericalGrad) /
+                   (math::sd_abs<double,double>(analyticGrad) + math::sd_abs<double,double>(numericalGrad));
 
       // verify result
       if (relError > MAXRELERR || std::isnan(relError)) {
-        if (math::sd_abs<double>(analyticGrad - numericalGrad) < MINABSERR) continue;
+        if (math::sd_abs<double,double>(analyticGrad - numericalGrad) < MINABSERR) continue;
         printf("numericalGrad = %.15f,  analyticGrad = %.15f \n", numericalGrad, analyticGrad);
         printf(
             "GradCheck::checkGrad: got RELERROR = %f > MAXRELERROR(%f) for input array # %i and its element at "

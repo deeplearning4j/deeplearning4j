@@ -152,19 +152,11 @@ class SD_LIB_EXPORT NDArray {
  protected:
 
   /**
-   *  if true then array doesn't own buffer and simply points to another's buffer
-   */
-  bool _isView = false;
-
-  /**
    *  pointer on DataBuffer buffers in cpu/device memory
    */
   DataBuffer *_buffer = nullptr;
 
-  /**
-   *  buffers offset, it is the same both for cpu and device buffers
-   */
-  LongType _offset = 0L;
+
 
   /**
    *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides,
@@ -189,10 +181,8 @@ class SD_LIB_EXPORT NDArray {
    */
   LongType _length = -1L;
 
-  /**
-   *  type of array elements
-   */
-  DataType _dataType = FLOAT32;
+  LongType _offset = 0L;
+
 
   /**
    * deviceID where this NDArray belongs to
@@ -217,8 +207,8 @@ class SD_LIB_EXPORT NDArray {
   NDArray(DataBuffer *  buffer,  ShapeDescriptor *descriptor,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(DataBuffer *  buffer, LongType *shapeInfo,
-          LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
+  NDArray(DataBuffer *  buffer, const sd::LongType *shapeInfo,
+          sd::LaunchContext *context = LaunchContext::defaultContext(), const sd::LongType offset = 0);
 
   NDArray(DataBuffer *  buffer, char order, std::vector<LongType> &shape,
           LaunchContext *context = LaunchContext::defaultContext());
@@ -283,23 +273,20 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  do not allocate memory, memory for array is passed from outside
    */
-  NDArray(void *buffer, LongType *shapeInfo, LaunchContext *context = LaunchContext::defaultContext(),
-          bool isBuffAlloc = false);
-  NDArray(void *buffer, const LongType *shapeInfo, LaunchContext *context = LaunchContext::defaultContext(),
-          bool isBuffAlloc = false);
+  NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+          sd::LongType offset);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
    *  we suppose the content of both (device and host) buffers is identical
    */
-  NDArray(void *buffer, void *bufferD, const LongType *shapeInfo,
-          LaunchContext *context = LaunchContext::defaultContext(), bool isBuffAlloc = false,
-          bool isBuffDAlloc = false);
+  NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
+          const bool isBuffAlloc, const bool isBuffDAlloc, sd::LongType offset);
 
   /**
    *  copy constructor
    */
-  NDArray(const NDArray &other);
+  NDArray(NDArray &other);
 
   /**
    *  move constructor
@@ -335,7 +322,7 @@ class SD_LIB_EXPORT NDArray {
    * This constructor creates new array with elements copied from data and using shape information stored in shape,
    * elements from data will be casted to dtype
    */
-  NDArray(char order, std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype = DOUBLE,
+  NDArray(char order, std::vector<LongType> &shape,  std::vector<double> &data, DataType dtype = DOUBLE,
           LaunchContext *context = LaunchContext::defaultContext());
 
   /**
@@ -351,7 +338,7 @@ class SD_LIB_EXPORT NDArray {
    * This method returns new array with the same shape & data type
    * @return
    */
-  NDArray like();
+  NDArray &like();
 
   /**
    * This method returns new uninitialized array with the same shape & data type

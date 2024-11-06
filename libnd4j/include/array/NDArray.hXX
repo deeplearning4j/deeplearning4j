@@ -116,6 +116,8 @@ NDArray::NDArray(const NDArray &other) {
   } else {
     _buffer = new DataBuffer();
   }
+
+  _offset = other._offset;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -135,7 +137,6 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
 
   _context = context;
   _isAttached = _context->getWorkspace() != nullptr;
-  _offset = 0;
 
   if (shape.empty()) {
     //scalar
@@ -161,7 +162,7 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(char order, std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype,
+NDArray::NDArray(char order, std::vector<LongType> &shape,  std::vector<double> &data, DataType dtype,
                  LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data, sd::DataType dtype, sd::LaunchContext *context) - constructor 3\n");
@@ -180,7 +181,6 @@ NDArray::NDArray(char order, std::vector<LongType> &shape, const std::vector<dou
   }
 
   _context = context;
-  _offset = 0;
 
   if (shape.size() == 0) {
     if (data.size() == 0) {
@@ -495,9 +495,11 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
 
 ////////////////////////////////////////////////////////////////////////
 
-NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context,
+NDArray::NDArray(DataBuffer *buffer,
+                 const sd::LongType *shapeInfo,
+                 sd::LaunchContext *context,
                  const sd::LongType offset) {
-  if(!shape::isEmpty(shapeInfo) && buffer == nullptr) {
+  if(!shape::isEmptyConst(shapeInfo) && buffer == nullptr) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
@@ -510,6 +512,9 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
 
   }
 
+  if(buffer->getNumElements() < 1 && !shape::isEmptyConst(shapeInfo)) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
+  }
 
   _context = context;
   _buffer = buffer;
@@ -543,7 +548,6 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   creationTrace.load_here();
 #endif
   _context = context;
-  _offset = offset;
   if(descriptor->dataType() == DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
@@ -559,7 +563,8 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
+NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+                 sd::LongType offset) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 16\n");
     fflush(stdout);
