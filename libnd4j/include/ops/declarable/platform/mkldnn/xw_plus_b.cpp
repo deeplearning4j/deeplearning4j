@@ -36,7 +36,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-static void xwPlusBiasMKLDNN(const NDArray* x, const NDArray* weights, const NDArray* bias, NDArray* z,
+static void xwPlusBiasMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArray* z,
                              const bool bShouldTransp) {
   // mkl works with following
   // [M,K]     x [N,K]^T  + [N]   = [M,N]
@@ -146,7 +146,7 @@ static void xwPlusBiasMKLDNN(const NDArray* x, const NDArray* weights, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////
-static void xwPlusBiasBp(const NDArray* x, const NDArray* weights, const NDArray* bias, const NDArray* dLdz,
+static void xwPlusBiasBp(NDArray* x, NDArray* weights, NDArray* bias, NDArray* dLdz,
                          NDArray* dLdx, NDArray* dLdw, NDArray* dLdb, const bool bShouldTransp) {
   // mkl works with following
   // [M,K]     x [N,K]^T  + [N]   = [M,N]

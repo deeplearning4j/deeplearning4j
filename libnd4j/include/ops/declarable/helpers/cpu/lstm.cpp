@@ -46,8 +46,8 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1,
-              const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b, NDArray* ht,
+void lstmCell(sd::LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* ct_1,
+              NDArray* Wx, NDArray* Wh, NDArray* Wc, NDArray* Wp, NDArray* b, NDArray* ht,
               NDArray* ct, const std::vector<double>& params) {
   // xt   input [bS x nIn]
   // ht_1 previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false ->
@@ -89,7 +89,9 @@ void lstmCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* ht_1
   }
 
   // current sell state = ft*ct_1 + it*tanh(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-  ct->assign(sigmoid(zft + forgetBias) * (*ct_1) + sigmoid(zit) * tanh(zct));
+  NDArray zftPlusBias = zft + forgetBias;
+  NDArray sigmoidOut = sigmoid(zftPlusBias) * (*ct_1) + sigmoid(zit) * tanh(zct);
+  ct->assign(sigmoidOut);
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
   if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, *ct);
@@ -105,19 +107,12 @@ void lstmCell(sd::LaunchContext* context, const NDArray* xt, const NDArray* ht_1
     // if clipping projection is provided then projected cell output state is clipped by this value
     if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, *ht);
   } else
-    ht->assign(&htNoPeepHole);
+    ht->assign(htNoPeepHole);
 }
 
 template <typename T>
-static void fusedTanh(NDArray* z, NDArray* i, NDArray* c, const NDArray* cLast, NDArray* f, NDArray* h) {
+static void fusedTanh(NDArray* z, NDArray* i, NDArray* c, NDArray* cLast, NDArray* f, NDArray* h) {
   // cell state = blockInput .* inputGate + prevCellState .* forgetGate
-  /*
-  z->applyPairwiseTransform(pairwise::Multiply, i, c, nullptr);       //c = z * i
-  auto temp = (*f) * (*cLast);
-  *c += temp;                              //c = (i * z) + (zf * (*cLast))
-  c->applyTransform(transform::Tanh, h);  //h = tanh(c)
-   */
-
   auto uLen = static_cast<sd::LongType>(z->lengthOf());
   auto c_ = c->bufferAsT<T>();
   auto z_ = z->bufferAsT<T>();
@@ -138,8 +133,8 @@ static void fusedTanh(NDArray* z, NDArray* i, NDArray* c, const NDArray* cLast, 
 
 //////////////////////////////////////////////////////////////////////////
 
-void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast, const NDArray* W, const NDArray* Wci,
-                   const NDArray* Wcf, const NDArray* Wco, const NDArray* b, NDArray* i, NDArray* c, NDArray* f,
+void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDArray* Wci,
+                   NDArray* Wcf, NDArray* Wco, NDArray* b, NDArray* i, NDArray* c, NDArray* f,
                    NDArray* o, NDArray* z, NDArray* h, NDArray* y, const std::vector<double>& params) {
   /* Input arrays:
    *    0: xt              - input [bS, nIn] at time t

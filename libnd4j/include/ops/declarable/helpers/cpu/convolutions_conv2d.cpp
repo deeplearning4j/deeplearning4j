@@ -62,7 +62,8 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   std::vector<sd::LongType> colShape = {bS, oH, oW, kH, kW, iC};
   std::vector<sd::LongType> perm = {0, 3, 4, 5, 1, 2};
   NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
-  NDArray *colP = new NDArray(col->permute(perm, false));  // {bS, iC, kH, kW, oH, oW}
+  NDArray &colPFrom = col->permute(perm, false, false);
+  NDArray *colP = new NDArray(colPFrom);  // {bS, iC, kH, kW, oH, oW}
   std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
   NDArray mmulResult('f', mmulResultShape, output->dataType(), output->getContext());
 

@@ -74,8 +74,8 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
 
   if (!isNCDHW) {
     std::vector<sd::LongType> perm = {0, 4, 1, 2, 3};
-    input = new NDArray(input->permute(perm, false));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    output = new NDArray(output->permute(perm, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute(perm, false, false));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    output = new NDArray(output->permute(perm, false, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -207,9 +207,9 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
 
   if (!isNCDHW) {
     std::vector<sd::LongType> perm = {0, 4, 1, 2, 3};
-    input = new NDArray(input->permute(perm, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradI = new NDArray(gradI->permute(perm, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-    gradO = new NDArray(gradO->permute(perm, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
+    input = new NDArray(input->permute(perm, false, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradI = new NDArray(gradI->permute(perm, false, false));  // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
+    gradO = new NDArray(gradO->permute(perm, false, false));  // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
   }
 
   if (isSameMode)  // SAME
@@ -230,7 +230,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
 }
 
 DECLARE_SHAPE_FN(maxpool3dnew_bp) {
-  auto desc = new  ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)));
+  auto desc = new ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)), false);
   return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
 }
 

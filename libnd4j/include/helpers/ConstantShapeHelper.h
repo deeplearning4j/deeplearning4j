@@ -103,6 +103,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   ConstantShapeBuffer* storeAndWrapBuffer(ShapeDescriptor* descriptor);
   ShapeDescriptor* findBufferForShapeInfo(ShapeDescriptor *descriptor);
   const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
+  ConstantShapeBuffer* createConstBuffFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
 };
 }  // namespace sd
 

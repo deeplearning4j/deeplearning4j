@@ -114,7 +114,7 @@ SD_HOST static void gatherCudaLauncher(const cudaStream_t* stream, const int num
 }
 
 //////////////////////////////////////////////////////////////////////
-void gather(LaunchContext* context, const NDArray* input, const NDArray* indices, NDArray* output,
+void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output,
             const std::vector<LongType>& intArgs) {
   const LongType inputRank = input->rankOf();
   const LongType numOfIntArgs = intArgs.size();

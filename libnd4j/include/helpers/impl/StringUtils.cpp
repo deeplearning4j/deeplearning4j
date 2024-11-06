@@ -123,7 +123,7 @@ NDArray* StringUtils::createDataBufferFromVector(const std::vector<LongType>& ve
 }
 
 void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
-  if (!x->isBroadcastableTo(z->shapeInfo())) {
+  if (!x->isBroadcastableTo(*z)) {
     THROW_EXCEPTION("Shapes of x and z are not broadcastable.");
   }
 
@@ -230,7 +230,7 @@ NDArray StringUtils::createStringNDArray(NDArray& array, const std::vector<LongT
   return res;
 }
 
-void StringUtils::assignStringData(NDArray& dest, const NDArray& src, const std::vector<LongType>& offsets, DataType dtype) {
+void StringUtils::assignStringData(NDArray& dest, NDArray& src, const std::vector<LongType>& offsets, DataType dtype) {
   dest.preparePrimaryUse({&dest}, {&src});
   memcpy(dest.bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(LongType));
 
@@ -244,7 +244,7 @@ void StringUtils::assignStringData(NDArray& dest, const NDArray& src, const std:
 
 
 template <typename T>
-void StringUtils::convertStringsForDifferentDataType(const NDArray* sourceArray, NDArray* targetArray) {
+void StringUtils::convertStringsForDifferentDataType(NDArray* sourceArray, NDArray* targetArray) {
   if (!sourceArray->isS() || !targetArray->isS()) THROW_EXCEPTION("Source or target array is not a string array!");
 
   int numStrings = sourceArray->isScalar() ? 1 : sourceArray->lengthOf();
@@ -287,7 +287,7 @@ void StringUtils::convertStringsForDifferentDataType(const NDArray* sourceArray,
 
 
 template <typename T>
-std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType(const NDArray* sourceArray) {
+std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType(NDArray* sourceArray) {
   if (!sourceArray->isS()) THROW_EXCEPTION("Source array is not a string array!");
 
   LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(sourceArray->lengthOf());
@@ -358,7 +358,7 @@ LongType StringUtils::countSubarrays(const void* haystack, LongType haystackLeng
   return number;
 }
 
-LongType StringUtils::byteLength(const NDArray& array) {
+LongType StringUtils::byteLength(NDArray& array) {
   if (!array.isS())
     throw datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
 

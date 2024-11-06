@@ -40,45 +40,56 @@ class BroadcastHelper {
     }
 
     if (x->lengthOf() > 1 && y->lengthOf() > 1 && x->isSameShape(y)) {
-      x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyPairwiseTransform(op.p, yRef, zRef, extraArgs);
     } else if (x->lengthOf() > 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyScalarArr(op.s, yRef, zRef);
     } else if (x->lengthOf() <= 1 && y->lengthOf() > 1) {
+      NDArray &xRef = *x;
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
       if (z->isSameShape(y)) {
         if (op.s == scalar::Add || op.s == scalar::Multiply) {
-          y->applyScalarArr(op.s, *x, *z);
+          y->applyScalarArr(op.s, xRef, zRef);
         } else if (op.s == scalar::SquaredSubtract) {
-          y->applyScalarArr(scalar::SquaredReverseSubtract, *x, *z);
+          y->applyScalarArr(scalar::SquaredReverseSubtract, xRef, zRef);
         } else if (op.s == scalar::Subtract) {
-          y->applyScalarArr(scalar::ReverseSubtract, *x, *z);
+          y->applyScalarArr(scalar::ReverseSubtract, xRef, zRef);
         } else if (op.s == scalar::Divide) {
-          y->applyScalarArr(scalar::ReverseDivide, *x, *z);
+          y->applyScalarArr(scalar::ReverseDivide, xRef, zRef);
         } else if (op.s == scalar::Pow) {
-          y->applyScalarArr(scalar::ReversePow, *x, *z);
+          y->applyScalarArr(scalar::ReversePow, xRef, zRef);
         } else if (op.s == scalar::ReverseSubtract) {
-          y->applyScalarArr(scalar::Subtract, *x, *z);
+          y->applyScalarArr(scalar::Subtract, xRef, zRef);
         } else if (op.s == scalar::ReverseDivide) {
-          y->applyScalarArr(scalar::Divide, *x, *z);
+          y->applyScalarArr(scalar::Divide, xRef, zRef);
         } else if (op.s == scalar::MaxPairwise || op.s == scalar::MinPairwise || op.s == scalar::AMaxPairwise ||
                    op.s == scalar::AMinPairwise) {
-          y->applyScalarArr(op.s, *x, *z);
+          y->applyScalarArr(op.s, xRef, zRef);
         } else if (op.s == scalar::CopyPws) {
-          z->assign(y);
+          z->assign(yRef);
         } else {
-          z->assign(x);
-          z->applyPairwiseTransform(op.p, *y, extraArgs);
+          z->assign(xRef);
+          z->applyPairwiseTransform(op.p, yRef, extraArgs);
         }
         return z;
       } else {
         auto v = y->getShapeAsVector();
         auto tZ = NDArrayFactory::valueOf(v, y, y->ordering());
-        tZ->applyPairwiseTransform(op.p, *y, extraArgs);
+        tZ->applyPairwiseTransform(op.p, yRef, extraArgs);
         return tZ;
       }
     } else if (x->lengthOf() <= 1 && y->lengthOf() <= 1) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyScalarArr(op.s, yRef, zRef);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-      x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
+      NDArray &yRef = *y;
+      NDArray &zRef = *z;
+      x->applyTrueBroadcast(op, yRef, zRef, true, extraArgs);
       return z;
     } else {
       auto sx = ShapeUtils::shapeAsString(x);
@@ -113,7 +124,7 @@ class BroadcastHelper {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
       return z;
     } else if (!x->isScalar() && y->isScalar()) {
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (x->isScalar() && !y->isScalar()) {
       if (z->isSameShape(y)) {
         x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
@@ -124,15 +135,13 @@ class BroadcastHelper {
         return tZ;
       }
     } else if (x->isScalar() && y->isScalar()) {  // x->isScalar() && y->isScalar()
-      x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
+      x->applyScalarArr(op.s, *y, *z);
     } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
       x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
       return z;
     } else {
       auto sx = ShapeUtils::shapeAsString(x);
       auto sy = ShapeUtils::shapeAsString(y);
-      sd_printf("Broadcast: shapes should be equal, or broadcastable. But got %s vs %s instead\n", sx.c_str(),
-                sy.c_str());
       return nullptr;
     }
 

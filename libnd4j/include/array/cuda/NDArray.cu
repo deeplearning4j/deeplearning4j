@@ -58,7 +58,6 @@ namespace sd {
 void* NDArray::platformBuffer() { return specialBuffer(); }
 void const* NDArray::platformBuffer() const { return specialBuffer(); }
 
-LongType const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
 
 
 void NDArray::syncToDevice() const {
@@ -266,8 +265,8 @@ void NDArray::synchronize(const char* msg) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::prepareSpecialUse(const std::vector<NDArray*>& writeList,
+                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
   for (const auto& a : readList)
     if (a != nullptr) a->syncToDevice();
 
@@ -280,8 +279,8 @@ void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
+void NDArray::registerSpecialUse(const std::vector<NDArray*>& writeList,
+                                 const std::vector<NDArray*>& readList) {
   for (const auto& p : readList)
     if (p != nullptr) p->tickReadDevice();
 
@@ -290,8 +289,8 @@ void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
-                                const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::preparePrimaryUse(const std::vector<NDArray*>& writeList,
+                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
   for (const auto& a : readList)
     if (a != nullptr) a->syncToHost();
 
@@ -304,8 +303,8 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList,
-                                 const std::vector<const NDArray*>& readList) {
+void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
+                                 const std::vector<NDArray*>& readList) {
   for (const auto& p : readList)
     if (p != nullptr) p->tickReadHost();
 

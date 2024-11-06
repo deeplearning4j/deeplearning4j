@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
 
   REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
-  auto tmp = x->dup(false);
+  auto tmp = x->dup(x->ordering());
   tmp.applyTransform(transform::Neg, tmp);
 
   auto z = OUTPUT_VARIABLE(0);
@@ -102,7 +102,7 @@ DECLARE_TYPES(crelu_bp) {
 
 DECLARE_SHAPE_FN(crelu_bp) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape);
+  auto desc = new ShapeDescriptor(inShape, false);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;

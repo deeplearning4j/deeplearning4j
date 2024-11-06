@@ -32,7 +32,7 @@ namespace helpers {
 // for detailed explanations please take a look on web page:
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-static sd::Status _matrixDiagPart(const NDArray* input, NDArray* output) {
+static sd::Status _matrixDiagPart(NDArray* input, NDArray* output) {
   auto listOut = output->allTensorsAlongDimension({output->rankOf() - 1});
   auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
@@ -54,11 +54,11 @@ static sd::Status _matrixDiagPart(const NDArray* input, NDArray* output) {
   return sd::Status::OK;
 }
 
-sd::Status matrixDiagPart(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+sd::Status matrixDiagPart(sd::LaunchContext* context, NDArray* input, NDArray* output) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart, (const NDArray* input, NDArray* output), SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(template sd::Status _matrixDiagPart, (NDArray* input, NDArray* output), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

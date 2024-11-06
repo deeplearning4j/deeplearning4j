@@ -45,7 +45,7 @@ Status LogicReturn::processNode(Graph *graph, Node *node) {
     sd_debug("Returning varType: [%s]\n", EnumUtils::_VariableTypeToString(varIn->variableType()));
 
     // FIXME: this is obviously wrong, we should keep depth track for backprop here
-    varOut->getNDArray()->assign(varIn->getNDArray());
+    varOut->getNDArray()->assign(*varIn->getNDArray());
 
     if (Environment::getInstance().isDebugAndVerbose())
       sd_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber().e<float>(0),

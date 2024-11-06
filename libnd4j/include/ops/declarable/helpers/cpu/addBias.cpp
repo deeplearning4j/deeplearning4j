@@ -355,7 +355,7 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
 }
 
 template <typename X, typename Y>
-static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW) {
   auto x_shapeInfo = input.shapeInfo();
   auto z_shapeInfo = output.shapeInfo();
   auto x = input.bufferAsT<X>();
@@ -595,13 +595,13 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output,
   }
 }
 //////////////////////////////////////////////////////////////////////////
-void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+void addBias(sd::graph::Context& block, NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW) {
   BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), SD_FLOAT_TYPES,
                         SD_FLOAT_TYPES);
 }
 
 BUILD_DOUBLE_TEMPLATE(template void addBias_,
-                      (const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW), SD_FLOAT_TYPES,
+                      (NDArray& input, NDArray& bias, NDArray& output, const bool isNCHW), SD_FLOAT_TYPES,
                       SD_FLOAT_TYPES);
 }  // namespace helpers
 }  // namespace ops

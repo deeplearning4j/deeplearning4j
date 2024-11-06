@@ -32,7 +32,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // A{M,K} * x{K,N} = b{M,N}
 template <typename T>
-void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
+void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   if (A.rankOf() != 2) THROW_EXCEPTION("FullPivLU::solve: input matrix A must be 2D !");
 
   if (A.sizeAt(0) != b.sizeAt(0))
@@ -41,7 +41,7 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   if (A.sizeAt(1) != x.sizeAt(0))
     THROW_EXCEPTION("FullPivLU::solve: number of A columns must be equal to number of x rows !");
 
-  NDArray LU = A.dup(false);
+  NDArray LU = A.dup(A.ordering());
 
   const int rows = LU.sizeAt(0);
   const int cols = LU.sizeAt(1);
@@ -62,7 +62,7 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
     int colPivot = indPivot % (cols - k);
     int rowPivot = indPivot / (cols - k);
 
-    T currentMax = math::sd_abs<T>(bottomRightCorner.t<T>(rowPivot, colPivot));
+    T currentMax = math::sd_abs<T,T>(bottomRightCorner.t<T>(rowPivot, colPivot));
 
     // take into account that this was calculated in corner, not in whole LU
     rowPivot += k;
@@ -96,18 +96,20 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
 
     if (k < rows - 1) LU({k + 1, rows, k, k + 1}, true) /= LU.t<T>(k, k);
 
-    if (k < diagLen - 1)
+    if (k < diagLen - 1) {
+      NDArray left = LU({k + 1, rows, k, k + 1}, true);
+      NDArray right = LU({k, k + 1, k + 1, cols}, true);
       LU({k + 1, rows, k + 1, cols}, true) -=
-          mmul(LU({k + 1, rows, k, k + 1}, true), LU({k, k + 1, k + 1, cols}, true));
+          mmul(left,right);
+    }
   }
-
   //***************************************************//
 
   const T threshold = maxPivot * DataTypeUtils::eps<T>() * (T)diagLen;
 
   int nonZeroPivots2 = 0;
   for (int i = 0; i < nonZeroPivots1; ++i)
-    nonZeroPivots2 += static_cast<int>(math::sd_abs<T>(LU.t<T>(i, i)) > threshold);
+    nonZeroPivots2 += static_cast<int>(math::sd_abs<T,T>(LU.t<T>(i, i)) > threshold);
 
   if (nonZeroPivots2 == 0) {
     x.nullify();
@@ -141,10 +143,12 @@ void FullPivLU<T>::solve(const NDArray& A, const NDArray& b, NDArray& x) {
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
   helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
 
-  if (rows > cols) c({cols, -1, 0, 0}, true) -= mmul(LU({cols, -1, 0, 0}, true), c({0, cols, 0, 0}, true));
-
+  if (rows > cols) {
+    NDArray left = LU({cols, -1, 0, 0}, true);
+    NDArray right = c({0, cols, 0, 0}, true);
+    c({cols, -1, 0, 0}, true) -= mmul(left, right);
+  }
   NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
-  // TriangularSolver<T>::solve(LU({0,nonZeroPivots2, 0,nonZeroPivots2}, true), cTopRows2, false, false, cTopRows2);
   helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
                                      cTopRows2);
 

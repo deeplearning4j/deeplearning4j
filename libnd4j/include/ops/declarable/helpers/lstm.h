@@ -29,23 +29,23 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray sigmoid(const NDArray& arr) {
+static SD_INLINE NDArray sigmoid(NDArray& arr) {
   return (const_cast<NDArray&>(arr)).transform(transform::Sigmoid);
 }
 
-static SD_INLINE void sigmoidInplace(const NDArray& arr) {
+static SD_INLINE void sigmoidInplace(NDArray& arr) {
   (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, const_cast<NDArray&>(arr));
 }
 
 //////////////////////////////////////////////////////////////////////////
-static SD_INLINE NDArray tanh(const NDArray& arr) { return (const_cast<NDArray&>(arr)).transform(transform::Tanh); }
+static SD_INLINE NDArray tanh(NDArray& arr) { return (const_cast<NDArray&>(arr)).transform(transform::Tanh); }
 
-static SD_INLINE void tanhInplace(const NDArray& arr) {
+static SD_INLINE void tanhInplace(NDArray& arr) {
   (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, const_cast<NDArray&>(arr));
 }
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat) {
+static NDArray timeSubset(NDArray* arr, const int t, const int dataFormat) {
   if (dataFormat == 0) {  // TNS: shape [timeLength, numExamples, inOutSize]
     return (*arr)({t, t + 1, 0, 0, 0, 0});
   } else if (dataFormat == 1) {  // NST: shape [numExamples, inOutSize, timeLength]
@@ -55,16 +55,16 @@ static NDArray timeSubset(const NDArray* arr, const int t, const int dataFormat)
   }
 }
 
-SD_LIB_HIDDEN void lstmCell(LaunchContext* context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1,
-                            const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp,
-                            const NDArray* b, NDArray* ht, NDArray* ct, const std::vector<double>& params);
+SD_LIB_HIDDEN void lstmCell(LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* ct_1,
+                            NDArray* Wx, NDArray* Wh, NDArray* Wc, NDArray* Wp,
+                            NDArray* b, NDArray* ht, NDArray* ct, const std::vector<double>& params);
 
-SD_LIB_HIDDEN void lstmTimeLoop(LaunchContext* context, const NDArray* x, const NDArray* h0, const NDArray* c0,
-                                const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp,
-                                const NDArray* b, NDArray* h, NDArray* c, const std::vector<double>& params);
+SD_LIB_HIDDEN void lstmTimeLoop(LaunchContext* context, NDArray* x, NDArray* h0, NDArray* c0,
+                                NDArray* Wx, NDArray* Wh, NDArray* Wc, NDArray* Wp,
+                                NDArray* b, NDArray* h, NDArray* c, const std::vector<double>& params);
 
-SD_LIB_HIDDEN void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast, const NDArray* W,
-                                 const NDArray* Wci, const NDArray* Wcf, const NDArray* Wco, const NDArray* b,
+SD_LIB_HIDDEN void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W,
+                                 NDArray* Wci, NDArray* Wcf, NDArray* Wco, NDArray* b,
                                  NDArray* i, NDArray* c, NDArray* f, NDArray* o, NDArray* z, NDArray* h, NDArray* y,
                                  const std::vector<double>& params);
 

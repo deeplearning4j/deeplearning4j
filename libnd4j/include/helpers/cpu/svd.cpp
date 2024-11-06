@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV) {
+SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
 
@@ -73,7 +73,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV,
+SVD<T>::SVD(NDArray& matrix, const int switchSize, const bool calcU, const bool calcV, const bool fullUV,
             const char t) {
   if (matrix.rankOf() != 2 || matrix.isScalar())
     THROW_EXCEPTION("ops::helpers::SVD constructor: input array must be 2D matrix !");
@@ -331,8 +331,8 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, const NDArray& permut,
-                    const NDArray& diagShifted, const T shift) {
+T SVD<T>::secularEq(const T diff, NDArray& col0, NDArray& diag, NDArray permut,
+                    NDArray& diagShifted, const T shift) {
   auto len = permut.lengthOf();
   T res = 1.;
   T item;
@@ -347,7 +347,7 @@ T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, cons
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArray& permut, NDArray& singVals,
+void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray& singVals,
                           NDArray& shifts, NDArray& mus) {
   auto len = col0.lengthOf();
   auto curLen = len;
@@ -462,8 +462,8 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& permut, const NDArray& singVals,
-                     const NDArray& shifts, const NDArray& mus, NDArray& zhat) {
+void SVD<T>::perturb(NDArray col0, NDArray& diag, NDArray permut, NDArray& singVals,
+                     NDArray& shifts, NDArray& mus, NDArray& zhat) {
   int n = col0.lengthOf();
   int m = permut.lengthOf();
   if (m == 0) {
@@ -496,8 +496,8 @@ void SVD<T>::perturb(const NDArray& col0, const NDArray& diag, const NDArray& pe
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::calcSingVecs(const NDArray& zhat, const NDArray& diag, const NDArray& perm, const NDArray& singVals,
-                          const NDArray& shifts, const NDArray& mus, NDArray& U, NDArray& V) {
+void SVD<T>::calcSingVecs(NDArray zhat, NDArray& diag, NDArray perm, NDArray& singVals,
+                          NDArray& shifts, NDArray& mus, NDArray& U, NDArray& V) {
   int n = zhat.lengthOf();
   int m = perm.lengthOf();
 
@@ -748,7 +748,7 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDArray& U, const NDArray& V) {
+void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V) {
   if (_calcU) {
     int colsU = _fullUV ? hhU.rows() : _diagSize;
     std::vector<sd::LongType> tempShape = {hhU.rows(), colsU};
@@ -774,7 +774,7 @@ void SVD<T>::exchangeUV(const HHsequence& hhU, const HHsequence& hhV, const NDAr
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void SVD<T>::evalData(const NDArray& matrix) {
+void SVD<T>::evalData(NDArray& matrix) {
   const T almostZero = DataTypeUtils::min_positive<T>();
 
   if (matrix.sizeAt(1) < _switchSize) {

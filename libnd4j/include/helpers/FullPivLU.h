@@ -39,7 +39,7 @@ template <typename T>
 class FullPivLU {
  public:
   // A{M,K} * x{K,N} = b{M,N}
-  static void solve(const NDArray& A, const NDArray& b, NDArray& x);
+  static void solve(NDArray &A, NDArray &b, NDArray& x);
 };
 
 }  // namespace helpers
