@@ -56,9 +56,7 @@ public class FloatBuffer extends BaseCpuDataBuffer {
 
     }
 
-    public FloatBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
+
 
     public FloatBuffer(long length, boolean initialize) {
         super(length, initialize);
@@ -73,7 +71,11 @@ public class FloatBuffer extends BaseCpuDataBuffer {
     }
 
     public FloatBuffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
+    }
+
+    public FloatBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -85,9 +87,7 @@ public class FloatBuffer extends BaseCpuDataBuffer {
         elementSize = 4;
     }
 
-    public FloatBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public FloatBuffer(float[] data) {
         this(data, true);
@@ -109,17 +109,11 @@ public class FloatBuffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public FloatBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public FloatBuffer(double[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public FloatBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public FloatBuffer(float[] floats, boolean copy) {
         super(floats, copy);
@@ -130,11 +124,11 @@ public class FloatBuffer extends BaseCpuDataBuffer {
     }
 
     public FloatBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public FloatBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(data, copy, workspace);
     }
 
     @Override
