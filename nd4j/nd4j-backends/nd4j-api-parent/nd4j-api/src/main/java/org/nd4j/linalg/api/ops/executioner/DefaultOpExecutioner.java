@@ -981,25 +981,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         // no-op
     }
 
-    public static List<INDArray> getIntermediateResults(PointerPointer<OpaqueDataBuffer> pointerPointer, PointerPointer<LongPointer> opaqueConstantShapeBufferPointerPointer) {
-        List<INDArray> results = new ArrayList<>();
-        if (pointerPointer == null)
-            return results;
-        OpaqueDataBuffer[] buffers = new OpaqueDataBuffer[(int) pointerPointer.capacity()];
-        LongPointer[] shapes = new LongPointer[(int) opaqueConstantShapeBufferPointerPointer.capacity()];
-        for (int e = 0; e < pointerPointer.capacity(); e++) {
-            if (buffers[e] == null)
-                continue;
 
-
-            DataBuffer buffer = Nd4j.createBuffer(shapes[e], null, shapes[e].capacity(), DataType.LONG);
-            DataBuffer originalBuffer = Nd4j.createBuffer(buffers[e].primaryBuffer(),buffers[e].specialBuffer(),Shape.length(buffer),Shape.dataType(buffer));
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(originalBuffer, buffer);
-            results.add(arr);
-        }
-
-        return results;
-    }
 
     /**
      * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.

@@ -71,17 +71,15 @@ public class CudaUInt16DataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaUInt16DataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
     public CudaUInt16DataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 2, initialize, workspace);
     }
 
-    public CudaUInt16DataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+    public CudaUInt16DataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
+
 
     /**
      * Initialize the opType of this buffer
@@ -92,49 +90,25 @@ public class CudaUInt16DataBuffer extends BaseCudaDataBuffer {
         type = DataType.UINT16;
     }
 
-    public CudaUInt16DataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public CudaUInt16DataBuffer(float[] buffer) {
         super(buffer);
     }
 
-    public CudaUInt16DataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUInt16DataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaUInt16DataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
 
     public CudaUInt16DataBuffer(double[] data) {
-        super(data);
+        this(data.length);
+        setData(data);
     }
 
-    public CudaUInt16DataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaUInt16DataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUInt16DataBuffer(int[] data) {
-        super(data);
+        this(data.length);
+        setData(data);
     }
 
-    public CudaUInt16DataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaUInt16DataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {

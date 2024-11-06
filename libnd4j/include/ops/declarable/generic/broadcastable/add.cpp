@@ -32,10 +32,13 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
+  x->printIndexedBuffer("x");
+  y->printIndexedBuffer("y");
   BROADCAST_CHECK_EMPTY(x, y, z);
 
 
-
+  printf("x offset: %lld; y offset: %lld; z offset: %lld\n", x->offset(), y->offset(), z->offset());
+  fflush(stdout);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;
@@ -64,13 +67,13 @@ CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
 
   if (x->isSameShape(y)) {
     // PWT case case
-    gradY->assign(epsNext);
-    gradX->assign(epsNext);
+    gradY->assign(*epsNext);
+    gradX->assign(*epsNext);
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     gradY->assign(tmp);
-    gradX->assign(epsNext);
+    gradX->assign(*epsNext);
   } else {
     // broadcast case
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -80,13 +83,13 @@ CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
       gradX->assign(sum);
     } else
-      gradX->assign(epsNext);
+      gradX->assign(*epsNext);
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
       gradY->assign(sum);
     } else
-      gradY->assign(epsNext);
+      gradY->assign(*epsNext);
   }
 
 

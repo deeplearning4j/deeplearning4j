@@ -79,9 +79,6 @@ public class CudaUtf8Buffer extends BaseCudaDataBuffer {
         numWords = length;
     }
 
-    public CudaUtf8Buffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
-        super(ints, copy, workspace);
-    }
 
     public CudaUtf8Buffer(byte[] data, long numWords) {
         super(data.length, 1, false);
@@ -93,48 +90,15 @@ public class CudaUtf8Buffer extends BaseCudaDataBuffer {
         this.numWords = numWords;
     }
 
-    public CudaUtf8Buffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUtf8Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public CudaUtf8Buffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUtf8Buffer(long[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaUtf8Buffer(long[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy);
-    }
-
-    public CudaUtf8Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaUtf8Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUtf8Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaUtf8Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
-    public CudaUtf8Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
-
-        Preconditions.checkArgument(((CudaUtf8Buffer) underlyingBuffer).numWords == numWords, "String array can't be a view");
-    }
 
     public CudaUtf8Buffer(@NonNull Collection<String> strings) {
         super(CudaUtf8Buffer.stringBufferRequiredLength(strings), 1, false);
@@ -165,6 +129,10 @@ public class CudaUtf8Buffer extends BaseCudaDataBuffer {
         }
         headerPointer.put(cnt, currentLength);
         allocationPoint.tickHostWrite();
+    }
+
+    public CudaUtf8Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     public String getString(long index) {

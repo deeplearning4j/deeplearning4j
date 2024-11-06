@@ -31,6 +31,7 @@ import java.util.List;
 
 public class PaddingUtils {
 
+    // ... [Previous methods remain unchanged] ...
 
     /**
      * Calculate padded strides

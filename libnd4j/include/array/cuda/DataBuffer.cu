@@ -80,6 +80,26 @@ DataBuffer DataBuffer::dup() {
 }
 
 template <typename T>
+void* DataBuffer::primaryAtOffset(const LongType offset) {
+  T *type = reinterpret_cast<T*>(_primaryBuffer);
+  return reinterpret_cast<void *>(type + offset);
+}
+template <typename T>
+void* DataBuffer::specialAtOffset(const LongType offset) {
+  if(_specialBuffer == nullptr)
+    return nullptr;
+  T *type = reinterpret_cast<T*>(_specialBuffer);
+  return reinterpret_cast<void *>(type + offset);
+}
+
+#define PRIMARYOFFSET(T) template SD_LIB_EXPORT void* DataBuffer::primaryAtOffset<GET_SECOND(T)>(sd::LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),PRIMARYOFFSET)
+
+#define SPECIALOFFSET(T) template SD_LIB_EXPORT void* DataBuffer::specialAtOffset<GET_SECOND(T)>(sd::LongType offset);
+ITERATE_LIST((SD_COMMON_TYPES),SPECIALOFFSET)
+
+
+template <typename T>
 void _printHostBuffer(DataBuffer* buffer, long offset) {
   sd::LongType len = buffer->getNumElements();
   auto buff = buffer->template primaryAsT<T>();
@@ -373,16 +393,19 @@ void DataBuffer::memcpyPointer(std::shared_ptr<DataBuffer>   dst, std::shared_pt
 }
 
 /////////////////////////
-void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src) {
-  if (src->_lenInBytes > dst->_lenInBytes)
+
+
+template <typename T>
+void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
+  if (src->getLenInBytes() > dst->getLenInBytes())
     THROW_EXCEPTION("DataBuffer::memcpy: Source data buffer is larger than destination");
 
   int res = 0;
   if (src->isSpecialActual()) {
-    res = cudaMemcpyAsync(dst->_specialBuffer, src->_specialBuffer, src->getLenInBytes(), cudaMemcpyDeviceToDevice,
+    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyDeviceToDevice,
                           *LaunchContext::defaultContext()->getCudaStream());
   } else if (src->isPrimaryActual()) {
-    res = cudaMemcpyAsync(dst->_specialBuffer, src->_primaryBuffer, src->getLenInBytes(), cudaMemcpyHostToDevice,
+    res = cudaMemcpyAsync(dst->specialAtOffset<T>(dstOffset), src->specialAtOffset<T>(startingOffset), src->getLenInBytes(), cudaMemcpyHostToDevice,
                           *LaunchContext::defaultContext()->getCudaStream());
   }
 
@@ -392,6 +415,12 @@ void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src) {
   if (res != 0) throw cuda_exception::build("DataBuffer::memcpy: streamSync failed!", res);
 
   dst->writeSpecial();
+}
+
+void DataBuffer::memcpy(DataBuffer* dst, DataBuffer* src,
+                        sd::LongType startingOffset, sd::LongType dstOffset) {
+  BUILD_SINGLE_TEMPLATE(memcpyWithT,(dst, src, startingOffset, dstOffset),
+                        SD_COMMON_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

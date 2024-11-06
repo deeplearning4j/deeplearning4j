@@ -39,7 +39,6 @@ void mindistance_(const void *vinput, const void *vlow, const void *vhigh, int32
   T res = 0.0f;
   T po = 2.f;
   T o = 1.f;
-  PRAGMA_OMP_SIMD_SUM(res)
   for (auto e = 0; e < length; e++) {
     T p = input[e];
     T l = low[e];

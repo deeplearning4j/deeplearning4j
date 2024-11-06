@@ -93,8 +93,6 @@ class SD_LIB_EXPORT Environment {
 
   void setEnableBlas(bool reallyEnable) {
     _enableBlasFall.store(reallyEnable);
-    printf("Called set enabled blas %d\n",reallyEnable);
-    fflush(stdout);
   }
 
   /**

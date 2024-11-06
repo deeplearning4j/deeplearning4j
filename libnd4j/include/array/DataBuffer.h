@@ -38,7 +38,7 @@ class SD_LIB_EXPORT DataBuffer {
  private:
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
-  size_t _lenInBytes = 0;
+  LongType _lenInBytes = 0;
   DataType _dataType;
   memory::Workspace *_workspace = nullptr;
 
@@ -96,7 +96,7 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer(const void *hostBuffer,  // copies data from hostBuffer to own memory buffer
              const DataType dataType, const size_t lenInBytes, memory::Workspace *workspace = nullptr);
 
-  DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace *workspace = nullptr,
+  DataBuffer(const sd::LongType lenInBytes, const DataType dataType, memory::Workspace *workspace = nullptr,
              const bool allocBoth = false);
 
   DataBuffer(const DataBuffer &other);

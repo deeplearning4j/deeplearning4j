@@ -199,7 +199,7 @@ Variable *Context::getVariable(int idx) {
       sd_printf("Debug info for node_%i input[%i]; shape: %s; ews: [%i]; order: [%c]; dtype: [%s];\n",
                 this->_nodeId, idx, shape_.c_str(),array->ews(), array->ordering(), type.c_str());
       std::vector<sd::LongType> shapeLen = {array->lengthOf()};
-      auto raveled = array->reshape(array->ordering(), shapeLen);
+      NDArray &raveled = array->reshape(array->ordering(), shapeLen);
       sd_printf("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
         auto v = raveled.e<float>(i);
@@ -380,6 +380,13 @@ unsigned long Context::width() {
 }
 
 void Context::setInputArray(int index, NDArray *array, bool removable) {
+  if(array->shapeInfo() == nullptr) {
+    std::string errorMessage;
+    errorMessage += std::string("Array at index ");
+    errorMessage += std::to_string(index);
+    errorMessage += std::string(" has a null shape buffer!");
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
   if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");
@@ -392,45 +399,11 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
     errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(array->shapeInfo()));
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
   if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
-}
-
-void Context::setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
-  this->setInputArray(index, buffer, const_cast<const void *>(shapeInfo), specialBuffer,
-                      const_cast<const void *>(specialShapeInfo));
-}
-
-void Context::setInputArray(int index, void *buffer, void const *shapeInfo, void *specialBuffer,
-                            void const *specialShapeInfo) {
-  const LongType *shapeInfoCast = reinterpret_cast<const LongType *>(shapeInfo);
-  if(!DataTypeUtils::validDataType(ArrayOptions::dataType(shapeInfoCast))) {
-    std::string errorMessage;
-    errorMessage += std::string("Shape Buffer at index ");
-    errorMessage += std::to_string(index);
-    errorMessage += std::string(" has an invalid data type!");
-    //add the shape info as a string to the error message
-    errorMessage += std::string(" Shape info: ");
-    errorMessage += ShapeUtils::shapeAsString(shapeInfoCast);
-    errorMessage += std::string(" Data type: ");
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfoCast));
-    errorMessage += std::string(" Data buffer: ");
-    errorMessage += buffer != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Special buffer: ");
-    errorMessage += specialBuffer != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Offset: ");
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  auto array = new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
-
-  if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
-
-  _fastpath_in[index] = array;
-  _handles.emplace_back(array);
-
-  if (_context != nullptr) array->setContext(_context);
 }
 
 
@@ -455,22 +428,8 @@ void Context::setOutputArray(int index, NDArray *array, bool removable) {
   if (removable) _handles.emplace_back(array);
 }
 
-void Context::setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
-  this->setOutputArray(index, buffer, const_cast<const void *>(shapeInfo), specialBuffer,
-                       const_cast<const void *>(specialShapeInfo));
-}
 
-void Context::setOutputArray(int index, void *buffer, const void *shapeInfo, void *specialBuffer,
-                             const void *specialShapeInfo) {
-  if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
 
-  auto array =  new NDArray(buffer, specialBuffer, reinterpret_cast<LongType const *>(shapeInfo));
-
-  _fastpath_out[index] = array;
-  _handles.emplace_back(array);
-
-  if (_context != nullptr) array->setContext(_context);
-}
 
 
 void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeInfoCast, int index) {
@@ -520,7 +479,6 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeIn
       errorMessage += "Data buffer: " + std::string(dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null") + ". ";
       errorMessage += "Special buffer: " + std::string(dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null") + ". ";
     }
-    errorMessage += "Offset: " + std::to_string(dataBuffer->byteOffset()) + ". ";
     errorMessage += "Elements: ";
     for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
       errorMessage += std::to_string(newShapeInfoCast[i]) + ", ";
@@ -533,110 +491,43 @@ void validateBufferAndShape(InteropDataBuffer* dataBuffer, LongType * newShapeIn
 
 
 
-void Context::setInputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
-  auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-  auto shapeInfoCast = reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
-  auto newShapeInfoCast = reinterpret_cast<LongType *>(shapeInfoCast->primary());
-
-  validateBufferAndShape(dataBuffer,newShapeInfoCast,index);
-  if(shape::rank(newShapeInfoCast) > SD_MAX_RANK || shape::rank(newShapeInfoCast) < 0) {
-    std::string error;
-    error += std::string("Shape Buffer at index ");
-    error += std::string(" " + index);
-    error += std::string(" was corrupt! This is likely due to deallocation. Please double check the passed in shape  buffer.");
-    THROW_EXCEPTION(error.c_str());
-  }
-
-
-
-
-
-  if (_fastpath_in.size() < index + 1 || _fastpath_in.empty()) {
-    _fastpath_in.resize(index + 1);
-  }
-  NDArray *array;
-  if (dataBuffer != nullptr && !shape::isEmptyConst(newShapeInfoCast)) {
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeInfoCast, LaunchContext::defaultContext(),
-                        dataBuffer->byteOffset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            newShapeInfoCast)));
-
-  } else {
-    array = new NDArray(nullptr, nullptr, newShapeInfoCast);
-  }
-
-  _fastpath_in[index] = array;
-  _handles.emplace_back(array);
-
-  if (_context != nullptr) array->setContext(_context);
-}
-
-void Context::setOutputArray(int index, void *vdatabuffer, void const *shapeInfo, void const *specialShapeInfo) {
-  auto dataBuffer = reinterpret_cast<InteropDataBuffer *>(vdatabuffer);
-  if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
-  auto shapeInfoCast =  reinterpret_cast<const InteropDataBuffer *>(shapeInfo);
-  auto primary = shapeInfoCast->primary();
-  auto newShapeInfoCast = reinterpret_cast<const LongType *>(primary);
-  auto newShapeCast2 = const_cast<LongType *>(newShapeInfoCast);
-  if(dataBuffer != nullptr && dataBuffer->dataBuffer() != nullptr && shape::isEmptyConst(newShapeInfoCast) && (dataBuffer->dataBuffer()->primary() != nullptr || dataBuffer->dataBuffer()->special() != nullptr)) {
-    std::string errorMessage;
-    errorMessage += std::string("Shape Buffer at index ");
-    errorMessage += std::to_string(index);
-    errorMessage += std::string(" is marked as empty but data buffer is not null!");
-    //add the shape info as a string to the error message
-    errorMessage += std::string(" Shape info: ");
-    errorMessage += ShapeUtils::shapeAsString(newShapeInfoCast);
-    errorMessage += std::string(" Data type: ");
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(newShapeInfoCast));
-    errorMessage += std::string(" Data buffer: ");
-    errorMessage += dataBuffer->dataBuffer()->primary() != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Special buffer: ");
-    errorMessage += dataBuffer->dataBuffer()->special() != nullptr ? "not null" : "null";
-    errorMessage += std::string(" Offset: ");
-    errorMessage += std::to_string(dataBuffer->byteOffset());
-    //print the elements. we know these are longs
-    errorMessage += std::string(" Elements: ");
-    for(int i = 0; i < shape::shapeInfoLength(newShapeInfoCast); i++) {
-      errorMessage += std::to_string(newShapeInfoCast[i]);
-      errorMessage += std::string(", ");
-    }
-    errorMessage += std::string("\n");
-
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-
-  NDArray *array;
-  if (dataBuffer != nullptr) {
-    array = new NDArray(dataBuffer->dataBuffer(),newShapeCast2, LaunchContext::defaultContext(),
-                        dataBuffer->byteOffset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(
-                            newShapeCast2)));
-  }
-
-  else {
-    array = new NDArray(nullptr, nullptr, newShapeCast2);
-  }
-  _fastpath_out[index] = array;
-  _handles.emplace_back(array);
-
-  if (_context != nullptr) array->setContext(_context);
-}
-
 void Context::setTArguments(double *arguments, int numberOfArguments) {
   _tArgs.clear();
   _tArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _tArgs.push_back(arguments[e]);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("float values set in context: ");
+    for (auto d : _bArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setIArguments(LongType *arguments, int numberOfArguments) {
   _iArgs.clear();
   _iArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _iArgs.push_back(arguments[e]);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("int arguments set in context: ");
+    for (auto d : _bArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setBArguments(bool *arguments, int numberOfArguments) {
   _bArgs.clear();
   _bArgs.reserve(numberOfArguments);
   for (int e = 0; e < numberOfArguments; e++) _bArgs.push_back(arguments[e]);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("boolean types set in context: ");
+    for (auto d : _bArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setCudaContext(Pointer cudaStream, Pointer reductionPointer, Pointer allocationPointer) {
@@ -658,14 +549,35 @@ bool Context::helpersAllowed() { return _helpersAllowed; }
 
 void Context::setTArguments(const std::vector<double> &tArgs) {
   for (auto t : tArgs) _tArgs.emplace_back(t);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("t argument types set in context: ");
+    for (auto d : _bArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setIArguments(const std::vector<LongType> &iArgs) {
   for (auto i : iArgs) _iArgs.emplace_back(i);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("int argument types set in context: ");
+    for (auto d : iArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setBArguments(const std::vector<bool> &bArgs) {
   for (auto b : bArgs) _bArgs.push_back(b);
+  if(Environment::getInstance().isDebug() || Environment::getInstance().isVerbose()) {
+    printf("boolean types set in context: ");
+    for (auto d : _bArgs) {
+      printf("%s\n, ", std::to_string(d).c_str());
+    }
+    fflush(stdout);
+  }
 }
 
 void Context::setShapeFunctionOverride(bool reallyOverride) { _shapeFunctionOverride = reallyOverride; }
@@ -717,44 +629,10 @@ void Context::setInputArrays(int numArrays,NDArray** array, bool removable) {
     setInputArray(i,array[i],removable);
   }
 }
-void Context::setInputArrays(int numArrays,void** buffer, void const** shapeInfo, void** specialBuffer, void const** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setInputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
-  }
-}
-void Context::setInputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setInputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialBuffer[i]);
-  }
-
-}
-void Context::setInputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setInputArray(i,databuffer[i],shapeInfo[i],specialShapeInfo[i]);
-  }
-}
 
 void Context::setOutputArrays(int numArrays,NDArray** array, bool removable) {
   for(int i = 0; i < numArrays; i++) {
     setOutputArray(i,array[i],removable);
-  }
-}
-void Context::setOutputArrays(int numArrays,void** buffer, const void** shapeInfo, void** specialBuffer,
-                              const void** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setOutputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
-  }
-
-}
-void Context::setOutputArrays(int numArrays,void** buffer, void** shapeInfo, void** specialBuffer, void** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setOutputArray(i,buffer[i],shapeInfo[i],specialBuffer[i],specialShapeInfo[i]);
-  }
-}
-
-void Context::setOutputArrays(int numArrays,void** databuffer, void const** shapeInfo, void const** specialShapeInfo) {
-  for(int i = 0; i < numArrays; i++) {
-    setOutputArray(i,databuffer[i],shapeInfo[i],specialShapeInfo[i]);
   }
 }
 

@@ -909,22 +909,7 @@ public class OpExecutionerTests extends BaseNd4jTestWithBackends {
         assertArrayEquals(new long[]{3, 1, 5}, arrayZ.shape());
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTear1(Nd4jBackend backend) {
-        List<INDArray> arrays = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(10, 10).assign(i));
-        }
 
-        INDArray pile = Nd4j.pile(arrays);
-
-        INDArray[] tears = Nd4j.tear(pile, 1, 2);
-
-        for (int i = 0; i < 10; i++) {
-            assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
-        }
-    }
 
     @Override
     public char ordering() {

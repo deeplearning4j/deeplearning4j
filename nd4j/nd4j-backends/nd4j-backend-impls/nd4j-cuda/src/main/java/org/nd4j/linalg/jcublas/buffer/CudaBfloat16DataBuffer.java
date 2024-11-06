@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.ShortPointer;
@@ -32,11 +33,12 @@ import org.nd4j.common.util.ArrayUtil;
 import java.nio.ByteBuffer;
 
 /**
- * Cuda Short buffer
+ * Cuda BFloat16 buffer implementation
  *
  * @author raver119@gmail.com
  */
 public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
+
     /**
      * Meant for creating another view of a buffer
      *
@@ -56,13 +58,17 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         super(buffer, dataType, length, offset);
     }
 
+    public CudaBfloat16DataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
+        super(length, elementSize, initialize, workspace);
+    }
+
     /**
      * Base constructor
      *
      * @param length the length of the buffer
      */
     public CudaBfloat16DataBuffer(long length) {
-        super(length, 2);
+        super(length, 2, true); // elementSize for BFLOAT16 is 2 bytes
     }
 
     public CudaBfloat16DataBuffer(long length, boolean initialize) {
@@ -73,20 +79,16 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaBfloat16DataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+    public CudaBfloat16DataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     public CudaBfloat16DataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 2, initialize, workspace);
     }
 
-    public CudaBfloat16DataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
-    }
-
     /**
-     * Initialize the opType of this buffer
+     * Initialize the data type and element size for BFLOAT16
      */
     @Override
     protected void initTypeAndSize() {
@@ -94,63 +96,45 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         type = DataType.BFLOAT16;
     }
 
-    public CudaBfloat16DataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
-
+    /**
+     * Constructor for float[] data
+     *
+     * @param buffer the float array to initialize the buffer with
+     */
     public CudaBfloat16DataBuffer(float[] buffer) {
-        super(buffer);
+        super(buffer.length, 2, true); // Initialize with length, element size 2, and initialize flag
+        setData(buffer); // Set the data using the overridden setData(float[]) method
     }
 
-    public CudaBfloat16DataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBfloat16DataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaBfloat16DataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
-
+    /**
+     * Constructor for double[] data
+     *
+     * @param data the double array to initialize the buffer with
+     */
     public CudaBfloat16DataBuffer(double[] data) {
-        super(data);
+        super(data.length, 2, true); // Initialize with length, element size 2, and initialize flag
+        setData(data); // Set the data using the overridden setData(double[]) method
     }
 
-    public CudaBfloat16DataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBfloat16DataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
+    /**
+     * Constructor for int[] data
+     *
+     * @param data the int array to initialize the buffer with
+     */
     public CudaBfloat16DataBuffer(int[] data) {
-        super(data);
+        super(data.length, 2, true); // Initialize with length, element size 2, and initialize flag
+        setData(data); // Set the data using the overridden setData(int[]) method
     }
-
-    public CudaBfloat16DataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBfloat16DataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
 
     @Override
     protected DataBuffer create(long length) {
         return new CudaBfloat16DataBuffer(length);
     }
 
-
-
-
     @Override
     public void setData(float[] data) {
         val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-        copyDataFromSrc(pointer,length,offset,0);
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
@@ -169,7 +153,6 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         for(int i = 0; i < data.length; i++) {
             floats[i] = data[i];
         }
-
         setData(floats);
     }
 
@@ -181,13 +164,13 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
     @Override
     public void setData(short[] data) {
         val pointer = new ShortPointer(data);
-        copyDataFromSrc(pointer,length,offset,0);
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
     public void setData(double[] data) {
         val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-        copyDataFromSrc(pointer,length,offset,0);
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
@@ -197,6 +180,7 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public float[] asFloat() {
+        // Override to provide float representation from BFLOAT16
         return super.asFloat();
     }
 
@@ -209,7 +193,6 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
     public int[] asInt() {
         return ArrayUtil.toInts(asFloat());
     }
-
 
     @Override
     public DataBuffer create(double[] data) {
@@ -228,9 +211,6 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void flush() {
-
+        // Implement flush if necessary
     }
-
-
-
 }

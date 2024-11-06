@@ -175,7 +175,8 @@ public interface CustomOp  {
    } catch (ND4JIllegalStateException e) {
     throw e;
    } catch (Exception e) {
-    throw new ND4JIllegalStateException("Op name " + opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
+    String lastErrorMessage = Nd4j.getNativeOps().lastErrorMessage();
+    throw new ND4JIllegalStateException("Op name " + opName() + " - no output arrays were provided and calculateOutputShape failed to execute error message: " + lastErrorMessage, e);
    }
   }
 

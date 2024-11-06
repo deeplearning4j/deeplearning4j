@@ -70,7 +70,7 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 // Macro to define functions with advanced type promotion and debugging
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename Z = T>                    \
-Z FUNC_NAME(T val1, U val2) {                                         \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                                         \
     using calc_type = typename promote_type3<T, U, Z>::type;           \
     calc_type promoted_val1 = static_cast<calc_type>(val1);            \
     calc_type promoted_val2 = static_cast<calc_type>(val2);            \
@@ -2429,17 +2429,17 @@ SD_DEFINE_TERNARY_FUNC(sd_rotr,
 #pragma omp declare reduction(amaxT                                                                            \
                              : float, double, float16, bfloat16, int, sd::LongType, sd::UnsignedLong, int8_t, \
                                uint8_t, bool, int16_t, uint16_t, uint32_t                                     \
-                             : omp_out = sd::math::sd_max(sd::math::sd_abs(omp_in), sd::math::sd_abs(omp_out)))
+                             : omp_out = sd::math::sd_max(sd::math::sd_abs<sd::LongType,sd::LongType>(omp_in), sd::math::sd_abs<sd::LongType,sd::LongType>(omp_out)))
 
 #pragma omp declare reduction(aminT                                                                            \
                              : float, double, float16, bfloat16, int, sd::LongType, sd::UnsignedLong, int8_t, \
                                uint8_t, bool, int16_t, uint16_t, uint32_t                                     \
-                             : omp_out = sd::math::sd_min(sd::math::sd_abs(omp_in), sd::math::sd_abs(omp_out)))
+                             : omp_out = sd::math::sd_min(sd::math::sd_abs<double,double>(omp_in), sd::math::sd_abs<double,double>(omp_out)))
 
 #pragma omp declare reduction(asumT                                                                            \
                              : float, double, float16, bfloat16, int, sd::LongType, sd::UnsignedLong, int8_t, \
                                uint8_t, bool, int16_t, uint16_t, uint32_t                                     \
-                             : omp_out = sd::math::sd_abs(omp_in) + sd::math::sd_abs(omp_out))                \
+                             : omp_out = sd::math::sd_abs<double,double>(omp_in) + sd::math::sd_abs<double,double>(omp_out))                \
    initializer(omp_priv = 0)
 
 #pragma omp declare reduction(sumT                                                                             \

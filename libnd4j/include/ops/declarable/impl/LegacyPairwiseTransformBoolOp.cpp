@@ -22,7 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
 LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp(2) {

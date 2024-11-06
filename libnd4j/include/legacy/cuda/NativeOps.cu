@@ -352,16 +352,6 @@ void execPairwiseTransformBool(Pointer *extraPointers, int opNum, OpaqueNDArray 
   }
 }
 
-OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
-  try {
-    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
-    return buffer;
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
 
 ////////////////////////////////////////////////////////////////////////
 void execSummaryStatsScalar(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, bool biasCorrected) {
@@ -1505,12 +1495,6 @@ TadPack *tadOnlyShapeInfo(const LongType *hXShapeInfo, LongType *dimension, Long
   }
 }
 
-LongType const *getPrimaryShapeInfo(TadPack *pack) { return pack->primaryShapeInfo(); }
-LongType const *getPrimaryOffsets(TadPack *pack) { return pack->primaryOffsets(); }
-LongType const *getSpecialShapeInfo(TadPack *pack) { return pack->specialShapeInfo(); }
-LongType const *getSpecialOffsets(TadPack *pack) { return pack->specialOffsets(); }
-LongType getNumberOfTads(TadPack *pack) { return pack->numberOfTads(); }
-int getShapeInfoLength(TadPack *pack) { return pack->shapeInfoLength(); }
 
 int memcpyConstantAsync(LongType dst, Pointer src, LongType size, int flags, Pointer reserved) {
   cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(reserved);
@@ -1556,24 +1540,20 @@ Pointer getConstantSpace() {
 
 void pullRows(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, LongType n, OpaqueNDArray indexes, sd::LongType dimension) {
   try {
-    for (int i = 0; i < n; ++i) {
-      x[i]->prepareSpecialUse({z}, {x[i]});
-    }
+    x->prepareSpecialUse({z}, {x});
+
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
     dim3 launchDims = getLaunchDims("pullRows");
-    auto xType = x[0]->dataType();
+    auto xType = x->dataType();
 
     std::vector<void*> xBuffers(n);
     std::vector<const LongType*> tadShapeInfoBuffers(n);
     std::vector<const LongType*> tadOffsetsBuffers(n);
 
     for (int i = 0; i < n; ++i) {
-      xBuffers[i] = x[i]->specialBuffer();
-
-
       // Calculate TADs for each x
-      auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x[i]->shapeInfo(), &dimension, 1);
+      auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dimension, 1);
       tadShapeInfoBuffers[i] = const_cast<LongType*>(tadPackX->specialShapeInfo());
       tadOffsetsBuffers[i] = const_cast<LongType*>(tadPackX->specialOffsets());
     }
@@ -1590,14 +1570,14 @@ void pullRows(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, LongType
     LongType* indexesBuffer = reinterpret_cast<LongType*>(indexes->specialBuffer());
 
     BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
-                          (launchDims, stream, xBuffers.data(), zBuffer, n, indexesBuffer,
+                          (launchDims, stream, x->specialBuffer(), zBuffer, n, indexesBuffer,
                            *tadShapeInfoBuffers.data(), *tadOffsetsBuffers.data(), zTadShapeInfoBuffer, zTadOffsetsBuffer),
                           SD_COMMON_TYPES);
 
     DEBUG_KERNEL(stream, -1);
 
     for (int i = 0; i < n; ++i) {
-      x[i]->registerSpecialUse({z}, {x[i]});
+      x->registerSpecialUse({z}, {x});
     }
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1615,19 +1595,20 @@ void average(Pointer *extras,
     if (Environment::getInstance().isDebugAndVerbose()) printf("averageFloat called\n");
 
     auto xType = x[0]->dataType();
-    std::vector<void*> xBuffers(n);
-    for (int i = 0; i < n; ++i) {
-      xBuffers[i] = x[i]->specialBuffer();
-    }
 
     // launching on gpu
     if (mode == 0) {
       dim3 launchDims = getLaunchDims("average");
+      std::vector<void*> xBuffers(n);
+      for (int i = 0; i < n; ++i) {
+        xBuffers[i] = x[i]->specialBuffer();
+      }
+
       BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, xBuffers.data(), z->specialBuffer(), n, length, propagate), SD_COMMON_TYPES);
       DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
     } else {
       // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::averageGeneric(xBuffers.data(), z->buffer(), z->shapeInfo(), n, length, propagate), SD_COMMON_TYPES);
+      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::averageGeneric(x, z, n, length, propagate), SD_COMMON_TYPES);
     }
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1643,22 +1624,29 @@ void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, Lo
     if (Environment::getInstance().isDebugAndVerbose()) printf("accumulateFloat called\n");
     auto xType = x[0]->dataType();
 
-    // Extract buffers from each NDArray in the array
-    std::vector<void*> xBuffers(n);
-    for (int i = 0; i < n; ++i) {
-      xBuffers[i] = x[i]->buffer();
-    }
-
-    void* zBuffer = z->buffer();
 
     // launching on gpu
     if (mode == 0) {
+      // Extract buffers from each NDArray in the array
+      std::vector<void*> xBuffers(n);
+      for (int i = 0; i < n; ++i) {
+        xBuffers[i] = x[i]->specialBuffer();
+      }
+
+      void* zBuffer = z->specialBuffer();
+
       dim3 launchDims = getAccumDims(n);
       BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, xBuffers.data(), zBuffer, n, length), SD_COMMON_TYPES);
       DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
     } else {
+      std::vector<NDArray*> xBuffers(n);
+      for (int i = 0; i < n; ++i) {
+        xBuffers[i] = x[i];
+      }
+
+
       // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(xBuffers.data(), zBuffer, z->shapeInfo(), n, length), SD_COMMON_TYPES);
+      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(xBuffers.data(), z, n, length), SD_COMMON_TYPES);
     }
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1725,14 +1713,6 @@ void setOmpMinThreads(int threads) {
 }
 
 int getDevice() { return AffinityManager::currentDeviceId(); }
-
-void setElementThreshold(int num) {
-  // this is no-op for CUDA
-}
-
-void setTADThreshold(int num) {
-  // this is no-op for CUDA
-}
 
 ////////////////////////////////////////////////////////////////////////
 void execSummaryStats(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, bool biasCorrected) {
@@ -2300,53 +2280,6 @@ void prescanArrayRecursive(Pointer *extras, int *dZ, int *dX, int numElements, i
   DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
 }
 
-OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer shapeInfo,
-                                  OpaqueDataBuffer buffer,
-                                  OpaqueDataBuffer specialBuffer,
-                                  sd::LongType offset) {
-  sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo.primary());
-  sd::NDArray* ret = new sd::NDArray(buffer.getDataBuffer(),
-                                     shapeInfoCast,
-                                     LaunchContext::defaultContext(),
-                                     offset);
-  return ret;
-}
-
-void deleteNDArray(OpaqueNDArray array) {
-  delete array;
-}
-
-sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) {
-  return array->offset();
-}
-
-
-
-const sd::LongType* getOpaqueNDArrayShapeInfo(OpaqueNDArray array) {
-  return array->shapeInfo();
-}
-
-void* getOpaqueNDArrayBuffer(OpaqueNDArray array) {
-  if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArrayBuffer: Array or data buffer was null!");
-  }
-  return array->dataBuffer()->primary();
-}
-
-void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-  if(array == nullptr || array->dataBuffer() == nullptr) {
-    THROW_EXCEPTION("getOpaqueNDArraySpecialBuffer: Array or data buffer was null!");
-  }
-  return array->dataBuffer()->special();
-}
-
-sd::LongType getShapeInfoLength(OpaqueNDArray array) {
-  return shape::shapeInfoLength(array->rankOf());
-}
-
-sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
-  return array->dataBuffer()->getNumElements();
-}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -3110,17 +3043,6 @@ void scatterUpdate(Pointer *extraPointers, int opCode, OpaqueNDArray array, Opaq
         SD_COMMON_TYPES, SD_INDEXING_TYPES);
 
     DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-void inspectArray(Pointer *extraPointers, Pointer buffer, LongType *shapeInfo, Pointer specialBuffer,
-                  LongType *specialShapeInfo, Pointer debugInfo) {
-  try {
-    auto p = reinterpret_cast<DebugInfo *>(debugInfo);
-    NDArray array(buffer, shapeInfo, nullptr, 0, 0);
-    DebugHelper::retrieveDebugStatistics(p, &array);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

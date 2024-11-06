@@ -42,8 +42,7 @@ namespace graph {
 class SD_LIB_EXPORT GraphExecutioner {
  protected:
  public:
-  // static sd::Status executeFlatNode(sd::graph::Graph *graph, sd::graph::Node *node, sd::graph::VariableSpace<float>
-  // *variableSpace);
+
 
   static Status executeFlatNode(Graph *graph, Node *node, VariableSpace *variableSpace);
 

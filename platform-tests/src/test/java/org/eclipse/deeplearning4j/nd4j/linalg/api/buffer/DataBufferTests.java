@@ -417,7 +417,7 @@ public class DataBufferTests extends BaseNd4jTestWithBackends {
         BytePointer bp = new BytePointer(5);
 
 
-        Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().pointerForAddress(bp.address());
+        Pointer ptr =Nd4j.getNativeOps().pointerForAddress(bp.address());
         DataBuffer buff = Nd4j.createBuffer(ptr, 5, DataType.INT8);
 
 

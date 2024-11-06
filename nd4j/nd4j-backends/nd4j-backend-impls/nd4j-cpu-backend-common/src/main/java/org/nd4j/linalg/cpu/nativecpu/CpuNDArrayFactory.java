@@ -1026,7 +1026,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             return x;
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sort(null,
+       Nd4j.getNativeOps().sort(null,
                 x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
                 null, null,
                 descending);
@@ -1043,7 +1043,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().sortTad(null,
+       Nd4j.getNativeOps().sortTad(null,
                 x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
                 null, null,
                 (LongPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.LONG).addressPointer(),

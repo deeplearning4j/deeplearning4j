@@ -25,6 +25,7 @@
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {

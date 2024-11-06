@@ -86,8 +86,9 @@ static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis,
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
 
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
+      T3 aVal= A[aOffset];
+      T3 bVal= B[bOffset];
+      T3 val = aVal * bVal;  // first iteration
 
       for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];
@@ -170,9 +171,14 @@ static void usualDot(const sd::LongType length, const double alpha, const void* 
   const bool betaPersent = beta;
 
   T3 sum = 0;
-  PRAGMA_SUM_ENV(length, sum)
-  for (sd::LongType i = 0; i < length; ++i) sum += X[i * incx] * Y[i * incy];
 
+  auto func = PRAGMA_THREADS_FOR {
+    for (sd::LongType i = start; i < stop; ++i) {
+      sum += X[i * incx] * Y[i * incy];
+    }
+  };
+
+  samediff::Threads::parallel_for(func, 0, length);
   if (betaPersent)
     *Z = alphaZ * sum + betaZ * *Z;
   else
@@ -283,7 +289,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     }
 
     if (pC != C) {
-      C->assign(pC);
+      C->assign(*pC);
     }
 
     for (auto* arr : toDelete) {

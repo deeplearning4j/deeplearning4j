@@ -136,6 +136,7 @@ ConstantShapeBuffer* ConstantShapeHelper::storeAndWrapBuffer(ShapeDescriptor* de
         errorMessage += "\n=======================================================Stack trace when written.============================\n";
         errorMessage += oss.str();
         errorMessage += "=======================================================End of stack trace when written.============================\n";
+        fflush(stdout);
 #endif
         THROW_EXCEPTION(errorMessage.c_str());
       }

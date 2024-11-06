@@ -367,6 +367,16 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
 
   samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
 }
+void tryPointer(sd::Pointer extra, sd::Pointer p, int len) {
+  try {
+    auto buf = reinterpret_cast<int8_t *>(p);
+    int cnt = 0;
+    for (int i = 0; i < len; i++) cnt += buf[cnt];
+  } catch (std::exception &e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+  }
+}
 
 void pullRows(sd::Pointer *extraPointers,
               OpaqueNDArray x,

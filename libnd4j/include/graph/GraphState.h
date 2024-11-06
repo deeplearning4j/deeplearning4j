@@ -43,7 +43,7 @@ class SD_LIB_EXPORT GraphState {
   // id of this GraphState instance
   LongType _id = 0;
 
-  // map of scopes. Scope id is used as key, since it's referred in calls later anyway
+  // map of scopes. OpScope id is used as key, since it's referred in calls later anyway
   SD_MAP_IMPL<int, Scope*> _scopes;
 
   // this variable space holds temp references
@@ -85,7 +85,6 @@ class SD_LIB_EXPORT GraphState {
    */
   Status forgetScope(int scopeId);
 
-#ifndef __JAVACPP_HACK__
   /**
    * This method adds given op to the end of specified scope
    * PLEASE NOTE: This method is used for tests mostly
@@ -104,7 +103,7 @@ class SD_LIB_EXPORT GraphState {
   Scope* getScope(int scopeId);
 
   Graph* graph();
-#endif
+
   /**
    * This method adds given op to the end of specified scope
    *

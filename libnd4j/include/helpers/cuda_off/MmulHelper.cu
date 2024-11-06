@@ -354,7 +354,7 @@ NDArray* MmulHelper::mmulMxM(NDArray* A, NDArray* B, NDArray* C, double alpha, d
     auto cudaResult = cudaStreamSynchronize(*stream);
     if (cudaResult != 0) throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
 
-    if (C != pC) C->assign(pC);
+    if (C != pC) C->assign(*pC);
 
     for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
   }

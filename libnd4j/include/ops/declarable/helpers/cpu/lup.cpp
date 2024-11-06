@@ -301,7 +301,7 @@ template <typename T, typename I>
 static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
   auto n = input->sizeAt(-1);
 
-  output->assign(input);  // fill up output tensor with zeros
+  output->assign(*input);  // fill up output tensor with zeros
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});
@@ -368,16 +368,16 @@ static sd::Status inverse_(LaunchContext* context, NDArray* input, NDArray* outp
   auto n = input->sizeAt(-1);
   auto n2 = n * n;
   auto totalCount = output->lengthOf() / n2;
-
-  output->assign(0.f);  // fill up output tensor with zeros
+  float zerof = 0.f;
+  output->assign(zerof);  // fill up output tensor with zeros
   auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);    //, block.getWorkspace());
   auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);  //, block.getWorkspace());
   auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
-
+  float zero = 0.f;
   for (sd::LongType e = 0; e < totalCount; e++) {
-    if (e) matrix.assign(0.f);
+    if (e) matrix.assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
       matrix.p(row++, input->e<T>(k));
@@ -416,16 +416,15 @@ static sd::Status lowerInverse_(LaunchContext* context, NDArray* input, NDArray*
   auto n = input->sizeAt(-1);
   auto n2 = n * n;
   auto totalCount = output->lengthOf() / n2;
-
-  output->assign(0.f);  // fill up output tensor with zeros
+  float zero = 0.f;
+  output->assign(zero);  // fill up output tensor with zeros
   auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
   auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
-
   for (sd::LongType e = 0; e < totalCount; e++) {
-    if (e) matrix.assign(0.f);
+    if (e) matrix.assign(zero);
 
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; k++) {
       matrix.p(row++, input->e<T>(k));
@@ -479,7 +478,7 @@ sd::Status upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArr
 }
 
 template <typename T>
-static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray const* input) {
+static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
   ResultSet lastMatrixList = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
   for (sd::LongType i = 0; i < lastMatrixList.size(); i++) {
     auto thisMatrix = lastMatrixList.at(i);
@@ -502,7 +501,7 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray const* input
   return true;
 }
 
-bool checkCholeskyInput(sd::LaunchContext* context, NDArray const* input) {
+bool checkCholeskyInput(sd::LaunchContext* context, NDArray * input) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return checkCholeskyInput_, (context, input), SD_FLOAT_TYPES);
 }
 
@@ -511,7 +510,8 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
   auto n = input->sizeAt(-1);
   auto n2 = n * n;
   auto totalCount = output->lengthOf() / n2;
-  if (!inplace) output->assign(0.f);  // fill up output tensor with zeros only inplace=false
+  float zero = 0.f;
+  if (!inplace) output->assign(zero);  // fill up output tensor with zeros only inplace=false
 
   std::vector<sd::LongType> shape = {n,n};
   std::unique_ptr<NDArray> matrix(
@@ -523,8 +523,9 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
     for (sd::LongType k = e * n2, l = 0; k < (e + 1) * n2; k++) {
       matrix->p(l++, input->e<T>(k));
     }
+    float zero = 0.f;
     // if (e) // from the second loop need to zero matrix
-    lowerMatrix->assign(0.f);
+    lowerMatrix->assign(zero);
 
     for (sd::LongType col = 0; col < n; col++) {
       for (sd::LongType row = 0; row < col; row++) {

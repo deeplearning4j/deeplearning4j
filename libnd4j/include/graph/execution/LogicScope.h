@@ -29,7 +29,7 @@
 namespace sd {
 namespace graph {
 /**
- * This class is responsible for execution logic of Scope logical abstraction
+ * This class is responsible for execution logic of OpScope logical abstraction
  *
  * It's ultra-simple. It does nothing, and can't be executed directly.
  *

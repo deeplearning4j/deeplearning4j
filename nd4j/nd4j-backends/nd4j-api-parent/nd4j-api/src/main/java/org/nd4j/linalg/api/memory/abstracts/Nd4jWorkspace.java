@@ -640,6 +640,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 if (tagScope.decrementAndGet() == 0) {
                     Nd4j.getMemoryManager().setCurrentWorkspace(this);
                 }
+
+                this.lastClosed = Thread.currentThread().getStackTrace();
+
                 return;
             }
 
@@ -653,6 +656,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (tagScope.decrementAndGet() == 0) {
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
+
+            this.lastClosed = Thread.currentThread().getStackTrace();
+
             return;
         }
 
@@ -704,7 +710,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue())
                     || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP
                     && currentSize.get() == 0)) {
-                //log.info("Initializing on cycle {}", cyclesCount.get());
 
                 if (Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING)
                     initializeWorkspace();
@@ -770,13 +775,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public MemoryWorkspace notifyScopeEntered() {
         // we should block stuff since we're going to invalidate spilled allocations
         // TODO: block on spilled allocations probably?
-        if(isOpen.get())
+        if(isOpen.get()) {
+            this.lastEntered = Thread.currentThread().getStackTrace();
             return this;
+        }
         MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         // if we're opening the same workspace - just increase counter, and skip everything else
         if (prev == this && isOpen.get()) {
             tagScope.incrementAndGet();
+            this.lastEntered = Thread.currentThread().getStackTrace();
             return this;
         }
 

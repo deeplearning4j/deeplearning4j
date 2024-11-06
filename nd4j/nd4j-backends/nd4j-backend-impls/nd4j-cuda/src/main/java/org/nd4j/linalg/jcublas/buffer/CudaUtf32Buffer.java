@@ -79,9 +79,6 @@ public class CudaUtf32Buffer extends BaseCudaDataBuffer {
         numWords = length;
     }
 
-    public CudaUtf32Buffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
-        super(ints, copy, workspace);
-    }
 
     public CudaUtf32Buffer(byte[] data, long numWords) {
         super(data.length, 1, false);
@@ -93,48 +90,20 @@ public class CudaUtf32Buffer extends BaseCudaDataBuffer {
         this.numWords = numWords;
     }
 
-    public CudaUtf32Buffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaUtf32Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUtf32Buffer(float[] data, boolean copy) {
         super(data, copy);
     }
 
-    public CudaUtf32Buffer(long[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUtf32Buffer(long[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy);
-    }
 
-    public CudaUtf32Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public CudaUtf32Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUtf32Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaUtf32Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
-    public CudaUtf32Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
-
-        Preconditions.checkArgument(((CudaUtf32Buffer) underlyingBuffer).numWords == numWords, "String array can't be a view");
-    }
 
     public CudaUtf32Buffer(@NonNull Collection<String> strings) {
         super(CudaUtf32Buffer.stringBufferRequiredLength(strings), 1, false);

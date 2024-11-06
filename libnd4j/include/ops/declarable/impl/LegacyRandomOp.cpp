@@ -85,7 +85,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
       }
 
-      if (!block.isInplace()) z->assign(input);
+      if (!block.isInplace()) z->assign(*input);
 
       RandomLauncher::applyDropOut(block.launchContext(), block.randomGenerator(), z, prob);
     } break;
@@ -259,7 +259,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "AlphaDropOut requires either TArgs or 5 arguments to be present");
       }
 
-      if (!block.isInplace()) z->assign(input);
+      if (!block.isInplace()) z->assign(*input);
 
       RandomLauncher::applyAlphaDropOut(block.launchContext(), block.randomGenerator(), z, prob, a, b, pa);
     } break;

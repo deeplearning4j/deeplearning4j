@@ -96,9 +96,6 @@ public class DoubleBuffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public DoubleBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy);
-    }
 
     public DoubleBuffer(double[] doubles, boolean copy) {
         super(doubles, copy);

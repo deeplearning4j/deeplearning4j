@@ -74,10 +74,10 @@ DECLARE_SYN(while, While);
 
 /**
  *  This op is a placeholder.
- *  Actual Scope implementation is in Graph and GraphExecutioner
+ *  Actual OpScope implementation is in Graph and GraphExecutioner
  */
-LOGIC_OP_IMPL(Scope);
-DECLARE_SYN(scope, Scope);
+LOGIC_OP_IMPL(OpScope);
+DECLARE_SYN(scope, OpScope);
 
 /**
  *  This op is a placeholder.
