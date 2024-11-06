@@ -79,8 +79,8 @@ public class Utf16Buffer extends BaseCpuDataBuffer {
         numWords = length;
     }
 
-    public Utf16Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
+    public Utf16Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     public Utf16Buffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
@@ -99,9 +99,6 @@ public class Utf16Buffer extends BaseCpuDataBuffer {
         super(data, copy);
     }
 
-    public Utf16Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf16Buffer(float[] data, boolean copy) {
         super(data, copy);
@@ -116,25 +113,19 @@ public class Utf16Buffer extends BaseCpuDataBuffer {
     }
 
     public Utf16Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
-    public Utf16Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf16Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
     public Utf16Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
     }
 
-    public Utf16Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
-    }
+
 
     public Utf16Buffer(@NonNull Collection<String> strings) {
         super(Utf16Buffer.stringBufferRequiredLength(strings), false);

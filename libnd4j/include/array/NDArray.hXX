@@ -101,6 +101,8 @@ NDArray::NDArray(const NDArray &other) {
   } else {
     _buffer = new DataBuffer();
   }
+
+  _offset = other._offset;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -120,7 +122,6 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
 
   _context = context;
   _isAttached = _context->getWorkspace() != nullptr;
-  _offset = 0;
 
   if (shape.empty()) {
     //scalar
@@ -146,7 +147,7 @@ NDArray::NDArray(const char order, std::vector<sd::LongType> &shape, sd::DataTyp
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(char order, std::vector<LongType> &shape, const std::vector<double> &data, DataType dtype,
+NDArray::NDArray(char order, std::vector<LongType> &shape,  std::vector<double> &data, DataType dtype,
                  LaunchContext *context) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(const char order, const std::vector<sd::LongType> &shape, const std::vector<double> &data, sd::DataType dtype, sd::LaunchContext *context) - constructor 3\n");
@@ -165,22 +166,18 @@ NDArray::NDArray(char order, std::vector<LongType> &shape, const std::vector<dou
   }
 
   _context = context;
-  _offset = 0;
 
   if (shape.size() == 0) {
     if (data.size() == 0) {
       auto desc = ShapeDescriptor::emptyDescriptor(dtype);
       setShapeInfo(desc);
-      if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     } else {
       auto desc = ShapeDescriptor::scalarDescriptor(dtype);
       setShapeInfo(desc);
-      if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     }
   } else {
     auto desc = new ShapeDescriptor(dtype, order, shape);
     setShapeInfo(desc);
-    if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   }
 
   if (lengthOf() != data.size()) {
@@ -478,9 +475,11 @@ NDArray::NDArray(DataBuffer *  buffer, const char order, const std::vector<sd::L
 
 ////////////////////////////////////////////////////////////////////////
 
-NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context,
+NDArray::NDArray(DataBuffer *buffer,
+                 const sd::LongType *shapeInfo,
+                 sd::LaunchContext *context,
                  const sd::LongType offset) {
-  if(!shape::isEmpty(shapeInfo) && buffer == nullptr) {
+  if(!shape::isEmptyConst(shapeInfo) && buffer == nullptr) {
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer can't be nullptr !");
   }
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
@@ -493,15 +492,26 @@ NDArray::NDArray(DataBuffer *buffer, sd::LongType *shapeInfo, sd::LaunchContext 
 
   }
 
+  if(buffer->getNumElements() < 1 && !shape::isEmptyConst(shapeInfo)) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
+  }
 
   _context = context;
-  _offset = offset;
   _buffer = buffer;
-  setShapeInfo(shapeInfo);
-  if(buffer != nullptr) {
-    _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
-  } else {
-    _isView = false;
+  _length = shape::length(shapeInfo);
+  _offset = offset;
+  auto constShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+  if(!shape::strideEquals(shapeInfo, constShapeInfo->primary())) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - strideEquals failed !");
+  }
+
+  this->_shapeInfoBuffer = constShapeInfo;
+  this->_shapeInfo = constShapeInfo->primary();
+  this->_shapeInfoD = constShapeInfo->special();
+  if(this->_shapeInfo == nullptr) {
+    THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - shapeInfo is nullptr");
+  }
+  if(buffer == nullptr) {
     _length = 0;
   }
 }
@@ -518,41 +528,23 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
   creationTrace.load_here();
 #endif
   _context = context;
-  _offset = offset;
   if(descriptor->dataType() == DataType::UNKNOWN) {
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
 
-  setShapeInfo(ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor));
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
+  _shapeInfo = constDesc->primary();
+  _shapeInfoD = constDesc->special();
   _buffer = buffer;
-  _dataType = descriptor->dataType();
   _length = shape::length(_shapeInfo);
-  if(buffer != nullptr)
-    _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
-  else {
-    _isView = false;
-    _length = 0;
-  }
-}
-
-
-NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc)
-    : NDArray::NDArray(buffer, const_cast<const sd::LongType *>(shapeInfo), context, isBuffAlloc) {
-  if(Environment::getInstance().isLogNativeNDArrayCreation()) {
-    sd_print("NDArray::NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 15\n");
-    fflush(stdout);
-
-  }
-#if defined(SD_GCC_FUNCTRACE)
-  creationTrace = StackTrace();
-  creationTrace.load_here();
-#endif
 
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 // do not allocate memory, memory for array is passed from outside
-NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) {
+NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+                 sd::LongType offset) {
   if(Environment::getInstance().isLogNativeNDArrayCreation()) {
     sd_print("NDArray::NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc) - constructor 16\n");
     fflush(stdout);

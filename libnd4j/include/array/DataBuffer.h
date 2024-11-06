@@ -113,6 +113,11 @@ class SD_LIB_EXPORT DataBuffer {
 
   size_t getNumElements();
 
+  template <typename T>
+  void *primaryAtOffset(const LongType offset);
+  template <typename T>
+  void *specialAtOffset(const LongType offset);
+
   void *primary();
   void *special();
   void printAllocationTrace();
@@ -167,7 +172,7 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer  dup();
   void printHostDevice(long offset);
   static void memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src);
-  static void memcpy(DataBuffer *dst, DataBuffer *src);
+  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

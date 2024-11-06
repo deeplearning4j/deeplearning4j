@@ -55,9 +55,6 @@ public class UInt32Buffer extends BaseCpuDataBuffer {
         super(length);
     }
 
-    public UInt32Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
 
     public UInt32Buffer(long length, boolean initialize) {
         super(length, initialize);
@@ -72,7 +69,11 @@ public class UInt32Buffer extends BaseCpuDataBuffer {
     }
 
     public UInt32Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
+    }
+
+    public UInt32Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -84,9 +85,7 @@ public class UInt32Buffer extends BaseCpuDataBuffer {
         elementSize = 4;
     }
 
-    public UInt32Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public UInt32Buffer(float[] data) {
         this(data, true);
@@ -108,17 +107,11 @@ public class UInt32Buffer extends BaseCpuDataBuffer {
         super(data, copyOnOps);
     }
 
-    public UInt32Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public UInt32Buffer(double[] data, boolean copyOnOps) {
         super(data, copyOnOps);
     }
 
-    public UInt32Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public UInt32Buffer(float[] floats, boolean copy) {
         super(floats, copy);
@@ -129,11 +122,11 @@ public class UInt32Buffer extends BaseCpuDataBuffer {
     }
 
     public UInt32Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
     public UInt32Buffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(data, copy, workspace);
     }
 
     @Override
