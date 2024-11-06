@@ -32,10 +32,13 @@ BROADCASTABLE_OP_IMPL(add, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto z = OUTPUT_VARIABLE(0);
+  x->printIndexedBuffer("x");
+  y->printIndexedBuffer("y");
   BROADCAST_CHECK_EMPTY(x, y, z);
 
 
-
+  printf("x offset: %lld; y offset: %lld; z offset: %lld\n", x->offset(), y->offset(), z->offset());
+  fflush(stdout);
   auto tZ = BroadcastHelper::broadcastApply(BroadcastOpsTuple::Add(), x, y, z);
   if (tZ == nullptr)
     return Status::KERNEL_FAILURE;

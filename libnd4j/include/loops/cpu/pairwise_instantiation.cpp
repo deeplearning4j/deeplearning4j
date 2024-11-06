@@ -20,12 +20,12 @@ ITERATE_COMBINATIONS: This macro iterates over two lists of data types (SD_COMMO
 Function Instantiation:
 The PairWiseTransform::exec function is instantiated for various combinations of data types. The function signature includes parameters for operation number (opNum), input arrays (x, y), their shape information (xShapeInfo, yShapeInfo), output array (z), its shape information (zShapeInfo), extra parameters (extraParams), and the range of elements to process (start, stop).
  * */
-ITERATE_COMBINATIONS_3((SD_COMMON_TYPES),(SD_COMMON_TYPES),(SD_COMMON_TYPES),INSTANT_PROCESS_COMBINATION_3,functions::pairwise_transforms::PairWiseTransform, ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
+ITERATE_COMBINATIONS_3((SD_NUMERIC_TYPES),(SD_NUMERIC_TYPES),(SD_NUMERIC_TYPES),INSTANT_PROCESS_COMBINATION_3,functions::pairwise_transforms::PairWiseTransform, ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                                                                                                                                                                          const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
                                                                                                                                                                          void *extraParams, sd::LongType start, sd::LongType stop))
 ITERATE_COMBINATIONS(
-    (SD_COMMON_TYPES),
-    (SD_COMMON_TYPES),
+    (SD_NUMERIC_TYPES),
+    (SD_NUMERIC_TYPES),
     CALLBACK_INSTANTIATE_PROMOTE,
     promote,
     ;

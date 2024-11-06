@@ -448,6 +448,8 @@
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
                                 <includePath>${libnd4jhome}/include/performance</includePath>
+                                <includePath>${libnd4jhome}/include/legacy</includePath>
+
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>
@@ -487,6 +489,8 @@
                                     <skip>${javacpp.parser.skip}</skip>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
                                     <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets
+                                        <deleteJniFiles>false</deleteJniFiles>
+
                                     </classOrPackageName>
                                 </configuration>
                             </execution>

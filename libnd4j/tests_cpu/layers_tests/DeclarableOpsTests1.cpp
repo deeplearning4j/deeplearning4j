@@ -668,9 +668,12 @@ TEST_F(DeclarableOpsTests1, AddScalarScalar1) {
   auto x = NDArrayFactory::create_<float>('c', {1, 1});
   auto y = NDArrayFactory::create_<float>('c', {1, 1});
   auto exp = NDArrayFactory::create<float>('c', {1, 1});
-  x->assign(2);
-  y->assign(1);
-  exp.assign(3);
+  int two = 2;
+  int one = 1;
+  int three = 3;
+  x->assign(two);
+  y->assign(one);
+  exp.assign(three);
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);
@@ -693,9 +696,12 @@ TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
   auto x = NDArrayFactory::create_<float>('c', {5, 3});
   auto y = NDArrayFactory::create_<float>('c', {5, 3});
   auto exp = NDArrayFactory::create<float>('c', {5, 3});
-  x->assign(3);
-  y->assign(1);
-  exp.assign(2);
+  int three = 3;
+  int one = 1;
+  int two = 2;
+  x->assign(three);
+  y->assign(one);
+  exp.assign(two);
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);
@@ -718,9 +724,12 @@ TEST_F(DeclarableOpsTests1, SubtractTest_1) {
   auto x = NDArrayFactory::create_<float>('c', {1, 6});
   auto y = NDArrayFactory::create_<float>('c', {1, 6});
   auto exp = NDArrayFactory::create<float>('c', {1, 6});
-  x->assign(3);
-  y->assign(1);
-  exp.assign(2);
+  int three = 3;
+  int one = 1;
+  int two = 2;
+  x->assign(three);
+  y->assign(one);
+  exp.assign(two);
 
   auto variableSpace = new VariableSpace();
   variableSpace->putVariable(-1, x);

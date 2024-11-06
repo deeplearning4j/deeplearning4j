@@ -315,15 +315,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
-        /**
-         * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
-         * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
-         * The first item is the shape information. The second one is the offsets.
-         */
-        Pair<DataBuffer, DataBuffer> tadBuffers = x.isEmpty() ? Pair.makePair(x.data(), null): tadManager.getTADOnlyShapeInfo(x, dimension);
-        Pair<DataBuffer, DataBuffer> yTadBuffers = null;
-
-
 
         /**
          * Note because dimension arrays don't change,
@@ -1265,8 +1256,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             shape[i] = ptr.get(i);
         }
 
-        val t = ArrayOptionsHelper.arrayType(shape);
-        return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
+        LongShapeDescriptor ret = LongShapeDescriptor.builder()
+                .shape(Shape.shape(shape))
+                .stride(Shape.stride(shape))
+                .order(Shape.order(shape))
+                .ews(Shape.elementWiseStride(shape))
+                .extras(Shape.extras(shape))
+                .build();
+        return ret;
     }
 
     @Override
@@ -1297,9 +1294,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 ? opContext.getInputArrays() : op.inputArguments();
         int cnt = 0;
         int numProcessed = 0;
+        long[] offsets = new long[nIn];
         for (val in: inputArgs) {
             if (!in.isEmpty())
                 inputBuffers.put(cnt, in.data().addressPointer());
+            offsets[cnt] = in.offset();
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
             numProcessed++;

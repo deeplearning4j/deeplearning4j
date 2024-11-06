@@ -65,77 +65,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return allocationMode;
     }
 
-    @Override
-    public DataBuffer create(ByteBuffer underlyingBuffer, DataType dataType, long length, long offset) {
-        switch (dataType) {
-            case DOUBLE:
-                return new CudaDoubleDataBuffer(underlyingBuffer, dataType, length, offset);
-            case FLOAT:
-                return new CudaFloatDataBuffer(underlyingBuffer, dataType, length, offset);
-            case HALF:
-                return new CudaHalfDataBuffer(underlyingBuffer, dataType, length, offset);
-            case BFLOAT16:
-                return new CudaBfloat16DataBuffer(underlyingBuffer, dataType, length, offset);
-            case LONG:
-                return new CudaLongDataBuffer(underlyingBuffer, dataType, length, offset);
-            case INT:
-                return new CudaIntDataBuffer(underlyingBuffer, dataType, length, offset);
-            case SHORT:
-                return new CudaShortDataBuffer(underlyingBuffer, dataType, length, offset);
-            case UBYTE:
-                return new CudaUByteDataBuffer(underlyingBuffer, dataType, length, offset);
-            case UINT16:
-                return new CudaUInt16DataBuffer(underlyingBuffer, dataType, length, offset);
-            case UINT32:
-                return new CudaUInt32DataBuffer(underlyingBuffer, dataType, length, offset);
-            case UINT64:
-                return new CudaUInt64DataBuffer(underlyingBuffer, dataType, length, offset);
-            case BYTE:
-                return new CudaByteDataBuffer(underlyingBuffer, dataType, length, offset);
-            case BOOL:
-                return new CudaBoolDataBuffer(underlyingBuffer, dataType, length, offset);
-            case UTF8:
-                return new CudaUtf8Buffer(underlyingBuffer, dataType, length, offset);
-            default:
-                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
-        }
-    }
 
-    @Override
-    public DataBuffer create(DataBuffer underlyingBuffer, long offset, long length) {
-        switch (underlyingBuffer.dataType()) {
-            case DOUBLE:
-                return new CudaDoubleDataBuffer(underlyingBuffer, length, offset);
-            case FLOAT:
-                return new CudaFloatDataBuffer(underlyingBuffer, length, offset);
-            case HALF:
-                return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
-            case BFLOAT16:
-                return new CudaBfloat16DataBuffer(underlyingBuffer, length, offset);
-            case UINT64:
-                return new CudaUInt64DataBuffer(underlyingBuffer, length, offset);
-            case LONG:
-                return new CudaLongDataBuffer(underlyingBuffer, length, offset);
-            case UINT32:
-                return new CudaUInt32DataBuffer(underlyingBuffer, length, offset);
-            case INT:
-                return new CudaIntDataBuffer(underlyingBuffer, length, offset);
-            case UINT16:
-                return new CudaUInt16DataBuffer(underlyingBuffer, length, offset);
-            case SHORT:
-                return new CudaShortDataBuffer(underlyingBuffer, length, offset);
-            case UBYTE:
-                return new CudaUByteDataBuffer(underlyingBuffer, length, offset);
-            case BYTE:
-                return new CudaByteDataBuffer(underlyingBuffer, length, offset);
-            case BOOL:
-                return new CudaBoolDataBuffer(underlyingBuffer, length, offset);
-            case UTF8:
-                return new CudaUtf8Buffer(underlyingBuffer, length, offset);
-            default:
-                throw new ND4JIllegalStateException("Unknown data buffer type: " + underlyingBuffer.dataType().toString());
-        }
-    }
+
 
     /**
      * This method will create new DataBuffer of the same dataType & same length
@@ -225,130 +156,6 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return new CudaIntDataBuffer(data, copy, workspace);
     }
 
-    @Override
-    public DataBuffer createDouble(long offset, int length) {
-        return new CudaDoubleDataBuffer(length, 8, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, int length) {
-        return new CudaFloatDataBuffer(length, 4, length);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, int length) {
-        return new CudaIntDataBuffer(length, 4, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, int[] data) {
-        return new CudaDoubleDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, int[] data) {
-        return new CudaFloatDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, int[] data) {
-        return new CudaIntDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, double[] data) {
-        return new CudaDoubleDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, double[] data, MemoryWorkspace workspace) {
-        return new CudaDoubleDataBuffer(data, true, offset, workspace);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, byte[] data, int length) {
-        return new CudaDoubleDataBuffer(ArrayUtil.toDoubleArray(data), true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, byte[] data, int length) {
-        return new CudaFloatDataBuffer(ArrayUtil.toDoubleArray(data), true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, double[] data) {
-        return new CudaFloatDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, double[] data) {
-        return new CudaIntDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, float[] data) {
-        return new CudaDoubleDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, float[] data) {
-        return new CudaFloatDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, float[] data, MemoryWorkspace workspace) {
-        return new CudaFloatDataBuffer(data, true, offset, workspace);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, float[] data) {
-        return new CudaIntDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, int[] data, boolean copy) {
-        return new CudaDoubleDataBuffer(data, true, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, int[] data, boolean copy) {
-        return new CudaFloatDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, int[] data, boolean copy) {
-        return new CudaIntDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, double[] data, boolean copy) {
-        return new CudaDoubleDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, double[] data, boolean copy) {
-        return new CudaFloatDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, double[] data, boolean copy) {
-        return new CudaIntDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createDouble(long offset, float[] data, boolean copy) {
-        return new CudaDoubleDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createFloat(long offset, float[] data, boolean copy) {
-        return new CudaFloatDataBuffer(data, copy, offset);
-    }
-
-    @Override
-    public DataBuffer createInt(long offset, float[] data, boolean copy) {
-        return new CudaIntDataBuffer(data, copy, offset);
-    }
 
     @Override
     public DataBuffer createDouble(long length) {
@@ -804,6 +611,43 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return new CudaFloatDataBuffer(floatPointer, FloatIndexer.create(floatPointer),length);
     }
 
+    @Override
+    public DataBuffer createBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        switch (dataType) {
+            case DOUBLE:
+                return new CudaDoubleDataBuffer(underlyingBuffer, dataType, length);
+            case FLOAT:
+                return new CudaFloatDataBuffer(underlyingBuffer, dataType, length);
+            case HALF:
+                return new CudaHalfDataBuffer(underlyingBuffer, dataType, length);
+            case BFLOAT16:
+                return new CudaBfloat16DataBuffer(underlyingBuffer, dataType, length);
+            case LONG:
+                return new CudaLongDataBuffer(underlyingBuffer, dataType, length);
+            case INT:
+                return new CudaIntDataBuffer(underlyingBuffer, dataType, length);
+            case SHORT:
+                return new CudaShortDataBuffer(underlyingBuffer, dataType, length);
+            case UBYTE:
+                return new CudaUByteDataBuffer(underlyingBuffer, dataType, length);
+            case UINT16:
+                return new CudaUInt16DataBuffer(underlyingBuffer, dataType, length);
+            case UINT32:
+                return new CudaUInt32DataBuffer(underlyingBuffer, dataType, length);
+            case UINT64:
+                return new CudaUInt64DataBuffer(underlyingBuffer, dataType, length);
+            case BYTE:
+                return new CudaByteDataBuffer(underlyingBuffer, dataType, length);
+            case BOOL:
+                return new CudaBoolDataBuffer(underlyingBuffer, dataType, length);
+            case UTF8:
+                return new CudaUtf8Buffer(underlyingBuffer, dataType, length);
+            default:
+                throw new IllegalStateException("Unknown datatype used: [" + dataType + "]");
+        }
+    }
+
+
 
     @Override
     public DataBuffer createHalf(long length) {
@@ -843,56 +687,10 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return new CudaHalfDataBuffer(data, copy);
     }
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @param copy
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, double[] data, boolean copy) {
-        return new CudaHalfDataBuffer(data, copy, offset);
-    }
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @param copy
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, float[] data, boolean copy) {
-        return new CudaHalfDataBuffer(data, copy, offset);
-    }
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @param copy
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, int[] data, boolean copy) {
-        return new CudaHalfDataBuffer(data, copy, offset);
-    }
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, double[] data) {
-        return new CudaHalfDataBuffer(data, true, offset);
-    }
+
 
     /**
      * Creates a half-precision data buffer
@@ -906,35 +704,7 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return new CudaHalfDataBuffer(data, true, offset);
     }
 
-    @Override
-    public DataBuffer createHalf(long offset, float[] data, MemoryWorkspace workspace) {
-        return new CudaHalfDataBuffer(data, true, offset, workspace);
-    }
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, int[] data) {
-        return new CudaHalfDataBuffer(data, true, offset);
-    }
-
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param data   the data to create the buffer from
-     * @param copy
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, byte[] data, boolean copy) {
-        return new CudaHalfDataBuffer(ArrayUtil.toFloatArray(data), copy, offset);
-    }
 
     /**
      * Creates a half-precision data buffer
@@ -982,17 +752,6 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
 
-    /**
-     * Creates a half-precision data buffer
-     *
-     * @param offset
-     * @param length
-     * @return the new buffer
-     */
-    @Override
-    public DataBuffer createHalf(long offset, int length) {
-        return new CudaHalfDataBuffer(length);
-    }
 
     @Override
     public DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace) {

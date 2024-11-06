@@ -130,7 +130,7 @@ SD_INLINE void printBuffer(void* buffer, sd::DataType dataType, sd::LongType len
 namespace sd {
 class SD_LIB_EXPORT Logger {
  public:
-  static SD_HOST void info(const char *format, ...);
+  static SD_HOST void info(const char *fdataTypeormat, ...);
   static SD_HOST void infoEmpty(const char *format);
 
   static SD_HOST void printv(const char *format, const std::vector<int> &vec);

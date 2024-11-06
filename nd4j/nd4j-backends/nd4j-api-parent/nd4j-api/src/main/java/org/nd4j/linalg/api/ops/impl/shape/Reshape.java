@@ -245,7 +245,9 @@ public class Reshape extends DynamicCustomOp {
             if(inputArguments.size() > 1)
                 shape = inputArguments.get(1).toLongVector();
             //wrap an existing buffer to ensure that the original buffer doesn't get deallocated
-            INDArray arr = Nd4j.create(Nd4j.createBuffer(inputArguments().get(0).data(),0,inputArguments().get(0).data().length()),shape,Nd4j.getStrides(shape,newOrder),0,newOrder);
+            INDArray arr = Nd4j.create(inputArguments().get(0).data(),
+                    shape,
+                    Nd4j.getStrides(shape,newOrder),inputArguments().get(0).offset(),newOrder);
             addOutputArgument(arr);
             return false;
         }

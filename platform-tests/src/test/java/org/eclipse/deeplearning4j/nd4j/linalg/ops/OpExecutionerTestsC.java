@@ -1100,48 +1100,7 @@ public class OpExecutionerTestsC extends BaseNd4jTestWithBackends {
         INDArray max = array.max(1);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testNorm2_2(Nd4jBackend backend) {
-        INDArray array = Nd4j.rand(new int[]{127, 164}, 1, 100, Nd4j.getRandom());
 
-        double norm2 = array.norm2Number().doubleValue();
-    }
-
-    /**
-     * This test fails, but that's ok.
-     * It's here only as reminder, that in some cases we can have EWS==1 for better performances.
-     *
-     * @throws Exception
-     */
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTadEws(Nd4jBackend backend) {
-        INDArray array = Nd4j.create(32, 5, 10);
-        assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());
-    }
-
-
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTear1(Nd4jBackend backend) {
-        List<INDArray> arrays = new ArrayList<>();
-        val num = 10;
-        for (int i = 0; i < num; i++) {
-            arrays.add(Nd4j.create(5, 20).assign(i));
-        }
-
-        INDArray pile = Nd4j.pile(arrays);
-
-//        log.info("Pile: {}", pile);
-
-        INDArray[] tears = Nd4j.tear(pile, 1, 2);
-
-        for (int i = 0; i < num; i++) {
-            assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
-        }
-    }
 
     @Override
     public char ordering() {

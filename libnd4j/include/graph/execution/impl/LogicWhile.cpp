@@ -91,7 +91,7 @@ Status LogicWhile::processNode(Graph* graph, Node* node) {
       return Status::KERNEL_FAILURE;
     }
 
-    // now we should take result of the Scope run, and evaluate it
+    // now we should take result of the OpScope run, and evaluate it
     auto result = __variableSpace->getVariable(lastNode)->getNDArray();
 
 

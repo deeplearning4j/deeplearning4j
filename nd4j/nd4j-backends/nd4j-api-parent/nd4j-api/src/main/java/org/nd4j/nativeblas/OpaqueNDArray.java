@@ -35,7 +35,6 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
  * @see org.bytedeco.javacpp.Pointer
  * @see OpaqueNDArrayArr
  * @see Nd4j#getNativeOps()
- * @see sd::NDArray*
  *
  * @version 1.0
  * @since 2024.2.1

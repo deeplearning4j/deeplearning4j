@@ -26,6 +26,8 @@ import org.bytedeco.javacpp.tools.*;
 import org.bytedeco.openblas.global.openblas;
 import org.nd4j.presets.OpExclusionUtils;
 
+import static org.nd4j.presets.OpExclusionUtils.getSkipClasses;
+
 /**
  *
  * @author saudet
@@ -85,8 +87,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "array/ShapeList.h",
                 "system/type_boilerplate.h",
                 "system/op_boilerplate.h",
-                //"enum_boilerplate.h",
-                //"op_enums.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",
@@ -199,7 +199,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("OpaqueContext").pointerTypes("org.nd4j.nativeblas.OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("org.nd4j.nativeblas.OpaqueRandomGenerator"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("org.nd4j.nativeblas.OpaqueLaunchContext"))
-                .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer"))
+                .put (new Info("std::vector<std::string>","std::vector<std::string>*").cast().pointerTypes("PointerPointer")
                 .put(new Info("ExecTrace").pointerTypes("Pointer"))
                 .put(new Info("std::vector<sd::ops::ExecTrace*>","OpExecTrace**")
                         .pointerTypes("org.nd4j.nativeblas.OpExecTraceVector"))
@@ -240,14 +240,17 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
                         .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
-                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                 .put(new Info("std::vector<std::vector<sd::LongType> >").pointerTypes("LongVectorVector").define())
                 .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
                 .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
-                .put(new Info("sd::IndicesList").purify())
                 .put(new Info("shape::cuMalloc").skip())
+                .put(new Info("permutei").skip())
+                .put(new Info(OpExclusionUtils.getPrefixedSkipOps()).skip())
+                .put(new Info("sd::LaunchContext").skip())
+                .put(new Info(OpExclusionUtils.getPrefixedShapeFunctions()).skip())
+                .put(new Info(getSkipClasses()).skip())
                 .put(new Info("ErrorResult").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);

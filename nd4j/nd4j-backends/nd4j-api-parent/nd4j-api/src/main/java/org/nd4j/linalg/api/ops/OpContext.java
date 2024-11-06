@@ -24,7 +24,6 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.nativeblas.OpaqueContext;
 
 import java.util.List;
 
@@ -62,23 +61,6 @@ public interface OpContext extends AutoCloseable {
 
     int numIArguments();
 
-
-    /**
-     * This method returns integer argument by index
-     * from the c++ level. This is mainly used for testing.
-     * @param index index of the argument
-     * @return argument
-     */
-    int iArgumentAtNative(int index);
-
-    /**
-     * This method returns integer argument by index
-     * from the c++ level. This is mainly used for testing.
-
-     * @return
-     */
-    int numIArgumentsNative();
-
     /**
      * This method sets floating point arguments required for operation
      * @param arguments
@@ -99,22 +81,6 @@ public interface OpContext extends AutoCloseable {
     List<Double> getTArguments();
     int numTArguments();
 
-
-    /**
-     * This method returns floating point argument by index
-     * from the c++ level. This is mainly used for testing.
-     * @param index index of the argument
-     * @return argument
-     */
-    Double tArgumentNative(int index);
-
-    /**
-     * This method returns the number of floating point arguments
-     * from the c++ level. This is mainly used for testing.
-     * @return
-     */
-    int numTArgumentsNative();
-
     /**
      * This method sets data type arguments required for operation
      * @param arguments
@@ -134,21 +100,6 @@ public interface OpContext extends AutoCloseable {
     List<DataType> getDArguments();
     int numDArguments();
 
-    /**
-     * Returns the data type
-     * from the underlying c++.
-     * Mainly used for testing.
-     * @param index
-     * @return
-     */
-    DataType dataTypeNativeAt(int index);
-
-    /**
-     * This method returns number of data type arguments
-     * from c++. This is mainly used for testing.
-     * @return
-     */
-    int numDNative();
 
     /**
      * This method returns number of intermediate results
@@ -187,7 +138,6 @@ public interface OpContext extends AutoCloseable {
 
     void setBArguments(List<Boolean> arguments);
 
-
     /**
      * This method sets boolean arguments required for operation
      * @param arguments
@@ -198,22 +148,6 @@ public interface OpContext extends AutoCloseable {
 
     List<Boolean> getBArguments();
     int numBArguments();
-
-    /**
-     * This method returns boolean argument by index
-     * from the c++ level. This is mainly used for testing.
-     * @param index index of the argument
-     * @return
-     */
-    boolean bArgumentAtNative(int index);
-
-    /**
-     * This method returns number of boolean arguments
-     * from the c++ level. This is mainly used for testing.
-     * @return
-     */
-    int numBArgumentsNative();
-
 
     /**
      * This method sets root-level seed for rng
@@ -259,21 +193,6 @@ public interface OpContext extends AutoCloseable {
     INDArray getInputArray(int idx);
 
     /**
-     * This method returns input array by index
-     * from the c++ level. This is mainly used for testing.
-     * @param idx index of the argument
-     * @return input array
-     */
-    INDArray getInputArrayNative(int idx);
-
-    /**
-     * This method returns number of input arguments
-     * from the c++ level. This is mainly used for testing.
-     * @return
-     */
-    int numInputsNative();
-
-    /**
      * This method adds INDArray as output for future op call
      * @param index
      * @param array
@@ -302,28 +221,11 @@ public interface OpContext extends AutoCloseable {
 
     int numOutputArguments();
 
-
-    /**
-     * This method returns output array by index
-     * from the c++ level. This is mainly used for testing.
-     * @param idx
-     * @return
-     */
-    INDArray getOutputArrayNative(int idx);
-
-    /**
-     * This method returns number of outputs
-     * from the c++ level. This is mainly used for testing.
-     * @return output array
-     */
-    int numOutArgumentsNative();
-
     /**
      * This method returns pointer to context, to be used during native op execution
-     *
      * @return
      */
-    OpaqueContext contextPointer();
+    Pointer contextPointer();
 
     /**
      * This method allows to set op as inplace
@@ -340,7 +242,7 @@ public interface OpContext extends AutoCloseable {
     void allowHelpers(boolean reallyAllow);
 
     /**
-     * This method allows to display outputs validation via shape function
+     * This methos allows to disape outputs validation via shape function
      * @param reallyOverride
      */
     void shapeFunctionOverride(boolean reallyOverride);

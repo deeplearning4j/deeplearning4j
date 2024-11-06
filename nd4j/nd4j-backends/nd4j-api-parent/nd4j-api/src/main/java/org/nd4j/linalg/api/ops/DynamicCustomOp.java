@@ -393,7 +393,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     ctx.setIArguments(iArguments);
                     ctx.setDArguments(dArguments);
                     ctx.setTArguments(tArguments);
-                    ctx.setBAArguments(bArguments);
+                    ctx.setBArguments(bArguments);
                     ctx.setInputArrays(inputArguments);
                     ctx.setOutputArrays(outputArguments);
 

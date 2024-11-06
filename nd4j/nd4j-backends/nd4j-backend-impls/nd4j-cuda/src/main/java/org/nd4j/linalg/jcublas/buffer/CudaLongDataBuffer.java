@@ -71,8 +71,6 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
     public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements) {
         super();
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
-        this.offset = 0;
-        this.originalOffset = 0;
         this.underlyingLength = numberOfElements;
         this.length = numberOfElements;
         initTypeAndSize();
@@ -107,12 +105,10 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaLongDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
-    public CudaLongDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+
+    public CudaLongDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -124,9 +120,6 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         elementSize = 8;
     }
 
-    public CudaLongDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
 
 
     /**
@@ -139,17 +132,9 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
-    public CudaLongDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaLongDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public CudaLongDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
+
 
     public CudaLongDataBuffer(float[] data) {
         super(data);
@@ -159,12 +144,11 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         super(data, copy);
     }
 
-    public CudaLongDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaLongDataBuffer(int[] data) {
-        super(data);
+       this(data.length, 8);
+        setData(data);
+
     }
 
     public CudaLongDataBuffer(long[] data) {
@@ -183,13 +167,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         set(data, data.length, 0, 0);
     }
 
-    public CudaLongDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaLongDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     protected DataBuffer create(long length) {

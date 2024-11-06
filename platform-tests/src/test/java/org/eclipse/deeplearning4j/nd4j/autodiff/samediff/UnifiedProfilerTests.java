@@ -35,7 +35,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.profiler.UnifiedProfiler;
 import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
 import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 import org.nd4j.linalg.profiler.data.eventlogger.ObjectAllocationType;
@@ -59,7 +58,6 @@ public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testProfiler(Nd4jBackend backend) {
-        Nd4j.getProfiler().start();
         try {
             EventLogger.getInstance().setLogStream(new PrintStream(new FileOutputStream("your-logfile.log")));
         } catch (FileNotFoundException e) {
@@ -92,10 +90,6 @@ public class UnifiedProfilerTests extends BaseNd4jTestWithBackends {
 
         sd.fit(iterator, 10);
 
-        System.out.println(Nd4j.getProfiler().printCurrentStats());
-
-
-        Nd4j.getProfiler().stop();
 
     }
 

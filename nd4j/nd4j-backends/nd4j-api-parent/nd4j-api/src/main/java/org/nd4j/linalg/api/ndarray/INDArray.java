@@ -867,14 +867,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray assign(boolean value);
 
-    /**
-     * Get the linear index of the data in to the array
-     *
-     * @param i the index to getScalar
-     * @return the linear index in to the data
-     */
-    long linearIndex(long i);
-
     //TODO: unused / untested method. only used recursively.
     /**
      * Flattens the array for linear indexing in list.
@@ -2246,8 +2238,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the current array
      */
     INDArray permutei(long... rearrange);
-
-    void setIsView(boolean isView);
 
     /**
      * Dimshuffle: an extension of permute that adds the ability

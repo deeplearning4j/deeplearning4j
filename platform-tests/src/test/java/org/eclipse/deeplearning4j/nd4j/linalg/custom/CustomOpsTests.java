@@ -523,7 +523,7 @@ public class CustomOpsTests extends BaseNd4jTestWithBackends {
         context.setOutputArray(0, arrayZ);
 
         val addOp = new AddOp();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp2(null, addOp.opHash(), context.contextPointer());
+       Nd4j.getNativeOps().execCustomOp2(null, addOp.opHash(), context.contextPointer());
 
         assertEquals(exp, arrayZ);
     }

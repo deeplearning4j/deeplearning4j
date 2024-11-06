@@ -224,8 +224,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
     @AfterEach
     public void after() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+       Nd4j.getNativeOps().enableDebugMode(false);
+       Nd4j.getNativeOps().enableVerboseMode(false);
     }
 
     public Map<String, INDArray> variablesForInput() {

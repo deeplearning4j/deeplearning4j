@@ -45,7 +45,6 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
-#include <legacy/NativeOpExecutioner.h>
 #include <types/float16.h>
 #include <types/bfloat16.h>
 #include <iostream>
