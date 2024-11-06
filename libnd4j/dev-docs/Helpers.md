@@ -8,7 +8,7 @@ Requirements helper was introduced to replace plain checks for making them outpu
 - it is implicit bool. this makes it usable with logical operators and also inside if conditions. Besides it will benefit from shortcircuit nature of those operators.
 - it has the following check methods
 ```cpp
-Requirements& expect(const T& expVar,const T1& reqVar, Op comparision, const char *first_half="")
+Requirements& expect(const T& expVar,const T1& reqVar, Op comparison, const char *first_half="")
 Requirements& expectEq(const T& exp,const T1& req)
 Requirements& expectNotEq(const T& exp,const T1& req)
 Requirements& expectLess(const T& exp,const T1& req)
@@ -20,11 +20,11 @@ Requirements& expectFalse(const T& expVar, const char *msg=)
 ```
 - you can either log the success case or throw error on the failure
 - it can use plain types for checks. 
-- if value has stream operator it will be used to output it's value. for custom types you may need add that by yourself
+- if value has stream operator it will be used to output its value. for custom types you may need add that by yourself
 `ostream& operator<<(ostream& os, const CustomUserType& dt)`
 - there is generic template `InfoVariable` wrapper for types to make it informative. you can use lambda operators with them as well to make it lazily evaluated
 - we added custom `ShapeInfoVariable` wrapper for the NDArray and vector<> shapes to make them informative
-- one can use `expect` to add its own proper comparision. simple lambda for that will be like this:
+- one can use `expect` to add its own proper comparison. simple lambda for that will be like this:
 ```cpp
 [](const decltype(expType)& l, const decltype(reqType)& r){
             //compare and return
@@ -88,7 +88,7 @@ As it is seen the second check did not happen as the previous failed. But still 
 ```cpp
 Requirements req4("Requirement Helper Example#4");
 int zz = 20;
-req4.expectEq(zz, 21) &&  //shortcicuit And
+req4.expectEq(zz, 21) &&  //shortcircuit And
 req4.expectGreaterEq(makeInfoVariable(getAge(), "the user's age"), 18);
 ```
 Output:
@@ -168,5 +168,5 @@ Requirement Helper Example#8: {6} expected to be one of these {[1, 2, 3, 7, 8, 9
 
 
 ##### Here is live example:
-**Note:** some classes were mocked  there and do not represent the exact implementations in libnd4j. 
+**Note:** some classes were mocked there and do not represent the exact implementations in libnd4j. 
 https://godbolt.org/z/sq98vchs5

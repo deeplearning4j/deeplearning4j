@@ -34,7 +34,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -80,9 +79,7 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         numWords = length;
     }
 
-    public Utf8Buffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
-        super(buffer, dataType, length, offset);
-    }
+
 
     public Utf8Buffer(int[] ints, boolean copy, MemoryWorkspace workspace) {
         super(ints, copy, workspace);
@@ -100,9 +97,6 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         super(data, copy);
     }
 
-    public Utf8Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf8Buffer(float[] data, boolean copy) {
         super(data, copy);
@@ -117,25 +111,19 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
     }
 
     public Utf8Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data, copy);
     }
 
-    public Utf8Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public Utf8Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
     public Utf8Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+        super(length, elementSize);
     }
 
-    public Utf8Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
-    }
+
 
     public Utf8Buffer(@NonNull Collection<String> strings) {
         super(Utf8Buffer.stringBufferRequiredLength(strings), false);
@@ -165,7 +153,11 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         headerPointer.put(cnt, currentLength);
     }
 
-    
+    public Utf8Buffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
+    }
+
+
     private synchronized Pointer getPointer() {
         return this.pointer;
     }

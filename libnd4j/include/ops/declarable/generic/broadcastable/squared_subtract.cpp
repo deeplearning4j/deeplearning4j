@@ -81,8 +81,8 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
   } else {
     // broadcast case
 
-    auto preX = x->dup(false);
-    auto preY = y->dup(false);
+    auto preX = x->dup(x->ordering());
+    auto preY = y->dup(y->ordering());
 
     auto targetShape = epsNext->getShapeAsVector();
 
