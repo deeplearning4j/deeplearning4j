@@ -49,14 +49,14 @@ DIVERGENT_OP_IMPL(Switch, 2, 2, true) {
     if (!out0) {
       this->storeResult(block, 0, new NDArray(input->dup()));
     } else {
-      out0->assign(input);
+      out0->assign(*input);
     }
   } else {
     block.setBranch(1);
     if (!out1) {
       this->storeResult(block, 1, new NDArray(input->dup()));
     } else {
-      out1->assign(input);
+      out1->assign(*input);
     }
   }
 
@@ -74,10 +74,10 @@ DECLARE_SYN(while, While);
 
 /**
  *  This op is a placeholder.
- *  Actual Scope implementation is in Graph and GraphExecutioner
+ *  Actual OpScope implementation is in Graph and GraphExecutioner
  */
-LOGIC_OP_IMPL(Scope);
-DECLARE_SYN(scope, Scope);
+LOGIC_OP_IMPL(OpScope);
+DECLARE_SYN(scope, OpScope);
 
 /**
  *  This op is a placeholder.

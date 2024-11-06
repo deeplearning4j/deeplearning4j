@@ -230,7 +230,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xShapeInfo);
             shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2 is %lld,%lld,%lld offset  is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2);
+            printf("Index i0,i1,i2 is %lld,%lld,%lld offset  is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2);
 #endif
             s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2], extraParams), extraParams);
           }
@@ -240,7 +240,7 @@ static void reduceExec31(const X* x, const LongType* xShapeInfo, Z* z, const Lon
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xShapeInfo);
             shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2 is %lld,%lld,%lld offset is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2 * xStrd2);
+            printf("Index i0,i1,i2 is %lld,%lld,%lld offset is %lld reduceExec31\n", i0,i1,i2,i1 * xStrd1 + i2 * xStrd2);
 #endif
 
             s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2], extraParams), extraParams);
@@ -281,8 +281,8 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xShapeInfo);
             shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
-#endif;
+            printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
+#endif
             s = OpType::update(s, OpType::op(x1[i2], extraParams), extraParams);
           }
         else
@@ -290,7 +290,7 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xShapeInfo);
             shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
+            printf("Index i0,i1,i2 is %lld,%lld,%lld reduceExec32\n", i0,i1,i2);
 #endif
             s = OpType::update(s, OpType::op(x1[i2 * xStrd2], extraParams), extraParams);
           }
@@ -304,8 +304,12 @@ SD_LIB_HIDDEN void reduceExec32(const X* x, const LongType* xShapeInfo, Z* z, co
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E, typename OpType>
-SD_LIB_HIDDEN void reduceExec41(const X* x, const LongType* xShapeInfo, Z* z, const LongType* zShapeInfo,
-                                const LongType* dims, E* extraParams) {
+SD_LIB_HIDDEN void reduceExec41(const X* x,
+                                const LongType* xShapeInfo,
+                                Z* z, const
+                                LongType* zShapeInfo,
+                                const LongType* dims,
+                                E* extraParams) {
   LongType xRank = shape::rank(xShapeInfo);
   LongType zRank = shape::rank(zShapeInfo);
 
@@ -338,7 +342,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 + i2 * xStrd2 + i3 * xStrd3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 + i2 * xStrd2 + i3 * xStrd3);
 #endif
               s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
             }
@@ -349,7 +353,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 + i3 * xStrd3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 + i3 * xStrd3);
 #endif
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3], extraParams), extraParams);
             }
@@ -361,7 +365,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3);
 #endif
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3], extraParams), extraParams);
             }
@@ -372,7 +376,7 @@ SD_LIB_HIDDEN void reduceExec41(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset is %lld reduceExec41\n", i0,i1,i2,i3,i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3);
 #endif
               s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
             }
@@ -419,7 +423,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec42\n", i0,i1,i2,i3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec42\n", i0,i1,i2,i3);
 #endif
               s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3], extraParams), extraParams);
             }
@@ -429,7 +433,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3);
 #endif
               s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3], extraParams), extraParams);
             }
@@ -439,7 +443,7 @@ SD_LIB_HIDDEN void reduceExec42(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3 * xStrd3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld reduceExec42\n", i0,i1,i2,i3,i2 * xStrd2 + i3 * xStrd3);
 #endif
               s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3], extraParams), extraParams);
             }
@@ -486,7 +490,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
 #endif
               s = OpType::update(s, OpType::op(x2[i3], extraParams), extraParams);
             }
@@ -495,7 +499,7 @@ SD_LIB_HIDDEN void reduceExec43(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
               shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld reduceExec43\n", i0,i1,i2,i3);
 #endif
               s = OpType::update(s, OpType::op(x2[i3 * xStrd3], extraParams), extraParams);
             }
@@ -548,7 +552,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld reduceExec51\n", i0,i1,i2,i3,i4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld reduceExec51\n", i0,i1,i2,i3,i4);
 #endif
                 s = OpType::update(s, OpType::op(x0[i1 + i2 * xStrd2 + i3 * xStrd3 + i4 * xStrd4], extraParams),
                                    extraParams);
@@ -561,7 +565,7 @@ SD_LIB_HIDDEN void reduceExec51(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lldreduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld  offset %lldreduceExec51\n", i0,i1,i2,i3,i4,i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x0[i1 * xStrd1 + i2 + i3 * xStrd3 + i4 * xStrd4], extraParams),
                                    extraParams);
@@ -646,7 +650,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x1[i2 + i3 * xStrd3 + i4 * xStrd4], extraParams), extraParams);
               }
@@ -657,7 +661,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 + i3 * xStrd3 + i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 + i4 * xStrd4], extraParams), extraParams);
               }
@@ -668,7 +672,7 @@ SD_LIB_HIDDEN void reduceExec52(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 * xStrd2 + i3 + i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec52\n", i0,i1,i2,i3,i4,i2 * xStrd2 + i3 + i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x1[i2 * xStrd2 + i3 * xStrd3 + i4], extraParams), extraParams);
               }
@@ -731,7 +735,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 + i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 + i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x2[i3 + i4 * xStrd4], extraParams), extraParams);
               }
@@ -741,7 +745,7 @@ SD_LIB_HIDDEN void reduceExec53(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 * xStrd3 + i4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec53\n", i0,i1,i2,i3,i4,i3 * xStrd3 + i4);
 #endif
                 s = OpType::update(s, OpType::op(x2[i3 * xStrd3 + i4], extraParams), extraParams);
               }
@@ -802,7 +806,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4);
 #endif
                 s = OpType::update(s, OpType::op(x3[i4], extraParams), extraParams);
               }
@@ -811,7 +815,7 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                  printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4 * xStrd4);
+                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x3[i4 * xStrd4], extraParams), extraParams);
               }
@@ -922,9 +926,12 @@ SD_LIB_HIDDEN void ReductionLoops<X, Z, E>::loopReduce(memory::Workspace* worksp
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E>
 template <typename OpType>
-SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const LongType* xShapeInfo, Z* z,
-                                                          const LongType* zShapeInfo, E* extraParams,
+SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
+                                                          const LongType* xShapeInfo, Z* z,
+                                                          const LongType* zShapeInfo,
+                                                          E* extraParams,
                                                           LongType threadId, LongType numThreads) {
+  printf("deducing loop\n");
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
   if(xShapeInfo == nullptr) {
     THROW_EXCEPTION("Input x shape info was null!");
@@ -948,7 +955,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
-
+  printf("Beginning execution using loopkind %i\n", kindOfLoop);
+  fflush(stdout);
   switch (kindOfLoop) {
     //*********************************************//
     case LoopKind::EWS1: {
@@ -956,6 +964,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       LongType start = span.startX(), stop = span.stopX();
       for (LongType i = start; i < stop; i++) {
 #if defined(PRINT_INDICES)
+        printf("loopkind ews1\n");
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
         printf("Index is %lld offset is %lld loop kind: ews1 TransformLoops<X, Z, E>::loopTransform\n", i,i);
@@ -974,6 +983,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       LongType start = span.startX(), stop = span.stopX();
       for (auto i = start; i < stop; i++) {
 #if defined(PRINT_INDICES)
+        printf("loopkind ewsnonzero\n");
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
         printf("Index is %lld offset is %lld loop kind: EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,xEws,zEws);
@@ -994,13 +1004,29 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
       int64_t start = span.startX(), stop = span.stopX();
 
       if (zEws > 1) {
+        sd::LongType  indices[SD_MAX_RANK];
         for (auto i = start; i < stop; i++) {
-          const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
+          shape::index2coords(i, zShapeInfo, indices);
+          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
+#if defined(PRINT_INDICES)
+          printf("loopkind Z_EWSNONZERO\n");
+          shape::printShapeInfo(xShapeInfo);
+          shape::printShapeInfo(zShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
+#endif
           z[i * zEws] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       } else {
+        sd::LongType  indices[SD_MAX_RANK];
         for (auto i = start; i < stop; i++) {
-          const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
+          shape::index2coords(i, zShapeInfo, indices);
+          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
+#if defined(PRINT_INDICES)
+          printf("loopkind Z_EWSNONZERO\n");
+          shape::printShapeInfo(xShapeInfo);
+          shape::printShapeInfo(zShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
+#endif
           z[i] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
         }
       }
@@ -1044,7 +1070,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
         }
       }
-
+      printf("completed loopkind  rank 2 execution\n");
+      fflush(stdout);
     } break;
 
       //*********************************************//
@@ -1092,8 +1119,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
             for (LongType i3 = 0; i3 < uXShape3; ++i3) {
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xShapeInfo);
-                        shape::printShapeInfo(zShapeInfo);
-                        printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld offset %lld loop kind: RANK4 TransformLoops<X, Z, E>::loopTransform\n", i0,i1,i2,i3,z0 + i3 * zStride[3]);
+              shape::printShapeInfo(zShapeInfo);
+              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld z0 %lld xStride[3] %lld zStride[3] %lld offset %lld loop kind: RANK4 TransformLoops<X, Z, E>::loopTransform\n", i0,i1,i2,i3,z0,xStride[3],zStride[3],z0 + i3 * zStride[3]);
 #endif
               z[z0 + i3 * zStride[3]] = static_cast<Z>(OpType::op(x[x0 + i3 * xStride[3]], extraParams));
             }
@@ -1137,18 +1164,20 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
       //*********************************************//
     default: {
-      LongType xShapeInfoCast[SD_MAX_RANK];
-      LongType zShapeInfoCast[SD_MAX_RANK];
+      printf("default case\n");
+      fflush(stdout);;
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
 
-      bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-      bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
       auto xLen = shape::length(xShapeInfo);
       auto zLen = shape::length(zShapeInfo);
       auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
       for (auto i = span.startX(); i < span.stopX(); i++) {
-        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+        shape::index2coords(i,xShapeInfo,xCoords);
+        shape::index2coords(i,zShapeInfo,zCoords);
+        auto xOffset = shape::getOffset(xShapeInfo,xCoords,0);
+        auto zOffset = shape::getOffset(zShapeInfo,zCoords,0);
         if(xOffset >= xLen) {
           std::string errorMessage;
           errorMessage += "Offset is out of bounds for x. ";
@@ -1172,6 +1201,15 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
         printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i,xOffset,zOffset);
+        for(int e = 0; e < shape::rank(xShapeInfo); e++) {
+          printf("xCoords[%i]: %lld\n", e, xCoords[e]);
+        }
+
+        for(int e = 0; e < shape::rank(zShapeInfo); e++) {
+          printf("zCoords[%i]: %lld\n", e, zCoords[e]);
+        }
+
+        fflush(stdout);
 #endif
 
         auto opResult = OpType::op(x[xOffset], extraParams);
@@ -1181,6 +1219,9 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x, const Long
 
     }
   }
+
+  printf("ending loop transform\n");
+  fflush(stdout);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1251,8 +1292,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
         for (LongType j = 0; j < tadLen; ++j) {
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3\n", i,j);
+          shape::printShapeInfo(yTadShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
           s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
         }
@@ -1275,8 +1316,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
         for (LongType j = 0; j < tadLen; ++j) {
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3\n", i,j);
+          shape::printShapeInfo(yTadShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
           s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
         }
@@ -1301,8 +1342,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
           const auto yTadOffset = i0 * yTadStride[0];
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3\n", i,i0 * zEws);
+          shape::printShapeInfo(yTadShapeInfo);
+          printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3\n", i,i0 * zEws);
 #endif
           s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
         }
@@ -1329,8 +1370,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
             const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
 #endif
             s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
           }
@@ -1358,8 +1399,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
               const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK3 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
+              shape::printShapeInfo(yTadShapeInfo);
+              printf("Index is %lld offset is %lld loop kind: RANK3 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
 #endif
               s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
             }
@@ -1426,8 +1467,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
                                           i3 * yTadStride[3] + i4 * yTadStride[4];
 #if defined(PRINT_INDICES)
                   shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
+                  shape::printShapeInfo(yTadShapeInfo);
+                  printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
 #endif
 
                   s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
@@ -1460,8 +1501,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
             const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
             s = OpType::update(s, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
           }
@@ -1487,8 +1528,8 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
             const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
             s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
           }
@@ -1550,8 +1591,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
           for (LongType j = 0; j < tadLen; ++j) {
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
 #endif
             s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
           }
@@ -1577,8 +1618,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
           for (LongType j = 0; j < tadLen; ++j) {
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
 #endif
             s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
           }
@@ -1606,8 +1647,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
             const auto yTadOffset = i0 * yTadStride[0];
 #if defined(PRINT_INDICES)
             shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
+            shape::printShapeInfo(yTadShapeInfo);
+            printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
 #endif
             s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
           }
@@ -1636,8 +1677,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
               const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
+              shape::printShapeInfo(yTadShapeInfo);
+              printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
 #endif
               s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
             }
@@ -1704,8 +1745,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
                       i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
 #if defined(PRINT_INDICES)
                   shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK4 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
+                  shape::printShapeInfo(yTadShapeInfo);
+                  printf("Index is %lld offset is %lld loop kind: RANK4 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
 #endif
                   s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                 }
@@ -1742,8 +1783,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
                                             i3 * yTadStride[3] + i4 * yTadStride[4];
 #if defined(PRINT_INDICES)
                     shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
+                    shape::printShapeInfo(yTadShapeInfo);
+                    printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
 #endif
                     s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                   }
@@ -1778,8 +1819,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
               const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", zInd,j);
+              shape::printShapeInfo(yTadShapeInfo);
+              printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", zInd,j);
 #endif
               s = OpType::update(s, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
             }
@@ -1807,8 +1848,8 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
               const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
 #if defined(PRINT_INDICES)
               shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", zInd,j);
+              shape::printShapeInfo(yTadShapeInfo);
+              printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", zInd,j);
 #endif
 
               s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);

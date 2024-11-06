@@ -79,13 +79,8 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaIntDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
-    public CudaIntDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public CudaIntDataBuffer(int[] data) {
         this(data.length);
@@ -102,41 +97,19 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
-    public CudaIntDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
+
+    public CudaIntDataBuffer(float[] data) {
+        super(data);
     }
 
     public CudaIntDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
         super(data, copy, workspace);
     }
 
-    public CudaIntDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+    public CudaIntDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
-    public CudaIntDataBuffer(double[] data) {
-        super(data);
-    }
-
-    public CudaIntDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaIntDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaIntDataBuffer(float[] data) {
-        super(data);
-    }
-
-    public CudaIntDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaIntDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     protected DataBuffer create(long length) {

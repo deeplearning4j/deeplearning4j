@@ -24,6 +24,8 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.ShortPointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -73,17 +75,40 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaHalfDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
     public CudaHalfDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 2, initialize, workspace);
     }
 
     public CudaHalfDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+        super(data.length, 2, true, workspace);
+        setData(data);
     }
+
+    public CudaHalfDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
+    }
+
+    public CudaHalfDataBuffer(double[] data, boolean copy) {
+        super(data.length, 2, true);
+        setData(data);
+    }
+
+    public CudaHalfDataBuffer(float[] data, boolean copy) {
+        super(data.length, 2, true);
+        setData(data);
+    }
+
+    public CudaHalfDataBuffer(float[] data, boolean b, long offset) {
+        super(data.length, 2, true);
+        setData(data);
+    }
+
+    public CudaHalfDataBuffer(int[] data, boolean copy) {
+        super(data.length, 2, true);
+        setData(data);
+    }
+
 
     /**
      * Initialize the opType of this buffer
@@ -94,49 +119,28 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         type = DataType.HALF;
     }
 
-    public CudaHalfDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
 
     public CudaHalfDataBuffer(float[] buffer) {
-        super(buffer);
+        super(buffer.length, 2, true);
+        setData(buffer);
     }
 
-    public CudaHalfDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaHalfDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public CudaHalfDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
 
     public CudaHalfDataBuffer(double[] data) {
-        super(data);
+        super(data.length, 2, true);
+        setData(data);
     }
 
-    public CudaHalfDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaHalfDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaHalfDataBuffer(int[] data) {
-        super(data);
+        super(data.length, 2, true);
+        setData(data);
     }
 
-    public CudaHalfDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaHalfDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     protected DataBuffer create(long length) {
@@ -145,45 +149,61 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(float[] data) {
+        if (data.length == 0)
+            return;
         val pointer = new ShortPointer(ArrayUtil.toBfloats(data));
-        copyDataFromSrc(pointer,length,offset,0);
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        val shortData = ArrayUtil.toShorts(data);
+        set(shortData, shortData.length, 0, 0);
+    }
+
+    @Override
+    public void setData(double[] data) {
+        if (data.length == 0)
+            return;
+        val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
     public void setData(long[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        val shortData = ArrayUtil.toShorts(data);
+        set(shortData, shortData.length, 0, 0);
     }
 
     @Override
     public void setData(byte[] data) {
+        if (data.length == 0)
+            return;
         float[] floats = new float[data.length];
         for(int i = 0; i < data.length; i++) {
             floats[i] = data[i];
         }
-
         setData(floats);
     }
 
     @Override
     public void setData(short[] data) {
+        if (data.length == 0)
+            return;
         val pointer = new ShortPointer(data);
-        copyDataFromSrc(pointer,length,offset,0);
-    }
-
-    @Override
-    public void setData(double[] data) {
-        val pointer = new ShortPointer(ArrayUtil.toHalfs(data));
-        copyDataFromSrc(pointer,length,offset,0);
+        copyDataFromSrc(pointer, data.length, 0, 0);
     }
 
     @Override
     public void setData(boolean[] data) {
-        setData(ArrayUtil.toFloatArray(data));
+        if (data.length == 0)
+            return;
+        float[] floats = ArrayUtil.toFloatArray(data);
+        setData(floats);
     }
 
     @Override
@@ -242,7 +262,4 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
     public void flush() {
 
     }
-
-
-
 }

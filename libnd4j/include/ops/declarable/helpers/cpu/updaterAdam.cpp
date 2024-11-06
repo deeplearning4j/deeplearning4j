@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void adamUpdater_(const NDArray& gradient, const NDArray& initStateU, const NDArray& initStateM, NDArray& update,
+static void adamUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& initStateM, NDArray& update,
                          NDArray& stateU, NDArray& stateM, const double dLr, const double dBeta1, const double dBeta2,
                          const double dEpsilon, const int nIteration) {
   const T* grad = gradient.bufferAsT<T>();
@@ -105,8 +105,8 @@ static void adamUpdater_(const NDArray& gradient, const NDArray& initStateU, con
   return;
 }
 
-void updaterAdam(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                 const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
+void updaterAdam(sd::LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                 NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
                  const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), adamUpdater_,

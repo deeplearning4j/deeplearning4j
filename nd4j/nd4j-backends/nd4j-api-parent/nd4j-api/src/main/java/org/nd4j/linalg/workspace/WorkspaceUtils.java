@@ -54,29 +54,6 @@ public class WorkspaceUtils {
      * @param msg Message to include in the exception, if required
      * @param allowScopedOut If true: don't fail if we have an open workspace but are currently scoped out
      */
-    public static void closeWorkspacesForCurrentThread(boolean allowScopedOut) throws ND4JWorkspaceException {
-        if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
-
-            MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
-            if(allowScopedOut && (currWs == null || currWs instanceof DummyWorkspace))
-                return; //Open WS but we've scoped out
-
-            List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
-            for (MemoryWorkspace ws : l) {
-                if(ws.isScopeActive()) {
-                    ws.close();
-                }
-            }
-
-        }
-    }
-
-    /**
-     * Assert that no workspaces are currently open
-     *
-     * @param msg Message to include in the exception, if required
-     * @param allowScopedOut If true: don't fail if we have an open workspace but are currently scoped out
-     */
     public static void assertNoWorkspacesOpen(String msg, boolean allowScopedOut) throws ND4JWorkspaceException {
         if (Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()) {
 
@@ -88,7 +65,7 @@ public class WorkspaceUtils {
             List<String> workspaces = new ArrayList<>(l.size());
             for (MemoryWorkspace ws : l) {
                 if(ws.isScopeActive()) {
-                    workspaces.add(ws.getId());
+                    workspaces.add(String.valueOf(ws.getAssociatedEnumType()));
                 }
             }
             throw new ND4JWorkspaceException(msg + " - Open/active workspaces: " + workspaces);
@@ -156,7 +133,7 @@ public class WorkspaceUtils {
         List<String> workspaces = new ArrayList<>(l.size());
         for( MemoryWorkspace ws : l) {
             if(ws.isScopeActive()) {
-                workspaces.add(ws.getId());
+                workspaces.add(String.valueOf(ws.getAssociatedEnumType()));
             }
         }
         return workspaces;

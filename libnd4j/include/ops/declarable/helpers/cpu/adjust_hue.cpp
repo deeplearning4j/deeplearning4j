@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void adjustHue_(const NDArray *input, const NDArray *deltaScalarArr, NDArray *output, const sd::LongType dimC) {
+static void adjustHue_(NDArray *input, NDArray *deltaScalarArr, NDArray *output, const sd::LongType dimC) {
   const T delta = deltaScalarArr->e<T>(0);
   const int rank = input->rankOf();
 
@@ -86,7 +86,7 @@ static void adjustHue_(const NDArray *input, const NDArray *deltaScalarArr, NDAr
   }
 }
 
-void adjustHue(sd::LaunchContext *context, const NDArray *input, const NDArray *deltaScalarArr, NDArray *output,
+void adjustHue(sd::LaunchContext *context, NDArray *input, NDArray *deltaScalarArr, NDArray *output,
                const sd::LongType dimC) {
   BUILD_SINGLE_SELECTOR(input->dataType(), adjustHue_, (input, deltaScalarArr, output, dimC), SD_FLOAT_TYPES);
 }

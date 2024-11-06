@@ -98,7 +98,7 @@ void copy_core_generic(int rank, const T* x, T* coreZ, const sd::LongType* xShap
 }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
+void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, NDArray& padValue) {
   const T* x = input.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
 
@@ -111,7 +111,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
   if (mode == 0) {  // CONSTANT case
 
-    const T padVal = padValue.e<T>(0);
+    T padVal = padValue.e<T>(0);
 
     auto xShapes = input.shapeOf();
     auto outShapes = output.shapeOf();
@@ -192,14 +192,14 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
 
 
-void pad(sd::LaunchContext* context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output,
-         NDArray const& padValue) {
+void pad(sd::LaunchContext* context, const int mode, NDArray& input, NDArray& paddings, NDArray& output,
+         NDArray& padValue) {
   BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), SD_COMMON_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const int mode) {
   // mode:  0 - REFLECT, else - SYMMETRIC
   const int reflBorder = (bool)mode ? 1 : 0;
   const int rank = input.rankOf();
@@ -254,13 +254,13 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
   }
 }
 
-void mirrorPad(sd::LaunchContext* context, const NDArray& input, const NDArray& paddings, NDArray& output,
+void mirrorPad(sd::LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                const int mode) {
   BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void mirrorPad_,
-                      (const NDArray& input, const NDArray& paddings, NDArray& output, const int mode),
+                      (NDArray& input, NDArray& paddings, NDArray& output, const int mode),
                       SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////

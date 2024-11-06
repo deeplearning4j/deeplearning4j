@@ -99,7 +99,7 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
                                       ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()), length),
                         SD_COMMON_TYPES);
 
-  auto array = new NDArray(newBuffer, newShape, LaunchContext::defaultContext(), true);
+  auto array = new NDArray(newBuffer, newShape, LaunchContext::defaultContext(), true, 0);
 
   delete[] newShape;
   return array;

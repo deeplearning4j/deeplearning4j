@@ -38,7 +38,7 @@ class SD_LIB_EXPORT DataBuffer {
  private:
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
-  size_t _lenInBytes = 0;
+  LongType _lenInBytes = 0;
   DataType _dataType;
   memory::Workspace *_workspace = nullptr;
 
@@ -96,7 +96,7 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer(const void *hostBuffer,  // copies data from hostBuffer to own memory buffer
              const DataType dataType, const size_t lenInBytes, memory::Workspace *workspace = nullptr);
 
-  DataBuffer(const size_t lenInBytes, const DataType dataType, memory::Workspace *workspace = nullptr,
+  DataBuffer(const sd::LongType lenInBytes, const DataType dataType, memory::Workspace *workspace = nullptr,
              const bool allocBoth = false);
 
   DataBuffer(const DataBuffer &other);
@@ -112,6 +112,11 @@ class SD_LIB_EXPORT DataBuffer {
   size_t getLenInBytes() const;
 
   size_t getNumElements();
+
+  template <typename T>
+  void *primaryAtOffset(const LongType offset);
+  template <typename T>
+  void *specialAtOffset(const LongType offset);
 
   void *primary();
   void *special();
@@ -167,7 +172,7 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer  dup();
   void printHostDevice(long offset);
   static void memcpyPointer(std::shared_ptr<DataBuffer>  dst, std::shared_ptr<DataBuffer>  src);
-  static void memcpy(DataBuffer *dst, DataBuffer *src);
+  static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

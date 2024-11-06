@@ -29,18 +29,18 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void dynamicPartitionFunctor(LaunchContext* context, NDArray const* input, NDArray const* indices,
+SD_LIB_HIDDEN void dynamicPartitionFunctor(LaunchContext* context, NDArray * input, NDArray * indices,
                                            std::vector<NDArray*>& outputList);
 
 SD_LIB_HIDDEN Status dynamicStitchFunctor(LaunchContext* context, std::vector<NDArray*> const& inputs,
                                               std::vector<NDArray*> const& indices, NDArray* output);
 
-SD_LIB_HIDDEN void dynamicPartitionFunctorBP(LaunchContext* context, NDArray const* input, NDArray const* indices,
+SD_LIB_HIDDEN void dynamicPartitionFunctorBP(LaunchContext* context, NDArray * input, NDArray * indices,
                                              std::vector<NDArray*> const& gradientInputList,
                                              std::vector<NDArray*>& outputList);
 
 SD_LIB_HIDDEN Status dynamicStitchFunctorBP(LaunchContext* context, std::vector<NDArray*> const& inputs,
-                                                std::vector<NDArray*> const& indices, NDArray const* gradientInput,
+                                                std::vector<NDArray*> const& indices, NDArray * gradientInput,
                                                 std::vector<NDArray*>& outputList);
 }  // namespace helpers
 }  // namespace ops

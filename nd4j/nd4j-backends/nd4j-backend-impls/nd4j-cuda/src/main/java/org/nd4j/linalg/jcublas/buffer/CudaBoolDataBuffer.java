@@ -20,6 +20,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -30,11 +31,15 @@ import org.nd4j.common.util.ArrayUtil;
 import java.nio.ByteBuffer;
 
 /**
- * Cuda Short buffer
+ * Cuda Bool buffer implementation
+ *
+ * This class handles boolean data types for CUDA operations.
+ * Each boolean is represented as a single byte (1 for true, 0 for false).
  *
  * @author raver119@gmail.com
  */
 public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
+
     /**
      * Meant for creating another view of a buffer
      *
@@ -46,12 +51,40 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
         super(pointer, indexer, length);
     }
 
+    /**
+     * Meant for creating another view of a buffer with a special pointer
+     *
+     * @param pointer        the underlying buffer to create a view from
+     * @param specialPointer the special pointer for device memory
+     * @param indexer        the indexer for the pointer
+     * @param length         the length of the view
+     */
     public CudaBoolDataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
         super(pointer, specialPointer, indexer, length);
     }
 
+    /**
+     * Constructor using a ByteBuffer
+     *
+     * @param buffer    the ByteBuffer to initialize the buffer with
+     * @param dataType  the data type of the buffer
+     * @param length    the length of the buffer
+     * @param offset    the offset in the buffer
+     */
     public CudaBoolDataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
         super(buffer, dataType, length, offset);
+    }
+
+    /**
+     * Constructor with memory workspace
+     *
+     * @param length        the length of the buffer
+     * @param elementSize   the size of each element in bytes
+     * @param initialize    whether to initialize the buffer
+     * @param workspace     the memory workspace
+     */
+    public CudaBoolDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
+        super(length, elementSize, initialize, workspace);
     }
 
     /**
@@ -60,31 +93,60 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
      * @param length the length of the buffer
      */
     public CudaBoolDataBuffer(long length) {
-        super(length, 1);
+        super(length, 1, true); // elementSize for BOOL is 1 byte
+        setData(new boolean[(int) length]); // Initialize with false
     }
 
+    /**
+     * Constructor with initialization flag
+     *
+     * @param length      the length of the buffer
+     * @param initialize  whether to initialize the buffer
+     */
     public CudaBoolDataBuffer(long length, boolean initialize) {
         super(length, 1, initialize);
+        if (initialize) {
+            setData(new boolean[(int) length]); // Initialize with false
+        }
     }
 
+    /**
+     * Constructor with specified element size
+     *
+     * @param length        the length of the buffer
+     * @param elementSize   the size of each element in bytes
+     */
     public CudaBoolDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaBoolDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
-
+    /**
+     * Constructor with memory workspace and initialization flag
+     *
+     * @param length        the length of the buffer
+     * @param initialize    whether to initialize the buffer
+     * @param workspace     the memory workspace
+     */
     public CudaBoolDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 1, initialize, workspace);
-    }
-
-    public CudaBoolDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+        if (initialize) {
+            setData(new boolean[(int) length]); // Initialize with false
+        }
     }
 
     /**
-     * Initialize the opType of this buffer
+     * Constructor using a ByteBuffer without offset
+     *
+     * @param underlyingBuffer the ByteBuffer to initialize the buffer with
+     * @param dataType         the data type of the buffer
+     * @param length           the length of the buffer
+     */
+    public CudaBoolDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
+    }
+
+    /**
+     * Initialize the data type and element size for BOOL
      */
     @Override
     protected void initTypeAndSize() {
@@ -92,55 +154,40 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
         type = DataType.BOOL;
     }
 
-    public CudaBoolDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
-
+    /**
+     * Constructor for float[] data
+     *
+     * @param buffer the float array to initialize the buffer with
+     */
     public CudaBoolDataBuffer(float[] buffer) {
-        super(buffer);
+        super(buffer.length, 1, true); // Initialize with length, element size 1, and initialize flag
+        setData(buffer); // Set the data using the overridden setData(float[]) method
     }
 
-    public CudaBoolDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBoolDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaBoolDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
-
+    /**
+     * Constructor for double[] data
+     *
+     * @param data the double array to initialize the buffer with
+     */
     public CudaBoolDataBuffer(double[] data) {
-        super(data);
+        super(data.length, 1, true); // Initialize with length, element size 1, and initialize flag
+        setData(data); // Set the data using the overridden setData(double[]) method
     }
 
-    public CudaBoolDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBoolDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
+    /**
+     * Constructor for int[] data
+     *
+     * @param data the int array to initialize the buffer with
+     */
     public CudaBoolDataBuffer(int[] data) {
-        super(data);
-    }
-
-    public CudaBoolDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaBoolDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 1, true); // Initialize with length, element size 1, and initialize flag
+        setData(data); // Set the data using the overridden setData(int[]) method
     }
 
     @Override
     protected DataBuffer create(long length) {
         return new CudaBoolDataBuffer(length);
     }
-
 
     @Override
     public float[] getFloatsAt(long offset, long inc, int length) {
@@ -152,23 +199,37 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-
-
     @Override
     public void setData(float[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0.0f ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toShorts(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0 ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
-
-
 
     @Override
     public void setData(double[] data) {
-        setData(ArrayUtil.toFloats(data));
+        if (data.length == 0)
+            return;
+        byte[] byteData = new byte[data.length];
+        for(int i = 0; i < data.length; i++) {
+            byteData[i] = (byte)(data[i] != 0.0 ? 1 : 0);
+        }
+        set(byteData, byteData.length, 0, 0);
     }
 
     @Override
@@ -191,12 +252,10 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
         return ArrayUtil.toInts(asFloat());
     }
 
-
     @Override
     public double getDouble(long i) {
         return super.getFloat(i);
     }
-
 
     @Override
     public DataBuffer create(double[] data) {
@@ -215,9 +274,6 @@ public class CudaBoolDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void flush() {
-
+        // No action needed for BOOL data
     }
-
-
-
 }

@@ -61,7 +61,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void softmaxDerivative(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
   const int rank = input.rankOf();
   sd::LongType temp;
 
@@ -93,7 +93,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
 
   if (inEWS == 1) {
     for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T>(max, inBuff[i]);
-    PRAGMA_OMP_SIMD_SUM(sum)
+    PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < length; i++) {
       outBuff[i] = sd::math::sd_exp<T, T>(inBuff[i] - max);
       sum += outBuff[i];
@@ -105,11 +105,10 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
       outBuff[i] = sd::math::sd_log<T, T>(outBuff[i]);
     }
   } else if (inEWS > 1) {
-    PRAGMA_OMP_SIMD_MAX(max)
+    PRAGMA_OMP_SIMD
+    for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T,T>(max, inBuff[i * inEWS]);
 
-    for (sd::LongType i = 0; i < length; i++) max = sd::math::sd_max<T>(max, inBuff[i * inEWS]);
-
-    PRAGMA_OMP_SIMD_SUM(sum)
+    PRAGMA_OMP_SIMD
     for (sd::LongType i = 0; i < length; i++) {
       outBuff[i * inEWS] = sd::math::sd_exp<T, T>(inBuff[i * inEWS] - max);
       sum += outBuff[i * inEWS];
@@ -124,7 +123,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
 }
 
 ///////////////////////////////////////////////////////////////////
-void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void logSoftMaxForVector(sd::LaunchContext* context, NDArray& input, NDArray& output) {
   if (!input.isVector() || !output.isVector())
     THROW_EXCEPTION("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
 
@@ -134,7 +133,7 @@ void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void prelu(sd::LaunchContext* context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+void prelu(sd::LaunchContext* context, NDArray& input, NDArray& alpha, NDArray& output) {
   const sd::LongType inputLen = input.lengthOf();
   const sd::LongType* inputShapeInfo = input.shapeInfo();
   const sd::LongType* alphaShapeInfo = alpha.shapeInfo();
@@ -155,13 +154,13 @@ void prelu(sd::LaunchContext* context, const NDArray& input, const NDArray& alph
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI,
+void preluBP(sd::LaunchContext* context, NDArray& input, NDArray& alpha, NDArray& dLdO, NDArray& dLdI,
              NDArray& dLdA) {
   const sd::LongType inputLen = input.lengthOf();
   const sd::LongType* inputShapeInfo = input.shapeInfo();
   const sd::LongType* alphaShapeInfo = alpha.shapeInfo();
-
-  dLdA.assign(0.0f);
+  float zero = 0.f;
+  dLdA.assign(zero);
 
   for (sd::LongType i = 0; i < inputLen; ++i) {
     // FIXME: double
@@ -184,12 +183,12 @@ bool checkAlphaShapeLen(std::vector<sd::LongType> const& expectedShape, sd::Long
   return expectedAlphaLen == shapeLen;
 }
 template <typename T>
-static void thresholdRelu_(NDArray const& input, double threshold, NDArray& output) {
+static void thresholdRelu_(NDArray& input, double threshold, NDArray& output) {
   auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; };
   const_cast<NDArray&>(input).applyLambda<T>(routine, output);
 }
 
-void thresholdRelu(sd::LaunchContext* context, NDArray const& input, double threshold, NDArray& output) {
+void thresholdRelu(sd::LaunchContext* context, NDArray& input, double threshold, NDArray& output) {
   BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
 }
 
@@ -213,7 +212,7 @@ void thresholdReluDerivative(sd::LaunchContext* context, NDArray* input, double 
 }
 
 ///////////////////////////////////////////////////////////////////
-void logSoftmax(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void logSoftmax(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
   const int rank = input.rankOf();
 
   if (input.isVector()) {

@@ -41,20 +41,13 @@ class SD_LIB_EXPORT TadDescriptor {
                          const bool keepUnitiesInShape = false);
   ~TadDescriptor() = default;
 
-  // we use default copy assignment operator
-#ifndef __NEC__
+
   // NCC has issues with copy constructors
   TadDescriptor &operator=(const TadDescriptor &other) = default;
   // we use default move assignment operator
   TadDescriptor &operator=(TadDescriptor &&other) noexcept = default;
   explicit TadDescriptor(const TadDescriptor &other);
-#endif
 
-#ifdef __NEC__
-  TadDescriptor(TadDescriptor &&rhs) = default;                  // move constructor
-  TadDescriptor(const TadDescriptor &rhs) = default;             // copy constructor
-  TadDescriptor &operator=(const TadDescriptor &rhs) = default;  // copy assignment operator
-#endif
 
   // equal to operator
   bool operator==(const TadDescriptor &other) const;

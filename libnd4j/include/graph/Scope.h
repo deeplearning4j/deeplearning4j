@@ -31,14 +31,14 @@ namespace sd {
 namespace graph {
 
 /**
- * Scope holds sequential list of operations, and made suitable for continuous
+ * OpScope holds sequential list of operations, and made suitable for continuous
  * re-execution of multiple operations.
  *
  * @tparam T
  */
 class SD_LIB_EXPORT Scope {
  protected:
-  // Graph-unique IDs for Scope instances
+  // Graph-unique IDs for OpScope instances
   int _id;
   std::string _name;
 
@@ -92,7 +92,7 @@ class SD_LIB_EXPORT Scope {
   std::string* name();
 
   /**
-   * This method returns clone of this Scope
+   * This method returns clone of this OpScope
    */
   Scope* clone();
 

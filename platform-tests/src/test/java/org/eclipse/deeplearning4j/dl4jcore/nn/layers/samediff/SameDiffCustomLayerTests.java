@@ -76,8 +76,8 @@ public class SameDiffCustomLayerTests extends BaseDL4JTest {
     public void after() {
         Nd4j.setDataType(initialType);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+       Nd4j.getNativeOps().enableDebugMode(false);
+       Nd4j.getNativeOps().enableVerboseMode(false);
     }
 
     @Test

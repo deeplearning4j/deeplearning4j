@@ -781,7 +781,7 @@ static void argIndexCaseNonScalar(const int& first_rank, const int& output_rank,
 }
 
 template <typename X, typename Z, typename ReductionOp>
-SD_LIB_HIDDEN void argIndex_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+SD_LIB_HIDDEN void argIndex_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   char input_order = input.ordering();
   bool try_squash_outer = (input_order == output.ordering()) && output.ews() != 0;
   const sd::LongType* input_shapeInfo = input.shapeInfo();
@@ -854,7 +854,7 @@ struct IndexMin {
 template <typename X, typename Z>
 struct IndexAbsMax {
   static SD_INLINE void update(X& current, Z& currentIndex, const X& candidate, const Z& candidateIndex) {
-    auto absCandidate = sd::math::sd_abs<X>(candidate);
+    auto absCandidate = sd::math::sd_abs<X,X>(candidate);
     if (absCandidate > current) {
       current = absCandidate;
       currentIndex = candidateIndex;
@@ -865,7 +865,7 @@ struct IndexAbsMax {
 template <typename X, typename Z>
 struct IndexAbsMin {
   static SD_INLINE void update(X& current, Z& currentIndex, const X& candidate, const Z& candidateIndex) {
-    auto absCandidate = sd::math::sd_abs<X>(candidate);
+    auto absCandidate = sd::math::sd_abs<X,X>(candidate);
     if (absCandidate < current) {
       current = absCandidate;
       currentIndex = candidateIndex;
@@ -875,22 +875,22 @@ struct IndexAbsMin {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_LIB_HIDDEN void argMax_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+SD_LIB_HIDDEN void argMax_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   return argIndex_<X, Z, IndexMax<X, Z>>(input, output, dimensions);
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void argMin_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+SD_LIB_HIDDEN void argMin_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   return argIndex_<X, Z, IndexMin<X, Z>>(input, output, dimensions);
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void argAbsMax_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+SD_LIB_HIDDEN void argAbsMax_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   return argIndex_<X, Z, IndexAbsMax<X, Z>>(input, output, dimensions);
 }
 
 template <typename X, typename Z>
-SD_LIB_HIDDEN void argAbsMin_(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+SD_LIB_HIDDEN void argAbsMin_(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   return argIndex_<X, Z, IndexAbsMin<X, Z>>(input, output, dimensions);
 }
 }  // namespace helpers

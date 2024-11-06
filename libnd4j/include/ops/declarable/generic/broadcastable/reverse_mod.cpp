@@ -64,9 +64,9 @@ CUSTOM_OP_IMPL(reversemod_bp, 3, 2, false, 0, 0) {
 
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
-
-  gradY->assign(0.0f);
-  gradX->assign(0.0f);
+  float assign = 0.0f;
+  gradY->assign(assign);
+  gradX->assign(assign);
 
   return Status::OK;
 }

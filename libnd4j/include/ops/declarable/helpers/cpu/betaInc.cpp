@@ -42,7 +42,7 @@ static T continuedFraction(const T a, const T b, const T x) {
 
   T t2 = 1;
   T t1 = static_cast<T>(1) - aPlusb * x / (a + static_cast<T>(1));
-  if (math::sd_abs<T>(t1) < min) t1 = min;
+  if (math::sd_abs<T,T>(t1) < min) t1 = min;
   t1 = static_cast<T>(1) / t1;
   T result = t1;
 
@@ -51,27 +51,27 @@ static T continuedFraction(const T a, const T b, const T x) {
     val = i * (b - i) * x / ((aPlus2i - static_cast<T>(1)) * aPlus2i);
     // t1
     t1 = static_cast<T>(1) + val * t1;
-    if (math::sd_abs<T>(t1) < min) t1 = min;
+    if (math::sd_abs<T,T>(t1) < min) t1 = min;
     t1 = static_cast<T>(1) / t1;
     // t2
     t2 = static_cast<T>(1) + val / t2;
-    if (math::sd_abs<T>(t2) < min) t2 = min;
+    if (math::sd_abs<T,T>(t2) < min) t2 = min;
     // result
     result *= t2 * t1;
     val = -(a + i) * (aPlusb + i) * x / ((aPlus2i + static_cast<T>(1)) * aPlus2i);
     // t1
     t1 = static_cast<T>(1) + val * t1;
-    if (math::sd_abs<T>(t1) < min) t1 = min;
+    if (math::sd_abs<T,T>(t1) < min) t1 = min;
     t1 = static_cast<T>(1) / t1;
     // t2
     t2 = static_cast<T>(1) + val / t2;
-    if (math::sd_abs<T>(t2) < min) t2 = min;
+    if (math::sd_abs<T,T>(t2) < min) t2 = min;
     // result
     val = t2 * t1;
     result *= val;
 
     // condition to stop loop
-    if (math::sd_abs<T>(val - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
+    if (math::sd_abs<T,T>(val - static_cast<T>(1)) <= DataTypeUtils::eps<T>()) return result;
   }
 
   return DataTypeUtils::infOrMax<T>();  // no convergence, more iterations is required, return infinity
@@ -97,7 +97,7 @@ static T betaIncCore(T a, T b, T x) {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void betaIncForArray(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x,
+static void betaIncForArray(sd::LaunchContext* context, NDArray& a, NDArray& b, NDArray& x,
                             NDArray& output) {
   int xLen = x.lengthOf();
 
@@ -110,13 +110,13 @@ static void betaIncForArray(sd::LaunchContext* context, const NDArray& a, const 
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(sd::LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDArray& output) {
   auto xType = a.dataType();
   BUILD_SINGLE_SELECTOR(xType, betaIncForArray, (context, a, b, x, output), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void betaIncForArray,
-                      (sd::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x,
+                      (sd::LaunchContext * context, NDArray& a, NDArray& b, NDArray& x,
                        NDArray& output),
                       SD_FLOAT_TYPES);
 

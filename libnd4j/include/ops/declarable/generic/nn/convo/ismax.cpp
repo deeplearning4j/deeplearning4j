@@ -34,8 +34,9 @@ CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
   auto dimensions = *(block.getIArguments());  // argI
+  int one = 1;
   if (x->isScalar())
-    z->assign(1);
+    z->assign(one);
   else
     helpers::ismax(block.launchContext(), x, z, dimensions);
 

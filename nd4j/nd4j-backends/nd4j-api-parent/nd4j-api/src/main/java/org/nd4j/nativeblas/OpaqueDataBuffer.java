@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -69,7 +68,7 @@ public class OpaqueDataBuffer extends Pointer {
     }
 
     public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special) {
-        OpaqueDataBuffer ret = NativeOpsHolder.getInstance().getDeviceNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
+        OpaqueDataBuffer ret =Nd4j.getNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
         if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
             ret.captureTrace();
         return ret;
@@ -94,7 +93,7 @@ public class OpaqueDataBuffer extends Pointer {
                 //when  using func trace we want to print allocation traces when deallocation is called. this is used to debug
                 //potential race condition and crashes. c++ prints the equivalent stack trace when func trace is enabled.
                 //This allows us to check where a deallocated buffer that caused an issue was allocated.
-                if(buffer != null && NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
+                if(buffer != null && Nd4j.getNativeOps().isFuncTrace())
                     buffer.captureTrace();
                 // check error code
                 ec = Nd4j.getNativeOps().lastErrorCode();
@@ -132,12 +131,12 @@ public class OpaqueDataBuffer extends Pointer {
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
                 // try to expand the buffer
-                NativeOpsHolder.getInstance().getDeviceNativeOps().dbExpand(this, numElements);
+               Nd4j.getNativeOps().dbExpand(this, numElements);
 
                 // check error code
-                ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+                ec =Nd4j.getNativeOps().lastErrorCode();
                 if (ec != 0) {
-                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em =Nd4j.getNativeOps().lastErrorMessage();
 
                     // if expansion failed it might be caused by casual OOM, so we'll try GC
                     System.gc();
@@ -160,24 +159,23 @@ public class OpaqueDataBuffer extends Pointer {
      * This method creates a view out of this InteropDataBuffer
      *
      * @param bytesLength
-     * @param bytesOffset
      * @return
      */
-    public OpaqueDataBuffer createView(long bytesLength, long bytesOffset) {
+    public OpaqueDataBuffer createView(long bytesLength) {
         OpaqueDataBuffer buffer = null;
         int ec = 0;
         String em = null;
 
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
-                buffer = NativeOpsHolder.getInstance().getDeviceNativeOps().dbCreateView(this, bytesLength, bytesOffset);
+                buffer =Nd4j.getNativeOps().dbCreateView(this, bytesLength);
                 if(NativeOpsHolder.getInstance().getDeviceNativeOps().isFuncTrace())
                     buffer.captureTrace();
                 // check error code
-                ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+                ec =Nd4j.getNativeOps().lastErrorCode();
 
                 if (ec != 0) {
-                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em =Nd4j.getNativeOps().lastErrorMessage();
 
                     // if view creation failed it might be caused by casual OOM, so we'll try GC
                     System.gc();
@@ -224,7 +222,7 @@ public class OpaqueDataBuffer extends Pointer {
      * @return
      */
     public int deviceId() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbDeviceId(this);
+        return Nd4j.getNativeOps().dbDeviceId(this);
     }
 
     /**
@@ -237,7 +235,7 @@ public class OpaqueDataBuffer extends Pointer {
     public void setPrimaryBuffer(Pointer ptr, long numElements) {
         //note we call print here because dbSetSpecialBuffer can deallocate on the c++ side
         printAllocationTraceIfNeeded();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(this, ptr, numElements);
+       Nd4j.getNativeOps().dbSetPrimaryBuffer(this, ptr, numElements);
     }
 
     /**
@@ -251,21 +249,21 @@ public class OpaqueDataBuffer extends Pointer {
         //note we call print here because dbSetSpecialBuffer can deallocate on the c++ side
         printAllocationTraceIfNeeded();
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(this, ptr, numElements);
+       Nd4j.getNativeOps().dbSetSpecialBuffer(this, ptr, numElements);
     }
 
     /**
      * This method synchronizes device memory
      */
     public void syncToSpecial() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToSpecial(this);
+       Nd4j.getNativeOps().dbSyncToSpecial(this);
     }
 
     /**
      * This method synchronizes host memory
      */
     public void syncToPrimary() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(this);
+       Nd4j.getNativeOps().dbSyncToPrimary(this);
     }
 
     public void printAllocationTraceIfNeeded() {
@@ -282,6 +280,6 @@ public class OpaqueDataBuffer extends Pointer {
         if(Nd4j.getEnvironment().isFuncTracePrintDeallocate()) {
             System.out.println("Java side deallocation current trace: \n " + currentTrace());
         }
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(this);
+       Nd4j.getNativeOps().dbClose(this);
     }
 }

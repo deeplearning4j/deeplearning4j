@@ -20,6 +20,8 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.NonNull;
+import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -32,7 +34,7 @@ import org.nd4j.common.util.ArrayUtil;
 import java.nio.ByteBuffer;
 
 /**
- * Cuda double  buffer
+ * Cuda double buffer
  *
  * @author Adam Gibson
  */
@@ -77,12 +79,19 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaDoubleDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+    public CudaDoubleDataBuffer(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
+        super(length, elementSize, initialize, workspace);
+    }
+
+    public CudaDoubleDataBuffer() {
     }
 
     public CudaDoubleDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+        super(data, copy, workspace);
+    }
+
+    public CudaDoubleDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
 
     /**
@@ -94,55 +103,24 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         elementSize = 8;
     }
 
-    public CudaDoubleDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
-
-
     /**
      * Instantiate based on the given data
      *
      * @param data the data to instantiate with
      */
     public CudaDoubleDataBuffer(double[] data) {
-        this(data.length);
+        super(data.length, 8, true);
         setData(data);
     }
 
-    public CudaDoubleDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaDoubleDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaDoubleDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
-
     public CudaDoubleDataBuffer(float[] data) {
-        super(data);
-    }
-
-    public CudaDoubleDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaDoubleDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 8, true);
+        setData(data);
     }
 
     public CudaDoubleDataBuffer(int[] data) {
-        super(data);
-    }
-
-    public CudaDoubleDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaDoubleDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 8, true);
+        setData(data);
     }
 
     @Override
@@ -152,15 +130,51 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toDoubles(data));
+        if (data.length == 0)
+            return;
+        double[] doubleData = ArrayUtil.toDoubles(data);
+        copyDataFromSrc(new DoublePointer(doubleData), data.length, 0, 0);
     }
 
     @Override
     public void setData(float[] data) {
-        setData(ArrayUtil.toDoubles(data));
+        if (data.length == 0)
+            return;
+        double[] doubleData = ArrayUtil.toDoubles(data);
+        copyDataFromSrc(new DoublePointer(doubleData), data.length, 0, 0);
     }
 
+    @Override
+    public void setData(double[] data) {
+        if (data.length == 0)
+            return;
+        copyDataFromSrc(new DoublePointer(data), data.length, 0, 0);
+    }
 
+    @Override
+    public DataType dataType() {
+        return DataType.DOUBLE;
+    }
+
+    @Override
+    public float[] asFloat() {
+        return super.asFloat();
+    }
+
+    @Override
+    public double[] asDouble() {
+        return ArrayUtil.toDoubles(asFloat());
+    }
+
+    @Override
+    public int[] asInt() {
+        return ArrayUtil.toInts(asFloat());
+    }
+
+    @Override
+    public double getDouble(long i) {
+        return super.getDouble(i);
+    }
 
     @Override
     public DataBuffer create(double[] data) {
@@ -209,5 +223,4 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
 
         setData(arr);
     }
-
 }

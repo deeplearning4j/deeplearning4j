@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static void _spaceTodepth_(const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+static void _spaceTodepth_(NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   auto input_ptr = reinterpret_cast<T const *>(input.buffer());
   auto output_ptr = reinterpret_cast<T *>(output->buffer());
 
@@ -98,12 +98,12 @@ static void _spaceTodepth_(const NDArray &input, NDArray *output, int block_size
   }
 }
 
-void _spaceTodepth(sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+void _spaceTodepth(sd::LaunchContext *context, NDArray&input, NDArray *output, int block_size, bool isNHWC) {
   BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), SD_COMMON_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_,
-                      (const NDArray &input, NDArray *output, int block_size, bool isNHWC), SD_COMMON_TYPES);
+                      (NDArray&input, NDArray *output, int block_size, bool isNHWC), SD_COMMON_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

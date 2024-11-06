@@ -50,7 +50,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static void applyActivation(const NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
+static void applyActivation(NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
   switch (opId) {
     case 0:
       (const_cast<NDArray&>(x)).applyTransform(transform::Tanh, z);
@@ -95,7 +95,7 @@ static void applyActivation(const NDArray& x, const int opId, const float alpha,
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void activationDeriv(const NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
+static void activationDeriv(NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
   switch (opId) {
     case 0:
       (const_cast<NDArray&>(x)).applyTransform(transform::TanhDerivative, z);
@@ -153,7 +153,7 @@ static void activationDeriv(const NDArray& x, const int opId, const float alpha,
 
 //////////////////////////////////////////////////////////////////////////
 // FIXME - derivative undefined when not-clipped c has element/elements equal to -clipVal or clipVal
-static void clipDeriv(const float clipVal, const NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
+static void clipDeriv(const float clipVal, NDArray& c, NDArray& z0, NDArray& z1, NDArray& z2, NDArray& z3) {
   if (clipVal == 0) return;
 
   auto func = PRAGMA_THREADS_FOR {
@@ -171,7 +171,7 @@ static void clipDeriv(const float clipVal, const NDArray& c, NDArray& z0, NDArra
 }
 
 //////////////////////////////////////////////////////////////////////////
-static NDArray tensorAlongTimeBatchDims(const NDArray& arr, const int dataFormat, const int t1, const int t2,
+static NDArray tensorAlongTimeBatchDims(NDArray& arr, const int dataFormat, const int t1, const int t2,
                                         const int b1, const int b2) {
   if (dataFormat == 0 || dataFormat == 3) return arr({t1, t2, b1, b2, 0, 0});  // TNS: [sL, bS, nIn]
 
@@ -189,8 +189,8 @@ static SD_INLINE int getBatchTimeTotalIndex(const int dataFormat, const int sL, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI,
-                   const NDArray* cI, const NDArray* Wp, const std::vector<float>& params, NDArray* h, NDArray* c) {
+void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI,
+                   NDArray* cI, NDArray* Wp, const std::vector<float>& params, NDArray* h, NDArray* c) {
   // * -> means element-wise multiplication
   // × -> means matrix multiplication
 
@@ -290,8 +290,8 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const
 
 //////////////////////////////////////////////////////////////////////////
 // this auxiliary ff should be running before backprop
-void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI,
-                   const NDArray* cI, const NDArray* Wp, const std::vector<float>& params, NDArray* z, NDArray* a,
+void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI,
+                   NDArray* cI, NDArray* Wp, const std::vector<float>& params, NDArray* z, NDArray* a,
                    NDArray* h, NDArray* c) {
   // z - zi, zf, zg, zo
   // a - i, f, g, o
@@ -555,11 +555,13 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     // dLdWr
     *dLdWr += mmul(hIT, dLdzR);  // [nOut, 1] x [1, 4*nOut] = [nOut, 4*nOut]
   } else {
+    NDArray xT = x->transpose();
+    NDArray hIT = hI->transpose();
     // dLdWx
-    *dLdWx += mmul(x->transpose(), dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
+    *dLdWx += mmul(xT, dLdz);  // [nIn, bS] x [bS, 4*nOut] = [nIn, 4*nOut]
 
     // dLdWr
-    *dLdWr += mmul(hI->transpose(), dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
+    *dLdWr += mmul(hIT, dLdz);  // [nOut, bS] x [bS, 4*nOut] = [nOut, 4*nOut]
   }
 
   // dLdb
@@ -592,8 +594,8 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* seqLen,
-                       const NDArray* hI, const NDArray* cI, const NDArray* Wp, const std::vector<float>& params,
+void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* seqLen,
+                       NDArray* hI, NDArray* cI, NDArray* Wp, const std::vector<float>& params,
                        const bool forward, NDArray* h, NDArray* hL, NDArray* cL) {
   // INPUTS:
   // x  - current input  [sL, bS, nIn],  [bS, sL, nIn],  [bS, nIn, sL],
@@ -680,7 +682,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
         for (sd::LongType t = 1; t < sL; ++t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t - 1), ct, Wp, params, hSet->at(t), ct);  // rest time steps
 
-        if (hL) hL->assign(hSet->at(sL - 1));  // assign last output to hL if it is not nullptr
+        if (hL) hL->assign(*hSet->at(sL - 1));  // assign last output to hL if it is not nullptr
       }
     } else {
       if (!h) {  // seqLen is present and h is absent
@@ -730,7 +732,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
             indPrev = indCurr;
           }
 
-          if (hL) htSet->at(e)->assign(hSet->at(indPrev));  // assign last output to hL if hL is not nullptr
+          if (hL) htSet->at(e)->assign(*hSet->at(indPrev));  // assign last output to hL if hL is not nullptr
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, limit, sL, e, e + 1)
@@ -752,7 +754,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
         for (sd::LongType t = sL - 2; t >= 0; --t)
           lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), ct, Wp, params, hSet->at(t), ct);  // rest time steps
 
-        if (hL) hL->assign(hSet->at(0));  // assign last output to hL if it is not nullptr
+        if (hL) hL->assign(*hSet->at(0));  // assign last output to hL if it is not nullptr
       }
     } else if (directionMode == 1) {  // only backward, no bidirectional mode
 
@@ -803,7 +805,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
             indPrev = indCurr;
           }
 
-          if (hL) htSet->at(e)->assign(hSet->at(indPrev));  // assign last output to hL if it is not nullptr
+          if (hL) htSet->at(e)->assign(*hSet->at(indPrev));  // assign last output to hL if it is not nullptr
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, 0, sL - limit, e, e + 1)
@@ -859,7 +861,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr, c
             indPrev = indCurr;
           }
 
-          if (hL) htSet->at(e)->assign(hSet->at(indPrev));  // assign last output to hL if it is not nullptr
+          if (hL) htSet->at(e)->assign(*hSet->at(indPrev));  // assign last output to hL if it is not nullptr
 
           if (limit != sL)
             tensorAlongTimeBatchDims(*h, dataFormat, limit, sL, e, e + 1)
@@ -984,11 +986,11 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
     if (!seqLen) {  // seqLen is absent
 
       if (hI)
-        hSet->at(0)->assign(hI);
+        hSet->at(0)->assign(*hI);
       else
         hSet->at(0)->nullify();
       if (cI)
-        cSet->at(0)->assign(cI);
+        cSet->at(0)->assign(*cI);
       else
         cSet->at(0)->nullify();
 
@@ -1023,11 +1025,11 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
         }
 
         if (hI)
-          hSet->at(e)->assign(hISet->at(e));
+          hSet->at(e)->assign(*hISet->at(e));
         else
           hSet->at(e)->nullify();
         if (cI)
-          cSet->at(e)->assign(cISet->at(e));
+          cSet->at(e)->assign(*cISet->at(e));
         else
           cSet->at(e)->nullify();
 
@@ -1059,11 +1061,11 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
     if (!seqLen) {  // backward or bidirectional, seqLen is absent
 
       if (hI)
-        hSet->at(sL)->assign(hI);
+        hSet->at(sL)->assign(*hI);
       else
         hSet->at(sL)->nullify();
       if (cI)
-        cSet->at(sL)->assign(cI);
+        cSet->at(sL)->assign(*cI);
       else
         cSet->at(sL)->nullify();
 
@@ -1097,11 +1099,11 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
         }
 
         if (hI)
-          hSet->at(sL * bS + e)->assign(hISet->at(e));
+          hSet->at(sL * bS + e)->assign(*hISet->at(e));
         else
           hSet->at(sL * bS + e)->nullify();
         if (cI)
-          cSet->at(sL * bS + e)->assign(cISet->at(e));
+          cSet->at(sL * bS + e)->assign(*cISet->at(e));
         else
           cSet->at(sL * bS + e)->nullify();
 
@@ -1140,11 +1142,11 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
         }
 
         if (hI)
-          h({limit, limit + 1, e, e + 1, 0, 0}).assign(hISet->at(e));
+          h({limit, limit + 1, e, e + 1, 0, 0}).assign(*hISet->at(e));
         else
           h({limit, limit + 1, e, e + 1, 0, 0}).nullify();
         if (cI)
-          c({limit, limit + 1, e, e + 1, 0, 0}).assign(cISet->at(e));
+          c({limit, limit + 1, e, e + 1, 0, 0}).assign(*cISet->at(e));
         else
           c({limit, limit + 1, e, e + 1, 0, 0}).nullify();
 

@@ -31,21 +31,21 @@ namespace helpers {
 // for detailed explanations please take a look on web page:
 // https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 template <typename T>
-static void _diagFunctor(const NDArray* input, NDArray* output) {
+static void _diagFunctor(NDArray* input, NDArray* output) {
   const int inLength = input->isScalar() ? 1 : input->lengthOf();
 
   for (int i = 0; i < inLength; ++i) output->p<T>(i * (inLength + 1), (*input).e<T>(i));
 }
 
-void diagFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
+void diagFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output) {
   auto xType = input->dataType();
 
   BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), SD_COMMON_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (NDArray* input, NDArray* output);, SD_COMMON_TYPES);
 
-void diagPartFunctor(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
+void diagPartFunctor(sd::LaunchContext* context, NDArray * input, NDArray* output) {
   const int outLen = output->lengthOf();
   const int inLen = input->lengthOf();
   int i(0), j(0);

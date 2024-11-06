@@ -28,7 +28,7 @@
 #include <ops/declarable/helpers/stack.h>
 
 #include "execution/cuda/LaunchDims.h"
-
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {

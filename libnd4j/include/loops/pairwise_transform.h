@@ -79,6 +79,9 @@ class PairWiseTransform {
                    sd::LongType resultStride, void *vextraParams, sd::LongType len, sd::LongType start,
                    sd::LongType stop);
 };
+
+
+
 }  // namespace pairwise_transforms
 }  // namespace functions
 

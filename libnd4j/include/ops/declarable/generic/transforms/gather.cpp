@@ -70,9 +70,10 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     NDArray* pIndices = indices;
     if (indices == nullptr) {
      std::vector<sd::LongType> shape =  {static_cast<sd::LongType>(intArgs.size()) - 1};
+     std::vector<double> inputVec =  std::vector<double>(intArgs.begin() + 1, intArgs.end());
       pIndices =
           new NDArray(input->ordering(), shape,
-                      std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
+                     inputVec, DataType::INT64, block.launchContext());
     }
       const sd::LongType numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
 
@@ -156,7 +157,7 @@ DECLARE_SHAPE_FN(gather) {
     ArrayOptions::setPropertyBit(outputShapeInfo, ARRAY_EMPTY);
   }
 
-  auto desc = new ShapeDescriptor(outputShapeInfo);
+  auto desc = new ShapeDescriptor(outputShapeInfo, false);
 
   auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
   RELEASE(outputShapeInfo, block.getWorkspace());

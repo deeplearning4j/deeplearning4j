@@ -23,7 +23,6 @@
 #include <graph/scheme/node_generated.h>
 #include <graph/scheme/result_generated.h>
 
-//#include <protobuf/core/framework/graph.pb.h>
 #include <graph/GraphExecutioner.h>
 #include <graph/Node.h>
 #include <graph/Scope.h>
@@ -36,8 +35,7 @@
 #include <memory/MemoryRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 
-//#include <google/protobuf/text_format.h>
-//#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include <array/DataTypeUtils.h>
 #include <exceptions/graph_execution_exception.h>
 #include <exceptions/no_results_exception.h>
@@ -130,20 +128,17 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
         if (variableSpace->hasVariable(v->getName())) {
           // symbolic feeder
           auto array = variableSpace->getVariable(v->getName())->getNDArray();
-          auto vr = new NDArray(array->dup(false));
-          //                    deletables.push_back(vr);
+          auto vr = new NDArray(array->dup(array->ordering()));
           v->setNDArray(vr);
         } else {
           sd_debug("Can't find variable [%s] in parent graph...", v->getName()->c_str());
           return Status::BAD_INPUT;
-          // throw "Can't find desired variable";
         }
       } else {
         // if we're not using symbolic lookup - we'll use sequential approach then
         auto p = node->input()->at(cnt);
         auto array = variableSpace->getVariable(p)->getNDArray();
-        auto vr = new NDArray(array->dup(false));
-        // deletables.push_back(vr);
+        auto vr = new NDArray(array->dup(array->ordering()));
         v->setNDArray(vr);
       }
 
@@ -183,7 +178,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
       for (auto v : *node->output()) {
         if (variableSpace->hasExternalVariable(v.first)) {
           variableSpace->getVariable(v.first)->getNDArray()->assign(
-              variableSpace->getVariable(node->id())->getNDArray());
+              *variableSpace->getVariable(node->id())->getNDArray());
         }
       }
     }

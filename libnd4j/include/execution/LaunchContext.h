@@ -103,7 +103,9 @@ class SD_LIB_EXPORT LaunchContext {
                 Pointer allocationPointer = nullptr);
   LaunchContext();
   ~LaunchContext();
-  memory::Workspace* getWorkspace() const { return _workspace; }
+  memory::Workspace* getWorkspace() const {
+    return _workspace;
+  }
   void setWorkspace(memory::Workspace* theWorkspace) { _workspace = theWorkspace; }
 
   void* engine();

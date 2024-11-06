@@ -68,7 +68,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
 }
 
 ///////////////////////////////////////////////////////////////////
-void softMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
+void softMaxForVector(sd::LaunchContext* context, NDArray& input, NDArray& output) {
   if (!input.isVector() || !output.isVector())
     THROW_EXCEPTION("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
 
@@ -145,9 +145,7 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
       T max = -DataTypeUtils::max<T>();
       T sum(0.f);
 
-      PRAGMA_OMP_SIMD_MAX_2(max)
       for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[j]);
-      PRAGMA_OMP_SIMD_SUM(sum)
       for (sd::LongType j = 0; j < tadLen; ++j) {
         T temp = sd::math::sd_exp<T, T>(inBuff[j] - max);
         outBuff[j] = temp;
@@ -163,7 +161,7 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
   const int rank = input.rankOf();
 
   if (input.isVector()) {
@@ -225,7 +223,7 @@ static void softmax_(sd::LaunchContext* context, const NDArray& input, NDArray& 
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmax(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimension) {
+void softmax(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
   BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (context, input, output, dimension), SD_FLOAT_TYPES);
 }
 

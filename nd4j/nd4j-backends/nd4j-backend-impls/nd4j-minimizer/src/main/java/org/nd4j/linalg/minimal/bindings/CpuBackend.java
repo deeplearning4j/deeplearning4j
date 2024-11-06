@@ -74,7 +74,7 @@ public class CpuBackend extends Nd4jBackend {
 
     @Override
     public String buildInfo() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+        return Nd4j.getNativeOps().buildInfo();
     }
 
     @Override

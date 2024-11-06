@@ -223,7 +223,6 @@ public class NDArrayStrings {
             }
             return vectorToString(arr, summarize);
         } else {
-            offset++;
             StringBuilder sb = new StringBuilder();
             sb.append("[");
             long nSlices = arr.slices();

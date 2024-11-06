@@ -26,7 +26,6 @@
 #include <list>
 #include <map>
 #include <unordered_map>
-//#include <NDArray.h>
 #include <graph/ExecutorConfiguration.h>
 #include <graph/Node.h>
 #include <graph/Scope.h>
@@ -169,7 +168,7 @@ class SD_LIB_EXPORT Graph {
   std::vector<ops::OpDescriptor> getOperations();
 
   /**
-   * This method returns Scope ptr specified with id
+   * This method returns OpScope ptr specified with id
    *
    * @param id
    * @return
@@ -177,7 +176,7 @@ class SD_LIB_EXPORT Graph {
   Scope *scopeById(int id);
 
   /**
-   * This method returns TRUE if specified ID refers to Scope, and false otherwise
+   * This method returns TRUE if specified ID refers to OpScope, and false otherwise
    * @param id
    * @return
    */

@@ -25,6 +25,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyStatsOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {
@@ -114,13 +115,8 @@ ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, Context &b
     newShape[6] = 1;
     newShape[7] = 99;
   } else {
-    // in this case we're building proper shape for reduction
-    auto array = new NDArray(nullptr, inShape, block.launchContext());
-
-    auto newShape = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), *array, false, true);
-
-    delete array;
-    return SHAPELIST(newShape);
+    const sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), inShape, false, true);
+    return SHAPELIST(xShape2);
   }
 
   return SHAPELIST(CONSTANT(newShape));

@@ -30,14 +30,14 @@ CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
     if(block.getVariableSpace() == nullptr || block.getVariableSpace()->getVariables().size() != block.width()) {
       auto in = INPUT_VARIABLE(e);
       auto out = OUTPUT_VARIABLE(e);
-      out->assign(in);
+      out->assign(*in);
     } else {
       auto inVar = block.variable(e);
       if (inVar->variableType() == NDARRAY) {
         auto in = INPUT_VARIABLE(e);
         auto out = OUTPUT_VARIABLE(e);
 
-        out->assign(in);
+        out->assign(*in);
       } else if (inVar->variableType() == ARRAY_LIST) {
         auto var = block.ensureVariable(e);
         if (!var->hasNDArrayList()) {
@@ -65,7 +65,7 @@ DECLARE_SHAPE_FN(expose) {
     auto var = block.getVariable(e);
     if (var->variableType() == NDARRAY) {
       auto inShape = inputShape->at(e);
-      auto desc = new ShapeDescriptor(inShape);
+      auto desc = new ShapeDescriptor(inShape, false);
       shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
     }

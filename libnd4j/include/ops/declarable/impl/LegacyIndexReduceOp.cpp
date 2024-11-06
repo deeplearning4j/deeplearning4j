@@ -24,6 +24,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {
@@ -52,7 +53,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Cont
     newShape[6] = 1;
     newShape[7] = 99;
 
-    auto desc = new ShapeDescriptor(newShape, INT64);
+    auto desc = new ShapeDescriptor(newShape, INT64, false);
     auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     RELEASE(newShape, block.getWorkspace());
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
@@ -88,7 +89,7 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Cont
       newShape[6] = 1;
       newShape[7] = 99;
 
-      auto desc = new ShapeDescriptor(newShape, INT64);
+      auto desc = new ShapeDescriptor(newShape, INT64, false);
       auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
       RELEASE(newShape, block.getWorkspace());
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;

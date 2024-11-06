@@ -22,7 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 namespace sd {
 namespace ops {
 LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp(2) {
@@ -69,7 +69,7 @@ Status LegacyPairwiseTransformBoolOp::validateAndExecute(Context &block) {
  */
 ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape, BOOL);
+  auto desc = new ShapeDescriptor(inShape, BOOL, false);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;

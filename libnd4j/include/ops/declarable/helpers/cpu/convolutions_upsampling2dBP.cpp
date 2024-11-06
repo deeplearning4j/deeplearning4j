@@ -27,7 +27,7 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+static void upsampling2dBP_(NDArray& gradO, NDArray& gradI, const bool isNCHW) {
   // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
   // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
@@ -77,7 +77,7 @@ static void upsampling2dBP_(const NDArray& gradO, NDArray& gradI, const bool isN
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iH, 1);
 }
 
-void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI,
+void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, NDArray& gradO, NDArray& gradI,
                                       const bool isNCHW) {
   BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), SD_FLOAT_TYPES);
 }

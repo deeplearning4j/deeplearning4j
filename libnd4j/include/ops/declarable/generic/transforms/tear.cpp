@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
   auto tads = input->allTensorsAlongDimension(dims);
   for (sd::LongType e = 0; e < tads.size(); e++) {
     auto outE = OUTPUT_VARIABLE(e);
-    outE->assign(tads.at(e));
+    outE->assign(*tads.at(e));
 
     // just for debugging purposes
     this->storeResult(block, e, *outE);

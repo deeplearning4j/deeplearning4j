@@ -243,7 +243,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
 
         __syncthreads();
-        aggregatePartials<OpType>(sPartials,threadIdxX, sd::math::sd_min<sd::LongType>(blockDimX, tadLength), extraParams);
+        aggregatePartials<OpType>(sPartials,threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDimX, tadLength), extraParams);
 
         __syncthreads();
         if (threadIdxX == 0) {
@@ -263,7 +263,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         }
 
         __syncthreads();
-        aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType>(blockDim.x, tadLength), extraParams);
+        aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDim.x, tadLength), extraParams);
 
         __syncthreads();
         if (threadIdxX == 0) {
@@ -293,7 +293,7 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     }
     sPartials[threadIdxX] = reduction;
     __syncthreads();
-    aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType>(blockDim.x, n), extraParams);
+    aggregatePartials<OpType>(sPartials, threadIdxX, sd::math::sd_min<sd::LongType,sd::LongType>(blockDim.x, n), extraParams);
     if (gridDimX > 1) {
       __shared__ bool amLast;
       unsigned int *unsignedSharedMemory = (unsigned int *)reductionBuffer;

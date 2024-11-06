@@ -43,7 +43,7 @@ void meshgrid(sd::LaunchContext* context, const std::vector<NDArray*>& inArrs, c
 
   for (int i = 0; i < rank; ++i) {
     auto list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});
-    for (int j = 0; j < list.size(); ++j) list.at(j)->assign(inArrs[i]);
+    for (int j = 0; j < list.size(); ++j) list.at(j)->assign(*inArrs[i]);
   }
 }
 

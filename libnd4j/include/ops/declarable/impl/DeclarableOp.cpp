@@ -248,6 +248,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       }
     }
 
+
     // if we override shape function, we'll return size of fastPath
     if (fp && ctx.shapeFunctionOverride()) {
       return (int)ctx.fastpath_out().size();
@@ -264,6 +265,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
       shapeStart = std::chrono::system_clock::now();
     }
+
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
     if (sd::Environment::getInstance().isDebugAndVerbose()) {
@@ -426,17 +428,17 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
 
   // if that's first run - we probably have nothing here
   if (var->getNDArray() == nullptr) {
-    auto desc = new ShapeDescriptor(__shape);
+    auto desc = new ShapeDescriptor(__shape, false);
     DataBuffer * buffer =
-      new DataBuffer(len * sizeof(int8_t),desc->dataType(), workspace);
+        new DataBuffer(len * sizeof(int8_t),desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     delete desc;
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
-    auto desc = new ShapeDescriptor(__shape);
+    auto desc = new ShapeDescriptor(__shape, false);
     DataBuffer * buffer =
-      new DataBuffer(len * sizeof(int8_t), desc->dataType(), workspace);
+        new DataBuffer(len * sizeof(int8_t), desc->dataType(), workspace);
     var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
     delete desc;
   }
@@ -675,12 +677,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // ensure number of IArgs, TArgs match our expectations
   REQUIRE_OK(this->validateArguments(*block));
-
   // validating data types for inputs and (optionally) outputs
   REQUIRE_OK(this->validateDataTypes(*block));
 
   // this method will allocate output NDArrays for this op
   auto numOutputs = this->prepareOutputs(*block);
+
 
   if (Environment::getInstance().isProfiling()) {
     timeStart = std::chrono::system_clock::now();
@@ -696,90 +698,14 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
     if (OpRegistrator::getInstance().hasHelper(this->getOpHash(), block->engine())) {
       auto helper = OpRegistrator::getInstance().getPlatformHelper(this->getOpHash(), block->engine());
       if (helper->isUsable(*block)) {
-#if defined(HAVE_VEDA)
-        auto helper_exec = [](sd::ops::platforms::PlatformHelper *helper, sd::graph::Context &block, int numOutputs) {
-          std::vector<const sd::NDArray *> readList;
-          std::vector<const sd::NDArray *> writeList;
-          VEDA_HANDLE &handle = VEDA::getInstance().getVEDA_HANDLE(0);
-          SCOPED_VEDA_CONTEXT scopedContext(handle.getDevice());
-
-          for (int i = 0; i < block.width(); i++) {
-            auto a = INPUT_VARIABLE(i);
-            if (a) {
-#if defined(DEBUG_VEDA_LOGS)
-              a->getDataBuffer()->showCounters("helper: before read", helper->name().c_str());
-#endif
-              a->getDataBuffer()->allocVeda();
-              a->getDataBuffer()->asyncToVeda();
-            }
-          }
-          for (int i = 0; i < numOutputs; i++) {
-            auto a = reinterpret_cast<sd::NDArray *>(helper->getZ(block, i));
-            if (a) {
-#if defined(DEBUG_VEDA_LOGS)
-              a->getDataBuffer()->showCounters("helper:  before write", helper->name().c_str());
-#endif
-              a->getDataBuffer()->allocVeda();
-              // its probably better to sync it when we have view
-              if (a->isView() && a->lengthOf() * a->sizeOfT() != a->getDataBuffer()->getLenInBytes()) {
-                a->getDataBuffer()->asyncToVeda();
-              }
-              a->getDataBuffer()->writeSpecial();
-            }
-          }
-
-          auto status = helper->invokeHelper(block);
-
-          return status;
-        };
-        status = helper_exec(helper, *block, numOutputs);
-#else
         status = helper->invokeHelper(*block);
-#endif
         hasHelper = true;
       }
     }
   }
 
-  // if we don't have platform-specific helper - invoke generic implementation
-#if defined(HAVE_VEDA)
-  // try to sync if we have incomplete buffers
-  if (!hasHelper) {
-    auto nonhelper_exec = [](sd::ops::DeclarableOp *op, sd::graph::Context &block, int numOutputs) {
-      std::vector<const sd::NDArray *> readList;
-      std::vector<const sd::NDArray *> writeList;
-      for (int i = 0; i < block.width(); i++) {
-        auto a = INPUT_VARIABLE(i);
-        readList.push_back(a);
-#if defined(DEBUG_VEDA_LOGS)
-        if (a) {
-          a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before read", op->getOpName()->c_str());
-        }
-#endif
-      }
-      for (int i = 0; i < numOutputs; i++) {
-        auto a = reinterpret_cast<sd::NDArray *>(op->getZ(block, i));
-        writeList.push_back(a);
-#if defined(DEBUG_VEDA_LOGS)
-        if (a) {
-          a->getDataBuffer()->showBufferLimited();
-          a->getDataBuffer()->showCounters("ordinary: before write", op->getOpName()->c_str());
-        }
-#endif
-      }
-
-      NDArray::preparePrimaryUse(writeList, readList);
-      auto status = op->validateAndExecute(block);
-      NDArray::registerPrimaryUse(writeList, readList);
-      return status;
-    };
-    status = nonhelper_exec(this, *block, numOutputs);
-  }
-#else
 
   if (!hasHelper) status = this->validateAndExecute(*block);
-#endif
   // optionally saving execution time
   if (Environment::getInstance().isProfiling()) {
     timeEnd = std::chrono::system_clock::now();
@@ -807,13 +733,21 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // now we print out all outputs for this node
   if (sd::Environment::getInstance().isDebugAndVerbose()) {
-    sd_printf("Op with name %s and num inputs %i \n", this->getOpName()->c_str(), block->width());
+    std::string * opName = this->getOpName();
+    if(opName == nullptr) {
+      THROW_EXCEPTION("Op name is null!");
+    }
+    if(block == nullptr) {
+      THROW_EXCEPTION("Block is null!");
+    }
+    sd::LongType  width = block->width();
+    sd_printf("Op with name %s and num inputs %i \n", opName->c_str(), block->width());
     auto vs = block->getVariableSpace();
     int numInputs = block->width();
     for (int e = 0; e < numInputs; e++) {
       auto array = block->isFastPath() ?  block->fastpath_in()[e]
                                        : vs->getVariable(block->nodeId(), e)->getNDArray();
-     sd_printf("Checking input %d  block fast path %d op name %s\n",e,block->isFastPath(),this->getOpName()->c_str());
+      sd_printf("Checking input %d  block fast path %d op name %s\n",e,block->isFastPath(),this->getOpName()->c_str());
       auto shape = ShapeUtils::shapeAsString(array);
       //limit size preview for string arrays due to allocation size when debugging
       int sizePreview = array->isS() ? 2 : 32;
@@ -850,6 +784,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
       bool isEmpty = array->isEmpty();
       bool isScalar = array->isScalar();
       int lengthOf = array->lengthOf();
+      array->printShapeInfo("DeclarableOp::execute: array shape");
       sd::LongType len = sd::math::sd_min<LongType>(32, array->isEmpty() || array->isScalar() ? 1 : array->lengthOf());
       auto first = array->isEmpty() ? new std::string(std::string("Empty NDArray")) : array->asString(len);
       auto type = DataTypeUtils::asString(array->dataType());
@@ -992,8 +927,6 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
     sd_printf("%s: no operands provided for the op", this->getOpName()->c_str());
     return sd::Status::BAD_INPUT;
   }
-
-
 
   int cnt = 0;
   for (auto p : *block.inputs()) {

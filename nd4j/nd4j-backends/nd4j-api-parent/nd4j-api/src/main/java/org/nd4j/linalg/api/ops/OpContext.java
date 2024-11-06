@@ -136,7 +136,7 @@ public interface OpContext extends AutoCloseable {
     void setBArguments(Pointer arguments, int length);
 
 
-    void setBAArguments(List<Boolean> arguments);
+    void setBArguments(List<Boolean> arguments);
 
     /**
      * This method sets boolean arguments required for operation

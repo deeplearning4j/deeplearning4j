@@ -178,70 +178,70 @@ void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y
 }
 
 template <typename X, typename Y>
-static void quickSort_parallel_key(void *varray, sd::LongType const *xShapeInfo, void *yarray,
-                                   sd::LongType const *yShapeInfo, sd::LongType lenArray, int numThreads,
+static void quickSort_parallel_key(NDArray *x, NDArray *y, sd::LongType lenArray, int numThreads,
                                    bool descending) {
-  auto array = reinterpret_cast<X *>(varray);
-  auto values = reinterpret_cast<Y *>(yarray);
+  auto array = reinterpret_cast<X *>(x->bufferAsT<X>());
+  auto values = reinterpret_cast<Y *>(y->bufferAsT<Y>());
   int cutoff = 1000;
 
   PRAGMA_OMP_PARALLEL_THREADS(numThreads) {
     PRAGMA_OMP_SINGLE_ARGS(nowait) {
-      quickSort_parallel_internal_key(array, xShapeInfo, values, yShapeInfo, 0, lenArray - 1, cutoff, descending);
+      quickSort_parallel_internal_key(array, x->shapeInfo(), values, y->shapeInfo(), 0, lenArray - 1, cutoff, descending);
     }
   }
 }
 
 template <typename X, typename Y>
-static void quickSort_parallel_value(void *varray, sd::LongType const *xShapeInfo, void *yarray,
-                                     sd::LongType const *yShapeInfo, sd::LongType lenArray, int numThreads,
+static void quickSort_parallel_value(NDArray *x, NDArray *y, sd::LongType lenArray, int numThreads,
                                      bool descending) {
-  auto array = reinterpret_cast<X *>(varray);
-  auto values = reinterpret_cast<Y *>(yarray);
+  auto array = reinterpret_cast<X *>(x->bufferAsT<X>());
+  auto values = reinterpret_cast<Y *>(y->bufferAsT<Y>());
   int cutoff = 1000;
 
   PRAGMA_OMP_PARALLEL_THREADS(numThreads) {
     PRAGMA_OMP_SINGLE_ARGS(nowait) {
-      quickSort_parallel_internal_value(array, xShapeInfo, values, yShapeInfo, 0, lenArray - 1, cutoff, descending);
+      quickSort_parallel_internal_value(array, x->shapeInfo(), values,y->shapeInfo(), 0, lenArray - 1, cutoff, descending);
     }
   }
 }
 
 template <typename X, typename Y>
-void DoubleMethods<X, Y>::sortByKey(void *vx, sd::LongType const *xShapeInfo, void *vy, sd::LongType const *yShapeInfo,
+void DoubleMethods<X, Y>::sortByKey(NDArray *x,NDArray *y,
                                     bool descending) {
-  quickSort_parallel_key<X, Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(),
+  quickSort_parallel_key<X, Y>(x,y, x->lengthOf(),Environment::getInstance().maxMasterThreads(),
                                descending);
 }
 
 template <typename X, typename Y>
-void DoubleMethods<X, Y>::sortByValue(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                      sd::LongType const *yShapeInfo, bool descending) {
-  quickSort_parallel_value<X, Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(),
+void DoubleMethods<X, Y>::sortByValue(NDArray *x,NDArray *y,
+                                      bool descending) {
+  quickSort_parallel_value<X, Y>(x,y,x->lengthOf(),Environment::getInstance().maxMasterThreads(),
                                  descending);
 }
 
 template <typename X, typename Y>
-void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                       sd::LongType const *yShapeInfo, LongType *dimension, LongType dimensionLength,
-                                       bool descending) {
-  auto x = reinterpret_cast<X *>(vx);
-  auto y = reinterpret_cast<Y *>(vy);
+void DoubleMethods<X, Y>::sortTadByKey(NDArray *xArr,NDArray *yArr,
+                                       NDArray *dimension, bool descending) {
+  auto x = xArr->bufferAsT<X>();
+  auto y = yArr->bufferAsT<Y>();
+  auto dimensionData = dimension->bufferAsT<sd::LongType>();
+  auto dimensionLength = dimension->lengthOf();
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(xArr->shapeInfo(), dimensionData, dimensionLength);
+  auto packY = ConstantTadHelper::getInstance().tadForDimensions(yArr->shapeInfo(), dimensionData, dimensionLength);
 
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-  auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
-  auto xLength = shape::length(xShapeInfo);
+  auto xLength = xArr->lengthOf();
   auto xTadLength = shape::length(packX->primaryShapeInfo());
   auto numTads = packX->numberOfTads();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto dx = x + packX->primaryOffsets()[r];
-      auto dy = y + packY->primaryOffsets()[r];
-
-      quickSort_parallel_key<X, Y>(dx, packX->primaryShapeInfo(), dy, packY->primaryShapeInfo(), xTadLength, 1,
+      NDArray *xView = packX->extractTadView(xArr,r);
+      NDArray *yView = packY->extractTadView(yArr,r);
+      quickSort_parallel_key<X, Y>(xView,
+                                   yView, xTadLength, 1,
                                    descending);
+      delete xView;
+      delete yView;
     }
   };
 
@@ -249,26 +249,28 @@ void DoubleMethods<X, Y>::sortTadByKey(void *vx, sd::LongType const *xShapeInfo,
 }
 
 template <typename X, typename Y>
-void DoubleMethods<X, Y>::sortTadByValue(void *vx, sd::LongType const *xShapeInfo, void *vy,
-                                         sd::LongType const *yShapeInfo, LongType *dimension, LongType dimensionLength,
-                                         bool descending) {
-  auto x = reinterpret_cast<X *>(vx);
-  auto y = reinterpret_cast<Y *>(vy);
+void DoubleMethods<X, Y>::sortTadByValue(NDArray *xArr, NDArray *yArr,
+                                         NDArray *dimension, bool descending) {
+  auto x = reinterpret_cast<X *>(xArr->bufferAsT<X>());
+  auto y = reinterpret_cast<Y *>(yArr->bufferAsT<Y>());
+  auto dimensionData = dimension->bufferAsT<sd::LongType>();
+  auto len = dimension->lengthOf();
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(xArr->shapeInfo(), dimensionData, len);
+  auto packY = ConstantTadHelper::getInstance().tadForDimensions(yArr->shapeInfo(), dimensionData, len);
 
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-  auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
-  auto xLength = shape::length(xShapeInfo);
+  auto xLength = xArr->lengthOf();
   auto xTadLength = shape::length(packX->primaryShapeInfo());
   auto numTads = packX->numberOfTads();
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
-      auto dx = x + packX->primaryOffsets()[r];
-      auto dy = y + packY->primaryOffsets()[r];
-
-      quickSort_parallel_value<X, Y>(dx, packX->primaryShapeInfo(), dy, packY->primaryShapeInfo(), xTadLength, 1,
-                                     descending);
+      NDArray *xView = packX->extractTadView(xArr,r);
+      NDArray *yView = packY->extractTadView(yArr,r);
+      quickSort_parallel_value<X, Y>(xView,
+                                   yView, xTadLength, 1,
+                                   descending);
+      delete xView;
+      delete yView;
     }
   };
 

@@ -24,6 +24,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <legacy/NativeOpExecutioner.h>
 
 namespace sd {
 namespace ops {
@@ -102,7 +103,7 @@ LegacyOp *LegacyBroadcastBoolOp::clone() { return new LegacyBroadcastBoolOp(this
  */
 ShapeList *LegacyBroadcastBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape, BOOL);
+  auto desc = new ShapeDescriptor(inShape, BOOL, false);
   auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
   if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
   return ret;

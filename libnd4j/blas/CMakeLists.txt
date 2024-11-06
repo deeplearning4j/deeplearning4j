@@ -486,31 +486,6 @@ elseif(SD_CPU OR SD_AURORA)
     endif()
 
 
-    if(SD_CHECK_VECTORIZATION)
-        set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})
-        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-
-            if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0)
-                set(CHECK_VECT_FLAGS "-ftree-vectorize -fsave-optimization-record")
-                #to process fsave-optimization-record we will need our cython version code
-                message("Build Auto vectorization helpers")
-                execute_process(COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/cython_setup.py" "build_ext" "--inplace" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/" RESULT_VARIABLE ret)
-                message("build='${ret}'")
-
-                #remove fail cases that gcc fails produce sometimes
-                file(GLOB_RECURSE FAILURE_CASES false ../include/loops/cpu/compilation_units/reduce3*.cpp)
-                #message("*****${FAILURE_CASES}")
-                foreach(FL_ITEM ${FAILURE_CASES})
-                    message("Removing failure cases ${FL_ITEM}")
-                    list(REMOVE_ITEM VECT_FILES ${FL_ITEM})
-                endforeach()
-            else()
-                set(CHECK_VECT_FLAGS "-ftree-vectorize -fopt-info-vec-optimized-missed")
-            endif()
-            message("CHECK VECTORIZATION ${CHECK_VECT_FLAGS}")
-            set_source_files_properties( ${VECT_FILES}  PROPERTIES COMPILE_FLAGS "${CHECK_VECT_FLAGS}" )
-        endif()
-    endif()
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)

@@ -117,6 +117,15 @@ public interface NDArrayFactory {
     INDArray create(int[] shape, DataBuffer buffer);
 
     /**
+     * Create an ndarray with the given shape
+     * and data
+     * @param buffer the buffer to use
+     * @param longShapeDescriptor the shape descriptor to use.
+     * @return the ndarray
+     */
+    INDArray create(DataBuffer buffer,LongShapeDescriptor longShapeDescriptor);
+
+    /**
      * Returns the order for this ndarray for internal data storage
      *
      * @return the order (c or f)
@@ -289,17 +298,6 @@ public interface NDArrayFactory {
      * @return the concatneated ndarrays
      */
     INDArray concat(int dimension, INDArray... toConcat);
-
-    /**
-     * Concatenate ndarrays along a dimension
-     *
-     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
-     *
-     * @param dimension the dimension to concatneate along
-     * @param toConcat  the ndarrays to concateneate
-     * @return the concatneated ndarrays
-     */
-    INDArray specialConcat(int dimension, INDArray... toConcat);
 
     /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
@@ -1574,14 +1572,6 @@ public interface NDArrayFactory {
 
     INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering);
 
-
-    /**
-     *
-     * @param tensor
-     * @param dimensions
-     * @return
-     */
-    INDArray[] tear(INDArray tensor, long... dimensions);
 
     /**
      *

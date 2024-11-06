@@ -287,7 +287,7 @@ public class AtomicAllocator implements Allocator {
         if (array.isEmpty() || array.isS())
             return;
 
-        val buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
+        val buffer = array.data();
         synchronizeHostData(buffer);
     }
 

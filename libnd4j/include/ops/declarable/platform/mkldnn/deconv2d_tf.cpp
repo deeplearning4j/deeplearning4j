@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI, const sd::LongType bS, const sd::LongType iC,
+static void deconv2TFdBpMKLDNN(NDArray* weights, NDArray* gradO, NDArray* gradI, const sd::LongType bS, const sd::LongType iC,
                                const sd::LongType iH, const sd::LongType iW, const sd::LongType oC, const sd::LongType oH, const sd::LongType oW, const sd::LongType kH,
                                const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH,
                                const sd::LongType dW, const bool isNCHW, const int wFormat) {
