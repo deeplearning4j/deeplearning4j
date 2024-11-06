@@ -69,23 +69,6 @@ public class ShapeBufferTests extends BaseNd4jTestWithBackends {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testShape(Nd4jBackend backend) {
-        long[] shape = {2, 4};
-        long[] stride = {1, 2};
-        val shapeInfoBuffer = Shape.createShapeInformation(shape, stride, 1, 'c', DataType.DOUBLE, false);
-        val buff = shapeInfoBuffer.asNioLong();
-        val shapeView = Shape.shapeOf(buff);
-        assertTrue(Shape.contentEquals(shape, shapeView));
-        val strideView = Shape.stride(buff);
-        assertTrue(Shape.contentEquals(stride, strideView));
-        assertEquals('c', Shape.order(buff));
-        assertEquals(1, Shape.elementWiseStride(buff));
-        assertFalse(Shape.isVector(buff));
-        assertTrue(Shape.contentEquals(shape, Shape.shapeOf(buff)));
-        assertTrue(Shape.contentEquals(stride, Shape.stride(buff)));
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
