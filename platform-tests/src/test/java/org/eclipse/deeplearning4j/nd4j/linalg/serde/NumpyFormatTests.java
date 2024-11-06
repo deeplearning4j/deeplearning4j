@@ -145,8 +145,8 @@ public class NumpyFormatTests extends BaseNd4jTestWithBackends {
         INDArray linspace = Nd4j.linspace(1,4,4, DataType.FLOAT);
         DataBuffer convertBuffer = Nd4j.getNDArrayFactory().convertToNumpyBuffer(linspace);
         Pointer convert = Nd4j.getNDArrayFactory().convertToNumpy(linspace);
-        Pointer pointer = NativeOpsHolder.getInstance().getDeviceNativeOps().loadNpyFromHeader(convert);
-        Pointer pointer1 = NativeOpsHolder.getInstance().getDeviceNativeOps().dataPointForNumpyStruct(pointer);
+        Pointer pointer =Nd4j.getNativeOps().loadNpyFromHeader(convert);
+        Pointer pointer1 =Nd4j.getNativeOps().dataPointForNumpyStruct(pointer);
         pointer1.capacity(linspace.data().getElementSize() * linspace.data().length());
         ByteBuffer byteBuffer = linspace.data().pointer().asByteBuffer();
         byte[] originalData = new byte[byteBuffer.capacity()];

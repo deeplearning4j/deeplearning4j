@@ -84,8 +84,6 @@ import org.nd4j.presets.OpExclusionUtils;
                 "array/ShapeList.h",
                 "system/type_boilerplate.h",
                 "system/op_boilerplate.h",
-                //"enum_boilerplate.h",
-                //"op_enums.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",
@@ -242,10 +240,6 @@ public class Nd4jMinimalPresets implements InfoMapper, BuildEnabled {
                 .put(new Info("ErrorResult").skip());
 
         OpExclusionUtils.processOps(logger, properties, infoMap);
-
-
-        infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
-
     }
 
 

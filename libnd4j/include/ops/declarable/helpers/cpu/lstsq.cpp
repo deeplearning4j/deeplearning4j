@@ -79,7 +79,7 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     // 5. Solve two triangular systems:
     auto rightB = rightOutput.ulike();
     helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, true, false, &rightB);
-    helpers::adjointMatrix(context, &leftOutput, true, &leftOutput);  //.transposei();
+    helpers::adjointMatrix(context, &leftOutput, true, &leftOutput);
     helpers::triangularSolveFunctor(context, &leftOutput, &rightB, false, false, output);
     // All done
   } else {  // QR decomposition approach

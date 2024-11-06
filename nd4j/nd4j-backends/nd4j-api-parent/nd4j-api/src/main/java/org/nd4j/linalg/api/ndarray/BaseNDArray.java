@@ -2669,6 +2669,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //note we have a manual isView() to express arrays that might use the
         //same buffer and technically use the start of the same buffer but do not
         //actually "own" the buffer
+
         return c2  || ArrayOptionsHelper.isView(this.shapeInfoJava());
     }
 

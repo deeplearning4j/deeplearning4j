@@ -32,9 +32,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
-import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
@@ -63,14 +61,10 @@ import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.memory.WorkspaceAllocationsTracker;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.profiler.UnifiedProfiler;
-import org.nd4j.linalg.profiler.data.eventlogger.EventLogger;
-import org.nd4j.linalg.profiler.data.eventlogger.EventType;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -81,7 +75,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -977,7 +970,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         for(int i = 0; i < numThreads; i++) {
             File write = new File("pv_" + i + ".zip");
-            System.out.println(UnifiedProfiler.getInstance().printCurrentStats());
             WordVectorSerializer.writeParagraphVectors(pv,write.getAbsolutePath());
 
         }
