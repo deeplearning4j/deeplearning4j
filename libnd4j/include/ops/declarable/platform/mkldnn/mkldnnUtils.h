@@ -108,15 +108,15 @@ DECLARE_PLATFORM(concat, ENGINE_CPU);
 
 namespace onednnUtils {
 
-void poolingONEDNN(const NDArray* input, NDArray* output, const int kD, const int kH, const int kW, const int sD,
+void poolingONEDNN(NDArray* input, NDArray* output, const int kD, const int kH, const int kW, const int sD,
                    const int sH, const int sW, const int pD, const int pH, const int pW, const int isNCHW,
                    const dnnl::algorithm mode);
 
-void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI, const int kD, const int kH,
+void poolingBpONEDNN(NDArray* input, NDArray* gradO, NDArray* gradI, const int kD, const int kH,
                      const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW,
                      const int isNCHW, const dnnl::algorithm mode);
 
-void getONEDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+void getONEDNNMemoryDescLrn(NDArray* src, NDArray* diff_src, NDArray* dst,
                             dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md,
                             dnnl::memory::desc* lrn_dst_md, dnnl::memory::desc* user_src_md,
                             dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis);
@@ -129,15 +129,15 @@ dnnl::engine& getEngine(void* ptr);
  * @param const array rank
  * @param reference to memory dimentions
  */
-void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims);
+void getDims(NDArray* array, const int rank, dnnl::memory::dims& mklDims);
 /**
  * This function evaluate memory format tag based on array shapeInfo
  * @param const array
  * @return memory format
  */
-dnnl::memory::format_tag getFormat(const NDArray& arr);
+dnnl::memory::format_tag getFormat(NDArray& arr);
 
-void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut = {});
+void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut = {});
 //////////////////////////////////////////////////////////////////////
 /**
  * This function load and reorder user memory to mkl
@@ -149,7 +149,7 @@ void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std:
  * @param primitive memory descriptor
  * @param dnnl arg activation enumerator
  */
-dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream,
+dnnl::memory loadDataToMklStream(NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream,
                                  const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
                                  dnnl::memory& arg);
 

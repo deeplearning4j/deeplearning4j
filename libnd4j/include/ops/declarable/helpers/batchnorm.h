@@ -28,8 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-SD_LIB_HIDDEN void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma,
-                             const NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon);
+SD_LIB_HIDDEN void batchnorm(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
+                             NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon);
 
 }
 }  // namespace ops

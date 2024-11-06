@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
+static void deconv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArray* output,
                            const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH, const sd::LongType pW,
                            const sd::LongType dH, const sd::LongType dW, const int paddingMode, const bool isNCHW, const int wFormat) {
   // mkl supports weights format [oC, iC, kH, kW] only
@@ -156,7 +156,7 @@ static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI,
+static void deconv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, NDArray* gradI,
                              NDArray* gradW, NDArray* gradB, const sd::LongType kH, const sd::LongType kW, const sd::LongType sH, const sd::LongType sW,
                              const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW, const int paddingMode,
                              const bool isNCHW, const int wFormat) {

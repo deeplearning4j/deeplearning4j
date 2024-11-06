@@ -26,6 +26,7 @@ import lombok.Setter;
 import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
+import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.shape.PaddingUtils;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
@@ -143,12 +144,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     private static ThreadLocal<Boolean> initWithFalse() {
-        return new ThreadLocal<Boolean>() {
-            @Override
-            protected Boolean initialValue() {
-                return false;
-            }
-        };
+        return ThreadLocal.withInitial(() -> false);
     }
     @Getter
     @Setter
@@ -207,9 +203,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public static boolean callingToString() {
         return callingToString.get();
     }
-
-
-
 
 
     private void logCreationFromConstructor() {
@@ -1281,22 +1274,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
-
-    /**
-     * Returns whether the ndarray is valid or not
-     * @return true if the ndarray is valid
-     * false otherwise
-     */
-    @Deprecated
-    public boolean isValid() {
-        try {
-            linearIndex(length() - 1);
-        } catch (Exception e) {
-            return false;
-        }
-        return true;
-    }
-
     protected INDArray create(DataBuffer data, int[] shape, long offset) {
         return Nd4j.create(data, shape, offset);
     }
@@ -1441,11 +1418,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), elementWiseStride(), order, this.dataType(), isEmpty()));
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), order, this.dataType(), isEmpty());
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(descriptor));
     }
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(ArrayUtil.toLongArray(shape),ArrayUtil.toLongArray( stride), Shape.elementWiseStride(shape, stride, ordering() == 'f'), ordering(), this.dataType(), isEmpty());
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), isEmpty()));
     }
 
@@ -2087,9 +2066,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         autoProcessScalarCall();
 
-        if (index == 0)
-            return data().getLong(index);
-
         long[] dimensions = ordering() == 'c' ? Shape.ind2subC(this, index) : Shape.ind2sub(this, index);
         Shape.assertShapeLessThan(dimensions, shape());
         return getLong(dimensions);
@@ -2100,7 +2076,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         logBeforeViewCreationIfNeccessary();
         if(isScalar()) {
             logViewCreationIfNeccessary();
-            return data().getLong(0);
+            return data().getLong(offset);
         }
         long ret =  Shape.getLong(this, indices);
         logViewCreationIfNeccessary();
@@ -2129,7 +2105,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 return Shape.getDouble(this, indices[0], 0);
             } else if ((isScalar() || length() == 1) && indices[0] == 0) {
                 logViewCreationIfNeccessary();
-                return data().getDouble(0);
+                return data().getDouble(offset);
             }
         }
         double ret =  Shape.getDouble(this, indices);
@@ -2155,13 +2131,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             else if (isColumnVector())
                 return Shape.getDouble(this, indices[0], 0);
             else if (isScalar() && indices[0] == 0)
-                return data().getDouble(0);
+                return data().getDouble(offset);
             else
                 throw new IllegalStateException("Indexes length must be > 1 for non vectors and scalars");
         }
         double ret =  Shape.getDouble(this, indices);
-
-
         return ret;
     }
 
@@ -3158,9 +3132,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    protected DataBuffer shapeOf() {
-        return Shape.shapeOf(shapeInfoDataBuffer());
-    }
 
 
 
@@ -3541,9 +3512,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray add(INDArray other) {
         validateNumericalArray("add", false);
         if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering()));
+            INDArray toAdd = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), Shape.broadcastOutputShape(this.shape(), other.shape()), this.ordering());
+            return addi(other, toAdd);
         } else {
-            return addi(other, Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering()));
+            INDArray toAdd = Nd4j.createUninitialized(Shape.pickPairwiseDataType(this.dataType(), other.dataType()), this.shape(), this.ordering());
+            return addi(other, toAdd);
         }
     }
 
@@ -3823,18 +3796,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    @Deprecated  //TODO: Investigate. Not deprecated in the base interface.
-    public long linearIndex(long i) {
-        long idx = i;
-        for (int j = 0; j < jvmShapeInfo.rank - 1; j++) {
-            if (size((int) i) == 1)
-                continue;
-            idx += i * stride(j);
-        }
-        return Shape.offset(jvmShapeInfo.javaShapeInformation) + (idx);
-    }
-
-    @Override
     public INDArray slice(long slice) {
         Nd4j.getCompressor().autoDecompress(this);
 
@@ -3932,9 +3893,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 indexes[i] += this.size(i);
         }
         long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
-        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1, 'c', this.dataType(), false);
-        INDArray ret = Nd4j.createArrayFromShapeBuffer(buffer, shape);
+        INDArray ret =  Nd4j.scalar(data().getDouble(offset + idx)).castTo(dataType());
+
         logViewCreationIfNeccessary();
 
         return ret;
@@ -3952,9 +3912,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         long idx = Shape.getOffset(jvmShapeInfo.javaShapeInformation, indexes);
-        val buffer = Nd4j.createBuffer(this.data(), idx, 1);
-        val shape = Nd4j.getShapeInfoProvider().createShapeInformation(new long[0], new long[0],1,'c', this.dataType(), false);
-        INDArray ret =  Nd4j.createArrayFromShapeBuffer(buffer, shape);
+        INDArray ret =  Nd4j.scalar(data().getDouble(offset + idx)).castTo(dataType());
         if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
             NDArrayEvent event = NDArrayEvent.builder()
                     .dataAtEvent(NDArrayMetaData.from(ret))
@@ -4154,7 +4112,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         autoProcessScalarCall();
 
         if (i == 0)
-            return data().getDouble(i);
+            return data().getDouble(offset + i);
 
         long[] dimensions = ordering() == 'c' ? Shape.ind2subC(this, i) : Shape.ind2sub(this, i);
         Shape.assertShapeLessThan(dimensions, shape());
@@ -4217,153 +4175,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getCompressor().autoDecompress(this);
 
         logBeforeViewCreationIfNeccessary();
-        boolean hasZeros = false;
-        for(int i = 0; i < newShape.length; i++) {
-            if(newShape[i] == 0) {
-                hasZeros = true;
-                break;
-            }
-        }
+        ReshapeNoCopy reshape = new ReshapeNoCopy(this,newShape,null,order);
+        INDArray ret = Arrays.stream(getExecutioner().exec(reshape)).findFirst().orElseThrow();
+        logViewCreationIfNeccessary();
 
-        //shape doesn't matter just let it through
-        //scalars are not empty
-        if(hasZeros && !Shape.shapeIsScalar(newShape) && newShape.length > 1) {
-            return Nd4j.create(dataType(),newShape);
-        }
-
-
-        // special case for empty reshape
-        if (this.length() <= 1 && (newShape == null || newShape.length == 0) || isScalar() && newShape.length == 1 && newShape[0] == 0) {
-            if(data() == null)
-                return Nd4j.emptyWithShape(newShape,dataType());
-            else //scalar case
-                return Nd4j.create(this.data(),newShape, new long[]{1}, 0);
-        }
-
-        if (newShape == null)
-            throw new ND4JIllegalStateException(
-                    "Can't reshape(long...) without shape arguments. Got empty shape instead.");
-
-        // TODO: maybe toFlatten() makes more sense here?
-        // reshape(-1) special case
-        if (newShape.length == 1 && newShape[0] == -1)
-            newShape[0] = this.length();
-
-        int numberNegativesOnes = 0;
-        long[] shape = ArrayUtil.copy(newShape);
-
-
-        for (int i = 0; i < shape.length; i++) {
-            if (shape[i] < 0) {
-                if (numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones. Got shape "
-                            + Arrays.toString(newShape));
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for (int j = 0; j < shape.length; j++)
-                    if (shape[j] >= 1)
-                        shapeLength *= shape[j];
-                long realShape = Math.abs(length() / shapeLength);
-                long[] thisNewShape = new long[shape.length];
-                for (int j = 0; j < shape.length; j++) {
-                    if (i != j) {
-                        thisNewShape[j] = shape[j];
-                    } else
-                        thisNewShape[j] = realShape;
-                }
-
-                shape = thisNewShape;
-                break;
-
-            }
-        }
-
-        long prod = ArrayUtil.prodLong(shape);
-
-        //ignore scalars this validation can be shaky
-        if (this.length() > 1 && prod != this.length()) {
-            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
-        }
-
-
-
-
-        INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
-
-        if (reshapeAttempt != null) {
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .dataAtEvent(NDArrayMetaData.from(reshapeAttempt))
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                reshapeAttempt.addEvent(event);
-
-            }
-
-            logViewCreationIfNeccessary();
-
-            return reshapeAttempt;
-        }
-
-        if(enforceView) {
-            throw new ND4JIllegalStateException("Unable to reshape array as view, called with enforceView=true. " +
-                    "Use enforceView=false to return a copy instead, or call reshape on a non-strided array. Array shape info: " + this.shapeInfoToString().replaceAll("\n",""));
-        }
-
-
-        if (order != ordering()) {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape,order);
-            ret.setData(dup(order).data());
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .dataAtEvent(NDArrayMetaData.from(ret))
-                        .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                ret.addEvent(event);
-
-            }
-            return ret;
-        } else if (this.isEmpty()) {
-            INDArray ret = Nd4j.create(this.dataType(), shape);
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .dataAtEvent(NDArrayMetaData.from(ret))
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                ret.addEvent(event);
-
-            }
-            return ret;
-
-        } else {
-            INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
-            //in this case we need properly duplicate the data. the strides do not match
-            //the new data buffer and will be incorrect.
-            INDArray ravel = toFlattened(this);
-            ret.setData(ravel.data());
-            if(Nd4j.getEnvironment().isLogNDArrayEvents() && !callingToString.get()) {
-                NDArrayEvent event = NDArrayEvent.builder()
-                        .dataAtEvent(NDArrayMetaData.from(ret))
-                        .parentDataAtEvent(NDArrayMetaData.fromArr(this))
-                        .ndArrayEventType(NDArrayEventType.VIEW_CREATION)
-                        .stackTrace(Thread.currentThread().getStackTrace())
-                        .build();
-                ret.addEvent(event);
-
-            }
-
-            logViewCreationIfNeccessary();
-            return ret;
-
-        }
+        return ret;
     }
 
     @Override
@@ -5796,6 +5612,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Iterator<Object> iterator() {
         return new FirstAxisIterator(this);
+    }
+
+    @Override
+    public long originalOffset() {
+        return offset;
     }
 
 

@@ -202,11 +202,11 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   uint8_t *recurrentWeightsData = nullptr;
   if (inputWeights) {
     inputWeightsT =
-        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}).dup('c') : inputWeights->transpose().dup('c');
+        inputWeights->rankOf() == 3 ? inputWeights->permute({0, 2, 1}, 0, false).dup('c') : inputWeights->transpose().dup('c');
     inputWeightsData = (uint8_t *)inputWeightsT.specialBuffer();
   }
   if (recurrentWeights) {
-    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}).dup('c')
+    recurrentWeightsT = recurrentWeights->rankOf() == 3 ? recurrentWeights->permute({0, 2, 1}, 0, false).dup('c')
                                                         : recurrentWeights->transpose().dup('c');
     recurrentWeightsData = (uint8_t *)recurrentWeightsT.specialBuffer();
   }
@@ -227,7 +227,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   }
 
   if (dataFormat == 1) {
-    permutedX = input->permute({1, 0, 2}).dup('c');
+    permutedX = input->permute({1, 0, 2}, 0, false).dup('c');
     argX = &permutedX;
   }
 
@@ -254,7 +254,7 @@ void cudnn_rnn_old(LaunchContext *contextPtr, int dataFormat, NDArray *input, ND
   if (outputActivations != nullptr && argOutput != outputActivations) {
     // refill output
     if (dataFormat == 1) {
-      outputActivations->assign(argOutput->permute({1, 0, 2}));
+      outputActivations->assign(argOutput->permute({1, 0, 2}, 0, false));
     }
   }
   NDArray::registerSpecialUse({outputActivations, finalTimeStepActivations, finalMemCellState},

@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k,
+static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k,
                                bool needSort) {
   sd::LongType width = input->sizeAt(-1);
   sd::LongType lastDim = input->rankOf() - 1;
@@ -117,7 +117,7 @@ static sd::Status topKFunctor_(const NDArray* input, NDArray* values, NDArray* i
 // ----------------------------------------------------------------------------------------------- //
 
 template <typename T>
-static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* input, const NDArray* target,
+static sd::Status inTopKFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* target,
                                  NDArray* result, const sd::LongType k) {
   std::vector<sd::LongType> shapeI(input->rankOf());
   for (int i = 0; i < input->rankOf() - 1; i++) shapeI[i] = input->sizeAt(i);
@@ -125,7 +125,8 @@ static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* inpu
   std::unique_ptr<NDArray> indices(NDArrayFactory::create_<sd::LongType>(input->ordering(), shapeI, context));
   NDArray* values = nullptr;
   sd::Status status = topKFunctor(context, input, values, indices.get(), k, true);
-  result->assign(0);
+  int assign = 0;
+  result->assign(assign);
   if (status == sd::Status::OK) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
@@ -145,23 +146,23 @@ static sd::Status inTopKFunctor_(sd::LaunchContext* context, const NDArray* inpu
   return status;
 }
 
-sd::Status topKFunctor(sd::LaunchContext* context, const NDArray* input, NDArray* values, NDArray* indices,
+sd::Status topKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                        const sd::LongType k, bool needSort) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indices, k, needSort),
                         SD_NUMERIC_TYPES);
 }
 
-sd::Status inTopKFunctor(sd::LaunchContext* context, const NDArray* input, const NDArray* target, NDArray* result,
+sd::Status inTopKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result,
                          const sd::LongType k) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k),
                         SD_NUMERIC_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::Status topKFunctor_,
-                      (const NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
+                      (NDArray* input, NDArray* values, NDArray* indices, const sd::LongType k, bool needSort),
                       SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template sd::Status inTopKFunctor_,
-                      (sd::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result,
+                      (sd::LaunchContext * context, NDArray* input, NDArray* target, NDArray* result,
                        const sd::LongType k),
                       SD_NUMERIC_TYPES);
 }  // namespace helpers

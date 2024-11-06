@@ -31,7 +31,7 @@ namespace sd {
 namespace onednnUtils {
 
 //////////////////////////////////////////////////////////////////////
-void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims) {
+void getDims(NDArray* array, const int rank, dnnl::memory::dims& mklDims) {
   std::vector<int64_t> vDims(rank);
   for (auto i = 0; i < rank; i++) {
     vDims[i] = array->sizeAt(i);
@@ -39,7 +39,7 @@ void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims) 
   mklDims = dnnl::memory::dims(vDims);
 }
 //////////////////////////////////////////////////////////////////////
-dnnl::memory::format_tag getFormat(const NDArray& arr) {
+dnnl::memory::format_tag getFormat(NDArray& arr) {
   dnnl::memory::format_tag result;
 
   switch (arr.rankOf()) {
@@ -69,7 +69,7 @@ dnnl::memory::format_tag getFormat(const NDArray& arr) {
 }
 
 //////////////////////////////////////////////////////////////////////
-void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut) {
+void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut) {
   if (array.ews() != 1 || (array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty()) {
     mklMd.data.format_kind = dnnl_blocked;  // overrides format
 
@@ -83,7 +83,7 @@ void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std:
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
-dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream,
+dnnl::memory loadDataToMklStream(NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream,
                                  const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
                                  dnnl::memory& arg) {
   auto user_mem = dnnl::memory(user_md, engine, const_cast<NDArray&>(array).buffer());
@@ -95,7 +95,7 @@ dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engin
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingONEDNN(const NDArray* input, NDArray* output, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD,
+void poolingONEDNN(NDArray* input, NDArray* output, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD,
                    const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const int isNCHW,
                    const dnnl::algorithm mode) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for input
@@ -182,7 +182,7 @@ void poolingONEDNN(const NDArray* input, NDArray* output, const sd::LongType kD,
 }
 
 //////////////////////////////////////////////////////////////////////
-void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI, const sd::LongType kD, const sd::LongType kH,
+void poolingBpONEDNN(NDArray* input, NDArray* gradO, NDArray* gradI, const sd::LongType kD, const sd::LongType kH,
                      const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
                      const int isNCHW, const dnnl::algorithm mode) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for input
@@ -293,7 +293,7 @@ void poolingBpONEDNN(const NDArray* input, const NDArray* gradO, NDArray* gradI,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void getONEDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+void getONEDNNMemoryDescLrn(NDArray* src, NDArray* diff_src, NDArray* dst,
                             dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md,
                             dnnl::memory::desc* lrn_dst_md, dnnl::memory::desc* user_src_md,
                             dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis) {

@@ -38,7 +38,7 @@ void matrixBandPart_(NDArray* input, NDArray* output, sd::LongType lowerBand, sd
     NDArray* inputMatrix = listDiag.at(e);
     NDArray* outputMatrix = listOut.at(e);
     if (outputMatrix != inputMatrix)  // if not inplace
-      outputMatrix->assign(inputMatrix);
+      outputMatrix->assign(*inputMatrix);
     if (lowerBand >= 0) {
       for (sd::LongType row = 0; row < inputMatrix->rows(); ++row) {
         for (sd::LongType col = 0; col < row; ++col) {

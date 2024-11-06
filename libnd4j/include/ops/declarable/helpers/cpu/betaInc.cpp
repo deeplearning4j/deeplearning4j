@@ -97,7 +97,7 @@ static T betaIncCore(T a, T b, T x) {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void betaIncForArray(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x,
+static void betaIncForArray(sd::LaunchContext* context, NDArray& a, NDArray& b, NDArray& x,
                             NDArray& output) {
   int xLen = x.lengthOf();
 
@@ -110,13 +110,13 @@ static void betaIncForArray(sd::LaunchContext* context, const NDArray& a, const 
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(sd::LaunchContext* context, NDArray& a, NDArray& b, NDArray& x, NDArray& output) {
   auto xType = a.dataType();
   BUILD_SINGLE_SELECTOR(xType, betaIncForArray, (context, a, b, x, output), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void betaIncForArray,
-                      (sd::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x,
+                      (sd::LaunchContext * context, NDArray& a, NDArray& b, NDArray& x,
                        NDArray& output),
                       SD_FLOAT_TYPES);
 

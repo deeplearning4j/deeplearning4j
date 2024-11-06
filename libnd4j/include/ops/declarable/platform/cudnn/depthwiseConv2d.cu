@@ -29,8 +29,8 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void depthwiseConv2dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                                 const NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
+static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights,
+                                 NDArray* bias, NDArray* output, const LongType kH, const LongType kW, const LongType sH,
                                  const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                                  const LongType paddingMode, const bool isNCHW) {
   // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)
@@ -129,8 +129,8 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, const NDArray* in
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void depthwiseConv2dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                                   const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH,
+static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights,
+                                   NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const LongType kH,
                                    const LongType kW, const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH,
                                    const LongType dW, const LongType paddingMode, const bool isNCHW) {
   // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)

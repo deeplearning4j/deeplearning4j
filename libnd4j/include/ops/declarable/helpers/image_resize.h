@@ -124,7 +124,7 @@ struct KeysCubicKernelFunc
   }
 
   SD_HOST_DEVICE T operator()(T s) const {
-    auto abs_s = math::sd_abs(s);
+    auto abs_s = math::sd_abs<T,T>(s);
     if (abs_s >= T(2)) {
       return T(0.0);
     } else if (abs_s >= T(1)) {
@@ -150,7 +150,7 @@ struct LanczosKernelFunc
   explicit LanczosKernelFunc(float const radius) : _radius(radius) {}
   SD_HOST_DEVICE float operator()(float x) const {
     float const kPI = 3.141592653589793f;
-    x = math::sd_abs(x);
+    x = math::sd_abs<float,float>(x);
     if (x > _radius) return 0.f;
     // Need to special case the limit case of sin(x) / x when x is zero.
     if (x <= 1.e-3f) {
@@ -177,7 +177,7 @@ struct GaussianKernelFunc
   // This implies a radius of 1.5,
   explicit GaussianKernelFunc(float radius = 1.5f) : _radius(radius), _sigma(radius / kRadiusMultiplier) {}
   SD_HOST_DEVICE float operator()(float x) const {
-    x = math::sd_abs(x);
+    x = math::sd_abs<float,float>(x);
     if (x >= _radius) return 0.0f;
     return std::exp(-x * x / (2.0 * _sigma * _sigma));
   }
@@ -194,7 +194,7 @@ struct BoxKernelFunc
 #endif
 {
   SD_HOST_DEVICE float operator()(float x) const {
-    x = math::sd_abs(x);
+    x = math::sd_abs<float,float>(x);
     return x < 0.5f ? 1.f : x == 0.5f ? 0.5f : 0.f;
   }
   SD_HOST_DEVICE float radius() const { return 1.f; }
@@ -210,7 +210,7 @@ struct TriangleKernelFunc
 {
   // https://en.wikipedia.org/wiki/Triangle_function
   SD_HOST_DEVICE float operator()(float x) const {
-    x = math::sd_abs(x);
+    x = math::sd_abs<float,float>(x);
     return x < 1.f ? 1.f - x : 0.f;
   }
   SD_HOST_DEVICE float radius() const { return 1.f; }
@@ -229,7 +229,7 @@ struct MitchellCubicKernelFunc
   // graphics.  Computer Graphics (Proceedings of ACM SIGGRAPH 1988),
   // 22(4):221–228, 1988.
   SD_HOST_DEVICE float operator()(float x) const {
-    x = math::sd_abs(x);
+    x = math::sd_abs<float,float>(x);
     if (x >= 2.f) {
       return 0.f;
     } else if (x >= 1.f) {
@@ -244,7 +244,8 @@ struct MitchellCubicKernelFunc
 // A pre-computed span of pixels along a single dimension.
 // The output pixel will be the weighted sum of pixels starting from start.
 struct Spans {
-  // The maximum span size of any output pixel.
+  Spans() {
+  } // The maximum span size of any output pixel.
   int _spanSize;
   // int32 tensor with shape {outputSize}.
   NDArray _starts;
@@ -279,7 +280,7 @@ struct ImageResizerStateCommon {
   // heightScale and widthScale, and calculates the output size.
   // If any of these operations fails, it sets an error status in
   // the context, which the caller must check.
-  Status validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
+  Status validateAndCalculateOutputSize(NDArray * input, int const width, int const height) {
     //
     batchSize = input->sizeAt(0);  //.dim_size(0);
     outHeight = static_cast<I>(height);
@@ -308,7 +309,7 @@ struct ImageResizerStateCommon {
   }
 
   // Calculates all the required variables, and allocates the output.
-  Status validateAndCreateOutput(NDArray const* input, int const width, int const height) {
+  Status validateAndCreateOutput(NDArray * input, int const width, int const height) {
     return validateAndCalculateOutputSize(input, width, height);
   }
 
@@ -479,7 +480,7 @@ SD_INLINE SD_HOST_DEVICE void getWeightsAndIndices(const float* coeffs_table, co
     out->_weight3 = (out->_index3 == in_loc + 2 ? coeffs_table[(kTableSize - offset) * 2 + 1] : 0.0f);
 
     const float weight_sum = out->_weight0 + out->_weight1 + out->_weight2 + out->_weight3;
-    if (math::sd_abs(weight_sum) >= 1000.0f * DataTypeUtils::min<float>()) {
+    if (math::sd_abs<float,float>(weight_sum) >= 1000.0f * DataTypeUtils::min<float>()) {
       const float one_over_weight_sum = 1.0f / weight_sum;
       out->_weight0 *= one_over_weight_sum;
       out->_weight1 *= one_over_weight_sum;
@@ -733,30 +734,30 @@ SD_HOST_DEVICE void gatherColumns(int const spanSize, int const* starts, Z const
   }
 }
 
-SD_LIB_HIDDEN Status resizeBilinearFunctor(LaunchContext* context, NDArray const* image, int const width,
-                                               int const height, bool const alignCorners, bool const halfPixelCenter,
-                                               NDArray* output);
-SD_LIB_HIDDEN Status resizeNeighborFunctor(LaunchContext* context, NDArray const* images, int const width,
-                                               int const height, CoordinateTransformationMode coorMode,
-                                               NearestMode nearestMode, bool alignCorner, NDArray* output);
-SD_LIB_HIDDEN Status resizeBicubicFunctor(LaunchContext* context, NDArray const* image, int const width,
-                                              int const height, bool preserveAspectRatio, bool antialias,
-                                              NDArray* output);
-SD_LIB_HIDDEN Status resizeBicubicFunctorA(LaunchContext* context, NDArray const* image, int const width,
-                                               int const height, bool const alignCorners,
-                                               CoordinateTransformationMode coorMode, bool exclude_outside,
-                                               double coefficient, NDArray* output);
-SD_LIB_HIDDEN Status resizeAreaFunctor(LaunchContext* context, NDArray const* image, int const width,
-                                           int const height, bool const alignCorners, NDArray* output);
+SD_LIB_HIDDEN Status resizeBilinearFunctor(LaunchContext* context, NDArray * image, int const width,
+                                           int const height, bool const alignCorners, bool const halfPixelCenter,
+                                           NDArray* output);
+SD_LIB_HIDDEN Status resizeNeighborFunctor(LaunchContext* context, NDArray * images, int const width,
+                                           int const height, CoordinateTransformationMode coorMode,
+                                           NearestMode nearestMode, bool alignCorner, NDArray* output);
+SD_LIB_HIDDEN Status resizeBicubicFunctor(LaunchContext* context, NDArray * image, int const width,
+                                          int const height, bool preserveAspectRatio, bool antialias,
+                                          NDArray* output);
+SD_LIB_HIDDEN Status resizeBicubicFunctorA(LaunchContext* context, NDArray * image, int const width,
+                                           int const height, bool const alignCorners,
+                                           CoordinateTransformationMode coorMode, bool exclude_outside,
+                                           double coefficient, NDArray* output);
+SD_LIB_HIDDEN Status resizeAreaFunctor(LaunchContext* context, NDArray * image, int const width,
+                                       int const height, bool const alignCorners, NDArray* output);
 
-SD_LIB_HIDDEN Status resizeFunctor(LaunchContext* context, NDArray const* image, int const width,
-                                       int const height, ImageResizeMethods method,
-                                       CoordinateTransformationMode coorMode, bool exclude_outside,
-                                       NearestMode nearestMode, double coefficient, bool antialias, NDArray* output);
+SD_LIB_HIDDEN Status resizeFunctor(LaunchContext* context, NDArray * image, int const width,
+                                   int const height, ImageResizeMethods method,
+                                   CoordinateTransformationMode coorMode, bool exclude_outside,
+                                   NearestMode nearestMode, double coefficient, bool antialias, NDArray* output);
 
-SD_LIB_HIDDEN Status resizeImagesFunctor(LaunchContext* context, NDArray const* image, int const width,
-                                             int const height, ImageResizeMethods method, bool alignCorners,
-                                             NDArray* output);
+SD_LIB_HIDDEN Status resizeImagesFunctor(LaunchContext* context, NDArray * image, int const width,
+                                         int const height, ImageResizeMethods method, bool alignCorners,
+                                         NDArray* output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

@@ -130,8 +130,8 @@ void adaBeliefUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void updaterAdaBelief(LaunchContext* context, const NDArray& gradient, const NDArray& initStateU,
-                      const NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
+void updaterAdaBelief(LaunchContext* context, NDArray& gradient, NDArray& initStateU,
+                      NDArray& initStateM, NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr,
                       const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   PointersManager manager(context, "adamUpdater");
 

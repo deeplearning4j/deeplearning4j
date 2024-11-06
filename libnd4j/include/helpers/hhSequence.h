@@ -33,12 +33,12 @@ class HHsequence {
   /*
    *  matrix containing the Householder vectors
    */
-  const NDArray& _vectors;
+  NDArray& _vectors;
 
   /*
    *  vector containing the Householder coefficients
    */
-  const NDArray& _coeffs;
+  NDArray& _coeffs;
 
   /*
    *  shift of the Householder sequence
@@ -58,7 +58,7 @@ class HHsequence {
   /*
    *  constructor
    */
-  HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type);
+  HHsequence(NDArray& vectors, NDArray& coeffs, const char type);
 
   /**
    *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
@@ -77,11 +77,11 @@ class HHsequence {
 
   void applyTo(NDArray& dest);
 
-  SD_INLINE int rows() const;
+  SD_INLINE int rows();
 };
 
 //////////////////////////////////////////////////////////////////////////
-SD_INLINE int HHsequence::rows() const { return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); }
+SD_INLINE int HHsequence::rows() { return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); }
 
 }  // namespace helpers
 }  // namespace ops

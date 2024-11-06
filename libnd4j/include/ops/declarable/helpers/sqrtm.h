@@ -31,7 +31,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-SD_LIB_HIDDEN void sqrtm(LaunchContext* context, const NDArray* x, NDArray* z);
+SD_LIB_HIDDEN void sqrtm(LaunchContext* context, NDArray* x, NDArray* z);
 
 }  // namespace helpers
 }  // namespace ops

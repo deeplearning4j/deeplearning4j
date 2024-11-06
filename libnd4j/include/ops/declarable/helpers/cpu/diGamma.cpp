@@ -31,18 +31,18 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // calculate digamma function for array elements
 template <typename T>
-static void diGamma_(const NDArray& x, NDArray& z) {
+static void diGamma_(NDArray& x, NDArray& z) {
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) z.p(i, diGammaScalar<T>(x.e<T>(i)));
   };
   samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
-void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
+void diGamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
   BUILD_SINGLE_SELECTOR(x.dataType(), diGamma_, (x, z), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void diGamma_, (const NDArray& x, NDArray& z), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void diGamma_, (NDArray& x, NDArray& z), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

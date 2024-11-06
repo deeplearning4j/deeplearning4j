@@ -3,11 +3,9 @@ project(tests_cpu)
 
 set(SD_ALL_OPS 1)
 
-if (SD_AURORA)
-  set(GTEST_PATCH_COMMAND "patch -Np1 < ${CMAKE_SOURCE_DIR}/tests_cpu/gtest_aurora.patch || true")
-else()
-  set(GTEST_PATCH_COMMAND "")
-endif()
+
+set(GTEST_PATCH_COMMAND "")
+
 
 # Download and unpack googletest at configure time
 configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)

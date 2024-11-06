@@ -25,14 +25,13 @@
 #include <algorithm>
 
 namespace sd {
-#ifndef __NEC__
 // already defined for NEC compiler
 TadDescriptor::TadDescriptor(const TadDescriptor &other) {
   _originalShape = other._originalShape;
   _axis = other._axis;
   _unitiesInShape = other._unitiesInShape;
 }
-#endif
+
 TadDescriptor::TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
   ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape, false);

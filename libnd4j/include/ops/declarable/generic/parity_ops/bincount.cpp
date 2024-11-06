@@ -55,7 +55,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
     if (weights->lengthOf() < 1) {
       std::vector<sd::LongType> currShape = values.getShapeAsVector();
       weights = NDArrayFactory::create_('c', currShape, values.dataType());
-      weights->assign(1);
+      int one = 1;
+      weights->assign(one);
     } else if (weights->isScalar()) {
       auto value = weights->cast(INT64).asVectorT<LongType>();
       std::vector<sd::LongType> currShape = values.getShapeAsVector();
@@ -84,7 +85,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
     if (weights->lengthOf() < 1) {
       std::vector<sd::LongType> currShape = values.getShapeAsVector();
       weights = NDArrayFactory::create_('c', currShape, values.dataType());
-      weights->assign(1);
+      int one = 1;
+      weights->assign(one);
     } else if (weights->isScalar()) {
       auto value = weights->asVectorT<LongType>();
       std::vector<sd::LongType> currShape = values.getShapeAsVector();
@@ -98,7 +100,8 @@ CUSTOM_OP_IMPL(bincount, 1, 1, false, 0, 0) {
   maxLength = math::sd_min(maxLength, values.e<LongType>(maxIndex) + 1);
 
   auto result = OUTPUT_VARIABLE(0);
-  result->assign(0.0f);
+  float zero = 0.0f;
+  result->assign(zero);
 
   helpers::adjustWeights(block.launchContext(), &values, weights, result, minLength, maxLength);
 

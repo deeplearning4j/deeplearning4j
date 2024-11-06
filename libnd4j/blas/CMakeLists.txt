@@ -447,7 +447,7 @@ if(SD_CUDA)
 
         install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif(CUDA_FOUND)
-elseif(SD_CPU OR SD_AURORA)
+elseif(SD_CPU)
 
     if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
         message("Experimental mode ENABLED")

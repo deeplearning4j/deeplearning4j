@@ -30,7 +30,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-Hessenberg<T>::Hessenberg(const NDArray& matrix) {
+Hessenberg<T>::Hessenberg(NDArray& matrix) {
   if (matrix.rankOf() != 2) THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) == 1) {
@@ -89,7 +89,7 @@ void Hessenberg<T>::evalData() {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-Schur<T>::Schur(const NDArray& matrix) {
+Schur<T>::Schur(NDArray& matrix) {
   if (matrix.rankOf() != 2) THROW_EXCEPTION("ops::helpers::Schur constructor: input matrix must be 2D !");
 
   if (matrix.sizeAt(0) != matrix.sizeAt(1))
@@ -100,7 +100,7 @@ Schur<T>::Schur(const NDArray& matrix) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Schur<T>::evalData(const NDArray& matrix) {
+void Schur<T>::evalData(NDArray& matrix) {
   const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
 
   const T almostZero = DataTypeUtils::min_positive<T>();
@@ -206,7 +206,7 @@ void Schur<T>::calcShift(const int ind, const int iter, T& shift, NDArray& shift
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Schur<T>::initFrancisQR(const int ind1, const int ind2, const NDArray& shiftVec, int& ind3,
+void Schur<T>::initFrancisQR(const int ind1, const int ind2, NDArray& shiftVec, int& ind3,
                              NDArray& householderVec) {
   // shiftVec has length = 3
 
@@ -232,7 +232,7 @@ void Schur<T>::initFrancisQR(const int ind1, const int ind2, const NDArray& shif
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, const NDArray& householderVec) {
+void Schur<T>::doFrancisQR(const int ind1, const int ind2, const int ind3, NDArray& householderVec) {
   if (!(ind2 >= ind1))
     THROW_EXCEPTION(
         "ops::helpers::Schur:doFrancisQR: wrong input indexes, condition ind2 >= ind1 must be true !");

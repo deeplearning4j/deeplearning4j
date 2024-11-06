@@ -258,7 +258,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // dLdG
   *dLdV *= stdInv;
-  if (applyScale) dLdG->assign(dLdV);
+  if (applyScale) dLdG->assign(*dLdV);
 
   // (2 / N) * dfdv (use dLdV as storage for dfdv)
   *dLdV *= stdInv * stdInv;  // dLdV*stdInv * stdInv^2
