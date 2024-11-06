@@ -74,7 +74,7 @@ static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* v
 }
 
 template <typename T>
-NDArray vmul(LaunchContext* context, NDArray const& v, int n) {
+NDArray vmul(LaunchContext* context, NDArray& v, int n) {
   std::vector<LongType> shape = {n, n};
   NDArray res('c', shape, v.dataType(), context);  // x = matrix_new(n, n);
 
@@ -148,7 +148,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
 }
 
 template <typename T>
-void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+void qr_(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
   LongType lastDim = input->rankOf() - 1;
   LongType preLastDim = input->rankOf() - 2;
 
@@ -167,7 +167,7 @@ void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray
   NDArray::registerSpecialUse({outputQ, outputR}, {input});
 }
 
-void qr(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR,
+void qr(LaunchContext* context, NDArray * input, NDArray* outputQ, NDArray* outputR,
         bool const fullMatricies) {
   BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (context, input, outputQ, outputR, fullMatricies), SD_FLOAT_TYPES);
 }

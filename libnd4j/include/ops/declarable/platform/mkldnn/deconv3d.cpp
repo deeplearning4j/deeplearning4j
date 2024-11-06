@@ -32,7 +32,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
+static void deconv3dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDArray* output,
                            const sd::LongType kD, const sd::LongType kH, const sd::LongType kW, const sd::LongType sD, const sd::LongType sH, const sd::LongType sW,
                            const sd::LongType pD, const sd::LongType pH, const sd::LongType pW, const sd::LongType dD, const sd::LongType dH, const sd::LongType dW,
                            const bool isNCDHW, const int wFormat) {
@@ -158,7 +158,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI,
+static void deconv3dBackPropMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, NDArray* gradI,
                                    NDArray* gradW, NDArray* gradB, const sd::LongType kD, const sd::LongType kH, const sd::LongType kW,
                                    const sd::LongType sD, const sd::LongType sH, const sd::LongType sW, const sd::LongType pD, const sd::LongType pH, const sd::LongType pW,
                                    const sd::LongType dD, const sd::LongType dH, const int dW, const bool isNCDHW, const int wFormat) {

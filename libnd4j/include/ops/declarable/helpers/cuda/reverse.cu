@@ -149,7 +149,7 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
 }
 
 template <typename T>
-static void reverseTad(LaunchContext* context, const NDArray* input, NDArray* output,
+static void reverseTad(LaunchContext* context, NDArray* input, NDArray* output,
                        const LongType* inputTadShape, const LongType* inputTadOffsets,
                        const LongType* outputTadShape, const LongType* outputTadOffsets, uint64_t tadLength) {
   auto stream = context->getCudaStream();
@@ -164,7 +164,7 @@ static void reverseTad(LaunchContext* context, const NDArray* input, NDArray* ou
 }
 
 template <typename T>
-static void reverseArray(LaunchContext* context, const NDArray* input, NDArray* output, LongType numOfElemsToReverse) {
+static void reverseArray(LaunchContext* context, NDArray* input, NDArray* output, LongType numOfElemsToReverse) {
   auto stream = context->getCudaStream();
   LongType numOfReverse = numOfElemsToReverse;
   if (numOfElemsToReverse == 0) numOfReverse = input->lengthOf();
@@ -178,7 +178,7 @@ static void reverseArray(LaunchContext* context, const NDArray* input, NDArray* 
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void reverseSequence_(LaunchContext* context, const NDArray* input, const NDArray* seqLengths,
+static void reverseSequence_(LaunchContext* context, NDArray* input, NDArray* seqLengths,
                              NDArray* output, int seqDim, const int batchDim) {
   int posOfNonUnityDim = -1;
   seqLengths->syncToHost();
@@ -220,7 +220,7 @@ static void reverseSequence_(LaunchContext* context, const NDArray* input, const
   }
 }
 
-void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray* seqLengths, NDArray* output,
+void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths, NDArray* output,
                      int seqDim, const int batchDim) {
   NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
@@ -233,7 +233,7 @@ void reverseSequence(LaunchContext* context, const NDArray* input, const NDArray
 }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(LaunchContext* context, const NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
+void reverse(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
   auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
   auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
 

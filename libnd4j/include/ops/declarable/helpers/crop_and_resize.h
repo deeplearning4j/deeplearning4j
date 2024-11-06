@@ -29,11 +29,11 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T, typename F, typename I>
-SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray const* images, NDArray const* boxes, NDArray const* indices,
-                                         NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
+SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray * images, NDArray * boxes, NDArray * indices,
+                                         NDArray * cropSize, int method, double extrapolationVal, NDArray* crops);
 
-SD_LIB_HIDDEN void cropAndResizeFunctor(LaunchContext* context, NDArray const* images, NDArray const* boxes,
-                                        NDArray const* indices, NDArray const* cropSize, int method,
+SD_LIB_HIDDEN void cropAndResizeFunctor(LaunchContext* context, NDArray * images, NDArray * boxes,
+                                        NDArray * indices, NDArray * cropSize, int method,
                                         double extrapolationVal, NDArray* crops);
 }  // namespace helpers
 }  // namespace ops

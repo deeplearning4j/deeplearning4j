@@ -170,9 +170,10 @@ static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* 
   auto classesRangesLens = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   auto classesRangesBegs = NDArrayFactory::create<LongType>('c', {numClasses}, context);
   output->assign(DataTypeUtils::infOrMax<T>());
-  classesRangesBegs.assign(indices->lengthOf());
-  classesRangesLens.assign(0);
-
+  sd::LongType zero2 = 0;
+  sd::LongType len = indices->lengthOf();
+  classesRangesBegs.assign(zero2);
+  classesRangesLens.assign(len);
   fillUpSegments(indices, numClasses, classesRangesBegs, classesRangesLens);
   NDArray::prepareSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
   LongType* begins = reinterpret_cast<LongType*>(classesRangesBegs.specialBuffer());
@@ -300,7 +301,7 @@ static SD_KERNEL void segmentMinBPLinearKernel(const void* inputBuf, const LongT
     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-    if (math::sd_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
     }
   }
@@ -345,7 +346,7 @@ static SD_KERNEL void segmentMinBPTadKernel(const void* inputBuf, const LongType
     auto outGrad = gradOut + gradOutOffsets[segment];
 
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      if (math::sd_abs(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
+      if (math::sd_abs<T,T>(in[e] - current[e]) <= T(1.e-6)) currentOut[e] = outGrad[e];
     }
   }
 }

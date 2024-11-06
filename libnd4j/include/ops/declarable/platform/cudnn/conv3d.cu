@@ -30,7 +30,7 @@ namespace ops {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void conv3dCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights, const NDArray* bias,
+static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights, NDArray* bias,
                         NDArray* output, const LongType kD, const LongType kH, const LongType kW, const LongType sD, const LongType sH,
                         const LongType sW, const LongType pD, const LongType pH, const LongType pW, const LongType dD, const LongType dH,
                         const LongType dW, const int paddingMode, const bool isNCDHW, const int wFormat) {
@@ -132,8 +132,8 @@ static void conv3dCUDNN(const LaunchContext* context, const NDArray* input, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void conv3dBpCUDNN(const LaunchContext* context, const NDArray* input, const NDArray* weights,
-                          const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kD,
+static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* weights,
+                          NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kD,
                           const LongType kH, const LongType kW, const LongType sD, const LongType sH, const LongType sW, const LongType pD,
                           const LongType pH, const LongType pW, const LongType dD, const LongType dH, const LongType dW, const int paddingMode,
                           const bool isNCDHW, const int wFormat) {

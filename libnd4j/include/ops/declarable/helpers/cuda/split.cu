@@ -89,7 +89,7 @@ BUILD_SINGLE_TEMPLATE(template void splitCudaLauncher,
                       SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void split(LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const LongType axis) {
+void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArrs, const LongType axis) {
   const int numOfSubArrs = outArrs.size();
   const auto sizeofT = input.sizeOfT();
 

@@ -21,11 +21,12 @@
 //
 
 #include <system/op_boilerplate.h>
+
 #if NOT_EXCLUDED(OP_cast)
 
 #include <array/DataTypeUtils.h>
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/assign.h>
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
@@ -37,7 +38,9 @@ CUSTOM_OP_IMPL(cast, 1, 1, false, 0, -2) {
     return sd::Status::OK;
   }
 
-  if (!block.isInplace()) output->assign(input);
+  if (!block.isInplace()) {
+    helpers::assign(block.launchContext(), output, input);
+  }
 
   STORE_RESULT(output);
   return sd::Status::OK;

@@ -29,7 +29,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+void matrixSetDiag_(NDArray& input, NDArray& diagonal, NDArray& output, const bool zeroPad) {
   // input and output are the same array (x == z) when zeroPad = true
   // xRank = zRank, xRank = yRank + 1
   // xLen = zLen
@@ -68,7 +68,7 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
 }
 
 //////////////////////////////////////////////////////////////////////////
-void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output,
+void matrixSetDiag(sd::LaunchContext* context, NDArray& input, NDArray& diagonal, NDArray& output,
                    const bool zeroPad) {
   BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiag_, (input, diagonal, output, zeroPad), SD_COMMON_TYPES);
 }

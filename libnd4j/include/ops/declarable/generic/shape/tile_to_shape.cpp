@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {
     auto tempRes = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
     gradX->assign(tempRes);
   } else
-    gradX->assign(epsNext);
+    gradX->assign(*epsNext);
 
   STORE_RESULT(gradX);
 

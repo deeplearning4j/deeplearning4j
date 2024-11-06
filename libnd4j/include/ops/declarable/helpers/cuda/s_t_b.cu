@@ -103,7 +103,7 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
   std::vector<sd::LongType> rearrShape =  {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)};
   NDArray inputRearranged0 = input.reshape(
       input.ordering(), rearrShape,false);
-  inputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
+  inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
@@ -201,7 +201,7 @@ BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher,
                       SD_COMMON_TYPES, SD_INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& blockShape, const NDArray& crop,
+void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockShape, NDArray& crop,
                     NDArray& output) {
   // 4D example, numOfSpatialDims = 2 - two spatial dimensions
   // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  -
@@ -231,7 +231,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, const NDArray& b
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  inputRearranged0.permutei(temp);
+  inputRearranged0.permutei(temp, 0, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     output.assign(inputRearranged0);
@@ -335,7 +335,7 @@ BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher,
                       SD_COMMON_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output, const LongType padBottom,
+void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const LongType padBottom,
                   const LongType padTop, const LongType padLeft, const LongType padRight,
                   const LongType blockSize) {
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW +
@@ -345,7 +345,7 @@ void spaceToBatch(LaunchContext* context, const NDArray& input, NDArray& output,
   NDArray outputRearranged0 = output.reshape(
       output.ordering(), outputShape,
       false);
-  outputRearranged0.permutei({2, 3, 0, 4, 1, 5},false);
+  outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
     outputRearranged0.assign(input);
@@ -458,7 +458,7 @@ BUILD_DOUBLE_TEMPLATE(template void spaceToBatchNDCudaLauncher,
                       SD_COMMON_TYPES, SD_INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding,
+void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape, NDArray& padding,
                     NDArray& output) {
   // 4D example with two spatial dimensions
   // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom +
@@ -488,7 +488,7 @@ void spaceToBatchND(LaunchContext* context, const NDArray& input, const NDArray&
   }
   for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
 
-  outputRearranged0.permutei(temp,false);
+  outputRearranged0.permutei(temp, false, false);
 
   // ****** //
 

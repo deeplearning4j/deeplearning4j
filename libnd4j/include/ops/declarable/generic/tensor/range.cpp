@@ -88,8 +88,10 @@ CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
       s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
       d = NDArrayFactory::create_(1.0f, block.launchContext());
     } else {
-      s = NDArrayFactory::create_(T_ARG(0), block.launchContext());
-      d = NDArrayFactory::create_(T_ARG(2), block.launchContext());
+      float start = static_cast<float>(T_ARG(0));
+      float delta = static_cast<float>(T_ARG(2));
+      s = NDArrayFactory::create_<float>(start, block.launchContext());
+      d = NDArrayFactory::create_<float>(delta, block.launchContext());
     }
 
     localS = true;
@@ -164,7 +166,7 @@ DECLARE_SHAPE_FN(range) {
         THROW_EXCEPTION(errorMessage.c_str());
       }
 
-      if (math::sd_abs<double>(start + steps * delta) < math::sd_abs<double>(limit)) ++steps;
+      if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
     } else if (isZ) {
       LongType start(0), limit, delta(1);
 
@@ -192,7 +194,7 @@ DECLARE_SHAPE_FN(range) {
 
       if (!block.numD()) dataType = INPUT_VARIABLE(0)->dataType();
 
-      if (math::sd_abs<double>(start + steps * delta) < math::sd_abs<double>(limit)) ++steps;
+      if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
 
       if(steps <= 0) {
         std::string errorMessage;
@@ -240,7 +242,7 @@ DECLARE_SHAPE_FN(range) {
 
     steps = (limit - start) / delta;
 
-    if (math::sd_abs<LongType>(start + steps * delta) < math::sd_abs<LongType>(limit)) ++steps;
+    if (math::sd_abs<LongType,LongType>(start + steps * delta) < math::sd_abs<LongType,LongType>(limit)) ++steps;
 
     if(steps <= 0) {
       std::string errorMessage;
@@ -304,7 +306,7 @@ DECLARE_SHAPE_FN(range) {
       THROW_EXCEPTION(errorMessage.c_str());
     }
 
-    if (math::sd_abs<double>(start + steps * delta) < math::sd_abs<double>(limit)) ++steps;
+    if (math::sd_abs<double,double>(start + steps * delta) < math::sd_abs<double,double>(limit)) ++steps;
   } else {
     REQUIRE_TRUE(
         false, 0,

@@ -28,7 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 //////////////////////////////////////////////////////////////////////////
-void argMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+void argMax(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax,
@@ -48,7 +48,7 @@ void argMax(const NDArray& input, NDArray& output, const std::vector<LongType>& 
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+void argMin(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin,
@@ -68,7 +68,7 @@ void argMin(const NDArray& input, NDArray& output, const std::vector<LongType>& 
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argAbsMax(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+void argAbsMax(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax,
@@ -88,7 +88,7 @@ void argAbsMax(const NDArray& input, NDArray& output, const std::vector<LongType
   NDArray::registerSpecialUse({&output}, {&input});
 }
 
-void argAbsMin(const NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
+void argAbsMin(NDArray& input, NDArray& output, const std::vector<LongType>& dimensions) {
   NDArray::prepareSpecialUse({&output}, {&input});
   if (output.isScalar()) {
     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin,

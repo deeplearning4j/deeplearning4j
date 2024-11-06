@@ -46,7 +46,7 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     axis = *block.getIArguments();
 
   if (axis.empty()) {  // do not perform reversion
-    if (!block.isInplace()) output->assign(input);
+    if (!block.isInplace()) output->assign(*input);
   } else {
     // check the consistency of input dimensions to reverse along
     shape::checkDimensions(input->rankOf(), &axis);
@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(reverse_bp, 2, 1, false, 0, -2) {
     axis = *block.getIArguments();
 
   if (axis.empty()) {  // reversion is not performed in this case
-    output->assign(eps);
+    output->assign(*eps);
   } else {
     // check the consistency of input dimensions to reverse along
     shape::checkDimensions(input->rankOf(), &axis);

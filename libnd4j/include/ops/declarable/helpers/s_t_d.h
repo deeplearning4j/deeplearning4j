@@ -25,7 +25,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void _spaceTodepth(LaunchContext *context, const NDArray &input, NDArray *output, int block_size,
+SD_LIB_HIDDEN void _spaceTodepth(LaunchContext *context, NDArray&input, NDArray *output, int block_size,
                                  bool isNHWC);
 }
 }  // namespace ops

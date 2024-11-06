@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void nadamUpdater_(const NDArray& gradient, const NDArray& initStateV, const NDArray& initStateM,
+static void nadamUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& initStateM,
                           NDArray& update, NDArray& stateV, NDArray& stateM, const double dLr, const double dBeta1,
                           const double dBeta2, const double dEpsilon, const int nIteration) {
   const T* grad = gradient.bufferAsT<T>();
@@ -110,8 +110,8 @@ static void nadamUpdater_(const NDArray& gradient, const NDArray& initStateV, co
   return;
 }
 
-void updaterNadam(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initStateV,
-                  const NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM, const double dLr,
+void updaterNadam(sd::LaunchContext* context, NDArray& gradient, NDArray& initStateV,
+                  NDArray& initStateM, NDArray& update, NDArray& stateV, NDArray& stateM, const double dLr,
                   const double dBeta1, const double dBeta2, const double dEpsilon, const int nIteration) {
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), nadamUpdater_,

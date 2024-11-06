@@ -32,7 +32,7 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, NDArray& update, NDArray& stateH,
+static void adaGradUpdater_(NDArray& gradient, NDArray& initState, NDArray& update, NDArray& stateH,
                             const double dLr, const double dEpsilon) {
   const T* grad = gradient.bufferAsT<T>();
   const T* init = initState.bufferAsT<T>();
@@ -86,7 +86,7 @@ static void adaGradUpdater_(const NDArray& gradient, const NDArray& initState, N
   return;
 }
 
-void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const NDArray& initState, NDArray& update,
+void updaterAdaGrad(sd::LaunchContext* context, NDArray& gradient, NDArray& initState, NDArray& update,
                     NDArray& stateH, const double dLr, const double dEpsilon) {
   BUILD_SINGLE_SELECTOR(gradient.dataType(), adaGradUpdater_, (gradient, initState, update, stateH, dLr, dEpsilon),
                         SD_FLOAT_TYPES);

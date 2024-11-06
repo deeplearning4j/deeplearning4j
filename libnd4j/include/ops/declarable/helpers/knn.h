@@ -27,7 +27,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-SD_LIB_HIDDEN void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray &highest,
+SD_LIB_HIDDEN void knn_mindistance(NDArray&input, NDArray&lowest, NDArray&highest,
                                    NDArray &output);
 }
 }  // namespace ops

@@ -77,7 +77,7 @@ void drawBoundingBoxesFunctor(sd::LaunchContext* context, NDArray* images, NDArr
   auto width = images->sizeAt(2);
   auto channels = images->sizeAt(3);
 
-  output->assign(images);  // fill up all output with input images, then fill up boxes
+  output->assign(*images);  // fill up all output with input images, then fill up boxes
   ColorTable_t colorTable;
   if (colors) {
     for (auto i = 0; i < colors->sizeAt(0); i++) {
