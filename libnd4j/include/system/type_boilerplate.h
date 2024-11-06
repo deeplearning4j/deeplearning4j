@@ -1226,100 +1226,9 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 
 
-// Macro to instantiate function templates, with debug and type checking
-#define INSTANTIATE_FUNCTION_2(func, type1, type2)                                \
-        template<> void func<EXTRACT_SECOND(type1), EXTRACT_SECOND(type2)>();                     \
-
-
-// Helper macros to extract arguments from a list (up to 16)
-#define GET_ARG_1(a1, ...) a1
-#define GET_ARG_2(a1, a2, ...) a2
-#define GET_ARG_3(a1, a2, a3, ...) a3
-#define GET_ARG_4(a1, a2, a3, a4, ...) a4
-#define GET_ARG_5(a1, a2, a3, a4, a5, ...) a5
-#define GET_ARG_6(a1, a2, a3, a4, a5, a6, ...) a6
-#define GET_ARG_7(a1, a2, a3, a4, a5, a6, a7, ...) a7
-#define GET_ARG_8(a1, a2, a3, a4, a5, a6, a7, a8, ...) a8
-#define GET_ARG_9(a1, a2, a3, a4, a5, a6, a7, a8, a9, ...) a9
-#define GET_ARG_10(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ...) a10
-#define GET_ARG_11(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, ...) a11
-#define GET_ARG_12(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, ...) a12
-#define GET_ARG_13(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, ...) a13
-#define GET_ARG_14(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, ...) a14
-#define GET_ARG_15(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, ...) a15
-#define GET_ARG_16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, ...) a16
-
-#define GET_ARG_N(N, ...) GET_ARG_##N(__VA_ARGS__)
-
-// Macro to process pairwise combinations with a custom macro processor (up to 16 elements)
-#define GENERATE_COMBINATIONS_FOR_T1(t1, list2, processor, func)                  \
-    processor(func, t1, GET_ARG_1 list2);                                         \
-    processor(func, t1, GET_ARG_2 list2);                                         \
-    processor(func, t1, GET_ARG_3 list2);                                         \
-    processor(func, t1, GET_ARG_4 list2);                                         \
-    processor(func, t1, GET_ARG_5 list2);                                         \
-    processor(func, t1, GET_ARG_6 list2);                                         \
-    processor(func, t1, GET_ARG_7 list2);                                         \
-    processor(func, t1, GET_ARG_8 list2);                                         \
-    processor(func, t1, GET_ARG_9 list2);                                         \
-    processor(func, t1, GET_ARG_10 list2);                                        \
-    processor(func, t1, GET_ARG_11 list2);                                        \
-    processor(func, t1, GET_ARG_12 list2);                                        \
-    processor(func, t1, GET_ARG_13 list2);                                        \
-    processor(func, t1, GET_ARG_14 list2);                                        \
-    processor(func, t1, GET_ARG_15 list2);                                        \
-    processor(func, t1, GET_ARG_16 list2);
-
-// Macro to generate all combinations for two lists
-#define GENERATE_ALL_COMBINATIONS_FOR_T1(t1, list2, processor, func)              \
-    GENERATE_COMBINATIONS_FOR_T1(t1, list2, processor, func)
-
-// Macro to generate all combinations for two lists using a custom processor macro
-#define GENERATE_ALL_COMBINATIONS(list1, list2, processor, func)                  \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_1 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_2 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_3 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_4 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_5 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_6 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_7 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_8 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_9 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_10 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_11 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_12 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_13 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_14 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_15 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_16 list1, list2, processor, func)
 
 // Helper macro to apply a macro to arguments, forcing expansion
 #define APPLY(macro, args) macro args
-
-// Helper to extract the second element from a tuple
-#define EXTRACT_SECOND_HELPER(_1, _2) _2
-
-// Macro to extract the second element from the tuple
-#define EXTRACT_SECOND(tuple) APPLY(EXTRACT_SECOND_HELPER, tuple)
-// Macro to generate all combinations for two lists using a custom processor macro
-#define GENERATE_ALL_COMBINATIONS(list1, list2, processor, func)                  \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_1 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_2 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_3 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_4 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_5 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_6 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_7 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_8 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_9 list1, list2, processor, func)     \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_10 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_11 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_12 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_13 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_14 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_15 list1, list2, processor, func)    \
-    GENERATE_ALL_COMBINATIONS_FOR_T1(GET_ARG_16 list1, list2, processor, func)
-
 
 #define LIST(...) __VA_ARGS__
 
@@ -1642,17 +1551,10 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
     OUTER_LOOP_15(OUTER_LIST, INNER_LIST, INNER_SIZE, CALLBACK,FUNC_NAME,ARGS) \
     CAT(INNER_LOOP_, INNER_SIZE)(GET(15, OUTER_LIST), INNER_LIST, CALLBACK,FUNC_NAME,ARGS)
 
+
 #define ITERATE_COMBINATIONS(OUTER_LIST, INNER_LIST, CALLBACK,FUNC_NAME,ARGS) \
     CAT(OUTER_LOOP_, PP_NARGS(EXPAND OUTER_LIST))(OUTER_LIST, INNER_LIST, PP_NARGS(EXPAND INNER_LIST), CALLBACK,FUNC_NAME,ARGS)
 
-
-
-
-#define PROCESS_COMBINATION_3(a1, b1, a2, b2, a3, b3,FUNC_NAME,ARGS) \
-    std::cout << "(" << a1 << ", " << b1 << ", " << a2 << ", " << b2 << ", " << a3 << ", " << b3 << ")\n";
-
-#define CALLBACK_PROCESS_COMBINATION_3(outer, middle, inner,FUNC_NAME,ARGS) \
-    PROCESS_COMBINATION_3(GET_FIRST(outer), GET_SECOND(outer), GET_FIRST(middle), GET_SECOND(middle), GET_FIRST(inner), GET_SECOND(inner),FUNC_NAME,ARGS)
 
 #define INNER_LOOP_1_3(OUTER_ELEMENT, MIDDLE_ELEMENT, INNER_LIST, CALLBACK,FUNC_NAME,ARGS) \
     CALLBACK(OUTER_ELEMENT, MIDDLE_ELEMENT, GET(0, INNER_LIST),FUNC_NAME,ARGS)
@@ -1851,6 +1753,81 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 
 #define INSTANT_PROCESS_COMBINATION_CLASS(a1, b1,FUNC_NAME,ARGS) template class FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
 #define INSTANT_PROCESS_COMBINATION_CLASS_3(a1, b1,c1,FUNC_NAME,ARGS) extern template class FUNC_NAME<GET_SECOND(a1),GET_SECOND(b1), GET_SECOND(c1)>ARGS;
+
+
+
+#define LOOP_1(CALLBACK, LIST) \
+    CALLBACK(GET(0, LIST))
+
+#define LOOP_2(CALLBACK, LIST) \
+    LOOP_1(CALLBACK, LIST) \
+    CALLBACK(GET(1, LIST))
+
+#define LOOP_3(CALLBACK, LIST) \
+    LOOP_2(CALLBACK, LIST) \
+    CALLBACK(GET(2, LIST))
+
+#define LOOP_4(CALLBACK, LIST) \
+    LOOP_3(CALLBACK, LIST) \
+    CALLBACK(GET(3, LIST))
+
+#define LOOP_5(CALLBACK, LIST) \
+    LOOP_4(CALLBACK, LIST) \
+    CALLBACK(GET(4, LIST))
+
+#define LOOP_6(CALLBACK, LIST) \
+    LOOP_5(CALLBACK, LIST) \
+    CALLBACK(GET(5, LIST))
+
+#define LOOP_7(CALLBACK, LIST) \
+    LOOP_6(CALLBACK, LIST) \
+    CALLBACK(GET(6, LIST))
+
+#define LOOP_8(CALLBACK, LIST) \
+    LOOP_7(CALLBACK, LIST) \
+    CALLBACK(GET(7, LIST))
+
+#define LOOP_9(CALLBACK, LIST) \
+    LOOP_8(CALLBACK, LIST) \
+    CALLBACK(GET(8, LIST))
+
+#define LOOP_10(CALLBACK, LIST) \
+    LOOP_9(CALLBACK, LIST) \
+    CALLBACK(GET(9, LIST))
+
+#define LOOP_11(CALLBACK, LIST) \
+    LOOP_10(CALLBACK, LIST) \
+    CALLBACK(GET(10, LIST))
+
+#define LOOP_12(CALLBACK, LIST) \
+    LOOP_11(CALLBACK, LIST) \
+    CALLBACK(GET(11, LIST))
+
+#define LOOP_13(CALLBACK, LIST) \
+    LOOP_12(CALLBACK, LIST) \
+    CALLBACK(GET(12, LIST))
+
+#define LOOP_14(CALLBACK, LIST) \
+    LOOP_13(CALLBACK, LIST) \
+    CALLBACK(GET(13, LIST))
+
+#define LOOP_15(CALLBACK, LIST) \
+    LOOP_14(CALLBACK, LIST) \
+    CALLBACK(GET(14, LIST))
+
+#define LOOP_16(CALLBACK, LIST) \
+    LOOP_15(CALLBACK, LIST) \
+    CALLBACK(GET(15, LIST))
+
+#define ITERATE_LIST(LIST, CALLBACK) \
+    CAT(LOOP_, PP_NARGS(EXPAND LIST))(CALLBACK, LIST)
+
+#define PROCESS_ELEMENT(a, b, FUNC_NAME, ARGS) \
+    std::cout << "(" << a << ", " << b << ")\n";
+
+#define CALLBACK_PROCESS_ELEMENT(ELEMENT, FUNC_NAME, ARGS) \
+    PROCESS_ELEMENT(GET_FIRST(ELEMENT), GET_SECOND(ELEMENT), FUNC_NAME, ARGS)
+
 
 
 #endif  // TESTS_CPU_TYPE_BOILERPLATE_H

@@ -362,6 +362,8 @@ public interface NativeOps {
  double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr);
  void deleteRandomGenerator(OpaqueRandomGenerator ptr);
  Pointer shapeBufferForNumpy(Pointer npyArray);
+ Pointer shapeBufferForNumpyHeader(Pointer npyArray);
+ long numpyHeaderLength(OpaqueDataBuffer opaqueDataBuffer,Pointer shapeBuffer);
  long getCachedMemory(int deviceId);
  Pointer lcScalarPointer(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  Pointer lcReductionPointer(org.nd4j.nativeblas.OpaqueLaunchContext lc);

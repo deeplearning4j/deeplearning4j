@@ -70,13 +70,13 @@ The BODY parameter is evaluated to compute the result, which is then cast to typ
 // Macro to define functions with advanced type promotion and debugging
 #define SD_PROMOTE_FUNC(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename Z = T>                    \
-Z FUNC_NAME(T val1, U val2) {                                         \
+SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                                         \
     using calc_type = typename promote_type3<T, U, Z>::type;           \
     calc_type promoted_val1 = static_cast<calc_type>(val1);            \
     calc_type promoted_val2 = static_cast<calc_type>(val2);            \
     calc_type result = BODY;                                           \
     return static_cast<Z>(result);                                     \
-}
+}                                                                     \
 
 
 

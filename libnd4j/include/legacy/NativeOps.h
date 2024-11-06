@@ -458,6 +458,8 @@ SD_LIB_EXPORT  sd::LongType *getNpyArrayShape(void *npArray);
 SD_LIB_EXPORT  char getNpyArrayOrder(void *npArray);
 SD_LIB_EXPORT  int getNpyArrayElemSize(void *npArray);
 SD_LIB_EXPORT  void deleteNPArrayStruct(void *npArray);
+SD_LIB_EXPORT long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize);
+SD_LIB_EXPORT long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer);
 SD_LIB_EXPORT  void deleteNPArrayMap(void *map);
 SD_LIB_EXPORT  int elementSizeForNpyArray(sd::Pointer npyArray);
 SD_LIB_EXPORT  int elementSizeForNpyArrayHeader(sd::Pointer npyArray);
