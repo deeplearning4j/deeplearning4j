@@ -36,19 +36,15 @@ namespace sd {
 class SD_LIB_EXPORT InteropDataBuffer {
  private:
   DataBuffer *_dataBuffer = nullptr;
-  uint64_t _offset = 0;
   bool owner;
   DataType _dataType = DataType::UNKNOWN;
  public:
   bool isConstant = false;
 
-  InteropDataBuffer(InteropDataBuffer *dataBuffer, uint64_t length, uint64_t offset);
+  InteropDataBuffer(InteropDataBuffer *dataBuffer, uint64_t length);
   InteropDataBuffer(DataBuffer * databuffer);
   InteropDataBuffer(size_t lenInBytes, DataType dtype, bool allocateBoth);
-  ~InteropDataBuffer() {
-    if(!isConstant && _offset < 1)
-      dataBuffer()->close();
-  }
+  ~InteropDataBuffer() {}
 #ifndef __JAVACPP_HACK__
   DataBuffer * getDataBuffer() const;
   DataBuffer * dataBuffer();
@@ -63,8 +59,6 @@ class SD_LIB_EXPORT InteropDataBuffer {
     isConstant = reallyConstant;
     dataBuffer()->markConstant(reallyConstant);
   }
-  uint64_t byteOffset() const;
-  void setByteOffset(uint64_t offset);
 
   void setPrimary(void *ptr, size_t length);
   void setSpecial(void *ptr, size_t length);
@@ -90,7 +84,6 @@ class SD_LIB_EXPORT InteropDataBuffer {
   static void preparePrimaryUse(const std::vector<const InteropDataBuffer *> &writeList,
                                 const std::vector<const InteropDataBuffer *> &readList,
                                 bool synchronizeWritables = false);
-  uint64_t offset() const;
 };
 }  // namespace sd
 

@@ -47,9 +47,6 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 
 void* NDArray::platformBuffer() { return buffer(); }
-void const* NDArray::platformBuffer() const { return buffer(); }
-
-sd::LongType const* NDArray::platformShapeInfo() const { return shapeInfo(); }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -338,11 +335,9 @@ void* NDArray::specialBuffer() {
   return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
-////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBuffer() const {
-  if (_buffer == nullptr || _buffer->special() == nullptr) return nullptr;
-  // FIXME: this should be fixed once CUDA backend added
-  return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+
+const void* NDArray::specialBufferWithOffset(LongType offset) {
+  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

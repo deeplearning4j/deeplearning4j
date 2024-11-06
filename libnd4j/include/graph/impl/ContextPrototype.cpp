@@ -83,11 +83,16 @@ int ContextPrototype::nodeId() { return getNodeId(); }
 
 DataType ContextPrototype::dataType() { return dataType(0); }
 
-DataType ContextPrototype::dataType(int index) { return _dataType; }
+DataType ContextPrototype::dataType(int index) {
+  if(numD() < 1) {
+    THROW_EXCEPTION("No data types were set for this ContextPrototype");
+  } else {
+    return _dArgs.at(index);
+  }
+}
 
 void ContextPrototype::setDataType(int index, DataType type) {
-  // if (_outputs->size() == 0)
-  _dataType = type;
+  _dArgs[index] = type;
 }
 
 size_t ContextPrototype::numT() { return (int)_tArgs.size(); }
@@ -124,6 +129,10 @@ ContextPrototype* ContextPrototype::clone() {
   for (auto v : _tArgs) clone->_tArgs.emplace_back(v);
 
   for (auto v : _iArgs) clone->_iArgs.emplace_back(v);
+
+  for(auto v : _bArgs) clone->_bArgs.emplace_back(v);
+
+  for(auto v : _dArgs) clone->_dArgs.emplace_back(v);
 
   return clone;
 }
