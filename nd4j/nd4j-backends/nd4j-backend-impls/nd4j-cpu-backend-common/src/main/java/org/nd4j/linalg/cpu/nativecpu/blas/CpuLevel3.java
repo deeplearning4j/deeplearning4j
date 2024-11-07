@@ -25,9 +25,10 @@ import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.cpu.nativecpu.blas.CpuBlas.*;
@@ -45,7 +46,6 @@ public class CpuLevel3 extends BaseLevel3 {
     protected void hgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
 
-        //if (true) {
             val fA = A.castTo(DataType.FLOAT);
             val fB = B.castTo(DataType.FLOAT);
             val fC = C.castTo(DataType.FLOAT);
@@ -53,17 +53,7 @@ public class CpuLevel3 extends BaseLevel3 {
             sgemm(Order, TransA, TransB, M, N, K, alpha, fA, lda, fB, ldb, beta, fC, ldc);
 
             C.assign(fC);
-        /*} else {
-            // TODO: uncomment this once we have optimized gemm calls
-            val t = MMulTranspose.builder()
-                    .transposeA(false)
-                    .transposeB(false)
-                    .transposeResult(false)
-                    .build();
-            val op = new Mmul(A, B, C, t);
-            Nd4j.exec(op);
-        }
-         */
+
     }
 
     @Override
@@ -74,8 +64,15 @@ public class CpuLevel3 extends BaseLevel3 {
                             (FloatPointer) A.data().addressPointer(), lda, (FloatPointer) B.data().addressPointer(),
                             ldb, beta, (FloatPointer) C.data().addressPointer(), ldc);
         } else {
-            Nd4j.getExecutioner()
-                            .exec(new AggregateGEMM('f', TransA, TransB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc));
+            MMulTranspose mt = MMulTranspose.builder()
+                    .transposeA(TransA == 'T' || TransA == 't')
+                    .transposeB(TransB == 'T' || TransB == 't')
+                    .transposeResult(false)
+                    .build();
+
+            Mmul mmulOp = new Mmul(A, B, alpha, beta, mt.isTransposeA(), mt.isTransposeB());
+            Nd4j.getExecutioner().exec(mmulOp);
+            C.assign(mmulOp.getOutputArgument(0));
         }
     }
 
@@ -127,8 +124,15 @@ public class CpuLevel3 extends BaseLevel3 {
                             (DoublePointer) A.data().addressPointer(), lda, (DoublePointer) B.data().addressPointer(),
                             ldb, beta, (DoublePointer) C.data().addressPointer(), ldc);
         } else {
-            Nd4j.getExecutioner()
-                            .exec(new AggregateGEMM('f', TransA, TransB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc));
+            MMulTranspose mt = MMulTranspose.builder()
+                    .transposeA(TransA == 'T' || TransA == 't')
+                    .transposeB(TransB == 'T' || TransB == 't')
+                    .transposeResult(false)
+                    .build();
+
+            Mmul mmulOp = new Mmul(A, B, alpha, beta, mt.isTransposeA(), mt.isTransposeB());
+            Nd4j.getExecutioner().exec(mmulOp);
+            C.assign(mmulOp.getOutputArgument(0));
         }
     }
 

@@ -49,7 +49,6 @@ public interface Op {
         REDUCE3,
         GRID,
         META,
-        AGGREGATION,
         CUSTOM,
         GRADIENT,
         CONDITIONAL,

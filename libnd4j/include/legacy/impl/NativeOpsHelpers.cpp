@@ -1261,7 +1261,6 @@ double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) {
 void deleteRandomGenerator(OpaqueRandomGenerator ptr) { delete ptr; }
 
 
-
 /**
  * Get the shape buffer from a
  * numpy array.

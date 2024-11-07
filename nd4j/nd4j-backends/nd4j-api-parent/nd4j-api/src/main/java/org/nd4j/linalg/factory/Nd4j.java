@@ -615,6 +615,15 @@ public class Nd4j {
         return create(descriptor, true);
     }
 
+
+    /**
+     * Delegates to {@link NDArrayFactory#create(DataBuffer, LongShapeDescriptor)}
+     * where an array is created with the given data buffer and long shape descriptor.
+     */
+    public static INDArray create(DataBuffer dataBuffer,LongShapeDescriptor descriptor) {
+        return Nd4j.getNDArrayFactory().create(dataBuffer,descriptor);
+    }
+
     /**
      * Create an ndarray based on the given description,
      * @param descriptor object with data for array creation.
@@ -622,13 +631,11 @@ public class Nd4j {
      * @return the ndarray of the specified description.
      */
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
-        if(descriptor.isEmpty()) {
-            return Nd4j.emptyWithShape(descriptor.getShape(),descriptor.dataType());
+        if (descriptor.isEmpty()) {
+            return Nd4j.emptyWithShape(descriptor.getShape(), descriptor.dataType());
         }
-        if (initialize)
-            return create(descriptor.dataType(), descriptor.getShape(), descriptor.getStride(), descriptor.getOrder());
-        else
-            return createUninitialized(descriptor.dataType(), descriptor.getShape(),descriptor.getStride(), descriptor.getOrder());
+        return Nd4j.getNDArrayFactory().create(descriptor);
+
     }
 
     /**
@@ -1122,17 +1129,7 @@ public class Nd4j {
         return compute.mean(dimension);
     }
 
-    /**
-     * Create a view of a data buffer
-     * Leverages the underlying storage of the buffer with a new view
-     *
-     * @param underlyingBuffer the underlying buffer
-     * @param offset the offset for the view
-     * @return the new view of the data buffer
-     */
-    public static DataBuffer createBuffer(DataBuffer underlyingBuffer, long offset, long length) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(underlyingBuffer, offset, length);
-    }
+
 
     /**
      * Create a buffer equal of length prod(shape)
@@ -1147,56 +1144,7 @@ public class Nd4j {
                 : createBuffer(new float[length], offset);
     }
 
-    /**
-     * Creates a buffer of the specified opType and length with the given byte buffer.
-     *
-     * This will wrap the buffer as a reference (no copy)
-     * if the allocation opType is the same.
-     * @param buffer the buffer to create from
-     * @param type the opType of buffer to create
-     * @param length the length of the buffer
-     * @return the created buffer
-     */
-    public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length, long offset) {
-        return DATA_BUFFER_FACTORY_INSTANCE.create(buffer, type, length, offset);
-    }
 
-    /**
-     * Create a buffer based on the data opType
-     *
-     * @param data the data to create the buffer with
-     * @return the created buffer
-     */
-    public static DataBuffer createBuffer(byte[] data, int length, long offset) {
-        DataBuffer ret;
-        if (dataType() == DataType.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, length);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, length);
-        return ret;
-    }
-
-    /**
-     * Creates a buffer of the specified length based on the data opType
-     *
-     * @param length the length of te buffer
-     * @return the buffer to create
-     */
-    public static DataBuffer createBuffer(int length, long offset) {
-        DataBuffer ret;
-        if (dataType() == DataType.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, length);
-        else if (dataType() == DataType.INT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, length);
-        else if (dataType() == DataType.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, length);
-        else if (dataType() == DataType.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, length);
-        else
-            ret = null;
-
-        return ret;
-    }
 
     private static boolean sameDataType(Pointer pointer,DataType dataType) {
         switch(dataType) {
@@ -1508,7 +1456,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length) {
-        return createBuffer(buffer, type, length, 0);
+        return getDataBufferFactory().createBuffer(buffer, type, length);
     }
 
 
@@ -2756,10 +2704,14 @@ public class Nd4j {
      * @return new INDArray.
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, long[]> shapeInfo) {
-        int rank = Shape.rank(shapeInfo.getFirst());
         // removed offset parameter that called a deprecated method which always returns 0.
-        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
-                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), 0, Shape.order(shapeInfo.getFirst()));
+        LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.builder()
+                .shape(Shape.shape(shapeInfo.getSecond()))
+                .stride(Shape.stride(shapeInfo.getSecond()))
+                .offset(0)
+                .build();
+
+        INDArray result = Nd4j.create(data,longShapeDescriptor);
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -5667,23 +5619,6 @@ public class Nd4j {
     }
 
     /**
-     * This method does the opposite to pile/vstack/hstack - it returns independent TAD copies along given dimensions
-     *
-     * @param tensor Array to tear
-     * @param dimensions dimensions
-     * @return Array copies
-     */
-    public static INDArray[] tear(INDArray tensor, @NonNull long... dimensions) {
-        if (dimensions.length >= tensor.rank())
-            throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
-
-        for (long dimension : dimensions)
-            if (dimension < 0) throw new ND4JIllegalStateException("Target dimensions can't have negative values");
-
-        return factory().tear(tensor, dimensions);
-    }
-
-    /**
      *   Upper triangle of an array.
 
 
@@ -5830,7 +5765,8 @@ public class Nd4j {
         if(arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.BFLOAT16 || arr.dataType() == DataType.UTF8)
             throw new IllegalArgumentException("Unable to write array data type of " + arr.dataType());
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),ArrayUtil.toInts(arr.shape()),arr.rank());
+       Nd4j.getNativeOps().saveNpy(file.getAbsolutePath(),arr.data().opaqueBuffer(),
+               new IntPointer(ArrayUtil.toInts(arr.shape())),arr.rank(),"w");
     }
 
 
@@ -5996,7 +5932,7 @@ public class Nd4j {
      */
     public static byte[] toNpyByteArray(INDArray input) {
         DataBuffer asNumpy = convertToNumpy(input);
-        long len = NativeOpsHolder.getInstance().getDeviceNativeOps().lengthInBytes(asNumpy.opaqueBuffer()) + input.dataType().width() * input.length();
+        long len = input.length() * input.data().getElementSize();
         Pointer pointer = asNumpy.addressPointer();
         pointer.limit(len);
         ByteBuffer directBuffer = pointer.asByteBuffer();

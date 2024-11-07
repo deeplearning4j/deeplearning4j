@@ -7092,21 +7092,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array2);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testTearPile_1(Nd4jBackend backend) {
-        val source = Nd4j.rand(new int[]{10, 15}).castTo(DataType.DOUBLE);
-
-        val list = Nd4j.tear(source, 1);
-
-        // just want to ensure that axis is right one
-        assertEquals(10, list.length);
-
-        val result = Nd4j.pile(list);
-
-        assertEquals(source.shapeInfoDataBuffer(), result.shapeInfoDataBuffer());
-        assertEquals(source, result);
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -7289,7 +7274,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         val tS = System.nanoTime();
         for (int e = 0; e < iterations; e++) {
-            //val c = new GemmParams(arrayX, arrayY, arrayZ);
             arrayX.mmuli(arrayY, arrayZ);
         }
 
@@ -8826,13 +8810,12 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         for(DataType dt : DataType.values()){
             if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
                 continue;
-//            System.out.println(dt);
 
             int lengthBytes = 256;
             int lengthElements = lengthBytes / dt.width();
             ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
 
-            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements);
             INDArray arr = Nd4j.create(db, new long[]{lengthElements});
 
             arr.toStringFull();
@@ -8860,7 +8843,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             int lengthElements = lengthBytes / dt.width();
             ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
 
-            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements);
             INDArray arr = Nd4j.create(db, new long[]{lengthElements/2, 2});
 
             arr.toStringFull();

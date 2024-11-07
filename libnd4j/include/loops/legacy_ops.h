@@ -23,9 +23,6 @@
 #ifndef PROJECT_LEGACY_OPS_H
 #define PROJECT_LEGACY_OPS_H
 
-#define AGGREGATE_OPS                                                                                                 \
-  (0, aggregateOps::HierarchicSoftmax), (1, aggregateOps::Dot), (2, aggregateOps::Axpy), (3, aggregateOps::SkipGram), \
-      (4, aggregateOps::CBOW), (5, aggregateOps::GEMM)
 
 #define BROADCAST_INT_OPS \
   (0, ShiftLeft), (1, ShiftRight), (2, CyclicShiftLeft), (3, CyclicShiftRight), (4, IntAnd), (5, IntOr), (6, IntXor)

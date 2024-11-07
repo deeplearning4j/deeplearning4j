@@ -76,7 +76,7 @@ SD_LIB_HIDDEN void clipByNorm(LaunchContext* context, NDArray& input, NDArray& o
                               const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool isInplace,
                               const bool useAverage);
 
-SD_LIB_HIDDEN void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*> const& inputs, double clipNorm,
+SD_LIB_HIDDEN void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*> & inputs, double clipNorm,
                                     memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
 SD_LIB_HIDDEN void clipByNormBp(LaunchContext* context, NDArray& input, NDArray& gradO,

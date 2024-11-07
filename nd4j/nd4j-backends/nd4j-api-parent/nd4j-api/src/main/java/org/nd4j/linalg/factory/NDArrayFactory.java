@@ -1584,13 +1584,6 @@ public interface NDArrayFactory {
     INDArray create(double[] data, long[] shape, long[] stride, long offset, char ordering);
 
 
-    /**
-     *
-     * @param tensor
-     * @param dimensions
-     * @return
-     */
-    INDArray[] tear(INDArray tensor, long... dimensions);
 
     /**
      *

@@ -47,7 +47,7 @@ public interface NativeOps {
 
  void shuffle(PointerPointer extras,
               OpaqueNDArrayArr x,
-              OpaqueNDArray z,
+              OpaqueNDArrayArr z,
               int N,
               OpaqueNDArray dimension,
               OpaqueNDArray shuffleMap);
@@ -247,6 +247,9 @@ public interface NativeOps {
  void setElementThreshold(int num);
  void setTADThreshold(int num);
  void execReduce3(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z);
+
+ void execReduce3All(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y,
+                     org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
  void execReduce3Scalar(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z);
  void execReduce3Tad(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension);
  Pointer initRandom(PointerPointer extraPointers, long seed, long bufferSize, Pointer ptrToBuffer);

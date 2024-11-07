@@ -33,8 +33,6 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
@@ -278,23 +276,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
     }
 
-    @Override
-    public <T extends Aggregate> void exec(Batch<T> batch) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void exec(Aggregate op) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public abstract INDArray exec(ScalarOp op);
-
-    @Override
-    public void exec(List<Aggregate> batch) {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
@@ -981,25 +962,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         // no-op
     }
 
-    public static List<INDArray> getIntermediateResults(PointerPointer<OpaqueDataBuffer> pointerPointer, PointerPointer<LongPointer> opaqueConstantShapeBufferPointerPointer) {
-        List<INDArray> results = new ArrayList<>();
-        if (pointerPointer == null)
-            return results;
-        OpaqueDataBuffer[] buffers = new OpaqueDataBuffer[(int) pointerPointer.capacity()];
-        LongPointer[] shapes = new LongPointer[(int) opaqueConstantShapeBufferPointerPointer.capacity()];
-        for (int e = 0; e < pointerPointer.capacity(); e++) {
-            if (buffers[e] == null)
-                continue;
-
-
-            DataBuffer buffer = Nd4j.createBuffer(shapes[e], null, shapes[e].capacity(), DataType.LONG);
-            DataBuffer originalBuffer = Nd4j.createBuffer(buffers[e].primaryBuffer(),buffers[e].specialBuffer(),Shape.length(buffer),Shape.dataType(buffer));
-            INDArray arr = Nd4j.createArrayFromShapeBuffer(originalBuffer, buffer);
-            results.add(arr);
-        }
-
-        return results;
-    }
 
     /**
      * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.

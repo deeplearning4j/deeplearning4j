@@ -21,7 +21,6 @@
 package org.nd4j.linalg.cpu.nativecpu.ops;
 
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.api.buffer.*;
@@ -39,8 +37,6 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
@@ -54,7 +50,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
-import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
@@ -62,7 +57,6 @@ import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
-import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,13 +82,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
-
-    /**
-     * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
-     * Since for NativeOpExecutioner all executions are synchronous
-     */
-    private ThreadLocal<Map<Integer, Pointer>> batchPointers = new ThreadLocal<>();
-    private ThreadLocal<Map<Integer, AggregateMemoryBlock>> memoryBlocks = new ThreadLocal<>();
 
     public NativeOpExecutioner() {
         tadManager.init(loop, constantHandler);
@@ -315,15 +302,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
-        /**
-         * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
-         * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
-         * The first item is the shape information. The second one is the offsets.
-         */
-        Pair<DataBuffer, DataBuffer> tadBuffers = x.isEmpty() ? Pair.makePair(x.data(), null): tadManager.getTADOnlyShapeInfo(x, dimension);
-        Pair<DataBuffer, DataBuffer> yTadBuffers = null;
-
-
 
         /**
          * Note because dimension arrays don't change,
@@ -393,41 +371,48 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
-        } else {
+        } else {if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+            OpaqueNDArray dims = OpaqueNDArray.fromINDArray(op.dimensions());
+
             if (ret.isScalar()) {
+                if (extraz.get() == null)
+                    extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        loop.execReduceFloat(null,op.opNum(),xb,zb,getPointerForExtraArgs(op, x.dataType()));
-
+                        loop.execReduceFloat(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_BOOL:
-                        loop.execReduceBool(null,op.opNum(),xb,zb,getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceBool(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
                         break;
                     case REDUCE_SAME:
-                        loop.execReduceSame(null,op.opNum(),xb,zb,getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceSame(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_LONG:
-                        loop.execReduceLong(null,op.opNum(),xb,zb,getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceLong(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
                         break;
                     default:
-                        throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                        throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
                 }
             } else {
+                if (extraz.get() == null)
+                    extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        loop.execReduceFloat(null,op.opNum(),xb,zb,getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceFloat(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb);
                         break;
                     case REDUCE_LONG:
-                        loop.execReduceLong2(null,op.opNum(),xb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceLong2(null, op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_SAME:
-                        loop.execReduceSame2(null,op.opNum(),xb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceSame2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_BOOL:
-                        loop.execReduceBool2(null,op.opNum(),xb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),getPointerForExtraArgs(op, x.dataType()));
+                        loop.execReduceBool2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
+
                     default:
-                        throw new UnsupportedOperationException("Unsupported op used in reduce: "+ op.getOpType());
+                        throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
                 }
             }
         }
@@ -469,21 +454,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
         switch (op.getOpType()) {
             case SCALAR:
-                loop.execScalarTad(null,op.opNum(),
+                loop.execScalarTad(null, op.opNum(),
                         xb,
                         zb,
                         yb,
-                        OpaqueNDArray.fromINDArray(op.dimensions()),
-                        getPointerForExtraArgs(op,x.dataType()));
+                        getPointerForExtraArgs(op, x.dataType()),
+                        OpaqueNDArray.fromINDArray(op.dimensions())
+                );
                 break;
             case SCALAR_BOOL:
-                loop.execScalarBoolTad(null,op.opNum(),
+                loop.execScalarTad(null, op.opNum(),
                         xb,
                         zb,
                         yb,
-                        OpaqueNDArray.fromINDArray(op.dimensions()),
-                        getPointerForExtraArgs(op,x.dataType()));
-                        break;
+                        getPointerForExtraArgs(op, x.dataType()),
+                        OpaqueNDArray.fromINDArray(op.dimensions())
+                );
+                break;
             default:
                 throw new UnsupportedOperationException();
         }
@@ -646,18 +633,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     case TRANSFORM_FLOAT:
                     case TRANSFORM_STRICT:
                     case TRANSFORM_SAME:
-                        if (!experimentalMode.get())
-                            Preconditions.checkArgument(x.dataType() == y.dataType() || y.dataType() == DataType.BOOL,
-                                    "Op.X and Op.Y must have the same data type, but got %s vs. %s", x.dataType(), y.dataType());
-
                         loop.execPairwiseTransform(dummy,op.opNum(),xb,yb,zb, getPointerForExtraArgs(op, x.dataType()));
                         break;
                     case TRANSFORM_BOOL:
-                        loop.execTransformBool(dummy,op.opNum(),xb,zb, getPointerForExtraArgs(op, x.dataType()));
+                        loop.execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case PAIRWISE_BOOL:
-                        loop.execPairwiseTransformBool(dummy,op.opNum(),xb,yb,zb, getPointerForExtraArgs(op, x.dataType()));
-
+                        loop.execPairwiseTransformBool(dummy, op.opNum(), xb, yb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                 }
             } else {
@@ -672,34 +654,27 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 val xb = OpaqueNDArray.fromINDArray(x);
                 val zb = OpaqueNDArray.fromINDArray(z);
 
+                if (extraz.get() == null)
+                    extraz.set(new PointerPointer(32));
+
                 switch (op.getOpType()) {
                     case TRANSFORM_FLOAT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        loop.execTransformFloat(dummy,op.opNum(),xb,zb,xtraz);
+                        loop.execTransformFloat(dummy, op.opNum(), xb,xtraz, zb);
                         break;
                     }
                     case TRANSFORM_STRICT: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        loop.execTransformStrict(dummy,op.opNum(),xb,zb,xtraz);
+                        loop.execTransformStrict(dummy, op.opNum(), xb, xtraz,zb);
                         break;
                     }
                     case TRANSFORM_SAME: {
                         val xtraz = getPointerForExtraArgs(op, z.dataType());
-                        loop.execTransformSame(dummy,op.opNum(),xb,zb,xtraz);
+                        loop.execTransformSame(dummy, op.opNum(), xb,xtraz, zb);
                         break;
                     }
-                    case TRANSFORM_ANY: {
-                        val xtraz = getPointerForExtraArgs(op, x.dataType());
-                        val opNum = op.opNum();
-                        loop.execTransformAny(dummy,opNum,xb,zb, getPointerForExtraArgs(op, x.dataType()));
-                        break;
-                    }
-                    case TRANSFORM_BOOL: {
-                        val xtraz = getPointerForExtraArgs(op, x.dataType());
-                        val opNum = op.opNum();
-                        loop.execTransformBool(dummy,opNum,xb,zb, getPointerForExtraArgs(op, x.dataType()));
-                        break;
-                    }
+
+
                     default:
                         throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
                 }
@@ -762,13 +737,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
+        OpaqueNDArray dimArray = OpaqueNDArray.fromINDArray(op.dimensions());
         switch (op.getOpType()) {
             case BROADCAST:
-                loop.execBroadcast(dummy,op.opNum(),xb, yb, zb,OpaqueNDArray.fromINDArray(op.dimensions()));
+                loop.execBroadcast(dummy,op.opNum(),xb, yb, zb,extraz.get(),dimArray);
 
                 break;
             case BROADCAST_BOOL:
-               loop.execBroadcastBool(dummy,op.opNum(),xb, yb, zb,OpaqueNDArray.fromINDArray(op.dimensions()),null);
+                loop.execBroadcastBool(dummy,op.opNum(),xb, yb,zb,extraz.get(),dimArray);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
@@ -787,236 +763,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
 
-    protected <T extends Aggregate> Pointer getPointer(Batch<T> batch) {
-        if (batchPointers.get() == null)
-            batchPointers.set(new HashMap<>());
-
-        if (!batchPointers.get().containsKey(batch.opNum())) {
-            val pointer = new IntPointer(batch.getSample().getRequiredBatchMemorySize() / 4 );
-            batchPointers.get().put(batch.opNum(), pointer);
-            return pointer;
-        }
-
-        return batchPointers.get().get(batch.opNum());
-    }
 
 
-    /**
-     * This method executes previously built batch
-     *
-     * @param batch
-     */
-    @Override
-    public <T extends Aggregate> void exec(Batch<T> batch) {
-
-        IntPointer pointer = (IntPointer) getPointer(batch);
-
-        int maxTypes = 5;
-
-        int maxIntArrays = batch.getSample().maxIntArrays();
-
-        int maxArraySize = batch.getSample().maxIntArraySize();
-
-
-        int indexPos = maxTypes * Batch.getBatchLimit();
-        int intArraysPos = indexPos + (batch.getSample().maxIndexArguments() * Batch.getBatchLimit());
-        int realPos = (intArraysPos + (maxIntArrays * maxArraySize * Batch.getBatchLimit()))
-                / (Nd4j.dataType() == DataType.DOUBLE ? 2 : 1);
-        int argsPos = (realPos + ((batch.getSample().maxRealArguments() * Batch.getBatchLimit())))
-                / (Nd4j.dataType() == DataType.DOUBLE ? 1 : 2);
-        int shapesPos = argsPos + (batch.getSample().maxArguments() * Batch.getBatchLimit());
-        DataType dataType = null;
-        for (int i = 0; i < batch.getNumAggregates(); i++) {
-            T op = batch.getAggregates().get(i);
-
-            if (i == 0)
-                dataType = op.getArguments().get(0).dataType();
-
-            // put num arguments
-            int idx = i * maxTypes;
-            pointer.put(idx, op.getArguments().size());
-            pointer.put(idx + 1, op.getShapes().size());
-            pointer.put(idx + 2, op.getIndexingArguments().size());
-            pointer.put(idx + 3, op.getRealArguments().size());
-            pointer.put(idx + 4, op.getIntArrayArguments().size());
-
-
-            // putting indexing arguments
-            for (int e = 0; e < op.getIndexingArguments().size(); e++) {
-                idx = indexPos + i * batch.getSample().maxIndexArguments();
-                pointer.put(idx + e, op.getIndexingArguments().get(e));
-            }
-
-            // putting intArray values
-            int bsize = maxIntArrays * maxArraySize;
-            for (int e = 0; e < op.getIntArrayArguments().size(); e++) {
-                int step = (i * bsize) + (e * maxArraySize);
-                if (op.getIntArrayArguments().get(e) != null)
-                    for (int x = 0; x < op.getIntArrayArguments().get(e).length; x++) {
-                        idx = intArraysPos + step + x;
-                        pointer.put(idx, op.getIntArrayArguments().get(e)[x]);
-                    }
-            }
-
-            // TODO: variable datatype should be handled here
-            // putting real arguments
-
-            switch (dataType) {
-                case FLOAT:
-                    FloatPointer fPtr = new FloatPointer(pointer);
-                    for (int e = 0; e < op.getRealArguments().size(); e++) {
-                        idx = realPos + i * op.maxRealArguments();
-                        fPtr.put(idx + e, op.getRealArguments().get(e).floatValue());
-                    }
-                    break;
-                case DOUBLE:
-                    DoublePointer dPtr = new DoublePointer(pointer);
-                    for (int e = 0; e < op.getRealArguments().size(); e++) {
-                        idx = realPos + (i * op.maxRealArguments());
-                        dPtr.put(idx + e, op.getRealArguments().get(e).doubleValue());
-                    }
-                    break;
-                default:
-                    throw new ND4JIllegalArgumentException("Only FLOAT and DOUBLE datatypes are supported");
-            }
-
-            if (extraz.get() == null)
-                extraz.set(new PointerPointer(32));
-
-            // putting arguments pointers
-
-            PointerPointer ptrPtr = new PointerPointer(pointer);
-
-            for (int e = 0; e < op.getArguments().size(); e++) {
-                idx = argsPos + i * batch.getSample().maxArguments();
-
-                if (op.getArguments().get(e) != null) {
-                    ptrPtr.put(idx + e, op.getArguments().get(e).data().addressPointer());
-                }
-            }
-
-
-            // putting shape pointers
-            for (int e = 0; e < op.getShapes().size(); e++) {
-                idx = shapesPos + i * batch.getSample().maxShapes();
-
-                if (op.getShapes().get(e) != null)
-                    ptrPtr.put(idx + e, op.getShapes().get(e).addressPointer());
-            }
-        }
-
-        loop.execAggregateBatch(null, batch.getNumAggregates(), batch.opNum(),
-                batch.getSample().maxArguments(), batch.getSample().maxShapes(),
-                batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
-                batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
-
-        if (loop.lastErrorCode() != 0) {
-            throw new RuntimeException(loop.lastErrorMessage());
-        }
-
-    }
-
-    /**
-     * This method takes arbitrary
-     * sized list of {@link Aggregate},
-     * and packs them into batches
-     * Note here that this is mainly used for random number generation
-     * for {@link RandomOp} and things like {@link org.nd4j.linalg.api.rng.distribution.Distribution}
-     * @param batch the list of {@link Aggregate} to
-     *              execute upon
-     */
-    @Override
-    public void exec(List<Aggregate> batch) {
-        if (batch.size() == 0)
-            return;
-
-        List<Batch<Aggregate>> batches = Batch.getBatches(batch);
-        for (Batch<Aggregate> single : batches) {
-            this.exec(single);
-        }
-    }
-
-    /**
-     * This method takes arbitrary
-     * sized list of {@link Aggregate},
-     * and packs them into batches
-     * Note here that this is mainly used for random number generation
-     * for {@link RandomOp} and things like {@link org.nd4j.linalg.api.rng.distribution.Distribution}
-     * @param op the list of {@link Aggregate} to
-     *              execute upon
-     */
-    @Override
-    public void exec(Aggregate op) {
-
-        if (memoryBlocks.get() == null)
-            memoryBlocks.set(new HashMap<>());
-
-        if (memoryBlocks.get().get(op.opNum()) == null)
-            memoryBlocks.get().put(op.opNum(), new AggregateMemoryBlock(op));
-
-        AggregateMemoryBlock block = memoryBlocks.get().get(op.opNum());
-
-        int numArguments = op.getArguments().size();
-        int numIndexArguments = op.getIndexingArguments().size();
-        int numRealArguments = op.getRealArguments().size();
-        int numShapes = op.getShapes().size();
-        int numIntArrays = op.getIntArrayArguments().size();
-
-        PointerPointer arguments = block.getArgumentsPointer();
-        List<IntPointer> pointers = new ArrayList<>();
-        PointerPointer intArrays = block.getArraysPointer();
-        val dataType = op.getArguments().get(0).dataType();
-
-        for (int x = 0; x < numArguments; x++) {
-            arguments.put(x, op.getArguments().get(x) == null ? null
-                    : op.getArguments().get(x).data().addressPointer());
-        }
-
-        PointerPointer shapes = block.getShapesPointer();
-
-        for (int x = 0; x < numShapes; x++) {
-            if (op.getShapes().get(x).dataType() != DataType.LONG)
-                throw new RuntimeException("ShapeBuffers should have LONG data opType");
-
-            shapes.put(x, op.getShapes().get(x) == null ? null : op.getShapes().get(x).addressPointer());
-        }
-
-        IntPointer pointer = block.getIndexingPointer();
-        for (int x = 0; x < numIndexArguments; x++) {
-            pointer.put(x, op.getIndexingArguments().get(x));
-        }
-
-
-        for (int x = 0; x < numRealArguments; x++) {
-            switch (dataType) {
-                case FLOAT:
-                    ((FloatPointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).floatValue());
-                    break;
-                case DOUBLE:
-                    ((DoublePointer) block.getRealArgumentsPointer()).put(x, op.getRealArguments().get(x).doubleValue());
-                    break;
-                default:
-                    throw new ND4JIllegalArgumentException("Only FLOAT and DOUBLE datatypes are supported");
-            }
-        }
-
-        for (int x = 0; x < numIntArrays; x++) {
-            IntPointer intPtr = block.getIntArrays().get(x);
-            intPtr.put(op.getIntArrayArguments().get(x), 0, op.getIntArrayArguments().get(x).length);
-            intArrays.put(x, intPtr);
-            pointers.add(intPtr);
-        }
-
-
-
-
-        loop.execAggregate(null, op.opNum(), arguments, numArguments, shapes, numShapes, pointer,
-                numIndexArguments, intArrays, numIntArrays, block.getRealArgumentsPointer(),
-                numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
-
-        if (loop.lastErrorCode() != 0)
-            throw new RuntimeException(loop.lastErrorMessage());
-    }
 
     /**
      * This method return set of key/value and
@@ -1124,64 +872,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return tadManager;
     }
 
-    /**
-     * This class holds memory chunks required for single specific Aggregate op.
-     * Can be used together with ThreadLocal variables
-     */
-    @Data
-    private static class AggregateMemoryBlock {
-        private List<IntPointer> intArrays = new ArrayList<>();
-        private IntPointer indexingPointer;
-        private Pointer realArgumentsPointer;
-        private PointerPointer shapesPointer;
-        private PointerPointer argumentsPointer;
-        private PointerPointer arraysPointer;
-
-        private final int opNum;
-
-        private AggregateMemoryBlock(@NonNull Aggregate op) {
-
-            opNum = op.opNum();
-
-            // creating IntArrays
-            for (int i = 0; i < op.maxIntArrays(); i++) {
-                intArrays.add(new IntPointer(op.maxIntArraySize()));
-            }
-
-            // allocating chunk for IndexingArguments
-            indexingPointer = new IntPointer(op.maxIndexArguments());
-
-            // allocating chunk for RealArguments
-            realArgumentsPointer = Nd4j.dataType() == DataType.DOUBLE ? new DoublePointer(op.maxRealArguments())
-                    : new FloatPointer(op.maxRealArguments());
-
-            // allocating chunk for shapesPointer
-            shapesPointer = new PointerPointer(op.maxShapes());
-
-            // allocating chunk for argumentsPointer
-            argumentsPointer = new PointerPointer(op.maxArguments());
-
-            // chunk for intArrays
-            arraysPointer = new PointerPointer(op.maxIntArrays());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            AggregateMemoryBlock that = (AggregateMemoryBlock) o;
-
-            return opNum == that.opNum;
-        }
-
-        @Override
-        public int hashCode() {
-            return opNum;
-        }
-    }
 
     @Override
     public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
@@ -1265,8 +955,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             shape[i] = ptr.get(i);
         }
 
-        val t = ArrayOptionsHelper.arrayType(shape);
-        return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
+        LongShapeDescriptor ret = LongShapeDescriptor.builder()
+                .shape(Shape.shape(shape))
+                .stride(Shape.stride(shape))
+                .order(Shape.order(shape))
+                .ews(Shape.elementWiseStride(shape))
+                .extras(Shape.extras(shape))
+                .build();
+        return ret;
     }
 
     @Override
@@ -1297,9 +993,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 ? opContext.getInputArrays() : op.inputArguments();
         int cnt = 0;
         int numProcessed = 0;
+        long[] offsets = new long[nIn];
         for (val in: inputArgs) {
             if (!in.isEmpty())
                 inputBuffers.put(cnt, in.data().addressPointer());
+            offsets[cnt] = in.offset();
 
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
             numProcessed++;
@@ -1591,11 +1289,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (tadY.getSecond().length() != indices.length())
             throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
 
-        loop.scatterUpdate(null, op.ordinal(), (int) indices.length(),
-                array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,
-                updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
-                indices.data().addressPointer(), (LongPointer) indices.shapeInfoDataBuffer().addressPointer(), null, null);
+        val arrayOpaque = OpaqueNDArray.fromINDArray(array);
+        val updatesOpaque = OpaqueNDArray.fromINDArray(updates);
+        val indicesOpaque = OpaqueNDArray.fromINDArray(indices);
 
+        INDArray dimm = Nd4j.createFromArray(axis);
+        val dimmOpaque = OpaqueNDArray.fromINDArray(dimm);
+
+        loop.scatterUpdate(null,op.ordinal(),arrayOpaque,indicesOpaque,updatesOpaque,dimmOpaque);
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
     }

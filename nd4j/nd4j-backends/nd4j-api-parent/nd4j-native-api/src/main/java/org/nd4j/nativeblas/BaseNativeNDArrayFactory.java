@@ -65,7 +65,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
     public DataBuffer convertToNumpyBuffer(INDArray array) {
         Pointer pointer =Nd4j.getNativeOps().numpyFromNd4j(array.data().addressPointer(), array.shapeInfoDataBuffer().pointer(), array.data().getElementSize());
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
-        long len =Nd4j.getNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
+        long len = Nd4j.getNativeOps().numpyHeaderLength(array.data().opaqueBuffer(),array.shapeInfoDataBuffer().pointer());
         pointer.capacity(len + array.length() * array.data().getElementSize());
         pointer.limit(len + array.length() * array.data().getElementSize());
         BytePointer wrapper = new BytePointer(pointer);

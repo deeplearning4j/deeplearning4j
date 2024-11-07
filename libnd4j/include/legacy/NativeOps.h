@@ -204,6 +204,8 @@ SD_LIB_EXPORT void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArr
 SD_LIB_EXPORT void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z, OpaqueNDArray scalar, void *extraParams, OpaqueNDArray dimension);
 SD_LIB_EXPORT void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, void *extraParams, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z) ;
+SD_LIB_EXPORT void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams);
+
 SD_LIB_EXPORT void execReduceSame(sd::Pointer *extraPointers,
                                   int opNum,
                                   OpaqueNDArray x,
@@ -300,6 +302,8 @@ SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers,
                                   bool descending);
 SD_LIB_EXPORT void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray values);
 SD_LIB_EXPORT void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) ;
+SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fileName, sd::LongType length);
+
 SD_LIB_EXPORT sd::LongType getResultWrapperSize(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::Pointer getResultWrapperPointer(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list) ;

@@ -1670,7 +1670,7 @@ void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, Lo
 bool isExperimentalEnabled() { return Environment::getInstance().isExperimentalBuild(); }
 void shuffle(Pointer *extras,
              OpaqueNDArrayArr x,
-             OpaqueNDArray z,
+             OpaqueNDArrayArr z,
              int N,
              OpaqueNDArray dimension,
              OpaqueNDArray shuffleMap) {
@@ -1685,12 +1685,19 @@ void shuffle(Pointer *extras,
     std::vector<LongType*> xShapeInfos(N);
     std::vector<LongType*> tadShapeInfoBuffers(N);
     std::vector<LongType*> tadOffsetsBuffers(N);
+    std::vector<void*> zBuffers(N);
+    std::vector<LongType*> zShapeInfos(N);
+    std::vector<LongType*> zTadShapeInfoBuffers(N);
+    std::vector<LongType*> zTadOffsetsBuffers(N);
 
     for (int i = 0; i < N; ++i) {
       xBuffers[i] = x[i]->specialBuffer();
       xShapeInfos[i] = const_cast<LongType*>(x[i]->specialShapeInfo());
 
-      // Extract dimensions for each x[i] from the array of arrays
+      zBuffers[i] = z[i]->specialBuffer();
+      zShapeInfos[i] = const_cast<LongType*>(z[i]->specialShapeInfo());
+
+      // Extract dimensions for each x[i] and z[i] from the array of arrays
       LongType* dimensions = reinterpret_cast<LongType*>(dimension->buffer());
       LongType dimLength = shape::length(dimension->shapeInfo());
 
@@ -1698,18 +1705,15 @@ void shuffle(Pointer *extras,
       auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(x[i]->shapeInfo(), dimensions, dimLength);
       tadShapeInfoBuffers[i] = const_cast<LongType*>(tadPackX->specialShapeInfo());
       tadOffsetsBuffers[i] = const_cast<LongType*>(tadPackX->specialOffsets());
+
+      // Calculate TADs for each z
+      auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z[i]->shapeInfo(), dimensions, dimLength);
+      zTadShapeInfoBuffers[i] = const_cast<LongType*>(tadPackZ->specialShapeInfo());
+      zTadOffsetsBuffers[i] = const_cast<LongType*>(tadPackZ->specialOffsets());
     }
 
-    void* zBuffer = z->specialBuffer();
-    LongType* zShapeInfo = const_cast<LongType*>(z->specialShapeInfo());
-
-    // Calculate TADs for z
-    auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), reinterpret_cast<LongType*>(dimension->buffer()), shape::length(dimension->shapeInfo()));
-    LongType* zTadShapeInfoBuffer = const_cast<LongType*>(tadPackZ->specialShapeInfo());
-    LongType* zTadOffsetsBuffer = const_cast<LongType*>(tadPackZ->specialOffsets());
-
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric,
-                          (launchDims, stream, xBuffers.data(), xShapeInfos.data(), &zBuffer, N, reinterpret_cast<int*>(shuffleMap->buffer()), tadShapeInfoBuffers.data(), tadOffsetsBuffers.data()),
+                          (launchDims, stream, xBuffers.data(), xShapeInfos.data(), zBuffers.data(), N, reinterpret_cast<int*>(shuffleMap->buffer()), tadShapeInfoBuffers.data(), tadOffsetsBuffers.data(), zTadShapeInfoBuffers.data(), zTadOffsetsBuffers.data()),
                           SD_COMMON_TYPES);
 
     DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
@@ -2042,16 +2046,6 @@ void execScalarTad(Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDA
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
   }
 }
-void execAggregate(Pointer *extraPointers, int opNum, void **arguments, int numArguments, LongType **shapes,
-                   int numShapes, int *indexArguments, int numIndexArguments, int **intArrays, int numIntArrays,
-                   void *realArguments, int numRealArguments, DataType dtype) {}
-
-void batchExecutor(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
-                   int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments, DataType dtype) {}
-
-void execAggregateBatch(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
-                        int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments,
-                        DataType dtype) {}
 
 ////////////////////////////////////////////////////////////////////////
 void execRandom(Pointer *extraPointers, int opNum, Pointer stateHost, OpaqueNDArray z, void *extraArguments) {
