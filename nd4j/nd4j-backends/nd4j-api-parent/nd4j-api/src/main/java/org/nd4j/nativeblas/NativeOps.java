@@ -432,6 +432,7 @@ public interface NativeOps {
  Pointer mapFromNpzFile(BytePointer path);
  Pointer mapFromNpzFile(String path);
  int getNumNpyArraysInMap(Pointer map);
+ LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
  String getNpyArrayNameFromMap(Pointer map, int index, BytePointer nameBuffer);
  BytePointer getNpyArrayNameFromMap(Pointer map, int index, String nameBuffer);
  Pointer getNpyArrayFromMap(Pointer map, int index);

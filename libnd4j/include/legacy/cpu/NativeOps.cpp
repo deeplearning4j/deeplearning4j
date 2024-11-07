@@ -64,7 +64,7 @@
 #endif
 
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 using namespace sd;
 
 
