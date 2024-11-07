@@ -100,7 +100,6 @@ ThreadPool::ThreadPool() {
   }
   //add an extra ticket to minimize the risk of running out of tickets due to race conditions
   _tickets.push(new Ticket());
-#endif
 }
 
 ThreadPool::~ThreadPool() {
