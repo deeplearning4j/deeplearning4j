@@ -86,8 +86,9 @@ static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis,
       auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
       auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
 
-
-      T3 val = A[aOffset] * B[bOffset];  // first iteration
+      T3 aVal= A[aOffset];
+      T3 bVal= B[bOffset];
+      T3 val = aVal * bVal;  // first iteration
 
       for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];

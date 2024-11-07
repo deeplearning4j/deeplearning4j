@@ -150,7 +150,6 @@ DECLARE_SHAPE_FN(conv2d) {
   strideCalcShape[2] = bS;
   strideCalcShape[3] = oC;
 
-
   sd::LongType *permute = new sd::LongType[4];
   permute[0] = 2;
   permute[1] = 3;

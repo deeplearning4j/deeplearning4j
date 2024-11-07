@@ -408,13 +408,20 @@ bool isViewOf(const void* ptr1, size_t size1, const void* ptr2, size_t size2) {
  * @param extraParams
  * @param n
  */
-void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum, const void *hX,
-                                                const sd::LongType *hXShapeInfo, const void *dX,
-                                                const sd::LongType *dXShapeInfo, const void *hY,
-                                                const sd::LongType *hYShapeInfo, const void *dY,
-                                                const sd::LongType *dYShapeInfo, void *hZ,
-                                                const sd::LongType *hZShapeInfo, void *dZ,
-                                                const sd::LongType *dZShapeInfo, void *extraParams) {
+void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum,
+                                                const void *hX,
+                                                const sd::LongType *hXShapeInfo,
+                                                const void *dX,
+                                                const sd::LongType *dXShapeInfo,
+                                                const void *hY,
+                                                const sd::LongType *hYShapeInfo,
+                                                const void *dY,
+                                                const sd::LongType *dYShapeInfo,
+                                                void *hZ,
+                                                const sd::LongType *hZShapeInfo,
+                                                void *dZ,
+                                                const sd::LongType *dZShapeInfo,
+                                                void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);

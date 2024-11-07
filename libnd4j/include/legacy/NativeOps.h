@@ -140,6 +140,8 @@ SD_LIB_EXPORT void saveNpy(std::string fname, const OpaqueDataBuffer  *data, con
 SD_LIB_EXPORT void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
                                 sd::LongType *specialShapeInfo, sd::Pointer debugInfo);
 
+SD_LIB_EXPORT OpaqueResultWrapper* executeFlatGraph(sd::Pointer* extraPointers, sd::Pointer flatBufferPointer);
+
 SD_LIB_EXPORT OpaqueVariablesSet *executeStoredGraph(sd::Pointer *extraPointers,
                                                      sd::LongType graphId,
                                                      sd::Pointer *inputBuffers,
@@ -439,8 +441,9 @@ SD_LIB_EXPORT sd::Pointer lcExecutionStream(OpaqueLaunchContext* lc);
 SD_LIB_EXPORT sd::Pointer lcCopyStream(OpaqueLaunchContext* lc);
 
 SD_LIB_EXPORT sd::Pointer lcBlasHandle(OpaqueLaunchContext* lc);
-
-
+SD_LIB_EXPORT  long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize);
+SD_LIB_EXPORT  long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer);
+SD_LIB_EXPORT sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray);
 SD_LIB_EXPORT  sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize,
                                                     sd::LongType* headerSize) ;
 SD_LIB_EXPORT  sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize);

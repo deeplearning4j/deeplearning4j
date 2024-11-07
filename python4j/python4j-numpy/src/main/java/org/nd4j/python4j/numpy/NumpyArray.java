@@ -186,7 +186,7 @@ public class NumpyArray extends PythonType<INDArray> {
         DataBuffer buff = cache.get(key);
         if (buff == null) {
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                Pointer ptr =Nd4j.getNativeOps().pointerForAddress(address);
+                Pointer ptr = Nd4j.getNativeOps().pointerForAddress(address);
                 ptr = ptr.limit(size);
                 ptr = ptr.capacity(size);
                 buff = Nd4j.createBuffer(ptr, size, dtype);

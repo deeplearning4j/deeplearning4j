@@ -41,11 +41,12 @@ class SD_LIB_EXPORT TadDescriptor {
                          const bool keepUnitiesInShape = false);
   ~TadDescriptor() = default;
 
+
+  // NCC has issues with copy constructors
   TadDescriptor &operator=(const TadDescriptor &other) = default;
   // we use default move assignment operator
   TadDescriptor &operator=(TadDescriptor &&other) noexcept = default;
   explicit TadDescriptor(const TadDescriptor &other);
-
 
 
   // equal to operator

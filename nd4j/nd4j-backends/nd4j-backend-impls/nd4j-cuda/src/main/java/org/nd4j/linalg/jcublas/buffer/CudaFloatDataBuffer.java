@@ -22,6 +22,8 @@ package org.nd4j.linalg.jcublas.buffer;
 
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -65,7 +67,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
      * @param length the length of the buffer
      */
     public CudaFloatDataBuffer(long length) {
-        super(length, 4);
+        super(length, 4, true);
     }
 
     public CudaFloatDataBuffer(long length, boolean initialize) {
@@ -81,9 +83,15 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaFloatDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
+    public CudaFloatDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data.length, 4, true, workspace);
+        setData(data);
     }
+
+    public CudaFloatDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
+    }
+
 
     /**
      * Initialize the opType of this buffer
@@ -94,52 +102,21 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         type = DataType.FLOAT;
     }
 
-    public CudaFloatDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public CudaFloatDataBuffer(float[] buffer) {
-        super(buffer);
-    }
-
-    public CudaFloatDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaFloatDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy, workspace);
-    }
-
-    public CudaFloatDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaFloatDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
+        super(buffer.length, 4, true);
+        setData(buffer);
     }
 
     public CudaFloatDataBuffer(double[] data) {
-        super(data);
-    }
-
-    public CudaFloatDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaFloatDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 4, true);
+        setData(data);
     }
 
     public CudaFloatDataBuffer(int[] data) {
-        super(data);
-    }
-
-    public CudaFloatDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaFloatDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
+        super(data.length, 4, true);
+        setData(data);
     }
 
     @Override
@@ -147,23 +124,25 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         return new CudaFloatDataBuffer(length);
     }
 
-
     @Override
     public double[] getDoublesAt(long offset, long inc, int length) {
         return ArrayUtil.toDoubles(getFloatsAt(offset, inc, length));
     }
 
-
     @Override
     public void setData(int[] data) {
-        setData(ArrayUtil.toFloats(data));
+        if (data.length == 0)
+            return;
+        float[] floatData = ArrayUtil.toFloats(data);
+        set(floatData, floatData.length, 0, 0);
     }
-
-
 
     @Override
     public void setData(double[] data) {
-        setData(ArrayUtil.toFloats(data));
+        if (data.length == 0)
+            return;
+        float[] floatData = ArrayUtil.toFloats(data);
+        set(floatData, floatData.length, 0, 0);
     }
 
     @Override
@@ -223,7 +202,4 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public void flush() {
 
     }
-
-
-
 }

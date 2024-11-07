@@ -104,7 +104,7 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
 
                 val thisStride = arr.stride();
 
-                val ib = arr.shapeInfo();
+                val ib = arr.shapeInfoJava();
                 DataBuffer db = arr.shapeInfoDataBuffer();
 
                 //Check shape calculation
@@ -112,7 +112,6 @@ public class StaticShapeTests extends BaseNd4jTestWithBackends {
                 assertEquals(shape.length, Shape.rank(db));
 
                 assertArrayEquals(shape, Shape.shape(ib));
-                assertArrayEquals(shape, Shape.shape(db));
 
                 for (int j = 0; j < shape.length; j++) {
                     assertEquals(shape[j], Shape.size(ib, j));

@@ -21,8 +21,6 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.annotation.ByVal;
-import org.bytedeco.javacpp.annotation.Cast;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
@@ -99,6 +97,9 @@ public interface NativeOps {
 
 
  void scatterUpdate(PointerPointer extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);
+
+ OpaqueResultWrapper executeFlatGraph(PointerPointer extraPointers, Pointer flatBufferPointer);
+
  OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers,
                                         long graphId,
                                         PointerPointer inputBuffers,
@@ -367,6 +368,7 @@ public interface NativeOps {
  Pointer shapeBufferForNumpy(Pointer npyArray);
  Pointer shapeBufferForNumpyHeader(Pointer npyArray);
  long numpyHeaderLength(OpaqueDataBuffer opaqueDataBuffer,Pointer shapeBuffer);
+
  long getCachedMemory(int deviceId);
  Pointer lcScalarPointer(org.nd4j.nativeblas.OpaqueLaunchContext lc);
  Pointer lcReductionPointer(org.nd4j.nativeblas.OpaqueLaunchContext lc);

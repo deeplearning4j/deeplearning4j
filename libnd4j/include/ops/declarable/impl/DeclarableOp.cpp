@@ -248,6 +248,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
       }
     }
 
+
     // if we override shape function, we'll return size of fastPath
     if (fp && ctx.shapeFunctionOverride()) {
       return (int)ctx.fastpath_out().size();
@@ -264,6 +265,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
       shapeStart = std::chrono::system_clock::now();
     }
+
 
     auto outSha = this->calculateOutputShape(&inSha, ctx);
     if (sd::Environment::getInstance().isDebugAndVerbose()) {
@@ -667,12 +669,12 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
 
   // ensure number of IArgs, TArgs match our expectations
   REQUIRE_OK(this->validateArguments(*block));
-
   // validating data types for inputs and (optionally) outputs
   REQUIRE_OK(this->validateDataTypes(*block));
 
   // this method will allocate output NDArrays for this op
   auto numOutputs = this->prepareOutputs(*block);
+
 
   if (Environment::getInstance().isProfiling()) {
     timeStart = std::chrono::system_clock::now();
@@ -917,8 +919,6 @@ sd::Status sd::ops::DeclarableOp::validateNonEmptyInput(Context &block) {
     sd_printf("%s: no operands provided for the op", this->getOpName()->c_str());
     return sd::Status::BAD_INPUT;
   }
-
-
 
   int cnt = 0;
   for (auto p : *block.inputs()) {

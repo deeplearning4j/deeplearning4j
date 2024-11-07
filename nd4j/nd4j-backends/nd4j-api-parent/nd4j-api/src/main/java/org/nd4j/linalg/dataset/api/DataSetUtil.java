@@ -319,7 +319,7 @@ public class DataSetUtil {
             }
         }
 
-        INDArray out = Nd4j.specialConcat(0, temp);
+        INDArray out = Nd4j.concat(0, temp);
         INDArray outMask = null;
         if (hasMasks) {
             outMask = DataSetUtil.mergePerOutputMasks2d(out.shape(), arrays, masks);
@@ -602,7 +602,7 @@ public class DataSetUtil {
             }
         }
 
-        INDArray out = Nd4j.specialConcat(0, temp);
+        INDArray out = Nd4j.concat(0, temp);
         INDArray outMask = null;
         if (hasMasks) {
             if(maskRank == 2) {

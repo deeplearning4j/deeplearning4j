@@ -71,17 +71,15 @@ public class CudaUInt32DataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaUInt32DataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
     public CudaUInt32DataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 4, initialize, workspace);
     }
 
-    public CudaUInt32DataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+    public CudaUInt32DataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
+
 
     /**
      * Initialize the opType of this buffer
@@ -92,49 +90,27 @@ public class CudaUInt32DataBuffer extends BaseCudaDataBuffer {
         type = DataType.UINT32;
     }
 
-    public CudaUInt32DataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public CudaUInt32DataBuffer(float[] buffer) {
         super(buffer);
     }
 
-    public CudaUInt32DataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUInt32DataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaUInt32DataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
 
     public CudaUInt32DataBuffer(double[] data) {
-        super(data);
+        this(data.length);
+        setData(data);
     }
 
-    public CudaUInt32DataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUInt32DataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUInt32DataBuffer(int[] data) {
-        super(data);
+        this(data.length);
+        setData(data);
     }
 
-    public CudaUInt32DataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUInt32DataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     public void assign(long[] indices, double[] data, boolean contiguous, long inc) {
@@ -143,7 +119,7 @@ public class CudaUInt32DataBuffer extends BaseCudaDataBuffer {
             throw new IllegalArgumentException("Indices and data length must be the same");
         if (indices.length > length())
             throw new IllegalArgumentException("More elements than space to assign. This buffer is of length "
-                            + length() + " where the indices are of length " + data.length);
+                    + length() + " where the indices are of length " + data.length);
 
         if (contiguous) {
             /*long offset = indices[0];

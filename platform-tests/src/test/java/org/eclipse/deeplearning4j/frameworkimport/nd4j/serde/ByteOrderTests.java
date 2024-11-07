@@ -47,8 +47,8 @@ public class ByteOrderTests  extends BaseNd4jTestWithBackends {
 
     @AfterEach
     public void tearDown() {
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+       Nd4j.getNativeOps().enableDebugMode(false);
+       Nd4j.getNativeOps().enableVerboseMode(false);
     }
 
 

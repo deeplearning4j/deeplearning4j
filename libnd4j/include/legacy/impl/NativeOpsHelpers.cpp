@@ -400,16 +400,7 @@ void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *
 }
 
 
-void tryPointer(sd::Pointer extra, sd::Pointer p, int len) {
-  try {
-    auto buf = reinterpret_cast<int8_t *>(p);
-    int cnt = 0;
-    for (int i = 0; i < len; i++) cnt += buf[cnt];
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
+
 void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer *ptr) { }
 
 void deleteConstantDataBuffer(OpaqueConstantDataBuffer *ptr) {

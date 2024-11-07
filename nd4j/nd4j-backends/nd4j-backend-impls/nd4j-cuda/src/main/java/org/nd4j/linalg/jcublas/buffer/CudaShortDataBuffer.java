@@ -71,17 +71,15 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
         super(length, elementSize);
     }
 
-    public CudaShortDataBuffer(long length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
     public CudaShortDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
         super(length, 2, initialize, workspace);
     }
 
-    public CudaShortDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy,0, workspace);
+    public CudaShortDataBuffer(ByteBuffer underlyingBuffer, DataType dataType, long length) {
+        super(underlyingBuffer, dataType, length);
     }
+
 
     /**
      * Initialize the opType of this buffer
@@ -92,49 +90,24 @@ public class CudaShortDataBuffer extends BaseCudaDataBuffer {
         type = DataType.SHORT;
     }
 
-    public CudaShortDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-    }
+
 
     public CudaShortDataBuffer(float[] buffer) {
         super(buffer);
     }
 
-    public CudaShortDataBuffer(float[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaShortDataBuffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
-
-    public CudaShortDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
-        super(data, copy, offset, workspace);
-    }
 
     public CudaShortDataBuffer(double[] data) {
-        super(data);
+      this(data.length);
+        setData(data);
     }
 
-    public CudaShortDataBuffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaShortDataBuffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaShortDataBuffer(int[] data) {
-        super(data);
+       this(data.length);
+        setData(data);
     }
 
-    public CudaShortDataBuffer(int[] data, boolean copy) {
-        super(data, copy);
-    }
-
-    public CudaShortDataBuffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     @Override
     protected DataBuffer create(long length) {

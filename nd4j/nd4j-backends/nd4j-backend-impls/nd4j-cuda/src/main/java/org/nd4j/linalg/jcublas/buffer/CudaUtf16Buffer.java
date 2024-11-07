@@ -93,48 +93,22 @@ public class CudaUtf16Buffer extends BaseCudaDataBuffer {
         this.numWords = numWords;
     }
 
-    public CudaUtf16Buffer(double[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUtf16Buffer(double[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUtf16Buffer(float[] data, boolean copy) {
         super(data, copy);
     }
 
-    public CudaUtf16Buffer(long[] data, boolean copy) {
-        super(data, copy);
-    }
 
-    public CudaUtf16Buffer(long[] data, boolean copy, MemoryWorkspace workspace) {
-        super(data, copy);
-    }
 
-    public CudaUtf16Buffer(float[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
-    public CudaUtf16Buffer(int[] data, boolean copy, long offset) {
-        super(data, copy, offset);
-    }
 
     public CudaUtf16Buffer(int length, int elementSize) {
         super(length, elementSize);
     }
 
-    public CudaUtf16Buffer(int length, int elementSize, long offset) {
-        super(length, elementSize, offset);
-    }
 
-    public CudaUtf16Buffer(DataBuffer underlyingBuffer, long length, long offset) {
-        super(underlyingBuffer, length, offset);
-        this.numWords = length;
 
-        Preconditions.checkArgument(((CudaUtf16Buffer) underlyingBuffer).numWords == numWords, "String array can't be a view");
-    }
 
     public CudaUtf16Buffer(@NonNull Collection<String> strings) {
         super(CudaUtf16Buffer.stringBufferRequiredLength(strings), 1, false);

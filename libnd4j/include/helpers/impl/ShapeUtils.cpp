@@ -1028,7 +1028,7 @@ std::vector<LongType> ShapeUtils::evalDimsWithoutUnities(const LongType* shapeIn
 
 ////////////////////////////////////////////////////////////////////////////////
 void ShapeUtils::updateStridesAndType(LongType* dest, const LongType* source, const char order) {
-  shape::updateStrides(dest, order);
+  shape::updateStrides(dest, order, false);
   dest[2 * dest[0] + 1] = 0;  // zero extra
   ArrayOptions::copyDataType(dest, source);
 }
