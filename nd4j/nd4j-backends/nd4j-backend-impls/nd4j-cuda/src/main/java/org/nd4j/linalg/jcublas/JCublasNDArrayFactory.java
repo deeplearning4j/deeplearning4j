@@ -32,7 +32,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;
@@ -355,6 +354,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         Nd4j.getExecutioner().push();
 
         return Nd4j.exec(new Concat(dimension, toConcat))[0];
+    }
+
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
+        return concat(dimension,toConcat );
     }
 
 

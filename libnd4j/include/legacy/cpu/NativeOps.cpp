@@ -1613,8 +1613,7 @@ void execTransformStrict(Pointer *extraPointers, int opNum, NDArray *x,void *ext
   }
 }
 
-void execReduce3All(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
-                    NDArray *z, NDArray *dimension, void *extraParams) {
+void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams) {
   try {
     NativeOpExecutioner::execReduce3All(nullptr, opNum,
                                         x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),

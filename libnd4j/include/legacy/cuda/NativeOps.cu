@@ -1703,8 +1703,10 @@ void shuffle(Pointer *extras,
     }
 
     BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric,
-                          (launchDims, stream, xBuffers.data(), xShapeInfos.data(), zBuffers.data(), N, reinterpret_cast<int*>(shuffleMap->buffer()), tadShapeInfoBuffers.data(), tadOffsetsBuffers.data(), zTadShapeInfoBuffers.data(), zTadOffsetsBuffers.data()),
-                          SD_COMMON_TYPES);
+                          (launchDims, stream, xBuffers.data(), xShapeInfos.data(), zBuffers.data(), N,
+                           reinterpret_cast<int*>(shuffleMap->buffer()), tadShapeInfoBuffers.data(),
+                           tadOffsetsBuffers.data()),
+
 
     DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
   } catch (std::exception &e) {
@@ -2279,7 +2281,7 @@ void prescanArrayRecursive(Pointer *extras, int *dZ, int *dX, int numElements, i
 
 
 ////////////////////////////////////////////////////////////////////////
-void execReduce3All(Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, void *extraParamsVals, OpaqueNDArray dimension) {
+void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams) {
   try {
     x->prepareSpecialUse({z}, {x, y, dimension});
     x->preparePrimaryUse({}, {dimension});
@@ -2301,7 +2303,7 @@ void execReduce3All(Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueND
                                         x->shapeInfo(),
                                         shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
                                         x->specialShapeInfo(),
-                                        extraParamsVals,
+                                        extraParams,
                                         shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->buffer(),
                                         y->shapeInfo(),
                                         shape::isEmptyConst(y->shapeInfo()) ? nullptr : y->specialBuffer(),
