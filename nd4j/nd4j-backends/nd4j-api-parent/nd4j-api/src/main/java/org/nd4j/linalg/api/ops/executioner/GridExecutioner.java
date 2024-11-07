@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 
 public interface GridExecutioner extends OpExecutioner {
 
@@ -47,19 +46,5 @@ public interface GridExecutioner extends OpExecutioner {
     int getQueueLength();
 
 
-    /**
-     * This method enqueues aggregate op for future invocation
-     *
-     * @param op
-     */
-    void aggregate(Aggregate op);
 
-    /**
-     * This method enqueues aggregate op for future invocation.
-     * Key value will be used to batch individual ops
-     *
-     * @param op
-     * @param key
-     */
-    void aggregate(Aggregate op, long key);
 }

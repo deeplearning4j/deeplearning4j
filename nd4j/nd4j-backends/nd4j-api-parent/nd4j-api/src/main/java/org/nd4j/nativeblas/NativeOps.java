@@ -45,7 +45,7 @@ public interface NativeOps {
 
  void shuffle(PointerPointer extras,
               OpaqueNDArrayArr x,
-              OpaqueNDArray z,
+              OpaqueNDArrayArr z,
               int N,
               OpaqueNDArray dimension,
               OpaqueNDArray shuffleMap);
@@ -248,6 +248,9 @@ public interface NativeOps {
  void setElementThreshold(int num);
  void setTADThreshold(int num);
  void execReduce3(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, Pointer extraParams, org.nd4j.nativeblas.OpaqueNDArray y, org.nd4j.nativeblas.OpaqueNDArray z);
+
+ void execReduce3All(PointerPointer extraPointers, int opNum, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray y,
+                     org.nd4j.nativeblas.OpaqueNDArray z, org.nd4j.nativeblas.OpaqueNDArray dimension, Pointer extraParams);
  void execReduce3Scalar(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z);
  void execReduce3Tad(PointerPointer extraPointers, int opNum, OpaqueNDArray x, Pointer extraParams, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension);
  Pointer initRandom(PointerPointer extraPointers, long seed, long bufferSize, Pointer ptrToBuffer);
@@ -363,13 +366,8 @@ public interface NativeOps {
  double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr);
  void deleteRandomGenerator(OpaqueRandomGenerator ptr);
  Pointer shapeBufferForNumpy(Pointer npyArray);
-
- /**
-  *
-  * Length in bytes of a numpy header + buffer
-  */
-
- long numpyHeaderLength(org.nd4j.nativeblas.OpaqueDataBuffer opaqueDataBuffer, Pointer shapeBuffer);
+ Pointer shapeBufferForNumpyHeader(Pointer npyArray);
+ long numpyHeaderLength(OpaqueDataBuffer opaqueDataBuffer,Pointer shapeBuffer);
 
  long getCachedMemory(int deviceId);
  Pointer lcScalarPointer(org.nd4j.nativeblas.OpaqueLaunchContext lc);
@@ -434,6 +432,7 @@ public interface NativeOps {
  Pointer mapFromNpzFile(BytePointer path);
  Pointer mapFromNpzFile(String path);
  int getNumNpyArraysInMap(Pointer map);
+ LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
  String getNpyArrayNameFromMap(Pointer map, int index, BytePointer nameBuffer);
  BytePointer getNpyArrayNameFromMap(Pointer map, int index, String nameBuffer);
  Pointer getNpyArrayFromMap(Pointer map, int index);

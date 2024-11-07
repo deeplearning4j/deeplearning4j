@@ -26,25 +26,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-/*
-    SD_INLINE void reluDerivative(NDArray* theFirst, NDArray * theSecond);
-    SD_INLINE void reluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void relu6Derivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void leakyReluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void eluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void seluDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void cubeDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void reduceNorm1(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void sxeLossWithLogits(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void tanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void hardTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void rationalTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void rectifiedTanhDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void softSignDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void softPlusDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void sigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-    SD_INLINE void hardSigmoidDerivative(NDArray* theFirst, NDArray* theSecond, NDArray* theOutput);
-*/
+
 SD_LIB_HIDDEN void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond);
 SD_LIB_HIDDEN void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond,
                                   NDArray* theOutput);
@@ -81,8 +63,8 @@ SD_LIB_HIDDEN void hardSigmoidDerivative(LaunchContext* context, NDArray* theFir
 SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output);
 SD_LIB_HIDDEN void logSumExp(LaunchContext* context, NDArray* input, NDArray* subtrah, NDArray* axis,
                              NDArray* output);
-SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray * targets,
-                                                         NDArray * input, NDArray * weights, NDArray* output);
+SD_LIB_HIDDEN void weightedCrossEntropyWithLogitsFunctor(LaunchContext* context, NDArray* targets,
+                                                         NDArray* input, NDArray* weights, NDArray* output);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

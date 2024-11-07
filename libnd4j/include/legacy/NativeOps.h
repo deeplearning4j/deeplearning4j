@@ -46,7 +46,6 @@
 #include <cstdlib>
 #include <types/float16.h>
 #include <unistd.h>
-
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
@@ -55,9 +54,9 @@ typedef sd::NDArray* OpaqueNDArray;
 typedef sd::NDArray** OpaqueNDArrayArr;
 typedef sd::LaunchContext* OpaqueLaunchContext;
 typedef RandomGenerator* OpaqueRandomGenerator;
-typedef ResultWrapper OpaqueResultWrapper;
-typedef VariablesSet OpaqueVariablesSet;
-typedef Variable OpaqueVariable;
+typedef sd::graph::ResultWrapper OpaqueResultWrapper;
+typedef sd::graph::VariablesSet OpaqueVariablesSet;
+typedef sd::graph::Variable OpaqueVariable;
 typedef sd::TadPack OpaqueTadPack;
 
 typedef sd::ConstantDataBuffer* OpaqueConstantDataBuffer;
@@ -207,13 +206,15 @@ SD_LIB_EXPORT void execScalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArr
 SD_LIB_EXPORT void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray z, OpaqueNDArray scalar, void *extraParams, OpaqueNDArray dimension);
 SD_LIB_EXPORT void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, void *extraParams, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z) ;
-SD_LIB_EXPORT void execReduceSame(sd::Pointer *extraPointers,
-                                  int opNum,
-                                  OpaqueNDArray x,
-                                  void *extraParams,
-                                  OpaqueNDArray z);
-SD_LIB_EXPORT void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
-SD_LIB_EXPORT void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
+SD_LIB_EXPORT void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams);
+
+SD_LIB_EXPORT void mmapFiSame(sd::Pointer *extraPointers,
+                              int opNum,
+                              OpaqueNDArray x,
+                              void *extraParams,
+                              OpaqueNDArray z);
+SD_LIB_EXPORT void mmapFiSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
+SD_LIB_EXPORT void mmapFiLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
@@ -258,7 +259,6 @@ SD_LIB_EXPORT void setOmpNumThreads(int threads) ;
 SD_LIB_EXPORT void enableVerboseMode(bool reallyEnable) ;
 SD_LIB_EXPORT int getDeviceMajor(int device) ;
 SD_LIB_EXPORT int getDeviceMinor(int device) ;
-SD_LIB_EXPORT sd::LongType getNumberOfTads(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) ;
 SD_LIB_EXPORT sd::Pointer getConstantSpace() ;
@@ -287,9 +287,13 @@ SD_LIB_EXPORT sd::LongType getShapeInfoLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) ;
 SD_LIB_EXPORT void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) ;
 SD_LIB_EXPORT void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
-                          sd::LongType *dimension, sd::LongType dimensionLength,
-                          sd::LongType *tadShapeInfo,  sd::LongType *tadOffsets, bool descending);
-    SD_LIB_EXPORT void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
+                           sd::LongType *dimension, sd::LongType dimensionLength,
+                           sd::LongType *tadShapeInfo,  sd::LongType *tadOffsets, bool descending);
+SD_LIB_EXPORT void sortByValue(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y, bool descending);
+
+SD_LIB_EXPORT void execReduceLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray  x,
+                                   void *extraParams,
+                                   OpaqueNDArray z, OpaqueNDArray dimension);
 
 SD_LIB_EXPORT void sortTadByKey(sd::Pointer *extraPointers,
                                 OpaqueNDArray x,
@@ -304,6 +308,8 @@ SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers,
                                   bool descending);
 SD_LIB_EXPORT void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray values);
 SD_LIB_EXPORT void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) ;
+SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fileName, sd::LongType length);
+
 SD_LIB_EXPORT sd::LongType getResultWrapperSize(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::Pointer getResultWrapperPointer(OpaqueResultWrapper *ptr) ;
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list) ;
@@ -443,7 +449,7 @@ SD_LIB_EXPORT  long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordS
 SD_LIB_EXPORT  long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer);
 SD_LIB_EXPORT sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray);
 SD_LIB_EXPORT  sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize,
-                                                    sd::LongType* headerSize) ;
+                                              sd::LongType* headerSize) ;
 SD_LIB_EXPORT  sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongType wordSize);
 SD_LIB_EXPORT  sd::Pointer shapeBufferForNumpyHeader(sd::Pointer npyArray);
 SD_LIB_EXPORT  sd::Pointer dataPointForNumpyHeader(sd::Pointer npyArray);
@@ -461,6 +467,8 @@ SD_LIB_EXPORT  sd::LongType *getNpyArrayShape(void *npArray);
 SD_LIB_EXPORT  char getNpyArrayOrder(void *npArray);
 SD_LIB_EXPORT  int getNpyArrayElemSize(void *npArray);
 SD_LIB_EXPORT  void deleteNPArrayStruct(void *npArray);
+SD_LIB_EXPORT long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize);
+SD_LIB_EXPORT long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffer);
 SD_LIB_EXPORT  void deleteNPArrayMap(void *map);
 SD_LIB_EXPORT  int elementSizeForNpyArray(sd::Pointer npyArray);
 SD_LIB_EXPORT  int elementSizeForNpyArrayHeader(sd::Pointer npyArray);

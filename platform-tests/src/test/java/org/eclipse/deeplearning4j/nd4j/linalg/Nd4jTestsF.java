@@ -47,11 +47,7 @@ public class Nd4jTestsF extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcat3D_Vstack_F(Nd4jBackend backend) {
-        //Nd4j.getExecutioner().enableVerboseMode(true);
-        //Nd4j.getExecutioner().enableDebugMode(true);
-
         int[] shape = new int[] {1, 1000, 150};
-        //INDArray cOrder =  Nd4j.rand(shape,123);
 
 
         List<INDArray> cArrays = new ArrayList<>();
@@ -59,7 +55,6 @@ public class Nd4jTestsF extends BaseNd4jTestWithBackends {
 
         for (int e = 0; e < 32; e++) {
             cArrays.add(Nd4j.create(shape, 'f').assign(e));
-            //            fArrays.add(cOrder.dup('f'));
         }
 
         Nd4j.getExecutioner().commit();

@@ -324,7 +324,7 @@ public class Nd4j {
      * @param trace whether to trace or not.
      */
     public static void toggleTrace(boolean trace) {
-       Nd4j.getNativeOps().toggleOpTrace(trace);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().toggleOpTrace(trace);
     }
 
 
@@ -333,7 +333,7 @@ public class Nd4j {
      *
      */
     public static void purgeTrace() {
-       Nd4j.getNativeOps().purgeOpTrace();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().purgeOpTrace();
     }
 
 
@@ -637,6 +637,7 @@ public class Nd4j {
         return Nd4j.getNDArrayFactory().create(descriptor);
 
     }
+
     /**
      * See {@link #create(int[], float[]...)}
      */
@@ -1250,7 +1251,6 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(@NonNull Pointer pointer,  Pointer devicePointer, long length, @NonNull DataType dataType) {
         Pointer nPointer = getPointer(pointer, dataType);
-        nPointer.capacity(length);
         return DATA_BUFFER_FACTORY_INSTANCE.create(nPointer, devicePointer, dataType, length, getIndexerByType(nPointer, dataType));
     }
 
@@ -4997,7 +4997,18 @@ public class Nd4j {
         return ret;
     }
 
-
+    /**
+     * Concatenate ndarrays along a dimension
+     *
+     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
+     *
+     * @param dimension dimension
+     * @param toConcat arrays to concatenate
+     * @return concatenated arrays.
+     */
+    public static INDArray specialConcat(int dimension, @NonNull INDArray... toConcat) {
+        return INSTANCE.specialConcat(dimension, toConcat);
+    }
 
     /**
      * Create an ndarray of zeros
@@ -5921,7 +5932,7 @@ public class Nd4j {
      */
     public static byte[] toNpyByteArray(INDArray input) {
         DataBuffer asNumpy = convertToNumpy(input);
-        long len =input.length() * input.data().getElementSize();
+        long len = input.length() * input.data().getElementSize();
         Pointer pointer = asNumpy.addressPointer();
         pointer.limit(len);
         ByteBuffer directBuffer = pointer.asByteBuffer();

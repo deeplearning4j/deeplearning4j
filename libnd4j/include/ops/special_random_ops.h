@@ -40,7 +40,6 @@ class Choice {
         sd::LongType coords[SD_MAX_RANK];
         shape::index2coords(e, zShapeBuffer, coords);
         auto zOffset = shape::getOffset(zShapeBuffer, coords);
-        
         T prob = rng->relativeT<T>(e);
         T cumProb = (T)0.0f;
         for (sd::LongType f = 0; f < yLength; f++) {
@@ -166,7 +165,6 @@ class BinomialDistribution {
         sd::LongType coords[SD_MAX_RANK];
         shape::index2coords(e, zShapeBuffer, coords);
         auto zOffset = shape::getOffset(zShapeBuffer, coords);
-        
         int success = 0;
         for (int t = 1; t <= trials; t++) {
           T randVal = rng->relativeT<T>((e + 1) * t);
@@ -223,7 +221,6 @@ class BinomialDistributionEx {
         sd::LongType coords[SD_MAX_RANK];
         shape::index2coords(e, zShapeBuffer, coords);
         auto zOffset = shape::getOffset(zShapeBuffer, coords);
-        
         int success = 0;
         for (int t = 1; t <= trials; t++) {
           T randVal = rng->relativeT<T>((e + 1) * t);
@@ -313,6 +310,7 @@ class TruncatedNormalDistribution {
 
         if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
           z[zOffset] = step(rng, mean, stddev, e, middle, z[zOffset]);
+
 
           if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) z[zOffset] = mean + sd::DataTypeUtils::min_positive<T>();
         }

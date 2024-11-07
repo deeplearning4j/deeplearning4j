@@ -57,43 +57,35 @@ import java.util.*;
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     private String opName;
-    @Builder.Default
     protected List<INDArray> inputArguments = new ArrayList<>();
-    @Builder.Default
     protected List<INDArray> outputArguments = new ArrayList<>();
 
 
     protected double[] tArgumentsArr;
 
-    @Builder.Default
     protected List<Double> tArguments = new ArrayList<>();
 
 
     protected long[] iArgumentsArr;
 
-    @Builder.Default
     protected List<Long> iArguments = new ArrayList<>();
 
 
     protected boolean[] bArgumentsArr;
 
-    @Builder.Default
     protected List<Boolean> bArguments = new ArrayList<>();
 
 
 
     protected DataType[] dArgumentsArr;
 
-    @Builder.Default
     protected List<DataType> dArguments = new ArrayList<>();
 
 
     protected String[] sArgumentsArr;
-    @Builder.Default
     protected List<String> sArguments = new ArrayList<>();
 
 
-    @Builder.Default
     protected List<Integer> axis = new ArrayList<>();
 
     @Getter

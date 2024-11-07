@@ -76,7 +76,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                          
     calc_type promoted_val2 = static_cast<calc_type>(val2);            \
     calc_type result = BODY;                                           \
     return static_cast<Z>(result);                                     \
-}
+}                                                                     \
 
 
 

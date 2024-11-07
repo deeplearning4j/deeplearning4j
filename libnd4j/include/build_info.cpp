@@ -48,8 +48,6 @@ const char *buildInfo() {
   ret += "Clang: " STRINGIZE(__clang_version__);
 #elif defined(_MSC_VER)
   ret += "MSVC: " STRINGIZE(_MSC_FULL_VER);
-#elif defined(__NEC__)
-  ret += "Nec CC: " STRINGIZE(__VERSION__);
 #else
   ret += "GCC: " STRINGIZE(__VERSION__);
 #endif

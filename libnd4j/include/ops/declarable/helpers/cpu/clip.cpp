@@ -139,7 +139,7 @@ void clipByNormBp(sd::LaunchContext* context, NDArray& input, NDArray& gradO, ND
 }
 
 template <typename T>
-static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace,
+static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd::memory::Workspace* workspace,
                               std::vector<NDArray*>& outputs, bool isInplace) {
   T globalNorm = 0;
   for (size_t i = 0; i < inputs.size(); i++) {
@@ -173,7 +173,7 @@ void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*>& inputs, dou
 }
 
 BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
-                      (std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace,
+                      (std::vector<NDArray*> & inputs, double clipNorm, sd::memory::Workspace* workspace,
                        std::vector<NDArray*>& outputs, bool isInplace),
                       SD_FLOAT_TYPES);
 

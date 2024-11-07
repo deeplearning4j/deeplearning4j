@@ -95,11 +95,11 @@ ThreadPool::ThreadPool() {
     CPU_SET(e, &cpuset);
     int rc = pthread_setaffinity_np(_threads[e]->native_handle(), sizeof(cpu_set_t), &cpuset);
     if (rc != 0) THROW_EXCEPTION("Failed to set pthread affinity");
+#endif
 
   }
   //add an extra ticket to minimize the risk of running out of tickets due to race conditions
   _tickets.push(new Ticket());
-#endif
 }
 
 ThreadPool::~ThreadPool() {

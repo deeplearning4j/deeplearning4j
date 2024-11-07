@@ -2176,62 +2176,65 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *s
 
 
 SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *sliceOfShapeBuffer(sd::LongType sliceIdx, sd::LongType *shapeBuffer) {
-  int rank = shape::rank(shapeBuffer);
-  int newRank = rank - 1;
-  if (newRank < 2) newRank = 2;
-  sd::LongType *newShapeBuffer = new sd::LongType[shapeInfoLength(newRank)];
-  newShapeBuffer[0] = newRank;
-  sd::LongType *currShape = shapeOf(shapeBuffer);
-  sd::LongType *currStride = stride(shapeBuffer);
-  // initialize new shape and stride by taking the shape and stride + 1
-  // and adding to the shape information
-  // a slice is always just taking the existing shape and cutting the first index off
-  // of the shape and stride
-  sd::LongType *newShape = shapeOf(newShapeBuffer);
-  sd::LongType *newStride = stride(newShapeBuffer);
-  if (isVector(shapeBuffer)) {
-    sd::LongType *currShape = shapeOf(shapeBuffer);
-    // row vector: slice index 0 is a valid index, just copy the whole thing
-    if (currShape[0] == 1) {
-      if (sliceIdx == 0) {
-        memcpy(newShapeBuffer, shapeBuffer, shapeInfoByteLength(shape::rank(shapeBuffer)));
-        return newShapeBuffer;
-      }
-    }
-      // column vector: this will be a scalar
-    else {
-      delete[] newShapeBuffer;
-      sd::LongType *scalar = createScalarShapeInfo();
-      return scalar;
-    }
-  } else if (isMatrix(shapeBuffer)) {
-    newShape[0] = 1;
-    newShape[1] = currShape[1];
-    newStride[0] = 1;
-    newStride[1] = currStride[1];
-  } else {
-    for (int i = 0; i < newRank; i++) {
-      newShape[i] = currShape[i + 1];
-      newStride[i] = currStride[i + 1];
-    }
-  }
+ int rank = shape::rank(shapeBuffer);
+ int newRank = rank - 1;
+ if (newRank < 2) newRank = 2;
+ sd::LongType *newShapeBuffer = new sd::LongType[shapeInfoLength(newRank)];
+ newShapeBuffer[0] = newRank;
+ sd::LongType *currShape = shapeOf(shapeBuffer);
+ sd::LongType *currStride = stride(shapeBuffer);
+ // initialize new shape and stride by taking the shape and stride + 1
+ // and adding to the shape information
+ // a slice is always just taking the existing shape and cutting the first index off
+ // of the shape and stride
+ sd::LongType *newShape = shapeOf(newShapeBuffer);
+ sd::LongType *newStride = stride(newShapeBuffer);
+ if (isVector(shapeBuffer)) {
+   sd::LongType *currShape = shapeOf(shapeBuffer);
+   // row vector: slice index 0 is a valid index, just copy the whole thing
+   if (currShape[0] == 1) {
+     if (sliceIdx == 0) {
+       memcpy(newShapeBuffer, shapeBuffer, shapeInfoByteLength(shape::rank(shapeBuffer)));
+       return newShapeBuffer;
+     }
+   }
+   // column vector: this will be a scalar
+   else {
+     delete[] newShapeBuffer;
+     sd::LongType *scalar = createScalarShapeInfo();
+     int offset = 0;
+     scalar[shapeInfoLength(2) - 3] = offset + sliceIdx;
+     return scalar;
+   }
+ } else if (isMatrix(shapeBuffer)) {
+   newShape[0] = 1;
+   newShape[1] = currShape[1];
+   newStride[0] = 1;
+   newStride[1] = currStride[1];
+ } else {
+   for (int i = 0; i < newRank; i++) {
+     newShape[i] = currShape[i + 1];
+     newStride[i] = currStride[i + 1];
+   }
+ }
 
-  auto indices = new sd::LongType[rank];
-  memset((void *)indices, 0, rank * sizeof(sd::LongType));
-  indices[0] = sliceIdx;
-  sd::LongType offset = getOffset(newShapeBuffer, indices);
-  newShapeBuffer[shapeInfoLength(newRank) - 3] = offset;
+ auto indices = new sd::LongType[rank];
+ memset((void *)indices, 0, rank * sizeof(sd::LongType));
+ indices[0] = sliceIdx;
+ sd::LongType offset = getOffset(newShapeBuffer, indices);
+ newShapeBuffer[shapeInfoLength(newRank) - 3] = offset;
 
-  // set current order and ews
-  newShapeBuffer[2 * newRank + 2] = elementWiseStride(shapeBuffer);
-  newShapeBuffer[2 * newRank + 3] = order(shapeBuffer);
+ // set current order and ews
+ newShapeBuffer[2 * newRank + 2] = elementWiseStride(shapeBuffer);
+ newShapeBuffer[2 * newRank + 3] = order(shapeBuffer);
 
-  // correct order and ews if necessary
-  checkStridesEwsAndOrder(newShapeBuffer);
+ // correct order and ews if necessary
+ checkStridesEwsAndOrder(newShapeBuffer);
 
-  delete[] indices;
+ delete[] indices;
 
-  return newShapeBuffer;
+ return newShapeBuffer;
+
 }
 
 
@@ -2886,7 +2889,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE T *range(int from, int to, int increment)
     }
   }
 
-  return ret;
+ return ret;
+
 }
 
 /**

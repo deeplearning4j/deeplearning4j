@@ -105,6 +105,7 @@ public class ReshapeNoCopy extends DynamicCustomOp {
                     INDArray newOut = Nd4j.create(needsCopyShape, false);
                     addOutputArgument(newOut);
                 } else {
+
                     INDArray newOut = Nd4j.create(inputArguments.get(0).data(),needsCopyShape);
                     addOutputArgument(newOut);
                 }

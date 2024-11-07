@@ -27,8 +27,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
@@ -216,26 +214,6 @@ public interface OpExecutioner {
      */
     void exec(GridOp op);
 
-    /**
-     *
-     * @param op
-     */
-    void exec(Aggregate op);
-
-    /**
-     * This method executes previously built batch
-     *
-     * @param batch
-     */
-    <T extends Aggregate> void exec(Batch<T> batch);
-
-    /**
-     * This method takes arbitrary sized list of aggregates,
-     * and packs them into batches
-     *
-     * @param batch
-     */
-    void exec(List<Aggregate> batch);
 
     /**
      * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()

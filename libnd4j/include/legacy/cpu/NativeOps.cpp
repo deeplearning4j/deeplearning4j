@@ -22,7 +22,6 @@
 
 #define __STDC_CONSTANT_MACROS
 
-#include <array/NDArray.h>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -30,7 +29,6 @@
 #include <helpers/BlasHelper.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
-#include <legacy/NativeOpExecutioner.h>
 #include <legacy/NativeOps.h>
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
@@ -66,7 +64,7 @@
 #endif
 
 #include <ops/declarable/OpRegistrator.h>
-
+#include <legacy/NativeOpExecutioner.h>
 using namespace sd;
 
 
@@ -486,47 +484,55 @@ void checkP2P() {
 
 
 template <typename T>
-void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArray dz, int N, int *shuffleMap, sd::LongType *dimension, sd::LongType dimensionLength) {
+void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffleMap, sd::LongType *dimension, sd::LongType dimensionLength) {
   auto func = PRAGMA_THREADS_FOR {
     for (auto f = start; f < stop; f++) {
       T *hX2 = hX[f]->bufferAsT<T>();
+      T *hZ2 = hZ[f]->bufferAsT<T>();
 
       auto xShapeInfo = hX[f]->shapeInfo();
-      auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-      auto tadOnlyShapeInfo = tadPack->primaryShapeInfo();
-      auto tadOffsets = tadPack->primaryOffsets();
+      auto zShapeInfo = hZ[f]->shapeInfo();
+      auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+      auto tadPackZ = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, dimension, dimensionLength);
+      auto tadOnlyShapeInfoX = tadPackX->primaryShapeInfo();
+      auto tadOffsetsX = tadPackX->primaryOffsets();
+      auto tadOnlyShapeInfoZ = tadPackZ->primaryShapeInfo();
+      auto tadOffsetsZ = tadPackZ->primaryOffsets();
 
-      const auto tadLength = shape::length(tadOnlyShapeInfo);
-      auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
+      const auto tadLength = shape::length(tadOnlyShapeInfoX);
+      auto tadEWSX = shape::elementWiseStride(tadOnlyShapeInfoX);
+      auto tadEWSZ = shape::elementWiseStride(tadOnlyShapeInfoZ);
       auto numTads = shape::length(xShapeInfo) / tadLength;
 
       if (shape::rank(xShapeInfo) == 1) {
         auto xLength = shape::length(xShapeInfo);
-        auto ews = shape::elementWiseStride(xShapeInfo);
+        auto ewsX = shape::elementWiseStride(xShapeInfo);
+        auto ewsZ = shape::elementWiseStride(zShapeInfo);
         for (LongType r = 0; r < xLength; r++) {
           auto swapIdx = shuffleMap[r];
           if (swapIdx < 0) continue;
 
-          math::sd_swap<T>(hX2[r * ews], hX2[swapIdx * ews]);
+          math::sd_swap<T>(hX2[r * ewsX], hZ2[swapIdx * ewsZ]);
         }
       } else {
         for (LongType r = 0; r < numTads; r++) {
           if (shuffleMap[r] < 0) continue;
 
-          auto oldOffset = tadOffsets[r];
-          auto newOffset = tadOffsets[shuffleMap[r]];
+          auto oldOffsetX = tadOffsetsX[r];
+          auto newOffsetZ = tadOffsetsZ[shuffleMap[r]];
 
-          auto rX = hX2 + oldOffset;
-          auto rY = hX2 + newOffset;
+          auto rX = hX2 + oldOffsetX;
+          auto rZ = hZ2 + newOffsetZ;
 
-          if (tadEWS == 1) {
+          if (tadEWSX == 1 && tadEWSZ == 1) {
             for (LongType i = 0; i < tadLength; i++) {
-              math::sd_swap<T>(rX[i], rY[i]);
+              math::sd_swap<T>(rX[i], rZ[i]);
             }
           } else {
             for (LongType i = 0; i < tadLength; i++) {
-              auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-              math::sd_swap<T>(hX2[offset + oldOffset], hX2[offset + newOffset]);
+              auto offsetX = shape::getIndexOffset(i, tadOnlyShapeInfoX);
+              auto offsetZ = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
+              math::sd_swap<T>(hX2[offsetX + oldOffsetX], hZ2[offsetZ + newOffsetZ]);
             }
           }
         }
@@ -540,7 +546,7 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArray dz, int N, int *shuffleMa
 
 void shuffle(Pointer *extras,
              OpaqueNDArrayArr x,
-             OpaqueNDArray z,
+             OpaqueNDArrayArr z,
              int N,
              OpaqueNDArray dimension,
              OpaqueNDArray shuffleMap) {
@@ -591,17 +597,7 @@ const char *getDeviceName(int deviceId) {
   return name;
 }
 
-void execAggregate(Pointer *extraPointers, int opNum, void **arguments, int numArguments,
-                   LongType **shapeArguments, int numShapeArguments, int *indexArguments, int numIndexArguments,
-                   int **intArrays, int numIntArrays, void *realArguments, int numRealArguments, DataType dtype) {}
 
-void batchExecutor(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
-                   int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments,
-                   DataType dtype) {}
-
-void execAggregateBatch(Pointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes,
-                        int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments,
-                        DataType dtype) {}
 
 void execRandom(Pointer *extraPointers, int opNum, Pointer state, OpaqueDataBuffer *dbZ,
                 const LongType *hZShapeInfo, const LongType *dZShapeInfo, void *extraArguments) {
@@ -1895,7 +1891,6 @@ BUILD_SINGLE_TEMPLATE(template void tearGeneric,
                           LongType const *),
                       SD_COMMON_TYPES);
 
-// void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArray dz, int N, int *shuffleMap, sd::LongType *dimension, sd::LongType dimensionLength) {
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric,
-                      (OpaqueNDArrayArr, OpaqueNDArray, int, int *,sd::LongType *, sd::LongType),
+                      (OpaqueNDArrayArr, OpaqueNDArrayArr, int, int *,sd::LongType *, sd::LongType),
                       SD_COMMON_TYPES);

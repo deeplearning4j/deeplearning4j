@@ -413,20 +413,6 @@ if(${HELPERS_armcompute})
 endif()
 
 
-if (${HELPERS_vednn})
-    find_package(VEDNN REQUIRED)
-
-    if(VEDNN_FOUND)
-        message("Found VEDNN: ${VEDNN_LIBRARIES}")
-        set(HAVE_VEDNN 1)
-        list(APPEND EXTERNAL_INCLUDE_DIRS ${VEDNN_INCLUDE})
-        message("----${VEDNN_INCLUDE}---")
-    else()
-        message( FATAL_ERROR "could not locate necessary VEDNN files")
-    endif()
-
-
-endif()
 
 
 

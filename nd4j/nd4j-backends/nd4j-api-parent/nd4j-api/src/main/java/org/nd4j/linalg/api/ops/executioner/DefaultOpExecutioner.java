@@ -33,8 +33,6 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
@@ -278,23 +276,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException("GridOp execution isn't supported for this OpExecutioner yet");
     }
 
-    @Override
-    public <T extends Aggregate> void exec(Batch<T> batch) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void exec(Aggregate op) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public abstract INDArray exec(ScalarOp op);
-
-    @Override
-    public void exec(List<Aggregate> batch) {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()
@@ -980,7 +961,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     public void setElementsThreshold(int threshold) {
         // no-op
     }
-
 
 
     /**

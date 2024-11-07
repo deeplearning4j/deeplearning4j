@@ -4503,6 +4503,46 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpecialConcat1(Nd4jBackend backend) {
+        for (int i = 0; i < 10; i++) {
+            List<INDArray> arrays = new ArrayList<>();
+            for (int x = 0; x < 10; x++) {
+                arrays.add(Nd4j.create(1, 100).assign(x).castTo(DataType.DOUBLE));
+            }
+
+            INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+            assertEquals(10, matrix.rows());
+            assertEquals(100, matrix.columns());
+
+            for (int x = 0; x < 10; x++) {
+                assertEquals(x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+                assertEquals(arrays.get(x), matrix.getRow(x).reshape(1,matrix.size(1)));
+            }
+        }
+    }
+
+
+    @ParameterizedTest
+    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
+    public void testSpecialConcat2(Nd4jBackend backend) {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int x = 0; x < 10; x++) {
+            arrays.add(Nd4j.create(new double[] {x, x, x, x, x, x}).reshape(1, 6));
+        }
+
+        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+        assertEquals(10, matrix.rows());
+        assertEquals(6, matrix.columns());
+
+//        log.info("Result: {}", matrix);
+
+        for (int x = 0; x < 10; x++) {
+            assertEquals(x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+            assertEquals(arrays.get(x), matrix.getRow(x).reshape(1, matrix.size(1)));
+        }
+    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -4510,6 +4550,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         INDArray array = Nd4j.create(10, 3, 96, 96).castTo(DataType.DOUBLE);
 
         for (int i = 0; i < 10; i++) {
+//            log.info("Trying i: {}", i);
             array.tensorAlongDimension(i, 1, 2, 3).putScalar(1, 2, 3, 1);
         }
     }
@@ -7051,6 +7092,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertEquals(exp, array2);
     }
 
+
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVariance_4D_1(Nd4jBackend backend) {
@@ -7232,7 +7274,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
 
         val tS = System.nanoTime();
         for (int e = 0; e < iterations; e++) {
-            //val c = new GemmParams(arrayX, arrayY, arrayZ);
             arrayX.mmuli(arrayY, arrayZ);
         }
 
@@ -8777,10 +8818,14 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
             DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements);
             INDArray arr = Nd4j.create(db, new long[]{lengthElements});
 
+            arr.toStringFull();
+            arr.toString();
+
             for(DataType dt2 : DataType.values()) {
                 if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
                     continue;
                 INDArray a2 = arr.castTo(dt2);
+                a2.toStringFull();
             }
         }
     }
@@ -8792,6 +8837,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         for(DataType dt : DataType.values()){
             if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
                 continue;
+//            System.out.println(dt);
 
             int lengthBytes = 256;
             int lengthElements = lengthBytes / dt.width();

@@ -174,7 +174,8 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
       std::vector<LongType> shape(input->lengthOf());
       for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
 
-      auto z = OUTPUT_VARIABLE(0);
+      auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+
       RandomLauncher::fillBinomial(block.launchContext(), block.randomGenerator(), z, trials, prob);
 
     } break;
@@ -201,9 +202,12 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
       std::vector<LongType> shape(input->lengthOf());
       for (int e = 0; e < input->lengthOf(); e++) shape[e] = input->e<LongType>(e);
 
-      auto z = OUTPUT_VARIABLE(0);
+      auto z = OUTPUT_VARIABLE(0);  // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
+
       RandomLauncher::fillLogNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
 
+      // FIXME: !!
+      // OVERWRITE_RESULT(z);
     } break;
     case random::TruncatedNormalDistribution: {
       // truncated norm distribution
@@ -326,6 +330,7 @@ ResultSet LegacyRandomOp::execute(RandomGenerator& rng, std::vector<NDArray*>& i
                                   std::vector<int>& iArgs, bool isInplace) {
   VariableSpace variableSpace;
   ResultSet arrayList;
+  // ResultSet arrayList;
 
   if (isInplace) arrayList.setNonRemovable();
 

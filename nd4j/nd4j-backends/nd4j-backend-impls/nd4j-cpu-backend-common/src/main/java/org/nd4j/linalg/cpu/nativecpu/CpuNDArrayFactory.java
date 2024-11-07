@@ -43,9 +43,7 @@ import org.nd4j.linalg.cpu.nativecpu.blas.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
-import org.nd4j.nativeblas.LongPointerWrapper;
-import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.*;
 
 import java.util.*;
 
@@ -660,36 +658,15 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         Nd4j.getCompressor().autoDecompress(source);
 
-        val dummy = new PointerPointer(new Pointer[] {null});
-
-        val tadManager = Nd4j.getExecutioner().getTADManager();
-
-        val tadBuffers = tadManager.getTADOnlyShapeInfo(source, new long[] {sourceDimension});
-
-        val zTadBuffers = tadManager.getTADOnlyShapeInfo(ret, new long[] {sourceDimension});
-
-        val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
-
-        val zTadShapeInfo = zTadBuffers.getFirst().addressPointer();
-
-        val pIndex = new LongPointer(indexes);
-
-        val offsets = tadBuffers.getSecond();
-        val hostTadOffsets = offsets == null ? null : offsets.addressPointer();
-
-        val zOffsets = zTadBuffers.getSecond();
-
-        val zTadOffsets = zOffsets == null ? null : zOffsets.addressPointer();
+        OpaqueNDArray sourceOpaque = OpaqueNDArray.fromINDArray(source);
+        OpaqueNDArray retOpaque = OpaqueNDArray.fromINDArray(ret);
+        OpaqueNDArray indexOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(indexes));
 
 
-        nativeOps.pullRows(dummy,
-                ((BaseCpuDataBuffer) source.data()).getOpaqueDataBuffer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(), null,
-                ((BaseCpuDataBuffer) ret.data()).getOpaqueDataBuffer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null,
-                indexes.length, pIndex,
-                (LongPointer) hostTadShapeInfo,
-                new LongPointerWrapper(hostTadOffsets),
-                (LongPointer) zTadShapeInfo,
-                new LongPointerWrapper(zTadOffsets));
+        nativeOps.pullRows(null,
+                sourceOpaque, retOpaque,
+                indexes.length, indexOpaque,
+                sourceDimension);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -707,35 +684,21 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         long len = target.length();
 
-        PointerPointer dataPointers = new PointerPointer(arrays.length);
-
-        for (int i = 0; i < arrays.length; i++) {
-            Nd4j.getCompressor().autoDecompress(arrays[i]);
-
-            if (arrays[i].elementWiseStride() != 1)
-                throw new ND4JIllegalStateException("Native accumulation is applicable only to continuous INDArrays");
-
-            if (arrays[i].length() != len)
-                throw new ND4JIllegalStateException("All arrays should have equal length for accumulation");
-
-            dataPointers.put(i, arrays[i].data().addressPointer());
-        }
+        OpaqueNDArray targetOpaque = OpaqueNDArray.fromINDArray(target);
+        OpaqueNDArrayArr arraysOpaque = new OpaqueNDArrayArr(Arrays.stream(arrays)
+                .map(OpaqueNDArray::fromINDArray)
+                .toArray(OpaqueNDArray[]::new));
 
 
         nativeOps.accumulate(null,
-                dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
-                null, null,
-                target.data().addressPointer(), (LongPointer) target.shapeInfoDataBuffer().addressPointer(),
-                null, null,
-                arrays.length,
-                len);
+                arraysOpaque, targetOpaque,
+                arrays.length, len);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return target;
     }
-
     /**
      * This method averages input arrays, and returns averaged array
      *
@@ -749,8 +712,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             throw new RuntimeException("Input arrays are missing");
 
         if (arrays.length == 1) {
-            //Edge case - average 1 array - no op
-            if(target == null){
+            // Edge case - average 1 array - no op
+            if (target == null) {
                 return null;
             }
             return target.assign(arrays[0]);
@@ -758,32 +721,15 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         long len = target != null ? target.length() : arrays[0].length();
 
-        PointerPointer dataPointers = new PointerPointer(arrays.length);
-        val firstType = arrays[0].dataType();
-
-        for (int i = 0; i < arrays.length; i++) {
-            Nd4j.getCompressor().autoDecompress(arrays[i]);
-
-            Preconditions.checkArgument(arrays[i].dataType() == firstType, "All arrays must have the same data type");
-
-            if (arrays[i].elementWiseStride() != 1)
-                throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
-
-            if (arrays[i].length() != len)
-                throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
-
-            dataPointers.put(i, arrays[i].data().addressPointer());
-        }
+        OpaqueNDArray targetOpaque = OpaqueNDArray.fromINDArray(target);
+        OpaqueNDArrayArr arraysOpaque = new OpaqueNDArrayArr(Arrays.stream(arrays)
+                .map(OpaqueNDArray::fromINDArray)
+                .toArray(OpaqueNDArray[]::new));
 
 
         nativeOps.average(null,
-                dataPointers, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(),
-                null, null,
-                target == null ? null : target.data().addressPointer(), target == null ? null : (LongPointer) target.shapeInfoDataBuffer().addressPointer(),
-                null, null,
-                arrays.length,
-                len,
-                true);
+                arraysOpaque, targetOpaque,
+                arrays.length, len, true);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -874,64 +820,35 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         val map = ArrayUtil.buildInterleavedVector(rnd, (int) numTads);
 
-        val dataPointers = new PointerPointer(arrays.size());
-        val shapePointers = new PointerPointer(arrays.size());
-        val tadPointers = new PointerPointer(arrays.size());
-        val offsetPointers = new PointerPointer(arrays.size());
+        OpaqueNDArrayArr arraysOpaque = new OpaqueNDArrayArr(arrays.stream()
+                .map(OpaqueNDArray::fromINDArray)
+                .toArray(OpaqueNDArray[]::new));
 
-        val dummy = new PointerPointer(new Pointer[] {null});
-
-        List<Pair<DataBuffer, DataBuffer>> list = new ArrayList<>();
-
-        val tadManager = Nd4j.getExecutioner().getTADManager();
-
-        val ptrMap = new IntPointer(map);
-
-        long[] ptrs = new long[arrays.size()];
+        INDArray mapArray = Nd4j.createFromArray(map);
+        OpaqueNDArray ptrMap = OpaqueNDArray.fromINDArray(mapArray);
 
 
-        for (int i = 0; i < arrays.size(); i++) {
-            val array = arrays.get(i);
 
-            Nd4j.getCompressor().autoDecompress(array);
-
-            val dimension = dimensions.size() > 1 ? dimensions.get(i) : dimensions.get(0);
-
-            val tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
-            list.add(tadBuffers);
-
-            val hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
-
-            val offsets = tadBuffers.getSecond();
-
-            if (array.rank() != 1 && offsets.length() != numTads)
-                throw new ND4JIllegalStateException("Can't symmetrically shuffle arrays with non-equal number of TADs");
-
-            if (offsets == null)
-                throw new ND4JIllegalStateException("Offsets for shuffle can't be null");
-
-            dataPointers.put(i, array.data().addressPointer());
-            shapePointers.put(i, array.shapeInfoDataBuffer().addressPointer());
-            offsetPointers.put(i, offsets.addressPointer());
-            tadPointers.put(i, tadBuffers.getFirst().addressPointer());
+        // Convert List<long[]> to long[][]
+        long[][] dimensionsArray = new long[dimensions.size()][];
+        for (int i = 0; i < dimensions.size(); i++) {
+            dimensionsArray[i] = dimensions.get(i);
         }
 
+        // Create an INDArray from the long[][]
+        INDArray dimensionsINDArray = Nd4j.createFromArray(dimensionsArray);
 
-        nativeOps.shuffle(dummy,
-                dataPointers, shapePointers,
-                null, null,
-                dataPointers, shapePointers,
-                null, null,
+        // Convert the INDArray to an OpaqueNDArray
+        OpaqueNDArray dimensionsOpaque = OpaqueNDArray.fromINDArray(dimensionsINDArray);
+
+
+        nativeOps.shuffle(null,
+                arraysOpaque, arraysOpaque,
                 arrays.size(),
-                ptrMap, tadPointers, offsetPointers);
+                dimensionsOpaque, ptrMap);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        dataPointers.address();
-        shapePointers.address();
-        tadPointers.address();
-        offsetPointers.address();
     }
 
     /**
@@ -1025,11 +942,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (x.isScalar())
             return x;
 
+        OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArray(x);
 
-       Nd4j.getNativeOps().sort(null,
-                x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                null, null,
+        nativeOps.sort(null,
+                xOpaque,
                 descending);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return x;
     }
@@ -1040,22 +960,18 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             return x;
 
         Arrays.sort(dimension);
-        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
+        OpaqueNDArray xOpaque = OpaqueNDArray.fromINDArray(x);
+        OpaqueNDArray dimensionOpaque = OpaqueNDArray.fromINDArray(Nd4j.createFromArray(dimension));
 
-
-       Nd4j.getNativeOps().sortTad(null,
-                x.data().addressPointer(), (LongPointer) x.shapeInfoDataBuffer().addressPointer(),
-                null, null,
-                (LongPointer) Nd4j.getConstantHandler().getConstantBuffer(dimension, DataType.LONG).addressPointer(),
-                dimension.length,
-                (LongPointer) tadBuffers.getFirst().addressPointer(),
-                new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+        nativeOps.sort(null,
+                xOpaque,
                 descending);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return x;
     }
-
     @Override
     public INDArray sortCooIndices(INDArray x) {
         throw new UnsupportedOperationException("Not an COO ndarray");

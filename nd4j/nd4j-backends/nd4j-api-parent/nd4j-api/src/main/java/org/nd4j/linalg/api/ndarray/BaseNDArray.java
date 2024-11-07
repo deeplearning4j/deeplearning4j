@@ -299,7 +299,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
     }
 
-
     /**
      *
      * @param buffer
@@ -1213,17 +1212,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(data, shape, stride, offset, Nd4j.order());
     }
 
-
-    public OpaqueNDArray asOpaqueNDArray() {
-        DataBuffer shapeInfo = this.shapeInfoDataBuffer();
-        DataBuffer buffer = this.data();
-        return OpaqueNDArray.create(
-                shapeInfo.opaqueBuffer(),
-                buffer.opaqueBuffer(),
-                null,
-                this.offset()
-        );
-    }
 
 
     protected static DataBuffer internalCreateBuffer(float[] data) {
@@ -2667,6 +2655,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         //note we have a manual isView() to express arrays that might use the
         //same buffer and technically use the start of the same buffer but do not
         //actually "own" the buffer
+
         return c2  || ArrayOptionsHelper.isView(this.shapeInfoJava());
     }
 
@@ -5615,6 +5604,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public long originalOffset() {
         return offset;
     }
+
 
     private void readObject(ObjectInputStream s) {
         try {

@@ -7,7 +7,6 @@
 #include "execution/Threads.h"
 #include "helpers/OpTracker.h"
 
-#include <array/NDArray.h>
 #include <exceptions/allocation_exception.h>
 #include <fcntl.h>
 #include <graph/GraphExecutioner.h>
@@ -504,7 +503,7 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
 
     // block should contain references to proper variable
-    varSpace.putVariable(1, e, array);
+    varSpace.putVariable(1, e, *array);
     block.pickInput(1, e);
 
     inShapes.push_back(shape_);
@@ -930,11 +929,11 @@ VariablesSet *executeStoredGraph(sd::Pointer *extraPointers, sd::LongType  graph
   }
 }
 
-sd::LongType  getVariablesSetSize(VariablesSet *set) { return set->size(); }
+sd::LongType  getVariablesSetSize(OpaqueVariablesSet *set) { return set->size(); }
 
-sd::Status getVariablesSetStatus(VariablesSet *set) { return set->status(); }
+sd::Status getVariablesSetStatus(OpaqueVariablesSet *set) { return set->status(); }
 
-Variable *getVariable(VariablesSet *set, sd::LongType  i) { return set->at(i); }
+OpaqueVariable *getVariable(OpaqueVariablesSet *set, sd::LongType  i) { return set->at(i); }
 
 int getVariableId(Variable *variable) { return variable->id(); }
 
@@ -1020,7 +1019,7 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
     auto array = new sd::NDArray(buffer, shapeInfo, varSpace->launchContext(), 0, 0);
 
     // now we just put array to VarSpace
-    varSpace->putVariable(0, e, array);
+    varSpace->putVariable(0, e, *array);
     node.pickInput(0, e);
   }
 
@@ -1251,7 +1250,6 @@ double getRandomGeneratorNextDouble(OpaqueRandomGenerator ptr) {
 }
 
 void deleteRandomGenerator(OpaqueRandomGenerator ptr) { delete ptr; }
-
 
 
 /**
