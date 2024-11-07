@@ -40,8 +40,6 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.aggregates.Aggregate;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
@@ -1397,36 +1395,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return null;
     }
 
-    protected <T extends Aggregate> DataBuffer getBuffer(Batch<T> batch) {
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(batch.getSample().getRequiredBatchMemorySize() * 4,
-                false);
-        batch.setParamsSurface(buffer);
-        return buffer;
-    }
 
-    @Override
-    public <T extends Aggregate> void exec(Batch<T> batch) {
-        throw new UnsupportedOperationException("Pew-pew");
-    }
 
-    @Override
-    public void exec(List<Aggregate> batch) {
-        if (batch.size() == 0)
-            return;
-
-        List<Batch<Aggregate>> batches = Batch.getBatches(batch, 8192);
-        for (Batch<Aggregate> single : batches) {
-            this.exec(single);
-        }
-
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-        context.syncOldStream();
-    }
-
-    @Override
-    public void exec(Aggregate op) {
-        throw new UnsupportedOperationException("Pew-pew");
-    }
 
     /**
      * This method executes specified RandomOp using default RNG available via Nd4j.getRandom()

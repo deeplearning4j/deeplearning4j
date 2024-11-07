@@ -83,7 +83,7 @@ SD_LIB_EXPORT OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext
 
 SD_LIB_EXPORT void shuffle(sd::Pointer *extras,
                            OpaqueNDArrayArr x,
-                           OpaqueNDArray z,
+                           OpaqueNDArrayArr z,
                            int N,
                            OpaqueNDArray dimension,
                            OpaqueNDArray shuffleMap);
@@ -208,13 +208,8 @@ SD_LIB_EXPORT void execBroadcast(sd::Pointer *extraPointers, int opNum, OpaqueND
 SD_LIB_EXPORT void execReduceFloat(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z) ;
 SD_LIB_EXPORT void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams);
 
-SD_LIB_EXPORT void mmapFiSame(sd::Pointer *extraPointers,
-                              int opNum,
-                              OpaqueNDArray x,
-                              void *extraParams,
-                              OpaqueNDArray z);
-SD_LIB_EXPORT void mmapFiSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
-SD_LIB_EXPORT void mmapFiLong2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
+
+
 SD_LIB_EXPORT void execReduceLong(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceBool2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
 SD_LIB_EXPORT void execReduceBool(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) ;
@@ -269,6 +264,11 @@ SD_LIB_EXPORT void setOmpMinThreads(int threads) ;
 SD_LIB_EXPORT int getDevice() ;
 SD_LIB_EXPORT void setElementThreshold(int num) ;
 SD_LIB_EXPORT void setTADThreshold(int num) ;
+SD_LIB_EXPORT void execReduceSame(sd::Pointer *extraPointers, int opNum, OpaqueNDArray  x,
+                                  void *extraParams,OpaqueNDArray  z);
+SD_LIB_EXPORT void execReduceSame2(sd::Pointer *extraPointers, int opNum,
+                                   OpaqueNDArray x,void *extraParams,
+                                   OpaqueNDArray z, OpaqueNDArray  dimension) ;
 SD_LIB_EXPORT void execReduce3(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray y, OpaqueNDArray z) ;
 SD_LIB_EXPORT void execReduce3Scalar(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray y, OpaqueNDArray z);
 SD_LIB_EXPORT void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension);
