@@ -1706,7 +1706,7 @@ void shuffle(Pointer *extras,
                           (launchDims, stream, xBuffers.data(), xShapeInfos.data(), zBuffers.data(), N,
                            reinterpret_cast<int*>(shuffleMap->buffer()), tadShapeInfoBuffers.data(),
                            tadOffsetsBuffers.data()),
-                          SD_COMMON_TYPES);
+
 
     DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
   } catch (std::exception &e) {
