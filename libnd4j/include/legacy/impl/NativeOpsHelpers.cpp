@@ -730,8 +730,6 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Special buffer was null!");
   }
   sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
-  printf("shape info for opaque ndaray is: \n");
-  fflush(stdout);
   shape::printShapeInfo(shapeInfoCast);
   sd::NDArray* ret = new sd::NDArray(buffer->getDataBuffer(),
                                      shapeInfoCast,

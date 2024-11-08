@@ -1148,9 +1148,9 @@ void execIndexReduceScalar(Pointer *extraPointers, int opNum, NDArray *x,void *e
                            NDArray *z) {
   try {
     NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum,
-                                               x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                               x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                                extraParams,
-                                               z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                                               z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1170,9 +1170,9 @@ void execIndexReduce(Pointer *extraPointers, int opNum, NDArray *x,
     auto hTADOffsets = tadPack->primaryOffsets();
 
     NativeOpExecutioner::execIndexReduce(nullptr, opNum,
-                                         x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                          extraParams,
-                                         z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                          dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                          hTADShapeInfo, hTADOffsets);
 
@@ -1198,9 +1198,9 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
     auto hTADOffsetsZ = tadPackZ->primaryOffsets();
 
     NativeOpExecutioner::execBroadcast(nullptr, opNum,
-                                       x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                       y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                       z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                       x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                       y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                       z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                        dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                        hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
 
@@ -1240,9 +1240,9 @@ void execReduceFloat(Pointer *extraPointers, int opNum, NDArray *x,
                      void *extraParams, NDArray *z) {
   try {
     NativeOpExecutioner::execReduceFloatScalar(nullptr, opNum,
-                                               x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                               x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                                extraParams,
-                                               z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                                               z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1253,9 +1253,9 @@ void execReduceSame(Pointer *extraPointers, int opNum, NDArray *x,
                     void *extraParams,NDArray *z) {
   try {
     NativeOpExecutioner::execReduceSameScalar(nullptr, opNum,
-                                              x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                              x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                               extraParams,
-                                              z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                                              z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1330,9 +1330,9 @@ void execReduceFloat2(Pointer *extraPointers, int opNum, NDArray *x,void *extraP
                                   new std::vector<LongType>();
 
     NativeOpExecutioner::execReduceFloat(nullptr, opNum,
-                                         x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                         x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                          extraParams,
-                                         z->dataBuffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                         z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                          dims->data(), dims->size());
 
     delete dims;
@@ -1366,9 +1366,9 @@ void execReduceBool2(Pointer *extraPointers, int opNum, NDArray *x,
                                   new std::vector<LongType>();
 
     NativeOpExecutioner::execReduceBool(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        z->dataBuffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -1402,9 +1402,9 @@ void execReduceSame2(Pointer *extraPointers, int opNum,
                                   new std::vector<LongType>();
 
     NativeOpExecutioner::execReduceSame(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        z->dataBuffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -1438,9 +1438,9 @@ void execReduceLong2(Pointer *extraPointers, int opNum, NDArray *x,
                                   new std::vector<LongType>();
 
     NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        z->dataBuffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
+                                        z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
 
     delete dims;
@@ -1463,10 +1463,10 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
     auto hTADOffsets = tadPack->primaryOffsets();
 
     NativeOpExecutioner::execReduce3TAD(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                        z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                         dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                         hTADShapeInfo, hTADOffsets, nullptr, nullptr);
   } catch (std::exception &e) {
@@ -1479,9 +1479,9 @@ void execScalar(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                 NDArray *scalar, void *extraParams) {
   try {
     NativeOpExecutioner::execScalar(nullptr, opNum,
-                                    x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                    z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                    scalar->dataBuffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                     extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1493,9 +1493,9 @@ void execScalarBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                     NDArray *scalar, void *extraParams) {
   try {
     NativeOpExecutioner::execScalarBool(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                        z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                        scalar->dataBuffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                         extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1508,9 +1508,9 @@ void execSummaryStatsScalar(Pointer *extraPointers, int opNum, NDArray *x,
                             NDArray *z,  bool biasCorrected) {
   try {
     NativeOpExecutioner::execSummaryStatsScalar(nullptr, opNum,
-                                                x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                                x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                                 extraParams,
-                                                z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                                z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                                 biasCorrected);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1522,9 +1522,9 @@ void execSummaryStats(Pointer *extraPointers, int opNum, NDArray *x,
                       NDArray *z, void *extraParams, bool biasCorrected) {
   try {
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
-                                          x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                           extraParams,
-                                          z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                           biasCorrected);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1541,9 +1541,9 @@ void execSummaryStatsTad(Pointer *extraPointers, int opNum, NDArray *x,
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execSummaryStats(nullptr, opNum,
-                                          x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                           extraParams,
-                                          z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                           dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                           tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
                                           biasCorrected);
@@ -1556,8 +1556,8 @@ void execSummaryStatsTad(Pointer *extraPointers, int opNum, NDArray *x,
 void execTransformFloat(Pointer *extraPointers, int opNum, NDArray *x,  void *extraParams,NDArray *z) {
   try {
     NativeOpExecutioner::execTransformFloat(nullptr, opNum,
-                                            x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                            z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                            x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                             extraParams, nullptr, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1568,8 +1568,8 @@ void execTransformFloat(Pointer *extraPointers, int opNum, NDArray *x,  void *ex
 void execTransformSame(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
     NativeOpExecutioner::execTransformSame(nullptr, opNum,
-                                           x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                           z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                           z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                            extraParams, nullptr, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1580,8 +1580,8 @@ void execTransformSame(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
     NativeOpExecutioner::execTransformBool(nullptr, opNum,
-                                           x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                           z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                           z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                            extraParams, nullptr, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1592,8 +1592,8 @@ void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
     NativeOpExecutioner::execTransformAny(nullptr, opNum,
-                                          x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                          z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                           extraParams, nullptr, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1604,8 +1604,8 @@ void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraP
 void execTransformStrict(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
     NativeOpExecutioner::execTransformStrict(nullptr, opNum,
-                                             x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                             z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                             x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                             z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                              extraParams, nullptr, nullptr);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1616,10 +1616,10 @@ void execTransformStrict(Pointer *extraPointers, int opNum, NDArray *x,void *ext
 void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, OpaqueNDArray y, OpaqueNDArray z, OpaqueNDArray dimension, void *extraParams) {
   try {
     NativeOpExecutioner::execReduce3All(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                        z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                         dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                         nullptr, nullptr, nullptr, nullptr);
   } catch (std::exception &e) {
@@ -1632,7 +1632,7 @@ void execRandom(Pointer *extraPointers, int opNum, Pointer state, NDArray *z,
                 void *extraArguments) {
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
-                                    z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                     extraArguments);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1644,9 +1644,9 @@ void execRandom3(Pointer *extraPointers, int opNum, Pointer state, NDArray *x, N
                  void *extraArguments) {
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
-                                    x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                    y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                    z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                     extraArguments);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1662,10 +1662,10 @@ void execScalarTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalar(nullptr, opNum,
-                                    x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                     extraParams,
-                                    z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                    scalar->dataBuffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                     dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                     tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
                                     tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
@@ -1683,10 +1683,10 @@ void execScalarBoolTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalarBool(nullptr, opNum,
-                                        x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                        x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                         extraParams,
-                                        z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                        scalar->dataBuffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
+                                        z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                        scalar->buffer(), scalar->shapeInfo(), scalar->specialBuffer(), scalar->specialShapeInfo(),
                                         dimension->bufferAsT<LongType>(), dimension->lengthOf(),
                                         tadPack->primaryShapeInfo(), tadPack->primaryOffsets(),
                                         tadPack->primaryShapeInfo(), tadPack->primaryOffsets());
@@ -1701,9 +1701,9 @@ void execPairwiseTransformBool(Pointer *extraPointers, int opNum, NDArray *x, ND
                                void *extraParams,NDArray *z) {
   try {
     NativeOpExecutioner::execPairwiseBoolTransform(nullptr, opNum,
-                                                   x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                                   y->dataBuffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                                                   z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                                   x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                                   y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                                                   z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                                    extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1731,8 +1731,8 @@ void execRandom2(Pointer *extraPointers, int opNum, Pointer state,
                  NDArray *x, NDArray *z, void *extraArguments) {
   try {
     NativeOpExecutioner::execRandom(nullptr, opNum, state,
-                                    x->dataBuffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                    z->dataBuffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                    x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                                     extraArguments);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
