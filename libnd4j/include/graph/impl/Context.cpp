@@ -178,9 +178,15 @@ void Context::setInnerTime(LongType time) { this->_executionTime.second = time; 
 
 Variable *Context::getVariable(int idx) {
   if (idx >= this->_inputs.size()) {
-    sd_printf("Node %i; Variable [%i] requested, but only %i inputs available\n", this->_nodeId, idx,
-              this->_inputs.size());
-    THROW_EXCEPTION("Context: bad Variable index");
+    std::string errorMessage;
+    errorMessage += "Node ";
+    errorMessage += std::to_string(this->_nodeId);
+    errorMessage += "; Variable [";
+    errorMessage += std::to_string(idx);
+    errorMessage += " requested, but only ";
+    errorMessage += std::to_string(this->_inputs.size());
+    errorMessage += " available";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 
   auto p = this->_inputs[idx];
@@ -235,8 +241,16 @@ Variable *Context::variable(std::pair<int, int> &p) {
   try {
     return _variableSpace->getVariable(p);
   } catch (std::exception &e) {
-    sd_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
-    THROW_EXCEPTION("Bad variable");
+    std::string errorMessage;
+    errorMessage += "Node ";
+    errorMessage += std::to_string(this->_nodeId);
+    errorMessage += "; Non-existent variable requested: [";
+    errorMessage += std::to_string(p.first);
+    errorMessage += ":";
+    errorMessage += std::to_string(p.second);
+    errorMessage += "]";
+    errorMessage += "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
   }
 }
 

@@ -1628,49 +1628,27 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
-        if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if(log.isTraceEnabled()){
+        if (nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
+            if (log.isTraceEnabled()) {
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
             return Collections.emptyList();
         }
 
-        val inputBuffers = new PointerPointer<>(nIn * 2);
-        val inputShapes = new PointerPointer<>(nIn);
-        long[] offsets = new long[nIn];
-
         val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
-        int cnt = 0;
-        for (val in: inputArgs) {
-            // TODO: once we implement Context-based shape function call this method should be removed
-            val loc = Nd4j.getAffinityManager().getActiveLocation(in);
-            if (loc != AffinityManager.Location.DEVICE && loc != AffinityManager.Location.EVERYWHERE) {
-                Nd4j.getAffinityManager().ensureLocation(in, AffinityManager.Location.DEVICE);
-            }
-            offsets[cnt] = in.offset();
-
-            // NOT A TYPO: shape functions work on host side only
-            if (!in.isEmpty()) {
-                inputBuffers.put(cnt, in.data().addressPointer());
-                inputBuffers.put(cnt + nIn, AtomicAllocator.getInstance().getPointer(in.data()));
-            }
-
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
-        }
-
+        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputArgs.stream().map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new));
 
         int nIArgs = opContext != null ? opContext.numIArguments() : op.numIArguments();
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
-        cnt = 0;
-        if(opContext != null) {
-            for (val i: opContext.getIArguments())
+        int cnt = 0;
+        if (opContext != null) {
+            for (val i : opContext.getIArguments())
                 iArgs.put(cnt++, i);
         } else {
-            for (val i: op.iArgs())
+            for (val i : op.iArgs())
                 iArgs.put(cnt++, i);
         }
-
 
         int nTArgs = opContext != null ? opContext.numTArguments() : op.numTArguments();
         val tArgs = nTArgs > 0 ? new DoublePointer(nTArgs) : null;
@@ -1682,36 +1660,33 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dArgs = nDArgs > 0 ? new IntPointer(nDArgs) : null;
 
         cnt = 0;
-        if(opContext != null){
-            for (val b: opContext.getBArguments())
+        if (opContext != null) {
+            for (val b : opContext.getBArguments())
                 bArgs.put(cnt++, b);
         } else {
-            for (val b: op.bArgs())
+            for (val b : op.bArgs())
                 bArgs.put(cnt++, b);
-        }
-
-
-        cnt = 0;
-        if(opContext != null){
-            for (val b: opContext.getTArguments())
-                tArgs.put(cnt++, b);
-        } else {
-            for (val b: op.tArgs())
-                tArgs.put(cnt++, b);
         }
 
         cnt = 0;
-        if(opContext != null) {
-            for (val b: opContext.getDArguments())
+        if (opContext != null) {
+            for (val b : opContext.getTArguments())
+                tArgs.put(cnt++, b);
+        } else {
+            for (val b : op.tArgs())
+                tArgs.put(cnt++, b);
+        }
+
+        cnt = 0;
+        if (opContext != null) {
+            for (val b : opContext.getDArguments())
                 dArgs.put(cnt++, b.toInt());
         } else {
-            for (val b: op.dArgs())
+            for (val b : op.dArgs())
                 dArgs.put(cnt++, b.toInt());
         }
 
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null,
-                hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
-                iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs,new LongPointer(offsets));
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputsOpaque, nIn, tArgs, nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -1719,11 +1694,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (ptrptr == null)
             throw new RuntimeException();
 
-        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++ )
+        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++)
             result.add(getShapeFromPointer(new PagedPointer(nativeOps.getShape(ptrptr, e)).asLongPointer()));
 
         nativeOps.deleteShapeList(ptrptr);
-
 
         return result;
     }

@@ -345,7 +345,7 @@ public class TestLossOpValidation extends BaseOpValidation {
                         tc = tc.gradCheckMask(Collections.singletonMap("weights", w.getArr().neq(0)));
                     }
 
-                    if(fn.equals("sparsesoftmax")){
+                    if(fn.equals("sparsesoftmax")) {
                         tc.gradCheckSkipVariables("labels");
                     }
 

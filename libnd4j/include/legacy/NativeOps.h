@@ -127,9 +127,9 @@ SD_LIB_EXPORT void* getOpaqueNDArrayBuffer(OpaqueNDArray array);
 
 SD_LIB_EXPORT void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array);
 
-SD_LIB_EXPORT OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer shapeInfo,
-                                                OpaqueDataBuffer buffer,
-                                                OpaqueDataBuffer specialBuffer,
+SD_LIB_EXPORT OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
+                                                OpaqueDataBuffer *buffer,
+                                                OpaqueDataBuffer *specialBuffer,
                                                 sd::LongType offset);
 
 
@@ -172,9 +172,10 @@ SD_LIB_EXPORT void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointe
                                OpaqueNDArray y, OpaqueNDArray z, void *extraArguments);
 
 SD_LIB_EXPORT sd::LongType const *getShape(OpaqueShapeList *list, sd::LongType i);
-SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
-                                                      int numInputShapes, double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
-                                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs,sd::LongType *offsets);
+
+SD_LIB_EXPORT OpaqueShapeList  *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArrayArr inputs, int numInputs,
+                                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
+                                                     bool *bArgs, int numBArgs, int *dArgs, int numDArgs);
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list);
 
 SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *db) ;

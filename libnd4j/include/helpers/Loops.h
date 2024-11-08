@@ -931,7 +931,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
                                                           const LongType* zShapeInfo,
                                                           E* extraParams,
                                                           LongType threadId, LongType numThreads) {
-  printf("deducing loop\n");
   const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
   if(xShapeInfo == nullptr) {
     THROW_EXCEPTION("Input x shape info was null!");
@@ -955,8 +954,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
-  printf("Beginning execution using loopkind %i\n", kindOfLoop);
-  fflush(stdout);
   switch (kindOfLoop) {
     //*********************************************//
     case LoopKind::EWS1: {
@@ -1070,8 +1067,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
         }
       }
-      printf("completed loopkind  rank 2 execution\n");
-      fflush(stdout);
     } break;
 
       //*********************************************//
@@ -1164,8 +1159,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
       //*********************************************//
     default: {
-      printf("default case\n");
-      fflush(stdout);;
       LongType xCoords[SD_MAX_RANK];
       LongType zCoords[SD_MAX_RANK];
 
@@ -1220,8 +1213,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
     }
   }
 
-  printf("ending loop transform\n");
-  fflush(stdout);
 }
 
 //////////////////////////////////////////////////////////////////////////////

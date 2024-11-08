@@ -39,7 +39,6 @@ class SD_LIB_EXPORT DataBuffer {
   void *_primaryBuffer = nullptr;
   void *_specialBuffer = nullptr;
   LongType _lenInBytes = 0;
-  DataType _dataType;
   memory::Workspace *_workspace = nullptr;
 
   std::atomic<int> _deviceId;
@@ -85,6 +84,7 @@ class SD_LIB_EXPORT DataBuffer {
   bool _isOwnerPrimary;
   bool _isOwnerSpecial;
   bool isConstant = false;
+  DataType _dataType;
 
   DataBuffer(void *primary, void *special, const size_t lenInBytes, const DataType dataType,
              const bool isOwnerPrimary = false, const bool isOwnerSpecial = false,

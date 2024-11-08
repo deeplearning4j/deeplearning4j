@@ -467,75 +467,9 @@ sd::Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer();
 
 const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().getAllCustomOperations(); }
 
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputBuffers,
-                                      sd::Pointer *inputShapes, int numInputShapes, double *tArgs, int numTArgs,
-                                      sd::LongType  *iArgs, int numIArgs, bool *bArgs, int numBArgs, int *dArgs, int numDArgs,
-                                      sd::LongType  *offsets) {
-
-  sd::graph::VariableSpace varSpace;
-  Context block(2, &varSpace);
-  sd::ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(bArgs[e]);
-
-  for (int e = 0; e < numDArgs; e++) block.getDArguments()->push_back(sd::DataTypeUtils::fromInt(dArgs[e]));
-
-  for (int e = 0; e < numInputShapes; e++) {
-    auto shape_ = reinterpret_cast<sd::LongType  *>(inputShapes[e]);
-    if(shape_ == nullptr) {
-      THROW_EXCEPTION("Input shape was null!");
-    }
-
-    if((shape_ != nullptr && shape_[0] > SD_MAX_RANK) || shape_[0] < 0) {
-      THROW_EXCEPTION("Input shape rank is invalid. Either > 32 or < 0. Likely corrupt. Please check your input shapes.");
-    }
-
-
-
-    // we shouldn't copy buffer if that's empty array
-    void *buffer_ = sd::ArrayOptions::arrayType(shape_) == sd::ArrayType::EMPTY ? nullptr : inputBuffers[e];
-
-    auto array = new sd::NDArray(buffer_, shape_, block.launchContext(), 0, offsets[e]);
-
-
-    // block should contain references to proper variable
-    varSpace.putVariable(1, e, *array);
-    block.pickInput(1, e);
-
-    inShapes.push_back(shape_);
-  }
-
-  auto status = op->validateDataTypes(block);
-  if (status != sd::Status::OK) THROW_EXCEPTION("Data types validation failed");
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  if (varSpace.launchContext() != nullptr) shapeList->detach();
-
-  return shapeList;
-}
-
-sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType  hash, sd::Pointer *inputBuffers, sd::Pointer *inputShapes,
-                                      int numInputShapes, double *tArgs, int numTArgs, sd::LongType  *iArgs, int numIArgs,
-                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs,
-                                      sd::LongType  *offsets) {
-  try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs,
-                                  numIArgs, bArgs, numBArgs, dArgs, numDArgs, nullptr);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
-}
-
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, sd::Pointer *inputShapes,
-                                      int numInputShapes, double *tArgs, int numTArgs, sd::LongType  *iArgs, int numIArgs) {
+sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueNDArrayArr inputs,
+                                      int numInputs, double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
+                                      bool *pBoolean, int numBArgs, int *dArgs, int numDaargs) {
   Context block(1);
   sd::ShapeList inShapes;
 
@@ -543,19 +477,39 @@ sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::Decla
 
   for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
 
-  for (int e = 0; e < numInputShapes; e++) inShapes.push_back(reinterpret_cast<sd::LongType  *>(inputShapes[e]));
+  for (int e = 0; e < numInputs; e++) inShapes.push_back(inputs[e]->shapeInfo());
+
+  for(int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(pBoolean[e]);
+
+  for(int e = 0; e < numDaargs; e++) block.getDArguments()->push_back(sd::DataTypeUtils::fromInt(dArgs[e]));
 
   auto shapeList = op->calculateOutputShape(&inShapes, block);
 
   return shapeList;
 }
 
-sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType  hash, sd::Pointer *inputShapes, int numInputShapes,
-                                     double *tArgs, int numTArgs, sd::LongType  *iArgs, int numIArgs) {
+sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArrayArr inputs, int numInputs,
+                                      double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
+                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    return _calculateOutputShapes(extraPointers, op, inputs, numInputs, tArgs, numTArgs, iArgs, numIArgs, bArgs,
+                                  numBArgs, dArgs, numDArgs);
+  } catch (std::exception &e) {
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return nullptr;
+  }
+}
 
-    return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+
+
+sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArray *inputs, int numInputs,
+                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs) {
+  try {
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    return _calculateOutputShapes(extraPointers, op, inputs, numInputs, tArgs, numTArgs, iArgs, numIArgs, nullptr, 0,
+                                  nullptr, 0);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -759,12 +713,27 @@ sd::LongType getOpaqueNDArrayLength(OpaqueNDArray array) {
 }
 
 
-OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer shapeInfo,
-                                  OpaqueDataBuffer buffer,
-                                  OpaqueDataBuffer specialBuffer,
+OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
+                                  OpaqueDataBuffer *buffer,
+                                  OpaqueDataBuffer *specialBuffer,
                                   sd::LongType offset) {
-  sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo.primary());
-  sd::NDArray* ret = new sd::NDArray(buffer.getDataBuffer(),
+  if(shapeInfo == nullptr) {
+    THROW_EXCEPTION("createOpaqueNDArray: Shape info was null!");
+  }
+
+
+  if(buffer == nullptr) {
+    THROW_EXCEPTION("createOpaqueNDArray: Buffer was null!");
+  }
+
+  if(specialBuffer == nullptr) {
+    THROW_EXCEPTION("createOpaqueNDArray: Special buffer was null!");
+  }
+  sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
+  printf("shape info for opaque ndaray is: \n");
+  fflush(stdout);
+  shape::printShapeInfo(shapeInfoCast);
+  sd::NDArray* ret = new sd::NDArray(buffer->getDataBuffer(),
                                      shapeInfoCast,
                                      sd::LaunchContext::defaultContext(),
                                      offset);
@@ -777,7 +746,7 @@ void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long 
   OpaqueDataBuffer *targetView = dbCreateView(target, n);
   sd::DataBuffer *targetBuf = copyFrom->dataBuffer();
   sd::DataBuffer *srcBuf = targetView->dataBuffer();
-  sd::DataBuffer::memcpy(targetBuf, srcBuf, 0, 0);
+  sd::DataBuffer::memcpy(targetBuf, srcBuf, targetOffset, fromOffset);
 }
 
 

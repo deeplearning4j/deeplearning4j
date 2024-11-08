@@ -356,10 +356,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     throw new RuntimeException(errorMessage.toString());
                 }
             } else if (ret.isScalar()) {
-                loop.execReduce3Scalar(null,op.opNum(),xb,yb,zb,null);;
+                loop.execReduce3Scalar(null,op.opNum(),xb,null,yb,zb);
             } else {
                 try {
-                    loop.execReduce3Tad(null,op.opNum(),xb, yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()),null);
+                    loop.execReduce3Tad(null,op.opNum(),xb,null, yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()));
 
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
@@ -979,8 +979,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
-        if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if(log.isTraceEnabled()) {
+        if (nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
+            if (log.isTraceEnabled()) {
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
             }
@@ -994,7 +994,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt = 0;
         int numProcessed = 0;
         long[] offsets = new long[nIn];
-        for (val in: inputArgs) {
+        for (val in : inputArgs) {
             if (!in.isEmpty())
                 inputBuffers.put(cnt, in.data().addressPointer());
             offsets[cnt] = in.offset();
@@ -1003,27 +1003,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             numProcessed++;
         }
 
-
-
-        if(numProcessed != nIn) {
+        if (numProcessed != nIn) {
             throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
                     "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
-
         int nIArgs = opContext != null ? opContext.numIArguments() : op.numIArguments();
         val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
         cnt = 0;
-        if(opContext != null) {
-            if(iArgs != null)
-                for (val i: opContext.getIArguments())
+        if (opContext != null) {
+            if (iArgs != null)
+                for (val i : opContext.getIArguments())
                     iArgs.put(cnt++, i);
         } else {
-            if(iArgs != null)
-                for (val i: op.iArgs())
+            if (iArgs != null)
+                for (val i : op.iArgs())
                     iArgs.put(cnt++, i);
         }
-
 
         int nTArgs = opContext != null ? opContext.numTArguments() : op.numTArguments();
         val tArgs = nTArgs > 0 ? new DoublePointer(nTArgs) : null;
@@ -1035,58 +1031,52 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val dArgs = nDArgs > 0 ? new IntPointer(nDArgs) : null;
 
         cnt = 0;
-        if(opContext != null) {
-            if(bArgs != null)
-                for (val b: opContext.getBArguments())
+        if (opContext != null) {
+            if (bArgs != null)
+                for (val b : opContext.getBArguments())
                     bArgs.put(cnt++, b);
         } else {
-            if(bArgs != null)
-                for (val b: op.bArgs())
+            if (bArgs != null)
+                for (val b : op.bArgs())
                     bArgs.put(cnt++, b);
-        }
-
-
-        cnt = 0;
-        if(opContext != null) {
-            if(tArgs != null)
-                for (val b: opContext.getTArguments())
-                    tArgs.put(cnt++, b);
-        } else {
-            if(tArgs != null)
-                for (val b: op.tArgs())
-                    tArgs.put(cnt++, b);
         }
 
         cnt = 0;
-        if(opContext != null) {
-            if(dArgs != null)
-                for (val b: opContext.getDArguments())
+        if (opContext != null) {
+            if (tArgs != null)
+                for (val b : opContext.getTArguments())
+                    tArgs.put(cnt++, b);
+        } else {
+            if (tArgs != null)
+                for (val b : op.tArgs())
+                    tArgs.put(cnt++, b);
+        }
+
+        cnt = 0;
+        if (opContext != null) {
+            if (dArgs != null)
+                for (val b : opContext.getDArguments())
                     dArgs.put(cnt++, b.toInt());
         } else {
-            if(dArgs != null)
-                for (val b: op.dArgs())
+            if (dArgs != null)
+                for (val b : op.dArgs())
                     dArgs.put(cnt++, b.toInt());
         }
 
-
-
-        if(numProcessed != nIn) {
+        if (numProcessed != nIn) {
             throw new ND4JIllegalStateException("Number of processed inputs should match number of inputs. " +
                     "Got " + numProcessed + " inputs but should have been " + nIn + " . This is likely due a null input.");
         }
 
-
         OpaqueShapeList ptrptr;
         try {
-            ptrptr = loop.calculateOutputShapes2(null,
-                    hash, inputBuffers, inputShapes, nIn, tArgs, nTArgs,
-                    iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs,new LongPointer(offsets));
+            OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputArgs.stream().map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new));
+            ptrptr = loop.calculateOutputShapes2(null, hash, inputsOpaque, nIn, tArgs, nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
 
             if (loop.lastErrorCode() != 0) {
-                //used with debuggers mainly
                 StringBuilder errorMessage = new StringBuilder();
                 DifferentialFunction differentialFunction = (DifferentialFunction) op;
-                errorMessage.append("Native  execution exec failed: ");
+                errorMessage.append("Native execution exec failed: ");
                 errorMessage.append(differentialFunction.debugInfo());
                 errorMessage.append(loop.lastErrorMessage());
                 throw new RuntimeException(errorMessage.toString());
@@ -1098,8 +1088,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             StringBuilder sb = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
             sb.append("Inputs: [(");
-            for( int i = 0; i < inputArgs.size(); i++) {
-                if(i > 0)
+            for (int i = 0; i < inputArgs.size(); i++) {
+                if (i > 0)
                     sb.append("), (");
                 sb.append(Shape.shapeToStringShort(inputArgs.get(i)));
             }
@@ -1116,7 +1106,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0) {
             StringBuilder errorMessage = new StringBuilder();
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
-            errorMessage.append("Native  execution exec failed: ");
+            errorMessage.append("Native execution exec failed: ");
             errorMessage.append(differentialFunction.debugInfo());
             errorMessage.append(loop.lastErrorMessage());
             throw new RuntimeException(errorMessage.toString());
@@ -1124,24 +1114,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (ptrptr == null)
             throw new RuntimeException();
 
-        for (int e = 0; e < loop.getShapeListSize(ptrptr); e++ )
+        for (int e = 0; e < loop.getShapeListSize(ptrptr); e++)
             result.add(getShapeFromPointer(new PagedPointer(loop.getShape(ptrptr, e)).asLongPointer()));
 
-
-        //loop.deleteShapeList(ptrptr);
-
-        if(log.isTraceEnabled()) {/**/
+        if (log.isTraceEnabled()) {
             String[] arr = new String[result.size()];
-            for( int i = 0; i < result.size(); i++) {
+            for (int i = 0; i < result.size(); i++) {
                 arr[i] = result.get(i).toString();
             }
 
             DifferentialFunction differentialFunction = (DifferentialFunction) op;
-            log.trace("Calculated output shapes for op  of name {} and type {} - {}",differentialFunction.getOwnName(), op.getClass().getName(), Arrays.toString(arr));
+            log.trace("Calculated output shapes for op of name {} and type {} - {}", differentialFunction.getOwnName(), op.getClass().getName(), Arrays.toString(arr));
         }
         return result;
     }
-
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {
