@@ -639,6 +639,7 @@ NDArray::NDArray(DataBuffer *buffer,
     THROW_EXCEPTION("NDArray::NDArray(DataBuffer *  buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const sd::LongType offset) - buffer is empty !");
   }
 
+
   _context = context;
   _buffer = buffer;
   _length = shape::length(shapeInfo);

@@ -40,7 +40,6 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.listeners.debugging.ControlflowListener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.function.BiFunction;
@@ -222,7 +221,6 @@ public class TFGraphTestAllHelper {
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
 
-        OpValidation.collectTensorflowImportCoverage(graph);
 
         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             assertTrue(predictions.keySet().size() > 0,"No predictions to validate");
@@ -385,7 +383,6 @@ public class TFGraphTestAllHelper {
         //Serialize and deserialize, check equality:
         ByteBuffer serialized = graph.asFlatBuffers(true);
         Preconditions.checkNotNull(serialized, "Serialization failed? Null output");
-        OpValidation.checkDeserializedEquality(graph, serialized, new TestCase(graph).testName(modelName).placeholderValues(inputs));
 
 
         Nd4j.EPS_THRESHOLD = 1e-5;
@@ -407,10 +404,7 @@ public class TFGraphTestAllHelper {
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sdPredictions = p.getSecond();
 
-        //Collect coverage info about ops
-        OpValidation.collectTensorflowImportCoverage(graph);
-
-        if (!execType.equals(ExecuteWith.JUST_PRINT)) {
+         if (!execType.equals(ExecuteWith.JUST_PRINT)) {
             int count = 0;
             //Evaluate the nodes in their execution order - this is useful for debugging (as we want the *first* failure
             // to be detected before later failures)

@@ -25,7 +25,6 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.nd4j.autodiff.listeners.debugging.ArrayTracker;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;

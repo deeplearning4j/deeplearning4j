@@ -50,7 +50,6 @@ import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import java.util.*
 
 import mu.KotlinLogging
-import org.nd4j.autodiff.listeners.debugging.ArrayTracker
 import org.nd4j.linalg.api.ndarray.INDArray
 import kotlin.collections.HashMap
 
@@ -258,9 +257,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         //First, add any constants, placeholders, and zero-input ops
         //note: we enable eager mode here for dynamic variable resolution
         val sd = SameDiff.create().enableEagerMode()
-        if(trackVariableChanges) {
-            sd.addListeners(ArrayTracker(irGraph.variableNames()))
-        }
 
         val convertedDynamic = HashMap<String,INDArray>()
 
@@ -268,10 +264,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             //declare as variables
             dynamicVariables.forEach { (name, ndarray) ->
                 val converted = irGraph.convertToNDArray(ndarray)
-                /**
-                 * TODO: convert placeholders to proper data types
-                 * with checking. It appears not all dyanmicVariables will match expected data type.
-                 */
                 if(!sd.hasVariable(name))
                     sd.`var`(name,converted)
                 sd.setEagerArrForVarName(name,converted)

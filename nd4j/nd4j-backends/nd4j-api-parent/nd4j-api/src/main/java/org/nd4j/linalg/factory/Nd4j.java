@@ -4459,7 +4459,11 @@ public class Nd4j {
     public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
         //ensure shapes that wind up being scalar end up with the right shape
         checkShapeValues(shape);
-        return INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
+        if(shape.length == 0) {
+            return scalar(dataType, 0.0);
+        }
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape, Nd4j.getStrides(shape, ordering), 0, ordering, dataType, false);
+        return INSTANCE.create(descriptor);
     }
 
     /**

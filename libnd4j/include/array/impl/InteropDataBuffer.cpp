@@ -75,7 +75,17 @@ void InteropDataBuffer::markOwner(bool owner) {
   this->_dataBuffer->_isOwnerSpecial = owner;
 }
 
-DataBuffer * InteropDataBuffer::getDataBuffer() const { return _dataBuffer; }
+DataBuffer * InteropDataBuffer::getDataBuffer() const {
+  //this can effect size of calculations among others
+  if(_dataType == DataType::UNKNOWN) {
+    THROW_EXCEPTION("All interop buffers must have a known data type.");
+  }
+ if(_dataBuffer != nullptr && _dataBuffer->_dataType == DataType::UNKNOWN) {
+    _dataBuffer->_dataType = _dataType;
+
+ }
+  return _dataBuffer;
+}
 
 DataBuffer * InteropDataBuffer::dataBuffer() {
   if(_dataBuffer == nullptr || _dataBuffer == nullptr) {
