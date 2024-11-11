@@ -12,11 +12,16 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))) {
+  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))
+     || ArrayOptions::isView(const_cast<LongType *>(output->shapeInfo()))
+     || ArrayOptions::isView(const_cast<LongType *>(input->shapeInfo()))) {
     //deref avoiding copy
     NDArray &originalInput = *input;
     output->assign(originalInput);
   } else if(input->dataBuffer() != output->dataBuffer()) {
+    if(input->dataBuffer()->getLenInBytes() != output->dataBuffer()->getLenInBytes()) {
+      THROW_EXCEPTION("Unable to copy whole data buffer. Use a strided approach instead.");
+    }
     //deref avoiding copy
     //preserve original buffer as it does not need a copy but the buffers
     //are not the same.
@@ -98,6 +103,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     ArrayOptions::toggleIsEmpty(newShapeInfo);
   } else {
     bool needsCopy = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
+    printf("reshape no copy Needs copy: %i\n", needsCopy);
+    fflush(stdout);
     if (!needsCopy) {
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
@@ -107,7 +114,10 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
     } else {
+      printf("Setting needs copy\n");
+      fflush(stdout);
       // If reshape is not possible without allocation, fall back to regular reshape
+      shape::updateStrides(newShapeInfo, order,true);
       shape::setElementWiseStride(newShapeInfo, 0);
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);

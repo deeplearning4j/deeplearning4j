@@ -1805,8 +1805,6 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(NDArray other, bool allowParallelism) {
-  printf("calling normal assign\n");
-  fflush(stdout);
   if (this == &other) {
     sd_print("NDArray::assign: this == &other\n");
     return;

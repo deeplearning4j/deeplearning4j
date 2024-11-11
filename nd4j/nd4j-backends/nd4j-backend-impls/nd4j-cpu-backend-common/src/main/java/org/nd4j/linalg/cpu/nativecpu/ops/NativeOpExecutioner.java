@@ -399,7 +399,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        loop.execReduceFloat(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb);
+                        loop.execReduceFloat2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb,OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_LONG:
                         loop.execReduceLong2(null, op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
