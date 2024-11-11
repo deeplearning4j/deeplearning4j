@@ -1160,7 +1160,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
       //*********************************************//
     default: {
       LongType xCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
 
       auto xLen = shape::length(xShapeInfo);
       auto zLen = shape::length(zShapeInfo);
@@ -1168,28 +1167,9 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
 
       for (auto i = span.startX(); i < span.stopX(); i++) {
         shape::index2coords(i,xShapeInfo,xCoords);
-        shape::index2coords(i,zShapeInfo,zCoords);
         auto xOffset = shape::getOffset(xShapeInfo,xCoords,0);
-        auto zOffset = shape::getOffset(zShapeInfo,zCoords,0);
-        if(xOffset >= xLen) {
-          std::string errorMessage;
-          errorMessage += "Offset is out of bounds for x. ";
-          errorMessage += "Offset is ";
-          errorMessage += std::to_string(xOffset);
-          errorMessage += " with xLen ";
-          errorMessage += std::to_string(xLen);
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
+        auto zOffset = shape::getOffset(zShapeInfo,xCoords,0);
 
-        if(zOffset >= zLen) {
-          std::string errorMessage;
-          errorMessage += "Offset is out of bounds for z. ";
-          errorMessage += "Offset is ";
-          errorMessage += std::to_string(zOffset);
-          errorMessage += " with zLen ";
-          errorMessage += std::to_string(zLen);
-          THROW_EXCEPTION(errorMessage.c_str());
-        }
 #if defined(PRINT_INDICES)
         shape::printShapeInfo(xShapeInfo);
         shape::printShapeInfo(zShapeInfo);
@@ -1199,7 +1179,7 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
         }
 
         for(int e = 0; e < shape::rank(zShapeInfo); e++) {
-          printf("zCoords[%i]: %lld\n", e, zCoords[e]);
+          printf("zCoords[%i]: %lld\n", e, xCoords[e]);
         }
 
         fflush(stdout);

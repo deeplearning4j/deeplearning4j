@@ -55,9 +55,11 @@ public class TestPCA extends BaseNd4jTestWithBackends {
 
         INDArray A1 = A.dup('f');
         INDArray Factor = PCA.pca_factor(A1, 3, true);
-        A1 = A.subiRowVector(A.mean(0));
+        INDArray mean = A.mean(0);
+        A1 = A.subiRowVector(mean);
 
-        INDArray Reduced = A1.mmul(Factor.transpose());
+        INDArray factorTransposed = Factor.transpose();
+        INDArray Reduced = A1.mmul(factorTransposed);
         INDArray Reconstructed = Reduced.mmul(Factor);
         INDArray Diff = Reconstructed.sub(A1);
         for (int i = 0; i < m * n; i++) {

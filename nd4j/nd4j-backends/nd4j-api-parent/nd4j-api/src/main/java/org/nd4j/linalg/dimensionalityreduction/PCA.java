@@ -193,7 +193,8 @@ public class PCA {
         INDArray V = VT.transpose();
         INDArray factor = Nd4j.create(A.dataType(),new long[]{n, nDims}, 'f');
         for (int i = 0; i < nDims; i++) {
-            factor.putColumn(i, V.getColumn(i));
+            INDArray column = V.getColumn(i);
+            factor.putColumn(i, column);
         }
 
         //difference from cuda vs cpu backends
