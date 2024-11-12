@@ -1555,10 +1555,9 @@ void execSummaryStatsTad(Pointer *extraPointers, int opNum, NDArray *x,
 
 void execTransformFloat(Pointer *extraPointers, int opNum, NDArray *x,  void *extraParams,NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformFloat(nullptr, opNum,
-                                            x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                            extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformFloat(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                            x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                            z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1579,10 +1578,9 @@ void execTransformSame(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 
 void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformBool(nullptr, opNum,
-                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                           z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                           extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformBool(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                           x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                           z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1591,10 +1589,9 @@ void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 
 void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformAny(nullptr, opNum,
-                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                          extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                          x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                          z->specialShapeInfo(), extraParams, false);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1603,10 +1600,9 @@ void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraP
 
 void execTransformStrict(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformStrict(nullptr, opNum,
-                                             x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                             z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                             extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformStrict(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                             x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                             z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

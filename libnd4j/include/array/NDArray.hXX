@@ -46,6 +46,7 @@
 
 #include "execution/Threads.h"
 #include "helpers/ShapeUtils.h"
+#include "system/buffer.h"
 namespace sd {
 
 template <>
@@ -1857,8 +1858,7 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 
     NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
                                           other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
-                                          specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr,
-                                          allowParallelism);
+                                          specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
 
     registerSpecialUse({this}, {&other});
   }
@@ -3085,17 +3085,9 @@ NDArray NDArray::asT()  {
                            : NDArray(ordering(), shape, DataTypeUtils::fromT<T>(), this->getContext());
 
   prepareSpecialUse({&result}, {this});
-  NativeOpExecutioner::execTransformAny(getContext(),
-                                        transform::AnyOps::Assign,
-                                        buffer(), shapeInfo(),
-                                        specialBuffer(),
-                                        specialShapeInfo(),
-                                        result.buffer(),
-                                        result.shapeInfo(),
-                                        result.specialBuffer(),
-                                        result.specialShapeInfo(),
-                                        nullptr,
-                                        nullptr, nullptr);
+  NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, buffer(), shapeInfo(), specialBuffer(),
+                                        specialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(),
+                                        result.specialShapeInfo(), nullptr, false);
   registerSpecialUse({&result}, {this});
 
   return result;
@@ -4913,7 +4905,7 @@ void NDArray::applyTransform(sd::transform::FloatOps op, NDArray &target, ExtraA
   NativeOpExecutioner::execTransformFloat(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(),
       target.specialBuffer(), target.specialShapeInfo(),
-      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
   NDArray::registerSpecialUse({&target}, {this});
 }
 
@@ -4925,7 +4917,7 @@ void NDArray::applyTransform(sd::transform::AnyOps op, NDArray &target, ExtraArg
   NativeOpExecutioner::execTransformAny(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(),
       target.specialBuffer(), target.specialShapeInfo(),
-      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, false);
   NDArray::registerSpecialUse({&target}, {this});
 }
 
@@ -4955,7 +4947,7 @@ void NDArray::applyTransform(sd::transform::StrictOps op, NDArray &target, Extra
   NativeOpExecutioner::execTransformStrict(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(),
       target.specialBuffer(), target.specialShapeInfo(),
-      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
   NDArray::registerSpecialUse({&target}, {this});
 }
 
@@ -4969,7 +4961,7 @@ void NDArray::applyTransform(sd::transform::BoolOps op, NDArray &target, ExtraAr
   NativeOpExecutioner::execTransformBool(
       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(),
       target.specialBuffer(), target.specialShapeInfo(),
-      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+      extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
   NDArray::registerSpecialUse({&target}, {this});
 }
 
@@ -4984,7 +4976,7 @@ NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams)  & {
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                           result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                          result.specialShapeInfo(), extraParams, nullptr, nullptr);
+                                          result.specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({&result}, {this});
 
   return result;
@@ -4996,8 +4988,7 @@ NDArray NDArray::transform(sd::transform::FloatOps op, void *extraParams) && {
 
   NDArray::prepareSpecialUse({this}, {this});
   NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams,
-                                          nullptr, nullptr);
+                                          buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return std::move(*this);
@@ -5040,7 +5031,7 @@ NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams)  & {
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                            result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                           result.specialShapeInfo(), extraParams, nullptr, nullptr);
+                                           result.specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({&result}, {this});
 
   return result;
@@ -5052,8 +5043,7 @@ NDArray NDArray::transform(sd::transform::StrictOps op, void *extraParams) && {
 
   NDArray::prepareSpecialUse({this}, {this});
   NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                           buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams,
-                                           nullptr, nullptr);
+                                           buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return std::move(*this);
@@ -5070,7 +5060,7 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams)  & {
   NDArray::prepareSpecialUse({&result}, {this});
   NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                          result.buffer(), result.shapeInfo(), result.specialBuffer(),
-                                         result.specialShapeInfo(), extraParams, nullptr, nullptr);
+                                         result.specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({&result}, {this});
 
   return result;
@@ -5082,8 +5072,7 @@ NDArray NDArray::transform(sd::transform::BoolOps op, void *extraParams) && {
 
   NDArray::prepareSpecialUse({this}, {this});
   NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams,
-                                         nullptr, nullptr);
+                                         buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams);
   NDArray::registerSpecialUse({this}, {this});
 
   return std::move(*this);

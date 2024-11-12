@@ -45,10 +45,11 @@ using namespace sd;
 #include <loops/special_kernels.h>
 
 #include "../../array/ShapeList.h"
+#include "../../helpers/shape.h"
 #include "../../ops/declarable/DeclarableOp.h"
 #include "../../system/common.h"
-#include "../NativeOps.h"
 #include "../NativeOpExecutioner.h"
+#include "../NativeOps.h"
 
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
@@ -922,19 +923,11 @@ void execTransformBool(Pointer *extraPointers, int opNum, OpaqueNDArray x, void 
     auto tadOffsets = reinterpret_cast<LongType *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformBool(&lc,
-                                           opNum,
-                                           shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                           x->shapeInfo(),
-                                           shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                           x->specialShapeInfo(),
-                                           shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                           z->shapeInfo(),
-                                           shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                           z->specialShapeInfo(),
-                                           extraParams,
-                                           tadShapeInfo,
-                                           tadOffsets);
+    NativeOpExecutioner::execTransformBool(
+        &lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
+        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -950,17 +943,11 @@ void execTransformAny(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *
     auto streamSpecial = reinterpret_cast<cudaStream_t &>(extraPointers[4]);
     LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3], reinterpret_cast<int *>(extraPointers[6]));
 
-    NativeOpExecutioner::execTransformAny(&lc,
-                                          opNum,
-                                          shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-                                          x->shapeInfo(),
-                                          shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-                                          x->specialShapeInfo(),
-                                          shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-                                          z->shapeInfo(),
-                                          shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-                                          z->specialShapeInfo(),
-                                          extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(
+        &lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
+        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams, false);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -979,16 +966,10 @@ void execTransformStrict(Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformStrict(
-        &lc, opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(), extraParams,
-        tadShapeInfo, tadOffsets);
+        &lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
+        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {
@@ -1007,18 +988,10 @@ void execTransformFloat(Pointer *extraPointers, int opNum, OpaqueNDArray x, void
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execTransformFloat(
-        &lc,
-        opNum,
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(),
-        x->shapeInfo(),
-        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(),
-        x->specialShapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(),
-        z->shapeInfo(),
-        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(),
-        z->specialShapeInfo(), extraParams,
-        tadShapeInfo,
-        tadOffsets);
+        &lc, opNum, shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->buffer(), x->shapeInfo(),
+        shape::isEmptyConst(x->shapeInfo()) ? nullptr : x->specialBuffer(), x->specialShapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->buffer(), z->shapeInfo(),
+        shape::isEmptyConst(z->shapeInfo()) ? nullptr : z->specialBuffer(), z->specialShapeInfo(), extraParams);
 
     x->registerSpecialUse({z}, {x});
   } catch (std::exception &e) {

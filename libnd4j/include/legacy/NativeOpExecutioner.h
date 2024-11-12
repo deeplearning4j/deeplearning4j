@@ -308,18 +308,17 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execTransformFloat(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                  const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                  const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                 void *extraParams, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets);
+                                 void *extraParams);
 
   static void execTransformAny(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                               void *extraParams, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
-                               bool allowParallelism = true);
+                               void *extraParams, bool allowParallelism);
 
   static void execTransformStrict(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                   const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                   const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                  void *extraParams, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets);
+                                  void *extraParams);
 
   static void execTransformSame(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                 const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
@@ -329,7 +328,7 @@ class SD_LIB_EXPORT NativeOpExecutioner {
   static void execTransformBool(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                 const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                 const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                void *extraParams, const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets);
+                                void *extraParams);
   /**
    *
    * @param opNum

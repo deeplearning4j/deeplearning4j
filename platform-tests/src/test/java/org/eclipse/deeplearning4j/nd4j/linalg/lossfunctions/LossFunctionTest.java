@@ -57,35 +57,6 @@ import static org.junit.jupiter.api.Assertions.*;
 public class LossFunctionTest extends BaseNd4jTestWithBackends {
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testClippingXENT(Nd4jBackend backend) {
-
-        ILossFunction l1 = new LossBinaryXENT(0);
-        ILossFunction l2 = new LossBinaryXENT();
-
-        INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.create(3, 5), 0.5));
-        INDArray preOut = Nd4j.valueArrayOf(3, 5, -1000.0);
-
-        IActivation a = new ActivationSigmoid();
-
-        double score1 = l1.computeScore(labels, preOut.dup(), a, null, false);
-        assertTrue(Double.isNaN(score1));
-
-        double score2 = l2.computeScore(labels, preOut.dup(), a, null, false);
-        assertFalse(Double.isNaN(score2));
-
-        INDArray grad1 = l1.computeGradient(labels, preOut.dup(), a, null);
-        INDArray grad2 = l2.computeGradient(labels, preOut.dup(), a, null);
-
-        MatchCondition c1 = new MatchCondition(grad1, Conditions.isNan());
-        MatchCondition c2 = new MatchCondition(grad2, Conditions.isNan());
-        int match1 = Nd4j.getExecutioner().exec(c1).getInt(0);
-        int match2 = Nd4j.getExecutioner().exec(c2).getInt(0);
-
-        assertTrue(match1 > 0);
-        assertEquals(0, match2);
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

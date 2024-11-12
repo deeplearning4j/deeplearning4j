@@ -50,7 +50,7 @@ Status LegacyTransformBoolOp::validateAndExecute(Context &block) {
   NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
                                          input->specialBuffer(), input->specialShapeInfo(), z->buffer(), z->shapeInfo(),
                                          z->specialBuffer(), z->specialShapeInfo(),
-                                         extras.argumentsAsT(input->dataType()), nullptr, nullptr);
+                                         extras.argumentsAsT(input->dataType()));
 
   manager.synchronize();
   STORE_RESULT(*z);
