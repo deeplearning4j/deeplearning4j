@@ -78,10 +78,10 @@ void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y
                        NDArray *z,void *extraParams, NDArray *dimension) {
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
 
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
@@ -1163,7 +1163,7 @@ void execIndexReduce(Pointer *extraPointers, int opNum, NDArray *x,
                      ) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1186,10 +1186,10 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
                    NDArray *z,void *extraInfo, NDArray *dimension) {
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
 
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
@@ -1289,7 +1289,7 @@ void execReduceLong(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *ex
                     OpaqueNDArray z, OpaqueNDArray dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1456,7 +1456,7 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
                     NDArray *z, NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1658,7 +1658,7 @@ void execScalarTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                    NDArray *scalar,void *extraParams, NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalar(nullptr, opNum,
@@ -1679,7 +1679,7 @@ void execScalarBoolTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z
                        NDArray *scalar, void *extraParams,NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalarBool(nullptr, opNum,

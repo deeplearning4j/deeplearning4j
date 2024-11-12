@@ -89,17 +89,17 @@ public class LossFunctionTest extends BaseNd4jTestWithBackends {
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testWeightedLossFunctionDTypes(Nd4jBackend backend){
+    public void testWeightedLossFunctionDTypes(Nd4jBackend backend) {
 
-        for(DataType activationsDt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
-            for(DataType weightsDt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}){
+        for(DataType activationsDt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
+            for(DataType weightsDt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
                 for( boolean rank1W : new boolean[]{false, true}) {
 
                     INDArray preOut = Nd4j.rand(activationsDt, 2, 3);
                     INDArray l = Nd4j.rand(activationsDt, 2, 3);
 
                     INDArray w = Nd4j.createFromArray(1.0f, 2.0f, 3.0f).castTo(weightsDt);
-                    if(!rank1W){
+                    if(!rank1W) {
                         w = w.reshape(1, 3);
                     }
 

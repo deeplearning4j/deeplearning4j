@@ -36,62 +36,41 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
 
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, {axis});
 
-  auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
-  auto tLen = static_cast<unsigned int>(shape::length(tadPack->primaryShapeInfo()));
+  auto iLen = static_cast<sd::LongType>(shape::length(iShapeInfo));
+  auto tLen = static_cast<sd::LongType>(shape::length(tadPack->primaryShapeInfo()));
   auto numTads = static_cast<unsigned int>(tadPack->numberOfTads());
-  auto tadEws = shape::elementWiseStride(tadPack->primaryShapeInfo());
 
   if (iLen != numTads) THROW_EXCEPTION("OneHot: number of TADs should be equal to number of indices");
-
-  if (shape::elementWiseStride(zShapeInfo) != 1 || shape::elementWiseStride(iShapeInfo) != 1)
-    THROW_EXCEPTION("OneHot: op expects output and indices to have elementWiseStride to be equal to 1");
 
   Z zero = static_cast<Z>(off);
   Z one = static_cast<Z>(on);
 
-  if (tadEws >= 1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = 0; e < stop; e++) {
-        auto cO = output + tadPack->primaryOffsets()[e];
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto e = start; e < stop; e++) {
+      auto cO = output + tadPack->primaryOffsets()[e];
+      auto idx = static_cast<sd::LongType>(indices[e]);
 
-        auto idx = static_cast<int>(indices[e]);
-        if (idx < 0 || idx >= tLen) {
-          PRAGMA_OMP_SIMD
-          for (unsigned int t = 0; t < tLen; t++) {
-            cO[t * tadEws] = zero;
-          }
-        } else {
-          PRAGMA_OMP_SIMD
-          for (unsigned int t = 0; t < tLen; t++) {
-            cO[t * tadEws] = idx == t ? one : zero;
-          }
+      if (idx < 0 || idx >= tLen) {
+        PRAGMA_OMP_SIMD
+        for (sd::LongType t = 0; t < tLen; t++) {
+          sd::LongType coords[SD_MAX_RANK];
+          shape::index2coords(t, tadPack->primaryShapeInfo(), coords);
+          auto offset = shape::getOffset(tadPack->primaryShapeInfo(), coords);
+          cO[offset] = zero;
+        }
+      } else {
+        PRAGMA_OMP_SIMD
+        for (sd::LongType t = 0; t < tLen; t++) {
+          sd::LongType coords[SD_MAX_RANK];
+          shape::index2coords(t, tadPack->primaryShapeInfo(), coords);
+          auto offset = shape::getOffset(tadPack->primaryShapeInfo(), coords);
+          cO[offset] = idx == t ? one : zero;
         }
       }
-    };
+    }
+  };
 
-    samediff::Threads::parallel_tad(func, 0, numTads);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        auto cO = output + tadPack->primaryOffsets()[e];
-
-        auto idx = static_cast<int>(indices[e]);
-        if (idx < 0 || idx >= tLen) {
-          PRAGMA_OMP_SIMD
-          for (sd::LongType t = 0; t < tLen; t++) {
-            cO[shape::getIndexOffset(t, tadPack->primaryShapeInfo())] = zero;
-          }
-        } else {
-          PRAGMA_OMP_SIMD
-          for (sd::LongType t = 0; t < tLen; t++) {
-            cO[shape::getIndexOffset(t, tadPack->primaryShapeInfo())] = idx == t ? one : zero;
-          }
-        }
-      }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, numTads);
-  }
+  samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 void onehot(const sd::LaunchContext* context, NDArray* indices, NDArray* output, const sd::LongType axis,
@@ -99,11 +78,11 @@ void onehot(const sd::LaunchContext* context, NDArray* indices, NDArray* output,
   auto zType = output->dataType();
   auto iType = indices->dataType();
 
-  BUILD_DOUBLE_SELECTOR(zType, iType, onehot_,
+  BUILD_DOUBLE_SELECTOR(zType, iType, helpers::onehot_,
                         (output->buffer(), output->shapeInfo(), indices->buffer(), indices->shapeInfo(), axis, on, off),
                         SD_COMMON_TYPES, SD_COMMON_TYPES);
-}
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
+}
 #endif

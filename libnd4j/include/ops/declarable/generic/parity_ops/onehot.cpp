@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
   if (block.numI() > 1) {
     depth = INT_ARG(1);
   } else if (block.width() > 1) {
-    depth = INPUT_VARIABLE(1)->e<int>(0);
+    depth = INPUT_VARIABLE(1)->e<sd::LongType>(0);
   }
 
   REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
@@ -81,7 +81,7 @@ DECLARE_SHAPE_FN(onehot) {
   if (block.numI() > 1) {
     depth = INT_ARG(1);
   } else if (block.width() > 1) {
-    depth = INPUT_VARIABLE(1)->e<int>(0);
+    depth = INPUT_VARIABLE(1)->e<sd::LongType>(0);
   }
 
   REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
