@@ -78,10 +78,10 @@ void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y
                        NDArray *z,void *extraParams, NDArray *dimension) {
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
 
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
@@ -1163,7 +1163,7 @@ void execIndexReduce(Pointer *extraPointers, int opNum, NDArray *x,
                      ) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1186,10 +1186,10 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
                    NDArray *z,void *extraInfo, NDArray *dimension) {
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
-                                                                      dimension->shapeOf(),
+                                                                      dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
 
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
@@ -1289,7 +1289,7 @@ void execReduceLong(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *ex
                     OpaqueNDArray z, OpaqueNDArray dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1456,7 +1456,7 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
                     NDArray *z, NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     auto hTADShapeInfo = tadPack->primaryShapeInfo();
@@ -1555,10 +1555,9 @@ void execSummaryStatsTad(Pointer *extraPointers, int opNum, NDArray *x,
 
 void execTransformFloat(Pointer *extraPointers, int opNum, NDArray *x,  void *extraParams,NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformFloat(nullptr, opNum,
-                                            x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                            extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformFloat(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                            x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                            z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1579,10 +1578,9 @@ void execTransformSame(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 
 void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformBool(nullptr, opNum,
-                                           x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                           z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                           extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformBool(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                           x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                           z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1591,10 +1589,9 @@ void execTransformBool(Pointer *extraPointers, int opNum, NDArray *x,void *extra
 
 void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformAny(nullptr, opNum,
-                                          x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                          z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                          extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformAny(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                          x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                          z->specialShapeInfo(), extraParams, false);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1603,10 +1600,9 @@ void execTransformAny(Pointer *extraPointers, int opNum, NDArray *x,void *extraP
 
 void execTransformStrict(Pointer *extraPointers, int opNum, NDArray *x,void *extraParams, NDArray *z) {
   try {
-    NativeOpExecutioner::execTransformStrict(nullptr, opNum,
-                                             x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                                             z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                             extraParams, nullptr, nullptr);
+    NativeOpExecutioner::execTransformStrict(nullptr, opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(),
+                                             x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(),
+                                             z->specialShapeInfo(), extraParams);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1658,7 +1654,7 @@ void execScalarTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                    NDArray *scalar,void *extraParams, NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalar(nullptr, opNum,
@@ -1679,7 +1675,7 @@ void execScalarBoolTad(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z
                        NDArray *scalar, void *extraParams,NDArray *dimension) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
-                                                                     dimension->shapeOf(),
+                                                                     dimension->bufferAsT<sd::LongType>(),
                                                                      dimension->lengthOf());
 
     NativeOpExecutioner::execScalarBool(nullptr, opNum,

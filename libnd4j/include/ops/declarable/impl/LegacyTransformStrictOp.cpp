@@ -49,7 +49,7 @@ Status LegacyTransformStrictOp::validateAndExecute(Context &block) {
   NativeOpExecutioner::execTransformStrict(block.launchContext(), opNum, input->buffer(), input->shapeInfo(),
                                            input->specialBuffer(), input->specialShapeInfo(), z->buffer(),
                                            z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                                           extras.argumentsAsT(z->dataType()), nullptr, nullptr);
+                                           extras.argumentsAsT(z->dataType()));
 
   manager.synchronize();
   STORE_RESULT(*z);

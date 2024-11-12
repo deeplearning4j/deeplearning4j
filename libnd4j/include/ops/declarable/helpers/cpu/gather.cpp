@@ -96,10 +96,10 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
               auto inBuff = input->bufferWithOffset(offset);
               auto outOffset = outTadPack->primaryOffsets()[i];
               auto outBuff = output->bufferWithOffset(outOffset);
-              NativeOpExecutioner::execTransformAny(
-                  input->getContext(), transform::Assign, inBuff, inTadShapeInfo, nullptr /*input specialBuffer*/,
-                  nullptr /*input special*/, outBuff, outTadShapeInfo, nullptr /*output specialBuffer*/,
-                  nullptr /*output special*/, nullptr, nullptr, nullptr, false /*allowParallelism*/);
+              NativeOpExecutioner::execTransformAny(input->getContext(), transform::Assign, inBuff, inTadShapeInfo,
+                                                    nullptr /*input specialBuffer*/, nullptr /*input special*/, outBuff,
+                                                    outTadShapeInfo, nullptr /*output specialBuffer*/,
+                                                    nullptr /*output special*/, nullptr, false /*allowParallelism*/);
             }
           };
 
@@ -143,10 +143,10 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
             auto inBuff = input->bufferWithOffset(inTadPack->primaryOffsets()[intArgs[i + 1]]);
             auto outBuff = output->bufferWithOffset(outTadPack->primaryOffsets()[i]);
 
-            NativeOpExecutioner::execTransformAny(
-                input->getContext(), transform::Assign, inBuff, inTadShapeInfo, nullptr /*input specialBuffer*/,
-                nullptr /*input special*/, outBuff, outTadShapeInfo, nullptr /*output specialBuffer*/,
-                nullptr /*output special*/, nullptr, nullptr, nullptr, false /*allowParallelism*/);
+            NativeOpExecutioner::execTransformAny(input->getContext(), transform::Assign, inBuff, inTadShapeInfo,
+                                                  nullptr /*input specialBuffer*/, nullptr /*input special*/, outBuff,
+                                                  outTadShapeInfo, nullptr /*output specialBuffer*/,
+                                                  nullptr /*output special*/, nullptr, false /*allowParallelism*/);
           }
         };
         samediff::Threads::parallel_tad(func, 0, numOfSubArrs);

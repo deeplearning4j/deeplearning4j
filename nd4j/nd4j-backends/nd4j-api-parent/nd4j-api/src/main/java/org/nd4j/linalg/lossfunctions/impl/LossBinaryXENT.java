@@ -109,7 +109,7 @@ public class LossBinaryXENT implements ILossFunction {
     }
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        if(!labels.equalShapes(preOutput)){
+        if(!labels.equalShapes(preOutput)) {
             Preconditions.throwEx("Labels and preOutput must have equal shapes: got shapes %s vs %s", labels.shape(), preOutput.shape());
         }
         labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
@@ -131,7 +131,9 @@ public class LossBinaryXENT implements ILossFunction {
                         .build();
                 Nd4j.getExecutioner().execAndReturn(op);
             }
-            scoreArr = Transforms.log(output, true).muli(labels);
+
+            INDArray logOut = Transforms.log(output,true);
+            scoreArr = logOut.muli(labels);
             INDArray secondTerm = output.rsubi(1);
             Transforms.log(secondTerm, false);
             secondTerm.muli(labels.rsub(1));

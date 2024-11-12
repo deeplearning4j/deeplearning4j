@@ -1064,8 +1064,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
 void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, const void *hX,
                                              const sd::LongType *hXShapeInfo, const void *dX,
                                              const sd::LongType *dXShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                             void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
-                                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {
+                                             void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1084,8 +1083,7 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, c
 void NativeOpExecutioner::execTransformBool(sd::LaunchContext *lc, int opNum, const void *hX,
                                             const sd::LongType *hXShapeInfo, const void *dX,
                                             const sd::LongType *dXShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
-                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
-                                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {
+                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1105,7 +1103,6 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
                                            const sd::LongType *hXShapeInfo, const void *dX,
                                            const sd::LongType *dXShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                            void *dZ, const sd::LongType *dZShapeInfo, void *extraParams,
-                                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets,
                                            bool allowParallelism) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
 
@@ -1169,8 +1166,7 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, 
                                               const sd::LongType *hXShapeInfo, const void *dX,
                                               const sd::LongType *dXShapeInfo, void *hZ,
                                               const sd::LongType *hZShapeInfo, void *dZ,
-                                              const sd::LongType *dZShapeInfo, void *extraParams,
-                                              const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {
+                                              const sd::LongType *dZShapeInfo, void *extraParams) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 

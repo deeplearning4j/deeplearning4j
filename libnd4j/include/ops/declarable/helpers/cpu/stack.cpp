@@ -54,11 +54,10 @@ static void stack_(const std::vector<NDArray*>& inArrs, NDArray& output, const i
       for (auto i = start; i < stop; i++) {
         void* zBuff = output.bufferWithOffset(zTadPack->primaryOffsets()[i]);
 
-        NativeOpExecutioner::execTransformAny(inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(),
-                                              inArrs[i]->shapeInfo(), nullptr /*input specialBuffer*/,
-                                              nullptr /*input special*/, zBuff, zTadShapeInfo,
-                                              nullptr /*output specialBuffer*/, nullptr /*output special*/, nullptr,
-                                              nullptr, nullptr, false /*allowParallelism*/);
+        NativeOpExecutioner::execTransformAny(
+            inArrs[0]->getContext(), transform::Assign, inArrs[i]->buffer(), inArrs[i]->shapeInfo(),
+            nullptr /*input specialBuffer*/, nullptr /*input special*/, zBuff, zTadShapeInfo,
+            nullptr /*output specialBuffer*/, nullptr /*output special*/, nullptr, false /*allowParallelism*/);
       }
     };
 
@@ -98,7 +97,7 @@ static void unstack_(NDArray& input, const std::vector<NDArray*>& outArrs, const
         NativeOpExecutioner::execTransformAny(
             input.getContext(), transform::Assign, xBuff, xTadShapeInfo, nullptr /*input specialBuffer*/,
             nullptr /*input special*/, outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr /*output specialBuffer*/,
-            nullptr /*output special*/, nullptr, nullptr, nullptr, false /*allowParallelism*/);
+            nullptr /*output special*/, nullptr, false /*allowParallelism*/);
       }
     };
 

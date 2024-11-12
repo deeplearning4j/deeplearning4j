@@ -402,7 +402,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     NativeOpExecutioner::execTransformAny(block.launchContext(), transform::Assign, x->bufferWithOffset(offset),
                                           subArrShapeInfoPack->primary(), x->specialBufferWithOffset(offset),
                                           subArrShapeInfoPack->special(), z->buffer(), z->shapeInfo(),
-                                          z->specialBuffer(), z->specialShapeInfo(), nullptr, nullptr, nullptr, true);
+                                          z->specialBuffer(), z->specialShapeInfo(), nullptr, true);
 
     NDArray::registerSpecialUse({z}, {x});
 
