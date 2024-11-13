@@ -196,7 +196,7 @@ public class OpaqueNDArray extends Pointer {
         return create(
                 shapeInfo.opaqueBuffer(),
                 array.isEmpty() ? null : buffer.opaqueBuffer(),
-                array.isEmpty() ? null : array.data().opaqueBuffer(),
+                array.isEmpty() ? null :buffer.opaqueBuffer(),
                 array.offset()
         );
     }

@@ -106,9 +106,8 @@ public interface NativeOps {
                                         PointerPointer inputShapes,
                                        IntPointer inputIndices, int numInputs);
  LongPointer getShape(OpaqueShapeList list, long i);
- OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, OpaqueNDArrayArr inputs, int numInputs,
-                                        DoublePointer tArgs, int numTArgs, LongPointer iArgs, int numIArgs,
-                                        BooleanPointer bArgs, int numBArgs, IntPointer dArgs, int numDArgs);
+ boolean checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements);
+ OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, OpaqueContext context);
 
  void dbPrintAllocationTrace(org.nd4j.nativeblas.OpaqueDataBuffer db);
  int numIntermediateResults(org.nd4j.nativeblas.OpaqueContext contextPointer);

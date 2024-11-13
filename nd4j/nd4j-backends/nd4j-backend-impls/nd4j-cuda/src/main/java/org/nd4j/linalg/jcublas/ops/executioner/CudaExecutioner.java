@@ -85,8 +85,6 @@ import static org.bytedeco.cuda.global.cudart.*;
 @Slf4j
 public class CudaExecutioner extends DefaultOpExecutioner {
 
-    protected static NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
-
 
     @Getter
     protected static TADManager tadManager = new DeviceTADManager();
@@ -100,12 +98,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected AtomicBoolean experimentalMode = new AtomicBoolean(false);
 
     public CudaExecutioner() {
-        experimentalMode.set(nativeOps.isExperimentalEnabled());
+        experimentalMode.set(Nd4j.getNativeOps().isExperimentalEnabled());
     }
 
-    public NativeOps getNativeOps() {
-        return nativeOps;
-    }
 
     @Override
     public String getLastOp() {
@@ -164,7 +159,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         switch (op.getOpType()) {
             case BROADCAST:
-                nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execBroadcast(xShapeInfoHostPointer, op.opNum(),
                         x,
                         y,
                         z,
@@ -172,7 +167,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimension);
                 break;
             case BROADCAST_BOOL:
-                nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
                         x,
                         y,
                         z,
@@ -183,8 +178,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, null, st);
 
@@ -311,13 +306,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dim = OpaqueNDArray.fromINDArray(dimArr);
         if (op instanceof Variance) {
             if (ret.isScalar()) {
-                nativeOps.execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
                         x,
                         extraArgs,
                         z,
                         ((Variance) op).isBiasCorrected());
             } else {
-                nativeOps.execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
                         x,
                         extraArgs,
                         z,
@@ -326,39 +321,39 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         } else if (op.y() != null) {
             if (ret.isScalar()) {
-                nativeOps.execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
                         x,
                         extraArgs,
                         y,
                         z);
             } else {
-                nativeOps.execReduce3Tad(xShapeInfoHostPointer, op.opNum(),x
+                Nd4j.getNativeOps().execReduce3Tad(xShapeInfoHostPointer, op.opNum(),x
                         ,extraArgs,y,z,dim);
             }
         } else {
             if (ret.isScalar()) {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceFloat(xShapeInfoHostPointer, op.opNum(),
                                 x,
                                 extraArgs,
                                 z);
                         break;
                     case REDUCE_BOOL:
-                        nativeOps.execReduceBool(xShapeInfoHostPointer,
+                        Nd4j.getNativeOps().execReduceBool(xShapeInfoHostPointer,
                                 op.opNum(),
                                 x,
                                 extraArgs,
                                 z,dim);
                         break;
                     case REDUCE_LONG:
-                        nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceLong(xShapeInfoHostPointer, op.opNum(),
                                 x,
                                 extraArgs,
                                 z,dim);
                         break;
                     case REDUCE_SAME:
-                        nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceSame(xShapeInfoHostPointer, op.opNum(),
                                 x,
                                 extraArgs,
                                 z);
@@ -369,20 +364,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             } else {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
                                 x,
                                 extraArgs,z,dim);
                         break;
                     case REDUCE_BOOL:
-                        nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceBool2(xShapeInfoHostPointer, op.opNum(),
                                 x,extraArgs,z,dim);
                         break;
                     case REDUCE_SAME:
-                        nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceSame2(xShapeInfoHostPointer, op.opNum(),
                                 x, extraArgs, z,dim);
                         break;
                     case REDUCE_LONG:
-                        nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceLong2(xShapeInfoHostPointer, op.opNum(),
                                 x, extraArgs, z,dim);
                         break;
                     default:
@@ -391,8 +386,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, null, st);
 
@@ -553,14 +548,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val z = OpaqueNDArray.fromINDArray(op.z());
         INDArray dim1 = op.dimensions().castTo(DataType.LONG);
         val dimension2 = OpaqueNDArray.fromINDArray(dim1);
-        nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
+        Nd4j.getNativeOps().execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                 x,
                 extraArgs,
                 z,
                 dimension2);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, null, st);
 
@@ -686,7 +681,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         switch (op.getOpType()) {
             case BROADCAST:
-                nativeOps.execBroadcast(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execBroadcast(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         yb,
                         zb,
@@ -694,7 +689,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimension);
                 break;
             case BROADCAST_BOOL:
-                nativeOps.execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execBroadcastBool(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         yb,
                         zb,
@@ -705,8 +700,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -788,7 +783,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (z.isScalar() || dimension == null || dimension[0] == Integer.MAX_VALUE) {
-            nativeOps.execIndexReduceScalar(xShapeInfoHostPointer, op.opNum(),
+            Nd4j.getNativeOps().execIndexReduceScalar(xShapeInfoHostPointer, op.opNum(),
                     xb,
                     extraArgs,
                     zb);
@@ -799,15 +794,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val dim = Nd4j.createFromArray(dimension);
             val dimPointer = OpaqueNDArray.fromINDArray(dim);
 
-            nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
+            Nd4j.getNativeOps().execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                     xb,
                     extraArgs,
                     zb,
                     dimPointer);
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -955,13 +950,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (z.isScalar()) {
             if (op instanceof Variance) {
-                nativeOps.execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execSummaryStatsScalar(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         extraArgs,
                         zb,
                         ((Variance) op).isBiasCorrected());
             } else if (y != null) {
-                nativeOps.execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execReduce3Scalar(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         extraArgs,
                         yb,
@@ -969,25 +964,25 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             } else {
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceFloat(xShapeInfoHostPointer, op.opNum(),
                                 xb,
                                 extraArgs,
                                 zb);
                         break;
                     case REDUCE_BOOL:
-                        nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceBool(xShapeInfoHostPointer, op.opNum(),
                                 xb,
                                 extraArgs,
                                 zb,dimensionPointer);
                         break;
                     case REDUCE_SAME:
-                        nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceSame(xShapeInfoHostPointer, op.opNum(),
                                 xb,
                                 extraArgs,
                                 zb);
                         break;
                     case REDUCE_LONG:
-                        nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                        Nd4j.getNativeOps().execReduceLong(xShapeInfoHostPointer, op.opNum(),
                                 xb,
                                 extraArgs,
                                 zb,dimensionPointer);
@@ -999,7 +994,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
 
             if (y != null) {
-                nativeOps.execReduce3Tad(
+                Nd4j.getNativeOps().execReduce3Tad(
                         xShapeInfoHostPointer,
                         op.opNum(),
                         xb,
@@ -1008,7 +1003,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         zb,dimensionPointer);
             } else {
                 if (op instanceof Variance) {
-                    nativeOps.execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
                             xb, (LongPointer)
                                     extraArgs,
                             zb,
@@ -1017,26 +1012,26 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
-                            nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
+                            Nd4j.getNativeOps().execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
                                     xb,
                                     extraArgs,
                                     zb, dimensionPointer);
 
                             break;
                         case REDUCE_SAME:
-                            nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
+                            Nd4j.getNativeOps().execReduceSame2(xShapeInfoHostPointer, op.opNum(),
                                     xb,
                                     extraArgs,
                                     zb, dimensionPointer);
                             break;
                         case REDUCE_BOOL:
-                            nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
+                            Nd4j.getNativeOps().execReduceBool2(xShapeInfoHostPointer, op.opNum(),
                                     xb,
                                     extraArgs,
                                     zb, dimensionPointer);
                             break;
                         case REDUCE_LONG:
-                            nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
+                            Nd4j.getNativeOps().execReduceLong2(xShapeInfoHostPointer, op.opNum(),
                                     xb,
                                     extraArgs,
                                     zb, dimensionPointer);
@@ -1048,8 +1043,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1112,7 +1107,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val dimensionPointer = OpaqueNDArray.fromINDArray(dim);
         switch (op.getOpType()) {
             case SCALAR:
-                nativeOps.execScalarTad(extraPointers, op.opNum(),
+                Nd4j.getNativeOps().execScalarTad(extraPointers, op.opNum(),
                         x,
                         z,
                         y,
@@ -1121,7 +1116,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                 break;
             case SCALAR_BOOL:
-                nativeOps.execScalarBoolTad(extraPointers, op.opNum(),
+                Nd4j.getNativeOps().execScalarBoolTad(extraPointers, op.opNum(),
                         x,
                         z,
                         y,
@@ -1132,8 +1127,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException();
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, null, st);
 
@@ -1210,14 +1205,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         switch (op.getOpType()) {
             case SCALAR_BOOL:
-                nativeOps.execScalarBool(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execScalarBool(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         zb,
                         yb,
                         extraArgs);
                 break;
             case SCALAR:
-                nativeOps.execScalar(xShapeInfoHostPointer, op.opNum(),
+                Nd4j.getNativeOps().execScalar(xShapeInfoHostPointer, op.opNum(),
                         xb,
                         zb,
                         yb,
@@ -1227,8 +1222,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1330,14 +1325,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             switch (op.getOpType()) {
                 case TRANSFORM_BOOL:
                 case PAIRWISE_BOOL:
-                    nativeOps.execPairwiseTransformBool(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execPairwiseTransformBool(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             yb,
                             extraArgs,
                             zb );
                     break;
                 default:
-                    nativeOps.execPairwiseTransform(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execPairwiseTransform(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             yb,
                             zb,
@@ -1347,31 +1342,31 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
             switch (op.getOpType()) {
                 case TRANSFORM_ANY:
-                    nativeOps.execTransformAny(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execTransformAny(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             extraArgs,
                             zb);
                     break;
                 case TRANSFORM_FLOAT:
-                    nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execTransformFloat(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             extraArgs,
                             zb);
                     break;
                 case TRANSFORM_BOOL:
-                    nativeOps.execTransformBool(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execTransformBool(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             extraArgs,
                             zb);
                     break;
                 case TRANSFORM_SAME:
-                    nativeOps.execTransformSame(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execTransformSame(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             extraArgs,
                             zb);
                     break;
                 case TRANSFORM_STRICT:
-                    nativeOps.execTransformStrict(xShapeInfoHostPointer, op.opNum(),
+                    Nd4j.getNativeOps().execTransformStrict(xShapeInfoHostPointer, op.opNum(),
                             xb,
                             extraArgs,
                             zb);
@@ -1381,8 +1376,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         if (extraArgs != null)
             extraArgs.address();
@@ -1453,7 +1448,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (x != null && y != null && z != null) {
             // triple arg call
-            nativeOps.execRandom3(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+            Nd4j.getNativeOps().execRandom3(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                     xb,
                     yb,
                     zb,
@@ -1461,7 +1456,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         } else if (x != null && z != null) {
             //double arg call
-            nativeOps.execRandom2(extraZZ, op.opNum(),
+            Nd4j.getNativeOps().execRandom2(extraZZ, op.opNum(),
                     rng.getStatePointer(), // rng state ptr
                     xb,
                     zb,
@@ -1470,13 +1465,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         } else {
             // single arg call
-            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+            Nd4j.getNativeOps().execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                     zb,
                     AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(z.dataType()),context));
         }
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         profilingConfigurableHookOut(op, oc, st);
 
@@ -1498,21 +1493,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             List<Map<String, Object>> devicesList = new ArrayList<>();
 
             // fill with per-device information: name, memory, versions
-            for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
+            for (int i = 0; i < Nd4j.getNativeOps().getAvailableDevices(); i++) {
                 Map<String, Object> deviceProps = new HashMap<>();
 
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, nativeOps.getDeviceName(i));
-                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
-                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) nativeOps.getDeviceMajor(i));
-                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) nativeOps.getDeviceMinor(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY, Nd4j.getNativeOps().getDeviceName(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, Nd4j.getNativeOps().getDeviceFreeMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, Nd4j.getNativeOps().getDeviceTotalMemory(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY, (long) Nd4j.getNativeOps().getDeviceMajor(i));
+                deviceProps.put(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY, (long) Nd4j.getNativeOps().getDeviceMinor(i));
 
                 devicesList.add(i, deviceProps);
             }
 
             // fill with basic general info
             props.put(Nd4jEnvironment.BACKEND_KEY, "CUDA");
-            props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, nativeOps.getAvailableDevices());
+            props.put(Nd4jEnvironment.CUDA_NUM_GPUS_KEY, Nd4j.getNativeOps().getAvailableDevices());
             props.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
             props.put(Nd4jEnvironment.BLAS_VENDOR_KEY, (Nd4j.factory().blas()).getBlasVendor().toString());
             props.put(Nd4jEnvironment.HOST_FREE_MEMORY_KEY, Pointer.maxBytes() - Pointer.totalBytes());
@@ -1526,11 +1521,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             List<Map<String, Object>> devicesList = (List<Map<String, Object>>) properties.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
 
             // just update information that might change over time
-            for (int i = 0; i < nativeOps.getAvailableDevices(); i++) {
+            for (int i = 0; i < Nd4j.getNativeOps().getAvailableDevices(); i++) {
                 Map<String, Object> dev = devicesList.get(i);
 
-                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, nativeOps.getDeviceFreeMemory(i));
-                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, nativeOps.getDeviceTotalMemory(i));
+                dev.put(Nd4jEnvironment.CUDA_FREE_MEMORY_KEY, Nd4j.getNativeOps().getDeviceFreeMemory(i));
+                dev.put(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY, Nd4j.getNativeOps().getDeviceTotalMemory(i));
             }
 
             properties.put(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY, devicesList);
@@ -1563,7 +1558,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
         if(customOps == null) {
-            String list = nativeOps.getAllCustomOps();
+            String list = Nd4j.getNativeOps().getAllCustomOps();
 
             if (list == null || list.isEmpty()) {
                 log.warn("No customs ops available!");
@@ -1612,96 +1607,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val t = ArrayOptionsHelper.arrayType(shape);
         return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op) {
-        return calculateOutputShape(op, null);
-    }
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
-
-        Nd4j.getExecutioner().commit();
-
-        val lc = op.opName().toLowerCase();
-        val hash = op.opHash();
-
-        val result = new ArrayList<LongShapeDescriptor>();
-        int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
-        if (nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
-            if (log.isTraceEnabled()) {
-                log.trace("Could not calculate output shape for op {}: number of input args was 0",
-                        op.getClass().getName());
-            }
-            return Collections.emptyList();
-        }
-
-        val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
-        OpaqueNDArrayArr inputsOpaque = new OpaqueNDArrayArr(inputArgs.stream().map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new));
-
-        int nIArgs = opContext != null ? opContext.numIArguments() : op.numIArguments();
-        val iArgs = nIArgs > 0 ? new LongPointer(nIArgs) : null;
-        int cnt = 0;
-        if (opContext != null) {
-            for (val i : opContext.getIArguments())
-                iArgs.put(cnt++, i);
-        } else {
-            for (val i : op.iArgs())
-                iArgs.put(cnt++, i);
-        }
-
-        int nTArgs = opContext != null ? opContext.numTArguments() : op.numTArguments();
-        val tArgs = nTArgs > 0 ? new DoublePointer(nTArgs) : null;
-
-        int nBArgs = opContext != null ? opContext.numBArguments() : op.numBArguments();
-        val bArgs = nBArgs > 0 ? new BooleanPointer(nBArgs) : null;
-
-        int nDArgs = opContext != null ? opContext.numDArguments() : op.numDArguments();
-        val dArgs = nDArgs > 0 ? new IntPointer(nDArgs) : null;
-
-        cnt = 0;
-        if (opContext != null) {
-            for (val b : opContext.getBArguments())
-                bArgs.put(cnt++, b);
-        } else {
-            for (val b : op.bArgs())
-                bArgs.put(cnt++, b);
-        }
-
-        cnt = 0;
-        if (opContext != null) {
-            for (val b : opContext.getTArguments())
-                tArgs.put(cnt++, b);
-        } else {
-            for (val b : op.tArgs())
-                tArgs.put(cnt++, b);
-        }
-
-        cnt = 0;
-        if (opContext != null) {
-            for (val b : opContext.getDArguments())
-                dArgs.put(cnt++, b.toInt());
-        } else {
-            for (val b : op.dArgs())
-                dArgs.put(cnt++, b.toInt());
-        }
-
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputsOpaque, nIn, tArgs, nTArgs, iArgs, nIArgs, bArgs, nBArgs, dArgs, nDArgs);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        if (ptrptr == null)
-            throw new RuntimeException();
-
-        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++)
-            result.add(getShapeFromPointer(new PagedPointer(nativeOps.getShape(ptrptr, e)).asLongPointer()));
-
-        nativeOps.deleteShapeList(ptrptr);
-
-        return result;
-    }
-
+    
     /**
      * This method executes given CustomOp
      *
@@ -1769,128 +1675,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(message.toString(), e);
         }
     }
-
-    @Override
-    public void enableDebugMode(boolean reallyEnable) {
-        debug.set(reallyEnable);
-        nativeOps.enableDebugMode(reallyEnable);
-    }
-
-    @Override
-    public void enableVerboseMode(boolean reallyEnable) {
-        verbose.set(reallyEnable);
-        nativeOps.enableVerboseMode(reallyEnable);
-    }
-
-    @Override
-    public void registerGraph(long id, Pointer graph) {
-        nativeOps.registerGraph(null, id, graph);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-    }
-
-    @Override
-    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
-
-        Nd4j.getExecutioner().commit();
-
-        val ptrBuffers = new PointerPointer(map.size() * 2);
-        val ptrShapes = new PointerPointer(map.size() * 2);
-        val ptrIndices = new IntPointer(map.size());
-
-        int cnt = 0;
-        val keySet = new ArrayList<>(map.keySet());
-        for (val key: keySet) {
-            val array = map.get(key);
-
-            ptrBuffers.put(cnt, AtomicAllocator.getInstance().getHostPointer(array));
-            ptrShapes.put(cnt, AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()));
-            ptrIndices.put(cnt, reverseMap.get(key));
-
-            cnt++;
-        }
-
-        val newMap = new LinkedHashMap<String, INDArray>();
-
-        OpaqueVariablesSet result = nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        OpStatus status = OpStatus.byNumber(nativeOps.getVariablesSetStatus(result));
-
-        if (status != OpStatus.ND4J_STATUS_OK)
-            throw new ND4JIllegalStateException("Op execution failed: " + status);
-
-        for (int e = 0; e < nativeOps.getVariablesSetSize(result); e++) {
-            OpaqueVariable var = nativeOps.getVariable(result, e);
-            int nodeId = nativeOps.getVariableId(var);
-            int index = nativeOps.getVariableIndex(var);
-            LongPointer shapeInfo = nativeOps.getVariableShape(var);
-            Pointer buffer = nativeOps.getVariableBuffer(var);
-
-            val rank = (int) shapeInfo.get(0);
-            val jshape = new long[rank * 2 + 4];
-            for (int i = 0; i < jshape.length; i++) {
-                jshape[i] = shapeInfo.get(i);
-            }
-
-            val shapeOf = Shape.shapeOf(jshape);
-            val stridesOf = Shape.stridesOf(jshape);
-            val order = Shape.order(jshape);
-            val array = Nd4j.create(shapeOf, stridesOf, 0, order);
-
-            Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * array.dataType().width());
-
-
-            String nodeName = nativeOps.getVariableName(var);
-            newMap.put(nodeName, array);
-        }
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        nativeOps.deleteVariablesSet(result);
-
-        return newMap;
-    }
-
-    @Override
-    public void forgetGraph(long id) {
-        nativeOps.unregisterGraph(null, id);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-    }
-
-    /**
-     * This method allows to set desired number of elements per thread, for performance optimization purposes.
-     * I.e. if array contains 2048 elements, and threshold is set to 1024, 2 threads will be used for given op execution.
-     * <p>
-     * Default value: 1024
-     *
-     * @param threshold
-     */
-    @Override
-    public void setElementsThreshold(int threshold) {
-        nativeOps.setElementThreshold(threshold);
-    }
-
-    /**
-     * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.
-     * I.e. if matrix has shape of 64 x 128, and threshold is set to 8, each thread will be processing 8 sub-arrays (sure, if you have 8 core cpu).
-     * If your cpu has, say, 4, cores, only 4 threads will be spawned, and each will process 16 sub-arrays
-     * <p>
-     * Default value: 8
-     *
-     * @param threshold
-     */
-    @Override
-    public void setTadThreshold(int threshold) {
-        nativeOps.setTADThreshold(threshold);
-    }
-
+    
 
     @Override
     public ExecutionerType type() {
@@ -1933,13 +1718,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         OpaqueNDArray zb = OpaqueNDArray.fromINDArray(indices);
         INDArray axisArray = Nd4j.createFromArray(axis);
         OpaqueNDArray axis2 = OpaqueNDArray.fromINDArray(axisArray);
-        nativeOps.scatterUpdate(
+        Nd4j.getNativeOps().scatterUpdate(
                 stuff,
                 op.ordinal(),
                 xb,zb,yb,axis2);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
     }
 
     @Override
@@ -1958,9 +1743,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
 
-        val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        val status = Nd4j.getNativeOps().execCustomOp2(null, op.opHash(), context.contextPointer());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         if (status != 0)
             throw new RuntimeException("Op [" + op.opName() + "] execution failed");
@@ -2007,10 +1792,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 ctx.getBufferSpecial());
 
 
-        nativeOps.inspectArray(extras, AtomicAllocator.getInstance().getHostPointer(array), (LongPointer) AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(array, ctx), (LongPointer) AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()), debugInfo);
+        Nd4j.getNativeOps().inspectArray(extras, AtomicAllocator.getInstance().getHostPointer(array), (LongPointer) AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(array, ctx), (LongPointer) AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()), debugInfo);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         return INDArrayStatistics.builder()
                 .minValue(debugInfo._minValue())
@@ -2028,15 +1813,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        val dbf = Nd4j.getNativeOps().shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+        val result = new CudaLongDataBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf), Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
         return result;
@@ -2044,15 +1829,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = nativeOps.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        val dbf = Nd4j.getNativeOps().shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+        val result = new CudaLongDataBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf), Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
 
         return result;
@@ -2060,16 +1845,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, long[] dimension) {
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo( array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
+        OpaqueTadPack pack = Nd4j.getNativeOps().tadOnlyShapeInfo( array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val tadShape = new CudaLongDataBuffer(nativeOps.getPrimaryShapeInfo(pack), nativeOps.getSpecialShapeInfo(pack), nativeOps.getShapeInfoLength(pack));
-        val tadOffsets = new CudaLongDataBuffer(nativeOps.getPrimaryOffsets(pack), nativeOps.getSpecialOffsets(pack), nativeOps.getNumberOfTads(pack));
+        val tadShape = new CudaLongDataBuffer(Nd4j.getNativeOps().getPrimaryShapeInfo(pack), Nd4j.getNativeOps().getSpecialShapeInfo(pack), Nd4j.getNativeOps().getShapeInfoLength(pack));
+        val tadOffsets = new CudaLongDataBuffer(Nd4j.getNativeOps().getPrimaryOffsets(pack), Nd4j.getNativeOps().getSpecialOffsets(pack), Nd4j.getNativeOps().getNumberOfTads(pack));
 
 
         return new TadPack(tadShape, tadOffsets);
@@ -2077,15 +1862,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = nativeOps.constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
+        val dbf = Nd4j.getNativeOps().constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
+        val buffer = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantDataBufferPrimary(dbf), Nd4j.getNativeOps().getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);
 
         return buffer;
@@ -2093,24 +1878,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
+        val dbf = Nd4j.getNativeOps().constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
+        val buffer = Nd4j.createBuffer(Nd4j.getNativeOps().getConstantDataBufferPrimary(dbf), Nd4j.getNativeOps().getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);
 
         return buffer;
     }
 
-    @Override
-    public int useCount(DataBuffer buffer){
-        return nativeOps.dbUseCount(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
-    }
+
 
 
 }

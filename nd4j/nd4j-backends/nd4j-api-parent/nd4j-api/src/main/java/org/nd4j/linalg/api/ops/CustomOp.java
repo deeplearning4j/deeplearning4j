@@ -155,6 +155,45 @@ public interface CustomOp  {
   */
  void clearArrays();
 
+
+ default void setupOpContextFromCustomOp(OpContext opContext) {
+  // Set input arguments
+  val inputArgs = inputArguments();
+  if (inputArgs != null && !inputArgs.isEmpty()) {
+   opContext.setInputArrays(inputArgs.toArray(new INDArray[0]));
+  }
+
+  // Set integer arguments
+  val iArgs = iArgs();
+  if (iArgs != null && iArgs.length > 0) {
+   opContext.setIArguments(iArgs);
+  }
+
+  // Set floating point arguments
+  val tArgs = tArgs();
+  if (tArgs != null && tArgs.length > 0) {
+   opContext.setTArguments(tArgs);
+  }
+
+  // Set boolean arguments
+  val bArgs = bArgs();
+  if (bArgs != null && bArgs.length > 0) {
+   opContext.setBArguments(bArgs);
+  }
+
+  // Set data type arguments
+  val dArgs = dArgs();
+  if (dArgs != null && dArgs.length > 0) {
+   opContext.setDArguments(dArgs);
+  }
+
+  // Set output arguments
+  val outputArgs = outputArguments();
+  if (outputArgs != null && !outputArgs.isEmpty()) {
+   opContext.setOutputArrays(outputArgs.toArray(new INDArray[0]));
+  }
+ }
+
  /**
   * Initialize the output arrays, if required.
   * @return True if the output arrays were initialized (and hence should be calculated), false otherwise

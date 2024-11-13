@@ -20,6 +20,10 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.PointerPointer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> {
 
@@ -27,5 +31,34 @@ public class OpaqueNDArrayArr extends PointerPointer<OpaqueNDArray> {
     public OpaqueNDArrayArr(OpaqueNDArray... array) { super(array); }
 
 
+    /**
+     * @see {@link #createFrom(INDArray...)}
+     * @param array
+     * @return
+     */
+    public static OpaqueNDArrayArr createFrom(List<INDArray> array) {
+        OpaqueNDArray[] inputs = array.stream()
+                .map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new);
+        OpaqueNDArrayArr inputsOpaque = (OpaqueNDArrayArr) new OpaqueNDArrayArr().capacity(inputs.length);
+        inputsOpaque.put(inputs);
+        return inputsOpaque;
+    }
+
+
+    /**
+     * Simple creation method
+     * that handles ensuring a proper 
+     * instantiation of the array with capacity
+     * and putting the result pointers in the array.
+     * @param array the array to create the OpaqueNDArrayArr from
+     * @return
+     */
+    public static OpaqueNDArrayArr createFrom(INDArray... array) {
+        OpaqueNDArray[] inputs = Arrays.stream(array)
+                .map(OpaqueNDArray::fromINDArray).toArray(OpaqueNDArray[]::new);
+        OpaqueNDArrayArr inputsOpaque = (OpaqueNDArrayArr) new OpaqueNDArrayArr().capacity(inputs.length);
+        inputsOpaque.put(inputs);
+        return inputsOpaque;
+    }
 
 }
