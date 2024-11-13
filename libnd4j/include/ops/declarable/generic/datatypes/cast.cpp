@@ -53,6 +53,7 @@ DECLARE_SHAPE_FN(cast) {
     DataType newType = block.dataType(0);
     DataType secondComp = block.getDArguments()->at(0);
     auto desc = new ShapeDescriptor(inShape, newType, true);
+   printf("cast new data type: %s", DataTypeUtils::asString(desc->dataType()).c_str());
     auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
     if(compDataType != newType) {
@@ -68,6 +69,8 @@ DECLARE_SHAPE_FN(cast) {
     return ret;
 
   } else {
+    printf("block d arguments is empty trying to use int\n");
+    fflush(stdout);
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
     auto desc = new ShapeDescriptor(inShape, newType, false);

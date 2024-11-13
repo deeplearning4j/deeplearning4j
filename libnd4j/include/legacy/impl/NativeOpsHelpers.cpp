@@ -1059,7 +1059,7 @@ void setGraphContextBArguments(Context *ptr, bool *arguments, int numberOfArgume
 
 void setGraphContextDArguments(OpaqueContext *ptr, int *arguments, int numberOfArguments) {
   std::vector<sd::DataType> dtypes(numberOfArguments);
-  for (int e = 0; e < numberOfArguments; e++) dtypes[e] = (sd::DataType)arguments[e];
+  for (int e = 0; e < numberOfArguments; e++) dtypes[e] = sd::DataTypeUtils::fromInt(arguments[e]);
 
   ptr->setDArguments(dtypes);
 }
