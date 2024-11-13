@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -154,6 +155,45 @@ public interface CustomOp  {
   * Clear the input and output INDArrays, if any are set
   */
  void clearArrays();
+
+
+ default void setupOpContextFromCustomOp(OpContext opContext) {
+  // Set input arguments
+  val inputArgs = inputArguments();
+  if (inputArgs != null && !inputArgs.isEmpty()) {
+   opContext.setInputArrays(inputArgs.toArray(new INDArray[0]));
+  }
+
+  // Set integer arguments
+  val iArgs = iArgs();
+  if (iArgs != null && iArgs.length > 0) {
+   opContext.setIArguments(iArgs);
+  }
+
+  // Set floating point arguments
+  val tArgs = tArgs();
+  if (tArgs != null && tArgs.length > 0) {
+   opContext.setTArguments(tArgs);
+  }
+
+  // Set boolean arguments
+  val bArgs = bArgs();
+  if (bArgs != null && bArgs.length > 0) {
+   opContext.setBArguments(bArgs);
+  }
+
+  // Set data type arguments
+  val dArgs = dArgs();
+  if (dArgs != null && dArgs.length > 0) {
+   opContext.setDArguments(dArgs);
+  }
+
+  // Set output arguments
+  val outputArgs = outputArguments();
+  if (outputArgs != null && !outputArgs.isEmpty()) {
+   opContext.setOutputArrays(outputArgs.toArray(new INDArray[0]));
+  }
+ }
 
  /**
   * Initialize the output arrays, if required.

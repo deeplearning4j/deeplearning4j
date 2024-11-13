@@ -173,9 +173,7 @@ SD_LIB_EXPORT void execRandom3(sd::Pointer *extraPointers, int opNum, sd::Pointe
 
 SD_LIB_EXPORT sd::LongType const *getShape(OpaqueShapeList *list, sd::LongType i);
 
-SD_LIB_EXPORT OpaqueShapeList  *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArrayArr inputs, int numInputs,
-                                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
-                                                     bool *bArgs, int numBArgs, int *dArgs, int numDArgs);
+SD_LIB_EXPORT OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context);
 SD_LIB_EXPORT sd::LongType getShapeListSize(OpaqueShapeList *list);
 
 SD_LIB_EXPORT void dbPrintAllocationTrace(OpaqueDataBuffer *db) ;
@@ -280,6 +278,7 @@ SD_LIB_EXPORT int lengthForShapeBufferPointer(sd::Pointer buffer) ;
 SD_LIB_EXPORT sd::Pointer pointerForAddress(sd::LongType address) ;
 SD_LIB_EXPORT void prescanArrayRecursive(sd::Pointer *extras, int *dZ, int *dX, int numElements, int level) ;
 SD_LIB_EXPORT void deleteNDArray(OpaqueNDArray array) ;
+SD_LIB_EXPORT bool checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements);
 SD_LIB_EXPORT sd::LongType getOpaqueNDArrayOffset(OpaqueNDArray array) ;
 SD_LIB_EXPORT void* getOpaqueNDArrayBuffer(OpaqueNDArray array) ;
 SD_LIB_EXPORT void* getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) ;

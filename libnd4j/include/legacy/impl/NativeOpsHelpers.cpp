@@ -467,34 +467,21 @@ sd::Pointer getResultWrapperPointer(ResultWrapper *ptr) { return ptr->pointer();
 
 const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().getAllCustomOperations(); }
 
-sd::ShapeList *_calculateOutputShapes(sd::Pointer *extraPointers, sd::ops::DeclarableOp *op, OpaqueNDArrayArr inputs,
-                                      int numInputs, double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
-                                      bool *pBoolean, int numBArgs, int *dArgs, int numDaargs) {
-  Context block(1);
-  sd::ShapeList inShapes;
-
-  for (int e = 0; e < numIArgs; e++) block.getIArguments()->push_back(iArgs[e]);
-
-  for (int e = 0; e < numTArgs; e++) block.getTArguments()->push_back(tArgs[e]);
-
-  for (int e = 0; e < numInputs; e++) inShapes.push_back(inputs[e]->shapeInfo());
-
-  for(int e = 0; e < numBArgs; e++) block.getBArguments()->push_back(pBoolean[e]);
-
-  for(int e = 0; e < numDaargs; e++) block.getDArguments()->push_back(sd::DataTypeUtils::fromInt(dArgs[e]));
-
-  auto shapeList = op->calculateOutputShape(&inShapes, block);
-
-  return shapeList;
-}
-
-sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArrayArr inputs, int numInputs,
-                                      double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs,
-                                      bool *bArgs, int numBArgs, int *dArgs, int numDArgs) {
+OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    return _calculateOutputShapes(extraPointers, op, inputs, numInputs, tArgs, numTArgs, iArgs, numIArgs, bArgs,
-                                  numBArgs, dArgs, numDArgs);
+    sd::ShapeList inShapes;
+
+    for (int e = 0; e < context->width(); e++) {
+      if (context->array(e) == nullptr) {
+        std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
+      inShapes.push_back(context->array(e)->shapeInfo());
+    }
+
+    auto shapeList = op->calculateOutputShape(&inShapes, *context);
+    return shapeList;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -502,102 +489,24 @@ sd::ShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType h
   }
 }
 
-
-
-sd::ShapeList *calculateOutputShapes(sd::Pointer *extraPointers, sd::LongType hash, OpaqueNDArray *inputs, int numInputs,
-                                     double *tArgs, int numTArgs, sd::LongType *iArgs, int numIArgs) {
-  try {
-    auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    return _calculateOutputShapes(extraPointers, op, inputs, numInputs, tArgs, numTArgs, iArgs, numIArgs, nullptr, 0,
-                                  nullptr, 0);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+bool checkOpaqueNDArrayElementsNull(OpaqueNDArrayArr elements,int numElements) {
+  for (int i = 0; i < numElements; i++) {
+    if (elements[i] == nullptr) return true;
   }
+  return false;
 }
+
 
 sd::LongType  getShapeListSize(sd::ShapeList *list) { return list->size(); }
 
 sd::LongType  const *getShape(sd::ShapeList *list, sd::LongType  i) { return list->at(i); }
 
-sd::Status realExec(sd::ops::DeclarableOp *op, sd::Pointer *extraPointers, sd::LongType  hash, sd::Pointer *inputBuffers,
-                    sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers, sd::Pointer *outputShapes,
-                    int numOutputs, double *tArgs, int numTArgs, sd::LongType  *iArgs, int numIArgs, bool *bArgs,
-                    int numBArgs, bool isInplace) {
-  if (op == nullptr) sd_printf("Can't find requested operation: [%lld]\n", hash);
 
-  // we're using the same fake nodeId everywhere here
-
-  std::vector<sd::NDArray *> inputs(numInputs);
-  std::vector<sd::NDArray *> outputs(numOutputs);
-  std::vector<double> ttArgs(numTArgs);
-  std::vector<sd::LongType > iiArgs(numIArgs);
-  std::vector<bool> biArgs(numBArgs);
-
-  // filling block now with inputs
-  for (int e = 0; e < numInputs; e++) {
-    auto shape = reinterpret_cast<sd::LongType  *>(inputShapes[e]);
-    void *buffer = sd::ArrayOptions::arrayType(shape) == sd::ArrayType::EMPTY ? nullptr : inputBuffers[e];
-
-    inputs[e] = new sd::NDArray(buffer, shape, nullptr, 0, 0);
-  }
-
-  // if not inplace - transferring output arrays
-
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      // we want to keep original output shape intact
-      auto shape = shape::copyShape(reinterpret_cast<sd::LongType  *>(outputShapes[e]));
-      void *buffer = sd::ArrayOptions::arrayType(shape) == sd::ArrayType::EMPTY ? nullptr : outputBuffers[e];
-
-      // FIXME: revisit this.
-      bool canNullify = true;
-      for (int i = 0; i < numInputs; i++) {
-        void *ibuffer = sd::ArrayOptions::arrayType(shape) == sd::ArrayType::EMPTY ? nullptr : inputBuffers[i];
-        if (ibuffer == buffer) {
-          canNullify = false;
-          break;
-        }
-      }
-
-      if (canNullify)
-        memset((uint8_t *)buffer, '\0',
-               shape::length(shape) * sd::DataTypeUtils::sizeOfElement(sd::ArrayOptions::dataType(shape)));
-
-      auto array = new sd::NDArray(buffer, shape, nullptr, 0, 0);
-      outputs[e] = array;
-
-      // and we want to release shape copy once we're done
-      delete[] shape;
-    }
-
-  for (int e = 0; e < numIArgs; e++) iiArgs[e] = iArgs[e];
-
-  for (int e = 0; e < numTArgs; e++) ttArgs[e] = tArgs[e];
-
-  for (int e = 0; e < numBArgs; e++) biArgs[e] = bArgs[e];
-
-  // hypothetically at this point we have everything filled
-  auto hZ = op->execute(inputs, outputs, ttArgs, iiArgs, biArgs, std::vector<sd::DataType>(), isInplace);
-
-  if (!isInplace)
-    for (int e = 0; e < numOutputs; e++) {
-      if (outputs[e]->ordering() != shape::order(reinterpret_cast<sd::LongType  *>(outputShapes[e])))
-        outputs[e]->streamline(shape::order(reinterpret_cast<sd::LongType  *>(outputShapes[e])));
-    }
-
-  for (auto v : inputs) delete v;
-
-  for (auto v : outputs) delete v;
-
-  return hZ;
-}
 
 
 // Function to execute a custom operation
-sd::Status execCustomOp(sd::Pointer *extraPointers, sd::LongType  hash, OpaqueNDArray *inputs, int numInputs,
-                        OpaqueNDArray *outputs, int numOutputs, double *tArgs, int numTArgs,
+sd::Status execCustomOp(sd::Pointer *extraPointers, sd::LongType  hash, OpaqueNDArrayArr inputs, int numInputs,
+                        OpaqueNDArrayArr outputs, int numOutputs, double *tArgs, int numTArgs,
                         sd::LongType  *iArgs, int numIArgs, bool *bArgs, int numBArgs, bool isInplace) {
   try {
     // Convert NDArray** inputs and outputs to std::vector<NDArray*>
@@ -730,7 +639,6 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
     THROW_EXCEPTION("createOpaqueNDArray: Special buffer was null!");
   }
   sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
-  shape::printShapeInfo(shapeInfoCast);
   sd::NDArray* ret = new sd::NDArray(buffer->getDataBuffer(),
                                      shapeInfoCast,
                                      sd::LaunchContext::defaultContext(),

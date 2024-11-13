@@ -103,8 +103,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     ArrayOptions::toggleIsEmpty(newShapeInfo);
   } else {
     bool needsCopy = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-    printf("reshape no copy Needs copy: %i\n", needsCopy);
-    fflush(stdout);
     if (!needsCopy) {
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
@@ -114,8 +112,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
     } else {
-      printf("Setting needs copy\n");
-      fflush(stdout);
       // If reshape is not possible without allocation, fall back to regular reshape
       shape::updateStrides(newShapeInfo, order,true);
       shape::setElementWiseStride(newShapeInfo, 0);

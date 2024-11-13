@@ -20,15 +20,19 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.LongIndexer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
@@ -36,6 +40,7 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -53,6 +58,9 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
+import org.nd4j.nativeblas.OpaqueShapeList;
+import org.nd4j.nativeblas.OpaqueVariable;
+import org.nd4j.nativeblas.OpaqueVariablesSet;
 
 import java.util.*;
 
@@ -902,15 +910,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return op;
     }
 
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op) {
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op, OpContext opContext) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public INDArray[] allocateOutputArrays(CustomOp op){
@@ -922,60 +922,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return out;
     }
 
-
     @Override
-    public void enableDebugMode(boolean reallyEnable) {
-        throw new UnsupportedOperationException();
+    public int useCount(DataBuffer buffer) {
+        return Nd4j.getNativeOps().dbUseCount(buffer.opaqueBuffer());
     }
 
-    @Override
-    public void enableVerboseMode(boolean reallyEnable) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void registerGraph(long id, Pointer graph) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map, Map<String, Integer> reverseMap) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void forgetGraph(long id) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-
-    /**
-     * This method allows to set desired number of elements per thread, for performance optimization purposes.
-     * I.e. if array contains 2048 elements, and threshold is set to 1024, 2 threads will be used for given op execution.
-     * <p>
-     * Default value: 1024
-     *
-     * @param threshold
-     */
-    @Override
-    public void setElementsThreshold(int threshold) {
-        // no-op
-    }
-
-
-    /**
-     * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.
-     * I.e. if matrix has shape of 64 x 128, and threshold is set to 8, each thread will be processing 8 sub-arrays (sure, if you have 8 core cpu).
-     * If your cpu has, say, 4, cores, only 4 threads will be spawned, and each will process 16 sub-arrays
-     * <p>
-     * Default value: 8
-     *
-     * @param threshold
-     */
-    @Override
-    public void setTadThreshold(int threshold) {
-        // no-op
-    }
 
     @Override
     public boolean isVerbose() {
@@ -992,10 +943,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public String getString(DataBuffer buffer, long index) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, long[] axis) {
@@ -1017,7 +964,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         StringBuilder sb = new StringBuilder();
         sb.append("Class: ").append(op.getClass().getName()).append("; opNum: ").append(op.opNum())
                 .append("; opName: ").append(op.opName());
-        if(op instanceof DifferentialFunction){
+        if(op instanceof DifferentialFunction) {
             sb.append("; opType: ").append(((DifferentialFunction)op).opType());
         }
 
@@ -1119,18 +1066,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public int useCount(DataBuffer buffer){
-        throw new UnsupportedOperationException();
-    }
-
-
-    public void setX(INDArray x, Op op, OpContext oc){
-        if(oc != null)
-            oc.setInputArray(0, x);
-        else
-            op.setX(x);
-    }
 
     public INDArray getX(Op op, OpContext oc) {
         if( oc != null )
@@ -1162,5 +1097,208 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         if( oc != null)
             return oc.getOutputArray(0);
         return op.z();
+    }
+
+
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op) {
+        try(OpContext ctx = buildContext()) {
+            op.setupOpContextFromCustomOp(ctx);
+            return calculateOutputShape(op, ctx);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+        val hash = op.opHash();
+        val result = new ArrayList<LongShapeDescriptor>();
+
+        OpaqueShapeList ptrptr;
+        ptrptr = Nd4j.getNativeOps().calculateOutputShapes2(null, hash, opContext.contextPointer());
+
+        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
+        if (ptrptr == null)
+            throw new RuntimeException();
+
+
+
+        if (Nd4j.getNativeOps().lastErrorCode() != 0) {
+            StringBuilder errorMessage = new StringBuilder();
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            errorMessage.append("Native execution exec failed: ");
+            errorMessage.append(differentialFunction.debugInfo());
+            errorMessage.append(Nd4j.getNativeOps().lastErrorMessage());
+            throw new RuntimeException(errorMessage.toString());
+        }
+        if (ptrptr == null)
+            throw new RuntimeException();
+
+        for (int e = 0; e < Nd4j.getNativeOps().getShapeListSize(ptrptr); e++)
+            result.add(getShapeFromPointer(new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));
+
+        if (log.isTraceEnabled()) {
+            String[] arr = new String[result.size()];
+            for (int i = 0; i < result.size(); i++) {
+                arr[i] = result.get(i).toString();
+            }
+
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            log.trace("Calculated output shapes for op of name {} and type {} - {}", differentialFunction.getOwnName(), op.getClass().getName(), Arrays.toString(arr));
+        }
+        return result;
+    }
+
+    protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
+        val rank = (int) ptr.get(0);
+
+        val shape = new long[rank * 2 + 4];
+        for (int i = 0; i < shape.length; i++) {
+            shape[i] = ptr.get(i);
+        }
+
+        LongShapeDescriptor ret = LongShapeDescriptor.builder()
+                .shape(Shape.shape(shape))
+                .stride(Shape.stride(shape))
+                .order(Shape.order(shape))
+                .ews(Shape.elementWiseStride(shape))
+                .extras(Shape.extras(shape))
+                .build();
+        return ret;
+    }
+
+    @Override
+    public void enableDebugMode(boolean reallyEnable) {
+        debug.set(reallyEnable);
+        Nd4j.getNativeOps().enableDebugMode(reallyEnable);
+    }
+
+    @Override
+    public void enableVerboseMode(boolean reallyEnable) {
+        verbose.set(reallyEnable);
+        Nd4j.getNativeOps().enableVerboseMode(reallyEnable);
+    }
+
+
+    @Override
+    public void registerGraph(long id, Pointer graph) {
+        Nd4j.getNativeOps().registerGraph(null, id, graph);
+
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+    }
+
+    @Override
+    public Map<String, INDArray> executeGraph(long id, @NonNull Map<String, INDArray> map, @NonNull Map<String, Integer> reverseMap) {
+
+        val ptrBuffers = new PointerPointer(map.size());
+        val ptrShapes = new PointerPointer(map.size());
+        val ptrIndices = new IntPointer(map.size());
+
+        int cnt = 0;
+        val keySet = new ArrayList<String>(map.keySet());
+        for (val key: keySet) {
+            val array = map.get(key);
+
+            ptrBuffers.put(cnt, array.data().addressPointer());
+            ptrShapes.put(cnt, array.shapeInfoDataBuffer().addressPointer());
+            ptrIndices.put(cnt, reverseMap.get(key));
+
+            cnt++;
+        }
+
+        val newMap = new LinkedHashMap<String, INDArray>();
+
+        OpaqueVariablesSet result = Nd4j.getNativeOps().executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+
+        OpStatus status = OpStatus.byNumber(Nd4j.getNativeOps().getVariablesSetStatus(result));
+
+        if (status != OpStatus.ND4J_STATUS_OK)
+            throw new ND4JIllegalStateException("Op execution failed: " + status);
+
+        for (int e = 0; e < Nd4j.getNativeOps().getVariablesSetSize(result); e++) {
+            OpaqueVariable var = Nd4j.getNativeOps().getVariable(result, e);
+            int nodeId = Nd4j.getNativeOps().getVariableId(var);
+            int index = Nd4j.getNativeOps().getVariableIndex(var);
+            LongPointer shapeInfo = Nd4j.getNativeOps().getVariableShape(var);
+            Pointer buffer = Nd4j.getNativeOps().getVariableBuffer(var);
+
+            val rank = (int) shapeInfo.get(0);
+            val jshape = new long[rank * 2 + 4];
+            for (int i = 0; i < jshape.length; i++) {
+                jshape[i] = shapeInfo.get(i);
+            }
+
+            val shapeOf = Shape.shapeOf(jshape);
+            val stridesOf = Shape.stridesOf(jshape);
+            val order = Shape.order(jshape);
+            val array = Nd4j.create(shapeOf, stridesOf, 0, order);
+
+            val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+            Pointer.memcpy(array.data().addressPointer(), buffer, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()));
+
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()), MemcpyDirection.HOST_TO_HOST);
+
+            String nodeName = Nd4j.getNativeOps().getVariableName(var);
+            newMap.put(nodeName, array);
+        }
+
+        // Nd4j.getNativeOps().deleteVariablesSet(result);
+
+        return newMap;
+    }
+
+    @Override
+    public void forgetGraph(long id) {
+        Nd4j.getNativeOps().unregisterGraph(null, id);
+        if (Nd4j.getNativeOps().lastErrorCode() != 0)
+            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
+    }
+
+    /**
+     * This method allows to set desired number of elements per thread, for performance optimization purposes.
+     * I.e. if array contains 2048 elements, and threshold is set to 1024, 2 threads will be used for given op execution.
+     * <p>
+     * Default value: 1024
+     *
+     * @param threshold
+     */
+    @Override
+    public void setElementsThreshold(int threshold) {
+        Nd4j.getNativeOps().setElementThreshold(threshold);
+    }
+
+    /**
+     * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.
+     * I.e. if matrix has shape of 64 x 128, and threshold is set to 8, each thread will be processing 8 sub-arrays (sure, if you have 8 core cpu).
+     * If your cpu has, say, 4, cores, only 4 threads will be spawned, and each will process 16 sub-arrays
+     * <p>
+     * Default value: 8
+     *
+     * @param threshold
+     */
+    @Override
+    public void setTadThreshold(int threshold) {
+        Nd4j.getNativeOps().setTADThreshold(threshold);
+    }
+
+    @Override
+    public String getString(DataBuffer buffer, long index) {
+        val addr = ((LongIndexer) buffer.indexer()).get(index);
+        val ptr = new PagedPointer(addr);
+        return "";
     }
 }

@@ -62,6 +62,8 @@ public interface OpExecutioner {
     }
 
 
+
+
     /**
      * When {@link Environment#isLogNDArrayEvents()}
      *  is true all arrays will log to {@link #getNd4jEventLog()}
