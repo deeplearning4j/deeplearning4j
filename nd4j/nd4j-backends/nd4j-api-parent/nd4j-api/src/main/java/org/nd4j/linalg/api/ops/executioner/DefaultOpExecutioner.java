@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.TadPack;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1144,7 +1145,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             throw new RuntimeException();
 
         for (int e = 0; e < Nd4j.getNativeOps().getShapeListSize(ptrptr); e++)
-            result.add(getShapeFromPointer(new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));
+            result.add(getShapeFromPointer(op,opContext,new PagedPointer(Nd4j.getNativeOps().getShape(ptrptr, e)).asLongPointer()));
 
         if (log.isTraceEnabled()) {
             String[] arr = new String[result.size()];
@@ -1158,7 +1159,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return result;
     }
 
-    protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
+    protected LongShapeDescriptor getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
 
         val shape = new long[rank * 2 + 4];
@@ -1172,9 +1173,30 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 .order(Shape.order(shape))
                 .ews(Shape.elementWiseStride(shape))
                 .extras(Shape.extras(shape))
+                .offset(offsetForDescriptor(op,ctx,Shape.extras(shape)))
                 .build();
         return ret;
     }
+
+    private static long offsetForDescriptor(CustomOp op,OpContext ctx,long flags) {
+       for(int i = 0; i < ArrayOptionsHelper.ARRAY_COPY_OFFSET_INDEXES.length; i++) {
+           if(ArrayOptionsHelper.hasBitSet(flags,ArrayOptionsHelper.ARRAY_COPY_OFFSET_INDEXES[i])) {
+               return offsetAtIndex(op,ctx,i);
+           }
+       }
+
+        return 0;
+
+    }
+
+    private static long offsetAtIndex(CustomOp op, OpContext ctx,int idx) {
+        if(ctx != null) {
+            return ctx.getInputArray(idx).offset();
+        } else {
+            return op.getInputArgument(idx).offset();
+        }
+    }
+
 
     @Override
     public void enableDebugMode(boolean reallyEnable) {

@@ -45,10 +45,16 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
     op *= olddims[oi];
   }
   if (np != op) {
+    printf("failed to reshape allocation point 1\n");
+    fflush(stdout);
+
     return false;  // total sizes must match
   }
 
   if (np == 0) {
+    printf("failed to reshape allocation point 2\n");
+    fflush(stdout);
+
     return false;  // don't support empty arrays
   }
 
@@ -75,11 +81,15 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
     for (ok = oi; ok < oj - 1; ok++) {
       if (isFOrder) {
         if (oldstrides[ok + 1] != olddims[ok] * oldstrides[ok]) {
+          printf("failed to reshape allocation point 3\n");
+          fflush(stdout);
           return false;  // not contiguous enough
         }
       } else {
         // C order
         if (oldstrides[ok] != olddims[ok + 1] * oldstrides[ok + 1]) {
+          printf("failed to reshape allocation point 4\n");
+          fflush(stdout);
           return false;  // not contiguous enough
         }
       }
@@ -120,6 +130,8 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
   // Update the output shape info
   outShape[0] = newnd;  // Set rank
 
+  printf("final no reshape alloc\n");
+  fflush(stdout);
   shape::setShape(outShape, const_cast<sd::LongType*>(newShape.data()));
   shape::setStride(outShape, newStrides.data());
   shape::setOrder(outShape, order);

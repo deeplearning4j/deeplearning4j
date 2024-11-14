@@ -297,6 +297,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor);
         setShapeInformation(shapeInformation);
         init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
+        this.offset = longShapeDescriptor.getOffset();
     }
 
     /**
