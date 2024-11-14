@@ -70,6 +70,38 @@ public class ArrayOptionsHelper {
     public static final long ARRAY_NEEDS_COPY = 67108864;
 
 
+    //this is used for when we need to use the offset of an input
+    //when creating a view of an array
+    //see ArrayOptions.h for more information
+    public static final long ARRAY_COPY_OFFSET_INPUT_0 = 134217728;
+    public static final long ARRAY_COPY_OFFSET_INPUT_1 = 268435456;
+    public static final long ARRAY_COPY_OFFSET_INPUT_2 = 536870912;
+    public static final long ARRAY_COPY_OFFSET_INPUT_3 = 1073741824;
+    public static final long ARRAY_COPY_OFFSET_INPUT_4 = 2147483648L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_5 = 4294967296L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_6 = 8589934592L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_7 = 17179869184L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_8 = 34359738368L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_9 = 68719476736L;
+    public static final long ARRAY_COPY_OFFSET_INPUT_10 = 137438953472L;
+
+
+    public static final long[] ARRAY_COPY_OFFSET_INDEXES = {
+            ARRAY_COPY_OFFSET_INPUT_0,
+            ARRAY_COPY_OFFSET_INPUT_1,
+            ARRAY_COPY_OFFSET_INPUT_2,
+            ARRAY_COPY_OFFSET_INPUT_3,
+            ARRAY_COPY_OFFSET_INPUT_4,
+            ARRAY_COPY_OFFSET_INPUT_5,
+            ARRAY_COPY_OFFSET_INPUT_6,
+            ARRAY_COPY_OFFSET_INPUT_7,
+            ARRAY_COPY_OFFSET_INPUT_8,
+            ARRAY_COPY_OFFSET_INPUT_9,
+            ARRAY_COPY_OFFSET_INPUT_10
+    };
+
+
+
     /**
      * Perform typical checks and compose them into a single flag.
      * This one just sets the data types and composes the other ones

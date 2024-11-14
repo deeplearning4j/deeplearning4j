@@ -65,11 +65,14 @@ public class MultiDataSetTest extends BaseNd4jTestWithBackends {
 
         INDArray[] in = new INDArray[nRows];
         INDArray[] out = new INDArray[nRows];
-        for (int i = 0; i < nRows; i++)
-            in[i] = expIn.getRow(i, true).dup();
-        for (int i = 0; i < nRows; i++)
-            out[i] = expOut.getRow(i, true).dup();
-
+        for (int i = 0; i < nRows; i++) {
+            INDArray rowView = expIn.getRow(i, true);
+            in[i] = rowView.dup();
+        }
+        for (int i = 0; i < nRows; i++) {
+            INDArray rowView = expOut.getRow(i, true);
+            out[i] = rowView.dup();
+        }
         List<MultiDataSet> list = new ArrayList<>(nRows);
         for (int i = 0; i < nRows; i++) {
             list.add(new MultiDataSet(in[i], out[i]));

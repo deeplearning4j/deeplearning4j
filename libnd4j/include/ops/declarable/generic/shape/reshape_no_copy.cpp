@@ -12,9 +12,7 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))
-     || ArrayOptions::isView(const_cast<LongType *>(output->shapeInfo()))
-     || ArrayOptions::isView(const_cast<LongType *>(input->shapeInfo()))) {
+  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))) {
     //deref avoiding copy
     NDArray &originalInput = *input;
     output->assign(originalInput);
@@ -102,22 +100,26 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     ArrayOptions::setDataType(newShapeInfo, dtype);
     ArrayOptions::toggleIsEmpty(newShapeInfo);
   } else {
-    bool needsCopy = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-    if (!needsCopy) {
+    bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
+    if (!reshapeNoAllocSuccess) {
+    // If reshape is not possible without allocation, fall back to regular reshape
+    shape::updateStrides(newShapeInfo, order,true);
+    shape::setElementWiseStride(newShapeInfo, 0);
+    ArrayOptions::resetFlags(newShapeInfo);
+    ArrayOptions::setDataType(newShapeInfo, dtype);
+    ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+    } else {
+
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
       shape::setShape(newShapeInfo,newShape.data());
       // If reshape is not possible without allocation, fall back to regular reshape
       shape::updateStrides(newShapeInfo, order,true);
       ArrayOptions::resetFlags(newShapeInfo);
+      //we need this in order to preserve the offset of the original buffer when creating the output array
+      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
       ArrayOptions::setDataType(newShapeInfo, dtype);
-    } else {
-      // If reshape is not possible without allocation, fall back to regular reshape
-      shape::updateStrides(newShapeInfo, order,true);
-      shape::setElementWiseStride(newShapeInfo, 0);
-      ArrayOptions::resetFlags(newShapeInfo);
-      ArrayOptions::setDataType(newShapeInfo, dtype);
-      ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+
     }
 
   }

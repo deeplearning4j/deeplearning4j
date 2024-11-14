@@ -95,7 +95,29 @@
 #define ARRAY_HAS_PADDED_BUFFER (1 << 25)
 //flags for when array has a view or not
 #define ARRAY_IS_VIEW 33554432
+
+//flag for when array needs a copy
+//this is mainly used in the reshape_no_copy op but could be used elsewhere
 #define ARRAY_NEEDS_COPY 67108864
+
+
+//we need this in order to preserve the offset of the original buffer when creating the output array
+//when views are created, sometimes we need to use the original offset of the array
+//we don't need this very often and we don't store the offset in the shape info
+//this preserves the offsets only being in the ndarray but allowing us to pass information
+//when creating views, each flag is for an input in to an op, most of the time we only need the first 3
+//but may need more. For now only the first one is used but may be needed elsewhere.
+#define ARRAY_COPY_OFFSET_INPUT_0 134217728
+#define ARRAY_COPY_OFFSET_INPUT_1 268435456
+#define ARRAY_COPY_OFFSET_INPUT_2 536870912
+#define ARRAY_COPY_OFFSET_INPUT_3 1073741824
+#define ARRAY_COPY_OFFSET_INPUT_4 2147483648
+#define ARRAY_COPY_OFFSET_INPUT_5 4294967296
+#define ARRAY_COPY_OFFSET_INPUT_6 8589934592
+#define ARRAY_COPY_OFFSET_INPUT_7 17179869184
+#define ARRAY_COPY_OFFSET_INPUT_8 34359738368
+#define ARRAY_COPY_OFFSET_INPUT_9 68719476736
+#define ARRAY_COPY_OFFSET_INPUT_10 137438953472
 
 
 #define DEFAULT_FLAG 0

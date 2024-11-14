@@ -673,7 +673,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         break;
                     }
 
-
+                    case TRANSFORM_BOOL: {
+                        Nd4j.getNativeOps().execTransformBool(dummy, op.opNum(), xb, getPointerForExtraArgs(op, z.dataType()), zb);
+                        break;
+                    }
                     default:
                         throw new UnsupportedOperationException("Unknown transform type: [" + op.getOpType() + "]");
                 }
