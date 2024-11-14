@@ -214,5 +214,10 @@ public class CudaUtf16Buffer extends BaseCudaDataBuffer {
         type = DataType.UTF16;
     }
 
-
+    @Override
+    public DataBuffer dup() {
+        CudaUtf16Buffer ret  = (CudaUtf16Buffer) super.dup();
+        ret.numWords = numWords;
+        return ret;
+    }
 }

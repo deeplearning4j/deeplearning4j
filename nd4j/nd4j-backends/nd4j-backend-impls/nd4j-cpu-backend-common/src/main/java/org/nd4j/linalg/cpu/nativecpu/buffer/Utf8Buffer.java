@@ -31,6 +31,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
@@ -222,11 +223,7 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         return size;
     }
 
-    public void put(long index, Pointer pointer) {
-        throw new UnsupportedOperationException();
-        //references.add(pointer);
-        //((LongIndexer) indexer).put(index, pointer.address());
-    }
+
 
     /**
      * Initialize the opType of this buffer
@@ -237,5 +234,11 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         type = DataType.UTF8;
     }
 
+    @Override
+    public DataBuffer dup() {
+        Utf8Buffer ret  = (Utf8Buffer) super.dup();
+        ret.numWords = numWords;
+        return ret;
+    }
 
 }
