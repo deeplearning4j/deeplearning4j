@@ -77,6 +77,7 @@ public class ProtectedCachedShapeInfoProvider extends BaseShapeInfoProvider {
         if (empty)
             extras = ArrayOptionsHelper.setOptionBit(extras, ArrayType.EMPTY);
 
+        extras = ArrayOptionsHelper.setDataType(extras, type);
         return createShapeInformation(shape, stride, elementWiseStride, order, extras);
     }
 

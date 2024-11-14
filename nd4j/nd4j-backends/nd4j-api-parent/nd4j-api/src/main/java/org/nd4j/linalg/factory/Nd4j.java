@@ -2709,6 +2709,8 @@ public class Nd4j {
                 .shape(Shape.shape(shapeInfo.getSecond()))
                 .stride(Shape.stride(shapeInfo.getSecond()))
                 .offset(0)
+                .order(Shape.order(shapeInfo.getSecond()))
+                .extras(Shape.extras(shapeInfo.getSecond()))
                 .build();
 
         INDArray result = Nd4j.create(data,longShapeDescriptor);
