@@ -233,5 +233,10 @@ public class Utf16Buffer extends BaseCpuDataBuffer {
         type = DataType.UTF16;
     }
 
-
+    @Override
+    public DataBuffer dup() {
+        Utf16Buffer ret  = (Utf16Buffer) super.dup();
+        ret.numWords = numWords;
+        return ret;
+    }
 }

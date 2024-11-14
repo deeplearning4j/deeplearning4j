@@ -428,8 +428,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public DataBuffer dup() {
         DataBuffer ret = create(length);
-        for (int i = 0; i < ret.length(); i++)
-            ret.put(i, getDouble(i));
+        Nd4j.getNativeOps().copyBuffer(ret.opaqueBuffer(),
+                length, opaqueBuffer(), 0, 0);
+
 
         return ret;
     }

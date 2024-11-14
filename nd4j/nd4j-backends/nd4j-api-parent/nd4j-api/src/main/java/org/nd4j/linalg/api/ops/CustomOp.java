@@ -21,6 +21,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;

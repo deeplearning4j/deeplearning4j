@@ -233,5 +233,10 @@ public class Utf32Buffer extends BaseCpuDataBuffer {
         type = DataType.UTF32;
     }
 
-
+    @Override
+    public DataBuffer dup() {
+        Utf32Buffer ret  = (Utf32Buffer) super.dup();
+        ret.numWords = numWords;
+        return ret;
+    }
 }
