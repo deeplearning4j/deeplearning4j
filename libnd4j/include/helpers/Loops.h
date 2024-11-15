@@ -955,80 +955,8 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
   switch (kindOfLoop) {
-    //*********************************************//
-    case LoopKind::EWS1: {
-      auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
-      LongType start = span.startX(), stop = span.stopX();
-      for (LongType i = start; i < stop; i++) {
-#if defined(PRINT_INDICES)
-        printf("loopkind ews1\n");
-        shape::printShapeInfo(xShapeInfo);
-        shape::printShapeInfo(zShapeInfo);
-        printf("Index is %lld offset is %lld loop kind: ews1 TransformLoops<X, Z, E>::loopTransform\n", i,i);
-#endif
-        z[i] = static_cast<Z>(OpType::op(x[i], extraParams));
-      }
-
-    } break;
 
       //*********************************************//
-    case LoopKind::EWSNONZERO: {
-      const LongType xEws = shape::elementWiseStride(xShapeInfo);
-      const LongType zEws = shape::elementWiseStride(zShapeInfo);
-
-      auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
-      LongType start = span.startX(), stop = span.stopX();
-      for (auto i = start; i < stop; i++) {
-#if defined(PRINT_INDICES)
-        printf("loopkind ewsnonzero\n");
-        shape::printShapeInfo(xShapeInfo);
-        shape::printShapeInfo(zShapeInfo);
-        printf("Index is %lld offset is %lld loop kind: EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,xEws,zEws);
-#endif
-        z[i * zEws] = static_cast<Z>(OpType::op(x[i * xEws], extraParams));
-      }
-
-
-    } break;
-
-      //*********************************************//
-    case LoopKind::Z_EWSNONZERO: {
-      const LongType zEws = shape::elementWiseStride(zShapeInfo);
-      LongType castXShapeInfo[SD_MAX_RANK];
-      const bool canCastX = DataTypeUtils::castShapeInfo<LongType>(xShapeInfo, castXShapeInfo);
-
-      auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
-      int64_t start = span.startX(), stop = span.stopX();
-
-      if (zEws > 1) {
-        sd::LongType  indices[SD_MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-          shape::index2coords(i, zShapeInfo, indices);
-          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
-#if defined(PRINT_INDICES)
-          printf("loopkind Z_EWSNONZERO\n");
-          shape::printShapeInfo(xShapeInfo);
-          shape::printShapeInfo(zShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
-#endif
-          z[i * zEws] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
-        }
-      } else {
-        sd::LongType  indices[SD_MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-          shape::index2coords(i, zShapeInfo, indices);
-          const auto xOffset = shape::getOffset(castXShapeInfo, indices);
-#if defined(PRINT_INDICES)
-          printf("loopkind Z_EWSNONZERO\n");
-          shape::printShapeInfo(xShapeInfo);
-          shape::printShapeInfo(zShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: Z_EWSNONZERO xEws is %lld zEws is %lld TransformLoops<X, Z, E>::loopTransform\n", i,i,zEws,zEws);
-#endif
-          z[i] = static_cast<Z>(OpType::op(x[xOffset], extraParams));
-        }
-      }
-
-    } break;
 
       //*********************************************//
     case LoopKind::RANK1: {

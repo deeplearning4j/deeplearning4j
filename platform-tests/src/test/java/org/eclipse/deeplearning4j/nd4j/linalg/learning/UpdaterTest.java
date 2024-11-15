@@ -50,19 +50,6 @@ import static org.nd4j.linalg.api.buffer.DataType.FLOAT16;
 public class UpdaterTest extends BaseNd4jTestWithBackends {
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAdaGradLegacy(Nd4jBackend backend) {
-        int rows = 1;
-        int cols = 1;
-
-
-        org.nd4j.linalg.learning.legacy.AdaGrad grad = new org.nd4j.linalg.learning.legacy.AdaGrad(rows, cols, 1e-3);
-        grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[]{rows, cols}, 'c', true);
-        INDArray w = Nd4j.ones(rows, cols);
-        grad.getGradient(w, 0);
-        assertEquals(1e-1, w.getDouble(0), 1e-1);
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

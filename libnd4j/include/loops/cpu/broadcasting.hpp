@@ -97,23 +97,7 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
          ? loopKind
          : sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
- if (kindOfLoop == sd::LoopKind::EWS1) {
-   for (auto i = start; i < stop; i++) {
-     auto oX = x + tadOffsets[i];
-     auto oZ = z + zTadOffset[i];
-
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
-   }
- } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
-   for (auto i = start; i < stop; i++) {
-     auto oX = x + tadOffsets[i];
-     auto oZ = z + zTadOffset[i];
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
-     }
-   }
- } else if (kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_X) {
+ if (kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_X) {
    auto loopLength = yShapeInfo[shape::rank(yShapeInfo)];
 
    for (auto i = start; i < stop; i++) {

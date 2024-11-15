@@ -1825,22 +1825,22 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 
   //scalar case
   if (other.isScalar()) {
-      if (!isScalar()) {
-          prepareUse({this}, {&other});
-          NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                          specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                          other.specialShapeInfo(), nullptr, allowParallelism);
-          registerUse({this}, {&other});
+    if (!isScalar()) {
+      prepareUse({this}, {&other});
+      NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
+                                      specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                      other.buffer(), other.shapeInfo(), other.specialBuffer(),
+                                      other.specialShapeInfo(), nullptr, allowParallelism);
+      registerUse({this}, {&other});
 
-      } else {
-          prepareUse({this}, {&other});
-          NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                          specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                          other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                          other.specialShapeInfo(), nullptr, allowParallelism);
-          registerUse({this}, {&other});
-      }
+    } else {
+      prepareUse({this}, {&other});
+      NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
+                                      specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
+                                      other.buffer(), other.shapeInfo(), other.specialBuffer(),
+                                      other.specialShapeInfo(), nullptr, allowParallelism);
+      registerUse({this}, {&other});
+    }
   } else {
     if (other.lengthOf() != lengthOf() && !ShapeUtils::areShapesBroadcastable(other.shapeInfo(), this->shapeInfo())) {
       auto shapeThis = ShapeUtils::shapeAsString(this);
@@ -1856,10 +1856,17 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 
     prepareSpecialUse({this}, {&other});
 
-    NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
-                                          other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
-                                          specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
-
+    if(!shape::shapeEquals(this->shapeInfo(),other.shapeInfo())) {
+      std::vector<sd::LongType> thisShape = this->getShapeAsVector();
+      NDArray &otherReshaped = other.reshape(other.ordering(),thisShape,false);
+      NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, otherReshaped.buffer(), otherReshaped.shapeInfo(),
+                                            otherReshaped.specialBuffer(), otherReshaped.specialShapeInfo(), buffer(), shapeInfo(),
+                                            specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
+    } else {
+      NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
+                                            other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
+                                            specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
+    }
     registerSpecialUse({this}, {&other});
   }
 }
