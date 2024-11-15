@@ -1210,8 +1210,8 @@ SD_LIB_EXPORT void calcSubArrShapeInfoAndOffset(const sd::LongType *idx, const s
 * will point on corresponding places in inShapeInfo
 */
 SD_LIB_EXPORT SD_HOST_DEVICE int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo,
-                                                             sd::LongType *&shapeNoUnities,
-                                                             sd::LongType *&stridesNoUnities);
+                                                             sd::LongType *shapeNoUnities,
+                                                             sd::LongType *stridesNoUnities);
 
 /**
 * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude(points on unity dimensions) =
@@ -3933,8 +3933,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType tadLength(const sd::LongType *shape
   }
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::LongType *&shapeNoUnities,
-                                                                sd::LongType *&stridesNoUnities) {
+SD_LIB_EXPORT SD_INLINE SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongType *inShapeInfo, sd::LongType *shapeNoUnities,
+                                                                sd::LongType *stridesNoUnities) {
   const int rank = shape::rank(inShapeInfo);
   const int numOfNonUnities = numOfNonUnitDims(rank, shapeOf(inShapeInfo));
 
@@ -3945,7 +3945,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int excludeUnitiesFromShapeInfo(const sd::LongTy
   }
 
   int j = 0;
-  for (int i = 0; i < rank; ++i) {
+  for (int i = 0; i < rank; i++) {
     if (shapeOf(inShapeInfo)[i] != 1) {
       shapeNoUnities[j] = shapeOf(inShapeInfo)[i];
       stridesNoUnities[j++] = stride(inShapeInfo)[i];
@@ -3960,7 +3960,7 @@ SD_LIB_EXPORT SD_INLINE void SD_HOST checkStridesEwsAndOrder(sd::LongType *shape
   // FIXME - indeed we don't need to allocate so large memory amount (2*SD_MAX_RANK), sufficient amount is
   // (2*oldNumOfNonUnities + 2*newNumOfNonUnities)
   sd::LongType tempBuffer[2 * SD_MAX_RANK];
-  sd::LongType *shape = tempBuffer, *strides;
+  sd::LongType *shape = tempBuffer, *strides = tempBuffer + shape::rank(shapeInfo);
 
   // exclude unities from shapeInfo
   const sd::LongType numOfNonUnities = excludeUnitiesFromShapeInfo(shapeInfo, shape, strides);
