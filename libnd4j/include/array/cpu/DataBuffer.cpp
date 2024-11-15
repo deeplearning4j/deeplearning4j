@@ -117,6 +117,10 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
 
 template <typename T>
 void memcpyWithT(DataBuffer* dst, DataBuffer* src, sd::LongType startingOffset, sd::LongType dstOffset) {
+  if(src->getLenInBytes() != dst->getLenInBytes()) {
+    THROW_EXCEPTION("DataBuffer::memcpy: source and destination buffers have different length in bytes");
+  }
+
   std::memcpy(dst->primaryAtOffset<T>(dstOffset), src->primaryAtOffset<T>(startingOffset), src->getLenInBytes());
   dst->readPrimary();
 }

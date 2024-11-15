@@ -357,8 +357,6 @@ size_t DataBuffer::getLenInBytes() const {
    if(_dataType == DataType::UNKNOWN) {
      THROW_EXCEPTION("DataBuffer getLenInBytes: dataType is UNKNOWN !");
    }
-   printf("Getting size for %s\n", DataTypeUtils::asString(_dataType).c_str());
-   fflush(stdout);
     return DataTypeUtils::sizeOfElement(_dataType);
   }
   return _lenInBytes;

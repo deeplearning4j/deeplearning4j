@@ -4779,7 +4779,7 @@ public class Nd4j {
     public static INDArray vstack(@NonNull INDArray... arrs) {
         Preconditions.checkState(arrs != null && arrs.length > 0, "No input specified to vstack (null or length 0)");
         //noinspection ConstantConditions
-        if(arrs[0].rank() == 1){
+        if(arrs[0].rank() == 1) {
             //Edge case: vstack rank 1 arrays - gives rank 2... vstack([3],[3]) -> [2,3]
             return pile(arrs);
         }

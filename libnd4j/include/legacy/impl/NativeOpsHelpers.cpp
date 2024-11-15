@@ -648,11 +648,7 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
 
 
 void copyBuffer(OpaqueDataBuffer *target, long n,  OpaqueDataBuffer *from, long fromOffset, long targetOffset) {
-  OpaqueDataBuffer *copyFrom = dbCreateView(from, n);
-  OpaqueDataBuffer *targetView = dbCreateView(target, n);
-  sd::DataBuffer *targetBuf = copyFrom->dataBuffer();
-  sd::DataBuffer *srcBuf = targetView->dataBuffer();
-  sd::DataBuffer::memcpy(targetBuf, srcBuf, targetOffset, fromOffset);
+  sd::DataBuffer::memcpy(target->dataBuffer(), from->dataBuffer(), targetOffset, fromOffset);
 }
 
 
