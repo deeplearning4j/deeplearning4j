@@ -59,13 +59,7 @@ public interface WeightLookupTable<T extends SequenceElement> extends Serializab
      */
     int layerSize();
 
-    /**
-     * Returns gradient for specified word
-     * @param column
-     * @param gradient
-     * @return
-     */
-    double getGradient(int column, double gradient);
+
 
     /**
      * Clear out all weights regardless

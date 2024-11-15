@@ -62,14 +62,6 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   }
 
   auto xCast = x->cast(sd::DataType::FLOAT32);
-  // move to NWHC
-  /**
-   * TODO: TF has a permute to NWHC here:
-   * https://github.com/tensorflow/tensorflow/blob/ce34a83e03394492b1c4e5bb92fbd56da2ba7ce5/tensorflow/core/kernels/fused_batch_norm_op.cc#L137
-   *
-   * This should be done as well for us, but results are still off.
-   * Figure out differences.
-   */
   if (dataFormat) {
     std::vector<LongType> permute = {0,2,3,1};
     xCast = xCast.permute(permute, false, false);
@@ -110,6 +102,11 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   const int restSize = x->lengthOf() / iD;
 
   auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, mean->dataType(), block.launchContext());
+  printf("xaffected shape:\n");
+  shape::printShapeInfo(xAffected.shapeInfo());
+  printf("xcasted shape info\n");
+  shape::printShapeInfo(xCast.shapeInfo());
+  fflush(stdout);
   xAffected.assign(xCast);
 
   const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;

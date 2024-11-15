@@ -29,21 +29,15 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.legacy.AdaGrad;
-import org.nd4j.common.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -76,7 +70,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-    protected AdaGrad adaGrad;
 
     @Getter
     @Setter
@@ -100,18 +93,9 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         this.negative = negative;
         initExpTable();
 
-        if (useAdaGrad) {
-            initAdaGrad();
-        }
     }
 
-    protected void initAdaGrad() {
-        long[] shape = new long[] {vocab.numWords() + 1, vectorLength};
-        int length = ArrayUtil.prod(shape);
-        adaGrad = new AdaGrad(shape, lr.get());
-        adaGrad.setStateViewArray(Nd4j.zeros(shape).reshape(1, length), shape, Nd4j.order(), true);
 
-    }
 
     public double[] getExpTable() {
         if(expTable == null)
@@ -123,12 +107,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         this.expTable = expTable;
     }
 
-    public double getGradient(int column, double gradient) {
-        if (adaGrad == null)
-            initAdaGrad();
-
-        return adaGrad.getGradient(gradient, column, syn0.shape());
-    }
 
     @Override
     public int layerSize() {
@@ -645,11 +623,11 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         if (this == o) return true;
         if (!(o instanceof InMemoryLookupTable)) return false;
         InMemoryLookupTable<?> that = (InMemoryLookupTable<?>) o;
-        return vectorLength == that.vectorLength && isUseAdaGrad() == that.isUseAdaGrad() && Double.compare(that.getNegative(), getNegative()) == 0 && useHS == that.useHS && Objects.equals(getSyn0(), that.getSyn0()) && Objects.equals(getSyn1(), that.getSyn1()) && Objects.equals(rng, that.rng) && Objects.equals(getTable(), that.getTable()) && Objects.equals(getSyn1Neg(), that.getSyn1Neg()) && Objects.equals(getVocab(), that.getVocab()) && Objects.equals(getCodes(), that.getCodes()) && Objects.equals(adaGrad, that.adaGrad) && Objects.equals(getTableId(), that.getTableId());
+        return vectorLength == that.vectorLength && isUseAdaGrad() == that.isUseAdaGrad() && Double.compare(that.getNegative(), getNegative()) == 0 && useHS == that.useHS && Objects.equals(getSyn0(), that.getSyn0()) && Objects.equals(getSyn1(), that.getSyn1()) && Objects.equals(rng, that.rng) && Objects.equals(getTable(), that.getTable()) && Objects.equals(getSyn1Neg(), that.getSyn1Neg()) && Objects.equals(getVocab(), that.getVocab()) && Objects.equals(getCodes(), that.getCodes()) && Objects.equals(getTableId(), that.getTableId());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getSyn0(), getSyn1(), vectorLength, rng, getTable(), getSyn1Neg(), isUseAdaGrad(), getNegative(), useHS, getVocab(), getCodes(), adaGrad, getTableId());
+        return Objects.hash(getSyn0(), getSyn1(), vectorLength, rng, getTable(), getSyn1Neg(), isUseAdaGrad(), getNegative(), useHS, getVocab(), getCodes(), getTableId());
     }
 }
