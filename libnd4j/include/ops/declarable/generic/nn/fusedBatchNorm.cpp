@@ -102,11 +102,6 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
   const int restSize = x->lengthOf() / iD;
 
   auto xAffected = NDArrayFactory::create(x->ordering(), {restSize, iD}, mean->dataType(), block.launchContext());
-  printf("xaffected shape:\n");
-  shape::printShapeInfo(xAffected.shapeInfo());
-  printf("xcasted shape info\n");
-  shape::printShapeInfo(xCast.shapeInfo());
-  fflush(stdout);
   xAffected.assign(xCast);
 
   const int restSizeMinusOne = (restSize > 1) ? (restSize - 1) : 1;
