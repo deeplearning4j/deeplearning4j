@@ -12,21 +12,11 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))) {
+  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))
+     || output->dataBuffer() != input->dataBuffer()) {
     //deref avoiding copy
     NDArray &originalInput = *input;
     output->assign(originalInput);
-  } else if(input->dataBuffer() != output->dataBuffer()) {
-    if(input->dataBuffer()->getLenInBytes() != output->dataBuffer()->getLenInBytes()) {
-      THROW_EXCEPTION("Unable to copy whole data buffer. Use a strided approach instead.");
-    }
-    //deref avoiding copy
-    //preserve original buffer as it does not need a copy but the buffers
-    //are not the same.
-    NDArray &originalInput = *input;
-    DataBuffer& original = *originalInput.dataBuffer();
-    output->dataBuffer()->memcpy(output->dataBuffer(),originalInput.dataBuffer(),output->offset(),input->offset());
-
   }
   //the rest is no op, we don't need to copy we just needed the new shape
 
@@ -102,19 +92,17 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   } else {
     bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
     if (!reshapeNoAllocSuccess) {
-    // If reshape is not possible without allocation, fall back to regular reshape
-    shape::updateStrides(newShapeInfo, order,true);
-    shape::setElementWiseStride(newShapeInfo, 0);
-    ArrayOptions::resetFlags(newShapeInfo);
-    ArrayOptions::setDataType(newShapeInfo, dtype);
-    ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+      // If reshape is not possible without allocation, fall back to regular reshape
+      shape::updateStrides(newShapeInfo, order,true);
+      shape::setElementWiseStride(newShapeInfo, 0);
+      ArrayOptions::resetFlags(newShapeInfo);
+      ArrayOptions::setDataType(newShapeInfo, dtype);
+      ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
     } else {
 
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
       shape::setShape(newShapeInfo,newShape.data());
-      // If reshape is not possible without allocation, fall back to regular reshape
-      shape::updateStrides(newShapeInfo, order,true);
       ArrayOptions::resetFlags(newShapeInfo);
       //we need this in order to preserve the offset of the original buffer when creating the output array
       ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);

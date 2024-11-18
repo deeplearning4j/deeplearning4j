@@ -283,8 +283,10 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval4d(Nd4jBackend backend) {
-        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
-        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10, 10);
+        Nd4j.getRandom().setSeed(1234);
+        Nd4j.getEnvironment().setCheckInputChange(true);
+        INDArray prediction = Nd4j.linspace(1,600,600).reshape(2, 3, 10, 10);
+        INDArray label = Nd4j.linspace(1,600,600).addi(1).reshape(2, 3, 10, 10);
 
 
         List<INDArray> rowsP = new ArrayList<>();

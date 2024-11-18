@@ -245,7 +245,9 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
             size0 *= labels.size(permuteDims[i]);
         }
 
-        INDArray lOut = labels.permute(permuteDims).dup('c').reshape('c',size0, labels.size(axis));
+        INDArray labelsPerm = labels.permute(permuteDims);
+        INDArray dupped = labelsPerm.dup('c');
+        INDArray lOut = dupped.reshape('c',size0, labels.size(axis));
         INDArray pOut = predictions.permute(permuteDims).dup('c').reshape('c',size0, labels.size(axis));
         INDArray mOut = mask == null ? null : mask.permute(permuteDims).dup('c').reshape('c',size0, labels.size(axis));
 
