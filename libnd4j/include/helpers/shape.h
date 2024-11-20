@@ -794,7 +794,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType prodLong(const sd::LongType *data, int
 * @return the double at the specified index
 */
 
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInfo, const sd::LongType *coords,
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInfo, sd::LongType *indices,
                                                     sd::LongType baseOffset = 0);
 
 // all three arrays should have same rank
@@ -3029,7 +3029,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(sd::LongType *xInfo, int offset) {
 
 //////////////////////////////////////////////////////////////////////////
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType getOffset(const sd::LongType *shapeInfo,
-                                                              const sd::LongType *indices,
+                                                              sd::LongType *indices,
                                                               sd::LongType baseOffset) {
   sd::LongType offset = baseOffset;
   int rank = shape::rank(shapeInfo);
@@ -4282,7 +4282,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void fillStrides(sd::LongType  *shapeInfo) {
 
 SD_LIB_EXPORT SD_INLINE SD_HOST bool reshapeC(const sd::LongType *oldShapeInfo, sd::LongType *newShapeInfo) {
   // newShapeInfo contains rank, shape and order; but no strides, type and ews
-  const int newRank = shape::rank(newShapeInfo);
+  const sd::LongType newRank = shape::rank(newShapeInfo);
 
   auto oldDt = sd::ArrayOptions::dataType(oldShapeInfo);
   if (oldDt == sd::DataType::UNKNOWN) {

@@ -374,7 +374,25 @@ if(SD_CUDA)
         file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
                 ../include/ops/impl/compilation_units/*.cpp.in)
 
-
+        set(ALL_SOURCES
+                ${PERF_SOURCES}
+                ${EXCEPTIONS_SOURCES}
+                ${EXEC_SOURCES}
+                ${TYPES_SOURCES}
+                ${ARRAY_SOURCES}
+                ${MEMORY_SOURCES}
+                ${GRAPH_SOURCES}
+                ${CUSTOMOPS_SOURCES}
+                ${CUSTOMOPS_ONEDNN_SOURCES}
+                ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+                ${CUSTOMOPS_GENERIC_SOURCES}
+                ${OPS_SOURCES}
+                ${HELPERS_SOURCES}
+                ${INDEXING_SOURCES}
+                ${LOOPS_SOURCES}
+                ${LEGACY_SOURCES}
+                ${LOOPS_SOURCES_CUDA}
+        )
 
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(FL_ITEM)
@@ -392,7 +410,7 @@ if(SD_CUDA)
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-                    )
+            )
 
 
         else()
@@ -401,7 +419,7 @@ if(SD_CUDA)
                     ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-                    )
+            )
 
         endif()
 
@@ -449,11 +467,6 @@ if(SD_CUDA)
     endif(CUDA_FOUND)
 elseif(SD_CPU)
 
-    if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
-        message("Experimental mode ENABLED")
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_EXPERIMENTAL_ENABLED=true")
-    endif()
 
     file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
@@ -478,6 +491,27 @@ elseif(SD_CPU)
     foreach(FL_ITEM ${COMPILATION_UNITS})
         genCompilation(FL_ITEM)
     endforeach()
+
+    set(ALL_SOURCES
+            ${PERF_SOURCES}
+            ${EXCEPTIONS_SOURCES}
+            ${EXEC_SOURCES}
+            ${TYPES_SOURCES}
+            ${ARRAY_SOURCES}
+            ${MEMORY_SOURCES}
+            ${GRAPH_SOURCES}
+            ${CUSTOMOPS_SOURCES}
+            ${CUSTOMOPS_ONEDNN_SOURCES}
+            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+            ${CUSTOMOPS_GENERIC_SOURCES}
+            ${OPS_SOURCES}
+            ${HELPERS_SOURCES}
+            ${INDEXING_SOURCES}
+            ${LOOPS_SOURCES}
+            ${LEGACY_SOURCES}
+            ${LOOPS_SOURCES}
+    )
+
 
     if (SD_X86_BUILD)
         # we disable platform optimizations for certains files for linux/macos
@@ -596,7 +630,6 @@ elseif(SD_CPU)
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES} ${CALLSTACK_SRC}
             ${LOOPS_SOURCES} ${CALLSTACK_SRC} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES}
-            ${CUSTOMOPS_VEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
 
     target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
@@ -669,3 +702,126 @@ elseif(SD_CPU)
     install(TARGETS ${SD_LIBRARY_NAME} DESTINATION  .)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cpu)
 endif()
+
+if("${SD_PREPROCESS}" STREQUAL "ON")
+    message("Preprocessing enabled ${CMAKE_BINARY_DIR}")
+    include_directories(${CMAKE_BINARY_DIR}/../../include)
+
+    # Step 1a: Remove duplicate entries to prevent multiple custom commands
+    list(REMOVE_DUPLICATES ALL_SOURCES)
+
+    # Step 2: Define the output directory for preprocessed files
+    set(PREPROCESSED_DIR "${CMAKE_SOURCE_DIR}/preprocessed")
+
+    # Create the preprocessed directory if it doesn't exist
+    file(MAKE_DIRECTORY ${PREPROCESSED_DIR})
+
+    # Initialize a list to hold all preprocessed file paths
+    set(PREPROCESSED_FILES)
+    message("CURRENT SOURCE DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}")
+    get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+    # Initialize lists
+    set(PROCESSED_SOURCES "")
+    set(PREPROCESSED_FILES "")
+
+    # Remove duplicates from ALL_SOURCES
+    list(REMOVE_DUPLICATES ALL_SOURCES)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../)
+    # Step 3: Create custom commands for each source file
+    foreach(src ${ALL_SOURCES})
+        # Check if the source file has already been processed
+        if(NOT src IN_LIST PROCESSED_SOURCES)
+            # Extract the file name without the path and extension
+            get_filename_component(src_name ${src} NAME_WE)  # NAME_WE removes the extension
+
+            # Optionally, include directory info to ensure uniqueness
+            get_filename_component(src_dir ${src} DIRECTORY)
+            string(REPLACE "/" "_" src_dir_ ${src_dir})
+
+            # Define the output preprocessed file path
+            set(preprocessed_file "${PREPROCESSED_DIR}/${src_dir_}_${src_name}.i")
+            message(STATUS "Processing ${src} to ${preprocessed_file}")
+
+            # Check if the preprocessed file already exists
+            if(NOT EXISTS "${preprocessed_file}")
+                # Determine the language based on file extension
+                if(src MATCHES "\\.c$")
+                    set(language "C")
+                elseif(src MATCHES "\\.cpp$" OR src MATCHES "\\.cxx$" OR src MATCHES "\\.cc$")
+                    set(language "CXX")
+                else()
+                    # Default to C++ if the extension is unrecognized
+                    set(language "CXX")
+                endif()
+                set(flags "")
+
+                # Include all directories specified by include_directories()
+                # Ensure that include directories are correctly scoped
+                get_property(INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/array)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/execution)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/types)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/memory)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/graph)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/exceptions)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/indexing)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/legacy)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops/cpu)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops/cuda)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/performance)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/helpers)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/system)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops/declarable)
+                list(APPEND INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops/declarable/helpers)
+
+
+                foreach(dir ${INCLUDE_DIRS})
+                    set(flags "${flags} -I${dir}")
+                endforeach()
+
+
+                set(compiler "${CMAKE_CXX_COMPILER}")
+
+                # Optionally, add definitions or other flags as needed
+                # Example:
+                # set(flags "${flags} -DSOME_DEFINITION")
+                message("COMMAND ${compiler}  -E ${flags} ${src} -o ${preprocessed_file} ")
+                # Create a custom command to preprocess the source file
+                execute_process(
+                        COMMAND "${compiler}" ${flags} ${src} -o ${preprocessed_file}
+                        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/../
+                        RESULT_VARIABLE result
+                        OUTPUT_VARIABLE stdout_output
+                        ERROR_VARIABLE stderr_output
+                )
+
+                set("output_log_file" "${preprocessed_file}.saved")
+
+                # Save the output and error to a log file
+                file(WRITE ${output_log_file} "Standard Output:\n${stdout_output}\n")
+                file(APPEND ${output_log_file} "COMMAND ${compiler}  -E ${flags} ${src} -o ${preprocessed_file} ")
+                file(APPEND ${output_log_file} "Standard Error:\n${stderr_output}\n")
+
+                # Append to the list of preprocessed files
+                list(APPEND PREPROCESSED_FILES ${preprocessed_file})
+
+            else()
+                message(STATUS "Preprocessed file already exists, skipping: ${preprocessed_file}")
+                # Append the existing preprocessed file to the list
+                list(APPEND PREPROCESSED_FILES ${preprocessed_file})
+            endif()
+
+            # Mark the source file as processed
+            list(APPEND PROCESSED_SOURCES ${src})
+        else()
+            message(STATUS "Skipping already processed file: ${src}")
+        endif()
+    endforeach()
+    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM 1)
+
+    # Create a custom target for all preprocessed files
+    add_custom_target(preprocess_sources ALL DEPENDS ${PROCESSED_SOURCES}   ${PREPROCESSED_FILES})
+
+endif ()

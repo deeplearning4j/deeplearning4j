@@ -18,7 +18,6 @@
 #  * SPDX-License-Identifier: Apache-2.0
 #  ******************************************************************************/
 #
-
 set -eu
 
 # cd to the directory containing this script
@@ -27,7 +26,7 @@ cd "$DIR"
 
 setwindows_msys() {
   if [[ $KERNEL == *"windows"* ]]; then
-  export CMAKE_COMMAND="$CMAKE_COMMAND -G \"MSYS Makefiles\""
+    export CMAKE_COMMAND="$CMAKE_COMMAND -G \"MSYS Makefiles\""
   fi
 }
 
@@ -35,20 +34,17 @@ setandroid_defaults() {
   if [[ -z ${ANDROID_NDK:-} ]]; then
     export ANDROID_NDK=$HOME/Android/android-ndk/
     echo "No ANDROID_NDK variable set. Setting to default of $ANDROID_NDK"
-    else
-        echo "USING ANDROID NDK $ANDROID_NDK"
-fi
+  else
+    echo "USING ANDROID NDK $ANDROID_NDK"
+  fi
 
   if [[ -z ${ANDROID_VERSION:-} ]]; then
     export ANDROID_VERSION=21
     echo "No ANDROID_VERSION variable set. Setting to default of $ANDROID_VERSION"
-    else
-       echo "USING ANDROID VERSION $ANDROID_VERSION"
+  else
+    echo "USING ANDROID VERSION $ANDROID_VERSION"
     # android needs static linking
-
-fi
-
-
+  fi
 }
 
 export CMAKE_COMMAND="cmake"
@@ -61,12 +57,6 @@ echo eval $CMAKE_COMMAND
 
 [[ -z ${MAKEJ:-} ]] && MAKEJ=4
 
-# Use > 1 to consume two arguments per pass in the loop (e.g. each
-# argument has a corresponding value to go with it).
-# Use > 0 to consume one or more arguments per pass in the loop (e.g.
-# some arguments don't have a corresponding value to go with it such
-# as in the --default example).
-# note: if this is set to > 0 the /etc/hosts part is not recognized ( may be a bug )
 PARALLEL="true"
 OS=
 CHIP=
@@ -78,7 +68,7 @@ PACKAGING=
 CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
-#OPERATIONS AND DATATYPES argument are lists with semicolon ; separator
+# OPERATIONS AND DATATYPES argument are lists with semicolon ; separator
 OPERATIONS=
 DATATYPES=
 CLEAN="false"
@@ -100,139 +90,151 @@ OPTIMIZATION_LEVEL=
 SANITIZERS="address,undefined,float-divide-by-zero,float-cast-overflow"
 FUNC_TRACE="OFF"
 LOG_OUTPUT="none"
+PRINT_MATH="OFF"
 KEEP_NVCC="OFF"
+PREPROCESS="ON"  # Initialize PREPROCESS variable
+
 while [[ $# -gt 0 ]]
 do
-key="$1"
-value="${2:-}"
-#Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
-case $key in
-    -ol|--optimization-level)
-    OPTIMIZATION_LEVEL="$value"
-    shift # past argument
-    ;;
-     -pi|--print-indices)
-      PRINT_INDICES="$value"
-      shift # past argument
-      ;;
-    -h|--helper)
-    HELPER="$value"
-    shift # past argument
-    ;;
-    -o|-platform|--platform)
-    OS="$value"
-    shift # past argument
-    ;;
-    -ft|-functrace|--functrace)
-    FUNC_TRACE="$value"
-    shift # past argument
-    ;;
-    -b|--build-type)
-    BUILD="$value"
-    shift # past argument
-    ;;
-    -p|--packaging)
-    PACKAGING="$value"
-    shift # past argument
-    ;;
-      -kno|--keep-nvcc-output)
-      KEEP_NVCC="$value"
-      shift # past argument
-      ;;
-    -c|--chip)
-    CHIP="$value"
-    shift # past argument
-    ;;
-    -cc|--compute)
-    COMPUTE="$value"
-    echo COMPUTE="$value"
-    shift # past argument
-    ;;
-    -a|--arch)
-    ARCH="$value"
-    shift # past argument
-    ;;
-    -l|--libtype)
-    LIBTYPE="$value"
-    shift # past argument
-    ;;
-    -e|--chip-extension)
-    CHIP_EXTENSION="$value"
-    shift # past argument
-    ;;
-    -v|--chip-version)
-    CHIP_VERSION="$value"
-    shift # past argument
-    ;;
-    -x|--experimental)
-    EXPERIMENTAL="$value"
-    shift # past argument
-    ;;
-    -op|--operations)
-    OPERATIONS="$value"
-    shift # past argument
-    ;;
-    -dt|--datatypes)
-    DATATYPES="$value"
-    shift # past argument
-    ;;
-    --use_lto)
-    USE_LTO="-DSD_USE_LTO=$value"
-    ;;
-    --name)
-    NAME="$value"
-    shift # past argument
-    ;;
-    --check-vectorization)
-    CHECK_VECTORIZATION="$value"
-    ;;
-    -j)
-    MAKEJ="$value"
-    shift # past argument
-    ;;
-    clean)
-    CLEAN="true"
-    ;;
-    -m|--minifier)
-    MINIFIER="true"
-    ;;
-    -t|--tests)
-    TESTS="true"
-    ;;
-    -V|--verbose)
-    VERBOSE="true"
-    ;;
-    -l|--log-output)
-      LOG_OUTPUT="$value"
-      ;;
-    -sa|--sanitize)
-    SANITIZE="$value"
-    shift # past argument
-    ;;
-     -sar|--sanitizers)
-      SANITIZERS="$value"
-      shift # past argument
-      ;;
-     # cmake will generate a list of ops to include for later
-     # this will setup macros needed to reproduce
-     # the builds on the command line such as what ops to include in a build
-     # usually dynamically handled by cmake
-     -of|--op-output-file)
-      OP_OUTPUT_FILE="$value"
-      ;;
-    --default)
-    DEFAULT=YES
-    ;;
-    *)
+    key="$1"
+    value="${2:-}"
+    # Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
+    case $key in
+        -ol|--optimization-level)
+            OPTIMIZATION_LEVEL="$value"
+            shift # past argument
+            ;;
+        -pi|--print-indices)
+            PRINT_INDICES="$value"
+            shift # past argument
+            ;;
+        -pm|--print-math)
+            PRINT_MATH="$value"
+            shift # past argument
+            ;;
+        -h|--helper)
+            HELPER="$value"
+            shift # past argument
+            ;;
+        -o|-platform|--platform)
+            OS="$value"
+            shift # past argument
+            ;;
+        -ft|-functrace|--functrace)
+            FUNC_TRACE="$value"
+            shift # past argument
+            ;;
+        -b|--build-type)
+            BUILD="$value"
+            shift # past argument
+            ;;
+        -p|--packaging)
+            PACKAGING="$value"
+            shift # past argument
+            ;;
+        -kno|--keep-nvcc-output)
+            KEEP_NVCC="$value"
+            shift # past argument
+            ;;
+        -c|--chip)
+            CHIP="$value"
+            shift # past argument
+            ;;
+        -cc|--compute)
+            COMPUTE="$value"
+            echo COMPUTE="$value"
+            shift # past argument
+            ;;
+        -a|--arch)
+            ARCH="$value"
+            shift # past argument
+            ;;
+        -l|--libtype)
+            LIBTYPE="$value"
+            shift # past argument
+            ;;
+        -e|--chip-extension)
+            CHIP_EXTENSION="$value"
+            shift # past argument
+            ;;
+        -v|--chip-version)
+            CHIP_VERSION="$value"
+            shift # past argument
+            ;;
+        -op|--operations)
+            OPERATIONS="$value"
+            shift # past argument
+            ;;
+        -dt|--datatypes)
+            DATATYPES="$value"
+            shift # past argument
+            ;;
+        --use_lto)
+            USE_LTO="-DSD_USE_LTO=$value"
+            shift # past argument
+            ;;
+        --name)
+            NAME="$value"
+            shift # past argument
+            ;;
+        --check-vectorization)
+            CHECK_VECTORIZATION="$value"
+            shift # past argument
+            ;;
+        -j)
+            MAKEJ="$value"
+            shift # past argument
+            ;;
+        clean)
+            CLEAN="true"
+            shift # past argument
+            ;;
+        -m|--minifier)
+            MINIFIER="true"
+            shift # past argument
+            ;;
+        -t|--tests)
+            TESTS="true"
+            shift # past argument
+            ;;
+        -V|--verbose)
+            VERBOSE="true"
+            shift # past argument
+            ;;
+        -l|--log-output)
+            LOG_OUTPUT="$value"
+            shift # past argument
+            ;;
+        -sa|--sanitize)
+            SANITIZE="$value"
+            shift # past argument
+            ;;
+        -sar|--sanitizers)
+            SANITIZERS="$value"
+            shift # past argument
+            ;;
+        -of|--op-output-file)
+            OP_OUTPUT_FILE="$value"
+            shift # past argument
+            ;;
+        --preprocess)
+            PREPROCESS="$value"
+            shift # past argument
+            ;;
+        --default)
+            DEFAULT=YES
+            shift # past argument
+            ;;
+        *)
             # unknown option
-    ;;
-esac
-if [[ $# -gt 0 ]]; then
-    shift # past argument or value
-fi
+            shift # past argument
+            ;;
+    esac
 done
+
 HOST=$(uname -s | tr [A-Z] [a-z])
 KERNEL=$HOST-$(uname -m | tr [A-Z] [a-z])
+
 if [ "$(uname)" == "Darwin" ]; then
     HOST="macosx"
     KERNEL="darwin-x86_64"
@@ -240,7 +242,6 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     HOST="windows"
     KERNEL="windows-x86_64"
-    # NOTE when running windows, do NOT use the gcc compiler in usr/ always use the one in mingw/bin
     echo "Running windows"
 elif [ "$(uname -m)" == "ppc64le" ]; then
     if [ -z "$ARCH" ]; then
@@ -258,236 +259,220 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
-    aurora)
-      CHIP="aurora"
-      NAME="nd4jaurora"
-      BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
-      SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=ON"
-      BUILD_PATH=""
-      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake -DSD_AURORA=true"
-    ;;
-
     linux-armhf)
-      if [ -z "$ARCH" ]; then
-        ARCH="armv7-a"
-      fi
-      if [ ! -z ${RPI_BIN+set} ]; then
-        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
-      fi
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
-    ;;
-
+        if [ -z "$ARCH" ]; then
+            ARCH="armv7-a"
+        fi
+        if [ ! -z ${RPI_BIN+set} ]; then
+            export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+        fi
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
+        ;;
     linux-arm64)
-      if [ -z "$ARCH" ]; then
-        ARCH="armv8-a"
-      fi
-      if [ ! -z ${RPI_BIN+set} ]; then
-        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
-      fi
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true"
-    ;;
-
+        if [ -z "$ARCH" ]; then
+            ARCH="armv8-a"
+        fi
+        if [ ! -z ${RPI_BIN+set} ]; then
+            export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+        fi
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true"
+        ;;
     android-arm)
-      if [ -z "$ARCH" ]; then
-        ARCH="armv7-a"
-      fi
+        if [ -z "$ARCH" ]; then
+            ARCH="armv7-a"
+        fi
 
-      setandroid_defaults
+        setandroid_defaults
 
-      # Note here for android 32 bit prefix on the binutils is different
-      # See https://developer.android.com/ndk/guides/other_build_systems
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi/prebuilt/$KERNEL/"
-      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
-      setwindows_msys
-    ;;
-
+        # Note here for android 32 bit prefix on the binutils is different
+        # See https://developer.android.com/ndk/guides/other_build_systems
+        export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi/prebuilt/$KERNEL/"
+        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
+        setwindows_msys
+        ;;
     android-arm64)
-      if [ -z "$ARCH" ]; then
-        ARCH="armv8-a"
-      fi
+        if [ -z "$ARCH" ]; then
+            ARCH="armv8-a"
+        fi
 
-      setandroid_defaults
+        setandroid_defaults
 
-      echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
-      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
-      setwindows_msys
-    ;;
-
+        echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
+        export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
+        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm64/"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
+        setwindows_msys
+        ;;
     android-x86)
-      if [ -z "$ARCH" ]; then
-        ARCH="i686"
-      fi
+        if [ -z "$ARCH" ]; then
+            ARCH="i686"
+        fi
 
-      setandroid_defaults
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
-      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DSD_ANDROID_BUILD=true"
-      setwindows_msys
-    ;;
-
+        setandroid_defaults
+        export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
+        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86/"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DSD_ANDROID_BUILD=true"
+        setwindows_msys
+        ;;
     android-x86_64)
 
-      if [ -z "$ARCH" ]; then
-        ARCH="x86-64"
-      fi
-      echo "BUILDING ANDROID x86_64"
+        if [ -z "$ARCH" ]; then
+            ARCH="x86-64"
+        fi
+        echo "BUILDING ANDROID x86_64"
 
-      setandroid_defaults
+        setandroid_defaults
 
 
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
-      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86_64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DSD_ANDROID_BUILD=true"
-      setwindows_msys
-    ;;
+        export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
+        export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+        export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+        export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86_64/"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DSD_ANDROID_BUILD=true"
+        setwindows_msys
+        ;;
 
     ios-x86_64)
-      LIBTYPE="static"
-      ARCH="x86-64"
-      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-      else
-        export IOS_VERSION="10.3"
-      fi
-      XCODE_PATH="$(xcode-select --print-path)"
-      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile -DSD_IOS_BUILD=true"
-    ;;
+        LIBTYPE="static"
+        ARCH="x86-64"
+        if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+            export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+        else
+            export IOS_VERSION="10.3"
+        fi
+        XCODE_PATH="$(xcode-select --print-path)"
+        export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile -DSD_IOS_BUILD=true"
+        ;;
 
     ios-x86)
-      LIBTYPE="static"
-      ARCH="i386"
-      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-      else
-        export IOS_VERSION="10.3"
-      fi
-      XCODE_PATH="$(xcode-select --print-path)"
-      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile -DSD_IOS_BUILD=true"
-    ;;
+        LIBTYPE="static"
+        ARCH="i386"
+        if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+            export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+        else
+            export IOS_VERSION="10.3"
+        fi
+        XCODE_PATH="$(xcode-select --print-path)"
+        export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile -DSD_IOS_BUILD=true"
+        ;;
 
     ios-arm64)
-      LIBTYPE="static"
-      ARCH="arm64"
-      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-      else
-        export IOS_VERSION="10.3"
-      fi
-      XCODE_PATH="$(xcode-select --print-path)"
-      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile -DSD_IOS_BUILD=true"
-    ;;
+        LIBTYPE="static"
+        ARCH="arm64"
+        if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+            export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+        else
+            export IOS_VERSION="10.3"
+        fi
+        XCODE_PATH="$(xcode-select --print-path)"
+        export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile -DSD_IOS_BUILD=true"
+        ;;
 
     ios-arm)
-      LIBTYPE="static"
-      ARCH="armv7"
-      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-      export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-      else
-        export IOS_VERSION="10.3"
-      fi
-      XCODE_PATH="$(xcode-select --print-path)"
-      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile -DSD_IOS_BUILD=true"
-    ;;
+        LIBTYPE="static"
+        ARCH="armv7"
+        if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+            export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+        else
+            export IOS_VERSION="10.3"
+        fi
+        XCODE_PATH="$(xcode-select --print-path)"
+        export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile -DSD_IOS_BUILD=true"
+        ;;
 
     ios-armv7)
-      # change those 2 parameters and make sure the IOS_SDK exists
-      export iPhoneOS="iPhoneOS"
-      export IOS_VERSION="10.3"
-      LIBTYPE="static"
-      ARCH="armv7"
-      export IOS_SDK="/Applications/Xcode.app/Contents/Developer/Platforms/${iPhoneOS}.platform/Developer/SDKs/${iPhoneOS}${IOS_VERSION}.sdk"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile -DSD_IOS_BUILD=true"
-    ;;
+        # change those 2 parameters and make sure the IOS_SDK exists
+        export iPhoneOS="iPhoneOS"
+        export IOS_VERSION="10.3"
+        LIBTYPE="static"
+        ARCH="armv7"
+        export IOS_SDK="/Applications/Xcode.app/Contents/Developer/Platforms/${iPhoneOS}.platform/Developer/SDKs/${iPhoneOS}${IOS_VERSION}.sdk"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile -DSD_IOS_BUILD=true"
+        ;;
 
     linux*)
-    ;;
+        ;;
 
     macosx*)
-      export CC=clang
-      export CXX=clang++
-      PARALLEL="true"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DSD_APPLE_BUILD=true"
-    ;;
+        export CC=clang
+        export CXX=clang++
+        PARALLEL="true"
+        export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DSD_APPLE_BUILD=true"
+        ;;
 
     windows*)
-      # Do something under Windows NT platform
-      if [ "$CHIP" == "cuda" ]; then
-        export CMAKE_COMMAND="cmake -G \"Ninja\""
-        export MAKE_COMMAND="ninja"
-        export CC="cl.exe"
-        export CXX="cl.exe"
-        PARALLEL="true"
-        VERBOSE_ARG="-v"
-      else
-        # NOTE when running windows, do NOT use the gcc compiler in usr/ always use the one in mingw/bin
-        # Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
-        # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
-        # may show up
-        export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-        export MAKE_COMMAND="make"
-        export CC=gcc
-        export CXX=g++
-        PARALLEL="true"
-      fi
+        # Do something under Windows NT platform
+        if [ "$CHIP" == "cuda" ]; then
+            export CMAKE_COMMAND="cmake -G \"Ninja\""
+            export MAKE_COMMAND="ninja"
+            export CC="cl.exe"
+            export CXX="cl.exe"
+            PARALLEL="true"
+            VERBOSE_ARG="-v"
+        else
+            # NOTE when running windows, do NOT use the gcc compiler in usr/ always use the one in mingw/bin
+            # Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
+            # prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
+            # may show up
+            export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
+            export MAKE_COMMAND="make"
+            export CC=gcc
+            export CXX=g++
+            PARALLEL="true"
+        fi
 
-      # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
-      if [ -z "${VCINSTALLDIR:-}" ]; then
-        echo "NEED TO SET DEFAULTS FOR VISUAL STUDIO, NO VCINSTALLDIR environment variable found"
-          export VisualStudioVersion=12.0
-        export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
-        export VCINSTALLDIR="$VSINSTALLDIR\\VC"
-        export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
-        export Platform=X64
-        export INCLUDE="$VCINSTALLDIR\\INCLUDE;$WindowsSdkDir\\include\\shared;$WindowsSdkDir\\include\\um"
-        export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
-        export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
-        export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
-      fi
-      # Make sure we are using 64-bit MinGW-w64
-      export PATH=/mingw64/bin/:/mingw64/lib:$PATH
-      # export GENERATOR="MSYS Makefiles"
-    ;;
+        # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
+        if [ -z "${VCINSTALLDIR:-}" ]; then
+            echo "NEED TO SET DEFAULTS FOR VISUAL STUDIO, NO VCINSTALLDIR environment variable found"
+            export VisualStudioVersion=12.0
+            export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
+            export VCINSTALLDIR="$VSINSTALLDIR\\VC"
+            export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
+            export Platform=X64
+            export INCLUDE="$VCINSTALLDIR\\INCLUDE;$WindowsSdkDir\\include\\shared;$WindowsSdkDir\\include\\um"
+            export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
+            export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
+            export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
+        fi
+        # Make sure we are using 64-bit MinGW-w64
+        export PATH=/mingw64/bin/:/mingw64/lib:$PATH
+        # export GENERATOR="MSYS Makefiles"
+        ;;
 esac
 
 if [ ! -d "include/generated" ]; then
-   mkdir -p "include/generated"
+    mkdir -p "include/generated"
 fi
 
 if [ -f "$OP_OUTPUT_FILE" ]; then
-   rm -f "${OP_OUTPUT_FILE}"
+    rm -f "${OP_OUTPUT_FILE}"
 fi
 
-
 if [ -z "$BUILD" ]; then
- BUILD="release"
-
+    BUILD="release"
 fi
 
 if [ -z "$CHIP" ]; then
- CHIP="cpu"
+    CHIP="cpu"
 fi
 
 if [ -z "$LIBTYPE" ]; then
- LIBTYPE="dynamic"
+    LIBTYPE="dynamic"
 fi
 
 if [ -z "$PACKAGING" ]; then
- PACKAGING="none"
+    PACKAGING="none"
 fi
 
 export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_SANITIZE=$SANITIZE -DSD_SANITIZERS=$SANITIZERS"
@@ -504,39 +489,34 @@ elif [ "$CHIP_EXTENSION" == "x86_64" ] || [ "$ARCH" == "x86_64" ]; then
 fi
 
 if [ -z "$ARCH" ]; then
- ARCH="x86-64"
+    ARCH="x86-64"
 fi
 
 if [ -z "$COMPUTE" ]; then
-  if [ "$ARCH" == "x86-64" ]; then
-   COMPUTE="all"
-  else
-      COMPUTE="all"
-  fi
+    COMPUTE="all"
 fi
 
 # Enable call stacking
 if [ "$FUNC_TRACE" == "ON" ]; then
-   export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_GCC_FUNCTRACE=ON"
-
-  fi
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_GCC_FUNCTRACE=ON"
+fi
 
 OPERATIONS_ARG=
 
 if [ -z "$OPERATIONS" ]; then
-  OPERATIONS_ARG="-DSD_ALL_OPS=true"
+    OPERATIONS_ARG="-DSD_ALL_OPS=true"
 else
-  OPERATIONS_ARG="-DSD_OPS_LIST=\"$OPERATIONS\" -DSD_ALL_OPS=false"
+    OPERATIONS_ARG="-DSD_OPS_LIST=\"$OPERATIONS\" -DSD_ALL_OPS=false"
 fi
 
 DATATYPES_ARG=
 
 if [ -n "$DATATYPES" ]; then
-  DATATYPES_ARG="-DSD_TYPES_LIST=\"$DATATYPES\""
+    DATATYPES_ARG="-DSD_TYPES_LIST=\"$DATATYPES\""
 fi
 
 if [ -z "$EXPERIMENTAL" ]; then
- EXPERIMENTAL="no"
+    EXPERIMENTAL="no"
 fi
 
 if [ "$CHIP" == "cpu" ]; then
@@ -553,32 +533,23 @@ if [ -z "$NAME" ]; then
     elif [ "$CHIP" == "cuda" ]; then
         NAME="nd4jcuda"
     elif [ "$CHIP" == "aurora" ]; then
-            NAME="nd4jaurora"
+        NAME="nd4jaurora"
     fi
 fi
 
 if [ "$LIBTYPE" == "dynamic" ]; then
-     SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF"
-     else
-         SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF -DSD_STATIC_LIB=ON"
+    SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF"
+else
+    SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF -DSD_STATIC_LIB=ON"
 fi
 
-# note this is a bit unusual. We set it to none as a way of
-# preventing cmake from injecting defaults in to the build.
-# note that we also don't use debug mode here
-# debug mode causes java code running a debug build of libnd4j
-# to just freeze. The goal is to use debug symbols and use other tools
-# like valgrind with symbol metadata + stack traces
-# from backward or other tools like compute-sanitizer
-# to give us the most information possible while being able to run from java.
-if [ "FUNC_TRACE" == "ON" ]; then
+# Set build type
+if [ "$FUNC_TRACE" == "ON" ]; then
     BUILD_TYPE="-DCMAKE_BUILD_TYPE=none"
-
 elif [ "$BUILD" == "release" ]; then
-        BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
-    else
-        BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
-
+    BUILD_TYPE="-DCMAKE_BUILD_TYPE=Release"
+else
+    BUILD_TYPE="-DCMAKE_BUILD_TYPE=Debug"
 fi
 
 if [ "$PACKAGING" == "none" ]; then
@@ -600,7 +571,7 @@ fi
 # Use parent of output file to mean source include directory
 OP_OUTPUT_FILE_ARG="-DOP_OUTPUT_FILE=../${OP_OUTPUT_FILE}"
 
-EXPERIMENTAL_ARG="";
+EXPERIMENTAL_ARG=""
 MINIFIER_ARG="-DSD_BUILD_MINIFIER=false"
 TESTS_ARG="-DSD_BUILD_TESTS=OFF"
 NAME_ARG="-DSD_LIBRARY_NAME=$NAME"
@@ -618,7 +589,6 @@ if [ "$TESTS" == "true" ]; then
     TESTS_ARG="-DSD_BUILD_TESTS=ON"
 fi
 
-
 ARCH_ARG="-DSD_ARCH=$ARCH -DSD_EXTENSION=$CHIP_EXTENSION"
 
 CUDA_COMPUTE="-DCOMPUTE=\"$COMPUTE\""
@@ -626,19 +596,18 @@ CUDA_COMPUTE="-DCOMPUTE=\"$COMPUTE\""
 if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     case $OS in
         linux*)
-        if [ "${CUDA_PATH-}" == "" ]; then
-            export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
-        fi
-        ;;
+            if [ "${CUDA_PATH-}" == "" ]; then
+                export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
+            fi
+            ;;
         macosx*)
-        export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
-        ;;
+            export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
+            ;;
         windows*)
-        export CUDA_PATH="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$CHIP_VERSION/"
-        ;;
+            export CUDA_PATH="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$CHIP_VERSION/"
+            ;;
     esac
 fi
-
 
 [[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
@@ -659,7 +628,7 @@ if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
     OPENBLAS_PATH=""
 fi
 
-# replace any backslash with a slash
+# Replace any backslash with a slash
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
 mkbuilddir() {
@@ -673,68 +642,187 @@ mkbuilddir() {
 
 HELPERS=""
 if [ "$HELPER" == "" ]; then
-  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                 WARNING!                                                  !!"
-  echo "!!                                      No helper packages configured!                                       !!"
-  echo "!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!                                                                                                           !!"
-  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                 WARNING!                                                  !!"
+    echo "!!                                      No helper packages configured!                                       !!"
+    echo "!!                          You can specify helper by using -h key. I.e. <-h onednn>                         !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!                                                                                                           !!"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 else
-  #  if helpers were defined, we'll propagate them to CMake
-  IFS=','
-  read -ra HLP <<< "$HELPER"
-  for i in "${HLP[@]}"; do
-    HELPERS="${HELPERS} -DHELPERS_$i=true"
-  done
-  IFS=' '
+    # If helpers were defined, we'll propagate them to CMake
+    IFS=','
+    read -ra HLP <<< "$HELPER"
+    for i in "${HLP[@]}"; do
+        HELPERS="${HELPERS} -DHELPERS_$i=true"
+    done
+    IFS=' '
 fi
 
-echo PACKAGING  = "${PACKAGING}"
-echo BUILD  = "${BUILD}"
-echo CHIP     = "${CHIP}"
-echo ARCH    = "${ARCH}"
-echo CHIP_EXTENSION  = "${CHIP_EXTENSION}"
-echo CHIP_VERSION    = "${CHIP_VERSION}"
-echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
-echo EXPERIMENTAL = ${EXPERIMENTAL}
-echo LIBRARY TYPE    = "${LIBTYPE}"
-echo OPERATIONS = "${OPERATIONS_ARG}"
-echo DATATYPES = "${DATATYPES_ARG}"
-echo MINIFIER = "${MINIFIER_ARG}"
-echo TESTS = "${TESTS_ARG}"
-echo NAME = "${NAME_ARG}"
-echo OPENBLAS_PATH = "$OPENBLAS_PATH"
+echo PACKAGING           = "${PACKAGING}"
+echo BUILD               = "${BUILD}"
+echo CHIP                = "${CHIP}"
+echo ARCH                = "${ARCH}"
+echo CHIP_EXTENSION      = "${CHIP_EXTENSION}"
+echo CHIP_VERSION        = "${CHIP_VERSION}"
+echo GPU_COMPUTE_CAPABILITY = "${COMPUTE}"
+echo EXPERIMENTAL        = "${EXPERIMENTAL}"
+echo LIBRARY TYPE        = "${LIBTYPE}"
+echo OPERATIONS          = "${OPERATIONS_ARG}"
+echo DATATYPES           = "${DATATYPES_ARG}"
+echo MINIFIER            = "${MINIFIER_ARG}"
+echo TESTS               = "${TESTS_ARG}"
+echo NAME                = "${NAME_ARG}"
+echo OPENBLAS_PATH       = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
-echo HELPERS = "$HELPERS"
-echo OP_OUTPUT_FILE ="$OP_OUTPUT_FILE"
-echo USE_LTO="$USE_LTO"
-echo SANITIZE="$SANITIZE"
-echo FUNC_TRACE="$FUNC_TRACE"
-echo LOG_OUTPUT="$LOG_OUTPUT"
-echo KEEP_NVCC="$KEEP_NVCC"
-echo PRINT_INDICES="$PRINT_INDICES"
+echo HELPERS             = "$HELPERS"
+echo OP_OUTPUT_FILE      = "$OP_OUTPUT_FILE"
+echo USE_LTO             = "$USE_LTO"
+echo SANITIZE            = "$SANITIZE"
+echo FUNC_TRACE          = "$FUNC_TRACE"
+echo LOG_OUTPUT          = "$LOG_OUTPUT"
+echo KEEP_NVCC           = "$KEEP_NVCC"
+echo PRINT_INDICES       = "$PRINT_INDICES"
+echo PRINT_MATH          = "$PRINT_MATH"
+echo PREPROCESS          = "$PREPROCESS"
+
 mkbuilddir
 pwd
 
+# ----------------------- CMake Configuration -----------------------
 
-
-echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG    -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.."
+# Configure CMake
+echo "$CMAKE_COMMAND - -DSD_KEEP_NVCC_OUTPUT=$KEEP_NVCC -DSD_GCC_FUNCTRACE=$FUNC_TRACE $BLAS_ARG $ARCH_ARG $NAME_ARG $OP_OUTPUT_FILE_ARG -DSD_SANITIZERS=${SANITIZERS} -DSD_SANITIZE=${SANITIZE} -DSD_CHECK_VECTORIZATION=${CHECK_VECTORIZATION} $USE_LTO $HELPERS $SHARED_LIBS_ARG $MINIFIER_ARG $OPERATIONS_ARG $DATATYPES_ARG $BUILD_TYPE $PACKAGING_ARG $EXPERIMENTAL_ARG $TESTS_ARG $CUDA_COMPUTE -DOPENBLAS_PATH=$OPENBLAS_PATH -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.."
 
 if [ "$LOG_OUTPUT" == "none" ]; then
-    eval "$CMAKE_COMMAND"  -DPRINT_INDICES="$PRINT_INDICES" -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC"  -DSD_GCC_FUNCTRACE="$FUNC_TRACE"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_SANITIZE="${SANITIZE}" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
-   else
-         eval "$CMAKE_COMMAND" -DPRINT_INDICES="$PRINT_INDICES"  -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" -DSD_GCC_FUNCTRACE="$FUNC_TRACE"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_SANITIZE="${SANITIZE}" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.. >> "$LOG_OUTPUT" 2>&1
+    eval "$CMAKE_COMMAND" \
+        -DPRINT_MATH="$PRINT_MATH" \
+        -DPRINT_INDICES="$PRINT_INDICES" \
+        -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
+        -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+        "$BLAS_ARG" \
+        "$ARCH_ARG" \
+        "$NAME_ARG" \
+        "$OP_OUTPUT_FILE_ARG" \
+        -DSD_SANITIZE="${SANITIZE}" \
+        -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
+        "$USE_LTO" \
+        "$HELPERS" \
+        "$SHARED_LIBS_ARG" \
+        "$MINIFIER_ARG" \
+        "$OPERATIONS_ARG" \
+        "$DATATYPES_ARG" \
+        "$BUILD_TYPE" \
+        "$PACKAGING_ARG" \
+        "$TESTS_ARG" \
+        "$CUDA_COMPUTE" \
+        -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        -DDEV=FALSE \
+        -DCMAKE_NEED_RESPONSE=YES \
+        -DMKL_MULTI_THREADED=TRUE \
+        ../..
+else
+    eval "$CMAKE_COMMAND" \
+        -DPRINT_MATH="$PRINT_MATH" \
+        -DPRINT_INDICES="$PRINT_INDICES" \
+        -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
+        -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+        "$BLAS_ARG" \
+        "$ARCH_ARG" \
+        "$NAME_ARG" \
+        "$OP_OUTPUT_FILE_ARG" \
+        -DSD_SANITIZE="${SANITIZE}" \
+        -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
+        "$USE_LTO" \
+        "$HELPERS" \
+        "$SHARED_LIBS_ARG" \
+        "$MINIFIER_ARG" \
+        "$OPERATIONS_ARG" \
+        "$DATATYPES_ARG" \
+        "$BUILD_TYPE" \
+        "$PACKAGING_ARG" \
+        "$TESTS_ARG" \
+        "$CUDA_COMPUTE" \
+        -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+        -DDEV=FALSE \
+        -DCMAKE_NEED_RESPONSE=YES \
+        -DMKL_MULTI_THREADED=TRUE \
+        ../.. >> "$LOG_OUTPUT" 2>&1
 fi
 
+# ----------------------- Preprocessing Step -----------------------
 
+# Handle the PREPROCESS flag
+if [ "$PREPROCESS" == "ON" ]; then
+   if [ "$LOG_OUTPUT" == "none" ]; then
+       eval "$CMAKE_COMMAND" \
+           -DPRINT_MATH="$PRINT_MATH" \
+           -DPRINT_INDICES="$PRINT_INDICES" \
+           -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
+           -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+            -DSD_PREPROCESS="$PREPROCESS" \
+           "$BLAS_ARG" \
+           "$ARCH_ARG" \
+           "$NAME_ARG" \
+           "$OP_OUTPUT_FILE_ARG" \
+           -DSD_SANITIZE="${SANITIZE}" \
+           "$USE_LTO" \
+           "$HELPERS" \
+           "$SHARED_LIBS_ARG" \
+           "$MINIFIER_ARG" \
+           "$OPERATIONS_ARG" \
+           "$DATATYPES_ARG" \
+           "$BUILD_TYPE" \
+           "$PACKAGING_ARG" \
+           "$TESTS_ARG" \
+           "$CUDA_COMPUTE" \
+           -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+           -DDEV=FALSE \
+           -DCMAKE_NEED_RESPONSE=YES \
+           -DMKL_MULTI_THREADED=TRUE \
+           ../..
+   else
+       eval "$CMAKE_COMMAND" \
+           -DPRINT_MATH="$PRINT_MATH" \
+           -DPRINT_INDICES="$PRINT_INDICES" \
+           -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
+           -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+           -DSD_PREPROCESS="$PREPROCESS" \
+           "$BLAS_ARG" \
+           "$ARCH_ARG" \
+           "$NAME_ARG" \
+           "$OP_OUTPUT_FILE_ARG" \
+           -DSD_SANITIZE="${SANITIZE}" \
+           -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
+           "$USE_LTO" \
+           "$HELPERS" \
+           "$SHARED_LIBS_ARG" \
+           "$MINIFIER_ARG" \
+           "$OPERATIONS_ARG" \
+           "$DATATYPES_ARG" \
+           "$BUILD_TYPE" \
+           "$PACKAGING_ARG" \
+           "$TESTS_ARG" \
+           "$CUDA_COMPUTE" \
+           -DOPENBLAS_PATH="$OPENBLAS_PATH" \
+           -DDEV=FALSE \
+           -DCMAKE_NEED_RESPONSE=YES \
+           -DMKL_MULTI_THREADED=TRUE \
+           ../.. >> "$LOG_OUTPUT" 2>&1
+   fi
+    echo "Running preprocessing step..."
+    exit 0
+fi
 
+# --------------------- End of Preprocessing Step ----------------------
+
+# Set Make arguments based on user options
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi
@@ -742,31 +830,15 @@ if [ "$VERBOSE" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS $VERBOSE_ARG"
 fi
 
+# Build the project
 
-if [ "$CHECK_VECTORIZATION" == "ON" ]; then
-
-if [ "$MAKE_COMMAND" == "make" ]; then
-    MAKE_ARGUMENTS="$MAKE_ARGUMENTS --output-sync=target"
-fi
-
-exec 3>&1
 
 if [ "$LOG_OUTPUT" == "none" ]; then
-    eval "$CMAKE_COMMAND"  -DPRINT_INDICES="$PRINT_INDICES" -DSD_GCC_FUNCTRACE="$FUNC_TRACE"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_SANITIZE="${SANITIZE}" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
-   else
-         eval "$CMAKE_COMMAND" -DPRINT_INDICES="$PRINT_INDICES"   -DSD_GCC_FUNCTRACE="$FUNC_TRACE"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$OP_OUTPUT_FILE_ARG" -DSD_SANITIZE="${SANITIZE}" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" "$USE_LTO" "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$DATATYPES_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../.. >> "$LOG_OUTPUT" 2>&1
-fi
-
-eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
-exec 3>&-
+    eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" && cd ../../..
 else
-
-if [ "$LOG_OUTPUT" == "none" ]; then
-   eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
-
-   else
-        eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  >> "$LOG_OUTPUT" 2>&1 && cd ../../..
+    eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
 fi
 
-fi
 
+
+echo "Build process completed successfully."

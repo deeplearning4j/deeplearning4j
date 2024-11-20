@@ -21,7 +21,7 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -61,7 +61,7 @@
         <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
          FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
          FOR ADDRESS USE: address,float-divide-by-zero,float-cast-overflow
-          FOR UNDEFINED USE: undefined,float-divide-by-zero,float-cast-overflow
+         FOR UNDEFINED USE: undefined,float-divide-by-zero,float-cast-overflow
          Note that address and undefined can't be used at the same time.
          An address memory overlap will occur otherwise.
          See: https://github.com/google/sanitizers/issues/856
@@ -80,11 +80,19 @@
         <libnd4j.test.runner></libnd4j.test.runner>
         <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
         <libnd4j.optimization>3</libnd4j.optimization>
+       <!-- Used to print indices of for loops in cpu. Used to detect out of bounds crashes when a program crashes.-->
         <libnd4j.printindices>OFF</libnd4j.printindices>
+        <!-- Used to print individual math operations. Need: PRINT_MATH_FUNCTION_NAME to use. Functions in platformmath.h and templatemath.h will run additional print statements. Pick from there.-->
+        <libnd4j.printmath>OFF</libnd4j.printmath>
         <junit.version>5.9.2</junit.version>
 
         <cpu.core.count></cpu.core.count>
-
+        <!-- New property for preprocessor flag
+         This flag allows us to use cmake to generate commands
+         we can use to output files that just run the preprocessor.
+         This is used for debugging odd macro behavior.
+         -->
+        <libnd4j.preprocess>OFF</libnd4j.preprocess>
     </properties>
 
     <dependencies>
@@ -356,8 +364,7 @@
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
-                                        <argument>buildnativeoperations.sh
-                                        </argument>
+                                        <argument>buildnativeoperations.sh</argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>
                                         <argument>--chip</argument>
@@ -393,6 +400,11 @@
                                         <argument>${libnd4j.optimization}</argument>
                                         <argument>--print-indices</argument>
                                         <argument>${libnd4j.printindices}</argument>
+                                        <argument>--print-math</argument>
+                                        <argument>${libnd4j.printmath}</argument>
+                                        <argument>--preprocess</argument>
+                                        <argument>${libnd4j.preprocess}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -528,6 +540,11 @@
                                         <argument>${libnd4j.optimization}</argument>
                                         <argument>--print-indices</argument>
                                         <argument>${libnd4j.printindices}</argument>
+                                        <argument>--print-math</argument>
+                                        <argument>${libnd4j.printmath}</argument>
+                                        <argument>--preprocess</argument>
+                                        <argument>${libnd4j.preprocess}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
