@@ -1705,4 +1705,12 @@ const char* get_type_name() {
 #define CALLBACK_INSTANTIATE_PROMOTE(a1, b1, FUNC_NAME, ARGS) \
     INSTANTIATE_PROMOTE(a1, b1, FUNC_NAME, ARGS)
 
+
+#define INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS) \
+    template FUNC_NAME<GET_SECOND(a1), GET_SECOND(b1)>ARGS;
+
+// Callback macro
+#define CALLBACK_INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS) \
+    INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS)
+
 #endif  // header

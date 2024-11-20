@@ -20,7 +20,6 @@
 // Created by raver on 9/1/2018.
 //
 #include <exceptions/graph_exception.h>
-#include <helpers/StringUtils.h>
 
 namespace sd {
 graph_exception::graph_exception(std::string message, LongType graphId) : std::runtime_error(message) {

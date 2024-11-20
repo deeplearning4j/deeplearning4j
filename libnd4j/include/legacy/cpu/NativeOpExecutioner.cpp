@@ -670,8 +670,6 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
                                       const void *hY, const sd::LongType *hYShapeInfo, const void *dY,
                                       const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                       void *dZ, const sd::LongType *dZShapeInfo) {
-  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
   NativeOpExecutioner::execReduce3Scalar(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo,
                                          dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
 }
