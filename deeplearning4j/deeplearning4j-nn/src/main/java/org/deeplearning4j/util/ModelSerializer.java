@@ -134,6 +134,7 @@ public class ModelSerializer {
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater,DataNormalization dataNormalization)
             throws IOException {
         ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
 
         // Save configuration as JSON
         String json = "";
@@ -145,14 +146,13 @@ public class ModelSerializer {
 
         ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
         zipfile.putNextEntry(config);
-        zipfile.write(json.getBytes());
+        dos.write(json.getBytes());
 
         // Save parameters as binary
         ZipEntry coefficients = new ZipEntry(COEFFICIENTS_BIN);
         zipfile.putNextEntry(coefficients);
-        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
         INDArray params = model.params();
-        if(params != null) {
+        if (params != null) {
             try {
                 Nd4j.write(model.params(), dos);
             } finally {
@@ -184,11 +184,11 @@ public class ModelSerializer {
         }
 
 
-        if(dataNormalization != null) {
+        if (dataNormalization != null) {
             // now, add our normalizer as additional entry
             ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
             zipfile.putNextEntry(nEntry);
-            NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
+            NormalizerSerializer.getDefault().write(dataNormalization, dos);
         }
 
         dos.close();
