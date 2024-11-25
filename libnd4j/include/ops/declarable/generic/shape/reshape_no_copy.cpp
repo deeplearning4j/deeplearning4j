@@ -9,8 +9,6 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
-  printf("reshape_no_copy exec\n");
-  fflush(stdout);
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
   //note that the calculate output shape that sets this flag does not have access to the data buffer
