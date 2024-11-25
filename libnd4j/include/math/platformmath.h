@@ -98,7 +98,7 @@ union PAIR {
   }
 
 template <typename T>
-SD_INLINE SD_HOST void sd_print_math2(char* func_name, T input1, T input2, T output) {
+SD_INLINE SD_HOST void sd_print_math2(const char* func_name, T input1, T input2, T output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -108,7 +108,7 @@ SD_INLINE SD_HOST void sd_print_math2(char* func_name, T input1, T input2, T out
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2(char* func_name, float input1, float input2, float output) {
+SD_INLINE SD_HOST void sd_print_math2(const char* func_name, float input1, float input2, float output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -118,7 +118,7 @@ SD_INLINE SD_HOST void sd_print_math2(char* func_name, float input1, float input
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<uint16_t>(char* func_name, uint16_t input1, uint16_t input2, uint16_t output) {
+SD_INLINE SD_HOST void sd_print_math2<uint16_t>(const char* func_name, uint16_t input1, uint16_t input2, uint16_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -128,7 +128,7 @@ SD_INLINE SD_HOST void sd_print_math2<uint16_t>(char* func_name, uint16_t input1
 
 // Specializations for integer types
 template <>
-SD_INLINE SD_HOST void sd_print_math2<int>(char* func_name, int input1, int input2, int output) {
+SD_INLINE SD_HOST void sd_print_math2<int>(const char* func_name, int input1, int input2, int output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -137,7 +137,7 @@ SD_INLINE SD_HOST void sd_print_math2<int>(char* func_name, int input1, int inpu
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<uint32_t>(char* func_name, uint32_t input1, uint32_t input2, uint32_t output) {
+SD_INLINE SD_HOST void sd_print_math2<uint32_t>(const char* func_name, uint32_t input1, uint32_t input2, uint32_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -146,7 +146,7 @@ SD_INLINE SD_HOST void sd_print_math2<uint32_t>(char* func_name, uint32_t input1
 }
 
 template <typename T>
-SD_INLINE SD_HOST void sd_print_math(char* func_name, T input, T output) {
+SD_INLINE SD_HOST void sd_print_math(const char* func_name, T input, T output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -156,7 +156,7 @@ SD_INLINE SD_HOST void sd_print_math(char* func_name, T input, T output) {
 
 // Specializations for integer types
 template <>
-SD_INLINE SD_HOST void sd_print_math<int>(char* func_name, int input, int output) {
+SD_INLINE SD_HOST void sd_print_math<int>(const char* func_name, int input, int output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -165,7 +165,7 @@ SD_INLINE SD_HOST void sd_print_math<int>(char* func_name, int input, int output
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<long>(char* func_name, long input, long output) {
+SD_INLINE SD_HOST void sd_print_math<long>(const char* func_name, long input, long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -174,7 +174,7 @@ SD_INLINE SD_HOST void sd_print_math<long>(char* func_name, long input, long out
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<unsigned long>(char* func_name, unsigned long input, unsigned long output) {
+SD_INLINE SD_HOST void sd_print_math<unsigned long>(const char* func_name, unsigned long input, unsigned long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -183,7 +183,7 @@ SD_INLINE SD_HOST void sd_print_math<unsigned long>(char* func_name, unsigned lo
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<long long>(char* func_name, long long input, long long output) {
+SD_INLINE SD_HOST void sd_print_math<long long>(const char* func_name, long long input, long long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -192,7 +192,7 @@ SD_INLINE SD_HOST void sd_print_math<long long>(char* func_name, long long input
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<unsigned long long>(char* func_name, unsigned long long input, unsigned long long output) {
+SD_INLINE SD_HOST void sd_print_math<unsigned long long>(const char* func_name, unsigned long long input, unsigned long long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -201,7 +201,7 @@ SD_INLINE SD_HOST void sd_print_math<unsigned long long>(char* func_name, unsign
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<int16_t>(char* func_name, int16_t input, int16_t output) {
+SD_INLINE SD_HOST void sd_print_math<int16_t>(const char* func_name, int16_t input, int16_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -210,7 +210,7 @@ SD_INLINE SD_HOST void sd_print_math<int16_t>(char* func_name, int16_t input, in
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<uint16_t>(char* func_name, uint16_t input, uint16_t output) {
+SD_INLINE SD_HOST void sd_print_math<uint16_t>(const char* func_name, uint16_t input, uint16_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -219,7 +219,7 @@ SD_INLINE SD_HOST void sd_print_math<uint16_t>(char* func_name, uint16_t input, 
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<int8_t>(char* func_name, int8_t input, int8_t output) {
+SD_INLINE SD_HOST void sd_print_math<int8_t>(const char* func_name, int8_t input, int8_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -228,7 +228,7 @@ SD_INLINE SD_HOST void sd_print_math<int8_t>(char* func_name, int8_t input, int8
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<uint8_t>(char* func_name, uint8_t input, uint8_t output) {
+SD_INLINE SD_HOST void sd_print_math<uint8_t>(const char* func_name, uint8_t input, uint8_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -237,7 +237,7 @@ SD_INLINE SD_HOST void sd_print_math<uint8_t>(char* func_name, uint8_t input, ui
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math<uint32_t>(char* func_name, uint32_t input, uint32_t output) {
+SD_INLINE SD_HOST void sd_print_math<uint32_t>(const char* func_name, uint32_t input, uint32_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -247,7 +247,7 @@ SD_INLINE SD_HOST void sd_print_math<uint32_t>(char* func_name, uint32_t input, 
 
 // Specializations for float16
 template <>
-SD_INLINE SD_HOST void sd_print_math(char* func_name, float16 input, float16 output) {
+SD_INLINE SD_HOST void sd_print_math(const char* func_name, float16 input, float16 output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -257,7 +257,7 @@ SD_INLINE SD_HOST void sd_print_math(char* func_name, float16 input, float16 out
 
 // Specializations for bfloat16
 template <>
-SD_INLINE SD_HOST void sd_print_math<bfloat16>(char* func_name, bfloat16 input, bfloat16 output) {
+SD_INLINE SD_HOST void sd_print_math<bfloat16>(const char* func_name, bfloat16 input, bfloat16 output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -267,7 +267,7 @@ SD_INLINE SD_HOST void sd_print_math<bfloat16>(char* func_name, bfloat16 input, 
 
 // Specialization for bool
 template <>
-SD_INLINE SD_HOST void sd_print_math<bool>(char* func_name, bool input, bool output) {
+SD_INLINE SD_HOST void sd_print_math<bool>(const char* func_name, bool input, bool output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -276,7 +276,7 @@ SD_INLINE SD_HOST void sd_print_math<bool>(char* func_name, bool input, bool out
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<uint64_t>(char* func_name, uint64_t input1, uint64_t input2, uint64_t output) {
+SD_INLINE SD_HOST void sd_print_math2<uint64_t>(const char* func_name, uint64_t input1, uint64_t input2, uint64_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -285,7 +285,7 @@ SD_INLINE SD_HOST void sd_print_math2<uint64_t>(char* func_name, uint64_t input1
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<long>(char* func_name, long input1, long input2, long output) {
+SD_INLINE SD_HOST void sd_print_math2<long>(const char* func_name, long input1, long input2, long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -294,7 +294,7 @@ SD_INLINE SD_HOST void sd_print_math2<long>(char* func_name, long input1, long i
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<long long>(char* func_name, long long input1, long long input2, long long output) {
+SD_INLINE SD_HOST void sd_print_math2<long long>(const char* func_name, long long input1, long long input2, long long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -303,7 +303,7 @@ SD_INLINE SD_HOST void sd_print_math2<long long>(char* func_name, long long inpu
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<unsigned long long>(char* func_name, unsigned long long input1, unsigned long long input2, unsigned long long output) {
+SD_INLINE SD_HOST void sd_print_math2<unsigned long long>(const char* func_name, unsigned long long input1, unsigned long long input2, unsigned long long output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -312,7 +312,7 @@ SD_INLINE SD_HOST void sd_print_math2<unsigned long long>(char* func_name, unsig
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<int16_t>(char* func_name, int16_t input1, int16_t input2, int16_t output) {
+SD_INLINE SD_HOST void sd_print_math2<int16_t>(const char* func_name, int16_t input1, int16_t input2, int16_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -321,7 +321,7 @@ SD_INLINE SD_HOST void sd_print_math2<int16_t>(char* func_name, int16_t input1, 
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<int8_t>(char* func_name, int8_t input1, int8_t input2, int8_t output) {
+SD_INLINE SD_HOST void sd_print_math2<int8_t>(const char* func_name, int8_t input1, int8_t input2, int8_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -330,7 +330,7 @@ SD_INLINE SD_HOST void sd_print_math2<int8_t>(char* func_name, int8_t input1, in
 }
 
 template <>
-SD_INLINE SD_HOST void sd_print_math2<uint8_t>(char* func_name, uint8_t input1, uint8_t input2, uint8_t output) {
+SD_INLINE SD_HOST void sd_print_math2<uint8_t>(const char* func_name, uint8_t input1, uint8_t input2, uint8_t output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
@@ -340,7 +340,7 @@ SD_INLINE SD_HOST void sd_print_math2<uint8_t>(char* func_name, uint8_t input1, 
 
 // Specializations for float16
 template <>
-SD_INLINE SD_HOST void sd_print_math2<float16>(char* func_name, float16 input1, float16 input2, float16 output) {
+SD_INLINE SD_HOST void sd_print_math2<float16>(const char* func_name, float16 input1, float16 input2, float16 output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif

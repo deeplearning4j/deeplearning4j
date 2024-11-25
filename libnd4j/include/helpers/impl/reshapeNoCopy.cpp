@@ -125,6 +125,7 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
   shape::setOrder(outShape, order);
   ArrayOptions::resetFlags(outShape);
   ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
+
   return true;
 }
 }

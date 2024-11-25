@@ -318,14 +318,18 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testRegressionEval3dMasking(Nd4jBackend backend) {
-        INDArray prediction = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
-        INDArray label = Nd4j.rand(DataType.FLOAT, 2, 3, 10);
+        INDArray prediction = Nd4j.linspace(1,60,60).reshape(2, 3, 10);
+        INDArray label = Nd4j.linspace(1,60,60).reshape(2, 3, 10).add(1);
 
         List<INDArray> rowsP = new ArrayList<>();
         List<INDArray> rowsL = new ArrayList<>();
 
+        double[][] data = {
+                {0, 1.0000, 0, 1.0000, 0, 1.0000, 1.0000, 0, 1.0000, 1.0000},
+                {1.0000, 0, 1.0000, 0, 1.0000, 1.0000, 1.0000, 1.0000, 0, 1.0000}
+        };
         //Check "DL4J-style" 2d per timestep masking [minibatch, seqLength] mask shape
-        INDArray mask2d = Nd4j.randomBernoulli(0.5, 2, 10);
+        INDArray mask2d = Nd4j.createFromArray(data);
         rowsP.clear();
         rowsL.clear();
         NdIndexIterator iter = new NdIndexIterator(2, 10);
@@ -346,9 +350,21 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         e2d_m2d.eval(l2d, p2d);
 
 
-
+        Nd4j.getRandom().setSeed(12345);
+        double[][][] data2 = {
+                {
+                        {1.0000, 1.0000, 0, 1.0000, 0, 1.0000, 0, 0, 0, 0},
+                        {0, 0, 1.0000, 1.0000, 0, 1.0000, 0, 1.0000, 1.0000, 0},
+                        {0, 1.0000, 0, 1.0000, 0, 0, 1.0000, 1.0000, 0, 0}
+                },
+                {
+                        {0, 0, 1.0000, 1.0000, 0, 0, 0, 1.0000, 0, 0},
+                        {0, 0, 0, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 1.0000, 0},
+                        {1.0000, 1.0000, 1.0000, 1.0000, 0, 0, 0, 1.0000, 1.0000, 0}
+                }
+        };
         //Check per-output masking:
-        INDArray perOutMask = Nd4j.randomBernoulli(0.5, label.shape());
+        INDArray perOutMask = Nd4j.createFromArray(data2);
         rowsP.clear();
         rowsL.clear();
         List<INDArray> rowsM = new ArrayList<>();
@@ -368,7 +384,7 @@ public class RegressionEvalTest  extends BaseNd4jTestWithBackends {
         RegressionEvaluation e2d_m2 = new RegressionEvaluation();
         e4d_m2.eval(label, prediction, perOutMask);
         e2d_m2.eval(l2d, p2d, m2d);
-        for(Metric m : Metric.values()){
+        for(Metric m : Metric.values()) {
             double d1 = e4d_m2.scoreForMetric(m);
             double d2 = e2d_m2.scoreForMetric(m);
             assertEquals(d2, d1, 1e-5,m.toString());

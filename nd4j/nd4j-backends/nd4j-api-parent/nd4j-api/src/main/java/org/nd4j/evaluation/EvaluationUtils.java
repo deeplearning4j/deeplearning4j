@@ -198,7 +198,7 @@ public class EvaluationUtils {
                 rowsToPull[usedCount++] = i;
             }
         }
-        if(usedCount == 0){
+        if(usedCount == 0) {
             //Edge case: all time steps are masked -> nothing to extract
             return null;
         }

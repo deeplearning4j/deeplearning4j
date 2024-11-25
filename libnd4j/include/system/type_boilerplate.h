@@ -1413,11 +1413,13 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
 #define GET_14(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, ...) t15
 #define GET_15(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, ...) t16
 
-#define GET_FIRST(tuple) GET_FIRST_IMPL tuple
 #define GET_FIRST_IMPL(a, b) a
+#define GET_FIRST(tuple) GET_FIRST_IMPL tuple
 
-#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
+
 #define GET_SECOND_IMPL(a, b) b
+#define GET_SECOND(tuple) GET_SECOND_IMPL tuple
+
 
 #define PROCESS_COMBINATION(a1, b1, a2, b2,FUNC_NAME,ARGS) \
     std::cout << "(" << a1 << ", " << b1 << ", " << a2 << ", " << b2 << ")\n";

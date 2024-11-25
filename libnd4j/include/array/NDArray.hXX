@@ -47,6 +47,9 @@
 #include "execution/Threads.h"
 #include "helpers/ShapeUtils.h"
 #include "system/buffer.h"
+#include <helpers/reshapeNoCopy.h>
+
+
 namespace sd {
 
 template <>
@@ -1806,71 +1809,16 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
 void NDArray::assign(NDArray other, bool allowParallelism) {
-  if (this == &other) {
-    sd_print("NDArray::assign: this == &other\n");
-    return;
-  }
+  NDArray::validateAssign(*this, other);
 
-  if (other.isEmpty()) {
-    if (!isEmpty()) {
-      THROW_EXCEPTION("Cannot assign empty array to non-empty array");
-    }
-    return;
-  }
+  const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(*this, other);
 
-  if (isEmpty()) {
-    *this = other;
-    return;
-  }
+  NDArray::copyDataForAssign(*this, other, modifiedOtherShapeInfo, allowParallelism);
 
-  //scalar case
-  if (other.isScalar()) {
-    if (!isScalar()) {
-      prepareUse({this}, {&other});
-      NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                      specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                      other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                      other.specialShapeInfo(), nullptr, allowParallelism);
-      registerUse({this}, {&other});
-
-    } else {
-      prepareUse({this}, {&other});
-      NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(),
-                                      specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
-                                      other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                      other.specialShapeInfo(), nullptr, allowParallelism);
-      registerUse({this}, {&other});
-    }
-  } else {
-    if (other.lengthOf() != lengthOf() && !ShapeUtils::areShapesBroadcastable(other.shapeInfo(), this->shapeInfo())) {
-      auto shapeThis = ShapeUtils::shapeAsString(this);
-      auto shapeThat = ShapeUtils::shapeAsString(&other);
-      std::string errorMessage;
-      errorMessage += "Can't assign array: this shape ";
-      errorMessage += shapeThis;
-      errorMessage += "; other shape: ";
-      errorMessage += shapeThat;
-      errorMessage += "\n";
-      THROW_EXCEPTION(errorMessage.c_str());
-    }
-
-    prepareSpecialUse({this}, {&other});
-
-    if(!shape::shapeEquals(this->shapeInfo(),other.shapeInfo())) {
-      std::vector<sd::LongType> thisShape = this->getShapeAsVector();
-      NDArray &otherReshaped = other.reshape(other.ordering(),thisShape,false);
-      NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, otherReshaped.buffer(), otherReshaped.shapeInfo(),
-                                            otherReshaped.specialBuffer(), otherReshaped.specialShapeInfo(), buffer(), shapeInfo(),
-                                            specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
-    } else {
-      NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.buffer(), other.shapeInfo(),
-                                            other.specialBuffer(), other.specialShapeInfo(), buffer(), shapeInfo(),
-                                            specialBuffer(), specialShapeInfo(), nullptr, allowParallelism);
-    }
-    registerSpecialUse({this}, {&other});
+  if (modifiedOtherShapeInfo != other.shapeInfo()) {
+    RELEASE(const_cast<sd::LongType*>(modifiedOtherShapeInfo), getContext()->getWorkspace());
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
@@ -2569,232 +2517,141 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
     THROW_EXCEPTION("Not implemented yet");
   }
 }
+
+// Validates whether the assignment operation can be performed
+void NDArray::validateAssign(NDArray& thisArray,  NDArray& other) {
+  if (&thisArray == &other) {
+    sd_print("NDArray::assign: this == &other\n");
+    return;
+  }
+
+  if (other.isEmpty()) {
+    if (!thisArray.isEmpty()) {
+      THROW_EXCEPTION("Cannot assign empty array to non-empty array");
+    }
+    return;
+  }
+
+  if (thisArray.isEmpty()) {
+    THROW_EXCEPTION("Cannot assign to an empty array");
+  }
+
+  if (!other.isScalar() &&
+      (other.lengthOf() != thisArray.lengthOf() &&
+       !ShapeUtils::areShapesBroadcastable(other.shapeInfo(), thisArray.shapeInfo()))) {
+    auto shapeThis = ShapeUtils::shapeAsString(&thisArray);
+    auto shapeThat = ShapeUtils::shapeAsString(&other);
+    std::string errorMessage = "Can't assign array: this shape " + shapeThis + "; other shape: " + shapeThat + "\n";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+}
+
+// Performs the data copy for assignment
+void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
+  if (other.isScalar()) {
+    NativeOpExecutioner::execScalar(thisArray.getContext(), scalar::CopyPws, thisArray.buffer(), thisArray.shapeInfo(),
+                                    thisArray.specialBuffer(), thisArray.specialShapeInfo(), thisArray.buffer(),
+                                    thisArray.shapeInfo(), thisArray.specialBuffer(), thisArray.specialShapeInfo(),
+                                    other.buffer(), other.shapeInfo(), other.specialBuffer(),
+                                    other.specialShapeInfo(), nullptr, allowParallelism);
+  } else {
+    thisArray.prepareSpecialUse({&thisArray}, {&other});
+    NativeOpExecutioner::execTransformAny(thisArray.getContext(),
+                                          transform::Assign,
+                                          thisArray.buffer(),
+                                          thisArray.shapeInfo(),
+                                          thisArray.specialBuffer(),
+                                          thisArray.specialShapeInfo(),
+                                          other.buffer(),
+                                          otherShapeInfo,
+                                          other.specialBuffer(),
+                                          otherShapeInfo,
+                                          nullptr
+                                          , allowParallelism);
+    thisArray.registerSpecialUse({&thisArray}, {&other}); // Registering through the instance
+  }
+}
+
+
 //////////////////////////////////////////////////////////////////////////
-// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray &NDArray::reshape(char order, std::vector<sd::LongType> &shape, bool copyToNewBuff) & {
-  if(order != 'c' && order != 'f') {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
+
+// Adjusts shape for assignment without modifying the original array
+const sd::LongType* NDArray::modifyShapeForAssign( NDArray& thisArray,  NDArray& other) {
+  if (!shape::shapeEquals(thisArray.shapeInfo(), other.shapeInfo())) {
+    std::vector<sd::LongType> thisShape = thisArray.getShapeAsVector();
+    return reshapeShapeInfo(other, other.ordering(), thisShape);
+  }
+  return other.shapeInfo();
+}
+
+// Reshape logic modularized into a static helper function
+sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::vector<sd::LongType>& newShape) {
+  if (order != 'c' && order != 'f') {
+    std::string errorMessage = "reshapeShapeInfo: unknown order, must be 'c' or 'f', received: ";
     errorMessage += order;
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  auto desc = new ShapeDescriptor(shapeInfo(), true, false);
-  if(!DataTypeUtils::validDataType(desc->dataType()))
-    THROW_EXCEPTION("Array created with unknown data type!");
-  if(!DataTypeUtils::validDataType(ArrayOptions::dataType(_shapeInfo))) {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshape: unknown data type, received: ";
-    errorMessage += std::to_string(ArrayOptions::dataType(_shapeInfo));
-#if defined(SD_GCC_FUNCTRACE)
-    Printer p;
-    std::ostringstream oss;
-    p.print(creationTrace, oss);
-    errorMessage += "\n=======================================================Stack trace when written.============================\n";
-    errorMessage += oss.str();
-    errorMessage += "=======================================================End of stack trace when written.============================\n";
-#endif
-
-    THROW_EXCEPTION(errorMessage.c_str());
-
-  }
-  if(desc->dataType() != ArrayOptions::dataType(_shapeInfo)) {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshape: new shape descriptor didn't have matching data type";
-    errorMessage += " Array data type: ";
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(_shapeInfo));
-    errorMessage += " shape info data type: ";
-    errorMessage += DataTypeUtils::asString(desc->dataType());
-
-#if defined(SD_GCC_FUNCTRACE)
-    Printer p;
-    std::ostringstream oss;
-    p.print(creationTrace, oss);
-    errorMessage += "\n=======================================================Stack trace when written.============================\n";
-    errorMessage += oss.str();
-    errorMessage += "=======================================================End of stack trace when written.============================\n";
-#endif
-
-
-    THROW_EXCEPTION(errorMessage.c_str());
-
-  }
-
-  if(desc->order() != 'c' && desc->order() != 'f') {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshape: unknown order, must be c or f received: ";
-    errorMessage += desc->order();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-  // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
-  if (order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), shape.size(), shape.data())) {
-    return *this;
-  }
-
-  const bool isOutShapeEmpty = std::find(shape.begin(), shape.end(), 0) != shape.end();
-
-  if (isEmpty() && !isOutShapeEmpty) {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshapei: can't reshape empty array to non-empty !\n";
-    errorMessage += "Empty array shape: ";
-    errorMessage += std::string(shape::shapeInfoString(shapeInfo()));
-    errorMessage += "\n";
-    errorMessage += "New shape: ";
-    errorMessage += std::string(shape::shapeInfoString(this->shapeInfo()));
-    errorMessage += "\n";
-    errorMessage += "Order: ";
-    errorMessage += this->ordering();
-    errorMessage += "\n";
-    THROW_EXCEPTION(errorMessage.c_str());
-
-  }
-
-  if (isEmpty() && isOutShapeEmpty) {
-    sd::LongType *shapeInfoNew = ShapeBuilders::emptyShapeInfo(dataType(), order, shape, getContext()->getWorkspace());
-    auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
-    _shapeInfo = constDesc->primary();
-    _shapeInfoD = constDesc->special();
-    return *this;
-  }
 
   std::vector<sd::LongType> shape_vector;
-
-  // looking for negative in shape
   int numberNegativesOnes = 0;
-
-  for (sd::LongType i = 0; i < shape.size(); i++) {
-    if (shape[i] < 0) {
+  for (size_t i = 0; i < newShape.size(); i++) {
+    if (newShape[i] < 0) {
       if (numberNegativesOnes >= 1) {
-        std::string errorMessage;
-        errorMessage += "NDArray::reshapei: only one dimension can be negative at once !\n";
-        errorMessage += "Shape: ";
-        errorMessage += ShapeUtils::shapeAsString(this);
-        errorMessage += "\n";
-        errorMessage += "New shape: ";
-        errorMessage += ShapeUtils::shapeAsString(shape);
-        errorMessage += "\n";
-        errorMessage += "Order: ";
-        errorMessage += this->ordering();
-        errorMessage += "\n";
-        errorMessage += "platform buffer is nullptr: \n";
-        errorMessage += std::to_string(platformBuffer() == nullptr);
-        THROW_EXCEPTION(errorMessage.c_str());
+        THROW_EXCEPTION("reshapeShapeInfo: only one dimension can be negative at once!");
       }
-
       numberNegativesOnes++;
-
       sd::LongType shapeLength = 1;
-      for (sd::LongType j = 0; j < shape.size(); j++)
-        if (i != j) shapeLength *= shape[j];
-
-      sd::LongType realShape = sd::math::sd_abs<sd::LongType,sd::LongType>(lengthOf() / shapeLength);
-
-      for (sd::LongType j = 0; j < shape.size(); j++) {
-        if (i != j)
-          shape_vector.push_back(shape[j]);
-        else
-          shape_vector.push_back(realShape);
+      for (size_t j = 0; j < newShape.size(); j++) {
+        if (i != j) shapeLength *= newShape[j];
       }
+      if (shapeLength == 0) {
+        THROW_EXCEPTION("reshapeShapeInfo: division by zero in negative dimension calculation");
+      }
+      sd::LongType realShape = array.lengthOf() / shapeLength;
+      shape_vector.push_back(realShape);
     } else {
-      shape_vector.push_back(shape[i]);
+      shape_vector.push_back(newShape[i]);
     }
   }
-
-
 
   sd::LongType arrLength = 1;
-  for (const auto &item : shape_vector) {
-    arrLength *= item;
+  for (const auto& dim : shape_vector) {
+    arrLength *= dim;
   }
 
-  //don't validate scalar case reshape 0 -> 1,1 should be valid
-  if (arrLength != this->lengthOf() && !isScalar()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshapei: bad length of new shape !\n";
-    errorMessage += "Shape: ";
-    errorMessage += ShapeUtils::shapeAsString(this);
-    errorMessage += "\n";
-    errorMessage += "New shape: ";
-    errorMessage += ShapeUtils::shapeAsString(shape);
-    errorMessage += "\n";
-    errorMessage += "Order: ";
-    errorMessage += this->ordering();
-    errorMessage += "\n";
-    errorMessage += "Length of new shape: ";
-    errorMessage += std::to_string(arrLength);
-    errorMessage += "\n";
-    errorMessage += "Length of array: ";
-    errorMessage += std::to_string(this->lengthOf());
-    errorMessage += "\n";
-    errorMessage += "Number of elements in array: ";
-    errorMessage += std::to_string(this->lengthOf());
-    errorMessage += "\n";
-    errorMessage += "Number of elements in new shape: ";
-    errorMessage += std::to_string(arrLength);
-    errorMessage += "\n";
-    errorMessage += "platform buffer is nullptr: \n";
-    errorMessage += std::to_string(platformBuffer() == nullptr);
-    THROW_EXCEPTION(errorMessage.c_str());
+  if (arrLength != array.lengthOf() && !array.isScalar()) {
+    THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
 
-  sd::LongType *shapeInfoNew;
-  ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(static_cast<LongType>(shape_vector.size())), sd::LongType);
+  sd::LongType* shapeInfoNew = nullptr;
+  ALLOCATE(shapeInfoNew, array.getContext()->getWorkspace(),
+           shape::shapeInfoLength(shape_vector.size()), sd::LongType);
+  shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
+  bool canReshape = ops::helpers::reshapeNoAlloc(array.shapeInfo(), shape_vector, order, shapeInfoNew);
+  ArrayOptions::setDataType(shapeInfoNew, ArrayOptions::dataType(array.shapeInfo()));
+  shape::setOrder(shapeInfoNew, order);
 
-  bool canReshape = shape::reshapeC(shapeInfo(), order, shape_vector.size(),shape_vector.data(), shapeInfoNew);
-  ArrayOptions::setDataType(shapeInfoNew, ArrayOptions::dataType(_shapeInfo));
-  if(!ArrayOptions::hasPropertyBitSet(shapeInfoNew,sd::ArrayOptions::flagForDataType(ArrayOptions::dataType(_shapeInfo)))) {
-    std::string errorMessage;
-    errorMessage += "NDArray::reshapei: bad data type of new shape !\n";
-    errorMessage += "Shape: ";
-    errorMessage += ShapeUtils::shapeAsString(this);
-    errorMessage += "\n";
-    errorMessage += "New shape: ";
-    errorMessage += ShapeUtils::shapeAsString(shape);
-    errorMessage += "\n";
-    errorMessage += "Order: ";
-    errorMessage += this->ordering();
-    errorMessage += "\n";
-    errorMessage += "Length of new shape: ";
-    errorMessage += std::to_string(arrLength);
-    errorMessage += "\n";
-    errorMessage += "Length of array: ";
-    errorMessage += std::to_string(this->lengthOf());
-    errorMessage += "\n";
-    errorMessage += "Original data type: ";
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(_shapeInfo));
-    //add what the expected flag is and what the extra property flag is
-    errorMessage += "\n";
-    errorMessage += "Expected data type: ";
-    errorMessage += DataTypeUtils::asString(ArrayOptions::dataType(shapeInfoNew));
-    errorMessage += "\n";
-    errorMessage += "Extra property flag: ";
-    errorMessage += std::to_string(ArrayOptions::extra(shapeInfoNew));
-    THROW_EXCEPTION(errorMessage.c_str());
+  if (!canReshape) {
+    shape::calcStrides(shapeInfoNew, order);
   }
 
-  if (canReshape) {
-    auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
-    if(copyToNewBuff) {
-      NDArray *ret = new NDArray(newShape->primary(),true, getContext(), false);
-      this->applyTransform(transform::Assign, *ret, nullptr);
-      NDArray& retDeRef = *ret;
-      return retDeRef;
-    } else {
-      NDArray *ret = new NDArray(getDataBuffer(), const_cast<sd::LongType *>(newShape->primary()), getContext(), offset());
-      NDArray& retDeRef = *ret;
-      return retDeRef;
-    }
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew)->primary();
+  return const_cast<sd::LongType*>(ret);
+}
 
-  } else {
-    shape::fillStrides(shapeInfoNew);
-    auto newShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
-    NDArray *ret = new NDArray(newShape->primary(), true, getContext(), false);
+NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
+  const sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(*this, order, shape);
+
+  if (copyToNewBuff) {
+    NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
     this->applyTransform(transform::Assign, *ret, nullptr);
-    NDArray& retDeRef = *ret;
-    return retDeRef;
+    RELEASE(const_cast<sd::LongType*>(newShapeInfo), getContext()->getWorkspace());
+    return *ret;
+  } else {
+    NDArray* ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(newShapeInfo), getContext(), offset());
+    RELEASE(const_cast<sd::LongType*>(newShapeInfo), getContext()->getWorkspace());
+    return *ret;
   }
-
-  NDArray& retDeRef = *this;
-  return retDeRef;
 }
 
 //////////////////////////////////////////////////////////////////////////

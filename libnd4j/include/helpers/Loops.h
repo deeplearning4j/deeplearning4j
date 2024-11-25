@@ -955,170 +955,79 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
   switch (kindOfLoop) {
+    //*********************************************//
+    default: {
+      if(shape::shapeEquals(xShapeInfo, zShapeInfo)) {
+        LongType xCoords[SD_MAX_RANK];
+        LongType zCoords[SD_MAX_RANK];
+        auto xLen = shape::length(xShapeInfo);
+        auto zLen = shape::length(zShapeInfo);
+        auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
-      //*********************************************//
+        for (auto i = span.startX(); i < span.stopX(); i++) {
+          shape::index2coords(i,xShapeInfo,xCoords);
+          shape::index2coords(i,zShapeInfo,zCoords);
+          // Calculate linear indices using coords2index
+          auto xOffset = shape::coords2index(xShapeInfo, xCoords);
+          auto zOffset = shape::coords2index(zShapeInfo, zCoords);
 
-      //*********************************************//
-    case LoopKind::RANK1: {
-      auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
-
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
-#if defined(PRINT_INDICES)
-        shape::printShapeInfo(xShapeInfo);
-        shape::printShapeInfo(zShapeInfo);
-        printf("Index is %lld offset is %lld loop kind: RANK1 TransformLoops<X, Z, E>::loopTransform\n", i0,i0 * xStride[0]);
-#endif
-        z[i0 * zStride[0]] = static_cast<Z>(OpType::op(x[i0 * xStride[0]], extraParams));
-      }
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK2: {
-      auto uXShape0 = static_cast<LongType>(xShape[0]);
-      auto uXShape1 = static_cast<LongType>(xShape[1]);
-
-      auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
-
-      auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
-
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
-        auto z0 = i0 * zStride[0];
-        auto x0 = i0 * xStride[0];
-
-        for (auto i1 = span.startY(); i1 < span.stopY(); ++i1) {
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xShapeInfo);
           shape::printShapeInfo(zShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: RANK2 TransformLoops<X, Z, E>::loopTransform\n", i1,z0 + i1 * zStride[1]);
-#endif
-          z[z0 + i1 * zStride[1]] = static_cast<Z>(OpType::op(x[x0 + i1 * xStride[1]], extraParams));
+          printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i,xOffset,zOffset);
+          for(int e = 0; e < shape::rank(xShapeInfo); e++) {
+            printf("xCoords[%i]: %lld\n", e, xCoords[e]);
+          }
 
+          for(int e = 0; e < shape::rank(zShapeInfo); e++) {
+            printf("zCoords[%i]: %lld\n", e, xCoords[e]);
+          }
+
+          fflush(stdout);
+#endif
+
+          auto opResult = OpType::op(x[xOffset], extraParams);
+          z[zOffset] = static_cast<Z>(opResult);
         }
+
+
+      } else {
+        LongType xCoords[SD_MAX_RANK];
+        LongType  zCoords[SD_MAX_RANK];
+        auto xLen = shape::length(xShapeInfo);
+        auto zLen = shape::length(zShapeInfo);
+        auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+
+        for (auto i = span.startX(); i < span.stopX(); i++) {
+          shape::index2coords(i,xShapeInfo,xCoords);
+          shape::index2coords(i,zShapeInfo,zCoords);
+          // Calculate linear indices using coords2index
+          auto xOffset = shape::coords2index(xShapeInfo, xCoords);
+          auto zOffset = shape::coords2index(zShapeInfo, zCoords);
+
+#if defined(PRINT_INDICES)
+          shape::printShapeInfo(xShapeInfo);
+          shape::printShapeInfo(zShapeInfo);
+          printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i,xOffset,zOffset);
+          for(int e = 0; e < shape::rank(xShapeInfo); e++) {
+            printf("xCoords[%i]: %lld\n", e, xCoords[e]);
+          }
+
+          for(int e = 0; e < shape::rank(zShapeInfo); e++) {
+            printf("zCoords[%i]: %lld\n", e, zCoords[e]);
+          }
+
+          fflush(stdout);
+#endif
+
+          auto opResult = OpType::op(x[xOffset], extraParams);
+          z[zOffset] = static_cast<Z>(opResult);
+        }
+
+
       }
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK3: {
-      auto uXShape0 = xShape[0];
-      auto uXShape1 = xShape[1];
-      auto uXShape2 = xShape[2];
-
-      auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
-      auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
-
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
-        for (auto i1 = span.startY(); i1 < span.stopY(); i1++) {
-          auto z0 = i0 * zStride[0] + i1 * zStride[1];
-          auto x0 = i0 * xStride[0] + i1 * xStride[1];
-
-          for (LongType i2 = 0; i2 < uXShape2; ++i2) {
-#if defined(PRINT_INDICES)
-            shape::printShapeInfo(xShapeInfo);
-            shape::printShapeInfo(zShapeInfo);
-            printf("Base index is %lld X Index is %lld offset is %lld loop kind: RANK3 TransformLoops<X, Z, E>::loopTransform\n", i2,x0 + i2 * xStride[2],z0 + i2 * zStride[2]);
-#endif
-            z[z0 + i2 * zStride[2]] = static_cast<Z>(OpType::op(x[x0 + i2 * xStride[2]], extraParams));
-          }
-        }
-
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK4: {
-      auto uXShape0 = xShape[0];
-      auto uXShape1 = xShape[1];
-      auto uXShape2 = xShape[2];
-      auto uXShape3 = xShape[3];
-
-      auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
-      auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
-
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
-        for (auto i1 = span.startY(); i1 < span.stopY(); i1++)
-          for (auto i2 = span.startZ(); i2 < span.stopZ(); i2++) {
-            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
-            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
-
-            for (LongType i3 = 0; i3 < uXShape3; ++i3) {
-#if defined(PRINT_INDICES)
-              shape::printShapeInfo(xShapeInfo);
-              shape::printShapeInfo(zShapeInfo);
-              printf("Index i0,i1,i2,i3 is %lld,%lld,%lld,%lld z0 %lld xStride[3] %lld zStride[3] %lld offset %lld loop kind: RANK4 TransformLoops<X, Z, E>::loopTransform\n", i0,i1,i2,i3,z0,xStride[3],zStride[3],z0 + i3 * zStride[3]);
-#endif
-              z[z0 + i3 * zStride[3]] = static_cast<Z>(OpType::op(x[x0 + i3 * xStride[3]], extraParams));
-            }
-          }
-
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK5: {
-      auto uXShape0 = xShape[0];
-      auto uXShape1 = xShape[1];
-      auto uXShape2 = xShape[2];
-      auto uXShape3 = xShape[3];
-      auto uXShape4 = xShape[4];
-
-      auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
-      auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
-
-      for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
-        for (auto i1 = span.startY(); i1 < span.stopY(); i1++)
-          for (auto i2 = span.startZ(); i2 < span.stopZ(); i2++) {
-            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
-            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
-
-            for (LongType i3 = 0; i3 < uXShape3; ++i3) {
-              auto z1 = z0 + i3 * zStride[3];
-              auto x1 = x0 + i3 * xStride[3];
-
-              for (LongType i4 = 0; i4 < uXShape4; ++i4) {
-#if defined(PRINT_INDICES)
-                shape::printShapeInfo(xShapeInfo);
-                shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld loop kind: RANK5 TransformLoops<X, Z, E>::loopTransform\n", i0,i1,i2,i3,i4,z1 + i4 * zStride[4]);
-#endif
-                z[z1 + i4 * zStride[4]] = static_cast<Z>(OpType::op(x[x1 + i4 * xStride[4]], extraParams));
-              }
-            }
-          }
-
-    } break;
-
-      //*********************************************//
-    default: {
-      LongType xCoords[SD_MAX_RANK];
-
-      auto xLen = shape::length(xShapeInfo);
-      auto zLen = shape::length(zShapeInfo);
-      auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
-
-      for (auto i = span.startX(); i < span.stopX(); i++) {
-        shape::index2coords(i,xShapeInfo,xCoords);
-        auto xOffset = shape::getOffset(xShapeInfo,xCoords,0);
-        auto zOffset = shape::getOffset(zShapeInfo,xCoords,0);
-
-#if defined(PRINT_INDICES)
-        shape::printShapeInfo(xShapeInfo);
-        shape::printShapeInfo(zShapeInfo);
-        printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i,xOffset,zOffset);
-        for(int e = 0; e < shape::rank(xShapeInfo); e++) {
-          printf("xCoords[%i]: %lld\n", e, xCoords[e]);
-        }
-
-        for(int e = 0; e < shape::rank(zShapeInfo); e++) {
-          printf("zCoords[%i]: %lld\n", e, xCoords[e]);
-        }
-
-        fflush(stdout);
-#endif
-
-        auto opResult = OpType::op(x[xOffset], extraParams);
-        z[zOffset] = static_cast<Z>(opResult);
-      }
-
-
     }
+
   }
 
 }

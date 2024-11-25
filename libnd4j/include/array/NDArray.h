@@ -49,6 +49,8 @@
 #include <types/bfloat16.h>
 #include <iostream>
 namespace sd {
+
+
 #ifndef __JAVACPP_HACK__
 static void printFormatted(std::ostream& os, NDArray & arr, LongType depth, LongType limit);
 //used in google test for printing
@@ -331,6 +333,13 @@ class SD_LIB_EXPORT NDArray {
    */
   NDArray(void *buffer, char order, std::vector<LongType> &shape, DataType dtype,
           LaunchContext *context = LaunchContext::defaultContext(), const bool isBuffAlloc = false);
+
+
+  // Static helper methods
+  SD_LIB_EXPORT static sd::LongType* reshapeShapeInfo( NDArray& array, char order, const std::vector<sd::LongType>& newShape);
+  SD_LIB_EXPORT static const sd::LongType* modifyShapeForAssign( NDArray& thisArray,  NDArray& other);
+  SD_LIB_EXPORT static void copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::LongType* otherShapeInfo, bool allowParallelism);
+  SD_LIB_EXPORT static void validateAssign( NDArray& thisArray,  NDArray& other);
 
 
 
