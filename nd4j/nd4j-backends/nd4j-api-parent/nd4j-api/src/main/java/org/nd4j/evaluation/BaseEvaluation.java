@@ -199,7 +199,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                         return reshapeSameShapeTo2d(axis, labels, predictions, mask);
                     }
                 } else {
-                    if(labels.equalShapes(mask)){
+                    if(labels.equalShapes(mask)) {
                         //Per output masking case
                         return reshapeSameShapeTo2d(axis, labels, predictions, mask);
                     } else if(mask.rank() == 1){
@@ -234,7 +234,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         long[] permuteDims = new long[labels.rank()];
         int j = 0;
         for( int i = 0; i < labels.rank(); i++) {
-            if(i == axis){
+            if(i == axis) {
                 continue;
             }
             permuteDims[j++] = i;

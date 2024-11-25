@@ -1934,13 +1934,26 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int computeElementWiseStride(sd::LongType
 }
 
 //////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType coords2index(const sd::LongType *shapeInfo, const sd::LongType *indices) {
-  sd::LongType index, shift = 1;
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType coords2index(const sd::LongType* shapeInfo, const sd::LongType* indices) {
+  const sd::LongType* shape = shape::shapeOf(shapeInfo);
+  const sd::LongType* strides = shape::stride(shapeInfo);
+  const sd::LongType rank = shape::rank(shapeInfo);
+  char order = shape::order(shapeInfo);  // Derive memory order from shapeInfo
 
-  index = indices[shapeInfo[0] - 1];
-  for (sd::LongType i = shapeInfo[0]; i > 1; --i) {
-    shift *= shapeInfo[i];
-    index += shift * indices[i - 2];
+  sd::LongType index = 0;
+
+  if (order == 'c') {
+    // C-order (row-major)
+    for (int i = 0; i < rank; ++i) {
+      index += indices[i] * strides[i];
+    }
+  } else if (order == 'f') {
+    // F-order (column-major)
+    for (int i = 0; i < rank; ++i) {
+      index += indices[i] * strides[i];
+    }
+  } else {
+    THROW_EXCEPTION("Unsupported memory order.");
   }
 
   return index;
@@ -2585,12 +2598,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType length(const sd::LongType *s
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE char order(const sd::LongType *buffer) {
   // order doesn't matter for scalars
   if (rank(buffer) < 1) return 'c';
-  // FIXME magic numbers
   sd::LongType len = shapeInfoLength(buffer[0]);
-  /**
-   * TODO: maybe need to handle this for different ranks? It seems like the wrong
-   * order is being returned here somehow.
-   */
   auto longValidation = buffer[len  - 1];
   if(longValidation != 99 && longValidation != 102) {
     std::string errorMessage;
@@ -2631,7 +2639,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE char setOrder(sd::LongType *buffer, char 
 
 
   sd::LongType len = shapeInfoLength(buffer[0]);
-  buffer[len - 1] = static_cast<sd::LongType>(static_cast<unsigned char>(c));
+  buffer[len - 1] = static_cast<sd::LongType>(c);
   return c;
 }
 

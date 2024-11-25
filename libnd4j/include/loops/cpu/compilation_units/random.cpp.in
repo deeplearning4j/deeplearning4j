@@ -22,6 +22,13 @@
 #include <loops/cpu/random.hpp>
 #cmakedefine SD_FLOAT_TYPES_GEN
 #if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
+
+// Helper macros for stringification
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
+// Emit the value of SD_PAIRWISE_TYPES_0 during compilation
+#pragma message("SD_PAIRWISE_TYPES_0: " STR((SD_PAIRWISE_TYPES_0)))
 namespace functions {
     namespace random {
         BUILD_SINGLE_TEMPLATE(template class SD_LIB_HIDDEN RandomFunction, , SD_FLOAT_TYPES_@FL_TYPE_INDEX@);

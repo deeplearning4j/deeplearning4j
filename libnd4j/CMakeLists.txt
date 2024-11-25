@@ -146,6 +146,174 @@ else()
 endif()
 
 
+
+
+
+# Define Combinations
+set(COMBINATIONS_3
+        "0,0,0"
+        "0,0,2"
+        "0,1,2"
+        "0,2,0"
+        "0,2,1"
+        "0,2,2"
+        "1,0,0"
+        "1,1,1"
+        "1,1,2"
+        "1,2,0"
+        "1,2,1"
+        "1,2,2"
+        "2,0,0"
+        "2,0,1"
+        "2,0,2"
+        "2,1,0"
+        "2,1,1"
+        "2,1,2"
+        "2,2,0"
+        "2,2,1"
+        "2,2,2"
+)
+set(COMBINATIONS_2
+        "0,0"
+        "0,1"
+        "1,0"
+        "1,1"
+        "0,2"
+        "2,0"
+        "1,2"
+        "2,1"
+        "2,2"
+)
+
+
+# Define genPartitionCombination Function
+function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR)
+    # TEMPLATE_FILE: Path to the .cpp.in template file
+    # COMBINATION_TYPE: "3" for ITERATE_COMBINATIONS_3, "2" for ITERATE_COMBINATIONS
+    # COMBINATION: Comma-separated string of indices, e.g., "0,0,0" or "0,1"
+    # OUTPUT_DIR: Directory to place the generated .cpp file
+
+    # Split the COMBINATION string into a list
+    string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
+
+    # Determine the number of elements in the combination
+    list(LENGTH COMB_LIST COMB_COUNT)
+
+    # Validate combination length
+    if(NOT (COMBINATION_TYPE EQUAL 3 OR COMBINATION_TYPE EQUAL 2))
+        message(FATAL_ERROR "Unsupported COMBINATION_TYPE: ${COMBINATION_TYPE}. Use 3 or 2.")
+    endif()
+
+    if(NOT ((COMBINATION_TYPE EQUAL 3 AND COMB_COUNT EQUAL 3) OR
+    (COMBINATION_TYPE EQUAL 2 AND COMB_COUNT EQUAL 2)))
+        message(FATAL_ERROR "Combination length (${COMB_COUNT}) does not match COMBINATION_TYPE (${COMBINATION_TYPE}).")
+    endif()
+
+    # Define placeholders based on combination type
+    if(COMBINATION_TYPE EQUAL 3)
+        list(GET COMB_LIST 0 COMB1)
+        list(GET COMB_LIST 1 COMB2)
+        list(GET COMB_LIST 2 COMB3)
+        set(PLACEHOLDER1 "@COMB1@")
+        set(PLACEHOLDER2 "@COMB2@")
+        set(PLACEHOLDER3 "@COMB3@")
+    elseif(COMBINATION_TYPE EQUAL 2)
+        list(GET COMB_LIST 0 COMB1)
+        list(GET COMB_LIST 1 COMB2)
+        set(PLACEHOLDER1 "@COMB1@")
+        set(PLACEHOLDER2 "@COMB2@")
+    endif()
+
+    # Read the template content
+    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
+
+    # Perform placeholder replacements
+    if(COMBINATION_TYPE EQUAL 3)
+        string(REPLACE "${PLACEHOLDER1}" "${COMB1}" TEMP_CONTENT "${TEMPLATE_CONTENT}")
+        string(REPLACE "${PLACEHOLDER2}" "${COMB2}" TEMP_CONTENT "${TEMP_CONTENT}")
+        string(REPLACE "${PLACEHOLDER3}" "${COMB3}" FINAL_CONTENT "${TEMP_CONTENT}")
+    elseif(COMBINATION_TYPE EQUAL 2)
+        string(REPLACE "${PLACEHOLDER1}" "${COMB1}" FINAL_CONTENT "${TEMPLATE_CONTENT}")
+        string(REPLACE "${PLACEHOLDER2}" "${COMB2}" FINAL_CONTENT "${FINAL_CONTENT}")
+    endif()
+
+    # Define the output file name based on combination
+    if(COMBINATION_TYPE EQUAL 3)
+        set(OUTPUT_FILE "pairwise_instantiation_${COMB1}_${COMB2}_${COMB3}.cpp")
+    elseif(COMBINATION_TYPE EQUAL 2)
+        set(OUTPUT_FILE "pairwise_instantiation_${COMB1}_${COMB2}.cpp")
+    endif()
+
+    # Define the full path for the generated file
+    set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
+
+    # Write the processed content to the output file
+    file(WRITE "${GENERATED_FILE}" "${FINAL_CONTENT}")
+
+    # Optionally, collect generated sources for further processing
+    list(APPEND CUSTOMOPS_GENERIC_SOURCES "${GENERATED_FILE}")
+
+    # Output a message for verification
+    message(STATUS "Generated Instantiation File: ${GENERATED_FILE}")
+endfunction()
+
+
+set(GEN_COMPILATION_TEMPLATES
+        "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
+        # Add other template files as needed
+)
+
+
+
+# Example Usage of genPartitionCombination
+# Define combinations for ITERATE_COMBINATIONS_3
+set(COMBINATIONS_3
+        "0,0,0"
+        "0,0,2"
+        "0,1,2"
+        "0,2,0"
+        "0,2,1"
+        "0,2,2"
+        "1,0,0"
+        "1,1,1"
+        "1,1,2"
+        "1,2,0"
+        "1,2,1"
+        "1,2,2"
+        "2,0,0"
+        "2,0,1"
+        "2,0,2"
+        "2,1,0"
+        "2,1,1"
+        "2,1,2"
+        "2,2,0"
+        "2,2,1"
+        "2,2,2"
+)
+
+# Define combinations for ITERATE_COMBINATIONS
+set(COMBINATIONS_2
+        "0,0"
+        "0,1"
+        "1,0"
+        "1,1"
+        "0,2"
+        "2,0"
+        "1,2"
+        "2,1"
+        "2,2"
+)
+
+# Define the list of instantiation templates under comb_compilation_units
+set(INSTANTIATION_TEMPLATES_3
+        "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
+)
+
+set(INSTANTIATION_TEMPLATES_2
+        "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
+)
+
+
 #///////////////////////////////////////////////////////////////////////////////
 # genCompilation: Generates cpp, cu files
 # INPUT:
@@ -267,7 +435,6 @@ function(genCompilation FILE_ITEM)
 
     set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
-
 
 # MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively
 set(MSVC_RT_LIB "MultiThreadedDLL")

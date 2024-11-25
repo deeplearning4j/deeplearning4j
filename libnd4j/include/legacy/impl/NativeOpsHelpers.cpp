@@ -470,6 +470,8 @@ const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().get
 OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
+    printf("Obtained op: %s\n", op->getOpName()->c_str());
+    fflush(stdout);
     sd::ShapeList inShapes;
 
     for (int e = 0; e < context->width(); e++) {
@@ -481,6 +483,8 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
     }
 
     auto shapeList = op->calculateOutputShape(&inShapes, *context);
+    printf("Ran calculateOutputShape for op %s \n", op->getOpName()->c_str());
+    fflush(stdout);
     return shapeList;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

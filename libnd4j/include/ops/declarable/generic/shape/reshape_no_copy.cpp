@@ -7,25 +7,29 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/reshapeNoCopy.h>
 namespace sd {
-namespace  ops {
+namespace ops {
 CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
+  printf("reshape_no_copy exec\n");
+  fflush(stdout);
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
-
-  if(ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(input->shapeInfo()))
-     || output->dataBuffer() != input->dataBuffer()) {
-    //deref avoiding copy
-    NDArray &originalInput = *input;
-    output->assign(originalInput);
+  //note that the calculate output shape that sets this flag does not have access to the data buffer
+  if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
+      || output->dataBuffer() != input->dataBuffer()) {
+    NDArray &inputRef = *input;
+    NDArray &outputRef = *output;
+    //immitate a reshape operation but without triggering a copy. These helpers are to prevent stack overflows with reshape -> assign -> reshape which used to exist
+    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(outputRef, output->ordering(), input->getShapeAsVector());
+    NDArray::copyDataForAssign(inputRef, outputRef, shapeInfo, false);
   }
-  //the rest is no op, we don't need to copy we just needed the new shape
+  // the rest is no op, we don't need to copy we just needed the new shape
 
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(reshape_no_copy) {
   auto inShape = inputShape->at(0);
-  if(ArrayOptions::dataType(inShape) == UNKNOWN) {
+  if (ArrayOptions::dataType(inShape) == UNKNOWN) {
     THROW_EXCEPTION("Illegal data type set for reshape: UNKNOWN");
   }
 
@@ -36,8 +40,8 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   if (block.width() > 1) {
     auto shapeArg = INPUT_VARIABLE(1);
     auto shapeBuffLong = shapeArg->getBufferAsVector<sd::LongType>();
-    //last is the ordering
-    for(int i = 0; i < shapeBuffLong.size() - 1; i++) {
+    // last is the ordering
+    for (int i = 0; i < shapeBuffLong.size() - 1; i++) {
       newShape.push_back(shapeBuffLong[i]);
     }
 
@@ -55,20 +59,21 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   } else {
     std::vector<sd::LongType> *iArgs = block.getIArguments();
-    for(LongType i = 0; i < block.numI() - 1; i++) {
+    for (LongType i = 0; i < block.numI() - 1; i++) {
       newShape.push_back(iArgs->at(i));
     }
     order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
   }
 
-  sd::LongType  len = shape::shapeInfoLength(newShape.size());
+  sd::LongType len = shape::shapeInfoLength(newShape.size());
   sd::LongType *newShapeInfo = new sd::LongType[len];
   newShapeInfo[0] = newShape.size();
-  shape::setShape(newShapeInfo,newShape.data());
+  shape::setShape(newShapeInfo, newShape.data());
+  shape::setOrder(newShapeInfo, order);
   auto newShapeView = shape::shapeOf(newShapeInfo);
 
-  for(int i = 0; i < newShape.size(); i++) {
-    if(newShape[i] != newShapeView[i]) {
+  for (int i = 0; i < newShape.size(); i++) {
+    if (newShape[i] != newShapeView[i]) {
       std::string errorMessage;
       errorMessage += "Failed to set shape. ";
       errorMessage += "Shape ";
@@ -83,33 +88,32 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
 
   if (shape::isEmptyConst(inShape)) {
     newShapeInfo[0] = newShape.size();
-    shape::setShape(newShapeInfo,newShape.data());
+    shape::setShape(newShapeInfo, newShape.data());
     // If reshape is not possible without allocation, fall back to regular reshape
-    shape::updateStrides(newShapeInfo, order,true);
+    shape::updateStrides(newShapeInfo, order, true);
     ArrayOptions::resetFlags(newShapeInfo);
     ArrayOptions::setDataType(newShapeInfo, dtype);
     ArrayOptions::toggleIsEmpty(newShapeInfo);
   } else {
     bool reshapeNoAllocSuccess = helpers::reshapeNoAlloc(inShape, newShape, order, newShapeInfo);
-    if (!reshapeNoAllocSuccess) {
-      // If reshape is not possible without allocation, fall back to regular reshape
-      shape::updateStrides(newShapeInfo, order,true);
+    if (!reshapeNoAllocSuccess || shape::order(inShape) != order) {
+      //we need new strides if we can't handle the copy
+      shape::updateStrides(newShapeInfo, order, true);
       shape::setElementWiseStride(newShapeInfo, 0);
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
-      ArrayOptions::setPropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
+      //ensure we trigger a proper data copy
+      ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_NEEDS_COPY);
     } else {
-
+      //we set strides in the reshape alloc success already
       newShapeInfo[0] = newShape.size();
       shape::setElementWiseStride(newShapeInfo, 0);
-      shape::setShape(newShapeInfo,newShape.data());
+      shape::setShape(newShapeInfo, newShape.data());
       ArrayOptions::resetFlags(newShapeInfo);
-      //we need this in order to preserve the offset of the original buffer when creating the output array
+      // we need this in order to preserve the offset of the original buffer when creating the output array
       ArrayOptions::togglePropertyBit(newShapeInfo, ARRAY_COPY_OFFSET_INPUT_0);
       ArrayOptions::setDataType(newShapeInfo, dtype);
-
     }
-
   }
 
   return SHAPELIST(CONSTANT(newShapeInfo));

@@ -61,11 +61,8 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
   std::vector<sd::LongType> colShape = {bS, oH, oW, kH, kW, iC};
   std::vector<sd::LongType> perm = {0, 3, 4, 5, 1, 2};
   NDArray *col = new NDArray('c', colShape, input->dataType(), input->getContext());
-  col->printShapeInfo("COL SHAPE INFO:");
   NDArray &colPFrom = col->permute(perm, false, false);
-  colPFrom.printShapeInfo("COLP FROM SHAPE INFO:");
   NDArray *colP = new NDArray(colPFrom);  // {bS, iC, kH, kW, oH, oW}
-  colP->printShapeInfo("COLP SHAPE INFO:");
   std::vector<sd::LongType> mmulResultShape = {bS * oH * oW, oC};
   NDArray mmulResult('f', mmulResultShape, output->dataType(), output->getContext());
   std::vector<LongType> permuteForOutput = {0, 3, 1, 2};
@@ -76,8 +73,6 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
 
   NDArray zeroVal =  NDArrayFactory::create(0.f, input->getContext());
   if (isNCHW) {
-    input->printBufferRaw("im2col input:");
-    input->printShapeInfo("im2col input shape info:");
     helpers::im2col(*ctx, *input, *colP, kH, kW, sH, sW, pH, pW, dH, dW,
                     zeroVal);
   } else {
@@ -88,45 +83,25 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
                     zeroVal);
   }
 
-  col->printBufferRaw("COL BUFFER RAW:");
-
   block.pushIntermediateResult(colP);
 
-  weights->printBufferRaw("WEIGHTS PRE PERMUTE:");
   std::vector<sd::LongType> shape = {bS * oH * oW, kH * kW * iC};
   NDArray &colReshaped = colP->reshape('c', shape, false);
-  colP->printBufferRaw("colPReshaped buffer raw:");
   std::vector<sd::LongType> perm2 = {3,2,1,0};
-   /**
-    * TODO; get the weights back in the right format.
-    * The im2col output seems to work now.
-    */
-  NDArray &weightsPermuted = weights->permute(perm2, false, false);
-  weights->printBufferRaw("\nweights buffer raw:\n");
-  colP->printBufferRaw("colPReshaped 2 buffer raw:");
 
-  weightsPermuted.printBufferRaw("\nweights permuted buffer raw:\n");
+  NDArray &weightsPermuted = weights->permute(perm2, false, false);
+
   std::vector<sd::LongType> wShape = {iC * kH * kW, oC};
   NDArray &reshapedW = weightsPermuted.reshape('f',wShape, false);
-  colReshaped.printBufferRaw("colPReshaped 3 buffer raw:");
   NDArray *colpPReshapedAddr = &colReshaped;
-  colpPReshapedAddr->printBufferRaw("colPReshaped ADDR AFTER 3 buffer raw:");
 
-  reshapedW.printBufferRaw("\nweights permuted reshaped buffer raw:\n");
-  colReshaped.printBufferRaw("colPReshaped going in for matmul");
-  reshapedW.printBufferRaw("\nweights permuted reshaped buffer raw:\n");
   NDArray *reshapedWAddr = &reshapedW;
-  colpPReshapedAddr->printBufferRaw("colPReshaped buffer raw:");
-  reshapedWAddr->printBufferRaw("\nweights permuted reshaped buffer raw:\n");
   MmulHelper::matmul(colpPReshapedAddr, reshapedWAddr, &mmulResult, false, false, 1.0, 0.0);
-  mmulResult.printBufferRaw("mmulResult buffer raw:");
 
   std::vector<sd::LongType>lastShape = {oH,oW,bS,oC};
   NDArray &reshaped = mmulResult.reshape('f', lastShape, false);
-  mmulResult.printBufferRaw("mmulResult reshaped buffer raw:");
   std::vector<sd::LongType> permute2 = {2,3,1,0};
   NDArray &permuted = reshaped.permute(permute2, false, false);
-  mmulResult.printBufferRaw("mmulResult reshaped permuted buffer raw:");
 
   // Reshape and copy result to output
   if (isNCHW) {

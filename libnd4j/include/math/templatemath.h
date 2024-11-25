@@ -53,7 +53,7 @@ namespace sd {
 namespace math {
 
 #include <type_traits>
-
+#include <types/type_promote.h>
 
 /*
 *
