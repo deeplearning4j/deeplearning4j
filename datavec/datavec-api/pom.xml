@@ -104,7 +104,7 @@
         </dependency>
         <!-- csv parser, same dep used by spark -->
         <dependency>
-            <groupId>net.sf.opencsv</groupId>
+            <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>${opencsv.version}</version>
         </dependency>
