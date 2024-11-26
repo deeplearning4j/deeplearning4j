@@ -133,66 +133,64 @@ public class ModelSerializer {
      */
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater,DataNormalization dataNormalization)
             throws IOException {
-        ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
-        DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
+        try (ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
+             DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile))) {
 
-        // Save configuration as JSON
-        String json = "";
-        if (model instanceof MultiLayerNetwork) {
-            json = ((MultiLayerNetwork) model).getLayerWiseConfigurations().toJson();
-        } else if (model instanceof ComputationGraph) {
-            json = ((ComputationGraph) model).getConfiguration().toJson();
-        }
-
-        ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
-        zipfile.putNextEntry(config);
-        dos.write(json.getBytes());
-
-        // Save parameters as binary
-        ZipEntry coefficients = new ZipEntry(COEFFICIENTS_BIN);
-        zipfile.putNextEntry(coefficients);
-        INDArray params = model.params();
-        if (params != null) {
-            try {
-                Nd4j.write(model.params(), dos);
-            } finally {
-                dos.flush();
-            }
-        } else {
-            ZipEntry noParamsMarker = new ZipEntry(NO_PARAMS_MARKER);
-            zipfile.putNextEntry(noParamsMarker);
-        }
-
-        if (saveUpdater) {
-            INDArray updaterState = null;
+            // Save configuration as JSON
+            String json = "";
             if (model instanceof MultiLayerNetwork) {
-                updaterState = ((MultiLayerNetwork) model).getUpdater().getStateViewArray();
+                json = ((MultiLayerNetwork) model).getLayerWiseConfigurations().toJson();
             } else if (model instanceof ComputationGraph) {
-                updaterState = ((ComputationGraph) model).getUpdater().getStateViewArray();
+                json = ((ComputationGraph) model).getConfiguration().toJson();
             }
 
-            if (updaterState != null && updaterState.length() > 0) {
-                ZipEntry updater = new ZipEntry(UPDATER_BIN);
-                zipfile.putNextEntry(updater);
+            ZipEntry config = new ZipEntry(CONFIGURATION_JSON);
+            zipfile.putNextEntry(config);
+            dos.write(json.getBytes());
 
+            // Save parameters as binary
+            ZipEntry coefficients = new ZipEntry(COEFFICIENTS_BIN);
+            zipfile.putNextEntry(coefficients);
+            INDArray params = model.params();
+            if (params != null) {
                 try {
-                    Nd4j.write(updaterState, dos);
+                    Nd4j.write(model.params(), dos);
                 } finally {
                     dos.flush();
                 }
+            } else {
+                ZipEntry noParamsMarker = new ZipEntry(NO_PARAMS_MARKER);
+                zipfile.putNextEntry(noParamsMarker);
+            }
+
+            if (saveUpdater) {
+                INDArray updaterState = null;
+                if (model instanceof MultiLayerNetwork) {
+                    updaterState = ((MultiLayerNetwork) model).getUpdater().getStateViewArray();
+                } else if (model instanceof ComputationGraph) {
+                    updaterState = ((ComputationGraph) model).getUpdater().getStateViewArray();
+                }
+
+                if (updaterState != null && updaterState.length() > 0) {
+                    ZipEntry updater = new ZipEntry(UPDATER_BIN);
+                    zipfile.putNextEntry(updater);
+
+                    try {
+                        Nd4j.write(updaterState, dos);
+                    } finally {
+                        dos.flush();
+                    }
+                }
+            }
+
+
+            if (dataNormalization != null) {
+                // now, add our normalizer as additional entry
+                ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
+                zipfile.putNextEntry(nEntry);
+                NormalizerSerializer.getDefault().write(dataNormalization, dos);
             }
         }
-
-
-        if (dataNormalization != null) {
-            // now, add our normalizer as additional entry
-            ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
-            zipfile.putNextEntry(nEntry);
-            NormalizerSerializer.getDefault().write(dataNormalization, dos);
-        }
-
-        dos.close();
-        zipfile.close();
     }
 
     /**
