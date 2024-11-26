@@ -472,13 +472,8 @@ class Deviation {
     sd::LongType coords[SD_MAX_RANK] = {};
     sd::LongType* ptr_coords = (sd::LongType*)&coords;
     if (outerLoopStart > 0) {
-      if (LastIndexFaster) {
-        sd::index2coords_C(outerLoopStart, rank - 1, bases, ptr_coords);
-      } else {
-        // skip first base
-        sd::index2coords_F(outerLoopStart, rank - 1, &(bases[1]), ptr_coords);
-      }
-      offset = sd::offset_from_coords(strides, ptr_coords, rank);
+      INDEX2COORDS(outerLoopStart, rank - 1, bases, ptr_coords);
+      COORDS2INDEX(rank, strides, ptr_coords, offset);
     }
     if (innerLoopCount >= vectorizationThreshold) {
       LOG_CALLS(88)
@@ -522,13 +517,8 @@ class Deviation {
     sd::LongType coords[SD_MAX_RANK] = {};
     sd::LongType* ptr_coords = (sd::LongType*)&coords;
     if (outerLoopStart > 0) {
-      if (LastIndexFaster) {
-        sd::index2coords_C(outerLoopStart, rank - 1, bases, ptr_coords);
-      } else {
-        // skip first base
-        sd::index2coords_F(outerLoopStart, rank - 1, &(bases[1]), ptr_coords);
-      }
-      offset = sd::offset_from_coords(strides, ptr_coords, rank);
+      INDEX2COORDS(outerLoopStart, rank - 1, bases, ptr_coords);
+      COORDS2INDEX(rank, strides, ptr_coords, offset);
     }
     LOG_CALLS(90)
     for (sd::LongType i = 0; i < outerLoopCount; i++) {

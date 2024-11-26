@@ -43,15 +43,17 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
   const auto xRank = indices.rankOf();
 
   auto func = PRAGMA_THREADS_FOR {
-    sd::LongType  xCoords[SD_MAX_RANK];
+    sd::LongType xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, xShapeInfo, xCoords);
+      INDEX2COORDS(i, xRank, xShapeInfo, xCoords);
 
-      const sd::LongType currentInd = x[shape::getOffset(xShapeInfo, xCoords)];
+      sd::LongType xOffset;
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
+
+      const sd::LongType currentInd = x[xOffset];
 
       if (currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
-        printf("checkIndices: out of range element %lld at index %ld \n", currentInd, i);
         ++numOfBadIndx;
       }
     }
@@ -61,7 +63,6 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
 
   return numOfBadIndx;
 }
-
 ///////////////////////////////////////////////////////////////////
 sd::LongType checkIndices(sd::LaunchContext* context, NDArray& indices, NDArray& output, const int axis) {
   BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), SD_INDEXING_TYPES);

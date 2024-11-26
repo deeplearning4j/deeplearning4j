@@ -135,8 +135,9 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(f, xTadShapeShapeInfo, coords);
-        auto offset = shape::getOffset(xTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
         oZ[offset] = OpType::op(oX[offset], y[offset], extraParams);
       }
     };
@@ -148,9 +149,11 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(f, xTadShapeShapeInfo, coords);
-        auto offset = shape::getOffset(xTadShapeShapeInfo, coords);
-        auto zOffset = shape::getOffset(zTadShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
         oZ[zOffset] = OpType::op(oX[offset], y[offset], extraParams);
       }
     };
@@ -162,9 +165,11 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(f, xTadShapeShapeInfo, coords);
-        auto offset = shape::getOffset(xTadShapeShapeInfo, coords);
-        auto yOffset = shape::getOffset(yShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
+        sd::LongType yOffset;
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
         oZ[offset] = OpType::op(oX[offset], y[yOffset], extraParams);
       }
     };
@@ -177,9 +182,11 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(f, yShapeInfo, coords);
-        auto xOffset = shape::getOffset(xTadShapeShapeInfo, coords);
-        auto offset = shape::getOffset(yShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, offset);
+        sd::LongType xOffset;
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, xOffset);
         oZ[offset] = OpType::op(oX[xOffset], y[offset], extraParams);
       }
     };
@@ -191,10 +198,13 @@ void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, c
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(f, zTadShapeInfo, coords);
-        auto xOffset = shape::getOffset(xTadShapeShapeInfo, coords);
-        auto yOffset = shape::getOffset(yShapeInfo, coords);
-        auto zOffset = shape::getOffset(zTadShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords);
+        sd::LongType xOffset;
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, xOffset);
+        sd::LongType yOffset;
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
         oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset], extraParams);
       }
     };
@@ -573,8 +583,19 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {
-      shape::getOffsetBroadcast(start, i, zShapeInfo, xShapeInfo, yShapeInfo, xzSameOffsets, yzSameOffsets, coords,
-                                zOffset, xOffset, yOffset);
+      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      if (xzSameOffsets) {
+        xOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+      }
+      if (yzSameOffsets) {
+        yOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+      }
 
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
     }

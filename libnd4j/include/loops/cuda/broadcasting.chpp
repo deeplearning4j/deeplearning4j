@@ -206,47 +206,25 @@ SD_DEVICE void Broadcast<X,Y,Z>::transformCuda(
   auto y = reinterpret_cast<Y const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
 
-  //decompose in to several sub tads after
-  //moving all dimensions (in sorted order)
-  //to the back.
-  //permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ sd::LongType numTads;
-  __shared__ sd::LongType yEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
-    tadLength = length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-    numTads = length(xShapeInfo) / tadLength;
-    yEWS = shape::elementWiseStride(yShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
+    tadLength = shape::length(tadOnlyShapeInfo);
+    numTads = shape::length(xShapeInfo) / tadLength;
   }
   __syncthreads();
 
-  auto xOrder = shape::order(tadOnlyShapeInfo);
-  auto yOrder = shape::order(yShapeInfo);
-  auto zOrder = shape::order(tadOnlyShapeInfoZ);
-
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-
     auto rX = x + tadOffsets[r];
     auto rZ = z + tadOffsetsZ[r];
 
-
-    if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && xOrder == yOrder && xOrder == zOrder) {
-      for (sd::LongType i = threadIdx.x; i < tadLength; i+= blockDim.x)
-        rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
-    }
-    else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-        auto xOffset = getIndexOffset(i, tadOnlyShapeInfo);
-        auto yOffset = getIndexOffset(i, yShapeInfo);
-        auto zOffset = getIndexOffset(i, tadOnlyShapeInfoZ);
-        rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
-      }
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xOffset, yOffset, zOffset;
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), &i, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), &i, yOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), &i, zOffset);
+      rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
     }
   }
 }
@@ -268,32 +246,27 @@ SD_DEVICE void Broadcast<X,Y,Z>::transformCuda(
   __shared__ bool xzSameOffsets, yzSameOffsets;
 
   if (threadIdx.x == 0) {
-
     zLen  = shape::length(zShapeInfo);
     rank = shape::rank(zShapeInfo);
-
     xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
   }
   __syncthreads();
 
-
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-
   sd::LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
+    INDEX2COORDS(i, rank, zShapeInfo, coords);
 
-    shape::index2coords(i, zShapeInfo, coords);
-
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
-    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
-    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
+    sd::LongType zOffset, xOffset, yOffset;
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    xOffset = xzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    yOffset = yzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
 
     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
   }
 }
-
 
 }
 }

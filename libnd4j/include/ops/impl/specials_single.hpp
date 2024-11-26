@@ -100,7 +100,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
       zPtrList.push_back(z);
       z += inArrs[i]->lengthOf();
     }
-    auto func = [&inArrs, &zPtrList](sd::LongType thread_id, sd::LongType start, sd::LongType stop, sd::LongType increment) -> void {
+    auto func = [&inArrs, &zPtrList](sd::LongType thread_id, sd::LongType start, sd::LongType stop,
+                                     sd::LongType increment) -> void {
       for (sd::LongType i = start; i < stop; ++i) {
         const auto memAmountToCopy = inArrs[i]->lengthOf();
         const auto inputPtr = inArrs[i]->bufferAsT<T>();
@@ -123,15 +124,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   }
   bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';
   if (copyCase2) {
-    // copyCase2:
-    // in this case:
-    // when NDArrays follow the same order (here it is done for the "c" "the last index is fast" order)
-    // and unit elementwise stride.
-    // we will just concatenate by iterating over t=shape[0]*...*shape[axis-1] times
-    // and copying all buffers with {offset: t * copy_size_i, size: copy_size_i} into output buffer with { offset: t*
-    // total_copy_size, total copy size} where: copy_size_i = shape[axis] * .. * shape[rank-1] of the iTh input array
-    // total copy size is sum of all {copy_size_i}
-
     sd::LongType times = 1;
     auto shapes = shape::shapeOf(output.shapeInfo());
 
@@ -144,7 +136,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
     std::vector<InputArgsCase2<T>> inputArgs;
     for (sd::LongType i = 0; i < numOfInArrs; i++) {
-      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(), static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
+      InputArgsCase2<T> input = {inArrs[i]->bufferAsT<T>(),
+                                 static_cast<int>(inArrs[i]->lengthOf()) / static_cast<int>(times)};
       inputArgs.push_back(input);
     }
 
@@ -176,9 +169,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i += increment) {
-      shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
+      INDEX2COORDS(i, shape::rank(output.shapeInfo()), output.shapeInfo(), coords);
 
-      const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(shape::rank(output.shapeInfo()), shape::shapeOf(output.shapeInfo()), coords, zOffset);
 
       sd::LongType inArrIdx = 0;
       sd::LongType xDim = inArrs[inArrIdx]->sizeAt(axis);
@@ -190,7 +184,9 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
       }
 
       const T *x = inArrs[inArrIdx]->bufferAsT<T>();
-      const auto xOffset = shape::getOffset(inArrs[inArrIdx]->shapeInfo(), coords);
+      sd::LongType xOffset;
+      COORDS2INDEX(shape::rank(inArrs[inArrIdx]->shapeInfo()), shape::shapeOf(inArrs[inArrIdx]->shapeInfo()), coords,
+                   xOffset);
 
       zBuff[zOffset] = x[xOffset];
 
@@ -200,7 +196,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
   samediff::Threads::parallel_for(func, 0, output.lengthOf());
 }
-
 /**
  * Concatneate multi array of the same shape together
  * along a particular dimension
@@ -224,17 +219,12 @@ void SpecialMethods<T>::concatCpuGeneric(LongType dimension, int numArrays,NDArr
 }
 
 template <typename T>
-void SpecialMethods<T>::splitCpuGeneric(NDArray&input, const std::vector<NDArray *> &outArrs,
-                                        const LongType axis) {
+void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArray*>& outArrs, const LongType axis) {
   int numSplits = outArrs.size();
-
   const auto sizeofT = input.sizeOfT();
-
   auto xBuff = input.bufferAsT<T>();
 
-  bool luckCase1 =
-      ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) &&
-      input.ews() == 1;
+  bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
 
   if (luckCase1) {
     for (sd::LongType i = 0; i < numSplits; ++i) {
@@ -244,7 +234,7 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray&input, const std::vector<NDArray
   }
 
   if (luckCase1) {
-    T *x = const_cast<T *>(xBuff);
+    T* x = const_cast<T*>(xBuff);
     for (sd::LongType i = 0; i < numSplits; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf();
       memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
@@ -260,8 +250,9 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray&input, const std::vector<NDArray
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i += increment) {
-      shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
+      INDEX2COORDS(i, shape::rank(input.shapeInfo()), input.shapeInfo(), coords);
+      sd::LongType xOffset;
+      COORDS2INDEX(shape::rank(input.shapeInfo()), shape::shapeOf(input.shapeInfo()), coords, xOffset);
 
       sd::LongType outArrIdx = 0;
       temp = coords[axis];
@@ -271,8 +262,9 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray&input, const std::vector<NDArray
         ++outArrIdx;
       }
 
-      T *z = outArrs[outArrIdx]->bufferAsT<T>();
-      const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
+      T* z = outArrs[outArrIdx]->bufferAsT<T>();
+      sd::LongType zOffset;
+      COORDS2INDEX(shape::rank(outArrs[outArrIdx]->shapeInfo()), shape::shapeOf(outArrs[outArrIdx]->shapeInfo()), coords, zOffset);
       z[zOffset] = xBuff[xOffset];
 
       coords[axis] = temp;

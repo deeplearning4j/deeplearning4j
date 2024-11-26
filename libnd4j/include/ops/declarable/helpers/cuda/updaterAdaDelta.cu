@@ -50,16 +50,13 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, c
 
   __shared__ LongType xLen;
   __shared__ T rhoT;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInMsgSame, bXStMsgSame, bXInMsdxSame, bXStMsdxSame;
+  __shared__ bool bOrdering, bXZsame, bXInMsgSame, bXStMsgSame, bXInMsdxSame, bXStMsdxSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
 
     rhoT = (1 - rho);
 
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stMsgShapeInfo) && 1 == shape::elementWiseStride(inMsgShapeInfo) &&
-           1 == shape::elementWiseStride(stMsdxShapeInfo) && 1 == shape::elementWiseStride(inMsdxShapeInfo);
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stMsgShapeInfo) &&
                 shape::order(stMsgShapeInfo) == shape::order(inMsgShapeInfo) &&
@@ -77,17 +74,15 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, c
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    auto xOffset = i, zOffset = i, initMsgOffset = i, initMsdxOffset = i, stMsgOffset = i, stMsdxOffset = i;
+    LongType xOffset, zOffset, initMsgOffset, initMsdxOffset, stMsgOffset, stMsdxOffset;
 
-    if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initMsgOffset = bXInMsgSame ? xOffset : shape::getOffset(inMsgShapeInfo, coords);
-      stMsgOffset = bXStMsgSame ? xOffset : shape::getOffset(stMsgShapeInfo, coords);
-      initMsdxOffset = bXInMsdxSame ? xOffset : shape::getOffset(inMsdxShapeInfo, coords);
-      stMsdxOffset = bXStMsdxSame ? xOffset : shape::getOffset(stMsdxShapeInfo, coords);
-    }
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    initMsgOffset = bXInMsgSame ? xOffset : COORDS2INDEX(shape::rank(inMsgShapeInfo), shape::shapeOf(inMsgShapeInfo), coords, initMsgOffset);
+    stMsgOffset = bXStMsgSame ? xOffset : COORDS2INDEX(shape::rank(stMsgShapeInfo), shape::shapeOf(stMsgShapeInfo), coords, stMsgOffset);
+    initMsdxOffset = bXInMsdxSame ? xOffset : COORDS2INDEX(shape::rank(inMsdxShapeInfo), shape::shapeOf(inMsdxShapeInfo), coords, initMsdxOffset);
+    stMsdxOffset = bXStMsdxSame ? xOffset : COORDS2INDEX(shape::rank(stMsdxShapeInfo), shape::shapeOf(stMsdxShapeInfo), coords, stMsdxOffset);
 
     stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;
 
@@ -97,7 +92,6 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, c
     stMsdx[stMsdxOffset] = rho * initMsdx[initMsdxOffset] + up[zOffset] * up[zOffset] * rhoT;
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

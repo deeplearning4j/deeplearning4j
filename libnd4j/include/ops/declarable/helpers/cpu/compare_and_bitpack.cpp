@@ -94,7 +94,6 @@ uint8_t pack<bool>(const bool* buff, int stride, const bool& threshold) {
   res = res | buff[7 * stride];
   return res;
 }
-
 template <typename X>
 void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& output) {
   auto rank = input.rankOf();
@@ -148,7 +147,7 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
       extendedStrides[rank - 1] = 8 * inStrides[rank - 1];
       extendedStrides[rank] = inStrides[rank - 1];
       // general case. its slow. we can improve it for special case later
-      // generic case that could be further imrpoved. for now its slow
+      // generic case that could be further improved. for now its slow
       FUNC_1D func = [rank, buff, outBuff, outShapes, extendedStrides, outStrides, threshold](
                          uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
         sd::LongType coords[SD_MAX_RANK] = {};
@@ -156,14 +155,17 @@ void compareAndBitpack_(NDArray& input, NDArray& thresholdScalar, NDArray& outpu
         sd::LongType len = (stop - start);
         // its extended as {rank+1} so extendedStrides[rank] is valid
         auto innermostStride = extendedStrides[rank];
-        sd::index2coords_C(start, rank, outShapes, ptr_coords);
+        INDEX2COORDS(start, rank, outShapes, ptr_coords);
         // here last dimension will not be in coords. this way output shape and input shapes are equal
-        auto offset = sd::offset_from_coords(extendedStrides, outStrides, ptr_coords, rank);
+        sd::LongType inOffset, outOffset;
+        COORDS2INDEX(rank + 1, extendedStrides, ptr_coords, inOffset);
+        COORDS2INDEX(rank, outStrides, ptr_coords, outOffset);
         for (sd::LongType k = 0; k < len; k++) {
-          auto buffPart = &(buff[offset.first]);
-          auto outBuffPart = &(outBuff[offset.second]);
+          auto buffPart = &(buff[inOffset]);
+          auto outBuffPart = &(outBuff[outOffset]);
           *outBuffPart = pack<X>(buffPart, innermostStride, threshold);
-          offset = inc_coords(outShapes, extendedStrides, outStrides, ptr_coords, offset, rank);
+          inOffset += extendedStrides[rank];
+          outOffset += outStrides[rank - 1];
         }
       };
       samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);

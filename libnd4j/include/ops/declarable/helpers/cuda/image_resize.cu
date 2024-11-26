@@ -265,15 +265,15 @@ static SD_KERNEL void resizeNeighborKernel(T const* input, LongType const* input
         for (LongType e = start; e < channels; e += step) {
           LongType posX[] = {b, inY, inX, e};
           LongType posZ[] = {b, y, x, e};
-          auto xIndex = shape::getOffset(inputShape, posX);
-          auto zIndex = shape::getOffset(outputShape, posZ);
+          LongType xIndex, zIndex;
+          COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posX, xIndex);
+          COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), posZ, zIndex);
           output[zIndex] = input[xIndex];
         }
       }
     }
   }
 }
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resizeNeighborFunctor - main algorithm by nearest neighbor
 //
@@ -932,10 +932,15 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
     LongType y1Pos[] = {b, 0};
     LongType y2Pos[] = {b, 2};
     LongType x2Pos[] = {b, 3};
-    Z y1 = boxes[shape::getOffset(boxesShape, y1Pos)];  //->t<T>(b, 0)];
-    Z x1 = boxes[shape::getOffset(boxesShape, x1Pos)];
-    Z y2 = boxes[shape::getOffset(boxesShape, y2Pos)];
-    Z x2 = boxes[shape::getOffset(boxesShape, x2Pos)];
+    LongType y1Offset, x1Offset, y2Offset, x2Offset;
+    COORDS2INDEX(2, boxesShape, y1Pos, y1Offset);
+    COORDS2INDEX(2, boxesShape, x1Pos, x1Offset);
+    COORDS2INDEX(2, boxesShape, y2Pos, y2Offset);
+    COORDS2INDEX(2, boxesShape, x2Pos, x2Offset);
+    Z y1 = boxes[y1Offset];
+    Z x1 = boxes[x1Offset];
+    Z y2 = boxes[y2Offset];
+    Z x2 = boxes[x2Offset];
 
     int bIn = indices[b];
     if (bIn >= batchSize) {
@@ -954,8 +959,9 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
           auto step = blockDim.z * gridDim.z;
           for (int d = start; d < depth; d += step) {
             LongType zPos[] = {b, y, x, d};
-            auto zIndex = shape::getOffset(outputShape, zPos);
-            output[zIndex] = (Z)extrapolationVal;
+            LongType zOffset;
+            COORDS2INDEX(4, outputShape, zPos, zOffset);
+            output[zOffset] = (Z)extrapolationVal;
           }
         }
         continue;
@@ -974,8 +980,9 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             auto step = blockDim.z * gridDim.z;
             for (int d = start; d < depth; d += step) {
               LongType zPos[] = {b, y, x, d};
-              auto zIndex = shape::getOffset(outputShape, zPos);
-              output[zIndex] = (Z)extrapolationVal;
+              LongType zOffset;
+              COORDS2INDEX(4, outputShape, zPos, zOffset);
+              output[zOffset] = (Z)extrapolationVal;
             }
             continue;
           }
@@ -990,19 +997,21 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             LongType topRightPos[] = {bIn, topYIndex, right_x_index, d};
             LongType bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
             LongType bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
-            const T topLeft(
-                images[shape::getOffset(imagesShape, topLeftPos)]);
-            const T topRight(
-                images[shape::getOffset(imagesShape, topRightPos)]);
-            const T bottomLeft(images[shape::getOffset(
-                imagesShape, bottomLeftPos)]);
-            const T bottomRight(images[shape::getOffset(
-                imagesShape, bottomRightPos)]);
+            LongType topLeftOffset, topRightOffset, bottomLeftOffset, bottomRightOffset;
+            COORDS2INDEX(4, imagesShape, topLeftPos, topLeftOffset);
+            COORDS2INDEX(4, imagesShape, topRightPos, topRightOffset);
+            COORDS2INDEX(4, imagesShape, bottomLeftPos, bottomLeftOffset);
+            COORDS2INDEX(4, imagesShape, bottomRightPos, bottomRightOffset);
+            const T topLeft = images[topLeftOffset];
+            const T topRight = images[topRightOffset];
+            const T bottomLeft = images[bottomLeftOffset];
+            const T bottomRight = images[bottomRightOffset];
             const T top = topLeft + (topRight - topLeft) * x_lerp;
             const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
             LongType zPos[] = {b, y, x, d};
-            auto zIndex = shape::getOffset(outputShape, zPos);
-            output[zIndex] = Z(top + (bottom - top) * y_lerp);
+            LongType zOffset;
+            COORDS2INDEX(4, outputShape, zPos, zOffset);
+            output[zOffset] = Z(top + (bottom - top) * y_lerp);
           }
         }
       } else {  // method is "nearest neighbor"
@@ -1014,8 +1023,9 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             auto step = blockDim.z * gridDim.z;
             for (int d = start; d < depth; d += step) {
               LongType zPos[] = {b, y, x, d};
-              auto zIndex = shape::getOffset(outputShape, zPos);
-              output[zIndex] = (Z)extrapolationVal;
+              LongType zOffset;
+              COORDS2INDEX(4, outputShape, zPos, zOffset);
+              output[zOffset] = (Z)extrapolationVal;
             }
             continue;
           }
@@ -1026,9 +1036,10 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
           for (int d = start; d < depth; d += step) {
             LongType zPos[] = {b, y, x, d};
             LongType xPos[] = {bIn, closestYIndex, closestXIndex, d};
-            auto zIndex = shape::getOffset(outputShape, zPos);
-            auto xIndex = shape::getOffset(imagesShape, xPos);
-            output[zIndex] = images[xIndex];
+            LongType zOffset, xOffset;
+            COORDS2INDEX(4, outputShape, zPos, zOffset);
+            COORDS2INDEX(4, imagesShape, xPos, xOffset);
+            output[zOffset] = images[xOffset];
           }
         }
       }

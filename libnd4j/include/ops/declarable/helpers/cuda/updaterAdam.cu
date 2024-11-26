@@ -84,13 +84,13 @@ SD_KERNEL void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const
     LongType xOffset = i, zOffset = i, initMOffset = i, initUOffset = i, stMOffset = i, stUOffset = i;
 
     if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initUOffset = bXInUSame ? xOffset : shape::getOffset(invShapeInfo, coords);
-      stUOffset = bXStUSame ? xOffset : shape::getOffset(stvShapeInfo, coords);
-      initMOffset = bXInMSame ? xOffset : shape::getOffset(inmShapeInfo, coords);
-      stMOffset = bXStMSame ? xOffset : shape::getOffset(stmShapeInfo, coords);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      if (!bXZsame) COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      if (!bXInUSame) COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+      if (!bXStUSame) COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+      if (!bXInMSame) COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+      if (!bXStMSame) COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
     }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);

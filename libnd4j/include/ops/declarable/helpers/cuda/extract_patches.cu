@@ -91,7 +91,11 @@ static SD_KERNEL void globalExtractPatchesKernel(bool theSame, int batchCount,
               bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
 
               if (setUp) {  // VALID or SAME cases
-                outMatrix[shape::getOffset(outTadShape, zPos)] = patch[shape::getOffset(patchShape, xPos)];
+                LongType zOffset;
+                COORDS2INDEX(shape::rank(outTadShape), shape::stride(outTadShape), zPos, zOffset);
+                LongType xOffset;
+                COORDS2INDEX(shape::rank(patchShape), shape::stride(patchShape), xPos, xOffset);
+                outMatrix[zOffset] = patch[xOffset];
               }
               pos++;
             }

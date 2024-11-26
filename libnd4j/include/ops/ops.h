@@ -1256,7 +1256,7 @@ class IsNan {
 
   SD_OP_DEF static Z
   op(X d1, X *params) {
-    return sd::math::sd_isnan(d1) ? static_cast<X>(1) : static_cast<X>(0);
+    return sd::math::sd_isnan<X>(d1) ? static_cast<X>(1) : static_cast<X>(0);
   }
 
   SD_OP_DEF static X startingValue(const X *input) { return static_cast<X>(0); }
@@ -1968,9 +1968,9 @@ class MatchConditionBool {
       case 7:  // abs_greater_than
         return sd::math::sd_abs<X,X>(d1) > compare ? true : false;
       case 8:  // is inf
-        return sd::math::sd_isinf(d1) ? true : false;
+        return sd::math::sd_isinf<X>(d1) ? true : false;
       case 9:  // is nan
-        return sd::math::sd_isnan(d1) ? true : false;
+        return sd::math::sd_isnan<X>(d1) ? true : false;
       case 10:
         return (d1 == compare) ? true : false;
       case 11:
@@ -1981,10 +1981,10 @@ class MatchConditionBool {
         return sd::math::sd_abs<X,X>(d1) <= compare ? true : false;
       case 14:
         // isFinite
-        return !(sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1));
+        return !(sd::math::sd_isinf<X>(d1) || sd::math::sd_isnan<X>(d1));
       case 15:
         // isInfinite
-        return sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1);
+        return sd::math::sd_isinf<X>(d1) || sd::math::sd_isnan<X>(d1);
       default:
         sd_debug("Undefined match condition: [%i]\n", mode);
     }
@@ -2041,10 +2041,10 @@ class MatchCondition {
         return sd::math::sd_abs<X,X>(d1) <= compare ? 1 : 0;
       case 14:
         // isFinite
-        return !(sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1)) ? 1 : 0;
+        return !(sd::math::sd_isinf<X>(d1) || sd::math::sd_isnan<X>(d1)) ? 1 : 0;
       case 15:
         // isInfinite
-        return sd::math::sd_isinf(d1) || sd::math::sd_isnan(d1) ? 1 : 0;
+        return sd::math::sd_isinf<X>(d1) || sd::math::sd_isnan<X>(d1) ? 1 : 0;
       default:
         sd_printf("Undefined match condition: [%i]\n", mode);
     }
@@ -3747,7 +3747,7 @@ class CompareAndReplace {
       else
         return zd1;
     else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan(zd1))
+      if (sd::math::sd_isnan<X>(zd1))
         return zd2;
       else
         return zd1;
@@ -3838,7 +3838,7 @@ class CompareAndSet {
       else
         return d1;
     else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan(d2))
+      if (sd::math::sd_isnan<X>(d2))
         return d2;
       else
         return d1;
@@ -3936,7 +3936,7 @@ class CompareAndSetTransform {
       else
         return d1;
     else if (mode == 9)  // is nan
-      if (sd::math::sd_isnan(d1))
+      if (sd::math::sd_isnan<X>(d1))
         return set;
       else
         return d1;

@@ -45,13 +45,10 @@ SD_KERNEL void rmsPropUpdaterCuda(const void *vx, const LongType *xShapeInfo, co
   auto st = reinterpret_cast<T *>(vst);
 
   __shared__ LongType xLen;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInSame, bXStSame;
+  __shared__ bool bOrdering, bXZsame, bXInSame, bXStSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
-
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stShapeInfo) && 1 == shape::elementWiseStride(inShapeInfo);
 
     bOrdering = shape::order(zShapeInfo) == shape::order(xShapeInfo) &&
                 shape::order(xShapeInfo) == shape::order(stShapeInfo) &&
@@ -65,15 +62,13 @@ SD_KERNEL void rmsPropUpdaterCuda(const void *vx, const LongType *xShapeInfo, co
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    LongType xOffset = i, zOffset = i, initOffset = i, stOffset = i;
+    LongType xOffset, zOffset, initOffset, stOffset;
 
-    if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initOffset = bXInSame ? xOffset : shape::getOffset(inShapeInfo, coords);
-      stOffset = bXStSame ? xOffset : shape::getOffset(stShapeInfo, coords);
-    }
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    initOffset = bXInSame ? xOffset : COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
+    stOffset = bXStSame ? xOffset : COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
 
     st[stOffset] = init[initOffset] * rmsDecay + x[xOffset] * x[xOffset] * (1 - rmsDecay);
     up[zOffset] = (lr * x[xOffset]) / (math::sd_sqrt<T, T>(st[stOffset]) + epsilon);

@@ -113,17 +113,18 @@ SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void
 
   LongType coords[SD_MAX_RANK];
 
-  for (LongType m = blockIdx.x; m < zLen;
-       m += gridDim.x) {  // one block per each element of z, that is per each matrix
+  for (LongType m = blockIdx.x; m < zLen; m += gridDim.x) {  // one block per each element of z, that is per each matrix
 
-    shape::index2coords(m, zShapeInfo, coords);
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+    INDEX2COORDS(m, zRank, zShapeInfo, coords);
+    LongType zOffset;
+    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
     sharedMem[threadIdx.x] = 0;
 
     for (LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
       coords[zRank] = coords[zRank + 1] = i;
-      const auto xOffset = shape::getOffset(xShapeInfo, coords);
+      LongType xOffset;
+      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
       sharedMem[threadIdx.x] += x[xOffset];
     }
 
@@ -139,7 +140,6 @@ SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void
     __syncthreads();
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -195,14 +195,18 @@ SD_KERNEL static void triuBPCuda(const void* vx, const LongType* xShapeInfo, voi
   const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    shape::index2coords(i, zShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+    sd::LongType zOffset;
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
 
     if ((coords[rank - 2] + diag > coords[rank - 1]))  // row + diag > col
       z[zOffset] = 0;
-    else
-      z[zOffset] = x[areSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords)];
+    else {
+      sd::LongType xOffset;
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      z[zOffset] = x[areSameOffsets ? zOffset : xOffset];
+    }
   }
 }
 

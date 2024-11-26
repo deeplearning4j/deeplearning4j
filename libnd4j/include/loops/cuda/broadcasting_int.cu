@@ -171,22 +171,12 @@ SD_DEVICE void BroadcastInt<X>::transformInverseCuda(
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  // decompose in to several sub tads after
-  // moving all dimensions (in sorted order)
-  // to the back.
-  // permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType xEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
     tadLength = shape::length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
-    xEWS = shape::elementWiseStride(xShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
   }
   __syncthreads();
 
@@ -194,17 +184,16 @@ SD_DEVICE void BroadcastInt<X>::transformInverseCuda(
     auto rZ = z + tadOffsetsZ[r];
     auto rY = y + tadOffsets[r];
 
-    if (tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1) {
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS]);
-    } else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xOffset, yOffset, zOffset;
+      sd::LongType coords[SD_MAX_RANK];
 
-        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
-      }
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords, yOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), coords, zOffset);
+
+      rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
     }
   }
 }
@@ -226,22 +215,12 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(void const* vx, sd::LongType const
   auto y = reinterpret_cast<X const*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  // decompose in to several sub tads after
-  // moving all dimensions (in sorted order)
-  // to the back.
-  // permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType yEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
     tadLength = shape::length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(xShapeInfo) / tadLength;
-    yEWS = shape::elementWiseStride(yShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
   }
   __syncthreads();
 
@@ -255,17 +234,16 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(void const* vx, sd::LongType const
     }
     __syncthreads();
 
-    if (tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
-    } else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-        auto yOffset = shape::getIndexOffset(i, yShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xOffset, yOffset, zOffset;
+      sd::LongType coords[SD_MAX_RANK];
 
-        rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
-      }
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, coords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), coords, zOffset);
+
+      rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
     }
   }
 }
@@ -273,9 +251,9 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(void const* vx, sd::LongType const
 //////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_DEVICE void BroadcastInt<X>::transformCuda(const void* vx, const sd::LongType const* xShapeInfo, const void* vy,
-                                              const sd::LongType const* yShapeInfo, void* vz,
-                                              const sd::LongType const* zShapeInfo) {
+SD_DEVICE void BroadcastInt<X>::transformCuda(const void* vx, const sd::LongType* xShapeInfo, const void* vy,
+                                              const sd::LongType* yShapeInfo, void* vz,
+                                              const sd::LongType* zShapeInfo) {
   const X* x = reinterpret_cast<const X*>(vx);
   const X* y = reinterpret_cast<const X*>(vy);
   X* z = reinterpret_cast<X*>(vz);
@@ -298,11 +276,12 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(const void* vx, const sd::LongType
   sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
-    shape::index2coords(i, zShapeInfo, coords);
+    INDEX2COORDS(i, rank, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
-    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
-    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
+    sd::LongType zOffset, xOffset, yOffset;
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    xOffset = xzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    yOffset = yzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
 
     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
   }

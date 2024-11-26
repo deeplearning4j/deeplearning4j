@@ -58,16 +58,19 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
-    shape::index2coords(i, xShapeInfo, coords);
+    INDEX2COORDS(i, xShapeInfo, coords);
 
-    const auto xzOffset = shape::getOffset(xShapeInfo, coords);
+    LongType xzOffset;
+    COORDS2INDEX(xzRank, shape::shapeOf(xShapeInfo), coords, xzOffset);
     const auto xVal = x[xzOffset];
 
     if (xVal < 0) {
       for (LongType j = 0; j < yRank; ++j)
         if (yShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
-      z[xzOffset] = xVal * y[shape::getOffset(yShapeInfo, coords + 1)];
+      LongType yOffset;
+      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords + 1, yOffset);
+      z[xzOffset] = xVal * y[yOffset];
     } else
       z[xzOffset] = xVal;
   }
@@ -131,11 +134,12 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < inLen; i += totalThreads) {
-    shape::index2coords(i, inShapeInfo, coords);
+    INDEX2COORDS(i, inRank, inShapeInfo, coords);
 
-    const auto inOffset = shape::getOffset(inShapeInfo, coords);
-    const auto dLdOOffset = shape::getOffset(dLdOShapeInfo, coords);
-    const auto dLdIOffset = shape::getOffset(dLdIShapeInfo, coords);
+    LongType inOffset, dLdOOffset, dLdIOffset;
+    COORDS2INDEX(inRank, shape::shapeOf(inShapeInfo), coords, inOffset);
+    COORDS2INDEX(inRank, shape::shapeOf(dLdOShapeInfo), coords, dLdOOffset);
+    COORDS2INDEX(inRank, shape::shapeOf(dLdIShapeInfo), coords, dLdIOffset);
 
     const auto xVal = in[inOffset];
     const auto grO = dLdO[dLdOOffset];
@@ -144,8 +148,9 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
       for (LongType j = 0; j < alphaRank; ++j)
         if (alphaShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
-      const auto alphaOffset = shape::getOffset(alphaShapeInfo, coords + 1);
-      const auto dLdAOffset = shape::getOffset(dLdAShapeInfo, coords + 1);
+      LongType alphaOffset, dLdAOffset;
+      COORDS2INDEX(alphaRank, shape::shapeOf(alphaShapeInfo), coords + 1, alphaOffset);
+      COORDS2INDEX(alphaRank, shape::shapeOf(dLdAShapeInfo), coords + 1, dLdAOffset);
 
       dLdI[dLdIOffset] = grO * alpha[alphaOffset];
 

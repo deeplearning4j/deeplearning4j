@@ -92,50 +92,53 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::aggregatePartials(void *vsPartials, sd:
 template <typename X, typename Z>
 template <typename OpType>
 SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const sd::LongType *outerXTadShapeInfo, const sd::LongType *innerXTadShapeInfo,
-                                                        void *vextraParams, void *vreductionBuffer,
-                                                        void *vz, const sd::LongType *zShapeInfo) {
+                                                          void *vextraParams, void *vreductionBuffer,
+                                                          void *vz, const sd::LongType *zShapeInfo) {
 
-    auto x = reinterpret_cast<const X*>(vx);
-    auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
+  auto x = reinterpret_cast<const X*>(vx);
+  auto z = reinterpret_cast<Z*>(vz);
+  auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
-    //shared memory space for storing intermediate results
-    __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
-    __shared__  sd::LongType tadLen, numTads;
-    __shared__ bool sameOffsets;
+  //shared memory space for storing intermediate results
+  __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
+  __shared__  sd::LongType tadLen, numTads;
+  __shared__ bool sameOffsets;
 
-    if (threadIdx.x == 0) {
-        sameOffsets = shape::haveSameShapeAndStrides(zShapeInfo, outerXTadShapeInfo);
+  if (threadIdx.x == 0) {
+    sameOffsets = shape::haveSameShapeAndStrides(zShapeInfo, outerXTadShapeInfo);
 
-        tadLen  = shape::length(innerXTadShapeInfo);
-        numTads = shape::length(outerXTadShapeInfo);
+    tadLen  = shape::length(innerXTadShapeInfo);
+    numTads = shape::length(outerXTadShapeInfo);
+  }
+  __syncthreads();
+
+  sd::LongType coords[SD_MAX_RANK];
+
+  for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
+
+    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
+    sd::LongType outerOffset;
+    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
+    sd::LongType zOffset = sameOffsets ? outerOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+
+    const X* xTad = x + outerOffset;
+    sPartials[threadIdx.x] = OpType::startingValue(xTad);
+
+    for (int i = threadIdx.x; i < tadLen; i += blockDim.x) {
+      sd::LongType innerOffset;
+      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::shapeOf(innerXTadShapeInfo), coords, innerOffset);
+      sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(xTad[innerOffset], extraParams), extraParams);
     }
     __syncthreads();
 
-    sd::LongType coords[SD_MAX_RANK];
+    // aggregate. do NOT reduce for elements > tadLen
+    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLen), extraParams);
+    __syncthreads();
 
-    for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-
-        shape::index2coords(r, outerXTadShapeInfo, coords);
-        const auto outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
-        const auto zOffset = sameOffsets ? outerOffset : shape::getOffset(zShapeInfo, coords);
-
-        const X* xTad = x + outerOffset;
-        sPartials[threadIdx.x] = OpType::startingValue(xTad);
-
-        for (int i = threadIdx.x; i < tadLen; i += blockDim.x)
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(xTad[shape::getIndexOffset(i, innerXTadShapeInfo)], extraParams), extraParams);
-        __syncthreads();
-
-        // aggregate. do NOT reduce for elements > tadLen
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLen), extraParams);
-        __syncthreads();
-
-        if (threadIdx.x == 0)
-            z[zOffset] = OpType::postProcess(sPartials[threadIdx.x], tadLen, extraParams);
-    }
+    if (threadIdx.x == 0)
+      z[zOffset] = OpType::postProcess(sPartials[threadIdx.x], tadLen, extraParams);
+  }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>

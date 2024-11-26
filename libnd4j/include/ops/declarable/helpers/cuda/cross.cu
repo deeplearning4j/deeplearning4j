@@ -50,7 +50,7 @@ SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, cons
     totalThreads = gridDim.x * blockDim.x;
 
     rank = shape::rank(xShapeInfo);
-    lenWithoutLastDim = shape::length(xShapeInfo) / xShapeInfo[rank];  //  shape::length(xShapeInfo) / 3;
+    lenWithoutLastDim = shape::length(xShapeInfo) / xShapeInfo[rank];
   }
   __syncthreads();
 
@@ -58,35 +58,36 @@ SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, cons
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
-    shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
+    INDEX2COORDS(i, rank - 1, xShapeInfo + 1, coords);
 
     coords[rank - 1] = 0;
 
-    auto xOffset = shape::getOffset(xShapeInfo, coords);
-    auto yOffset = shape::getOffset(yShapeInfo, coords);
+    LongType xOffset, yOffset, zOffset;
+    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
 
     const auto x0 = x[xOffset];
     const auto y0 = y[yOffset];
 
-    xOffset += shape::stride(const_cast<LongType*>(xShapeInfo))[rank - 1];
-    yOffset += shape::stride(const_cast<LongType*>(yShapeInfo))[rank - 1];
+    xOffset += shape::stride(xShapeInfo)[rank - 1];
+    yOffset += shape::stride(yShapeInfo)[rank - 1];
 
     const auto x1 = x[xOffset];
     const auto y1 = y[yOffset];
 
-    xOffset += shape::stride(const_cast<LongType*>(xShapeInfo))[rank - 1];
-    yOffset += shape::stride(const_cast<LongType*>(yShapeInfo))[rank - 1];
+    xOffset += shape::stride(xShapeInfo)[rank - 1];
+    yOffset += shape::stride(yShapeInfo)[rank - 1];
 
     const auto x2 = x[xOffset];
     const auto y2 = y[yOffset];
 
-    auto zOffset = shape::getOffset(zShapeInfo, coords);
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
     z[zOffset] = x1 * y2 - x2 * y1;
 
-    zOffset += shape::stride(const_cast<LongType*>(zShapeInfo))[rank - 1];
+    zOffset += shape::stride(zShapeInfo)[rank - 1];
     z[zOffset] = x2 * y0 - x0 * y2;
 
-    zOffset += shape::stride(const_cast<LongType*>(zShapeInfo))[rank - 1];
+    zOffset += shape::stride(zShapeInfo)[rank - 1];
     z[zOffset] = x0 * y1 - x1 * y0;
   }
 }

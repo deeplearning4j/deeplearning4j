@@ -92,13 +92,13 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
 
   sd::LongType zDim = outArrs[0]->sizeAt(axis);
   // general case
-
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i += increment) {
-      shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
+      INDEX2COORDS(i, input.rankOf(), input.shapeInfo(), coords);
+      sd::LongType xOffset;
+      COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), coords, xOffset);
 
       sd::LongType outArrIdx = 0;
 
@@ -110,7 +110,8 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
       }
 
       T* z = outArrs[outArrIdx]->bufferAsT<T>();
-      const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(outArrs[outArrIdx]->rankOf(), shape::stride(outArrs[outArrIdx]->shapeInfo()), coords, zOffset);
       z[zOffset] = xBuff[xOffset];
 
       coords[axis] = temp;

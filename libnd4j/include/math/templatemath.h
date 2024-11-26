@@ -492,30 +492,240 @@ SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  return result;
 }
 
-// Similarly, add print statements to the rest of the functions and specializations...
-
-// For example, sd_isnan specializations:
-
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float16>(float16 value) {
- bool result = (value) == 0x7fffU;
- SD_PRINT_MATH_FUNC("sd_isnan<float16>", value, static_cast<float16>(result));
- return result;
+  bool result = *(value.data.getXP()) == 0x7fffU;
+  SD_PRINT_MATH_FUNC("sd_isnan<float16>", value, result);
+  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bfloat16>(bfloat16 value) {
- bool result = value == bfloat16::nan();  // 0x7fffU;
- SD_PRINT_MATH_FUNC("sd_isnan<bfloat16>", value, static_cast<bfloat16>(result));
- return result;
+  bool result = value == bfloat16::nan();  // 0x7fffU;
+  SD_PRINT_MATH_FUNC("sd_isnan<bfloat16>", value, result);
+  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float>(float value) {
- bool result = value != value;
- SD_PRINT_MATH_FUNC("sd_isnan<float>", value, static_cast<float>(result));
- return result;
+  bool result = value != value;
+  SD_PRINT_MATH_FUNC("sd_isnan<float>", value, result);
+  return result;
 }
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<double>(double value) {
+  bool result = value != value;
+  SD_PRINT_MATH_FUNC("sd_isnan<double>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int>(int value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<int>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint8_t>(uint8_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<uint8_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<int8_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<bool>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::LongType>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
+  bool result = value < (float16)-HALF_MAX_VALUE || value > (float16)HALF_MAX_VALUE;
+  SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
+  bool result = value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
+  SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
+#ifdef __CUDACC__
+  bool result = isinf(value);
+#else
+  bool result = std::isinf(value);
+#endif
+  SD_PRINT_MATH_FUNC("sd_isinf<float>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
+#ifdef __CUDACC__
+  bool result = isinf(value);
+#else
+  bool result = std::isinf(value);
+#endif
+  SD_PRINT_MATH_FUNC("sd_isinf<double>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int>(int value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<int>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<int8_t>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<bool>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::LongType>", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
+  bool result = false;
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result);
+  return result;
+}
+
+template <typename T>
+SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
+  bool result = !sd_isnan<T>(value) && !sd_isinf<T>(value);
+  SD_PRINT_MATH_FUNC("sd_isfin", value, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE float16 sd_copysign<float16>(float16 val1, float16 val2) {
+  float16 result = (float16)copysignf((float)val1, (float)val2);
+  SD_PRINT_MATH_FUNC2("sd_copysign<float16>", val1, val2, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE float sd_copysign<float>(float val1, float val2) {
+  float result = copysignf(val1, val2);
+  SD_PRINT_MATH_FUNC2("sd_copysign<float>", val1, val2, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE double sd_copysign<double>(double val1, double val2) {
+  double result = copysign(val1, val2);
+  SD_PRINT_MATH_FUNC2("sd_copysign<double>", val1, val2, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
+  int result = (val2 < 0) ? -(sd_abs<int,int>(val1)) : sd_abs<int,int>(val1);
+  SD_PRINT_MATH_FUNC2("sd_copysign<int>", val1, val2, result);
+  return result;
+}
+
+template <>
+SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
+  sd::LongType result = (val2 < 0) ? -(sd_abs<sd::LongType,sd::LongType>(val1)) : sd_abs<sd::LongType,sd::LongType>(val1);
+  SD_PRINT_MATH_FUNC2("sd_copysign<sd::LongType>", val1, val2, result);
+  return result;
+}
+
+
+
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {

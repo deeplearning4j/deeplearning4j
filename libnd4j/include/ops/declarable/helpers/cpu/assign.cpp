@@ -35,13 +35,13 @@ static void assign_(const void* vx, const sd::LongType* xShapeInfo,
   sd::LongType zCoords[SD_MAX_RANK];
 
   for (sd::LongType i = start; i < stop; i++) {
-    shape::index2coords(i, xShapeInfo, xCoords);
-    shape::index2coords(i, zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
 
-    auto xOffset = shape::getOffset(xShapeInfo, xCoords, xStart);
-    auto zOffset = shape::getOffset(zShapeInfo, zCoords, zStart);
+    sd::LongType xOffset, zOffset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
     z[zOffset] = static_cast<Z>(x[xOffset]);
-    printf("z[%lld] = x[%lld] values: %f %f\n", zOffset, xOffset, z[zOffset], x[xOffset]);
   }
 }
 

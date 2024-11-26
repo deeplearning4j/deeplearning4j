@@ -35,16 +35,21 @@ template <typename T>
 static SD_KERNEL void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inBuffer, LongType* inShape,
                                         LongType column, LongType rows, LongType columns) {
 
-
   for (auto i = blockIdx.x; i < rows; i += gridDim.x)
     for (auto j = threadIdx.x; j < columns; j += blockDim.x) {
       LongType pos[] = {i, j};
-      auto zIndex = shape::getOffset(outShape, pos);
-      auto xIndex = shape::getOffset(inShape, pos);
+
+      LongType zIndex;
+      COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), pos, zIndex);
+
+      LongType xIndex;
+      COORDS2INDEX(shape::rank(inShape), shape::stride(inShape), pos, xIndex);
+
       if (i < column || j < column) {
         outBuffer[zIndex] = i != j ? T(0.f) : T(1.f);
-      } else
+      } else {
         outBuffer[zIndex] = inBuffer[xIndex];  // m.t<T>(i,j) = in.t<T>(i,j);
+      }
     }
 }
 
@@ -65,9 +70,10 @@ static SD_KERNEL void vmulKernel(T* resBuf, const LongType* resShape, T const* v
   for (auto i = blockIdx.x; i < n; i += gridDim.x)
     for (auto j = threadIdx.x; j < n; j += blockDim.x) {
       LongType posR[] = {i, j};
-      auto indexR = shape::getOffset(resShape, posR);
-      auto indexX = shape::getIndexOffset(i, vShape);
-      auto indexY = shape::getIndexOffset(j, vShape);
+      LongType indexR, indexX, indexY;
+      COORDS2INDEX(shape::rank(resShape), shape::stride(resShape), posR, indexR);
+      COORDS2INDEX(1, shape::stride(vShape), &i, indexX);
+      COORDS2INDEX(1, shape::stride(vShape), &j, indexY);
 
       resBuf[indexR] = T(-2.f) * vBuff[indexX] * vBuff[indexY] + (i != j ? T(0.f) : T(1.f));
     }
@@ -91,7 +97,8 @@ template <typename T>
 static bool diagonalIsPositive(NDArray* matrix, LongType k) {
   T hVal;
   LongType pos[] = {k, k};
-  auto shift = shape::getOffset(matrix->shapeInfo(), pos);
+  LongType shift;
+  COORDS2INDEX(shape::rank(matrix->shapeInfo()), shape::stride(matrix->shapeInfo()), pos, shift);
   cudaMemcpy(&hVal, matrix->specialBuffer(), sizeof(T), cudaMemcpyDeviceToHost);
   return hVal > T(0.f);
 }

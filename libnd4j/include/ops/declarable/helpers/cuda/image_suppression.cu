@@ -54,20 +54,28 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
   LongType next2[] = {nextIndex, 2};
   LongType next3[] = {nextIndex, 3};
 
+  LongType prevOffset0, prevOffset1, prevOffset2, prevOffset3;
+  LongType nextOffset0, nextOffset1, nextOffset2, nextOffset3;
+
+  COORDS2INDEX(2, boxesShape + 1, previous0, prevOffset0);
+  COORDS2INDEX(2, boxesShape + 1, previous1, prevOffset1);
+  COORDS2INDEX(2, boxesShape + 1, previous2, prevOffset2);
+  COORDS2INDEX(2, boxesShape + 1, previous3, prevOffset3);
+  COORDS2INDEX(2, boxesShape + 1, next0, nextOffset0);
+  COORDS2INDEX(2, boxesShape + 1, next1, nextOffset1);
+  COORDS2INDEX(2, boxesShape + 1, next2, nextOffset2);
+  COORDS2INDEX(2, boxesShape + 1, next3, nextOffset3);
+
   // we have rectangle with given max values. Compute vexes of rectangle first
 
-  T minYPrev =
-      math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-  T minXPrev =
-      math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T maxYPrev =
-      math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-  T maxXPrev =
-      math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T minYNext = math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T minXNext = math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
-  T maxYNext = math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T maxXNext = math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+  T minYPrev = math::sd_min(boxes[prevOffset0], boxes[prevOffset2]);
+  T minXPrev = math::sd_min(boxes[prevOffset1], boxes[prevOffset3]);
+  T maxYPrev = math::sd_max(boxes[prevOffset0], boxes[prevOffset2]);
+  T maxXPrev = math::sd_max(boxes[prevOffset1], boxes[prevOffset3]);
+  T minYNext = math::sd_min(boxes[nextOffset0], boxes[nextOffset2]);
+  T minXNext = math::sd_min(boxes[nextOffset1], boxes[nextOffset3]);
+  T maxYNext = math::sd_max(boxes[nextOffset0], boxes[nextOffset2]);
+  T maxXNext = math::sd_max(boxes[nextOffset1], boxes[nextOffset3]);
 
   // compute areas for comparation
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -87,7 +95,6 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
   // final check
   return intersectionValue > threshold;
 }
-
 
 template <typename T>
 static  inline T similirityV3_(NDArray& boxes, LongType i, LongType j) {
@@ -127,20 +134,28 @@ static SD_DEVICE T similirityV3(T* boxes, LongType const* boxesShape, int previo
   LongType next2[] = {nextIndex, 2};
   LongType next3[] = {nextIndex, 3};
 
+  LongType prevOffset0, prevOffset1, prevOffset2, prevOffset3;
+  LongType nextOffset0, nextOffset1, nextOffset2, nextOffset3;
+
+  COORDS2INDEX(2, boxesShape + 1, previous0, prevOffset0);
+  COORDS2INDEX(2, boxesShape + 1, previous1, prevOffset1);
+  COORDS2INDEX(2, boxesShape + 1, previous2, prevOffset2);
+  COORDS2INDEX(2, boxesShape + 1, previous3, prevOffset3);
+  COORDS2INDEX(2, boxesShape + 1, next0, nextOffset0);
+  COORDS2INDEX(2, boxesShape + 1, next1, nextOffset1);
+  COORDS2INDEX(2, boxesShape + 1, next2, nextOffset2);
+  COORDS2INDEX(2, boxesShape + 1, next3, nextOffset3);
+
   // we have rectangle with given max values. Compute vexes of rectangle first
 
-  T minYPrev =
-      math::sd_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-  T minXPrev =
-      math::sd_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T maxYPrev =
-      math::sd_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-  T maxXPrev =
-      math::sd_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-  T minYNext = math::sd_min(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T minXNext = math::sd_min(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
-  T maxYNext = math::sd_max(boxes[shape::getOffset(boxesShape, next0)], boxes[shape::getOffset(boxesShape, next2)]);
-  T maxXNext = math::sd_max(boxes[shape::getOffset(boxesShape, next1)], boxes[shape::getOffset(boxesShape, next3)]);
+  T minYPrev = math::sd_min(boxes[prevOffset0], boxes[prevOffset2]);
+  T minXPrev = math::sd_min(boxes[prevOffset1], boxes[prevOffset3]);
+  T maxYPrev = math::sd_max(boxes[prevOffset0], boxes[prevOffset2]);
+  T maxXPrev = math::sd_max(boxes[prevOffset1], boxes[prevOffset3]);
+  T minYNext = math::sd_min(boxes[nextOffset0], boxes[nextOffset2]);
+  T minXNext = math::sd_min(boxes[nextOffset1], boxes[nextOffset3]);
+  T maxYNext = math::sd_max(boxes[nextOffset0], boxes[nextOffset2]);
+  T maxXNext = math::sd_max(boxes[nextOffset1], boxes[nextOffset3]);
 
   // compute areas for comparator
   T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -302,7 +317,8 @@ static SD_DEVICE bool checkOverlapBoxes(T* boxes, LongType const* shape, T* scor
     T boxVal;
     if (simple) {
       LongType xPos[] = {selectedIndex, selectedIndices[j - 1]};
-      auto xShift = shape::getOffset(shape, xPos, 0);
+      LongType xShift;
+      COORDS2INDEX(shape::rank(shape), shape::stride(shape), xPos, xShift);
       boxVal = boxes[xShift];
     } else {
       boxVal = similirityV3(boxes, shape, selectedIndex, selectedIndices[j - 1]);

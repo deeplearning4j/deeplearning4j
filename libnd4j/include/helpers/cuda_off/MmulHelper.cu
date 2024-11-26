@@ -75,7 +75,7 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
 
   for (LongType i = tid; i < cLen; i += totalThreads) {
     // evaluate C coordinates
-    shape::index2coords(i, cShapeInfo, cCoords);
+    INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords);
 
     // evaluate A coordinates
     aCoords[aMaxis] = cCoords[cMaxis];
@@ -85,8 +85,9 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
     bCoords[bKaxis] = 0;
     bCoords[bNaxis] = cCoords[cNaxis];
 
-    auto aOffset = shape::getOffset(aShapeInfo, aCoords);
-    auto bOffset = shape::getOffset(bShapeInfo, bCoords);
+    LongType aOffset, bOffset, cOffset;
+    COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords, aOffset);
+    COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords, bOffset);
 
     T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -96,7 +97,7 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
       val = val + A[aOffset] * B[bOffset];
     }
 
-    auto cOffset = shape::getOffset(cShapeInfo, cCoords);
+    COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords, cOffset);
 
     if (betaPresent)
       C[cOffset] = alphaZ * val + betaZ * C[cOffset];
@@ -104,7 +105,6 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
       C[cOffset] = alphaZ * val;
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename T1, typename T2, typename T3>
 SD_HOST static void usualGemm(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -566,24 +566,25 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
 
   for (LongType i = tid; i < cLen; i += totalThreads) {
     // evaluate C coordinates
-    shape::index2coords(i, cShapeInfo, cCoords);
+    INDEX2COORDS(i, cRank, cShapeInfo, cCoords);
 
     // calculate index of current batch
     LongType batchInd;
-    if (cBatchDims != nullptr) batchInd = shape::coords2index(cShapeInfo, cBatchDims, cRank - 2, cCoords);
+    if (cBatchDims != nullptr) COORDS2INDEX(cRank - 2, shape::shapeOf(cShapeInfo), cCoords, batchInd);
 
     // evaluate A coordinates
-    if (aBatchDims != nullptr) shape::index2coords(batchInd, aShapeInfo, aBatchDims, aRank - 2, aCoords);
+    if (aBatchDims != nullptr) INDEX2COORDS(batchInd, aRank - 2, aShapeInfo, aCoords);
     aCoords[aMaxis] = cCoords[cMaxis];
     aCoords[aKaxis] = 0;
 
     // evaluate B coordinates
-    if (bBatchDims != nullptr) shape::index2coords(batchInd, bShapeInfo, bBatchDims, bRank - 2, bCoords);
+    if (bBatchDims != nullptr) INDEX2COORDS(batchInd, bRank - 2, bShapeInfo, bCoords);
     bCoords[bKaxis] = 0;
     bCoords[bNaxis] = cCoords[cNaxis];
 
-    auto aOffset = shape::getOffset(aShapeInfo, aCoords);
-    auto bOffset = shape::getOffset(bShapeInfo, bCoords);
+    LongType aOffset, bOffset, cOffset;
+    COORDS2INDEX(aRank, shape::shapeOf(aShapeInfo), aCoords, aOffset);
+    COORDS2INDEX(bRank, shape::shapeOf(bShapeInfo), bCoords, bOffset);
 
     T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -593,7 +594,7 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
       val = val + A[aOffset] * B[bOffset];
     }
 
-    auto cOffset = shape::getOffset(cShapeInfo, cCoords);
+    COORDS2INDEX(cRank, shape::shapeOf(cShapeInfo), cCoords, cOffset);
 
     if (betaPresent)
       C[cOffset] = alphaZ * val + betaZ * C[cOffset];

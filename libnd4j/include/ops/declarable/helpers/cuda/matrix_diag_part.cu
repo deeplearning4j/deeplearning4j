@@ -55,11 +55,14 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
     auto xOffset = tadOutputOffsets[i];
     for (LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
       LongType coords[2] = {j, j};
-      LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
-      *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
+      LongType tadOffset, indexOffset;
+      COORDS2INDEX(shape::rank(tadOnlyInputShapeInfo), shape::stride(tadOnlyInputShapeInfo), coords, tadOffset);
+      COORDS2INDEX(shape::rank(tadOnlyOutputShapeInfo), shape::stride(tadOnlyOutputShapeInfo), coords, indexOffset);
+      *(reinterpret_cast<T*>(outputBuffer) + xOffset + indexOffset) =
           *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
     }
   }
+}
 }
 
 //////////////////////////////////////////////////////////////////////////

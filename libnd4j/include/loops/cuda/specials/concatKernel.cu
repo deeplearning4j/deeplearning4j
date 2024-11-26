@@ -42,50 +42,39 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
   __shared__ int yLength;
   __shared__ char yOrder;
-  __shared__ int yEWS;
 
   char zOrder = shape::order(resultShapeInfo);
 
-  int zEWS = shape::elementWiseStride(resultShapeInfo);
-  int tadEWS = shape::elementWiseStride(zTadShape);
   int zLength = shape::length(resultShapeInfo);
 
   __shared__ int arrOffset;
   __shared__ int numTads;
 
   if (shape::isVector(resultShapeInfo)) {
-    if (zEWS >= 1) {
-      for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
-        if (shape::isVector(shapeInfoPointers[r]) ||
-            shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
-          yLength = shape::length(shapeInfoPointers[r]);
-          yEWS = shape::elementWiseStride(shapeInfoPointers[r]);
-          // FIXME: this is bad
-          __shared__ int baseIdx;
-          if (threadIdx.x == 0) {
-            baseIdx = 0;
-            for (int f = 0; f < r; f++) {
-              baseIdx += shape::length(shapeInfoPointers[f]);
-            }
+    for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+      if (shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
+        yLength = shape::length(shapeInfoPointers[r]);
+        __shared__ int baseIdx;
+        if (threadIdx.x == 0) {
+          baseIdx = 0;
+          for (int f = 0; f < r; f++) {
+            baseIdx += shape::length(shapeInfoPointers[f]);
           }
-          __syncthreads();
-          for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
-            result[baseIdx + i * zEWS] = dataT[r][i * yEWS];
-          }
-          __syncthreads();
-        } else {
-          if (tid == 0) printf("Non-matched order for vector\n");
         }
+        __syncthreads();
+        for (int i = threadIdx.x; i < yLength && baseIdx + i < zLength; i += blockDim.x) {
+          result[baseIdx + i] = dataT[r][i];
+        }
+        __syncthreads();
+      } else {
+        if (tid == 0) printf("Non-matched order for vector\n");
       }
-    } else {
-      if (tid == 0) printf("Vector Non-1 zEWS\n");
     }
     return;
   }
 
   bool _vec = shape::isVector(resultShapeInfo);
 
-  // TODO: to be pulled into separate kernel. matrix concatenation
   for (int r = 0; r < numArrays; r++) {
     auto currentShape = shapeInfoPointers[r];
     auto currentData = dataT[r];
@@ -95,20 +84,16 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
     if (threadIdx.x == 0) {
       yLength = shape::length(currentTad);
       yOrder = shape::order(currentTad);
-      yEWS = shape::elementWiseStride(currentTad);
       numTads = shape::length(currentShape) / yLength;
 
       arrOffset = 0;
       for (int f = 0; f < r; f++) {
         arrOffset += shape::length(tadShapes[f]);
       }
-
-
     }
     __syncthreads();
 
     if (yLength == 1 && _vec) {
-      // edge case, each thread will handle it's own tad then
       for (LongType j = tid; j < numTads; j += blockDim.x * gridDim.x) {
         LongType inputOffset = currentOffsets[j];
         LongType resultOffset = zOffsets[j];
@@ -118,25 +103,25 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
         LongType sub[SD_MAX_RANK];
 
-        shape::index2coords(arrOffset, zTadShape, sub);
+        INDEX2COORDS(arrOffset, shape::rank(zTadShape), zTadShape, sub);
 
-        LongType baseOffset = shape::getOffset(zTadShape, sub);
+        LongType baseOffset;
+        COORDS2INDEX(shape::rank(zTadShape), shape::shapeOf(zTadShape), sub, baseOffset);
 
         resultTAD += baseOffset;
 
         auto yRank = shape::rank(currentTad);
         auto tadRank = shape::rank(zTadShape);
 
-        shape::index2coords(0, currentTad, sub);
+        INDEX2COORDS(0, yRank, currentTad, sub);
 
-        auto yOffset = shape::getOffset(currentTad, sub);
-        resultOffset = shape::getOffset(zTadShape, sub);
+        LongType yOffset;
+        COORDS2INDEX(yRank, shape::shapeOf(currentTad), sub, yOffset);
+        COORDS2INDEX(tadRank, shape::shapeOf(zTadShape), sub, resultOffset);
 
         resultTAD[resultOffset] = dataTAD[yOffset];
       }
     } else {
-
-
       for (LongType j = blockIdx.x; j < numTads; j += gridDim.x) {
         auto inputOffset = currentOffsets[j];
         auto resultOffset = zOffsets[j];
@@ -146,18 +131,18 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
         LongType sub[SD_MAX_RANK];
 
-        shape::index2coords(arrOffset, zTadShape, sub);
-        LongType baseOffset = shape::getOffset(zTadShape, sub);
+        INDEX2COORDS(arrOffset, shape::rank(zTadShape), zTadShape, sub);
+        LongType baseOffset;
+        COORDS2INDEX(shape::rank(zTadShape), shape::shapeOf(zTadShape), sub, baseOffset);
 
         resultTAD += baseOffset;
 
-        if (zOrder == yOrder && yEWS > 0 && tadEWS > 0) {
+        if (zOrder == yOrder) {
           for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
-            resultTAD[i * tadEWS] = dataTAD[i * yEWS];
+            resultTAD[i] = dataTAD[i];
           }
         } else {
-          if (tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-
+          if (shape::order(resultShapeInfo) == shape::order(currentTad)) {
             if (threadIdx.x == 0) {
               baseIdx = 0;
               for (int f = 0; f < r; f++) {
@@ -168,17 +153,18 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
             if (numTads == 1) {
               for (int k = threadIdx.x; k < yLength; k += blockDim.x) {
-                resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
+                resultTAD[baseIdx + k] = dataTAD[k];
               }
             } else {
               LongType yIdx[SD_MAX_RANK];
               auto yRank = shape::rank(currentTad);
 
               for (LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
-                shape::index2coords(i, currentTad, yIdx);
-                auto yOffset = shape::getOffset(currentTad, yIdx);
+                INDEX2COORDS(i, yRank, currentTad, yIdx);
+                LongType yOffset;
+                COORDS2INDEX(yRank, shape::shapeOf(currentTad), yIdx, yOffset);
 
-                resultTAD[baseIdx + i * tadEWS] = dataTAD[yOffset];
+                resultTAD[baseIdx + i] = dataTAD[yOffset];
               }
             }
             __syncthreads();
@@ -187,11 +173,12 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
             LongType yIdx[SD_MAX_RANK];
 
             for (LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
-              shape::index2coords(i, currentTad, yIdx);
-              shape::index2coords(i, zTadShape, zIdx);
+              INDEX2COORDS(i, shape::rank(currentTad), currentTad, yIdx);
+              INDEX2COORDS(i, shape::rank(zTadShape), zTadShape, zIdx);
 
-              auto yOffset = shape::getOffset(currentTad, yIdx);
-              auto resultOffset = shape::getOffset(zTadShape, zIdx);
+              LongType yOffset;
+              COORDS2INDEX(shape::rank(currentTad), shape::shapeOf(currentTad), yIdx, yOffset);
+              COORDS2INDEX(shape::rank(zTadShape), shape::shapeOf(zTadShape), zIdx, resultOffset);
 
               resultTAD[resultOffset] = dataTAD[yOffset];
             }
@@ -203,7 +190,6 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
     __syncthreads();
   }
 }
-
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL void execConcatKernel(int numArrays, Pointer *data, Pointer *inputShapeInfos, void *vz, LongType *zShapeInfo,

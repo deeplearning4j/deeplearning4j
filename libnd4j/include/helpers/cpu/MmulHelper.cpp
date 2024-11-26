@@ -33,21 +33,20 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
 template <typename T1, typename T2, typename T3>
-static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
-                       const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
-                       const double beta) {
+static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, const int aKaxis,
+                      const int bKaxis, const int bNaxis, const int cMaxis, const int cNaxis, const double alpha,
+                      const double beta) {
   T1* A = vA->bufferAsT<T1>();
   T2* B = vB->bufferAsT<T2>();
   T3* C = vC->bufferAsT<T3>();
-  if(A == nullptr) {
+  if (A == nullptr) {
     THROW_EXCEPTION("usualGemm: A is nullptr");
   }
-  if(B == nullptr) {
+  if (B == nullptr) {
     THROW_EXCEPTION("usualGemm: B is nullptr");
   }
-  if(C == nullptr) {
+  if (C == nullptr) {
     THROW_EXCEPTION("usualGemm: C is nullptr");
-
   }
 
   const T3 alphaZ = alpha;
@@ -65,30 +64,26 @@ static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis,
   const sd::LongType cLen = vC->lengthOf();
   const int K = vA->sizeAt(aKaxis);
 
-
   auto func = PRAGMA_THREADS_FOR {
-    std::vector<sd::LongType> aCoords(2), bCoords(2), cCoords(2);
+    std::vector<sd::LongType> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
     for (auto i = start; i < stop; i++) {
       // evaluate C coordinates
-      shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
-
+      INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords.data());
 
       // evaluate A coordinates
       aCoords[aMaxis] = cCoords[cMaxis];
       aCoords[aKaxis] = 0;
 
-
       // evaluate B coordinates
       bCoords[bKaxis] = 0;
       bCoords[bNaxis] = cCoords[cNaxis];
 
-      auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
-      auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
+      sd::LongType aOffset, bOffset, cOffset;
+      COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords.data(), aOffset);
+      COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords.data(), bOffset);
 
-      T3 aVal= A[aOffset];
-      T3 bVal= B[bOffset];
-      T3 val = aVal * bVal;  // first iteration
+      T3 val = A[aOffset] * B[bOffset];  // first iteration
 
       for (int j = 1; j < K; j++) {  // rest iterations
         aOffset += shape::stride(aShapeInfo)[aKaxis];
@@ -96,11 +91,10 @@ static void usualGemm( NDArray* vA,  NDArray* vB, NDArray* vC, const int aMaxis,
         val += A[aOffset] * B[bOffset];
       }
 
-      auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
+      COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data(), cOffset);
       if (betaPresent) {
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
       } else {
-
         C[cOffset] = alphaZ * val;
       }
     }
@@ -480,24 +474,25 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
 
     for (sd::LongType i = start; i < stop; ++i) {
       // evaluate C coordinates
-      shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
+      INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords.data());
 
       // calculate index of current batch
       sd::LongType batchInd;
-      if (cRank > 2) batchInd = shape::coords2index(cShapeInfo, cBatchDims, cRank - 2, cCoords.data());
+      if (cRank > 2) COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data(), batchInd);
 
       // evaluate A coordinates
-      if (aRank > 2) shape::index2coords(batchInd, aShapeInfo, aBatchDims, aRank - 2, aCoords.data());
+      if (aRank > 2) INDEX2COORDS(batchInd, shape::rank(aShapeInfo), aShapeInfo, aCoords.data());
       aCoords[aMaxis] = cCoords[cMaxis];
       aCoords[aKaxis] = 0;
 
       // evaluate B coordinates
-      if (bRank > 2) shape::index2coords(batchInd, bShapeInfo, bBatchDims, bRank - 2, bCoords.data());
+      if (bRank > 2) INDEX2COORDS(batchInd, shape::rank(bShapeInfo), bShapeInfo, bCoords.data());
       bCoords[bKaxis] = 0;
       bCoords[bNaxis] = cCoords[cNaxis];
 
-      auto aOffset = shape::getOffset(aShapeInfo, aCoords.data());
-      auto bOffset = shape::getOffset(bShapeInfo, bCoords.data());
+      sd::LongType aOffset, bOffset, cOffset;
+      COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords.data(), aOffset);
+      COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords.data(), bOffset);
 
       T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -507,7 +502,7 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
         val = val + A[aOffset] * B[bOffset];
       }
 
-      auto cOffset = shape::getOffset(cShapeInfo, cCoords.data());
+      COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data(), cOffset);
 
       if (betaPersent)
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
@@ -518,7 +513,6 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
 
   samediff::Threads::parallel_tad(func, 0, cLen);
 }
-
 //////////////////////////////////////////////////////////////////////////
 NDArray* MmulHelper::mmulNxN( NDArray* A,  NDArray* B, NDArray* C, const double alpha, const double beta,
                               const char outOrder) {

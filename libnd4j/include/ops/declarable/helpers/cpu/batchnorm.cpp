@@ -141,30 +141,44 @@ static void batchnorm2_(NDArray* input, NDArray* mean, NDArray* variance, NDArra
         ++j;
 
     for (sd::LongType i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, input->shapeInfo(), xzCoords);
+      INDEX2COORDS(i, xRank, input->shapeInfo(), xzCoords);
 
-      const auto xOffset = shape::getOffset(input->shapeInfo(), xzCoords);
-      const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->shapeInfo(), xzCoords);
+      sd::LongType xOffset;
+      COORDS2INDEX(xRank, shape::shapeOf(input->shapeInfo()), xzCoords, xOffset);
+      sd::LongType zOffset = xzSameOffset ? xOffset : 0;
+      if (!xzSameOffset) {
+        COORDS2INDEX(xRank, shape::shapeOf(output->shapeInfo()), xzCoords, zOffset);
+      }
 
       if (minRank == xRank) {
         for (sd::LongType j = 0; j < numAxes; ++j) minCoords[axes[j]] = xzCoords[axes[j]];
       } else  // minRank = numAxes = 1 in this case
         minCoords[0] = xzCoords[axes[0]];
 
-      const auto meanOffset = shape::getOffset(mean->shapeInfo(), minCoords);
-      const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->shapeInfo(), minCoords);
+      sd::LongType meanOffset, varianceOffset;
+      COORDS2INDEX(minRank, shape::shapeOf(mean->shapeInfo()), minCoords, meanOffset);
+      varianceOffset = paramSameOffset ? meanOffset : 0;
+      if (!paramSameOffset) {
+        COORDS2INDEX(minRank, shape::shapeOf(variance->shapeInfo()), minCoords, varianceOffset);
+      }
 
       T sigmaInvGam = 1. / sd::math::sd_sqrt<T, T>(v[varianceOffset] + epsilon);
 
       if (g != nullptr) {
-        const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->shapeInfo(), minCoords);
+        sd::LongType gammaOffset = paramSameOffset ? meanOffset : 0;
+        if (!paramSameOffset) {
+          COORDS2INDEX(minRank, shape::shapeOf(gamma->shapeInfo()), minCoords, gammaOffset);
+        }
         sigmaInvGam *= g[gammaOffset];
       }
 
       z[zOffset] = (x[xOffset] - m[meanOffset]) * sigmaInvGam;
 
       if (b != nullptr) {
-        const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->shapeInfo(), minCoords);
+        sd::LongType betaOffset = paramSameOffset ? meanOffset : 0;
+        if (!paramSameOffset) {
+          COORDS2INDEX(minRank, shape::shapeOf(beta->shapeInfo()), minCoords, betaOffset);
+        }
         z[zOffset] += b[betaOffset];
       }
     }
@@ -172,7 +186,6 @@ static void batchnorm2_(NDArray* input, NDArray* mean, NDArray* variance, NDArra
 
   samediff::Threads::parallel_for(func, 0, input->lengthOf());
 }
-
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,
                NDArray* beta, NDArray* output, const std::vector<LongType>& axes, const double epsilon) {

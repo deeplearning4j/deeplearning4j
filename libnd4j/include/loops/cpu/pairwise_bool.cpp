@@ -67,97 +67,101 @@ void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, const sd::LongT
 template <typename X, typename Z>
 template <typename OpType>
 void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
-                                      const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                      void *vextraParams, sd::LongType start, sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto y = reinterpret_cast<const X *>(vy);
- auto z = reinterpret_cast<Z *>(vz);
- auto extraParams = reinterpret_cast<X *>(vextraParams);
+                                       const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
+                                       void *vextraParams, sd::LongType start, sd::LongType stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const X *>(vy);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
- sd::LongType n = shape::length(xShapeInfo);
- sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
- sd::LongType yEws = shape::elementWiseStride(yShapeInfo);
- sd::LongType zEws = shape::elementWiseStride(zShapeInfo);
+  sd::LongType n = shape::length(xShapeInfo);
 
- if (shape::isScalar(yShapeInfo)) {
-   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       sd::LongType offset = shape::getOffset(xShapeInfo, coords);
-       z[offset] = OpType::op(x[offset], y[0], extraParams);
-     };
-   } else {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
-       sd::LongType zOffset = shape::getOffset(zShapeInfo, coords);
-       z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
-     };
-   }
-   return;
- }
+  if (shape::isScalar(yShapeInfo)) {
+    if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        z[offset] = OpType::op(x[offset], y[0], extraParams);
+      };
+    } else {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType xOffset, zOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
+      };
+    }
+    return;
+  }
 
- const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
- const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
- const bool isSameLength = shape::length(xShapeInfo) == shape::length(yShapeInfo);
- if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
-   exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
- } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
-            !sameShapesXY && isSameLength) {  // not same shape, same length array
-   exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
- } else {
-   if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
-       shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       sd::LongType offset = shape::getOffset(xShapeInfo, coords);
-       z[offset] = OpType::op(x[offset], y[offset], extraParams);
-     };
-   } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto offset = shape::getOffset(xShapeInfo, coords);
-       auto zOffset = shape::getOffset(zShapeInfo, coords);
-       z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
-     };
-   } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto offset = shape::getOffset(xShapeInfo, coords);
-       auto yOffset = shape::getOffset(yShapeInfo, coords);
-       z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
-     };
-   } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, yShapeInfo, coords);
-       sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
-       sd::LongType offset = shape::getOffset(yShapeInfo, coords);
-       z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
-     };
-   } else {
-     PRAGMA_OMP_SIMD
-     for (sd::LongType i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, zShapeInfo, coords);
-       sd::LongType xOffset = shape::getOffset(xShapeInfo, coords);
-       sd::LongType yOffset = shape::getOffset(yShapeInfo, coords);
-       sd::LongType zOffset = shape::getOffset(zShapeInfo, coords);
-       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-     };
-   }
- }
+  const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+  const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
+  const bool isSameLength = shape::length(xShapeInfo) == shape::length(yShapeInfo);
+  if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
+    exec<OpType>(x, 1, y, 1, z, 1, extraParams, n, start, stop);
+  } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
+             !sameShapesXY && isSameLength) {  // not same shape, same length array
+    exec<OpType>(x, 1, y, 1, z, 1, extraParams, shape::length(yShapeInfo), start, stop);
+  } else {
+    if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
+        shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        z[offset] = OpType::op(x[offset], y[offset], extraParams);
+      };
+    } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType offset, zOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
+      };
+    } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType offset, yOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+        z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
+      };
+    } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, coords);
+        sd::LongType xOffset, offset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, offset);
+        z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
+      };
+    } else {
+      PRAGMA_OMP_SIMD
+      for (sd::LongType i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
+        sd::LongType xOffset, yOffset, zOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+      };
+    }
+  }
 }
 
 BUILD_DOUBLE_TEMPLATE(template class PairWiseBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);

@@ -39,7 +39,7 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongTyp
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
 
-  __shared__ LongType colLen, imLen,iH, iW;
+  __shared__ LongType colLen, imLen, iH, iW;
   __shared__ LongType imRank, colRank;
 
   if (threadIdx.x == 0) {
@@ -55,29 +55,27 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongTyp
 
   const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
 
-
   LongType coords[SD_MAX_RANK];
 
-  shape::index2coords(colInd, colShapeInfo, coords);
+  INDEX2COORDS(colInd, colRank, colShapeInfo, coords);
 
-  const auto colOffset = shape::getOffset(colShapeInfo, coords);
+  LongType colOffset;
+  COORDS2INDEX(colRank, shape::shapeOf(colShapeInfo), coords, colOffset);
 
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
-
   if (static_cast<LongType>(coords[2]) >= static_cast<LongType>(iH) ||
       static_cast<LongType>(coords[3]) >= static_cast<LongType>(iW) ||
-      coords[2] < 0 || coords[3] < 0)
-   if(colOffset < colLen)
-    col[colOffset] = zeroPadVal;
-  else {
-    auto imOffset = shape::getOffset(imShapeInfo, coords);
-    if(imOffset < imLen && colOffset < colLen)
+      coords[2] < 0 || coords[3] < 0) {
+    if (colOffset < colLen)
+      col[colOffset] = zeroPadVal;
+  } else {
+    LongType imOffset;
+    COORDS2INDEX(imRank, shape::shapeOf(imShapeInfo), coords, imOffset);
+    if (imOffset < imLen && colOffset < colLen)
       col[colOffset] = im[imOffset];
   }
-
-
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -61,9 +61,12 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
   auto xCoords = coords + threadIdx.x * xRank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, xShapeInfo, xCoords);
+    INDEX2COORDS(i, xRank, xShapeInfo, xCoords);
 
-    const LongType currentInd = x[shape::getOffset(xShapeInfo, xCoords)];
+    LongType xOffset;
+    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), xCoords, xOffset);
+
+    const LongType currentInd = x[xOffset];
 
     if (currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
       printf("checkIndices cuda: out of range element %lld at index %lld \n", currentInd, i);
@@ -74,7 +77,6 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
 
   if (threadIdx.x == 0 && numOfBadIndxPerBlock != 0) sd::math::atomics::sd_atomicAdd<LongType>(y, numOfBadIndxPerBlock);
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X>
 static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -141,7 +143,7 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const Lo
                (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
                (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
 
-    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] = shape::stride(yShapeInfo)[yNonUnitDim];
+    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] == shape::stride(yShapeInfo)[yNonUnitDim];
   }
   __syncthreads();
 
@@ -152,30 +154,30 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const Lo
     if (!is1Dcase) {
       yCoords = coords + threadIdx.x * (yRank + zRank);
       zCoords = yCoords + yRank;
-      shape::index2coords(i, zShapeInfo, zCoords);
+      INDEX2COORDS(i, zRank, zShapeInfo, zCoords);
     }
 
     for (LongType j = 0; j < xLen; ++j) {
       if (is1Dcase) {
         yOffset = j * shape::stride(yShapeInfo)[yNonUnitDim];
-        zFirstCoord = x[xySameStride ? yOffset : j * shape::stride(xShapeInfo)[xNonUnitDim]];
+        zFirstCoord = x[xySameStride ? yOffset : j];
 
         if (i != zFirstCoord) continue;
 
         zOffset = i * shape::stride(zShapeInfo)[zNonUnitDim];
-      }
+      } else {
+        INDEX2COORDS(j, xRank, xShapeInfo, yCoords);
 
-      else {
-        shape::index2coords(j, xShapeInfo, yCoords);  // first xRank coordinates in yCoords are the same for y and x
-
-        zFirstCoord = x[shape::getOffset(xShapeInfo, yCoords)];
+        LongType xOffset;
+        COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), yCoords, xOffset);
+        zFirstCoord = x[xOffset];
 
         if (zCoords[0] != zFirstCoord) continue;
 
         for (LongType k = 0; k < yRank - xRank; ++k) yCoords[xRank + k] = zCoords[k + 1];
 
-        yOffset = shape::getOffset(yShapeInfo, yCoords);
-        zOffset = shape::getOffset(zShapeInfo, zCoords);
+        COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+        COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoords, zOffset);
       }
 
       switch (opCode) {
@@ -241,7 +243,7 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
                (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
                (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
 
-    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] = shape::stride(yShapeInfo)[yNonUnitDim];
+    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] == shape::stride(yShapeInfo)[yNonUnitDim];
   }
   __syncthreads();
 
@@ -259,18 +261,16 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
       zOffset = x[xySameStride ? yOffset : i * shape::stride(xShapeInfo)[xNonUnitDim]] *
                 shape::stride(zShapeInfo)[zNonUnitDim];
     } else {
-      shape::index2coords(i, yShapeInfo, yCoords);
+      INDEX2COORDS(i, yRank, yShapeInfo, yCoords);
 
-      yOffset = shape::getOffset(yShapeInfo, yCoords);
-      xOffset =
-          shape::getOffset(xShapeInfo, yCoords);  // first xRank coordinates in yCoords are the same for y and x -> for
-      // (sd::LongType j = 0; j < xRank; ++j) xCoords[j] = yCoords[j];
+      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), yCoords, xOffset);
 
       zCoords[0] = x[xOffset];
 
       for (LongType j = 0; j < yRank - xRank; ++j) zCoords[j + 1] = yCoords[xRank + j];
 
-      zOffset = shape::getOffset(zShapeInfo, zCoords);
+      COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoords, zOffset);
     }
 
     switch (opCode) {
@@ -306,7 +306,6 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -386,28 +385,25 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   }
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    if (!is1Dcase) shape::index2coords(i, zShapeInfo, zCoords);
+    if (!is1Dcase) INDEX2COORDS(i, zRank, zShapeInfo, zCoords);
 
     for (LongType j = 0; j < len; j++) {
       if (is1Dcase) {
         if (x[j * shape::stride(xShapeInfo)[xNonUnitDim]] != i) continue;
 
-        yOffset = j * shape::stride(yShapeInfo)[yNonUnitDim];
-        zOffset = i * shape::stride(zShapeInfo)[zNonUnitDim];
+        COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+        COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoords, zOffset);
       } else {
-        shape::index2coords(j, xRank - 1, shape::shapeOf(const_cast<LongType *>(xShapeInfo)),
-                            yCoords);  // first xRank-1 coordinates in yCoords are the same for y and x
+        INDEX2COORDS(j, xRank - 1, shape::shapeOf(const_cast<LongType *>(xShapeInfo)), yCoords);
 
-        // first iteration
         yCoords[xRank - 1] = 0;
-        xOffset = shape::getOffset(xShapeInfo, yCoords);
+        COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), yCoords, xOffset);
         if (zCoords[0] != x[xOffset]) continue;
 
-        // rest iterations
         bool matched = true;
         for (LongType k = 1; k < xLastDim; k++) {
           yCoords[xRank - 1] = k;
-          xOffset += shape::stride(xShapeInfo)[xRank - 1];
+          COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), yCoords, xOffset);
           if (zCoords[k] != x[xOffset]) {
             matched = false;
             break;
@@ -418,8 +414,8 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
         for (LongType k = xLastDim; k < zRank; ++k) yCoords[yRank - zRank + k] = zCoords[k];
 
-        yOffset = shape::getOffset(yShapeInfo, yCoords);
-        zOffset = shape::getOffset(zShapeInfo, zCoords);
+        COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+        COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoords, zOffset);
       }
 
       switch (opCode) {
@@ -496,26 +492,25 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const Long
   yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
   zCoords = yCoords + biggerXYRank;
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, yShapeInfo, yCoords);
+    INDEX2COORDS(i, yRank, yShapeInfo, yCoords);
 
-    yOffset = shape::getOffset(yShapeInfo, yCoords);
+    COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
 
     if (yRank >= xRank)
       zCoords[xLastDim] = yCoords[xRank - 1];  // saving y coordinate, since it might be changed in next instructions
 
     for (LongType j = 0; j < xLastDim; ++j) {  // first xRank-1 coordinates in yCoords are the same for y and x
       yCoords[xRank - 1] = j;
-      zCoords[j] = x[shape::getOffset(xShapeInfo, yCoords)];
+      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), yCoords, zCoords[j]);
     }
 
     for (LongType j = xLastDim + 1; j < zRank; ++j) zCoords[j] = yCoords[yRank - zRank + j];
 
-    zOffset = shape::getOffset(zShapeInfo, zCoords);
+    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
     switch (opCode) {
       case pairwise::Add:
         z[zOffset] += y[yOffset];
-
         break;
       case pairwise::Subtract:
         z[zOffset] -= y[yOffset];
@@ -543,8 +538,8 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const Long
         break;
       default:
         continue;
-    }  // end switch
-  }    // end for loop
+    }
+  }
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -613,20 +608,24 @@ SD_KERNEL void scatterForLossCuda(const void *vx, const LongType *xShapeInfo, vo
 
   LongType *coords = sharedMem + threadIdx.x * (xRank + 1);
 
-  shape::index2coords(xInd, xShapeInfo, coords);
+  INDEX2COORDS(xInd, xRank, xShapeInfo, coords);
 
   // y last coordinate
-  coords[xRank] = x[shape::getOffset(xShapeInfo, coords)];
+  LongType xOffset;
+  COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+  coords[xRank] = x[xOffset];
 
-  const auto yOffset = shape::getOffset(yShapeInfo, coords);
+  LongType yOffset;
+  COORDS2INDEX(xRank + 1, shape::shapeOf(yShapeInfo), coords, yOffset);
 
   if (z == nullptr) {  // gradient calculation
     y[yOffset] -= 1.f;
   } else {
-    z[shape::getOffset(zShapeInfo, coords)] = y[yOffset];
+    LongType zOffset;
+    COORDS2INDEX(xRank + 1, shape::shapeOf(zShapeInfo), coords, zOffset);
+    z[zOffset] = y[yOffset];
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 static void scatterForLossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

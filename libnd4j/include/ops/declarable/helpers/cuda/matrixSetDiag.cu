@@ -67,19 +67,21 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const LongType* xShapeIn
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, xShapeInfo, coords);
+    INDEX2COORDS(i, xRank, xShapeInfo, coords);
 
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
-    const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);
+    LongType xOffset, zOffset, yOffset;
+    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    zOffset = areSameOffsets ? xOffset : COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
     // condition to be on diagonal of innermost matrix
-    if (coords[xRank - 2] == coords[xRank - 1])
-      z[zOffset] = y[shape::getOffset(yShapeInfo, coords)];
-    else
+    if (coords[xRank - 2] == coords[xRank - 1]) {
+      COORDS2INDEX(xRank - 1, shape::shapeOf(yShapeInfo), coords, yOffset);
+      z[zOffset] = y[yOffset];
+    } else {
       z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
+    }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

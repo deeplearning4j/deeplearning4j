@@ -105,8 +105,9 @@ static SD_KERNEL void adjointKernel(T* output, LongType batchSize, LongType rows
       for (auto c = threadIdx.y; c < r; c += blockDim.y) {
         LongType zPos[] = {r, c};
         LongType xPos[] = {c, r};
-        auto zIndex = shape::getOffset(outputTads, zPos);
-        auto xIndex = shape::getOffset(outputTads, xPos);
+        LongType zIndex, xIndex;
+        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zPos, zIndex);
+        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), xPos, xIndex);
         math::sd_swap(outputPart[zIndex], outputPart[xIndex]);
       }
     }

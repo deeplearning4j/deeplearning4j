@@ -76,7 +76,7 @@ struct bfloat16 {
 
   SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const float& rhs) {
 #ifdef __CUDACC__
-    if (::isnan(rhs)) {
+    if (::isnan<bfloat16>(rhs)) {
       _data = bfloat16::nan();
       return *this;
     }

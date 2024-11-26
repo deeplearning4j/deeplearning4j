@@ -112,17 +112,25 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::transformCudaXD(const void *vx, const s
   sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-    shape::index2coords(r, outerXTadShapeInfo, coords);
-    const sd::LongType outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
-    const sd::LongType zOffset = sameOffsets ? outerOffset : shape::getOffset(zShapeInfo, coords);
+    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
+    sd::LongType outerOffset, zOffset;
+    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
+    if (sameOffsets) {
+      zOffset = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
     const X *xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
 
-    for (int i = threadIdx.x; i < tadLen; i += blockDim.x)
+    for (int i = threadIdx.x; i < tadLen; i += blockDim.x) {
+      sd::LongType innerOffset;
+      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::shapeOf(innerXTadShapeInfo), coords, innerOffset);
       sPartials[threadIdx.x] =
           OpType::update(sPartials[threadIdx.x],
-                         OpType::op(xTad[shape::getIndexOffset(i, innerXTadShapeInfo)], extraParams), extraParams);
+                         OpType::op(xTad[innerOffset], extraParams), extraParams);
+    }
     __syncthreads();
 
     // aggregate. do NOT reduce for elements > tadLen

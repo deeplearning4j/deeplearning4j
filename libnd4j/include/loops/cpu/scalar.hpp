@@ -120,35 +120,36 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum, const void *x, const s
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                        const sd::LongType *zShapeInfo, const void *vscalar,
+                                         const sd::LongType *zShapeInfo, const void *vscalar,
                                          void *vextraParams,
-                                        const sd::LongType start, const sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto z = reinterpret_cast<Z *>(vz);
- auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
- auto extraParams = reinterpret_cast<Z *>(vextraParams);
+                                         const sd::LongType start, const sd::LongType stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-     PRAGMA_OMP_SIMD
-     for (auto i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto offset = shape::getOffset(xShapeInfo, coords);
-       z[offset] = OpType::op(x[offset], scalar, extraParams);
-     };
-   } else {
-     PRAGMA_OMP_SIMD
-     for (auto i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto xOffset = shape::getOffset(xShapeInfo, coords);
-       auto zOffset = shape::getOffset(zShapeInfo, coords);
-       z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
-     };
-   }
+  if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType offset;
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+      z[offset] = OpType::op(x[offset], scalar, extraParams);
+    };
+  } else {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType xOffset, zOffset;
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
+    };
+  }
 
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 template <typename OpType>

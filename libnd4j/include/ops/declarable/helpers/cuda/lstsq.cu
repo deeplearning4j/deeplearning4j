@@ -46,12 +46,12 @@ static SD_KERNEL void fillRegularizerKernel(T* ioMatrixData, const LongType* ioM
     auto z = ioMatrixData + ioMatrixOffsets[x];
     for (auto r = threadIdx.x; r < rows; r += blockDim.x) {
       LongType pos[] = {r, r};
-      auto zIndex = shape::getOffset(ioMatrixTads, pos);
+      LongType zIndex;
+      COORDS2INDEX(2, ioMatrixTads + 1, pos, zIndex);
       z[zIndex] = value;
     }
   }
 }
-
 template <typename T>
 static void fillRegularizer(LaunchContext* context, NDArray& ioMatrix, double const value) {
   std::vector<LongType> dims = {-2, -1};

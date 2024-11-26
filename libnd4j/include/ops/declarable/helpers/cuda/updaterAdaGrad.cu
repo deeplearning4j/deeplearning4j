@@ -65,21 +65,22 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    LongType xOffset = i, zOffset = i, initOffset = i, stOffset = i;
+    LongType xOffset, zOffset, initOffset, stOffset;
 
     if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initOffset = bXInSame ? xOffset : shape::getOffset(inShapeInfo, coords);
-      stOffset = bXStSame ? xOffset : shape::getOffset(stShapeInfo, coords);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      initOffset = bXInSame ? xOffset : COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
+      stOffset = bXStSame ? xOffset : COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+    } else {
+      xOffset = zOffset = initOffset = stOffset = i;
     }
 
     st[stOffset] = init[initOffset] + x[xOffset] * x[xOffset];
     up[zOffset] = (lr * x[xOffset]) / (math::sd_sqrt<T, T>(st[stOffset]) + epsilon);
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

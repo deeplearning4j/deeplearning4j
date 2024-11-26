@@ -53,7 +53,7 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
 
   __shared__ LongType xLen;
   __shared__ T epsilonT;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
+  __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
@@ -64,9 +64,6 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
     epsilonT = lr * math::sd_sqrt<T, T>(1. - beta2T) / (1.0 - beta1T);
     if (math::sd_isnan(epsilonT) || 0 == epsilonT || math::sd_isinf(epsilonT)) epsilonT = epsilon;
 
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stmShapeInfo) && 1 == shape::elementWiseStride(inmShapeInfo) &&
-           1 == shape::elementWiseStride(stvShapeInfo) && 1 == shape::elementWiseStride(invShapeInfo);
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
                 shape::order(stmShapeInfo) == shape::order(inmShapeInfo) &&
@@ -84,17 +81,15 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    auto xOffset = i, zOffset = i, initMOffset = i, initUOffset = i, stMOffset = i, stUOffset = i;
+    LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initUOffset = bXInUSame ? xOffset : shape::getOffset(invShapeInfo, coords);
-      stUOffset = bXStUSame ? xOffset : shape::getOffset(stvShapeInfo, coords);
-      initMOffset = bXInMSame ? xOffset : shape::getOffset(inmShapeInfo, coords);
-      stMOffset = bXStMSame ? xOffset : shape::getOffset(stmShapeInfo, coords);
-    }
+    INDEX2COORDS(i, xShapeInfo, coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    initUOffset = bXInUSame ? xOffset : COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+    stUOffset = bXStUSame ? xOffset : COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+    initMOffset = bXInMSame ? xOffset : COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+    stMOffset = bXStMSame ? xOffset : COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
     stU[stUOffset] = beta2 * initU[initUOffset] +
@@ -103,7 +98,6 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
     up[zOffset] = (stM[stMOffset] * epsilonT) / (math::sd_sqrt<T, T>(stU[stUOffset]) + epsilon);
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void adaBeliefUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

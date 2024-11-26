@@ -70,8 +70,9 @@ static SD_KERNEL void matrixBandKernel(const void* inputBuffer, const LongType* 
     for (LongType i = blockIdx.y; i < rows; i += gridDim.y) {
       for (LongType j = threadIdx.x; j < cols; j += totalThreads) {
         LongType coords[2] = {i, j};
-        LongType tadOffsetOut = shape::getOffset(tadOnlyOutputShapeInfo, coords);
-        LongType tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
+        LongType tadOffsetOut, tadOffsetIn;
+        COORDS2INDEX(shape::rank(tadOnlyOutputShapeInfo), shape::stride(tadOnlyOutputShapeInfo), coords, tadOffsetOut);
+        COORDS2INDEX(shape::rank(tadOnlyInputShapeInfo), shape::stride(tadOnlyInputShapeInfo), coords, tadOffsetIn);
 
         // If not inplace, copy the input to the output
         *(resetBuffer + xOffset + tadOffsetOut) = *(input + yOffset + tadOffsetIn);

@@ -64,9 +64,10 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeI
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  shape::index2coords(zInd, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
 
-  const auto zOffset = shape::getOffset(zShapeInfo, coords);
+  LongType zOffset;
+  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
   z[zOffset] = 0;
 
@@ -74,10 +75,12 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeI
   const LongType zCoord3 = coords[dimIH + 1] * factorW;
 
   for (coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
-    for (coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1])
-      z[zOffset] += x[shape::getOffset(xShapeInfo, coords)];
+    for (coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1]) {
+      LongType xOffset;
+      COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+      z[zOffset] += x[xOffset];
+    }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

@@ -127,7 +127,7 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
+      INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
 
       memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
@@ -135,8 +135,9 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
       for (sd::LongType j = 1; j <= numOfSpatialDims; ++j)
         xCoords[j] += crop.e<sd::LongType>(j - 1, 0);  // add crop left
 
-      const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
-      const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
+      sd::LongType zOffset, xOffset;
+      COORDS2INDEX(rank, shape::shapeOf(output.shapeInfo()), zCoords, zOffset);
+      COORDS2INDEX(rank, shape::shapeOf(input.shapeInfo()), xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }
@@ -307,9 +308,10 @@ static void spaceToBatchND_(NDArray& input, NDArray& padding, NDArray& output,
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
+      INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
 
-      const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
+      sd::LongType zOffset;
+      COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);
 
       memcpy(xCoords, zCoords, rank * sizeof(LongType));
 
@@ -326,10 +328,13 @@ static void spaceToBatchND_(NDArray& input, NDArray& padding, NDArray& output,
         xCoords[j] = zCoords[j] - padLeft;  // get coordinates for x
       }
 
-      if (within)
-        z[zOffset] = x[shape::getOffset(input.shapeInfo(), xCoords)];
-      else
+      if (within) {
+        sd::LongType xOffset;
+        COORDS2INDEX(rank, shape::stride(input.shapeInfo()), xCoords, xOffset);
+        z[zOffset] = x[xOffset];
+      } else {
         z[zOffset] = 0.f;
+      }
     }
   };
 

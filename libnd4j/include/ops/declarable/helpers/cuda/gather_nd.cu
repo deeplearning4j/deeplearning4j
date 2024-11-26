@@ -84,16 +84,18 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const LongType *xShapeInfo, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    shape::index2coords(i, zShapeInfo, zCoordStart);
+    INDEX2COORDS(i, zRank, zShapeInfo, zCoordStart);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, zCoordStart);
+    LongType zOffset;
+    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), zCoordStart, zOffset);
 
     // last y coordinate
     int coordToRestore;
     if (yLastDim != xRank) coordToRestore = static_cast<int>(zCoordStart[yRank - 1]);
 
     zCoordStart[yRank - 1] = 0;  // last y coordinate
-    const auto yOffset = shape::getOffset(yShapeInfo, zCoordStart);
+    LongType yOffset;
+    COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), zCoordStart, yOffset);
 
     // restore z coordinate
     if (yLastDim != xRank) zCoordStart[yRank - 1] = coordToRestore;
@@ -101,12 +103,12 @@ SD_KERNEL static void gatherNDCuda(const void *vx, const LongType *xShapeInfo, c
     // construct coordinates for x
     for (LongType j = 0; j < yLastDim; ++j) xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];  // last stride
 
-    const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
+    LongType xOffset;
+    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), xCoordStart, xOffset);
 
     z[zOffset] = x[xOffset];
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void gatherNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

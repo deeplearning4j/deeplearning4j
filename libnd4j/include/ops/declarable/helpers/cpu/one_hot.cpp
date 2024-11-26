@@ -54,16 +54,18 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
         PRAGMA_OMP_SIMD
         for (sd::LongType t = 0; t < tLen; t++) {
           sd::LongType coords[SD_MAX_RANK];
-          shape::index2coords(t, tadPack->primaryShapeInfo(), coords);
-          auto offset = shape::getOffset(tadPack->primaryShapeInfo(), coords);
+          INDEX2COORDS(t, shape::rank(tadPack->primaryShapeInfo()), tadPack->primaryShapeInfo(), coords);
+          LongType offset;
+          COORDS2INDEX(shape::rank(tadPack->primaryShapeInfo()), shape::shapeOf(tadPack->primaryShapeInfo()), coords, offset);
           cO[offset] = zero;
         }
       } else {
         PRAGMA_OMP_SIMD
         for (sd::LongType t = 0; t < tLen; t++) {
           sd::LongType coords[SD_MAX_RANK];
-          shape::index2coords(t, tadPack->primaryShapeInfo(), coords);
-          auto offset = shape::getOffset(tadPack->primaryShapeInfo(), coords);
+          INDEX2COORDS(t, shape::rank(tadPack->primaryShapeInfo()), tadPack->primaryShapeInfo(), coords);
+          LongType offset;
+          COORDS2INDEX(shape::rank(tadPack->primaryShapeInfo()), shape::shapeOf(tadPack->primaryShapeInfo()), coords, offset);
           cO[offset] = idx == t ? one : zero;
         }
       }

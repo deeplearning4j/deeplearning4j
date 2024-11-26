@@ -73,8 +73,9 @@ void copy_core_generic(int rank, const T* x, T* coreZ, const sd::LongType* xShap
 
   zip_size_t offset = {};
   if (rank > 1) {
-    index2coords_C(start, rank - 1, xShapes, ptrCoords);
-    offset = offset_from_coords(xStrides, zStrides, ptrCoords, rank - 1);
+    INDEX2COORDS(start, rank - 1, xShapes, ptrCoords);
+    COORDS2INDEX(rank - 1, xStrides, ptrCoords, offset.first);
+    COORDS2INDEX(rank - 1, zStrides, ptrCoords, offset.second);
   }
   if (lastStrideZ == 1 && lastStrideX == 1) {
     for (auto k = 0; k < (stop - start); k++) {
@@ -128,7 +129,8 @@ void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, ND
       all_paddings_zero = all_paddings_zero && (p0 == 0) && (p1 == 0);
     }
 
-    auto paddingOffset = all_paddings_zero ? 0 : sd::offset_from_coords(zStrides, ptrPaddingCoords, rank);
+    sd::LongType paddingOffset;
+    COORDS2INDEX(rank, zStrides, ptrPaddingCoords, paddingOffset);
 
     auto inputLastSize = xShapes[rank - 1];
 
@@ -161,11 +163,12 @@ void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, ND
     const sd::LongType shift2 = mode == 1 ? 2 : 1;  // REFLECT : SYMMETRIC
 
     auto func = PRAGMA_THREADS_FOR {
-      sd::LongType  zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
       for (auto i = start; i < stop; i++) {
-        shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
-        const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
+        INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
+        sd::LongType zOffset;
+        COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);
 
         memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
@@ -181,7 +184,8 @@ void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, ND
             xCoords[j] = 2 * xShape[j] - xCoords[j] - shift2;  // means fill from right
         }
 
-        const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
+        sd::LongType xOffset;
+        COORDS2INDEX(rank, shape::stride(input.shapeInfo()), xCoords, xOffset);
         z[zOffset] = x[xOffset];
       }
     };
@@ -189,7 +193,6 @@ void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, ND
     samediff::Threads::parallel_tad(func, 0, zLen);
   }
 }
-
 
 
 void pad(sd::LaunchContext* context, const int mode, NDArray& input, NDArray& paddings, NDArray& output,
@@ -223,10 +226,10 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
     }
   } else {
     auto func = PRAGMA_THREADS_FOR {
-      sd::LongType  inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
+      sd::LongType inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
 
       for (sd::LongType i = start; i < stop; i++) {
-        shape::index2coordsCPU(start, i, output.shapeInfo(), outIdx);
+        INDEX2COORDS(i, rank, output.shapeInfo(), outIdx);
 
         for (int j = 0; j < rank; ++j) {
           const sd::LongType inLen = input.sizeAt(j);
@@ -244,8 +247,9 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
             inIdx[j] = len - outIdx[j];
         }
 
-        auto outOffset = shape::getOffset(output.shapeInfo(), outIdx);
-        auto inOffset = shape::getOffset(input.shapeInfo(), inIdx);
+        sd::LongType outOffset, inOffset;
+        COORDS2INDEX(rank, shape::stride(output.shapeInfo()), outIdx, outOffset);
+        COORDS2INDEX(rank, shape::stride(input.shapeInfo()), inIdx, inOffset);
         reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T const*>(input.buffer())[inOffset];
       }
     };
@@ -253,7 +257,6 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
     samediff::Threads::parallel_for(func, 0, outLen);
   }
 }
-
 void mirrorPad(sd::LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                const int mode) {
   BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), SD_COMMON_TYPES);
