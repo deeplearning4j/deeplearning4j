@@ -51,10 +51,18 @@ static SD_KERNEL void fillUpElementKernel(void* outputBuffer, LongType const* ou
   const auto step = gridDim.x * blockDim.x;
   for (int t = tid; t < bufferLength; t += step) {
     auto tX = x + pTadOffsets[t];
-    z[shape::getIndexOffset(t, outputShapeInfo)] = tX[shape::getIndexOffset(n, pTadShape)];  // tX];
+    LongType zOffset, xOffset;
+    LongType zCoords[SD_MAX_RANK];
+    LongType xCoords[SD_MAX_RANK];
+
+    INDEX2COORDS(t, shape::rank(outputShapeInfo), outputShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(outputShapeInfo), shape::shapeOf(outputShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(n, shape::rank(pTadShape), pTadShape, xCoords);
+    COORDS2INDEX(shape::rank(pTadShape), shape::shapeOf(pTadShape), xCoords, xOffset);
+
+    z[zOffset] = tX[xOffset];
   }
 }
-
 template <typename T>
 void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   NDArray::prepareSpecialUse({output}, {input});

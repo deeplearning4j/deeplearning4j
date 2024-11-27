@@ -298,14 +298,11 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
 template <typename T>
 sd::LongType SpecialMethods<T>::getPosition(NDArray *input, sd::LongType index) {
   auto xShapeInfo = input->shapeInfo();
-  LongType xEWS = shape::elementWiseStride(xShapeInfo);
-
-  if (xEWS == 1)
-    return index;
-  else if (xEWS > 1)
-    return index * xEWS;
-  else
-    return shape::getIndexOffset(index, xShapeInfo);
+  LongType coords[SD_MAX_RANK];
+  INDEX2COORDS(index, shape::rank(xShapeInfo), xShapeInfo, coords);
+  LongType offset;
+  COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+  return offset;
 }
 
 template <typename T>

@@ -160,24 +160,21 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(void const *vx, sd::LongTyp
 
   // shared memory space for storing intermediate results
   __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
-  __shared__ sd::LongType xEws;
   __shared__ sd::LongType len;
 
   if (threadIdx.x == 0) {
-    xEws = shape::elementWiseStride(xShapeInfo);
     len = shape::length(xShapeInfo);
   }
   __syncthreads();
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  if (xEws > 0)
-    for (int i = tid; i < len; i += (blockDim.x * gridDim.x))
-      sPartials[threadIdx.x] =
-          OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-  else
-    for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-      sPartials[threadIdx.x] = OpType::update(
-          sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
+  for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+  }
 
   __syncthreads();
   aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
@@ -224,7 +221,6 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(void const *vx, sd::LongTyp
     }
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>

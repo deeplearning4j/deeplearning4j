@@ -29,26 +29,27 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL void flattenKernel(Pointer *extraPointers, int dOffset, char order, void *vz, LongType *zShapeInfo,
-                             void *vy,
-                             LongType *yShapeInfo) {
+                             void *vy, LongType *yShapeInfo) {
   auto z = reinterpret_cast<T *>(vz);
   auto y = reinterpret_cast<T *>(vy);
 
-  __shared__ LongType lenY, yOrder, zEWS, yEWS;
+  __shared__ LongType lenY;
 
   if (threadIdx.x == 0) {
-    yEWS = shape::elementWiseStride(yShapeInfo);
-    zEWS = shape::elementWiseStride(zShapeInfo);
     lenY = shape::length(yShapeInfo);
   }
   __syncthreads();
 
   LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (auto i = tid; i < lenY; i += gridDim.x * blockDim.x)
-    z[i * zEWS + dOffset] = y[ops::helpers::getIndexOffsetOrdered(i, yShapeInfo, order)];
+  for (auto i = tid; i < lenY; i += gridDim.x * blockDim.x) {
+    LongType yOffset;
+    sd::LongType yCoords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    z[i + dOffset] = y[yOffset];
+  }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void flattenKernelGeneric(dim3 &launchDims, cudaStream_t *stream, Pointer *extraPointers, int dOffset,

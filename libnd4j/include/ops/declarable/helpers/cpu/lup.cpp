@@ -296,8 +296,17 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
       if (pivotIndex < 0) {
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
-      math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
-                    permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+      sd::LongType firstIndexCoords[SD_MAX_RANK];
+      sd::LongType secondIndexCoords[SD_MAX_RANK];
+      sd::LongType firstIndex;
+      sd::LongType secondIndex;
+
+      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, firstIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), firstIndexCoords, firstIndex);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, secondIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), secondIndexCoords, secondIndex);
+
+      math::sd_swap(permutationBuf[firstIndex], permutationBuf[secondIndex]);
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
       processColumns(i, rowNum, compoundBuf, compoundShape);

@@ -56,10 +56,8 @@ sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *x
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-  // T startingVal = OpType::startingValue(x);
   auto startingIndex = OpType::startingIndexValue(x);
   auto len = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
   sd::OmpLaunchHelper info(len);
 
   sd::LongType xShapeInfoCast[SD_MAX_RANK];
@@ -68,38 +66,25 @@ sd::LongType IndexReduce<X, Y>::execScalar(const void *vx, const sd::LongType *x
   IndexValue<X> intermediatery[64];
   for (int e = 0; e < maxThreads; e++) intermediatery[e].index = -1;
 
-  if (xEws == 1 && shape::order(xShapeInfo) == 'c') {
-    auto func = PRAGMA_THREADS_FOR {
-      intermediatery[thread_id] = OpType::startingIndexValue(x);
+  auto func = PRAGMA_THREADS_FOR {
+    intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-      for (auto i = start; i < stop; i++) {
-        IndexValue<X> curr(x[i], i);
-        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
-      }
-    };
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      sd::LongType offset;
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+      IndexValue<X> curr(x[offset], i);
+      intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
+    }
+  };
 
-    maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
+  maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
 
-    for (int e = 0; e < maxThreads; e++) startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
+  for (int e = 0; e < maxThreads; e++) startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
 
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      intermediatery[thread_id] = OpType::startingIndexValue(x);
-
-      for (auto i = start; i < stop; i++) {
-        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-        IndexValue<X> curr(x[offset], i);
-        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
-      }
-    };
-
-    maxThreads = samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
-
-    for (int e = 0; e < maxThreads; e++) startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
-  }
   return startingIndex.index;
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>

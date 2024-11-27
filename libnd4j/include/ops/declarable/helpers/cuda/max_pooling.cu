@@ -35,11 +35,14 @@ static SD_KERNEL void indicesFiller(void* vz, LongType const* zShapeInfo, LongTy
 
   for (LongType b = blockIdx.x; b < bSize; b += gridDim.x) {
     for (LongType e = threadIdx.x; e < part; e += blockDim.x) {
-      z[shape::getIndexOffset(e + b * part, zShapeInfo)] = static_cast<Z>(e);
+      LongType zCoords[SD_MAX_RANK];
+      LongType zOffset;
+      INDEX2COORDS(e + b * part, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      z[zOffset] = static_cast<Z>(e);
     }
   }
 }
-
 template <typename T, typename Y>
 static void maxPoolingFunctor_(graph::Context& block, NDArray* input, NDArray* values,
                                std::vector<LongType> const& params, NDArray* indices) {

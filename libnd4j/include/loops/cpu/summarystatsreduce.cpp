@@ -74,11 +74,11 @@ Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx,
   startingIndex.initialize();
   auto length = shape::length(xShapeInfo);
 
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  const bool canCast = sd::DataTypeUtils::castShapeInfo<sd::LongType>(xShapeInfo, xShapeInfoCast);
-
   for (sd::LongType i = 0; i < length; i++) {
-    auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    sd::LongType xOffset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
 
     SummaryStatsData<X> curr;
     curr.initWithValue(x[xOffset]);
@@ -92,8 +92,7 @@ template <typename X, typename Z>
 template <typename OpType>
 void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
                                     void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
-                                    sd::LongType *dimension,
-                                    sd::LongType dimensionLength) {
+                                    sd::LongType *dimension, sd::LongType dimensionLength) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
@@ -113,15 +112,10 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
     return;
   }
 
-  // no-op
   if (dimensionLength < 1) return;
 
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-  // pre squeezed: this is for keeping the pointer to the original
-  // shape information for tad offset
-  // the squeezed information doesn't render the right strides for
-  // tad offset
   if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
     z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
     return;
@@ -129,13 +123,6 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
 
   auto tadShapeShapeInfo = tadPack->primaryShapeInfo();
   auto tadLength = shape::length(tadPack->primaryShapeInfo());
-  auto tadEWS = shape::elementWiseStride(tadPack->primaryShapeInfo());
-  auto tadOrder = shape::order(tadPack->primaryShapeInfo());
-
-  sd::LongType tadShapeShapeInfoCast[SD_MAX_RANK];
-  const bool canCast = tadEWS == 1 && tadOrder == 'c'
-                           ? false
-                           : sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
@@ -144,22 +131,16 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
       SummaryStatsData<X> comp;
       comp.initWithValue(tx[0]);
 
-      if (tadEWS == 1 && tadOrder == 'c') {
-        for (sd::LongType i = 1; i < tadLength; i++) {
-          SummaryStatsData<X> indexVal2;
-          indexVal2.initWithValue(tx[i]);
+      for (sd::LongType i = 1; i < tadLength; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(tadShapeShapeInfo), shape::shapeOf(tadShapeShapeInfo), coords);
+        sd::LongType xOffset;
+        COORDS2INDEX(shape::rank(tadShapeShapeInfo), shape::stride(tadShapeShapeInfo), coords, xOffset);
 
-          comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
-        }
-      } else {
-        for (sd::LongType i = 1; i < tadLength; i++) {
-          auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
+        SummaryStatsData<X> indexVal2;
+        indexVal2.initWithValue(tx[xOffset]);
 
-          SummaryStatsData<X> indexVal2;
-          indexVal2.initWithValue(tx[xOffset]);
-
-          comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
-        }
+        comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
       }
 
       z[r] = OpType::getValue(biasCorrected, comp);

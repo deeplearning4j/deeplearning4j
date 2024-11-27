@@ -176,23 +176,12 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
   auto z = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
-  // decompose in to several sub tads after
-  // moving all dimensions (in sorted order)
-  // to the back.
-  // permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType xEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
-
     tadLength = shape::length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
-    xEWS = shape::elementWiseStride(xShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
   }
   __syncthreads();
 
@@ -200,18 +189,22 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
     auto rZ = z + tadOffsetsZ[r];
     auto rY = y + tadOffsets[r];
 
-    if (tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1) {
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x)
-        rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS], extraParams);
-    } else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      sd::LongType zOffset;
 
-        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
-      }
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), tadOnlyShapeInfoZ, zCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords, zOffset);
+
+      rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
     }
   }
 }

@@ -2949,8 +2949,15 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs
     if (arrLenX != arrLenY) return;
 
     for (LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
-      const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-      const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+      LongType xCoords[SD_MAX_RANK];
+      LongType yCoords[SD_MAX_RANK];
+      LongType xOffset;
+      LongType yOffset;
+
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
 
       switch (opCode) {
         case 0:

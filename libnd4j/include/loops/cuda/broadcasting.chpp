@@ -73,13 +73,6 @@ static SD_KERNEL void broadcastInverseSimple(
 namespace functions {
 namespace broadcast {
 
-static sd::LongType SD_DEVICE __noinline__ getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
-  return shape::getIndexOffset(index, shapeInfo);
-}
-
-static sd::LongType SD_DEVICE __noinline__ length(const sd::LongType *shapeInfo) {
-  return shape::length(shapeInfo);
-}
 
 template<typename X, typename Y, typename Z>
 template <typename OpClass>
@@ -141,54 +134,38 @@ SD_DEVICE void Broadcast<X,Y,Z>::transformInverseCuda(
   auto y = reinterpret_cast<Y const*>(vy);
   auto z = reinterpret_cast<Z*>(vz);
 
-  //decompose in to several sub tads after
-  //moving all dimensions (in sorted order)
-  //to the back.
-  //permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType xEWS;
-  __shared__ sd::LongType zEWS;
-
 
   if (threadIdx.x == 0) {
-    tadLength = length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-    numTads = length(yShapeInfo) / tadLength;
-    xEWS = shape::elementWiseStride(xShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
+    tadLength = shape::length(tadOnlyShapeInfo);
+    numTads = shape::length(yShapeInfo) / tadLength;
   }
   __syncthreads();
 
-  auto xOrder = shape::order(xShapeInfo);
-  auto yOrder = shape::order(tadOnlyShapeInfo);
-  auto zOrder = shape::order(tadOnlyShapeInfoZ);
-
   for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-
-
     auto rY = y + tadOffsets[r];
     auto rZ = z + tadOffsetsZ[r];
 
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      sd::LongType zOffset;
 
-    if(tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1 && xOrder == yOrder && xOrder == zOrder) {
-      for (int i = threadIdx.x; i < tadLength; i+= blockDim.x)
-        rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS]);
-    }
-    else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-        auto xOffset = getIndexOffset(i, xShapeInfo);
-        auto yOffset = getIndexOffset(i, tadOnlyShapeInfo);
-        auto zOffset = getIndexOffset(i, tadOnlyShapeInfoZ);
-        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
-      }
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), tadOnlyShapeInfoZ, zCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords, zOffset);
+
+      rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
     }
   }
 }
-
-
 template<typename X, typename Y, typename Z>
 template <typename OpType>
 SD_DEVICE void Broadcast<X,Y,Z>::transformCuda(

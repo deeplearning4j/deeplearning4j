@@ -58,20 +58,29 @@ static SD_KERNEL void segmentSumLinearKernel(const void* input, const LongType* 
     zLen = shape::length(outputShape);
 
     if (segment < numOfClasses) {
-      zIndex = shape::getIndexOffset(segment, outputShape);
+      LongType zCoords[SD_MAX_RANK];
+      INDEX2COORDS(segment, shape::rank(outputShape), outputShape, zCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
       if(zIndex >= zLen)
         return;
       start = starts[segment];
       finish = start + lengths[segment];
-      z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
+      LongType xCoords[SD_MAX_RANK];
+      INDEX2COORDS(start, shape::rank(inputShape), inputShape, xCoords);
+      LongType xOffset;
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+      z[zIndex] = x[xOffset];
     }
   }
   __syncthreads();
 
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-    auto xIndex = shape::getIndexOffset(e, inputShape);
-    if (xIndex >= xLen) return;
-    math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+    LongType xCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
+    LongType xOffset;
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    if (xOffset >= xLen) return;
+    math::atomics::sd_atomicAdd(&z[zIndex], x[xOffset]);
   }
 }
 // -------------------------------------------------------------------------------------------------------------- //
@@ -95,22 +104,38 @@ static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const Lo
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
 
-    zIndex = shape::getIndexOffset(segment, outputShape);
-    if (lengths[segment] > 0)
-      z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)];
-    else
+    LongType zCoords[SD_MAX_RANK];
+    INDEX2COORDS(segment, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+    if (lengths[segment] > 0) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+      INDEX2COORDS(starts[segment], shape::rank(inputShape), inputShape, xCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+      z[zIndex] = x[xOffset];
+    } else {
       z[zIndex] = 0;
+    }
   }
   __syncthreads();
 
-  if (lengths[segment] > 0)
+  if (lengths[segment] > 0) {
     for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
-      auto xIndex = shape::getIndexOffset(e, inputShape);
-      auto yIndex = shape::getIndexOffset(e, indicesShape);
+      LongType xCoords[SD_MAX_RANK];
+      LongType yCoords[SD_MAX_RANK];
+      LongType xIndex;
+      LongType yIndex;
+
+      INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(indicesShape), indicesShape, yCoords);
+      COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
+
       if (y[yIndex] == segment && e != starts[segment]) {
         math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
       }
     }
+  }
 }
 // -------------------------------------------------------------------------------------------------------------- //
 // SegmentSum kernel
@@ -121,28 +146,35 @@ static SD_KERNEL void segmentSumTadKernel(void* inputBuf, const LongType* inputS
                                           LongType* lengths, LongType numOfClasses, void* outputBuf, const LongType* outputShape,
                                           const LongType* outputTads, const LongType* outputTadOffsets, LongType numIndices) {
 
+  __shared__ LongType len, total;
 
-   __shared__ LongType len, total;
+  if (threadIdx.x == 0) {
+    total = shape::sizeAt(inputShape, 0);
+    len = shape::length(inputTads);
+  }
+  __syncthreads();
 
-   if (threadIdx.x == 0) {
-     total = shape::sizeAt(inputShape, 0);
-     len = shape::length(inputTads);
-   }
-   __syncthreads();
+  for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
+    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
+    auto segment = indices[idx];
+    auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
+    auto start = starts[segment];
+    auto finish = start + lengths[segment];
+    if (lengths[segment] == 0) continue;
+    for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType xIndex;
+      LongType zIndex;
 
-   for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
-     auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-     auto segment = indices[idx];
-     auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-     auto start = starts[segment];
-     auto finish = start + lengths[segment];
-     if (lengths[segment] == 0) continue;
-     for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-       auto xIndex = shape::getIndexOffset(e, inputTads);
-       auto zIndex = shape::getIndexOffset(e, outputTads);
+      INDEX2COORDS(e, shape::rank(inputTads), inputTads, xCoords);
+      COORDS2INDEX(shape::rank(inputTads), shape::shapeOf(inputTads), xCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(outputTads), outputTads, zCoords);
+      COORDS2INDEX(shape::rank(outputTads), shape::shapeOf(outputTads), zCoords, zIndex);
+
       math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
-     }
-   }
+    }
+  }
 }
 // -------------------------------------------------------------------------------------------------------------- //
 
@@ -273,11 +305,23 @@ static SD_KERNEL void segmentSumBPLinearKernel(const void* inputBuf, const LongT
   auto step = gridDim.x * blockDim.x;
 
   for (auto e = start; e < xLen; e += step) {
-    auto zOffset = shape::getIndexOffset(e, outputShape);
-    auto xOffset = shape::getIndexOffset(e, inputShape);
-    auto yOffset = shape::getIndexOffset(e, indicesShape);
+    LongType zCoords[SD_MAX_RANK];
+    LongType xCoords[SD_MAX_RANK];
+    LongType yCoords[SD_MAX_RANK];
+    LongType zOffset;
+    LongType xOffset;
+    LongType yOffset;
+    LongType gradOffsetO;
+
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(indicesShape), indicesShape, yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yOffset);
     auto classIndex = y[yOffset];
-    auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
+    INDEX2COORDS(classIndex, shape::rank(epsShape), epsShape, zCoords);
+    COORDS2INDEX(shape::rank(epsShape), shape::shapeOf(epsShape), zCoords, gradOffsetO);
 
     z[zOffset] = gradOut[gradOffsetO];
   }
@@ -310,7 +354,10 @@ static SD_KERNEL void segmentSumBPTadKernel(const void* inputBuf, const LongType
   __syncthreads();
 
   for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-    auto yIndex = shape::getIndexOffset(i, indicesShape);
+    LongType yCoords[SD_MAX_RANK];
+    LongType yIndex;
+    INDEX2COORDS(i, shape::rank(indicesShape), indicesShape, yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
     auto segment = y[yIndex];
     auto currentOut = z + outOffsets[i];
     auto outGrad = gradOut + gradOutOffsets[segment];

@@ -1557,25 +1557,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isDimPermuted(const T *dimensions, c
 
 //////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
-
-  char order = shape::order(shapeInfo);
-  const sd::LongType ews = elementWiseStride(shapeInfo);
-  bool isView = shape::isViewConst(shapeInfo);
-  sd::LongType coords[SD_MAX_RANK];
-  sd::LongType  getOffset;
-  COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), coords, getOffset);
-#if defined(PRINT_INDICES)
-  shape::printShapeInfo(shapeInfo);
-  printf("Index is %lld offset is %lld\n", index,getOffset);
-#endif
-  return getOffset;
-
-
-}
-
-
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool shapeEquals(const int shape1Rank, const sd::LongType *shape1, const int shape2Rank,
                                                         const sd::LongType *shape2) {
   if (shape1Rank != shape2Rank) return false;
@@ -1611,13 +1592,8 @@ SD_DEVICE SD_INLINE sd::LongType *cuMalloc(sd::LongType *buffer, long size) {
 
 //////////////////////////////////////////////////////////////////////
 
-//////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType indexOffset(sd::LongType index, const sd::LongType *lShapeInfo,
-                                                                const sd::LongType *uShapeInfo, const bool useUnsigned) {
-  if (useUnsigned) return getIndexOffset(index, uShapeInfo);
+/////////////////////////////////////////////////////////////////////
 
-  return getIndexOffset(index, lShapeInfo);
-}
 
 /**
 * Get the ordering for the device

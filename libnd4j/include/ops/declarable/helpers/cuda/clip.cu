@@ -332,14 +332,22 @@ static void SD_KERNEL clipByValueKernel(void* input, const LongType* inputShape,
       else
         outputBuf[e] = inputBuf[e];
     } else {
-      auto inputOffset = shape::getIndexOffset(e, inputShape);
-      auto outputOffset = shape::getIndexOffset(e, outputShape);
+      LongType inputCoords[SD_MAX_RANK];
+      LongType outputCoords[SD_MAX_RANK];
+      LongType inputOffset;
+      LongType outputOffset;
+
+      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
       if (inputBuf[inputOffset] > rightBound)
         outputBuf[outputOffset] = (T)rightBound;
       else if (inputBuf[inputOffset] < leftBound)
         outputBuf[outputOffset] = (T)leftBound;
       else
-        outputBuf[outputOffset] = inputBuf[outputOffset];
+        outputBuf[outputOffset] = inputBuf[inputOffset];
     }
   }
 }

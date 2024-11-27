@@ -53,15 +53,26 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
       auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
-      auto val = x[shape::getIndexOffset(e, xShape)];
-      ;
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+
+      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+
+      auto val = x[xOffset];
       if (mVal < val) {
         mIdx = static_cast<Z>(i);
         mVal = val;
       }
     }
 
-    output[shape::getIndexOffset(e, outputShape)] = mIdx;
+    LongType outputCoords[SD_MAX_RANK];
+    LongType outputOffset;
+
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
+    output[outputOffset] = mIdx;
   }
 }
 
@@ -114,15 +125,27 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
-      auto val = x[shape::getIndexOffset(e, xShape)];
-      ;
-      if (mVal < val) mVal = val;
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+
+      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+
+      auto val = x[xOffset];
+      if (mVal < val) {
+        mVal = val;
+      }
     }
 
-    output[shape::getIndexOffset(e, outputShape)] = mVal;
+    LongType outputCoords[SD_MAX_RANK];
+    LongType outputOffset;
+
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
+    output[outputOffset] = mVal;
   }
 }
-
 template <typename T>
 static void mergeMax_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrsSize = static_cast<int>(inArrs.size());
@@ -286,14 +309,24 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
       auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
 
-      sum += x[shape::getIndexOffset(e, xShape)];
+      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+
+      sum += x[xOffset];
     }
 
-    output[shape::getIndexOffset(e, outputShape)] = sum / numArrays;
+    LongType outputCoords[SD_MAX_RANK];
+    LongType outputOffset;
+
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
+    output[outputOffset] = sum / numArrays;
   }
 }
-
 template <typename T>
 static void mergeAvg_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   std::vector<const void*> inBuffers(inArrs.size()), inShapes(inArrs.size());
@@ -428,14 +461,24 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
     for (int i = 0; i < numArrays; i++) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
       auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
+      LongType xOffset;
+      sd::LongType xCoords[SD_MAX_RANK];
 
-      sum += x[shape::getIndexOffset(e, xShape)];
+      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+
+      sum += x[xOffset];
     }
 
-    output[shape::getIndexOffset(e, outputShape)] = sum;
+    LongType outputOffset;
+    sd::LongType outputCoords[SD_MAX_RANK];
+
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
+    output[outputOffset] = sum;
   }
 }
-
 template <typename T>
 static void mergeAdd_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrSize = static_cast<int>(inArrs.size());

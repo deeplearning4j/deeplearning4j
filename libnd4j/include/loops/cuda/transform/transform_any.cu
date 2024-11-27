@@ -76,43 +76,30 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(const void *vx, const sd::LongT
   if(x == nullptr || z == nullptr) {
     return;
   }
-  __shared__ sd::LongType xEws;
-  __shared__ sd::LongType zEws;
-  __shared__ char xOrder;
-  __shared__ char zOrder;
   __shared__ sd::LongType length;
 
   if (threadIdx.x == 0) {
-    xEws = shape::elementWiseStride(xShapeInfo);
-    zEws = shape::elementWiseStride(zShapeInfo);
-    xOrder = shape::order(xShapeInfo);
-    zOrder = shape::order(zShapeInfo);
     length = shape::length(xShapeInfo);
   }
   __syncthreads();
 
-
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
 
-  if (xEws > 0 && zEws > 0 && xOrder == zOrder && xOrder == 'c') {
-    for (int i = tid; i < length; i += totalThreads) z[i * zEws] = OpType::op(x[i * xEws], params);
-  } else {
-    if (vx == vz) {
-      for (sd::LongType i = tid; i < length; i += totalThreads) {
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        z[xOffset] = OpType::op(x[xOffset], params);
-      }
-    } else {
-      for (sd::LongType i = tid; i < length; i += totalThreads) {
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, zShapeInfo);
-        z[zOffset] = OpType::op(x[xOffset], params);
-      }
-    }
+  for (sd::LongType i = tid; i < length; i += totalThreads) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType zOffset;
+
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = OpType::op(x[xOffset], params);
   }
 };
-
 template <typename X, typename Z>
 template <typename OpType>
 SD_HOST void TransformAny<X, Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, const void *x,

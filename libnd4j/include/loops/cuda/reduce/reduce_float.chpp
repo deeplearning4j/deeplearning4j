@@ -142,87 +142,79 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const s
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceFloatFunction<X,Z>::execScalarCuda(const void *vx, const sd::LongType *xShapeInfo,
-                                                         void *vextraParams,
-                                                         void *vz, const sd::LongType *zShapeInfo,
-                                                         void *vreductionBuffer,
-                                                         const sd::LongType *tadOnlyShapeInfo) {
+SD_DEVICE void ReduceFloatFunction<X, Z>::execScalarCuda(const void *vx, const sd::LongType *xShapeInfo,
+                                                         void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
+                                                         void *vreductionBuffer, const sd::LongType *tadOnlyShapeInfo) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
+  auto reductionBuffer = reinterpret_cast<Z *>(vreductionBuffer);
 
-    auto x = reinterpret_cast<const X*>(vx);
-    auto z = reinterpret_cast<Z*>(vz);
-    auto extraParams = reinterpret_cast<Z*>(vextraParams);
-    auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
+  auto tid = blockDim.x * blockIdx.x + threadIdx.x;
+  using Y = typename OpType::InterType;
+  // shared memory space for storing intermediate results
+  __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
+  __shared__ sd::LongType len;
 
-    auto tid = blockDim.x * blockIdx.x + threadIdx.x;
-    using Y = typename OpType::InterType;
-    //shared memory space for storing intermediate results
-    __shared__ Y sPartials[SD_CUDA_BLOCK_SIZE];
-    __shared__ sd::LongType xEws;
-    __shared__ sd::LongType len;
+  if (threadIdx.x == 0) {
+    len = shape::length(xShapeInfo);
+  }
+  __syncthreads();
 
-    if(threadIdx.x == 0) {
-        xEws = shape::elementWiseStride(xShapeInfo);
-        len = shape::length(xShapeInfo);
-    }
+  sPartials[threadIdx.x] = OpType::startingValue(x);
+
+  for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+  }
+
+  __syncthreads();
+  aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
+  __syncthreads();
+
+  if (gridDim.x > 1) {
+    unsigned int *tc = (unsigned int *)reductionBuffer;
+    __shared__ bool amLast;
+
+    tid = threadIdx.x;
+    if (threadIdx.x == 0)
+      reductionBuffer[blockIdx.x] = sPartials[0];  // this->postProcess(sPartials[0],len,extraParams);
+
+    __threadfence();
     __syncthreads();
 
-    sPartials[threadIdx.x] = OpType::startingValue(x);
-
-    if (xEws > 0)
-        for (int i = tid; i < len; i += (blockDim.x * gridDim.x))
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-    else
-        for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
+    if (threadIdx.x == 0) {
+      unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
+      amLast = (ticket == gridDim.x - 1);
+    }
 
     __syncthreads();
-    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
-    __syncthreads();
 
-    if (gridDim.x > 1) {
+    if (amLast) {
+      tc[16384] = 0;
+      sPartials[threadIdx.x] = OpType::startingValue(x);
 
-        unsigned int *tc = (unsigned int *)reductionBuffer;
-        __shared__ bool amLast;
+      for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x)
+        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 
-        tid = threadIdx.x;
-          if (threadIdx.x == 0)
-            reductionBuffer[blockIdx.x] = sPartials[0];//this->postProcess(sPartials[0],len,extraParams);
+      __syncthreads();
+      aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(gridDim.x, blockDim.x), extraParams);
+      __syncthreads();
 
-        __threadfence();
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
-            amLast = (ticket == gridDim.x - 1);
-        }
-
-        __syncthreads();
-
-        if (amLast) {
-
-            tc[16384] = 0;
-            sPartials[threadIdx.x] = OpType::startingValue(x);
-
-            for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x)
-                sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
-
-            __syncthreads();
-            aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(gridDim.x, blockDim.x), extraParams);
-            __syncthreads();
-
-            if (threadIdx.x == 0) {
-                z[0] = OpType::postProcess(sPartials[0], len, extraParams);
-            }
-        }
+      if (threadIdx.x == 0) {
+        z[0] = OpType::postProcess(sPartials[0], len, extraParams);
+      }
     }
-    else {
-
-        if (threadIdx.x == 0) {
-            unsigned int *tc = (unsigned *)reductionBuffer;
-            tc[16384] = 0;
-            z[0] = OpType::postProcess(sPartials[0], len, extraParams);
-        }
+  } else {
+    if (threadIdx.x == 0) {
+      unsigned int *tc = (unsigned *)reductionBuffer;
+      tc[16384] = 0;
+      z[0] = OpType::postProcess(sPartials[0], len, extraParams);
     }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

@@ -25,14 +25,7 @@
 
 
 namespace sd {
-static LongType SD_DEVICE __noinline__ getIndexOffset_(LongType index, LongType const* shapeInfo) {
-  return shape::getIndexOffset(index, shapeInfo);
-}
 
-static LongType SD_DEVICE __noinline__ subArrayOffset(LongType index, LongType const* shapeInfoA,
-                                                      LongType const* shapeInfoB) {
-  return shape::subArrayOffset(index, shapeInfoA, shapeInfoB);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  tileKernel:
@@ -42,19 +35,31 @@ static LongType SD_DEVICE __noinline__ subArrayOffset(LongType index, LongType c
 template <typename T>
 static SD_KERNEL void tileKernel(void const* inputBuffer, LongType const* inputShape, void* outputBuffer,
                                  LongType const* outputShape, LongType resultLength) {
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //        Original code to transform in cuda-based
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;  // copy linear sequence of elements, so one-level threading
   int totalThreads = gridDim.x * blockDim.x;
-  if (shape::order(outputShape) == 'c') {  //  ews == 1 always here
+
+  if (shape::order(outputShape) == 'c') {
     for (int i = tid; i < resultLength; i += totalThreads) {
-      auto yOffset = subArrayOffset(i, outputShape, inputShape);
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType yOffset;
+
+      INDEX2COORDS(i, shape::rank(outputShape), outputShape, yCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), yCoords, yOffset);
+
       *(reinterpret_cast<T*>(outputBuffer) + i) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset);
     }
   } else {
     for (int i = tid; i < resultLength; i += totalThreads) {
-      auto xOffset = getIndexOffset_(i, outputShape);
-      auto yOffset = subArrayOffset(i, outputShape, inputShape);
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+
+      INDEX2COORDS(i, shape::rank(outputShape), outputShape, xCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(inputShape), inputShape, yCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), yCoords, yOffset);
+
       *(reinterpret_cast<T*>(outputBuffer) + xOffset) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset);
     }
   }
@@ -86,32 +91,37 @@ BUILD_SINGLE_TEMPLATE(template void tileKernelH,
 // enhancement for tileKernel to different input and output data types: X - output type, Y - input type
 template <typename X, typename Y>
 static SD_KERNEL void tileKernelDouble(void const* inputBuffer, LongType const* inputShape, void* outputBuffer,
-                                       LongType const* outputShape, LongType resultLength, LongType ews) {
+                                       LongType const* outputShape, LongType resultLength) {
   char ordering = shape::order(outputShape);
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
 
-  if (ordering == 'c' && ews == 1) {  //  ews == 1 always here
+  if (ordering == 'c') {
     for (int i = tid; i < resultLength; i += totalThreads) {
-      auto yOffset = subArrayOffset(i, outputShape, inputShape);
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType yOffset;
+
+      INDEX2COORDS(i, shape::rank(outputShape), outputShape, yCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), yCoords, yOffset);
+
       *(reinterpret_cast<X*>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));
-    }
-  } else if (ordering == 'c' && ews > 1) {
-    for (int i = tid; i < resultLength; i += totalThreads) {
-      auto yOffset = subArrayOffset(i, outputShape, inputShape);
-      *(reinterpret_cast<X*>(outputBuffer) + i * ews) =
-          static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));
     }
   } else {
     for (int i = tid; i < resultLength; i += totalThreads) {
-      auto xOffset = getIndexOffset_(i, outputShape);
-      auto yOffset = subArrayOffset(i, outputShape, inputShape);
-      *(reinterpret_cast<X*>(outputBuffer) + xOffset) =
-          static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+
+      INDEX2COORDS(i, shape::rank(outputShape), outputShape, xCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(inputShape), inputShape, yCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), yCoords, yOffset);
+
+      *(reinterpret_cast<X*>(outputBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));
     }
   }
 }
-
 BUILD_SINGLE_TEMPLATE_TWICE(template SD_KERNEL void tileKernelDouble,
                             (void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
                              sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews),

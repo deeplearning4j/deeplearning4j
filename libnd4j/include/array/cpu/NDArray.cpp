@@ -163,21 +163,43 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   const bool isSameOrders = shape::order(xShapeInfo) == shape::order(xShapeInfo);
 
-  const auto xEws = shape::elementWiseStride(xShapeInfo);
-  const auto yEws = shape::elementWiseStride(yShapeInfo);
-
   auto func = PRAGMA_THREADS_FOR {
-    if (isSameOrders && xEws > 0 && yEws > 0) {
-      for (sd::LongType i = start; i < stop; i++) sd::math::sd_swap(x[i * xEws], y[i * yEws]);
+    if (isSameOrders) {
+      for (sd::LongType i = start; i < stop; i++) {
+        LongType xCoords[SD_MAX_RANK];
+        LongType yCoords[SD_MAX_RANK];
+        LongType xOffset;
+        LongType yOffset;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+
+        sd::math::sd_swap(x[xOffset], y[yOffset]);
+      }
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
       for (sd::LongType i = start; i < stop; i++) {
-        const auto ind = shape::getIndexOffset(i, xShapeInfo);
+        LongType coords[SD_MAX_RANK];
+        LongType ind;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, ind);
+
         sd::math::sd_swap(x[ind], y[ind]);
       }
     } else {
       for (sd::LongType i = start; i < stop; i++) {
-        const auto xInd = shape::getIndexOffset(i, xShapeInfo);
-        const auto yInd = shape::getIndexOffset(i, yShapeInfo);
+        LongType xCoords[SD_MAX_RANK];
+        LongType yCoords[SD_MAX_RANK];
+        LongType xInd;
+        LongType yInd;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xInd);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yInd);
+
         sd::math::sd_swap(x[xInd], y[yInd]);
       }
     }

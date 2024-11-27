@@ -69,7 +69,17 @@ SD_INLINE SD_DEVICE void ScalarInplace<X, Y, Z>::transformCuda(void *vscalar, vo
   __syncthreads();
 
   for (sd::LongType i = tid; i < length; i += totalThreads) {
-    z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo)], scalar, params);
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType yOffset;
+    sd::LongType zOffset;
+
+    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = OpType::op(y[yOffset], scalar, params);
   }
 }
 }  // namespace scalar

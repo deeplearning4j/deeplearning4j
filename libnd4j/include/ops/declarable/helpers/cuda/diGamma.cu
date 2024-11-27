@@ -46,9 +46,20 @@ SD_KERNEL static void diGammaCuda(const void *vx, const LongType *xShapeInfo, vo
   }
   __syncthreads();
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
+
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += gridDim.x * blockDim.x) {
-    const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-    const auto zOffset = sameOffset ? xOffset : shape::getIndexOffset(i, zShapeInfo);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    if (sameOffset) {
+      zOffset = xOffset;
+    } else {
+      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    }
 
     z[zOffset] = diGammaScalar<T>(x[xOffset]);
   }

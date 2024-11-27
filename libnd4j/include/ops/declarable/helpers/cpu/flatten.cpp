@@ -45,10 +45,15 @@ static void flatten_(std::vector<NDArray *> &inputs, NDArray *output, const char
     auto xShapeInfo = inputs[e]->shapeInfo();
     auto xLength = inputs[e]->lengthOf();
 
-    for (sd::LongType i = 0; i < xLength; i++) z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
+    for (sd::LongType i = 0; i < xLength; i++) {
+      sd::LongType xOffset;
+      sd::LongType xCoords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      z[i] = xBuffer[xOffset];
+    }
   }
 }
-
 void flatten(sd::LaunchContext *context, std::vector<NDArray *> &inputs, NDArray *output, char order) {
   BUILD_SINGLE_SELECTOR(output->dataType(), flatten_, (inputs, output, order), SD_COMMON_TYPES);
 }

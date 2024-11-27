@@ -90,20 +90,28 @@ static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* 
   }
   __syncthreads();
 
+  LongType inputCoords[SD_MAX_RANK];
+  LongType outputCoords[SD_MAX_RANK];
+  LongType inputOffset;
+  LongType outputOffset;
+
   for (auto i = blockIdx.x; i < (int)channels; i += gridDim.x) {
     T scale, nudgedMin, nudgedMax;
     nudge(min[i], max[i], lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
     // loop over blocks to quantization between nudged min and max
     for (auto b = threadIdx.x; b < block; b += blockDim.x) {
-      T val = input[shape::getIndexOffset(b * channels + i, inputShape)];
+      INDEX2COORDS(b * channels + i, shape::rank(inputShape), inputShape, inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      T val = input[inputOffset];
       if (val < nudgedMin) {
         val = nudgedMin;
       } else if (val > nudgedMax) {
         val = nudgedMax;
       }
-      output[shape::getIndexOffset(b * channels + i, outputShape)] =
-          (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
-    };
+      INDEX2COORDS(b * channels + i, shape::rank(outputShape), outputShape, outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+      output[outputOffset] = (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
+    }
   }
 }
 

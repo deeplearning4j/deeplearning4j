@@ -138,30 +138,34 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
   sd::LongType length = shape::length(xShapeInfo);
-  sd::LongType xEws = shape::elementWiseStride(xShapeInfo);
-  sd::LongType yEws = shape::elementWiseStride(yShapeInfo);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   char xOrder = shape::order(xShapeInfo);
   char yOrder = shape::order(yShapeInfo);
 
-
-  if(xOrder == yOrder && (xEws > 0 && yEws > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
-
-    if (xEws == 1 && yEws == 1) {
-      for(sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
-        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i], y[i], extraZ), extraZ);
+  if(xOrder == yOrder && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
+    for(sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+      sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
     }
-    else {
-      for(sd::LongType i = tid; i < length; i+= gridDim.x * blockDim.x)
-        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[i * xEws], y[i * yEws], extraZ), extraZ);
-    }
-  }
-  else {
+  } else {
     sPartials[threadIdx.x] = OpType::startingValue(x);
     auto threadCount = gridDim.x * blockDim.x;
     for(sd::LongType i = tid; i < length; i += threadCount) {
-      auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-      auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
       sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
     }
   }
@@ -171,10 +175,8 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
   __syncthreads();
 
   if (gridDim.x > 1) {
-
     auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
     __shared__ bool amLast;
-    int rank = shape::rank(xShapeInfo);
     tid = threadIdx.x;
     Z *extraBuffer = (Z *) allocationPointer;
     if (threadIdx.x == 0) {
@@ -195,11 +197,9 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
     __syncthreads();
 
     if (amLast) {
-
       tc[16384] = 0;
       sPartials[threadIdx.x] = OpType::startingValue(x);
 
-      // TODO: later probably replace this. Right now we need extraZ sync for CosineSimilarity ONLY
       if (tid == 0 && extraZ[0] != static_cast<Z>(0) && extraZ[1] != static_cast<Z>(0)) {
         extraZ[0] = 0.0;
         extraZ[1] = 0.0;
@@ -219,9 +219,7 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
       if (threadIdx.x == 0)
         z[0] = OpType::postProcess(sPartials[0], length, extraZ);
     }
-  }
-  else {
-
+  } else {
     if (tid == 0) {
       auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
       tc[16384] = 0;
@@ -283,8 +281,11 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
     auto x = dx + xOffsets[r];
 
     if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
-      auto x0 = shape::getIndexOffset(threadIdx.x, xTadShapeInfo);
-      tempX[threadIdx.x] = x[x0];
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      INDEX2COORDS(threadIdx.x, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xOffset);
+      tempX[threadIdx.x] = x[xOffset];
     }
     __syncthreads();
 
@@ -304,13 +305,19 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
         // we reset tempX IF we have >1 tiles
         if (t >= 1 || (limit > 1 && g > 0))
           if (threadIdx.x + (t * maxBlock) < xTadLength) {
-            auto x0 = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo);
-            tempX[threadIdx.x] = x[x0];
+            sd::LongType xCoords[SD_MAX_RANK];
+            sd::LongType xOffset;
+            INDEX2COORDS(threadIdx.x + (t * maxBlock), shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+            COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xOffset);
+            tempX[threadIdx.x] = x[xOffset];
           }
 
         for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {
-          auto y0 = shape::getIndexOffset(f, yTadShapeInfo);
-          sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[y0], extraZ), extraZ);
+          sd::LongType yCoords[SD_MAX_RANK];
+          sd::LongType yOffset;
+          INDEX2COORDS(f, shape::rank(yTadShapeInfo), yTadShapeInfo, yCoords);
+          COORDS2INDEX(shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), yCoords, yOffset);
+          sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yOffset], extraZ), extraZ);
         }
 
         // we MUST step through this block altogether
@@ -333,14 +340,14 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
 template <typename X, typename Z>
 template<typename OpType>
 SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShapeInfo,
-                                       void const* vy, sd::LongType const* yShapeInfo,
-                                       void *extraParams,
-                                       void *vz, sd::LongType const* zShapeInfo,  sd::LongType* dimension,
-                                       sd::LongType dimensionLength,
-                                       int postProcessOrNot,
-                                       sd::LongType* allocationPointer,
-                                       sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
-                                       sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
+                                        void const* vy, sd::LongType const* yShapeInfo,
+                                        void *extraParams,
+                                        void *vz, sd::LongType const* zShapeInfo,  sd::LongType* dimension,
+                                        sd::LongType dimensionLength,
+                                        int postProcessOrNot,
+                                        sd::LongType* allocationPointer,
+                                        sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets,
+                                        sd::LongType const* yTadOnlyShapeInfo, sd::LongType const* yTadOffsets) {
 
   // FIXME
   if(shape::isScalar(zShapeInfo))
@@ -394,9 +401,15 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
 
       for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
 
-        sd::LongType xOffset2 =  xOffset + j*xTadEws;
-        sd::LongType yOffset2 =  yOffset + j*yTadEws;
-        sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType yCoords[SD_MAX_RANK];
+        sd::LongType xOffset2;
+        sd::LongType yOffset2;
+        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
+        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), yTadOnlyShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset2);
+        COORDS2INDEX(shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords, yOffset2);
+        sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ), extraZ);
       }
 
       __syncthreads();
@@ -423,9 +436,15 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
 
       for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
 
-        sd::LongType xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo);
-        sd::LongType yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo);
-        sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType yCoords[SD_MAX_RANK];
+        sd::LongType xOffset2;
+        sd::LongType yOffset2;
+        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
+        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), yTadOnlyShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset2);
+        COORDS2INDEX(shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords, yOffset2);
+        sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ), extraZ);
 
       }
 
@@ -440,7 +459,6 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
     }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 SD_DEVICE void Reduce3<X,Y>::execCuda(int opNum,

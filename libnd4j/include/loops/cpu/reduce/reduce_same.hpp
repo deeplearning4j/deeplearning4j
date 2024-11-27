@@ -72,12 +72,16 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
     for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
 
     auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++)
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        sd::LongType indexOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, indexOffset);
         intermediate[thread_id] = OpType::update(
             intermediate[thread_id],
-            OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+            OpType::op(x[indexOffset], extraParams), extraParams);
+      }
     };
-
     maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
     // merge results
@@ -98,20 +102,20 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
   const sd::LongType length = shape::length(xShapeInfo);
   const auto xEws = shape::elementWiseStride(xShapeInfo);
 
-  if (xEws >= 1) {
-    return execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  auto startingValue = OpType::startingValue(x);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++)
-      startingValue = OpType::update(
-          startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
-          extraParams);
-
-    return OpType::postProcess(startingValue, length, extraParams);
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    sd::LongType indexOffset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, indexOffset);
+    startingValue = OpType::update(
+        startingValue, OpType::op(x[indexOffset], extraParams), extraParams);
   }
+
+  return OpType::postProcess(startingValue, length, extraParams)
 }
 
 template <typename X>

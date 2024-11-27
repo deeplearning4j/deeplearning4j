@@ -35,10 +35,19 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
 
   shared[threadIdx.x] = 0;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType xOffset0;
+  LongType xOffset1;
+
   // each thread will compare 2 elements: E and E+1
   for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
-    auto val0 = x[shape::getIndexOffset(e, xShapeInfo)];
-    auto val1 = x[shape::getIndexOffset(e + 1, xShapeInfo)];
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset0);
+    INDEX2COORDS(e + 1, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset1);
+
+    auto val0 = x[xOffset0];
+    auto val1 = x[xOffset1];
 
     bool v = false;
     if (isStrict)

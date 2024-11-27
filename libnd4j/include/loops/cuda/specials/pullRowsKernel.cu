@@ -31,33 +31,27 @@ SD_DEVICE void pullRowsKernel(void *vx, void *vz, LongType len, LongType *indexe
                               LongType const *tadOffsets, LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
-  auto xEWS = shape::elementWiseStride(tadShapeInfo);
-  auto zEWS = shape::elementWiseStride(zTadShapeInfo);
   auto tadLength = shape::length(tadShapeInfo);
 
-  if (xEWS >= 1 && zEWS >= 1) {
-    for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-      T *rX = x + tadOffsets[indexes[idx]];
-      T *rZ = z + zTadOffsets[idx];
+  for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
+    T *rX = x + tadOffsets[indexes[idx]];
+    T *rZ = z + zTadOffsets[idx];
 
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        rZ[i * zEWS] = rX[i * xEWS];
-      }
-    }
-  } else {
-    for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-      T *rX = x + tadOffsets[indexes[idx]];
-      T *rZ = z + zTadOffsets[idx];
+    for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType zOffset;
 
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, tadShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, zTadShapeInfo);
-        rZ[zOffset] = rX[xOffset];
-      }
+      INDEX2COORDS(i, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zOffset);
+
+      rZ[zOffset] = rX[xOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL void execPullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType const *tadShapeInfo,

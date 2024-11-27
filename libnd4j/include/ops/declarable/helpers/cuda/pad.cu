@@ -83,7 +83,10 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
       bool within = true;
       for (int j = rankMinusOne; j >= 0; --j) {
         if (xShape[j] == zShape[j]) continue;
-        const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo)];
+        LongType leftOffset;
+        LongType leftCoords[] = {yStride0 * j};
+        COORDS2INDEX(1, shape::shapeOf(yShapeInfo), leftCoords, leftOffset);
+        const auto left = y[leftOffset];
         if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
           within = false;
           break;
@@ -109,7 +112,10 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
 
       for (int j = rankMinusOne; j >= 0; --j) {
         if (xShape[j] == zShape[j]) continue;
-        xzCoord[j] = xzCoord[j] - y[shape::getIndexOffset(yStride0 * j, yShapeInfo)];  // are ready to fill middle (within input dimension range)
+        LongType leftOffset;
+        LongType leftCoords[] = {yStride0 * j};
+        COORDS2INDEX(1, shape::shapeOf(yShapeInfo), leftCoords, leftOffset);
+        xzCoord[j] = xzCoord[j] - y[leftOffset];  // are ready to fill middle (within input dimension range)
         if (xzCoord[j] < 0)
           xzCoord[j] = -xzCoord[j] - shift1;  // means fill from left
         else if (xzCoord[j] >= xShape[j])
@@ -122,7 +128,6 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -173,20 +178,29 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
+
   for (int i = start; i < zLen; i += step) {
-    auto zIndex = shape::getIndexOffset(i, zShape);
-    auto xIndex = shape::getIndexOffset(len - i, xShape);
-    if (i < leftSide)  // left side
-      xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape);
+    INDEX2COORDS(i, shape::rank(zShape), zShape, zCoords);
+    COORDS2INDEX(shape::rank(zShape), shape::shapeOf(zShape), zCoords, zOffset);
+    INDEX2COORDS(len - i, shape::rank(xShape), xShape, xCoords);
+    COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
 
-    else if (i >= leftSide && i < leftSide + xLen)  // middle
-      xIndex = shape::getIndexOffset(i - leftSide, xShape);
+    if (i < leftSide) {  // left side
+      INDEX2COORDS(leftSideCorrected - i, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+    } else if (i >= leftSide && i < leftSide + xLen) {  // middle
+      INDEX2COORDS(i - leftSide, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+    }
 
-    if(zIndex >= 0 && xIndex >= 0 && zIndex < zLen && xIndex < xLen)
-      z[zIndex] = x[xIndex];
+    if (zOffset >= 0 && xOffset >= 0 && zOffset < zLen && xOffset < xLen)
+      z[zOffset] = x[xOffset];
   }
 }
-
 template <typename F, typename I>
 static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, void* vz, const LongType* zShape,
                                       LongType outLen, void const* paddings, const LongType* paddingShape,

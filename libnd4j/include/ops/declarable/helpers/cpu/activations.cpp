@@ -42,19 +42,25 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
   T sum = 0.;
   sd::LongType length = shape::length(inShapeInfo);
 
+  LongType coords[SD_MAX_RANK];
+  LongType offset;
+
   for (sd::LongType i = 0; i < length; i++) {
-    const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
+    INDEX2COORDS(i, shape::rank(inShapeInfo), inShapeInfo, coords);
+    COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, offset);
     max = sd::math::sd_max<T>(max, inBuff[offset]);
   }
 
   for (sd::LongType i = 0; i < length; i++) {
-    const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
+    INDEX2COORDS(i, shape::rank(inShapeInfo), inShapeInfo, coords);
+    COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, offset);
     outBuff[offset] = sd::math::sd_exp<T, T>(inBuff[offset] - max);
     sum += outBuff[offset];
   }
 
   for (sd::LongType i = 0; i < length; i++) {
-    const sd::LongType offset = shape::getIndexOffset(i, inShapeInfo);
+    INDEX2COORDS(i, shape::rank(inShapeInfo), inShapeInfo, coords);
+    COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, offset);
     outBuff[offset] /= sum;
     outBuff[offset] *= (1.f - outBuff[offset]);  // derivative
   }

@@ -58,10 +58,17 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const LongType* xSha
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
+
   for (LongType i = tid; i < len; i += totalThreads) {
-    const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
     const LongType index = x[xOffset];
-    const auto zOffset = shape::getIndexOffset(index, zShapeInfo);
+    INDEX2COORDS(index, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
     z[zOffset] = i;
   }
 }
@@ -253,6 +260,7 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
 
   if (threadIdx.x == 0) {
     xRank = shape::rank(zShapeInfo);
+    zRank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
     numOfXOffsets = shape::length(xShapeInfo) / zLen;
 
@@ -267,9 +275,13 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
   auto xOffsets = globMem + tid * numOfXOffsets;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+    LongType zCoords[SD_MAX_RANK];
+    LongType zOffset;
 
-    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff,nullptr);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff, nullptr);
 
     z[zOffset] = x[xOffsets[0]];                      // first offset
     for (LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets

@@ -24,9 +24,7 @@
 #include <helpers/shape.h>
 #include <system/op_boilerplate.h>
 
-static sd::LongType SD_DEVICE  getIndexOffset(sd::LongType index, const sd::LongType *shapeInfo) {
-  return shape::getIndexOffset(index, shapeInfo);
-}
+
 
 static sd::LongType SD_DEVICE  length(const sd::LongType *shapeInfo) { return shape::length(shapeInfo); }
 
@@ -116,28 +114,24 @@ static SD_KERNEL void lambdaKernel(const void *vx, const sd::LongType *xShapeInf
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws]);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(x[xOffset]);
-    }
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(x[xOffset]);
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename T, typename Lambda>
 static SD_KERNEL void lambdaIndexedKernel(const void *vx, const sd::LongType *xShapeInfo, void *vz,
@@ -145,25 +139,22 @@ static SD_KERNEL void lambdaIndexedKernel(const void *vx, const sd::LongType *xS
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(e, x[e * xEws]);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(e, x[xOffset]);
-    }
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(e, x[xOffset]);
   }
 }
 
@@ -176,29 +167,26 @@ static SD_KERNEL void lambdaIndexedPairwiseKernel(const void *vx, const sd::Long
   auto y = reinterpret_cast<const T *>(vy);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto yEws = shape::elementWiseStride(yShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto yOrder = shape::order(yShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x)
-      z[e * zEws] = lambda(e, x[e * xEws], y[e * yEws]);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto yOffset = getIndexOffset(e, yShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(e, x[xOffset], y[yOffset]);
-    }
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(e, x[xOffset], y[yOffset]);
   }
 }
 
@@ -211,28 +199,26 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *vx, const sd::LongType *x
   auto y = reinterpret_cast<const T *>(vy);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto yEws = shape::elementWiseStride(yShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto yOrder = shape::order(yShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], y[e * yEws]);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto yOffset = getIndexOffset(e, yShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(x[xOffset], y[yOffset]);
-    }
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(x[xOffset], y[yOffset]);
   }
 }
 ///////////////////////////////////////////////////////////////////////
@@ -245,25 +231,22 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx
 
   auto yVal = *y;
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (xEws >= 1 && zEws >= 1 && xOrder == zOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) z[e * zEws] = lambda(x[e * xEws], yVal);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(x[xOffset], yVal);
-    }
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(x[xOffset], yVal);
   }
 }
 ////////////////////////////////////////////////////////////////////////
@@ -277,35 +260,32 @@ static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType 
   auto y = reinterpret_cast<const T *>(vy);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto wEws = shape::elementWiseStride(wShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto yEws = shape::elementWiseStride(yShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto wOrder = shape::order(wShapeInfo);
-  auto xOrder = shape::order(xShapeInfo);
-  auto yOrder = shape::order(yShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   auto zLength = length(zShapeInfo);
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  if (wEws > 1 && xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == zOrder && yOrder == xOrder && wOrder == xOrder) {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x)
-      z[e * zEws] = lambda(w[e * wEws], x[e * xEws], y[e * yEws]);
-  } else {
-    for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-      auto wOffset = getIndexOffset(e, wShapeInfo);
-      auto xOffset = getIndexOffset(e, xShapeInfo);
-      auto yOffset = getIndexOffset(e, yShapeInfo);
-      auto zOffset = getIndexOffset(e, zShapeInfo);
+  for (sd::LongType e = tid; e < zLength; e += blockDim.x * gridDim.x) {
+    sd::LongType wCoords[SD_MAX_RANK];
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType wOffset;
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+    sd::LongType zOffset;
 
-      z[zOffset] = lambda(w[wOffset], x[xOffset], y[yOffset]);
-    }
+    INDEX2COORDS(e, shape::rank(wShapeInfo), wShapeInfo, wCoords);
+    COORDS2INDEX(shape::rank(wShapeInfo), shape::shapeOf(wShapeInfo), wCoords, wOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = lambda(w[wOffset], x[xOffset], y[yOffset]);
   }
 }
-
 #endif
 
 //////////////////////////////////////////////////////////////////////////

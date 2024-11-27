@@ -41,12 +41,6 @@ static SD_DEVICE void assign_(void *vx, LongType *xShapeInfo, void *vz, LongType
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-  auto xEws = shape::elementWiseStride(xShapeInfo);
-  auto zEws = shape::elementWiseStride(zShapeInfo);
-
-  auto xOrder = shape::order(xShapeInfo);
-  auto zOrder = shape::order(zShapeInfo);
-
   __shared__ LongType length;
 
   if (threadIdx.x == 0) {
@@ -54,17 +48,18 @@ static SD_DEVICE void assign_(void *vx, LongType *xShapeInfo, void *vz, LongType
   }
   __syncthreads();
 
-  if (xEws > 0 && zEws > 0 && xOrder == zOrder) {
-    for (int i = threadIdx.x; i < length; i += blockDim.x) {
-      z[i * zEws] = x[i * xEws];
-    }
-  } else {
-    for (int i = threadIdx.x; i < length; i += blockDim.x) {
-      auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-      auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
 
-      z[zOffset] = x[xOffset];
-    }
+  for (int i = threadIdx.x; i < length; i += blockDim.x) {
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    z[zOffset] = x[xOffset];
   }
 }
 

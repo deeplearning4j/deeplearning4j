@@ -69,20 +69,42 @@ static void batchnorm_(NDArray* input, NDArray* mean, NDArray* variance, NDArray
 
       if (!isOwner) continue;
 
-      const auto meanOffset = shape::getIndexOffset(j, mean->shapeInfo());
-      const auto varOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->shapeInfo());
+      LongType meanCoords[SD_MAX_RANK];
+      LongType varCoords[SD_MAX_RANK];
+      LongType gammaCoords[SD_MAX_RANK];
+      LongType betaCoords[SD_MAX_RANK];
+      LongType meanOffset;
+      LongType varOffset;
+      LongType gammaOffset;
+      LongType betaOffset;
+
+      INDEX2COORDS(j, shape::rank(mean->shapeInfo()), mean->shapeInfo(), meanCoords);
+      COORDS2INDEX(shape::rank(mean->shapeInfo()), shape::shapeOf(mean->shapeInfo()), meanCoords, meanOffset);
+      varOffset = paramSameOffset ? meanOffset : 0;
+      if (!paramSameOffset) {
+        INDEX2COORDS(j, shape::rank(variance->shapeInfo()), variance->shapeInfo(), varCoords);
+        COORDS2INDEX(shape::rank(variance->shapeInfo()), shape::shapeOf(variance->shapeInfo()), varCoords, varOffset);
+      }
 
       const auto meanVal = m[meanOffset];
       auto sigmaInvGam = static_cast<T>(1) / sd::math::sd_sqrt<T, T>(v[varOffset] + epsilon);
 
       if (g != nullptr) {
-        const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->shapeInfo());
+        gammaOffset = paramSameOffset ? meanOffset : 0;
+        if (!paramSameOffset) {
+          INDEX2COORDS(j, shape::rank(gamma->shapeInfo()), gamma->shapeInfo(), gammaCoords);
+          COORDS2INDEX(shape::rank(gamma->shapeInfo()), shape::shapeOf(gamma->shapeInfo()), gammaCoords, gammaOffset);
+        }
         sigmaInvGam *= g[gammaOffset];
       }
 
       T betaVal = static_cast<T>(0);
       if (b != nullptr) {
-        const auto betaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, beta->shapeInfo());
+        betaOffset = paramSameOffset ? meanOffset : 0;
+        if (!paramSameOffset) {
+          INDEX2COORDS(j, shape::rank(beta->shapeInfo()), beta->shapeInfo(), betaCoords);
+          COORDS2INDEX(shape::rank(beta->shapeInfo()), shape::shapeOf(beta->shapeInfo()), betaCoords, betaOffset);
+        }
         betaVal = b[betaOffset];
       }
 
@@ -104,7 +126,6 @@ static void batchnorm_(NDArray* input, NDArray* mean, NDArray* variance, NDArray
 
   delete dimsToExclude;
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void batchnorm2_(NDArray* input, NDArray* mean, NDArray* variance, NDArray* gamma,

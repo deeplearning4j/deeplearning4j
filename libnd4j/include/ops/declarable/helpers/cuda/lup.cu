@@ -309,7 +309,12 @@ static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const v
   auto step = blockDim.x * gridDim.x;
 
   for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-    auto xIndex = shape::getIndexOffset(k, inputShape);
+    LongType coords[SD_MAX_RANK];
+    LongType xIndex;
+
+    INDEX2COORDS(k, shape::rank(inputShape), inputShape, coords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), coords, xIndex);
+
     matrix[j] = (F)inputBuf[xIndex];
   }
 }
@@ -333,7 +338,12 @@ static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, co
   auto step = blockDim.x * gridDim.x;
 
   for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-    auto zIndex = shape::getIndexOffset(k, outputShape);
+    LongType zCoords[SD_MAX_RANK];
+    LongType zIndex;
+
+    INDEX2COORDS(k, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+
     outputBuf[zIndex] = matrix[j];
   }
 }
@@ -615,8 +625,14 @@ static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutatio
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
 
-      math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
-                    permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+      sd::LongType permIndex1, permIndex2;
+      sd::LongType permCoords1[SD_MAX_RANK], permCoords2[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, permCoords1);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords1, permIndex1);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, permCoords2);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2, permIndex2);
+
+      math::sd_swap(permutationBuf[permIndex1], permutationBuf[permIndex2]);
 
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
@@ -660,8 +676,7 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   std::vector<LongType> dims();
   std::vector<LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
 
-  auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(),
-                                       context);  //, block.getWorkspace());
+  auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);
   auto det = NDArrayFactory::create<T>(1, context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
@@ -675,7 +690,10 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    auto offset = shape::getIndexOffset(e, output->shapeInfo());
+    auto offset;
+    sd::LongType offsetCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
+    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
@@ -712,8 +730,13 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
+    sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
+
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    auto offset = shape::getIndexOffset(e, output->shapeInfo());
+    LongType offset;
+    sd::LongType offsetCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
+    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantLogKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);

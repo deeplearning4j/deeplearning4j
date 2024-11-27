@@ -5920,20 +5920,6 @@ ResultSet NDArray::allExamples()  {
 }
 
 ////////////////////////////////////////////////////////////////////////
-sd::LongType NDArray::getOffset(const sd::LongType i)  {
-  if(this->isEmpty() || isScalar() && i == 0)
-    return 0;
-  if (i >= this->getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::getOffset: input index is out of array length: [";
-    errorMessage += std::to_string(i);
-    errorMessage += "] vs ";
-    errorMessage += std::to_string(lengthOf());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  return shape::getIndexOffset(i, _shapeInfo);
-}
 
 ////////////////////////////////////////////////////////////////////////
 NDArray &NDArray::like() {

@@ -36,7 +36,7 @@ static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, LongType const* the
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   int totalThreads = gridDim.x * blockDim.x;
 
-  __shared__ LongType resultLength, xEws, yEws;
+  __shared__ LongType resultLength;
   __shared__ bool sameOffsets, sameOrders;
   __shared__ T* input;
   __shared__ T* output;
@@ -48,26 +48,29 @@ static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, LongType const* the
 
     sameOffsets = shape::haveSameShapeAndStrides(theFirstShape, theSecondShape);
     sameOrders = shape::order(theFirstShape) == shape::order(theSecondShape);
-
-    xEws = shape::elementWiseStride(theFirstShape);
-    yEws = shape::elementWiseStride(theSecondShape);
   }
   __syncthreads();
 
   for (int i = tid; i < resultLength; i += totalThreads) {
-    if (sameOrders && xEws > 0 && yEws > 0) {
-      math::sd_swap(output[i * xEws], input[i * yEws]);
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+
+    INDEX2COORDS(i, shape::rank(theFirstShape), theFirstShape, xCoords);
+    COORDS2INDEX(shape::rank(theFirstShape), shape::shapeOf(theFirstShape), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(theSecondShape), theSecondShape, yCoords);
+    COORDS2INDEX(shape::rank(theSecondShape), shape::shapeOf(theSecondShape), yCoords, yOffset);
+
+    if (sameOrders && xOffset >= 0 && yOffset >= 0) {
+      math::sd_swap(output[xOffset], input[yOffset]);
     } else if (sameOffsets) {
-      const auto offset = shape::getIndexOffset(i, theFirstShape);
-      math::sd_swap(output[offset], input[offset]);
+      math::sd_swap(output[xOffset], input[xOffset]);
     } else {
-      const auto xOffset = shape::getIndexOffset(i, theFirstShape);
-      const auto yOffset = shape::getIndexOffset(i, theSecondShape);
       math::sd_swap(output[xOffset], input[yOffset]);
     }
   }
 }
-
 BUILD_SINGLE_TEMPLATE(template SD_KERNEL void swapUnsafeKernel,
                       (void* theFirstBuffer, sd::LongType const* theFirstShape, void* theSecondBuffer,
                        sd::LongType const* theSecondShape),

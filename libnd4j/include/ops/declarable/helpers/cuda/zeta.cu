@@ -45,9 +45,19 @@ SD_KERNEL static void zetaCuda(const void *vx, const LongType *xShapeInfo, const
   const auto totalThreads = gridDim.x * blockDim.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-    const auto qOffset = shape::getIndexOffset(i, qShapeInfo);
-    const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+    LongType xCoords[SD_MAX_RANK];
+    LongType qCoords[SD_MAX_RANK];
+    LongType zCoords[SD_MAX_RANK];
+    LongType xOffset;
+    LongType qOffset;
+    LongType zOffset;
+
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(qShapeInfo), qShapeInfo, qCoords);
+    COORDS2INDEX(shape::rank(qShapeInfo), shape::shapeOf(qShapeInfo), qCoords, qOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
   }

@@ -46,90 +46,49 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
   sd::LongType inLength = shape::length(inShapeBuffer);
   sd::LongType outLength = shape::length(outShapeBuffer);
   if (numOfElemsToReverse == 0) numOfElemsToReverse = inLength;
-  sd::LongType inEWS = shape::elementWiseStride(inShapeBuffer);
-  char inOrder = shape::order(inShapeBuffer);
   sd::LongType sLength = numOfElemsToReverse - 1;
+
+  LongType inCoords[SD_MAX_RANK];
+  LongType outCoords[SD_MAX_RANK];
+  LongType inOffset;
+  LongType outOffset;
 
   // two step phase here
   if (inArr == outArr) {
-    if (inEWS == 1) {
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto idx = sLength - e;
-          swap(const_cast<T*>(inArr), e, idx);
-        }
-      };
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
-    } else if (inEWS > 1) {
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) {
-          auto idx1 = (sLength - e) * inEWS;
-          sd::LongType idx2 = e * inEWS;
-          swap(const_cast<T*>(inArr), idx1, idx2);
-        }
-      };
-
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
-    } else {
-      auto func = PRAGMA_THREADS_FOR {
-        for (sd::LongType e = start; e < stop; e++) {
-          auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
-          auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
-          swap(outArr, inOffset, outOffset);
-        }
-      };
-
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
-    }
+    auto func = PRAGMA_THREADS_FOR {
+      for (sd::LongType e = start; e < stop; e++) {
+        INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
+        INDEX2COORDS(sLength - e, shape::rank(inShapeBuffer), inShapeBuffer, outCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), outCoords, outOffset);
+        swap(const_cast<T*>(inArr), inOffset, outOffset);
+      }
+    };
+    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
   } else {
     // single step phase here
-    auto outEWS = shape::elementWiseStride(outShapeBuffer);
-    char outOrder = shape::order(outShapeBuffer);
-
-    if (inEWS == 1 && outEWS == 1 && inOrder == outOrder) {
-      auto func = PRAGMA_THREADS_FOR {
-        for (sd::LongType e = start; e < stop; e++) outArr[sLength - e] = inArr[e];
-      };
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
-
-      if (inLength != numOfElemsToReverse) {
-        auto f2 = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) outArr[e] = inArr[e];
-        };
-        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
+    auto func = PRAGMA_THREADS_FOR {
+      for (sd::LongType e = start; e < stop; e++) {
+        INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
+        INDEX2COORDS(sLength - e, shape::rank(outShapeBuffer), outShapeBuffer, outCoords);
+        COORDS2INDEX(shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords, outOffset);
+        outArr[outOffset] = inArr[inOffset];
       }
-    } else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e++) outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
-      };
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
+    };
+    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
-      if (inLength != numOfElemsToReverse) {
-        auto f2 = PRAGMA_THREADS_FOR {
-          for (auto e = start; e < stop; e++) outArr[e * outEWS] = inArr[e * inEWS];
-        };
-        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
-      }
-    } else {
-      auto func = PRAGMA_THREADS_FOR {
+    if (inLength != numOfElemsToReverse) {
+      auto f2 = PRAGMA_THREADS_FOR {
         for (sd::LongType e = start; e < stop; e++) {
-          auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
-          auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
+          INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
+          COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
+          INDEX2COORDS(e, shape::rank(outShapeBuffer), outShapeBuffer, outCoords);
+          COORDS2INDEX(shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords, outOffset);
           outArr[outOffset] = inArr[inOffset];
         }
       };
-      samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
-
-      if (inLength != numOfElemsToReverse) {
-        auto f2 = PRAGMA_THREADS_FOR {
-          for (sd::LongType e = start; e < stop; e++) {
-            auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
-            auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
-            outArr[outOffset] = inArr[inOffset];
-          }
-        };
-        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
-      }
+      samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
     }
   }
 }

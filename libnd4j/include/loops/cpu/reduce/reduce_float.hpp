@@ -44,7 +44,6 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   using Y = typename OpType::InterType;
 
   const sd::LongType length = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
     if (std::is_same<OpType, simdOps::Mean<X, Z>>::value) {
@@ -64,61 +63,57 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
     return;
   }
 
-  if (xEws > 0) {
-    z[0] = execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-    Y intermediate[64];
+  auto startingValue = OpType::startingValue(x);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  Y intermediate[64];
 
-    PRAGMA_OMP_SIMD
-    for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  PRAGMA_OMP_SIMD
+  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
 
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++)
-        intermediate[thread_id] = OpType::update(
-            intermediate[thread_id],
-            OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
-    };
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      sd::LongType offset;
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+      intermediate[thread_id] = OpType::update(
+          intermediate[thread_id],
+          OpType::op(x[offset], extraParams), extraParams);
+    }
+  };
 
-    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+  maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
-    // merge results
-    for (int e = 1; e < maxThreads; e++)
-      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+  // merge results
+  for (int e = 1; e < maxThreads; e++)
+    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
 
-    // write out results
-    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
-  }
-}
-
-template <typename X, typename Z>
+  // write out results
+  z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+}template <typename X, typename Z>
 template <typename OpType>
 Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  int xEws = shape::elementWiseStride(xShapeInfo);
 
-  if (xEws > 0) {
-    return execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  auto startingValue = OpType::startingValue(x);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++)
-      startingValue = OpType::update(
-          startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
-          extraParams);
-
-    return OpType::postProcess(startingValue, length, extraParams);
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    sd::LongType offset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
-}
 
+  return OpType::postProcess(startingValue, length, extraParams);
+}
 template <typename X, typename Y>
 Y ReduceFloatFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                         void *extraParams) {

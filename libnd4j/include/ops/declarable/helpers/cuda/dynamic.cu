@@ -62,7 +62,13 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
 
     for (LongType e = threadIdx.x; e < iLimit; e += blockDim.x) {
       // load set of indices into shared memory
-      if (e < iLength) rawIndices[threadIdx.x] = i[shape::getIndexOffset(e, iShapeInfo)];
+      if (e < iLength) {
+        LongType iOffset;
+        LongType iCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, shape::rank(iShapeInfo), iShapeInfo, iCoords);
+        COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+        rawIndices[threadIdx.x] = i[iOffset];
+      }
       __syncthreads();
 
       // now we need to find out where our actual updates will be mapped
@@ -78,11 +84,15 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
       __syncthreads();
 
       // doing actual update
-      if (e < iLength)
+      if (e < iLength) {
         if (trueIndices[threadIdx.x] >= 0) {
-          z[trueIndices[threadIdx.x]] = x[shape::getIndexOffset(e, xShapeInfo)];
+          LongType xOffset;
+          LongType xCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+          COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+          z[trueIndices[threadIdx.x]] = x[xOffset];
         }
-
+      }
       __syncthreads();
     }
   }
@@ -105,12 +115,25 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *
     int outCnt = 0;
 
     for (LongType e = 0; e < iLength; e++) {
-      if (indices[shape::getIndexOffset(e, iShapeInfo)] == i) {
+      LongType iCoords[SD_MAX_RANK];
+      LongType iOffset;
+      INDEX2COORDS(e, shape::rank(iShapeInfo), iShapeInfo, iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+
+      if (indices[iOffset] == i) {
         auto dx = x + xTadOffsets[e];
         auto dz = z + zTadOffsets[i][outCnt++];
 
         for (int f = threadIdx.x; f < xLength; f += blockDim.x) {
-          dz[shape::getIndexOffset(f, zTadShapeInfos[i])] = dx[shape::getIndexOffset(f, xTadShapeInfo)];
+          LongType fCoords[SD_MAX_RANK];
+          LongType xOffset;
+          LongType zOffset;
+          INDEX2COORDS(f, shape::rank(xTadShapeInfo), xTadShapeInfo, fCoords);
+          COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), fCoords, xOffset);
+          INDEX2COORDS(f, shape::rank(zTadShapeInfos[i]), zTadShapeInfos[i], fCoords);
+          COORDS2INDEX(shape::rank(zTadShapeInfos[i]), shape::shapeOf(zTadShapeInfos[i]), fCoords, zOffset);
+
+          dz[zOffset] = dx[xOffset];
         }
       }
     }
@@ -212,9 +235,26 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfo
     auto iLength = shape::length(iShapeInfo);
 
     for (int i = threadIdx.x; i < iLength; i += blockDim.x) {
-      auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
-      if (idx >= 0 && idx < zLength)
-        z[shape::getIndexOffset(idx, zShapeInfo)] = x[shape::getIndexOffset(i, xShapeInfo)];
+      LongType iCoords[SD_MAX_RANK];
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType iOffset;
+      LongType xOffset;
+      LongType zOffset;
+
+      INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+
+      auto idx = indices[iOffset];
+      if (idx >= 0 && idx < zLength) {
+        INDEX2COORDS(idx, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+
+        z[zOffset] = x[xOffset];
+      }
     }
   }
 }
@@ -245,21 +285,33 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfo
 
     // process each index setting values for this tad
     for (int i = 0; i < iLength; i++) {
-      auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
+      LongType iCoords[SD_MAX_RANK];
+      LongType iOffset;
+      INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+
+      auto idx = indices[iOffset];
 
       // the input at a given index starting at the offset for the current tad
       auto x = reinterpret_cast<X *>(vx[e]) + xTadOffsets[e][i];
       auto zTad = bz + zTadOffsets[idx];
       for (int j = 0; j < xTadLength; j++) {
-        auto xIdx = shape::getIndexOffset(j, xTadShapeInfo);
-        auto zIdx = shape::getIndexOffset(j, zTadShapeInfo);
+        LongType xCoords[SD_MAX_RANK];
+        LongType zCoords[SD_MAX_RANK];
+        LongType xIdx;
+        LongType zIdx;
+
+        INDEX2COORDS(j, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xIdx);
+        INDEX2COORDS(j, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zIdx);
+
         if (xIdx < xTadLength && xIdx >= 0 && zIdx < zLength && zIdx >= 0) zTad[zIdx] = x[xIdx];
       }
     }
   }
 
   __syncthreads();
-
 }
 
 
