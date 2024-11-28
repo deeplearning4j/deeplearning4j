@@ -78,12 +78,35 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, c
 
     INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-    initMsgOffset = bXInMsgSame ? xOffset : COORDS2INDEX(shape::rank(inMsgShapeInfo), shape::shapeOf(inMsgShapeInfo), coords, initMsgOffset);
-    stMsgOffset = bXStMsgSame ? xOffset : COORDS2INDEX(shape::rank(stMsgShapeInfo), shape::shapeOf(stMsgShapeInfo), coords, stMsgOffset);
-    initMsdxOffset = bXInMsdxSame ? xOffset : COORDS2INDEX(shape::rank(inMsdxShapeInfo), shape::shapeOf(inMsdxShapeInfo), coords, initMsdxOffset);
-    stMsdxOffset = bXStMsdxSame ? xOffset : COORDS2INDEX(shape::rank(stMsdxShapeInfo), shape::shapeOf(stMsdxShapeInfo), coords, stMsdxOffset);
+    if (bXZsame) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
+    if (bXInMsgSame) {
+      initMsgOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inMsgShapeInfo), shape::shapeOf(inMsgShapeInfo), coords, initMsgOffset);
+    }
+
+    if (bXStMsgSame) {
+      stMsgOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stMsgShapeInfo), shape::shapeOf(stMsgShapeInfo), coords, stMsgOffset);
+    }
+
+    if (bXInMsdxSame) {
+      initMsdxOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inMsdxShapeInfo), shape::shapeOf(inMsdxShapeInfo), coords, initMsdxOffset);
+    }
+
+    if (bXStMsdxSame) {
+      stMsdxOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stMsdxShapeInfo), shape::shapeOf(stMsdxShapeInfo), coords, stMsdxOffset);
+    }
     stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;
 
     up[zOffset] = grad[xOffset] * (math::sd_sqrt<T, T>(initMsdx[initMsdxOffset] + epsilon) /

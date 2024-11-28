@@ -33,18 +33,18 @@ static void __where(NDArray &condition, NDArray &output, memory::Workspace *work
   NDArrayList list(0, true);
   sd::LongType cnt = 0;
 
-  sd::LongType idx[SD_MAX_RANK];
 
   for (sd::LongType e = 0; e < condition.lengthOf(); e++) {
-    INDEX2COORDS(e,condition.rankOf(),condition.shapeOf(),idx);
+    sd::LongType coords[SD_MAX_RANK];
 
+    INDEX2COORDS(e, condition.rankOf(), condition.shapeOf(), coords);
     sd::LongType offset;
-    COORDS2INDEX(condition.rankOf(), shape::stride(condition.shapeInfo()), idx, offset);
+    COORDS2INDEX(condition.rankOf(), shape::stride(condition.shapeInfo()), coords, offset);
 
     if (condition.e<bool>(offset)) {
       std::vector<sd::LongType> arrShape = {1, condition.rankOf()};
       auto array = NDArrayFactory::create_('c', arrShape, output.dataType(), output.getContext());
-      for (int f = 0; f < condition.rankOf(); f++) array->p(f, (T)idx[f]);
+      for (int f = 0; f < condition.rankOf(); f++) array->p(f, (T)coords[f]);
 
       list.write(cnt++, array);
     }

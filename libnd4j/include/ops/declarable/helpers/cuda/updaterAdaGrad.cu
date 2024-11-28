@@ -70,9 +70,23 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
     if (!bEWS || !bOrdering) {
       INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
       COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-      zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-      initOffset = bXInSame ? xOffset : COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
-      stOffset = bXStSame ? xOffset : COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      }
+
+      if (bXInSame) {
+        initOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
+      }
+
+      if (bXStSame) {
+        stOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+      }
     } else {
       xOffset = zOffset = initOffset = stOffset = i;
     }
@@ -95,7 +109,7 @@ void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
     epsilon = static_cast<T>(1e-7);
   }
   adaGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMemory, *stream>>>(vx, xShapeInfo, vin, inShapeInfo, vz,
-                                                                          zShapeInfo, vst, stShapeInfo, lr, epsilon);
+                                                                                   zShapeInfo, vst, stShapeInfo, lr, epsilon);
   sd::DebugHelper::checkErrorCode(const_cast<cudaStream_t *>(stream), "adaGradUpdaterCuda failed");
 
 }
@@ -110,8 +124,8 @@ void updaterAdaGrad(LaunchContext* context, NDArray& gradient, NDArray& initStat
   BUILD_SINGLE_SELECTOR(
       gradient.dataType(), adaGradUpdaterCudaLauncher,
       (launchDims.y, launchDims.x, launchDims.z,context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
-       initState.specialBuffer(), initState.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(),
-       stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dEpsilon),
+          initState.specialBuffer(), initState.specialShapeInfo(), update.specialBuffer(), update.specialShapeInfo(),
+          stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dEpsilon),
       SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({&update, &stateH}, {&gradient, &initState});
 

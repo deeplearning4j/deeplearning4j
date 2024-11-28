@@ -280,8 +280,17 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(const void* vx, const sd::LongType
 
     sd::LongType zOffset, xOffset, yOffset;
     COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
-    xOffset = xzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
-    yOffset = yzSameOffsets ? zOffset : COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    if (xzSameOffsets) {
+      xOffset = zOffset;
+    } else {
+      COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    }
+
+    if (yzSameOffsets) {
+      yOffset = zOffset;
+    } else {
+      COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    }
 
     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
   }

@@ -101,8 +101,9 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
                                             inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(), nullptr,
-                                            zTadShapeInfo, zBuff, zTadPack->specialShapeInfo(), nullptr, nullptr,
-                                            nullptr, false /*allowParallelism*/);
+                                            zTadShapeInfo, zBuff, zTadPack->specialShapeInfo(),
+                                            nullptr,
+                                            false);
     }
   }
 
@@ -190,7 +191,7 @@ static void unstack_(LaunchContext* context, NDArray& input, const std::vector<N
       NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign, nullptr, xTadShapeInfo, xBuff,
                                             xTadPack->specialShapeInfo(), nullptr, outArrs[i]->shapeInfo(),
                                             outArrs[i]->specialBuffer(), outArrs[i]->specialShapeInfo(), nullptr,
-                                            nullptr, nullptr, false /*allowParallelism*/);
+                                            false);
     }
   }
 

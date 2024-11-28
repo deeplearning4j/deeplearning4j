@@ -80,12 +80,35 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
 
     INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-    initUOffset = bXInUSame ? xOffset : COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
-    stUOffset = bXStUSame ? xOffset : COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
-    initMOffset = bXInMSame ? xOffset : COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
-    stMOffset = bXStMSame ? xOffset : COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+    if (bXZsame) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
+    if (bXInUSame) {
+      initUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+    }
+
+    if (bXStUSame) {
+      stUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+    }
+
+    if (bXInMSame) {
+      initMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+    }
+
+    if (bXStMSame) {
+      stMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+    }
     auto oneMinusBeta1Grad = grad[xOffset] * mbeta1;
 
     stM[stMOffset] = beta1 * initM[initMOffset] + oneMinusBeta1Grad;

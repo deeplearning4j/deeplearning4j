@@ -83,13 +83,37 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    INDEX2COORDS(i, xShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo), coords);
     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-    initUOffset = bXInUSame ? xOffset : COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
-    stUOffset = bXStUSame ? xOffset : COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
-    initMOffset = bXInMSame ? xOffset : COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
-    stMOffset = bXStMSame ? xOffset : COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+    if (bXZsame) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
+
+    if (bXInUSame) {
+      initUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+    }
+
+    if (bXStUSame) {
+      stUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+    }
+
+    if (bXInMSame) {
+      initMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+    }
+
+    if (bXStMSame) {
+      stMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+    }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
     stU[stUOffset] = beta2 * initU[initUOffset] +

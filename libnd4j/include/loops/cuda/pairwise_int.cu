@@ -47,12 +47,12 @@ SD_KERNEL static void pairwiseSimpleShaped(void const* vx, sd::LongType const* x
   __syncthreads();
 
   for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
-    LongType xCoords[SD_MAX_RANK];
-    LongType yCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-    LongType xOffset;
-    LongType yOffset;
-    LongType zOffset;
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+    sd::LongType zOffset;
 
     INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);

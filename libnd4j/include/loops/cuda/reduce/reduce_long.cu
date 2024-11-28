@@ -124,8 +124,11 @@ SD_DEVICE void ReduceLongFunction<X, Z>::transformCudaXD(const void *vx, const s
     INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
     sd::LongType outerOffset, zOffset;
     COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
-    zOffset = sameOffsets ? outerOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-
+    if(sameOffsets) {
+      sameOffsets = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
     const X *xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
 

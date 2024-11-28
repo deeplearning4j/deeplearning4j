@@ -320,9 +320,6 @@ void NDArray::syncShape()  {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void const* NDArray::specialBufferWithOffset(LongType offset)  {
-  return specialBuffer() != nullptr ? static_cast<int8_t const*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
-}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -393,7 +390,7 @@ void NDArray::tile(const std::vector<LongType>& reps, NDArray& target)  {
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR_TWICE(
       target.dataType(), tileKernelHH,
-      (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, ews, stream),
+      (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, stream),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this});
 }
@@ -416,7 +413,7 @@ void NDArray::tile(NDArray& target)  {
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR_TWICE(
       target.dataType(), tileKernelHH,
-      (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, ews, stream),
+      (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, stream),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this});
 }

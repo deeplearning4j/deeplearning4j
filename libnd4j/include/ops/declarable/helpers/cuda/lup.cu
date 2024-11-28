@@ -510,25 +510,6 @@ static void swapRows_(NDArray *matrix, LongType theFirst, LongType theSecond) {
 BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond),
                       SD_FLOAT_TYPES);
 
-template <typename T>
-static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirst, LongType theSecond) {
-  if (theFirst != theSecond) {
-    auto n = shape::sizeAt(matrixShape, static_cast<LongType>(-1));
-
-    auto loop = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        LongType theFirstPos[] = {theFirst, i};
-        LongType theSecondPos[] = {theSecond, i};
-        LongType theFirstIndex, theSecondIndex;
-        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theFirstPos, theFirstIndex);
-        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theSecondPos, theSecondIndex);
-        math::sd_swap(matrixBuf[theFirstIndex], matrixBuf[theSecondIndex]);
-      }
-    };
-
-    samediff::Threads::parallel_tad(loop, 0, n, 1);
-  }
-}
 void swapRows(NDArray *matrix, LongType theFirst, LongType theSecond) {
   BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), SD_FLOAT_TYPES);
 }
@@ -606,6 +587,33 @@ static void doolitleLU(LaunchContext *context, NDArray *compound, LongType rowNu
       compound->r<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i, i);
     }
   }
+}
+
+/*
+ * lu decomposition with naive algorithm with partial pivoting
+ * */
+template <typename T, typename I>
+static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShape) {
+  auto rowNum = shape::sizeAt(compoundShape, static_cast<sd::LongType>(0));
+  sd::LongType xInitial[] = {column, column};
+  sd::LongType xInitialIndex;
+  COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xInitial, xInitialIndex);
+  auto maxValue = T(0);
+  auto result = -1;
+  auto start = column;
+  auto stop = rowNum;
+  auto increment = 1;
+  for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
+    sd::LongType xPos[] = {rowCounter, column};
+    sd::LongType xIndex;
+    COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xPos, xIndex);
+    if (sd::math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
+      maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs<T,T>(compoundBuffer[xIndex]));
+      result = rowCounter;
+    }
+  }
+
+  return result;
 }
 
 template <typename T, typename I>
@@ -690,7 +698,7 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    auto offset;
+    sd::LongType offset;
     sd::LongType offsetCoords[SD_MAX_RANK];
     INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
     COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);

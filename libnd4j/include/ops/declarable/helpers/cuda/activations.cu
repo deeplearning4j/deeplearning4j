@@ -58,7 +58,7 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
-    INDEX2COORDS(i, xShapeInfo, coords);
+    INDEX2COORDS(i, xzRank,shape::shapeOf(xShapeInfo), coords);
 
     LongType xzOffset;
     COORDS2INDEX(xzRank, shape::shapeOf(xShapeInfo), coords, xzOffset);

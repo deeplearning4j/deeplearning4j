@@ -179,12 +179,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
         # See: https://github.com/bombela/backward-cpp
 
-        # Introduce variables:
-        # * CMAKE_INSTALL_LIBDIR
-        # * CMAKE_INSTALL_BINDIR
-        # * CMAKE_INSTALL_INCLUDEDIR
-
-        # check if compiler is nvcc or nvcc_wrapper
+        # Check if compiler is nvcc or nvcc_wrapper
         set(COMPILER_IS_NVCC false)
         get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
         if(COMPILER_NAME MATCHES "^nvcc")
@@ -197,11 +192,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
             endif()
         endif()
 
+        # Set C++ standard
         set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
         if(COMPILER_IS_NVCC)
+            # GNU C++ extensions are not supported by nvcc
             set(CMAKE_CXX_EXTENSIONS OFF)
         endif()
 
+        # Set C++ compiler and flags
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -g -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
@@ -217,6 +215,15 @@ if(NOT SD_CUDA)
     if(NOT SD_CPU)
         set(SD_CUDA FALSE)
         set(SD_CPU TRUE)
+    endif()
+endif()
+
+# Set SD_LIBRARY_NAME Based on Build Type
+if(NOT DEFINED SD_LIBRARY_NAME)
+    if(SD_CUDA)
+        set(SD_LIBRARY_NAME nd4jcuda)
+    else()
+        set(SD_LIBRARY_NAME nd4jcpu)
     endif()
 endif()
 
@@ -274,14 +281,13 @@ if(SD_CUDA)
         endif()
 
         if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
-            message("Adding jetson nano specific settings")
+            message("Adding Jetson Nano specific settings")
             # Need to manually specify stubbed links in order
             # for cublas and cusolver to be resolved
             if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
                 message("Setting cublas library manually")
-                set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
-                set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
-                # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
+                set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
+                # Unset NOTFOUND variables
                 unset(CUDA_cublas-NOTFOUND CACHE)
                 unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
                 unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
@@ -290,6 +296,7 @@ if(SD_CUDA)
             if(NOT DEFINED CUDA_cusolver_LIBRARY OR CUDA_cusolver_LIBRARY MATCHES ".*NOTFOUND.*")
                 message("Setting cusolver library manually for Jetson Nano")
                 set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
+                # Unset NOTFOUND variables
                 unset(CUDA_cusolver-NOTFOUND CACHE)
                 unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
                 unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
@@ -297,17 +304,9 @@ if(SD_CUDA)
 
             message("Jetson Nano cublas library: ${CUDA_cublas_LIBRARY}, cusolver library: ${CUDA_cusolver_LIBRARY}")
         endif()
-        # note this looks off. The reason for this is certain kernels
-        # will run with out of resources and use too many registers.
-        # the biggest one being im2col and col2im.
-        # we profiled them using ncu during the tests.
-        # in order to address this we force the compiler to cap the number of registers.
-        # 40 during the profiling seemed to be what saturated the usage.
-        # any more registers than that did not see many returns in usage.
-        # This may need to be tunable in the future.
-        # For the related benchmarks and how they were run
-        # see ../../platform-tests/docs/benchmark.md
-        set(CMAKE_CUDA_FLAGS  "${CMAKE_CUDA_FLAGS}  --maxrregcount=40 ")
+
+        # Cap the number of registers to prevent resource exhaustion
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --maxrregcount=40 ")
 
         # Define CUDA Architectures
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
@@ -322,13 +321,11 @@ if(SD_CUDA)
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
             set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
         elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
-            #matches USER COMPUTE old way
-            set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE} ")
+            # Matches user-specified compute capability
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE}")
             set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
         else()
-            #matches numbers NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
-            #NAME: Fermi Kepler Maxwell Kepler+Tegra Kepler+Tesla Maxwell+Tegra Pascal
-            #NUM:   2.0 2.1 3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.2 et cetera
+            # Matches specific compute capabilities
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
         endif()
 
@@ -391,37 +388,6 @@ if(SD_CUDA)
             genCompilation(${FL_ITEM})
         endforeach()
 
-        # Define Instantiation Templates
-        set(INSTANTIATION_TEMPLATES_3
-                "../include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
-        )
-        set(INSTANTIATION_TEMPLATES_2
-                "../include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
-        )
-
-        # Generate Instantiation Files
-        foreach(template_file IN LISTS INSTANTIATION_TEMPLATES_3)
-            foreach(comb IN LISTS COMBINATIONS_3)
-                genPartitionCombination(
-                        "${template_file}"
-                        "3"
-                        "${comb}"
-                        "${CMAKE_BINARY_DIR}/loops/cuda/comb_compilation_units"
-                )
-            endforeach()
-        endforeach()
-
-        foreach(template_file IN LISTS INSTANTIATION_TEMPLATES_2)
-            foreach(comb IN LISTS COMBINATIONS_2)
-                genPartitionCombination(
-                        "${template_file}"
-                        "2"
-                        "${comb}"
-                        "${CMAKE_BINARY_DIR}/loops/cuda/comb_compilation_units"
-                )
-            endforeach()
-        endforeach()
-
         # Include cuDNN Sources if Available
         if(HAVE_CUDNN)
             message("cuDNN included")
@@ -482,12 +448,30 @@ if(SD_CUDA)
         # Handle MSVC Runtime Library
         set(MSVC_RT_LIB "MultiThreadedDLL")
         set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         if(WIN32)
             message("Enabling /EHsc for CUDA on Windows")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
+
+        # Create the shared library using SD_LIBRARY_NAME
+        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+        endif()
+
+        # Create the static library if needed
+        if(SD_STATIC_LIB AND SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
+        elseif(SD_STATIC_LIB)
+            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+        endif()
+
+        # Set MSVC runtime library for the shared library
+        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         # Link CUDA Libraries
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
@@ -545,9 +529,8 @@ elseif(SD_CPU)
             ${LOOPS_SOURCES}
     )
 
-
     if (SD_X86_BUILD)
-        # we disable platform optimizations for certains files for linux/macos
+        # Disable platform optimizations for certain files on Linux/macOS
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
@@ -571,37 +554,6 @@ elseif(SD_CPU)
     # Generate Compilation Units
     foreach(FL_ITEM ${COMPILATION_UNITS})
         genCompilation(${FL_ITEM})
-    endforeach()
-
-    # Define Instantiation Templates
-    set(INSTANTIATION_TEMPLATES_3
-            "../include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
-    )
-    set(INSTANTIATION_TEMPLATES_2
-            "../include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
-    )
-
-    # Generate Instantiation Files for CPU
-    foreach(template_file IN LISTS INSTANTIATION_TEMPLATES_3)
-        foreach(comb IN LISTS COMBINATIONS_3)
-            genPartitionCombination(
-                    "${template_file}"
-                    "3"
-                    "${comb}"
-                    "${CMAKE_BINARY_DIR}/loops/cpu/comb_compilation_units"
-            )
-        endforeach()
-    endforeach()
-
-    foreach(template_file IN LISTS INSTANTIATION_TEMPLATES_2)
-        foreach(comb IN LISTS COMBINATIONS_2)
-            genPartitionCombination(
-                    "${template_file}"
-                    "2"
-                    "${comb}"
-                    "${CMAKE_BINARY_DIR}/loops/cpu/comb_compilation_units"
-            )
-        endforeach()
     endforeach()
 
     # Include cuDNN Sources if Available
@@ -639,33 +591,27 @@ elseif(SD_CPU)
         add_dependencies(samediff_obj ${external_dependency})
     endforeach()
 
-    if(IOS)
-        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
-    else()
-        # Build Shared Library
-        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
-            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
-            if(ANDROID)
-                # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
-                # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
-                # See: https://cmake.org/cmake/help/latest/prop_gbl/JOB_POOLS.html
-                cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
-                if(_logical_cores LESS 4)
-                    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
-                endif()
+    # Create the shared library using SD_LIBRARY_NAME
+    if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+        add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+        if(ANDROID)
+            # Limit the number of compile jobs on systems with few cores
+            cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+            if(_logical_cores LESS 4)
+                set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
             endif()
         endif()
+    endif()
 
-        if (SD_STATIC_LIB AND SD_SHARED_LIB)
-            # if both static and shared library are going to be built - static library will have special suffix
-            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
-            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
-        elseif(SD_STATIC_LIB)
-            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
-            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
-        endif()
+    # Create the static library if needed
+    if (SD_STATIC_LIB AND SD_SHARED_LIB)
+        add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
+        set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
+    elseif(SD_STATIC_LIB)
+        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
 
     # Handle MSVC Runtime Library Consistently
@@ -701,16 +647,10 @@ elseif(SD_CPU)
     endif()
 
     # Set Library Output Directories
-    if(SD_CUDA)
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
-    elseif(SD_CPU)
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu")
-    endif()
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu")
 
     # Install the Library
-    if(SD_CPU OR SD_CUDA)
-        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
-    endif()
+    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
 
 endif()
 
@@ -812,5 +752,3 @@ if(SD_PREPROCESS STREQUAL "ON")
     # Create a Custom Target for All Preprocessed Files
     add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
 endif()
-
-

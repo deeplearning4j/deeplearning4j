@@ -34,21 +34,21 @@
 namespace sd {
 
 template <typename T>
-SD_HOST void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, const LongType *xShapeInfo,
+SD_HOST void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx,  LongType *xShapeInfo,
                               LongType length, long idx);
 
 template <typename T>
-SD_HOST void fillDimensionalIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dX, void *dZ,
-                                         const LongType *zShapeInfo, const LongType *tadOnlyShapeInfo,
-                                         LongType *dimension, LongType dimensionLength, const LongType *tadOffsets);
+SD_HOST void fillDimensionalIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream,  void *dX, void *dZ,
+                                          LongType *zShapeInfo,  LongType *tadOnlyShapeInfo,
+                                         LongType *dimension, LongType dimensionLength,  LongType *tadOffsets);
 
 template <typename T>
 SD_HOST void convertToHalfGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, LongType n, half *dz);
 
 template <typename T>
-SD_HOST void tearKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, LongType const *xShapeInfo,
-                               Pointer *targets, LongType const *zShapeInfo, LongType const *tadShapeInfo,
-                               LongType const *tadOffsets);
+SD_HOST void tearKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, LongType  *xShapeInfo,
+                               Pointer *targets, LongType  *zShapeInfo, LongType  *tadShapeInfo,
+                               LongType  *tadOffsets);
 
 template <typename T>
 SD_HOST void shuffleKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdX, LongType **xShapeInfo,
@@ -59,7 +59,7 @@ SD_HOST void convertHalfsToGeneric(dim3 &launchDims, cudaStream_t *stream, half 
 
 template <typename T>
 SD_HOST void concatKernelVStackGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
-                                       Pointer *inputShapeInfos, void *vz, LongType const *zShapeInfo);
+                                       Pointer *inputShapeInfos, void *vz, LongType  *zShapeInfo);
 
 template <typename T>
 SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
@@ -67,18 +67,18 @@ SD_HOST void concatKernelScalarGeneric(dim3 &launchDims, cudaStream_t *stream, i
 
 template <typename T>
 SD_HOST void concatKernelHStackGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
-                                       Pointer *inputShapeInfos, void *vresult, LongType const *resultShapeInfo);
+                                       Pointer *inputShapeInfos, void *vresult, LongType  *resultShapeInfo);
 
 template <typename T>
 SD_HOST void concatKernelGeneric(dim3 &launchDims, cudaStream_t *stream, int numArrays, Pointer *data,
-                                 Pointer *inputShapeInfos, void *vresult, LongType const *resultShapeInfo,
-                                 Pointer *tadPointers, Pointer *offsetPointers, LongType const *zTadShape,
-                                 LongType const *zOffsets);
+                                 Pointer *inputShapeInfos, void *vresult, LongType  *resultShapeInfo,
+                                 Pointer *tadPointers, Pointer *offsetPointers, LongType  *zTadShape,
+                                 LongType  *zOffsets);
 
 template <typename T>
 SD_HOST void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, void *vz, LongType n,
-                                   LongType *indexes, LongType const *tadShapeInfo, LongType const *tadOffsets,
-                                   LongType const *zTadShapeInfo, LongType const *zTadOffsets);
+                                   LongType *indexes, LongType  *tadShapeInfo, LongType  *tadOffsets,
+                                   LongType  *zTadShapeInfo, LongType  *zTadOffsets);
 
 template <typename T>
 SD_HOST void averagingKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdx, void *vdz, int n,
@@ -97,8 +97,7 @@ SD_HOST void tileKernelH(void const *inputBuffer, LongType const *inputShape, vo
                          LongType const *outputShape, LongType resultLength, cudaStream_t *stream);
 template <typename X, typename Y>
 SD_HOST void tileKernelHH(void const *inputBuffer, LongType const *inputShape, void *outputBuffer,
-                          LongType const *outputShape, LongType resultLength, LongType ews,
-                          cudaStream_t *stream);
+                          LongType const *outputShape, LongType resultLength, cudaStream_t *stream);
 
 class NDArray;
 template <typename T>

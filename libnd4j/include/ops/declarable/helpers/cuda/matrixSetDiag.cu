@@ -71,8 +71,11 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const LongType* xShapeIn
 
     LongType xOffset, zOffset, yOffset;
     COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
-    zOffset = areSameOffsets ? xOffset : COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
-
+    if (areSameOffsets) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
     // condition to be on diagonal of innermost matrix
     if (coords[xRank - 2] == coords[xRank - 1]) {
       COORDS2INDEX(xRank - 1, shape::shapeOf(yShapeInfo), coords, yOffset);

@@ -104,11 +104,12 @@ SD_HOST_DEVICE SD_INLINE  void  sd_swap(T& val1, T& val2);
 SD_PROMOTE_FUNC(sd_max, (promoted_val1 > promoted_val2 ? promoted_val1 : promoted_val2))
 
 SD_PROMOTE_FUNC(sd_min, (promoted_val1 < promoted_val2 ? promoted_val1 : promoted_val2))
-
 SD_PROMOTE_FUNC(sd_add, (promoted_val1 + promoted_val2))
 SD_PROMOTE_FUNC(sd_subtract, (promoted_val1 - promoted_val2))
 SD_PROMOTE_FUNC(sd_multiply, (promoted_val1 * promoted_val2))
 SD_PROMOTE_FUNC(sd_divide, (promoted_val1 / promoted_val2))
+
+
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_re(T val1, T val2);
@@ -256,6 +257,14 @@ SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
  Z result = sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
  SD_PRINT_MATH_FUNC("sd_softplus", val, result);
  return result;
+}
+
+
+template <typename X, typename Z>
+SD_HOST_DEVICE inline Z sd_floor(X val) {
+  Z result = static_cast<Z>(p_floor<X>(val));
+  SD_PRINT_MATH_FUNC("sd_floor", val, result);
+  return result;
 }
 
 
@@ -785,6 +794,75 @@ SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
   return result;
 }
 
+
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_ceil(X val) {
+  return static_cast<Z>(p_ceil<X>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_round(X val) {
+  return static_cast<Z>(p_round<X>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_asin(X val) {
+  return p_asin<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_atan(X val) {
+  return p_atan<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_atanh(X val) {
+  return p_atanh<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_cosh(X val) {
+  return p_cosh<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_rint(X val) {
+  return p_rint<X>(val);
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_sinh(X val) {
+  return p_sinh<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_acos(X val) {
+  return p_acos<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_sech(X val) {
+  return static_cast<Z>(1) / sd_cosh<X, Z>(val);
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_acosh(X val) {
+  return p_acosh<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
+  return p_cos<Z>(static_cast<Z>(val));
+}
+
+template <typename X, typename Z>
+SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
+  return p_exp<X>(val);
+}
+
+
+
 // Implement sd_lgamma with print statements
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x) {
@@ -994,6 +1072,1298 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
   SD_PRINT_MATH_FUNC("sd_gamma", a, result);
   return result;
 }
+
+
+#if defined(__CUDACC__)
+namespace atomics {
+
+SD_DEVICE SD_INLINE int atomicCAS(int* address, int compare, int val);
+SD_DEVICE SD_INLINE unsigned int atomicCAS(unsigned int* address, unsigned int compare, unsigned int val);
+
+
+// Type conversion functions
+SD_DEVICE SD_INLINE int __float_as_int(float val) {
+  return *reinterpret_cast<int*>(&val);
+}
+
+SD_DEVICE SD_INLINE float __int_as_float(int val) {
+  return *reinterpret_cast<float*>(&val);
+}
+
+SD_DEVICE SD_INLINE long long int __double_as_longlong(double val) {
+  return *reinterpret_cast<long long int*>(&val);
+}
+
+SD_DEVICE SD_INLINE double __longlong_as_double(long long int val) {
+  return *reinterpret_cast<double*>(&val);
+}
+
+
+
+
+SD_DEVICE SD_INLINE unsigned short atomicCAS(unsigned short* address, unsigned short compare, unsigned short val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
+  unsigned int long_compare = compare;
+  unsigned int long_val = val;
+
+  unsigned int shift = ((size_t)address & 2) * 8;
+  unsigned int mask = 0xffff << shift;
+
+  long_compare = long_compare << shift;
+  long_val = long_val << shift;
+
+  unsigned int old = *base_address, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(base_address, assumed,
+                    (assumed & ~mask) | (long_val & mask));
+  } while (assumed != old);
+
+  return (unsigned short)((old & mask) >> shift);
+}
+
+
+
+template <typename T>
+SD_DEVICE SD_INLINE T __sync_val_compare_and_swap_custom(T* address, T compare, T val) {
+  T old;
+  bool success;
+  do {
+    old = *address;
+    if (old != compare) {
+      return old;
+    }
+    __threadfence();
+    success = (compare == __ldcg(address));  // Volatile load
+    if (success) {
+      *address = val;
+    }
+    __threadfence();
+  } while (!success);
+  return old;
+}
+
+// Specializations for common types
+SD_DEVICE SD_INLINE int __sync_val_compare_and_swap_custom(int* address, int compare, int val) {
+  return __sync_val_compare_and_swap_custom<int>(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE unsigned int __sync_val_compare_and_swap_custom(unsigned int* address, unsigned int compare, unsigned int val) {
+  return __sync_val_compare_and_swap_custom<unsigned int>(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE unsigned long long __sync_val_compare_and_swap_custom(unsigned long long* address, unsigned long long compare, unsigned long long val) {
+  return __sync_val_compare_and_swap_custom<unsigned long long>(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE float __sync_val_compare_and_swap_custom(float* address, float compare, float val) {
+  return __sync_val_compare_and_swap_custom<float>(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE double __sync_val_compare_and_swap_custom(double* address, double compare, double val) {
+  return __sync_val_compare_and_swap_custom<double>(address, compare, val);
+}
+
+// SD_INLINE atomicCAS implementations for integer types
+SD_DEVICE SD_INLINE int atomicCAS(int* address, int compare, int val) {
+  return (int) __sync_val_compare_and_swap_custom((unsigned int*)address, (unsigned int)compare, (unsigned int)val);
+}
+
+SD_DEVICE SD_INLINE unsigned int atomicCAS(unsigned int* address, unsigned int compare, unsigned int val) {
+  return __sync_val_compare_and_swap_custom(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE unsigned long long int atomicCAS(unsigned long long int* address,
+                                                     unsigned long long int compare,
+                                                     unsigned long long int val) {
+  return __sync_val_compare_and_swap_custom(address, compare, val);
+}
+
+SD_DEVICE SD_INLINE unsigned long   atomicCAS(unsigned long * address,
+                                            unsigned long compare,
+                                            unsigned long  val) {
+  return __sync_val_compare_and_swap_custom(address, compare, val);
+}
+
+
+
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicAdd(T* address, T val);
+
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicSub(T* address, T val);
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicMul(T* address, T val);
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicDiv(T* address, T val);
+
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicMin(T* address, T val);
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicMax(T* address, T val);
+
+template <typename T>
+SD_INLINE SD_DEVICE T sd_atomicCAS(T* address, T compare, T val);
+
+template <>
+SD_INLINE SD_DEVICE int32_t sd_atomicCAS<int32_t>(int32_t* address,int32_t compare, int32_t val) {
+  return atomicCAS((int *) address, (int )compare,(int) val);
+}
+
+template <>
+SD_INLINE SD_DEVICE uint32_t sd_atomicCAS<uint32_t>(uint32_t* address, uint32_t compare,uint32_t val) {
+  return atomicCAS((int *)address, (int) compare,(int) val);
+}
+
+
+
+SD_DEVICE SD_INLINE int atomicMin(int* address, int val) {
+  int old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, (val < assumed) ? val : assumed);
+  } while (assumed != old);
+  return old;
+}
+
+SD_DEVICE SD_INLINE unsigned int atomicMin(unsigned int* address, unsigned int val) {
+  unsigned int old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, (val < assumed) ? val : assumed);
+  } while (assumed != old);
+  return old;
+}
+
+SD_DEVICE SD_INLINE unsigned long long int atomicMin(unsigned long long int* address, unsigned long long int val) {
+  unsigned long long int old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, (val < assumed) ? val : assumed);
+  } while (assumed != old);
+  return old;
+}
+
+
+template <>
+inline SD_DEVICE int32_t sd_atomicMin<int32_t>(int32_t* address, int32_t val) {
+  return atomicMin(address, val);
+}
+
+template <>
+inline SD_DEVICE uint32_t sd_atomicMin<uint32_t>(uint32_t* address, uint32_t val) {
+  return atomicMin(address, val);
+}
+
+
+
+// Generic wrapper for atomicCAS
+template <typename T>
+inline SD_DEVICE T sd_atomicCAS(T* address, T compare, T val) {
+  // Default implementation using atomicCAS directly
+  return atomicCAS(address, compare, val);
+}
+
+template <>
+inline SD_DEVICE uint8_t sd_atomicCAS<uint8_t>(uint8_t* address, uint8_t compare, uint8_t val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
+  unsigned int old, assumed, fresh;
+  int shift = (reinterpret_cast<size_t>(address) & 3) * 8;
+
+  old = *address_as_uint;
+  do {
+    fresh = old;
+    if ((static_cast<unsigned int>(compare) == ((old >> shift) & 0xFF))) {
+      fresh = (old & ~(0xFF << shift)) | (static_cast<unsigned int>(val) << shift);
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (old >> shift) & 0xFF;
+}
+
+
+
+
+// Specialization for float
+template <>
+inline SD_DEVICE float sd_atomicCAS<float>(float* address, float compare, float val) {
+  int* address_as_int = reinterpret_cast<int*>(address);
+  int old = *address_as_int, assumed;
+  int compare_as_int = __float_as_int(compare);
+  int val_as_int = __float_as_int(val);
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed, (assumed == compare_as_int) ? val_as_int : assumed);
+  } while (assumed != old);
+
+  return __int_as_float(old);
+}
+
+template <>
+inline SD_DEVICE uint64_t sd_atomicCAS<uint64_t>(uint64_t* address, uint64_t compare, uint64_t val) {
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  return atomicCAS(address_as_ull, static_cast<unsigned long long int>(compare), static_cast<unsigned long long int>(val));
+}
+
+template <>
+inline SD_DEVICE uint16_t sd_atomicCAS<uint16_t>(uint16_t* address, uint16_t compare, uint16_t val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
+  unsigned int old, assumed, fresh;
+
+  old = *address_as_uint;
+  do {
+    if (reinterpret_cast<size_t>(address) & 2) {
+      fresh = (old & 0xFFFF) | ((static_cast<unsigned int>(compare) == (old >> 16)) ? (static_cast<unsigned int>(val) << 16) : (old & 0xFFFF0000));
+    } else {
+      fresh = (old & 0xFFFF0000) | ((static_cast<unsigned int>(compare) == (old & 0xFFFF)) ? static_cast<unsigned int>(val) : (old & 0xFFFF));
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
+}
+
+template <>
+inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare, int16_t val) {
+  int* address_as_uint = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 2));
+  int old, assumed, fresh;
+
+  old = *address_as_uint;
+  do {
+    if (reinterpret_cast<size_t>(address) & 2) {
+      fresh = (old & 0xFFFF) | ((static_cast<unsigned int>(compare) == (old >> 16)) ? (static_cast<unsigned int>(val) << 16) : (old & 0xFFFF0000));
+    } else {
+      fresh = (old & 0xFFFF0000) | ((static_cast<unsigned int>(compare) == (old & 0xFFFF)) ? static_cast<unsigned int>(val) : (old & 0xFFFF));
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<size_t>(address) & 2) ? (old >> 16) : (old & 0xFFFF);
+}
+
+template <>
+inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, sd::LongType compare, sd::LongType val) {
+  unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
+  unsigned long long int compare_as_ull = static_cast<unsigned long long int>(compare);
+  unsigned long long int val_as_ull = static_cast<unsigned long long int>(val);
+
+  unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
+
+  return static_cast<sd::LongType>(old_as_ull);
+}
+
+
+template <>
+inline SD_DEVICE double sd_atomicCAS<double>(double* address, double compare, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int compare_as_ull = __double_as_longlong(compare);
+  unsigned long long int val_as_ull = __double_as_longlong(val);
+
+  unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
+
+  return __longlong_as_double(old_as_ull);
+}
+
+
+
+template <>
+inline SD_DEVICE int8_t sd_atomicCAS<int8_t>(int8_t* address, int8_t compare, int8_t val) {
+  int* address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - (reinterpret_cast<size_t>(address) & 3));
+  int old, assumed, fresh;
+  int shift = (reinterpret_cast<size_t>(address) & 3) * 8;
+
+  old = *address_as_int;
+  do {
+    fresh = old;
+    if ((static_cast<int>(compare) == ((old >> shift) & 0xFF))) {
+      fresh = (old & ~(0xFF << shift)) | (static_cast<int>(val) << shift);
+    }
+
+    assumed = old;
+    old = atomicCAS(address_as_int, assumed, fresh);
+  } while (assumed != old);
+
+  return (old >> shift) & 0xFF;
+}
+
+// Specialization for int32_t
+
+
+template <>
+inline __device__ float16 sd_atomicCAS<float16>(float16* address, float16 compare, float16 val) {
+  auto address_as_ushort = reinterpret_cast<unsigned short*>(address);
+
+  auto addr = reinterpret_cast<size_t>(address);
+  bool misaligned = addr & 0x1;
+
+  if (misaligned) address_as_ushort = reinterpret_cast<unsigned short*>(address - 1);
+
+  unsigned short old = *address_as_ushort;
+  unsigned short assumed;
+  do {
+    assumed = old;
+    unsigned short compare_as_ushort = misaligned ?
+                                                  (old & 0xFF00) | (compare & 0xFF) :
+                                                  (old & 0x00FF) | (compare & 0xFF00);
+    unsigned short val_as_ushort = misaligned ?
+                                              (old & 0xFF00) | (val & 0xFF) :
+                                              (old & 0x00FF) | (val & 0xFF00);
+
+    old = atomicCAS(address_as_ushort, compare_as_ushort, val_as_ushort);
+  } while (assumed != old);
+
+  float16 result;
+  result = misaligned ? (old & 0xFF) : (old & 0xFF00);
+  return result;
+}
+
+// Updated BPAIR structure for bfloat16 operations
+union BPAIR {
+  struct {
+    unsigned short L;
+    unsigned short H;
+  } B;
+  int W;
+};
+
+// Specialization for bfloat16
+template <>
+inline SD_DEVICE bfloat16 sd_atomicCAS<bfloat16>(bfloat16* address, bfloat16 compare, bfloat16 val) {
+  auto address_as_int = reinterpret_cast<int*>(address);
+
+  auto addr = reinterpret_cast<size_t>(address);
+  bool misaligned = addr & 0x2;
+
+  if (misaligned) address_as_int = reinterpret_cast<int*>(reinterpret_cast<char*>(address) - 2);
+
+  BPAIR old, assumed, fresh;
+
+  old.W = *address_as_int;
+  do {
+    if (!misaligned) {
+      fresh.B.H = (bfloat16(old.B.H) == bfloat16(compare)) ? bfloat16(val) : bfloat16(old.B.H);
+      fresh.B.L = bfloat16(old.B.L);
+    } else {
+      fresh.B.L = (bfloat16(old.B.L) == bfloat16(compare)) ? bfloat16(val) : bfloat16(old.B.L);
+      fresh.B.H = bfloat16(old.B.H);
+    }
+
+    assumed.W = old.W;
+    old.W = atomicCAS(address_as_int, assumed.W, fresh.W);
+  } while (assumed.W != old.W);
+
+  if (!misaligned)
+    return bfloat16(old.B.H);
+  else
+    return bfloat16(old.B.L);
+}
+
+
+// Fallback implementation for __half_as_ushort
+SD_DEVICE SD_INLINE unsigned short __half_as_ushort(float16 h) {
+  return *reinterpret_cast<unsigned short*>(&h);
+}
+
+// Fallback implementation for __ushort_as_half
+SD_DEVICE SD_INLINE float16 __ushort_as_half(unsigned short u) {
+  return *reinterpret_cast<float16*>(&u);
+}
+
+
+template <>
+inline SD_DEVICE float sd_atomicMin<float>(float* address, float val) {
+  int* address_as_ull = (int*)address;
+  int old = __float_as_int(val), assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, __float_as_int(math::sd_min(val, __int_as_float(assumed))));
+  } while (assumed != old);
+  return __int_as_float(old);
+}
+template <>
+inline SD_DEVICE double sd_atomicMin<double>(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = __double_as_longlong(val), assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(math::sd_min(val, __longlong_as_double(assumed))));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+template <>
+inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val) {
+#if __CUDA_ARCH__ >= 350
+  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+#else
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = __double_as_longlong(val), assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, math::sd_min((unsigned long long)val, assumed));
+  } while (assumed != old);
+  return old;
+#endif
+}
+template <>
+inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, sd::LongType val) {
+#if __CUDA_ARCH__ >= 350
+  return atomicMin((unsigned long long*)address, (unsigned long long)val);
+#else
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = (unsigned long long)val, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, math::sd_min(val, (sd::LongType)assumed));
+  } while (assumed != old);
+  return old;
+#endif
+}
+template <>
+inline SD_DEVICE int16_t sd_atomicMin<int16_t>(int16_t* address, int16_t val) {
+  int32_t temp = *address;
+  *address = atomicMin(&temp, (int)val);
+  return *address;
+}
+template <>
+inline SD_DEVICE bfloat16 sd_atomicMin<bfloat16>(bfloat16* address, bfloat16 val) {
+  return bfloat16(sd_atomicMin<int16_t>(&address->_data, val._data));
+}
+template <>
+inline SD_DEVICE float16 sd_atomicMin<float16>(float16* address, float16 val) {
+  return float16(sd_atomicMin<int16_t>(reinterpret_cast<int16_t*>(&address->data), (int16_t)val.data));
+}
+// Custom max functions
+SD_DEVICE SD_INLINE int32_t sd_max(int32_t a, int32_t b) {
+  return a > b ? a : b;
+}
+
+SD_DEVICE SD_INLINE uint32_t sd_max(uint32_t a, uint32_t b) {
+  return a > b ? a : b;
+}
+
+template <>
+inline SD_DEVICE int32_t sd_atomicMax<int32_t>(int32_t* address, int32_t val) {
+  int32_t old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, sd_max(val, assumed));
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+SD_DEVICE SD_INLINE  uint32_t sd_atomicMax<uint32_t>(uint32_t* address, uint32_t val) {
+  uint32_t old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, sd_max(val, assumed));
+  } while (assumed != old);
+  return old;
+}
+
+
+template <>
+SD_DEVICE SD_INLINE  unsigned long sd_atomicMax<unsigned long>(unsigned long* address, unsigned long val) {
+  uint32_t old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, sd_max(val, assumed));
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+SD_DEVICE SD_INLINE  double sd_atomicMax<double>(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = __double_as_longlong(val), assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed,
+                    __double_as_longlong(math::sd_max(val, __longlong_as_double(assumed))));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+template <>
+SD_DEVICE SD_INLINE  float sd_atomicMax<float>(float* address, float val) {
+  int* address_as_ull = (int*)address;
+  int old = __float_as_int(val), assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, __float_as_int(math::sd_max(val, __int_as_float(assumed))));
+  } while (assumed != old);
+  return __int_as_float(old);
+}
+template <>
+SD_DEVICE SD_INLINE  uint8_t sd_atomicMin<uint8_t>(uint8_t* address, uint8_t val) {
+  uint32_t temp = *address;
+  *address = atomicMin(&temp, (uint32_t)val);
+  return *address;
+}
+
+template <>
+SD_DEVICE SD_INLINE  int8_t sd_atomicMin<int8_t>(int8_t* address, int8_t val) {
+  int32_t temp = *address;
+  *address = atomicMin(&temp, (int)val);
+  return *address;
+}
+
+template <>
+SD_DEVICE SD_INLINE uint16_t sd_atomicMin<uint16_t>(uint16_t* address, uint16_t val) {
+  uint32_t temp = *address;
+  *address = atomicMin(&temp, (uint32_t)val);
+  return *address;
+}
+
+// Custom max functions
+SD_DEVICE SD_INLINE  uint8_t sd_max(uint8_t a, uint8_t b) {
+  return a > b ? a : b;
+}
+
+SD_DEVICE SD_INLINE int8_t sd_max(int8_t a, int8_t b) {
+  return a > b ? a : b;
+}
+// Simplified __byte_perm for uint8_t operations
+SD_DEVICE SD_INLINE unsigned int __byte_perm_uint8(unsigned int a, unsigned int b, unsigned int selector) {
+  unsigned int result;
+  unsigned int byte_index = selector & 0x3;
+
+  if (selector & 0x4) {
+    // Extract byte from b
+    result = (b >> (byte_index * 8)) & 0xFF;
+  } else {
+    // Extract byte from a
+    result = (a >> (byte_index * 8)) & 0xFF;
+  }
+
+  return result;
+}
+
+template <>
+inline SD_DEVICE uint8_t sd_atomicMax<uint8_t>(uint8_t* address, uint8_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+  unsigned int sel = selectors[(size_t)address & 3];
+  unsigned int old, assumed, max_, new_;
+
+  old = *base_address;
+  do {
+    assumed = old;
+    max_ = sd_max((uint8_t)(__byte_perm_uint8(old, 0, ((size_t)address & 3) | 0x4440)), val);
+    new_ = __byte_perm_uint8(old, max_, sel);
+    old = atomicCAS(base_address, assumed, new_);
+  } while (assumed != old);
+
+  return (uint8_t)(__byte_perm_uint8(old, 0, ((size_t)address & 3) | 0x4440));
+}
+
+// Custom implementation of __byte_perm
+SD_DEVICE SD_INLINE unsigned int __byte_perm(unsigned int a, unsigned int b, unsigned int selector) {
+  unsigned int result = 0;
+  for (int i = 0; i < 4; ++i) {
+    unsigned int byteSel = (selector >> (i * 4)) & 0xF;
+    unsigned int byte;
+    if (byteSel < 4)
+      byte = (a >> (byteSel * 8)) & 0xFF;
+    else if (byteSel < 8)
+      byte = (b >> ((byteSel - 4) * 8)) & 0xFF;
+    else
+      byte = 0;
+    result |= byte << (i * 8);
+  }
+  return result;
+}
+
+
+template <>
+inline SD_DEVICE int8_t sd_atomicMax<int8_t>(int8_t* address, int8_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+  unsigned int sel = selectors[(size_t)address & 3];
+  unsigned int old, assumed, max_, new_;
+
+  old = *base_address;
+  do {
+    assumed = old;
+    max_ = sd_max((int8_t)(__byte_perm(old, 0, ((size_t)address & 3) | 0x4440)), val);
+    new_ = __byte_perm(old, max_, sel);
+    old = atomicCAS(base_address, assumed, new_);
+  } while (assumed != old);
+
+  return (int8_t)(__byte_perm(old, 0, ((size_t)address & 3) | 0x4440));
+}
+
+
+// AtomicMax signatures
+SD_DEVICE SD_INLINE int atomicMax(int* address, int val);
+SD_DEVICE SD_INLINE unsigned int atomicMax(unsigned int* address, unsigned int val);
+SD_DEVICE SD_INLINE unsigned long long int atomicMax(unsigned long long int* address, unsigned long long int val);
+
+// Custom atomicMax for 16-bit types
+SD_DEVICE SD_INLINE uint16_t atomicMax(uint16_t* address, uint16_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
+  unsigned int offset = ((size_t)address & 2) << 3;
+  unsigned int mask = 0xFFFF << offset;
+  unsigned int old = *base_address, assumed;
+
+  do {
+    assumed = old;
+    uint16_t current = (old & mask) >> offset;
+    uint16_t maximum = current > val ? current : val;
+    unsigned int new_val = (old & ~mask) | (maximum << offset);
+    old = atomicCAS(base_address, assumed, new_val);
+  } while (assumed != old);
+
+  return (old & mask) >> offset;
+}
+
+SD_DEVICE SD_INLINE int16_t atomicMax(int16_t* address, int16_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~2);
+  unsigned int offset = ((size_t)address & 2) << 3;
+  unsigned int mask = 0xFFFF << offset;
+  unsigned int old = *base_address, assumed;
+
+  do {
+    assumed = old;
+    int16_t current = (old & mask) >> offset;
+    int16_t maximum = current > val ? current : val;
+    unsigned int new_val = (old & ~mask) | ((unsigned short)maximum << offset);
+    old = atomicCAS(base_address, assumed, new_val);
+  } while (assumed != old);
+
+  return (int16_t)((old & mask) >> offset);
+}
+
+// Updated sd_atomicMax implementations
+template <>
+inline SD_DEVICE uint16_t sd_atomicMax<uint16_t>(uint16_t* address, uint16_t val) {
+  return atomicMax(address, val);
+}
+
+// Proper PAIR struct for float16 operations
+struct PAIR {
+  PAIR() {}
+  union {
+    struct {
+      float16 L;
+      float16 H;
+    } B;
+    int W;
+  };
+};
+
+template <>
+inline SD_DEVICE int16_t sd_atomicMax<int16_t>(int16_t* address, int16_t val) {
+  return atomicMax(address, val);
+}
+
+template <>
+SD_INLINE SD_DEVICE float16 sd_atomicMax<float16>(float16* address, float16 val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>((reinterpret_cast<char*>(address) - (reinterpret_cast<uintptr_t>(address) & 2)));
+  unsigned int old, assumed, fresh;
+  float16 old_val, max_val;
+
+  old = *address_as_uint;
+  do {
+    assumed = old;
+    if (reinterpret_cast<uintptr_t>(address) & 2) {
+      old_val = float16(static_cast<unsigned short>(old >> 16));
+      max_val = sd::math::sd_max<float16>(old_val, val);
+      fresh = (old & 0xFFFF) | (reinterpret_cast<unsigned short&>(max_val) << 16);
+    } else {
+      old_val = float16(static_cast<unsigned short>(old & 0xFFFF));
+      max_val = sd::math::sd_max<float16>(old_val, val);
+      fresh = (old & 0xFFFF0000) | reinterpret_cast<unsigned short&>(max_val);
+    }
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<uintptr_t>(address) & 2) ? float16(static_cast<unsigned short>(old >> 16))
+                                                    : float16(static_cast<unsigned short>(old & 0xFFFF));
+}
+
+template <>
+SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 val) {
+  unsigned int* address_as_uint = reinterpret_cast<unsigned int*>((reinterpret_cast<char*>(address) - (reinterpret_cast<uintptr_t>(address) & 2)));
+  unsigned int old, assumed, fresh;
+  bfloat16 old_val, max_val;
+
+  old = *address_as_uint;
+  do {
+    assumed = old;
+    if (reinterpret_cast<uintptr_t>(address) & 2) {
+      old_val = bfloat16(static_cast<unsigned short>(old >> 16));
+      max_val = sd::math::sd_max<bfloat16>(old_val, val);
+      fresh = (old & 0xFFFF) | (reinterpret_cast<unsigned short&>(max_val) << 16);
+    } else {
+      old_val = bfloat16(static_cast<unsigned short>(old & 0xFFFF));
+      max_val = sd::math::sd_max<bfloat16>(old_val, val);
+      fresh = (old & 0xFFFF0000) | reinterpret_cast<unsigned short&>(max_val);
+    }
+    old = atomicCAS(address_as_uint, assumed, fresh);
+  } while (assumed != old);
+
+  return (reinterpret_cast<uintptr_t>(address) & 2) ? bfloat16(static_cast<unsigned short>(old >> 16))
+                                                    : bfloat16(static_cast<unsigned short>(old & 0xFFFF));
+}
+template <>
+inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, (unsigned long long) sd::math::sd_max<LongType>(val, (sd::LongType)assumed));
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(val + __longlong_as_double(assumed)));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+
+template <>
+inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, val + assumed);
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+inline SD_DEVICE long sd_atomicAdd<long>(long* address, long val) {
+  unsigned long long* address_as_ull = (unsigned long long int*)address;
+
+  //    return atomicAdd(address, val);
+  unsigned long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, val + assumed);
+  } while (assumed != old);
+  return old;
+}
+
+// Custom atomicAdd for uint32_t
+SD_DEVICE SD_INLINE uint32_t atomicAdd(uint32_t* address, uint32_t val) {
+  uint32_t old = *address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address, assumed, assumed + val);
+  } while (assumed != old);
+  return old;
+}
+
+// Custom atomicAdd for uint64_t
+SD_DEVICE SD_INLINE uint64_t atomicAdd(uint64_t* address, uint64_t val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, assumed + val);
+  } while (assumed != old);
+  return old;
+}
+
+// Updated sd_atomicAdd implementation for uint32_t
+template <>
+inline SD_DEVICE uint32_t sd_atomicAdd<uint32_t>(uint32_t* address, uint32_t val) {
+  return atomicAdd(address, val);
+}
+
+// Updated sd_atomicAdd implementation for uint64_t
+template <>
+inline SD_DEVICE uint64_t sd_atomicAdd<uint64_t>(uint64_t* address, uint64_t val) {
+  return atomicAdd(address, val);
+}
+
+
+
+
+template <>
+inline SD_DEVICE float16 sd_atomicAdd<float16>(float16* address, float16 val) {
+#if __CUDA_ARCH__ >= 700 && CUDA_VERSION_MAJOR >= 10
+  atomicAdd(reinterpret_cast<__half*>(address), val.data);
+#else
+  auto address_as_ull = (int*)address;
+
+  long addr = (long)address;
+  bool misaligned = addr & 0x3;
+
+  if (misaligned) address_as_ull = (int*)(address - 1);
+
+  PAIR old, assumed, fresh;
+
+  old.W = *address_as_ull;
+  do {
+    if (!misaligned) {
+      float16 res = ((float16)old.B.H) + val;
+      fresh.B.H = res.data;
+      fresh.B.L = old.B.L;
+    } else {
+      float16 res = ((float16)old.B.L) + val;
+      fresh.B.L = res.data;
+      fresh.B.H = old.B.H;
+    }
+
+    assumed.W = old.W;
+    old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+  } while (assumed.W != old.W);
+
+  if (!misaligned)
+    return old.B.H;
+  else
+    return old.B.L;
+#endif
+}
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val) {
+  auto address_as_ull = (int*)address;
+
+  auto addr = (long)(address);
+  bool misaligned = addr & 0x3;
+
+  if (misaligned) address_as_ull = (int*)(address - 1);
+
+  BPAIR old, assumed, fresh;
+
+  old.W = *address_as_ull;
+  do {
+    if (!misaligned) {
+      bfloat16 res = old.B.H + val;
+      fresh.B.H = res;
+      fresh.B.L = old.B.L;
+    } else {
+      bfloat16 res = old.B.L + val;
+      fresh.B.L = res;
+      fresh.B.H = old.B.H;
+    }
+
+    assumed.W = old.W;
+    old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
+  } while (assumed.W != old.W);
+
+  if (!misaligned)
+    return old.B.H;
+  else
+    return old.B.L;
+}
+
+template <typename T>
+static SD_INLINE SD_DEVICE T internal_16bit_atomicAdd(T* address, T val) {
+  size_t shift = ((size_t)address & 2);
+  int* base_address = (int*)((char*)address - shift);
+
+  union I16PAIR {
+    struct {
+      T H;
+      T L;
+    } B;
+    int W;
+
+    SD_HOST_DEVICE
+    I16PAIR(){};
+
+    SD_HOST_DEVICE
+    ~I16PAIR(){};
+  };
+
+  I16PAIR pairNew, pairOld, pairAssumed;
+
+  if (reinterpret_cast<int*>(address) == base_address) {
+    pairOld.B.L = val;
+    do {
+      pairNew.B.L = pairOld.B.L;
+      pairNew.B.H = pairOld.B.H + val;
+      pairAssumed.W = pairOld.W;
+
+      pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+    } while (pairAssumed.W != pairOld.W);
+
+    return (T)pairOld.B.H;
+  } else {
+    pairOld.B.H = val;
+    do {
+      pairNew.B.H = pairOld.B.H;
+      pairNew.B.L = pairOld.B.L + val;
+      pairAssumed.W = pairOld.W;
+      pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+
+    } while (pairAssumed.W != pairOld.W);
+
+    return (T)pairOld.B.L;
+  }
+}
+
+template <>
+inline SD_DEVICE int16_t sd_atomicAdd<int16_t>(int16_t* address, int16_t val) {
+  return internal_16bit_atomicAdd<int16_t>(address, val);
+}
+
+template <>
+inline SD_DEVICE uint16_t sd_atomicAdd<uint16_t>(uint16_t* address, uint16_t val) {
+  return internal_16bit_atomicAdd<uint16_t>(address, val);
+}
+
+// Custom atomicAdd for int8_t
+SD_DEVICE SD_INLINE int8_t atomicAdd(int8_t* address, int8_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int shift = ((size_t)address & 3) * 8;
+  unsigned int mask = 0xFF << shift;
+
+  unsigned int assumed, old, sum;
+  old = *base_address;
+
+  do {
+    assumed = old;
+    sum = (assumed & mask) + (val << shift);
+    sum = (sum & mask) | (assumed & ~mask);
+    old = atomicCAS(base_address, assumed, sum);
+  } while (assumed != old);
+
+  return (int8_t)((old & mask) >> shift);
+}
+
+// Custom atomicAdd for uint8_t
+SD_DEVICE SD_INLINE uint8_t atomicAdd(uint8_t* address, uint8_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int shift = ((size_t)address & 3) * 8;
+  unsigned int mask = 0xFF << shift;
+
+  unsigned int assumed, old, sum;
+  old = *base_address;
+
+  do {
+    assumed = old;
+    sum = (assumed & mask) + (val << shift);
+    sum = (sum & mask) | (assumed & ~mask);
+    old = atomicCAS(base_address, assumed, sum);
+  } while (assumed != old);
+
+  return (uint8_t)((old & mask) >> shift);
+}
+
+// Updated sd_atomicAdd implementation for int8_t
+template <>
+inline SD_DEVICE int8_t sd_atomicAdd<int8_t>(int8_t* address, int8_t val) {
+  return atomicAdd(address, val);
+}
+
+// Updated sd_atomicAdd implementation for uint8_t
+template <>
+inline SD_DEVICE uint8_t sd_atomicAdd<uint8_t>(uint8_t* address, uint8_t val) {
+  return atomicAdd(address, val);
+}
+
+template <>
+inline SD_DEVICE bool sd_atomicAdd<bool>(bool* address, bool val) {
+  *address += (val);
+  return *address;
+}
+
+template <>
+inline SD_DEVICE double sd_atomicSub<double>(double* address, double val) {
+  return sd_atomicAdd<double>(address, -val);
+}
+
+template <>
+inline SD_DEVICE double sd_atomicMul<double>(double* address, double val) {
+  unsigned long long int* address_as_ull = (unsigned long long int*)address;
+  unsigned long long int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, __double_as_longlong(val * __longlong_as_double(assumed)));
+  } while (assumed != old);
+  return __longlong_as_double(old);
+}
+
+template <>
+inline SD_DEVICE double sd_atomicDiv<double>(double* address, double val) {
+  return sd_atomicMul<double>(address, 1. / val);
+}
+
+
+// Helper functions for float-int conversions
+SD_DEVICE SD_INLINE unsigned int __float_as_uint(float f) {
+  return *reinterpret_cast<unsigned int*>(&f);
+}
+
+SD_DEVICE SD_INLINE float __uint_as_float(unsigned int u) {
+  return *reinterpret_cast<float*>(&u);
+}
+
+
+// Custom atomicAdd for float
+SD_DEVICE SD_INLINE float atomicAdd(float* address, float val) {
+  unsigned int* address_as_uint = (unsigned int*)address;
+  unsigned int old = *address_as_uint, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed,
+                    __float_as_uint(val + __uint_as_float(assumed)));
+  } while (assumed != old);
+
+  return __uint_as_float(old);
+}
+
+// Custom atomicAdd for int32_t
+SD_DEVICE SD_INLINE int32_t atomicAdd(int32_t* address, int32_t val) {
+  unsigned int* address_as_uint = (unsigned int*)address;
+  unsigned int old = *address_as_uint, assumed;
+
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_uint, assumed,
+                    (unsigned int)((int)assumed + val));
+  } while (assumed != old);
+
+  return (int32_t)old;
+}
+
+// Updated sd_atomicAdd implementation for float
+template <>
+inline SD_DEVICE float sd_atomicAdd<float>(float* address, float val) {
+  return atomicAdd(address, val);
+}
+
+// Updated sd_atomicAdd implementation for int32_t
+template <>
+inline SD_DEVICE int32_t sd_atomicAdd<int32_t>(int32_t* address, int32_t val) {
+  return atomicAdd(address, val);
+}
+
+
+
+template <>
+inline SD_DEVICE float sd_atomicSub<float>(float* address, float val) {
+  return sd_atomicAdd<float>(address, -val);
+}
+
+template <>
+inline SD_DEVICE float16 sd_atomicSub<float16>(float16* address, float16 val) {
+  return sd_atomicAdd<float16>(address, -val);
+}
+template <>
+inline SD_DEVICE bfloat16 sd_atomicSub<bfloat16>(bfloat16* address, bfloat16 val) {
+  return sd_atomicAdd<bfloat16>(address, -val);
+}
+
+template <>
+inline SD_DEVICE float sd_atomicMul<float>(float* address, float val) {
+  int* address_as_ull = (int*)address;
+  int old = *address_as_ull, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(address_as_ull, assumed, __float_as_int(val * __int_as_float(assumed)));
+  } while (assumed != old);
+  return __int_as_float(old);
+}
+
+template <>
+inline SD_DEVICE int8_t sd_atomicMul<int8_t>(int8_t* address, int8_t val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+  unsigned int sel = selectors[(size_t)address & 3];
+  unsigned int old, assumed, mul, new_;
+
+  old = *base_address;
+
+  do {
+    assumed = old;
+    mul = val * (int8_t)__byte_perm(old, 0, ((size_t)address & 3) | 0x4440);
+    new_ = __byte_perm(old, mul, sel);
+
+    if (new_ == old) break;
+
+    old = atomicCAS(base_address, assumed, new_);
+  } while (assumed != old);
+  return (int8_t)old;
+}
+
+template <>
+inline SD_DEVICE unsigned char sd_atomicMul<unsigned char>(unsigned char* address, unsigned char val) {
+  unsigned int* base_address = (unsigned int*)((size_t)address & ~3);
+  unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+  unsigned int sel = selectors[(size_t)address & 3];
+  unsigned int old, assumed, mul, new_;
+
+  old = *base_address;
+
+  do {
+    assumed = old;
+    mul = val * (uint8_t)__byte_perm(old, 0, ((size_t)address & 3) | 0x4440);
+    new_ = __byte_perm(old, mul, sel);
+
+    if (new_ == old) break;
+
+    old = atomicCAS(base_address, assumed, new_);
+  } while (assumed != old);
+  return (uint8_t)old;
+}
+
+template <typename T>
+static SD_INLINE SD_DEVICE T internal_16bit_atomicMul(T* address, T val) {
+  size_t shift = ((size_t)address & 2);
+  int* base_address = (int*)((char*)address - shift);
+
+  union I16PAIR {
+    struct {
+      T H;
+      T L;
+    } B;
+    int W;
+
+    SD_HOST_DEVICE
+    I16PAIR(){};
+
+    SD_HOST_DEVICE
+    ~I16PAIR(){};
+  };
+
+  I16PAIR pairNew, pairOld, pairAssumed;
+
+  if (reinterpret_cast<int*>(address) == base_address) {
+    pairOld.B.L = val;
+    do {
+      pairNew.B.L = pairOld.B.L;
+      pairNew.B.H = pairOld.B.H * val;
+      pairAssumed.W = pairOld.W;
+
+      pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+    } while (pairAssumed.W != pairOld.W);
+
+    return (T)pairOld.B.H;
+  } else {
+    pairOld.B.H = val;
+    do {
+      pairNew.B.H = pairOld.B.H;
+      pairNew.B.L = pairOld.B.L * val;
+      pairAssumed.W = pairOld.W;
+      pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+
+    } while (pairAssumed.W != pairOld.W);
+
+    return (T)pairOld.B.L;
+  }
+}
+
+template <>
+inline SD_DEVICE int16_t sd_atomicMul<int16_t>(int16_t* address, int16_t val) {
+  return internal_16bit_atomicMul<int16_t>(address, val);
+}
+
+template <>
+inline SD_DEVICE uint16_t sd_atomicMul<uint16_t>(uint16_t* address, uint16_t val) {
+  return internal_16bit_atomicMul<uint16_t>(address, val);
+}
+
+template <>
+inline SD_DEVICE int sd_atomicMul<int>(int* address, int val) {
+  int* res_address = address;
+  int old = *res_address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(res_address, assumed, val * assumed);
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+inline SD_DEVICE unsigned int sd_atomicMul<unsigned int>(unsigned int* address, unsigned int val) {
+  unsigned int* res_address = address;
+  unsigned int old = *res_address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(res_address, assumed, val * assumed);
+  } while (assumed != old);
+  return old;
+}
+
+template <>
+inline SD_DEVICE int64_t sd_atomicMul<int64_t>(int64_t* address, int64_t val) {
+  unsigned long long int* res_address = (unsigned long long int*)address;
+  unsigned long long int old = *res_address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(res_address, assumed, val * assumed);
+  } while (assumed != old);
+  return (int64_t)old;
+}
+
+template <>
+inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val) {
+  unsigned long long int* res_address = (unsigned long long int*)address;
+  unsigned long long int old = *res_address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(res_address, assumed, val * assumed);
+  } while (assumed != old);
+  return (uint64_t)old;
+}
+
+#if !defined(_WIN32) && !defined(_WIN64)
+template <>
+inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
+  unsigned long long int* res_address = (unsigned long long*)address;
+  unsigned long long int old = *res_address, assumed;
+  do {
+    assumed = old;
+    old = atomicCAS(res_address, assumed, val * assumed);
+  } while (assumed != old);
+  return (sd::LongType)old;
+}
+#endif
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
+  return internal_16bit_atomicMul<bfloat16>(address, val);
+}
+
+template <>
+inline SD_DEVICE float16 sd_atomicMul<float16>(float16* address, float16 val) {
+  return internal_16bit_atomicMul<float16>(address, val);
+}
+
+template <>
+inline SD_DEVICE float sd_atomicDiv<float>(float* address, float val) {
+  return sd_atomicMul<float>(address, 1.f / val);
+}
+
+template <>
+inline SD_DEVICE float16 sd_atomicDiv<float16>(float16* address, float16 val) {
+  return internal_16bit_atomicMul<float16>(address, (float16)1.f / val);
+}
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
+  return internal_16bit_atomicMul<bfloat16>(address, (bfloat16)1 / val);
+}
+
+
+
+}  // namespace atomics
+#endif
 
 }  // namespace math
 }  // namespace sd

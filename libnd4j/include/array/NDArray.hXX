@@ -97,6 +97,9 @@ std::u32string NDArray::e(sd::LongType i)  {
   return r;
 }
 
+LongType NDArray::getOffset(const LongType i) {
+  return _offset + i;
+}
 
 template <>
 std::string NDArray::e(const sd::LongType i)  {
@@ -1968,6 +1971,12 @@ void NDArray::setContext(sd::LaunchContext *context) {
 
 
 //////////////////////////////////////////////////////////////////////////
+
+void *NDArray::specialBufferWithOffset(sd::LongType offset) {
+  return const_cast<int8_t *>(specialBuffer() != nullptr ? static_cast<const int8_t *>(specialBuffer()) + (offset * sizeOfT())
+                                                         : nullptr);
+}
+
 void *NDArray::bufferWithOffset(sd::LongType offset) {
   return const_cast<int8_t *>(buffer() != nullptr ? static_cast<const int8_t *>(buffer()) + (offset * sizeOfT())
                                                   : nullptr);
@@ -2568,7 +2577,7 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
                                           other.specialBuffer(),
                                           otherShapeInfo,
                                           nullptr
-                                          , allowParallelism);
+        , allowParallelism);
     thisArray.registerSpecialUse({&thisArray}, {&other}); // Registering through the instance
   }
 }
@@ -2833,6 +2842,23 @@ bool NDArray::isUnitary() {
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
+
+
+template <typename T>
+T *NDArray::specialBufferasTWithOffset(LongType offset) {
+  return reinterpret_cast<T *>(specialBufferWithOffset(offset));
+}
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES);
+
+
+template <typename T>
+T *NDArray::specialBufferasT() {
+  return specialBufferasTWithOffset<T>(0);
+}
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES);
+
 
 template <typename T>
 T *NDArray::bufferAsT() {
@@ -6215,24 +6241,24 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
 // addition operator array + scalar
 template <typename T, typename>
 NDArray operator+(NDArray &&arr,  T scalar) {
-  if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
-    return std::move(arr + scalar);  // arr is lvalue inside function body
+if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
+return std::move(arr + scalar);  // arr is lvalue inside function body
 
-  if (arr.isS())
-    THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
-  if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
-    THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+if (arr.isS())
+THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
 
-  auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
 
-  NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
-  NativeOpExecutioner::execScalar(arr.getContext(), sd::scalar::Add, arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
-                                  arr.specialShapeInfo(), arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
-                                  arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(),
-                                  tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+NativeOpExecutioner::execScalar(arr.getContext(), sd::scalar::Add, arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
+    arr.specialShapeInfo(), arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
+    arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(),
+    tmp.specialShapeInfo(), nullptr);
+NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
 
-  return std::move(arr);
+return std::move(arr);
 }
 template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  double scalar);
 template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float scalar);

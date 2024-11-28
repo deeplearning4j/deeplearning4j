@@ -89,18 +89,52 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
-             stHOffset = i;
+        stHOffset = i;
 
     if (!bOrdering) {
       INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
       COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-      zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-      initMOffset = bXInMSame ? xOffset : COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
-      stMOffset = bXStMSame ? xOffset : COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
-      initVOffset = bXInUSame ? xOffset : COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initVOffset);
-      stVOffset = bXStUSame ? xOffset : COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stVOffset);
-      initHOffset = bXInHSame ? xOffset : COORDS2INDEX(shape::rank(inhShapeInfo), shape::shapeOf(inhShapeInfo), coords, initHOffset);
-      stHOffset = bXStHSame ? xOffset : COORDS2INDEX(shape::rank(sthShapeInfo), shape::shapeOf(sthShapeInfo), coords, stHOffset);
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      }
+
+      if (bXInMSame) {
+        initMOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+      }
+
+      if (bXStMSame) {
+        stMOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+      }
+
+      if (bXInUSame) {
+        initVOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initVOffset);
+      }
+
+      if (bXStUSame) {
+        stVOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stVOffset);
+      }
+
+      if (bXInHSame) {
+        initHOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(inhShapeInfo), shape::shapeOf(inhShapeInfo), coords, initHOffset);
+      }
+
+      if (bXStHSame) {
+        stHOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(sthShapeInfo), shape::shapeOf(sthShapeInfo), coords, stHOffset);
+      }
     }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * mbeta1;

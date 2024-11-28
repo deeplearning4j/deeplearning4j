@@ -66,10 +66,23 @@ SD_KERNEL void rmsPropUpdaterCuda(const void *vx, const LongType *xShapeInfo, co
 
     INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
     COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-    zOffset = bXZsame ? xOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-    initOffset = bXInSame ? xOffset : COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
-    stOffset = bXStSame ? xOffset : COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+    if (bXZsame) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
+    if (bXInSame) {
+      initOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
+    }
+
+    if (bXStSame) {
+      stOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+    }
     st[stOffset] = init[initOffset] * rmsDecay + x[xOffset] * x[xOffset] * (1 - rmsDecay);
     up[zOffset] = (lr * x[xOffset]) / (math::sd_sqrt<T, T>(st[stOffset]) + epsilon);
   }

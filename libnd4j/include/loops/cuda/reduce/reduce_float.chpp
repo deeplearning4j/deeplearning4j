@@ -117,10 +117,13 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const s
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
 
     INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
-    sd::LongType outerOffset;
+    sd::LongType outerOffset,zOffset;
     COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
-    sd::LongType zOffset = sameOffsets ? outerOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-
+    if(sameOffsets) {
+      sameOffsets = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
     const X* xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
 

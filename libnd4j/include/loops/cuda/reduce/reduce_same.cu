@@ -114,7 +114,12 @@ SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(const void *vx, const sd::
     INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
     sd::LongType outerOffset;
     COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
-    sd::LongType zOffset = sameOffsets ? outerOffset : COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    sd::LongType zOffset;
+    if(sameOffsets) {
+      sameOffsets = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
     const X *xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
@@ -243,7 +248,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
 
     // scalar assign
     scalar::ScalarTransform<X, X, X>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
-                                                                   z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
+                                                        z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
   } else {
     const sd::LongType zRank = shape::rank(hZShapeInfo);
     const sd::LongType tadRank = shape::rank(hXShapeInfo) - zRank;
@@ -314,7 +319,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceXD(dim3 launchDims, cudaStream_t *
                                                  const sd::LongType *dims) {
   if (shape::length(hZShapeInfo) == 1) {
     execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
-                                            dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
+                     dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_T(intermediateXD,
                         PARAMS(launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z,

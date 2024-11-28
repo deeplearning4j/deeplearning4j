@@ -38,11 +38,11 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // put diagonals from input batched matrices to output batched vectors
 template <typename T>
-static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, LongType numTads,
-                                           LongType inputLength, const LongType* tadOnlyInputShapeInfo,
-                                           const LongType* tadInputOffsets,
-                                           const LongType* tadOnlyOutputShapeInfo,
-                                           const LongType* tadOutputOffsets) {
+static SD_KERNEL void matrixDiagPartKernel(void* inputBuffer, void* outputBuffer, LongType numTads,
+                                           LongType inputLength,  LongType* tadOnlyInputShapeInfo,
+                                            LongType* tadInputOffsets,
+                                            LongType* tadOnlyOutputShapeInfo,
+                                            LongType* tadOutputOffsets) {
 
   if(blockIdx.x >= numTads)
     return;
@@ -63,7 +63,7 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
     }
   }
 }
-}
+
 
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
@@ -97,8 +97,10 @@ static Status _matrixDiagPart(LaunchContext* context, NDArray* input, NDArray* o
 
   dim3 launchDims = getLaunchDims("matrixDiag");
   matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      input->specialBuffer(), output->specialBuffer(),numTads, lastDimension, packX->specialShapeInfo(),
-      packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());
+      input->specialBuffer(),
+      output->specialBuffer(),numTads, lastDimension, const_cast<sd::LongType *>(packX->specialShapeInfo()),
+      const_cast<sd::LongType *>(packX->specialOffsets()),
+      const_cast<sd::LongType *>(packZ->specialShapeInfo()), const_cast<sd::LongType *>(packZ->specialOffsets()));
 
   sd::DebugHelper::checkErrorCode(stream, "matrixDiagPartKernel failed");
 

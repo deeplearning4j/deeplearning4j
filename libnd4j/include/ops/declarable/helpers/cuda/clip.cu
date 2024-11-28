@@ -101,7 +101,7 @@ void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output, const s
   if (dims.empty()) {
     std::vector<LongType> empty;
     NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &empty) / z->lengthOf()
-                                          : z->reduceAlongDimension(reduce::Norm2, &empty);
+                                    : z->reduceAlongDimension(reduce::Norm2, &empty);
 
     if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
   } else {
@@ -177,7 +177,11 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 
     LongType zOffset, yOffset;
     COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
-    yOffset = sameOffsets ? zOffset : COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), zCoords, yOffset);
+    if(sameOffsets) {
+      yOffset = zOffset;
+    } else {
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), zCoords, yOffset);
+    }
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
@@ -190,7 +194,11 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
     if (actualNorm > clipNorm) {
       LongType sumOffset, xOffset;
       COORDS2INDEX(shape::rank(sumShapeInfo), shape::shapeOf(sumShapeInfo), normCoords, sumOffset);
-      xOffset = sameOffsets ? zOffset : COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), zCoords, xOffset);
+      if(sameOffsets) {
+        xOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), zCoords, xOffset);
+      }
 
       const T sumVal = sum[sumOffset];
       z[zOffset] = (clipNorm / actualNorm) * y[yOffset] *

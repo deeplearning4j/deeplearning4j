@@ -124,15 +124,15 @@ static SD_KERNEL void tileKernelDouble(void const* inputBuffer, LongType const* 
 }
 BUILD_SINGLE_TEMPLATE_TWICE(template SD_KERNEL void tileKernelDouble,
                             (void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                             sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews),
+                             sd::LongType const* outputShape, sd::LongType resultLength),
                             SD_COMMON_TYPES);
 
 template <typename X, typename Y>
 void tileKernelHH(void const* inputBuffer, LongType const* inputShape, void* outputBuffer, LongType const* outputShape,
-                  LongType resultLength, LongType ews, cudaStream_t* stream) {
+                  LongType resultLength, cudaStream_t* stream) {
   dim3 launchDims = getLaunchDims("tile");
   tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer,
-                                                                                outputShape, resultLength, ews);
+                                                                                outputShape, resultLength);
 
   DebugHelper::checkErrorCode(stream,"templatedSwapUnsafe(...) failed");
 
@@ -140,7 +140,7 @@ void tileKernelHH(void const* inputBuffer, LongType const* inputShape, void* out
 
 BUILD_SINGLE_TEMPLATE_TWICE(template void tileKernelHH,
                             (void const* inputBuffer, sd::LongType const* inputShape, void* outputBuffer,
-                             sd::LongType const* outputShape, sd::LongType resultLength, sd::LongType ews,
+                             sd::LongType const* outputShape, sd::LongType resultLength,
                              cudaStream_t* stream),
                             SD_COMMON_TYPES);
 }  // namespace sd

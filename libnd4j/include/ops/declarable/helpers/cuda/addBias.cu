@@ -71,7 +71,8 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
 
     LongType xOffsets;
     COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffsets);
-    LongType zOffsets = xzSameOffsets ? xOffsets : COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffsets);
+    LongType zOffsets;
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffsets);
     LongType yOffsets = coords[channelPosition] * shape::stride(yShapeInfo)[posOfNonUnityDim];
 
     if (xzAreSame)

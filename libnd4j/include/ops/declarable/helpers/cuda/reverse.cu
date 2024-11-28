@@ -70,7 +70,7 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     INDEX2COORDS(idx, shape::rank(inputTadShape), inputTadShape, fCoords);
     COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), fCoords, fOffset);
     INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(inputTadShape), inputTadShape, lCoords);
-    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), lOffset);
+    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape),lCoords, lOffset);
 
     // now we're storing input values
     auto v1 = tadInput[fOffset];

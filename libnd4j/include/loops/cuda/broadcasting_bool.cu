@@ -295,8 +295,17 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
     INDEX2COORDS(i, zRank, zShapeInfo, coords);
     sd::LongType zOffset, xOffset, yOffset;
     COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
-    xOffset = xzSameOffsets ? zOffset : COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
-    yOffset = yzSameOffsets ? zOffset : COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    if (xzSameOffsets) {
+      xOffset = zOffset;
+    } else {
+      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    }
+
+    if (yzSameOffsets) {
+      yOffset = zOffset;
+    } else {
+      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    }
     z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }
 }
