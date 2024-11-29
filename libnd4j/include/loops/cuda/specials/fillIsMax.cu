@@ -31,8 +31,13 @@ SD_KERNEL void execFillIsMax(void *vdZ, const LongType *xShapeInfo, LongType len
   auto dz = reinterpret_cast<T *>(vdZ);
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (LongType i = tid; i < length; i += blockDim.x * gridDim.x)
-    dz[shape::getIndexOffset(i, xShapeInfo)] = (i == idx ? (T)1 : (T)0);
+  for (LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
+    sd::LongType iCoords[SD_MAX_RANK];
+    sd::LongType iOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, iCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords, iOffset);
+    dz[iOffset] = (i == idx ? (T)1 : (T)0);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////

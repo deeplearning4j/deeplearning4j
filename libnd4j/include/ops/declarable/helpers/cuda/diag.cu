@@ -55,8 +55,17 @@ static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const LongType* outp
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  LongType zCoords[SD_MAX_RANK];
+  LongType xCoords[SD_MAX_RANK];
+  LongType zOffset;
+  LongType xOffset;
+
   for (int t = tid; t < inputLength; t += step) {  // for all vals in input, put all on diagonal position to output
-    z[shape::getIndexOffset(t * (inputLength + 1), outputShape)] = x[shape::getIndexOffset(t, inputShape)];  // tX];
+    INDEX2COORDS(t * (inputLength + 1), shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(t, shape::rank(inputShape), inputShape, xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    z[zOffset] = x[xOffset];
   }
 }
 
@@ -83,15 +92,21 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const LongType* 
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
+  LongType zCoords[SD_MAX_RANK];
+  LongType xCoords[SD_MAX_RANK];
+  LongType zOffset;
+  LongType xOffset;
   LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
-  for (int t = tid; t < outputLength && i < inputLength;
-       t += step) {  // loop by output, but input matrix may not be square
-    // put diagonal val from input onto output
-    z[shape::getIndexOffset(t, outputShape)] = x[shape::getIndexOffset(i, inputShape)];
+
+  for (int t = tid; t < outputLength && i < inputLength; t += step) {  // loop by output, but input matrix may not be square
+    INDEX2COORDS(t, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(inputShape), inputShape, xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    z[zOffset] = x[xOffset];
     i += outputLength + 1;  // shift to next diagonal value
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page:

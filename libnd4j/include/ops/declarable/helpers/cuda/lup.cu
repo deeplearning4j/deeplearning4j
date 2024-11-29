@@ -51,10 +51,19 @@ static SD_KERNEL void invertKernelLow(void *invertedBuf, const LongType *inverte
     LongType pos[] = {i, i - 1};
     LongType posX[] = {i, i};
     LongType posY[] = {i - 1, i - 1};
-    auto xIndex = shape::getOffset(inputShape, pos);
-    auto dxIndex = shape::getOffset(inputShape, posX);
-    auto dyIndex = shape::getOffset(inputShape, posY);
-    auto zIndex = shape::getOffset(invertedShape, pos);
+
+    LongType xIndex;
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), pos, xIndex);
+
+    LongType dxIndex;
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posX, dxIndex);
+
+    LongType dyIndex;
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posY, dyIndex);
+
+    LongType zIndex;
+    COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), pos, zIndex);
+
     // invert lower triangular matrix
     inverted[zIndex] = -input[xIndex] / (input[dxIndex] * input[dyIndex]);
   }
@@ -72,14 +81,14 @@ static SD_KERNEL void upvertKernel(void *invertedBuf, const LongType *invertedSh
 
   for (int i = start; i < n; i += step) {
     LongType pos[] = {i, i};
-    auto xIndex = shape::getOffset(inputShape, pos);
-    auto zIndex = shape::getOffset(invertedShape, pos);
+    LongType xIndex, zIndex;
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), pos, xIndex);
+    COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), pos, zIndex);
 
     // invert diagonal elements
     inverted[zIndex] /= input[xIndex];
   }
 }
-
 // ------------------------------------------------------------------------------------------------------------------ //
 //  invert upper second diagonal
 template <typename T>
@@ -99,14 +108,20 @@ static SD_KERNEL void upvertKernelUp(void *invertedBuf, const LongType *inverted
   for (int i = start; i < n - 1; i += step) {
     LongType pos[] = {i, i + 1};
     LongType posX[] = {i + 1, i + 1};
-    auto xIndex = shape::getOffset(inputShape, pos);
-    auto iIndex = shape::getOffset(invertedShape, posX);
-    auto zIndex = shape::getOffset(invertedShape, pos);
+
+    LongType xIndex;
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), pos, xIndex);
+
+    LongType iIndex;
+    COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), posX, iIndex);
+
+    LongType zIndex;
+    COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), pos, zIndex);
+
     // invert upper matrix
-    math::atomics::sd_atomicAdd(&inverted[zIndex], -input[xIndex] * inverted[iIndex]);  // / input[yIndex]);
+    math::atomics::sd_atomicAdd(&inverted[zIndex], -input[xIndex] * inverted[iIndex]);
   }
 }
-
 // ------------------------------------------------------------------------------------------------------------------ //
 template <typename T>
 static SD_KERNEL void invertLowKernel(void *invertedBuf, const LongType *invertedShape, const void *inputBuf,
@@ -125,10 +140,12 @@ static SD_KERNEL void invertLowKernel(void *invertedBuf, const LongType *inverte
         LongType posX[] = {i, k};
         LongType posD[] = {i, i};
 
-        auto xIndex = shape::getOffset(inputShape, posX);
-        auto yIndex = shape::getOffset(invertedShape, posY);
-        auto dIndex = shape::getOffset(inputShape, posD);
-        auto zIndex = shape::getOffset(invertedShape, posZ);
+        LongType xIndex, yIndex, dIndex, zIndex;
+        COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posX, xIndex);
+        COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), posY, yIndex);
+        COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posD, dIndex);
+        COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), posZ, zIndex);
+
         // invert non-diagonal elements
         math::atomics::sd_atomicAdd(&inverted[zIndex], -inverted[yIndex] * input[xIndex] / input[dIndex]);
       }
@@ -152,10 +169,12 @@ static SD_KERNEL void invertUpKernel(void *invertedBuf, const LongType *inverted
         LongType posZ[] = {i, j};
         LongType posY[] = {k, j};
         LongType posX[] = {i, k};
-        // inversion with Joardan Gauss transformation
-        auto xIndex = shape::getOffset(inputShape, posX);
-        auto yIndex = shape::getOffset(invertedShape, posY);
-        auto zIndex = shape::getOffset(invertedShape, posZ);
+
+        LongType xIndex, yIndex, zIndex;
+        COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), posX, xIndex);
+        COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), posY, yIndex);
+        COORDS2INDEX(shape::rank(invertedShape), shape::stride(invertedShape), posZ, zIndex);
+
         // invert upper non-diagonal elements
         math::atomics::sd_atomicAdd(&inverted[zIndex], -inverted[yIndex] * input[xIndex]);
       }
@@ -247,7 +266,7 @@ static SD_KERNEL void determinantKernel(T *compound, T *result, LongType len) {
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   for (auto i = start; i < len; i += step) {
-    auto pos = i * len + i;  // shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), di, 2);
+    auto pos = i * len + i;
     // multiply all diagonal elements
     math::atomics::sd_atomicMul(&result[0], compound[pos]);
   }
@@ -261,7 +280,7 @@ static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len)
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
   for (auto i = start; i < len; i += step) {
-    auto pos = i * len + i;  // shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), di, 2);
+    auto pos = i * len + i;
     // sum logs of all diagonal elements
     math::atomics::sd_atomicAdd(result, math::sd_log<T, T>(math::sd_abs<T,T>(compound[pos])));
   }
@@ -290,7 +309,12 @@ static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const v
   auto step = blockDim.x * gridDim.x;
 
   for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-    auto xIndex = shape::getIndexOffset(k, inputShape);
+    LongType coords[SD_MAX_RANK];
+    LongType xIndex;
+
+    INDEX2COORDS(k, shape::rank(inputShape), inputShape, coords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), coords, xIndex);
+
     matrix[j] = (F)inputBuf[xIndex];
   }
 }
@@ -314,7 +338,12 @@ static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, co
   auto step = blockDim.x * gridDim.x;
 
   for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-    auto zIndex = shape::getIndexOffset(k, outputShape);
+    LongType zCoords[SD_MAX_RANK];
+    LongType zIndex;
+
+    INDEX2COORDS(k, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+
     outputBuf[zIndex] = matrix[j];
   }
 }
@@ -330,7 +359,8 @@ static SD_KERNEL void fillUpPermutation(void *output, const LongType *shape, int
   for (auto i = start; i < rowNum; i += step) {
     int val = source[i] - 1;
     LongType posF[] = {i, val};
-    auto pos = shape::getOffset(shape, posF);
+    LongType pos;
+    COORDS2INDEX(shape::rank(shape), shape::stride(shape), posF, pos);
     permutation[pos] = F(1.f);
   }
 }
@@ -480,6 +510,36 @@ static void swapRows_(NDArray *matrix, LongType theFirst, LongType theSecond) {
 BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray * matrix, sd::LongType theFirst, sd::LongType theSecond),
                       SD_FLOAT_TYPES);
 
+void swapRows(NDArray *matrix, LongType theFirst, LongType theSecond) {
+  BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), SD_FLOAT_TYPES);
+}
+
+template <typename T>
+void processColumns(LongType currentRow, LongType rowNum, T *compoundBuf, LongType const *compoundShape) {
+  LongType xDiag[] = {currentRow, currentRow};
+  LongType diagIndex;
+  COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xDiag, diagIndex);
+
+  auto loop = PRAGMA_THREADS_FOR {
+    for (auto j = start; j < stop; j++) {
+      LongType xRow[] = {j, currentRow};
+      LongType rowIndex;
+      COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xRow, rowIndex);
+      compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
+
+      for (LongType k = currentRow + 1; k < rowNum; k++) {
+        LongType yRow[] = {j, k};
+        LongType yCol[] = {currentRow, k};
+        LongType rowIndexY, colIndex;
+        COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), yRow, rowIndexY);
+        COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), yCol, colIndex);
+        compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
+      }
+    }
+  };
+  samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
+}
+
 template <typename T>
 static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirst, LongType theSecond) {
   if (theFirst != theSecond) {
@@ -489,8 +549,9 @@ static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirs
       for (auto i = start; i < stop; i++) {
         LongType theFirstPos[] = {theFirst, i};
         LongType theSecondPos[] = {theSecond, i};
-        auto theFirstIndex = shape::getOffset(matrixShape, theFirstPos, 0);
-        auto theSecondIndex = shape::getOffset(matrixShape, theSecondPos, 0);
+        LongType theFirstIndex, theSecondIndex;
+        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theFirstPos, theFirstIndex);
+        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theSecondPos, theSecondIndex);
         math::sd_swap(matrixBuf[theFirstIndex], matrixBuf[theSecondIndex]);
       }
     };
@@ -498,55 +559,6 @@ static void swapRows(T *matrixBuf, LongType const *matrixShape, LongType theFirs
     samediff::Threads::parallel_tad(loop, 0, n, 1);
   }
 }
-
-void swapRows(NDArray *matrix, LongType theFirst, LongType theSecond) {
-  BUILD_SINGLE_SELECTOR(matrix->dataType(), swapRows_, (matrix, theFirst, theSecond), SD_FLOAT_TYPES);
-}
-
-template <typename T>
-void processColumns(LongType currentRow, LongType rowNum, T *compoundBuf, LongType const *compoundShape) {
-  LongType xDiag[] = {currentRow, currentRow};
-  auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
-  auto loop = PRAGMA_THREADS_FOR {
-    for (auto j = start; j < stop; j++) {
-      LongType xRow[] = {j, currentRow};
-      auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
-      compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
-
-      for (LongType k = currentRow + 1; k < rowNum; k++) {
-        LongType yRow[] = {j, k};
-        LongType yCol[] = {currentRow, k};
-        auto rowIndexY = shape::getOffset(compoundShape, yRow, 0);
-        auto colIndex = shape::getOffset(compoundShape, yCol, 0);
-        compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
-      }
-    }
-  };
-  samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
-}
-
-template <typename T, typename I>
-static I argmaxCol(I column, T *compoundBuffer, LongType const *compoundShape) {
-  auto rowNum = shape::sizeAt(compoundShape, static_cast<LongType>(0));
-  LongType xInitial[] = {column, column};
-  auto maxValue = T(0);
-  auto result = -1;
-  auto start = column;
-  auto stop = rowNum;
-  auto increment = 1;
-  for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
-    LongType xPos[] = {rowCounter, column};
-    auto xIndex = shape::getOffset(compoundShape, xPos, 0);
-
-    if (math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
-      maxValue = math::sd_max(maxValue, math::sd_abs<T,T>(compoundBuffer[xIndex]));
-      result = rowCounter;
-    }
-  }
-
-  return result;
-}
-
 template <typename T>
 static void doolitleLU(LaunchContext *context, NDArray *compound, LongType rowNum) {
   auto input = compound->dup();
@@ -577,6 +589,33 @@ static void doolitleLU(LaunchContext *context, NDArray *compound, LongType rowNu
   }
 }
 
+/*
+ * lu decomposition with naive algorithm with partial pivoting
+ * */
+template <typename T, typename I>
+static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShape) {
+  auto rowNum = shape::sizeAt(compoundShape, static_cast<sd::LongType>(0));
+  sd::LongType xInitial[] = {column, column};
+  sd::LongType xInitialIndex;
+  COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xInitial, xInitialIndex);
+  auto maxValue = T(0);
+  auto result = -1;
+  auto start = column;
+  auto stop = rowNum;
+  auto increment = 1;
+  for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
+    sd::LongType xPos[] = {rowCounter, column};
+    sd::LongType xIndex;
+    COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xPos, xIndex);
+    if (sd::math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
+      maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs<T,T>(compoundBuffer[xIndex]));
+      result = rowCounter;
+    }
+  }
+
+  return result;
+}
+
 template <typename T, typename I>
 static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutation, LongType rowNum) {
   NDArray::preparePrimaryUse({compound}, {permutation});
@@ -594,8 +633,14 @@ static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutatio
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
 
-      math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
-                    permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+      sd::LongType permIndex1, permIndex2;
+      sd::LongType permCoords1[SD_MAX_RANK], permCoords2[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, permCoords1);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords1, permIndex1);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, permCoords2);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2, permIndex2);
+
+      math::sd_swap(permutationBuf[permIndex1], permutationBuf[permIndex2]);
 
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
@@ -639,8 +684,7 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   std::vector<LongType> dims();
   std::vector<LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
 
-  auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(),
-                                       context);  //, block.getWorkspace());
+  auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);
   auto det = NDArrayFactory::create<T>(1, context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
@@ -654,7 +698,10 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    auto offset = shape::getIndexOffset(e, output->shapeInfo());
+    sd::LongType offset;
+    sd::LongType offsetCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
+    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
@@ -691,8 +738,13 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
+    sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
+
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    auto offset = shape::getIndexOffset(e, output->shapeInfo());
+    LongType offset;
+    sd::LongType offsetCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
+    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantLogKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
@@ -728,10 +780,11 @@ static SD_KERNEL void fillLowerUpperKernel(void *lowerBuf, const LongType *lower
     for (int j = threadIdx.x; j < n; j += blockDim.x) {
       LongType posX[] = {k, j};
       LongType posD[] = {j, j};
-      auto xPos = shape::getOffset(lowerShape, posX);
-      auto yPos = shape::getOffset(upperShape, posX);
-      auto iPos = shape::getOffset(matrixShape, posX);
-      auto dPos = shape::getOffset(matrixShape, posD);
+      LongType xPos, yPos, iPos, dPos;
+      COORDS2INDEX(shape::rank(lowerShape), shape::stride(lowerShape), posX, xPos);
+      COORDS2INDEX(shape::rank(upperShape), shape::stride(upperShape), posX, yPos);
+      COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), posX, iPos);
+      COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), posD, dPos);
       if (k >= j)
         lowerMatrix[xPos] = matrix[iPos];  //(k, j);
       else
@@ -739,7 +792,6 @@ static SD_KERNEL void fillLowerUpperKernel(void *lowerBuf, const LongType *lower
     }
   }
 }
-
 template <typename T>
 static Status inverse_(LaunchContext *context, NDArray *input, NDArray *output) {
   auto n = input->sizeAt(-1);
@@ -819,7 +871,7 @@ SD_KERNEL void adjustResultsKernel(F *dArray, const LongType *shape, const LongT
     for (auto r = threadIdx.x; r < n; r += blockDim.x) {
       for (auto c = r + 1; c < n; c++) {
         LongType posRC[] = {r, c};
-        auto pos = r * n + c;  // shape::getOffset(0, shapeOf, strideOf, posRC, 2);
+        auto pos = r * n + c;
         current[pos] = 0.;
       }
     }
@@ -932,15 +984,16 @@ SD_KERNEL void logDetKernel(const T *inputBuf, const LongType *inputShape, LongT
   for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
     auto current = input + tadOffsets[i];
 
-    auto zIndex = shape::getIndexOffset(i, outputShape);
+    LongType zIndex;
+    COORDS2INDEX(1, shape::stride(outputShape), &i, zIndex);
     for (auto e = threadIdx.x; e < n; e += blockDim.x) {
       LongType diag[] = {e, e};
-      auto xIndex = shape::getOffset(tadShape, diag);
+      LongType xIndex;
+      COORDS2INDEX(shape::rank(tadShape), shape::stride(tadShape), diag, xIndex);
       math::atomics::sd_atomicAdd(&output[zIndex], math::sd_log<T, T>(current[xIndex] * current[xIndex]));
     }
   }
 }
-
 template <typename T>
 Status logdetFunctor_(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});

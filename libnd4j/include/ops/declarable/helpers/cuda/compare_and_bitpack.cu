@@ -108,14 +108,19 @@ static void SD_KERNEL cmpBitpack(const void* vx, void* vz, int rank, int len, co
   auto inLastStride = xStridesExtended[rank];
 
   for (auto k = tid; k < len; k += gridDim.x * blockDim.x) {
-    index2coords_C(k, rank, shapes, ptr_coords);
-    auto offset = offset_from_coords(xStridesExtended, zStrides, ptr_coords, rank);
-    auto buffPart = &(x[offset.first]);
-    auto outBuffPart = &(z[offset.second]);
+    INDEX2COORDS(k, rank, shapes, ptr_coords);
+
+    LongType xOffset;
+    COORDS2INDEX(rank, xStridesExtended, ptr_coords, xOffset);
+
+    LongType zOffset;
+    COORDS2INDEX(rank, zStrides, ptr_coords, zOffset);
+
+    auto buffPart = &(x[xOffset]);
+    auto outBuffPart = &(z[zOffset]);
     *outBuffPart = pack<T>(buffPart, inLastStride, threshold);
   }
 }
-
 template <typename T>
 static void SD_KERNEL cmpBitpackEws(const void* vx, void* vz, int len, const LongType xStride,
                                     const LongType yStride, T threshold) {

@@ -98,7 +98,6 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(void *vx, sd::Long
   auto extraParams = reinterpret_cast<X *>(vextraParams);
   auto reductionBuffer = reinterpret_cast<X *>(vreductionBuffer);
 
-  int xEws = shape::elementWiseStride(xShapeInfo);
   auto len = shape::length(xShapeInfo);
   auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -111,14 +110,13 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(void *vx, sd::Long
   __syncthreads();
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  if (xEws > 0)
-    for (int i = tid; i < len; i += (blockDim.x * gridDim.x))
-      sPartials[threadIdx.x] =
-          OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-  else
-    for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-      sPartials[threadIdx.x] = OpType::update(
-          sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
+  for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+  }
 
   __syncthreads();
   aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
@@ -146,8 +144,9 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(void *vx, sd::Long
       tc[16384] = 0;
       sPartials[threadIdx.x] = OpType::startingValue(x);
 
-      for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x)
+      for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
+      }
 
       __syncthreads();
       aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(gridDim.x, blockDim.x), extraParams);

@@ -67,21 +67,27 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
                                               LongType boxSize, LongType colorTableLen) {
   for (auto batch = blockIdx.x; batch < (int)batchSize; batch += gridDim.x) {  // loop by batch
     for (auto boxIndex = 0; boxIndex < boxSize; ++boxIndex) {
-      // box with shape
-      // auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
       auto colorIndex = boxIndex % colorTableLen;  // colorSet->at(c);
       LongType indices0[] = {batch, boxIndex, 0};
       LongType indices1[] = {batch, boxIndex, 1};
       LongType indices2[] = {batch, boxIndex, 2};
       LongType indices3[] = {batch, boxIndex, 3};
-      auto rowStart = LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices0, 0)]);
+
+      LongType rowStartOffset, rowEndOffset, colStartOffset, colEndOffset;
+      COORDS2INDEX(3, boxesShape + 1, indices0, rowStartOffset);
+      COORDS2INDEX(3, boxesShape + 1, indices2, rowEndOffset);
+      COORDS2INDEX(3, boxesShape + 1, indices1, colStartOffset);
+      COORDS2INDEX(3, boxesShape + 1, indices3, colEndOffset);
+
+      auto rowStart = LongType((height - 1) * boxes[rowStartOffset]);
       auto rowStartBound = math::sd_max(LongType(0), rowStart);
-      auto rowEnd = LongType((height - 1) * boxes[shape::getOffset(boxesShape, indices2, 0)]);
+      auto rowEnd = LongType((height - 1) * boxes[rowEndOffset]);
       auto rowEndBound = math::sd_min(LongType(height - 1), rowEnd);
-      auto colStart = LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices1, 0)]);
+      auto colStart = LongType((width - 1) * boxes[colStartOffset]);
       auto colStartBound = math::sd_max(LongType(0), colStart);
-      auto colEnd = LongType((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
+      auto colEnd = LongType((width - 1) * boxes[colEndOffset]);
       auto colEndBound = math::sd_min(LongType(width - 1), colEnd);
+
       if (rowStart > rowEnd || colStart > colEnd) {
         continue;
       }
@@ -95,8 +101,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
           for (auto c = 0; c < channels; c++) {
             LongType zPos[] = {batch, rowStart, j, c};
             LongType cPos[] = {colorIndex, c};
-            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
-            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+            LongType cIndex, zIndex;
+            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
+            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -106,8 +113,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
           for (auto c = 0; c < channels; c++) {
             LongType zPos[] = {batch, rowEnd, j, c};
             LongType cPos[] = {colorIndex, c};
-            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
-            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+            LongType cIndex, zIndex;
+            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
+            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -118,8 +126,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
           for (auto c = 0; c < channels; c++) {
             LongType zPos[] = {batch, i, colStart, c};
             LongType cPos[] = {colorIndex, c};
-            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
-            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+            LongType cIndex, zIndex;
+            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
+            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -129,8 +138,9 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
           for (auto c = 0; c < channels; c++) {
             LongType zPos[] = {batch, i, colEnd, c};
             LongType cPos[] = {colorIndex, c};
-            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
-            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+            LongType cIndex, zIndex;
+            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
+            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }

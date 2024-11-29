@@ -65,12 +65,25 @@ static void rmsPropUpdater_(NDArray& gradient, NDArray& initState, NDArray& upda
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (sd::LongType  i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
-      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-      const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
-      const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateG.shapeInfo(), coords);
+    for (sd::LongType i = start; i < stop; i++) {
+      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), gradient.shapeInfo(), coords);
+      sd::LongType xOffset, zOffset, initOffset, stOffset;
+      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords, xOffset);
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(update.shapeInfo()), shape::shapeOf(update.shapeInfo()), coords, zOffset);
+      }
+      if (bXInSame) {
+        initOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(initState.shapeInfo()), shape::shapeOf(initState.shapeInfo()), coords, initOffset);
+      }
+      if (bXStSame) {
+        stOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stateG.shapeInfo()), shape::shapeOf(stateG.shapeInfo()), coords, stOffset);
+      }
 
       st[stOffset] = init[initOffset] * rmsDecay + grad[xOffset] * grad[xOffset] * (1 - rmsDecay);
       up[zOffset] = (lr * grad[xOffset]) / (math::sd_sqrt<T, T>(st[stOffset]) + epsilon);

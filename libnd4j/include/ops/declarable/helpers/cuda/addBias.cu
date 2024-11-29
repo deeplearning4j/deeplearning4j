@@ -67,11 +67,13 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += blockDim.x * gridDim.x) {
-    shape::index2coords(i, xShapeInfo, coords);
+    INDEX2COORDS(i, rank, xShapeInfo, coords);
 
-    const auto xOffsets = shape::getOffset(xShapeInfo, coords);
-    const auto zOffsets = xzSameOffsets ? xOffsets : shape::getOffset(zShapeInfo, coords);
-    const auto yOffsets = coords[channelPosition] * shape::stride(yShapeInfo)[posOfNonUnityDim];
+    LongType xOffsets;
+    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffsets);
+    LongType zOffsets;
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffsets);
+    LongType yOffsets = coords[channelPosition] * shape::stride(yShapeInfo)[posOfNonUnityDim];
 
     if (xzAreSame)
       z[zOffsets] += y[yOffsets];

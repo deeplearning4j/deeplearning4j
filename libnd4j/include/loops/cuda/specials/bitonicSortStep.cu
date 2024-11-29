@@ -44,32 +44,39 @@ SD_KERNEL void bitonicSortStepKernelKey(void *vx, sd::LongType const *xShapeInfo
 
   /* The threads with the lowest ids sort the array. */
   if ((ixj) > i) {
-    int posI = shape::getIndexOffset(i, xShapeInfo);
-    int posIXJ = shape::getIndexOffset(ixj, xShapeInfo);
+    sd::LongType iCoords[SD_MAX_RANK];
+    sd::LongType ixjCoords[SD_MAX_RANK];
+    sd::LongType iOffset;
+    sd::LongType ixjOffset;
+
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, iCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords, iOffset);
+    INDEX2COORDS(ixj, shape::rank(xShapeInfo), xShapeInfo, ixjCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords, ixjOffset);
 
     if ((i & k) == 0) {
       /* Sort ascending */
-      if (!descending == (x[posI] > x[posIXJ])) {
+      if (!descending == (x[iOffset] > x[ixjOffset])) {
         /* exchange(i,ixj); */
-        X temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
+        X temp = x[iOffset];
+        x[iOffset] = x[ixjOffset];
+        x[ixjOffset] = temp;
 
-        Y ytemp = y[posI];
-        y[posI] = y[posIXJ];
-        y[posIXJ] = ytemp;
+        Y ytemp = y[iOffset];
+        y[iOffset] = y[ixjOffset];
+        y[ixjOffset] = ytemp;
       }
     } else if ((i & k) != 0) {
       /* Sort descending */
-      if (!descending == (x[posI] < x[posIXJ])) {
+      if (!descending == (x[iOffset] < x[ixjOffset])) {
         /* exchange(i,ixj); */
-        X temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
+        X temp = x[iOffset];
+        x[iOffset] = x[ixjOffset];
+        x[ixjOffset] = temp;
 
-        Y ytemp = y[posI];
-        y[posI] = y[posIXJ];
-        y[posIXJ] = ytemp;
+        Y ytemp = y[iOffset];
+        y[iOffset] = y[ixjOffset];
+        y[ixjOffset] = ytemp;
       }
     }
   }
@@ -95,24 +102,31 @@ SD_KERNEL void bitonicSortStepKernel(void *vx, sd::LongType const *xShapeInfo, i
 
   /* The threads with the lowest ids sort the array. */
   if ((ixj) > i) {
-    int posI = shape::getIndexOffset(i, xShapeInfo);
-    int posIXJ = shape::getIndexOffset(ixj, xShapeInfo);
+    sd::LongType iCoords[SD_MAX_RANK];
+    sd::LongType ixjCoords[SD_MAX_RANK];
+    sd::LongType iOffset;
+    sd::LongType ixjOffset;
+
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, iCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords, iOffset);
+    INDEX2COORDS(ixj, shape::rank(xShapeInfo), xShapeInfo, ixjCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords, ixjOffset);
 
     if ((i & k) == 0) {
       /* Sort ascending */
-      if (!descending == (x[posI] > x[posIXJ])) {
+      if (!descending == (x[iOffset] > x[ixjOffset])) {
         /* exchange(i,ixj); */
-        T temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
+        T temp = x[iOffset];
+        x[iOffset] = x[ixjOffset];
+        x[ixjOffset] = temp;
       }
     } else if ((i & k) != 0) {
       /* Sort descending */
-      if (!descending == (x[posI] < x[posIXJ])) {
+      if (!descending == (x[iOffset] < x[ixjOffset])) {
         /* exchange(i,ixj); */
-        T temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
+        T temp = x[iOffset];
+        x[iOffset] = x[ixjOffset];
+        x[ixjOffset] = temp;
       }
     }
   }

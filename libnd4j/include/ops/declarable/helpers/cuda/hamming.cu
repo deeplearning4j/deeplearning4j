@@ -41,9 +41,20 @@ static SD_KERNEL void _hammingKernel(const void *vx, const LongType *xShapeInfo,
   shared[threadIdx.x] = 0;
 
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  LongType xCoords[SD_MAX_RANK];
+  LongType yCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType yOffset;
+
   for (LongType e = tid; e < length; e += blockDim.x * gridDim.x) {
-    auto _x = static_cast<unsigned long long>(x[shape::getIndexOffset(e, xShapeInfo)]);
-    auto _y = static_cast<unsigned long long>(y[shape::getIndexOffset(e, yShapeInfo)]);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+
+    auto _x = static_cast<unsigned long long>(x[xOffset]);
+    auto _y = static_cast<unsigned long long>(y[yOffset]);
 
     // we save intermediate result into shared memory
     shared[threadIdx.x] += __popcll(_x ^ _y);

@@ -64,11 +64,10 @@ static SD_KERNEL void vol2colCuda(const void* volume, const LongType* volShapeIn
 
   auto coords = sharedMem + threadIdx.x * colRank;
 
-  shape::index2coords(colInd, colShapeInfo, coords);
+  INDEX2COORDS(colInd, colRank, colShapeInfo, coords);
 
-
-
-  const auto colOffset = shape::getOffset(colShapeInfo, coords);
+  LongType colOffset;
+  COORDS2INDEX(colRank, shape::shapeOf(colShapeInfo), coords, colOffset);
 
   coords[2] = -pD + coords[2] * dD + coords[5] * sD;  // const auto volDep = (-pD + kDep * dD) + colD * sD;
   coords[3] = -pH + coords[3] * dH + coords[6] * sH;  // const auto volRow = (-pH + kRow * dH) + colH * sH;
@@ -78,8 +77,11 @@ static SD_KERNEL void vol2colCuda(const void* volume, const LongType* volShapeIn
       static_cast<unsigned>(coords[3]) >= static_cast<LongType>(iH) ||
       static_cast<unsigned>(coords[4]) >= static_cast<LongType>(iW))
     col[colOffset] = static_cast<T>(0.);
-  else
-    col[colOffset] = vol[shape::getOffset(volShapeInfo, coords)];
+  else {
+    LongType volOffset;
+    COORDS2INDEX(volRank, shape::shapeOf(volShapeInfo), coords, volOffset);
+    col[colOffset] = vol[volOffset];
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

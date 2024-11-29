@@ -52,17 +52,23 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 1;
           if (top < xTadLength) {
-            auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
-            auto t1 = shape::getIndexOffset(top, tadShapeInfo);
+            sd::LongType t0Coords[SD_MAX_RANK];
+            sd::LongType t1Coords[SD_MAX_RANK];
+            sd::LongType t0Offset;
+            sd::LongType t1Offset;
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
 
-            if (!descending == (dx[t0] > dx[t1])) {
-              X dt0 = dx[t0];
-              dx[t0] = dx[t1];
-              dx[t1] = dt0;
+            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+              X dt0 = dx[t0Offset];
+              dx[t0Offset] = dx[t1Offset];
+              dx[t1Offset] = dt0;
 
-              Y dy0 = dy[t0];
-              dy[t0] = dy[t1];
-              dy[t1] = dy0;
+              Y dy0 = dy[t0Offset];
+              dy[t0Offset] = dy[t1Offset];
+              dy[t1Offset] = dy0;
             }
           }
         }
@@ -70,17 +76,23 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 2;
           if (top < xTadLength) {
-            auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
-            auto t1 = shape::getIndexOffset(top, tadShapeInfo);
+            sd::LongType t0Coords[SD_MAX_RANK];
+            sd::LongType t1Coords[SD_MAX_RANK];
+            sd::LongType t0Offset;
+            sd::LongType t1Offset;
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
 
-            if (!descending == (dx[t0] > dx[t1])) {
-              X dt0 = dx[t0];
-              dx[t0] = dx[t1];
-              dx[t1] = dt0;
+            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+              X dt0 = dx[t0Offset];
+              dx[t0Offset] = dx[t1Offset];
+              dx[t1Offset] = dt0;
 
-              Y dy0 = dy[t0];
-              dy[t0] = dy[t1];
-              dy[t1] = dy0;
+              Y dy0 = dy[t0Offset];
+              dy[t0Offset] = dy[t1Offset];
+              dy[t1Offset] = dy0;
             }
           }
         }
@@ -89,10 +101,9 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
     }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::LongType *dimension,
+SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::LongType *dimension,
                                 sd::LongType dimensionLength,
                                 sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets, bool descending) {
   auto x = static_cast<T *>(vx);
@@ -122,8 +133,11 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::Lon
     int iterations = xTadLength;
     if (cached) {
       for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-        auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
-        shmem[tid] = dx[t0];
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType xOffset;
+        INDEX2COORDS(tid, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+        shmem[tid] = dx[xOffset];
       }
 
       __syncthreads();
@@ -135,13 +149,19 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::Lon
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 1;
           if (top < xTadLength) {
-            auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
-            auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
+            sd::LongType t0Coords[SD_MAX_RANK];
+            sd::LongType t1Coords[SD_MAX_RANK];
+            sd::LongType t0Offset;
+            sd::LongType t1Offset;
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
 
-            if (!descending == (dx[t0] > dx[t1])) {
-              T dt0 = dx[t0];
-              dx[t0] = dx[t1];
-              dx[t1] = dt0;
+            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+              T dt0 = dx[t0Offset];
+              dx[t0Offset] = dx[t1Offset];
+              dx[t1Offset] = dt0;
             }
           }
         }
@@ -149,13 +169,19 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::Lon
         for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
           auto top = 2 * tid + 2;
           if (top < xTadLength) {
-            auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
-            auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
+            sd::LongType t0Coords[SD_MAX_RANK];
+            sd::LongType t1Coords[SD_MAX_RANK];
+            sd::LongType t0Offset;
+            sd::LongType t1Offset;
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
 
-            if (!descending == (dx[t0] > dx[t1])) {
-              T dt0 = dx[t0];
-              dx[t0] = dx[t1];
-              dx[t1] = dt0;
+            if (!descending == (dx[t0Offset] > dx[t1Offset])) {
+              T dt0 = dx[t0Offset];
+              dx[t0Offset] = dx[t1Offset];
+              dx[t1Offset] = dt0;
             }
           }
         }
@@ -166,13 +192,15 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo,sd::Lon
     if (cached) {
       dx = x + tadOffsets[r];
       for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-        auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
-        dx[t0] = shmem[tid];
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType xOffset;
+        INDEX2COORDS(tid, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+        dx[xOffset] = shmem[tid];
       }
     }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, sd::LongType const *xShapeInfo,

@@ -59,22 +59,32 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     // now finding out element within tad
     auto idx = e % div;
 
-
-
     auto tadInput = input + inputTadOffsets[tadId];
     auto tadOutput = output + outputTadOffsets[tadId];
 
-    // we're calculating offsets within input TAD
-    auto fOffset = shape::getIndexOffset(idx, inputTadShape);
-    auto lOffset = shape::getIndexOffset(numOfElemsToReverse - idx - 1, inputTadShape);
+    LongType fCoords[SD_MAX_RANK];
+    LongType lCoords[SD_MAX_RANK];
+    LongType fOffset;
+    LongType lOffset;
+
+    INDEX2COORDS(idx, shape::rank(inputTadShape), inputTadShape, fCoords);
+    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), fCoords, fOffset);
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(inputTadShape), inputTadShape, lCoords);
+    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape),lCoords, lOffset);
 
     // now we're storing input values
     auto v1 = tadInput[fOffset];
     auto v2 = tadInput[lOffset];
 
-    // now we're calculating offsets within output TAD
-    auto zfOffset = shape::getIndexOffset(idx, outputTadShape);
-    auto zlOffset = shape::getIndexOffset(numOfElemsToReverse - idx - 1, outputTadShape);
+    LongType zfCoords[SD_MAX_RANK];
+    LongType zlCoords[SD_MAX_RANK];
+    LongType zfOffset;
+    LongType zlOffset;
+
+    INDEX2COORDS(idx, shape::rank(outputTadShape), outputTadShape, zfCoords);
+    COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zfCoords, zfOffset);
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(outputTadShape), outputTadShape, zlCoords);
+    COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zlCoords, zlOffset);
 
     // and saving values to output arrays
     tadOutput[zfOffset] = v2;
@@ -87,8 +97,15 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
       auto tadInput = input + inputTadOffsets[e];
       auto tadOutput = output + outputTadOffsets[e];
 
-      auto xOffset = shape::getIndexOffset(numOfElemsToReverse / 2, inputTadShape);
-      auto zOffset = shape::getIndexOffset(numOfElemsToReverse / 2, outputTadShape);
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType xOffset;
+      LongType zOffset;
+
+      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(inputTadShape), inputTadShape, xCoords);
+      COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), xCoords, xOffset);
+      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(outputTadShape), outputTadShape, zCoords);
+      COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zCoords, zOffset);
 
       tadOutput[zOffset] = tadInput[xOffset];
     }
@@ -100,17 +117,11 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
                                          const LongType* outputShape, LongType numOfElemsToReverse) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
-  __shared__ int linearStatus;
   __shared__ const T* inputArr;
   __shared__ T* outputArr;
   __shared__ char inputOrder, outputOrder;
 
   if (threadIdx.x == 0) {
-    linearStatus =
-        (shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape)) && (inputOrder == outputOrder)
-        ? shape::elementWiseStride(inputShape)
-        : 0;
-
     char inputOrder = shape::order(inputShape);
     char outputOrder = shape::order(outputShape);
     inputArr = reinterpret_cast<const T*>(input);
@@ -122,32 +133,47 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
   auto limit = numOfElemsToReverse / 2;
 
   for (uint64_t e = tid; e < limit; e += step) {
-    // we're calculating offsets within input array
-    auto fOffset = shape::getIndexOffset(e, inputShape);
-    auto lOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, inputShape);
+    LongType fCoords[SD_MAX_RANK];
+    LongType lCoords[SD_MAX_RANK];
+    LongType fOffset;
+    LongType lOffset;
 
-    // now we're storing input values
+    INDEX2COORDS(e, shape::rank(inputShape), inputShape, fCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), fCoords, fOffset);
+    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(inputShape), inputShape, lCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), lCoords, lOffset);
+
     auto v1 = inputArr[fOffset];
     auto v2 = inputArr[lOffset];
 
-    // now we're calculating offsets within output array
-    auto zfOffset = shape::getIndexOffset(e, outputShape);
-    auto zlOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, outputShape);
+    LongType zfCoords[SD_MAX_RANK];
+    LongType zlCoords[SD_MAX_RANK];
+    LongType zfOffset;
+    LongType zlOffset;
 
-    // and saving values to output arrays
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zfCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zfCoords, zfOffset);
+    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(outputShape), outputShape, zlCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zlCoords, zlOffset);
+
     outputArr[zfOffset] = v2;
     outputArr[zlOffset] = v1;
   }
 
-  // in case of odd array we'll have to move middle value
   if (odd && tid == 0) {
-    auto xOffset = shape::getIndexOffset(limit, inputShape);
-    auto zOffset = shape::getIndexOffset(limit, outputShape);
+    LongType xCoords[SD_MAX_RANK];
+    LongType zCoords[SD_MAX_RANK];
+    LongType xOffset;
+    LongType zOffset;
+
+    INDEX2COORDS(limit, shape::rank(inputShape), inputShape, xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(limit, shape::rank(outputShape), outputShape, zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
 
     outputArr[zOffset] = inputArr[xOffset];
   }
 }
-
 template <typename T>
 static void reverseTad(LaunchContext* context, NDArray* input, NDArray* output,
                        const LongType* inputTadShape, const LongType* inputTadOffsets,

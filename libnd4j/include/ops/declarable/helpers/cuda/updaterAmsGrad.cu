@@ -54,7 +54,7 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
 
   __shared__ LongType xLen;
   __shared__ T mbeta1, mbeta2, epsilonT;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame, bXInHSame, bXStHSame;
+  __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame, bXInHSame, bXStHSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
@@ -66,11 +66,6 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
 
     mbeta1 = (1 - beta1);
     mbeta2 = (1 - beta2);
-
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stmShapeInfo) && 1 == shape::elementWiseStride(inmShapeInfo) &&
-           1 == shape::elementWiseStride(stvShapeInfo) && 1 == shape::elementWiseStride(invShapeInfo) &&
-           1 == shape::elementWiseStride(sthShapeInfo) && 1 == shape::elementWiseStride(inhShapeInfo);
 
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
@@ -96,16 +91,50 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
     LongType xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,
         stHOffset = i;
 
-    if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initMOffset = bXInMSame ? xOffset : shape::getOffset(inmShapeInfo, coords);
-      stMOffset = bXStMSame ? xOffset : shape::getOffset(stmShapeInfo, coords);
-      initVOffset = bXInUSame ? xOffset : shape::getOffset(invShapeInfo, coords);
-      stVOffset = bXStUSame ? xOffset : shape::getOffset(stvShapeInfo, coords);
-      initHOffset = bXInHSame ? xOffset : shape::getOffset(inhShapeInfo, coords);
-      stHOffset = bXStHSame ? xOffset : shape::getOffset(sthShapeInfo, coords);
+    if (!bOrdering) {
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      }
+
+      if (bXInMSame) {
+        initMOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+      }
+
+      if (bXStMSame) {
+        stMOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+      }
+
+      if (bXInUSame) {
+        initVOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initVOffset);
+      }
+
+      if (bXStUSame) {
+        stVOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stVOffset);
+      }
+
+      if (bXInHSame) {
+        initHOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(inhShapeInfo), shape::shapeOf(inhShapeInfo), coords, initHOffset);
+      }
+
+      if (bXStHSame) {
+        stHOffset = xOffset;
+      } else {
+        COORDS2INDEX(shape::rank(sthShapeInfo), shape::shapeOf(sthShapeInfo), coords, stHOffset);
+      }
     }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * mbeta1;
@@ -115,7 +144,6 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
     up[zOffset] = epsilonT * stM[stMOffset] / (math::sd_sqrt<T, T>(stH[stHOffset]) + epsilon);
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void amsGradUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

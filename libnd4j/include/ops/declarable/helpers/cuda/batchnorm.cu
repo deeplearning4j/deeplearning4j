@@ -68,10 +68,11 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const LongType* xShapeInfo,
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < xLen; i += totalThreads) {
-    shape::index2coords(i, xShapeInfo, coords);
+    INDEX2COORDS(i, xRank, xShapeInfo, coords);
 
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+    LongType xOffset, zOffset;
+    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
     if (minRank == xRank) {
       for (LongType i = 0, j = 0; i < xRank; ++i) {
@@ -83,25 +84,27 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const LongType* xShapeInfo,
     } else  // minRank = numDims = 1 in this case
       coords[0] = coords[dims[0]];
 
-    const auto meanOffset = shape::getOffset(meanShapeInfo, coords);
-    const auto varianceOffset = shape::getOffset(varianceShapeInfo, coords);
+    LongType meanOffset, varianceOffset;
+    COORDS2INDEX(minRank, shape::shapeOf(meanShapeInfo), coords, meanOffset);
+    COORDS2INDEX(minRank, shape::shapeOf(varianceShapeInfo), coords, varianceOffset);
 
     T sigmaInvGam = 1. / math::sd_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
     if (gamma != nullptr) {
-      const auto gammaOffset = shape::getOffset(gammaShapeInfo, coords);
+      LongType gammaOffset;
+      COORDS2INDEX(minRank, shape::shapeOf(gammaShapeInfo), coords, gammaOffset);
       sigmaInvGam *= gamma[gammaOffset];
     }
 
     z[zOffset] = (x[xOffset] - mean[meanOffset]) * sigmaInvGam;
 
     if (beta != nullptr) {
-      const auto betaOffset = shape::getOffset(betaShapeInfo, coords);
+      LongType betaOffset;
+      COORDS2INDEX(minRank, shape::shapeOf(betaShapeInfo), coords, betaOffset);
       z[zOffset] += beta[betaOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 
 ///////////////////////////////////////////////////////////////////

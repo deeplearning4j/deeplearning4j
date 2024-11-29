@@ -82,14 +82,46 @@ static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& 
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (sd::LongType  i = start; i < gradient.lengthOf(); i++) {
-      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
-      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-      const auto initMsgOffset = bXInMsgSame ? xOffset : shape::getOffset(initStateMsg.shapeInfo(), coords);
-      const auto stMsgOffset = bXStMsgSame ? xOffset : shape::getOffset(stateMsg.shapeInfo(), coords);
-      const auto initMsdxOffset = bXInMsdxSame ? xOffset : shape::getOffset(initStateMsdx.shapeInfo(), coords);
-      const auto stMsdxOffset = bXStMsdxSame ? xOffset : shape::getOffset(stateMsdx.shapeInfo(), coords);
+    for (sd::LongType i = start; i < gradient.lengthOf(); i++) {
+      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+
+      sd::LongType xOffset;
+      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
+
+      sd::LongType zOffset;
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
+      }
+
+      sd::LongType initMsgOffset;
+      if (bXInMsgSame) {
+        initMsgOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateMsg.rankOf(), shape::stride(initStateMsg.shapeInfo()), coords, initMsgOffset);
+      }
+
+      sd::LongType stMsgOffset;
+      if (bXStMsgSame) {
+        stMsgOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateMsg.rankOf(), shape::stride(stateMsg.shapeInfo()), coords, stMsgOffset);
+      }
+
+      sd::LongType initMsdxOffset;
+      if (bXInMsdxSame) {
+        initMsdxOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateMsdx.rankOf(), shape::stride(initStateMsdx.shapeInfo()), coords, initMsdxOffset);
+      }
+
+      sd::LongType stMsdxOffset;
+      if (bXStMsdxSame) {
+        stMsdxOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateMsdx.rankOf(), shape::stride(stateMsdx.shapeInfo()), coords, stMsdxOffset);
+      }
 
       stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;
 
@@ -99,7 +131,6 @@ static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& 
       stMsdx[stMsdxOffset] = rho * initMsdx[initMsdxOffset] + up[zOffset] * up[zOffset] * rhoT;
     }
   };
-
   samediff::Threads::parallel_for(func, 0, gradient.lengthOf(), 1);
   return;
 }

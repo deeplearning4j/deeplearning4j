@@ -129,8 +129,8 @@ static SD_INLINE void indexInnerReduction(const LongType& rank, const X* buffer,
   sd::LongType coords[SD_MAX_RANK] = {};
   sd::LongType* ptr_coords = (sd::LongType*)&coords;
   if (outerLoopStart > 0) {
-    sd::index2coords_C(outerLoopStart, rank - 1, bases, ptr_coords);
-    offset = sd::offset_from_coords(strides, ptr_coords, rank);
+    INDEX2COORDS(outerLoopStart, rank - 1, bases, ptr_coords);
+    COORDS2INDEX(rank, strides, ptr_coords, offset);
   }
   Z startIndex = outerLoopStart * innerLoopCount;
   argCurrent = startIndex;
@@ -138,7 +138,6 @@ static SD_INLINE void indexInnerReduction(const LongType& rank, const X* buffer,
   LOG_CALLS(0)
   for (Z i = 0; i < outerLoopCount; i++) {
     const X* inner_buffer = &(buffer[offset]);
-    // typename std::make_signed<Z>::type iArgMax = -1;
     for (Z j = 0; j < innerLoopCount; j++) {
       ReductionOp::update(current, argCurrent, inner_buffer[j], j + startIndex);
     }
@@ -157,8 +156,8 @@ static SD_INLINE void indexInnerReduction(const int& rank, const X* buffer, X& c
   sd::LongType coords[SD_MAX_RANK] = {};
   sd::LongType* ptr_coords = (sd::LongType*)&coords;
   if (outerLoopStart > 0) {
-    sd::index2coords_C(outerLoopStart, rank - 1, bases, ptr_coords);
-    offset = sd::offset_from_coords(strides, ptr_coords, rank);
+    INDEX2COORDS(outerLoopStart, rank - 1, bases, ptr_coords);
+    COORDS2INDEX(rank, strides, ptr_coords, offset);
   }
   Z startIndex = outerLoopStart * innerLoopCount;
   argCurrent = startIndex;
@@ -166,13 +165,10 @@ static SD_INLINE void indexInnerReduction(const int& rank, const X* buffer, X& c
   LOG_CALLS(0)
   for (Z i = 0; i < outerLoopCount; i++) {
     const X* inner_buffer = &(buffer[offset]);
-    // typename std::make_signed<Z>::type iArgMax = -1;
     for (Z j = 0; j < innerLoopCount; j++) {
       ReductionOp::update(current, argCurrent, inner_buffer[j * inner_stride], startIndex + j);
     }
     offset = inc_coords<true>(bases, strides, ptr_coords, offset, rank, 1);
-    // offset = inc_coords<LastIndexFaster>(bases, strides, ptr_coords, offset, rank, 1);
-    // if (iArgMax >= 0) argCurrent = startIndex + iArgMax;
     startIndex += innerLoopCount;
   }
 }

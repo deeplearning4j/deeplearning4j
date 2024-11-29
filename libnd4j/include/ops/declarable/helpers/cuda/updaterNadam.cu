@@ -50,7 +50,7 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
 
   __shared__ LongType xLen;
   __shared__ T mbeta1T, mbeta1, mbeta2;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
+  __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
@@ -59,9 +59,6 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
     mbeta1 = (1 - beta1);
     mbeta2 = (1 - beta2);
 
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stmShapeInfo) && 1 == shape::elementWiseStride(inmShapeInfo) &&
-           1 == shape::elementWiseStride(stvShapeInfo) && 1 == shape::elementWiseStride(invShapeInfo);
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
                 shape::order(stmShapeInfo) == shape::order(inmShapeInfo) &&
@@ -79,18 +76,39 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    LongType xOffset = i, zOffset = i, initMOffset = i, initUOffset = i, stMOffset = i, stUOffset = i;
+    LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    if (!bEWS || !bOrdering) {
-      shape::index2coords(i, xShapeInfo, coords);
-      xOffset = shape::getOffset(xShapeInfo, coords);
-      zOffset = bXZsame ? xOffset : shape::getOffset(zShapeInfo, coords);
-      initUOffset = bXInUSame ? xOffset : shape::getOffset(invShapeInfo, coords);
-      stUOffset = bXStUSame ? xOffset : shape::getOffset(stvShapeInfo, coords);
-      initMOffset = bXInMSame ? xOffset : shape::getOffset(inmShapeInfo, coords);
-      stMOffset = bXStMSame ? xOffset : shape::getOffset(stmShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    if (bXZsame) {
+      zOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
     }
 
+    if (bXInUSame) {
+      initUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+    }
+
+    if (bXStUSame) {
+      stUOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+    }
+
+    if (bXInMSame) {
+      initMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+    }
+
+    if (bXStMSame) {
+      stMOffset = xOffset;
+    } else {
+      COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+    }
     auto oneMinusBeta1Grad = grad[xOffset] * mbeta1;
 
     stM[stMOffset] = beta1 * initM[initMOffset] + oneMinusBeta1Grad;
@@ -100,7 +118,6 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
                   (math::sd_sqrt<T, T>(stV[stUOffset]) + epsilon);
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void nadamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

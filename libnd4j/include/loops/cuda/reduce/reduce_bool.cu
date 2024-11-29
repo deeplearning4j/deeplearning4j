@@ -112,17 +112,25 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::transformCudaXD(const void *vx, const s
   sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-    shape::index2coords(r, outerXTadShapeInfo, coords);
-    const sd::LongType outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
-    const sd::LongType zOffset = sameOffsets ? outerOffset : shape::getOffset(zShapeInfo, coords);
+    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
+    sd::LongType outerOffset, zOffset;
+    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
+    if (sameOffsets) {
+      zOffset = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
     const X *xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
 
-    for (int i = threadIdx.x; i < tadLen; i += blockDim.x)
+    for (int i = threadIdx.x; i < tadLen; i += blockDim.x) {
+      sd::LongType innerOffset;
+      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::shapeOf(innerXTadShapeInfo), coords, innerOffset);
       sPartials[threadIdx.x] =
           OpType::update(sPartials[threadIdx.x],
-                         OpType::op(xTad[shape::getIndexOffset(i, innerXTadShapeInfo)], extraParams), extraParams);
+                         OpType::op(xTad[innerOffset], extraParams), extraParams);
+    }
     __syncthreads();
 
     // aggregate. do NOT reduce for elements > tadLen
@@ -149,32 +157,29 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
 
   // shared memory space for storing intermediate results
   __shared__ Z sPartials[SD_CUDA_BLOCK_SIZE];
-  __shared__ sd::LongType xEws;
   __shared__ sd::LongType len;
 
   if (threadIdx.x == 0) {
-    xEws = shape::elementWiseStride(xShapeInfo);
     len = shape::length(xShapeInfo);
   }
   __syncthreads();
 
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  if (xEws > 0)
-    for (int i = tid; i < len; i += (blockDim.x * gridDim.x))
-      sPartials[threadIdx.x] =
-          OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-  else
-    for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-      sPartials[threadIdx.x] = OpType::update(
-          sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
+  for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+  }
 
   __syncthreads();
   aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<sd::LongType>(blockDim.x, len), extraParams);
   __syncthreads();
 
   if (gridDim.x > 1) {
-    unsigned  int *tc = (unsigned  int *)reductionBuffer;
+    unsigned int *tc = (unsigned int *)reductionBuffer;
     __shared__ bool amLast;
 
     tid = threadIdx.x;
@@ -185,7 +190,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
     __syncthreads();
 
     if (threadIdx.x == 0) {
-      unsigned int ticket = atomicInc(&tc[16384],  gridDim.x);
+      unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
       amLast = (ticket == gridDim.x - 1);
     }
 
@@ -208,7 +213,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(const void *vx, const sd
     }
   } else {
     if (threadIdx.x == 0) {
-      sd::LongType  *tc = (sd::LongType *)reductionBuffer;
+      auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
       tc[16384] = 0;
       z[0] = OpType::postProcess(sPartials[0], len, extraParams);
     }

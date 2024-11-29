@@ -113,8 +113,7 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
                                 const LongType* wiShapeInfo, const void* vb, const LongType* bShapeInfo,
                                 const void* vc0, const LongType* c0ShapeInfo, const void* vmask,
                                 const LongType* maskShapeInfo, void* vht, const LongType* htShapeInfo,
-                                void* vct,
-                                const LongType* ctShapeInfo) {
+                                void* vct, const LongType* ctShapeInfo) {
   // inputs:
   // x     [time, bS, 2*K]
   // wi    [time, bS, 6*K], wi = mmul(x, weights);
@@ -156,12 +155,13 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
 
   if (tid >= len) return;
 
-  shape::index2coords(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
+  INDEX2COORDS(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
 
-  const auto maskOffst = mask ? shape::getOffset(maskShapeInfo, coords + 1) : 0;
-  const auto c0Offset = shape::getOffset(c0ShapeInfo, coords + 1);
-  const auto bFOffset = shape::getOffset(bShapeInfo, coords + 2);
-  const auto bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
+  LongType maskOffst, c0Offset, bFOffset, bROffset;
+  COORDS2INDEX(rank - 1, maskShapeInfo + 1, coords + 1, maskOffst);
+  COORDS2INDEX(rank - 1, c0ShapeInfo + 1, coords + 1, c0Offset);
+  COORDS2INDEX(rank - 1, bShapeInfo + 2, coords + 2, bFOffset);
+  bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
 
   const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
   const T bF = b[bFOffset];
@@ -175,14 +175,16 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
   else
     coords[0] = 0;
 
-  auto xOffset = shape::getOffset(xShapeInfo, coords);
-  auto htOffset = shape::getOffset(htShapeInfo, coords);
-  auto ctOffset = shape::getOffset(ctShapeInfo, coords);
+  LongType xOffset, htOffset, ctOffset;
+  COORDS2INDEX(rank, xShapeInfo, coords, xOffset);
+  COORDS2INDEX(rank, htShapeInfo, coords, htOffset);
+  COORDS2INDEX(rank, ctShapeInfo, coords, ctOffset);
 
   coords[2] *= 3;
-  auto wiOffset0 = shape::getOffset(wiShapeInfo, coords);
-  auto wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
-  auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
+  LongType wiOffset0, wiOffset1, wiOffset2;
+  COORDS2INDEX(rank, wiShapeInfo, coords, wiOffset0);
+  wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
+  wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
   // time loop
   for (LongType t = 0; t < time; ++t) {
@@ -213,7 +215,6 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
     }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -319,16 +320,17 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
 
   if (tid >= len) return;
 
-  shape::index2coords(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
+  INDEX2COORDS(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
 
-  const auto maskOffst = mask ? shape::getOffset(maskShapeInfo, coords + 1) : 0;
-  const auto c0Offset = shape::getOffset(c0ShapeInfo, coords + 1);
-  const auto gradCtOffset = shape::getOffset(gradCtShapeInfo, coords + 1);
-  const auto gradC0Offset = shape::getOffset(gradC0ShapeInfo, coords + 1);
-  const auto bFOffset = shape::getOffset(bShapeInfo, coords + 2);
-  const auto bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
-  const auto gradBFOffset = coords[1] * gradBShapeInfo[3] / 2 + coords[2] * gradBShapeInfo[4];
-  const auto gradBROffset = gradBFOffset + gradBShapeInfo[3];
+  LongType maskOffst, c0Offset, gradCtOffset, gradC0Offset, bFOffset, bROffset, gradBFOffset, gradBROffset;
+  if (mask) COORDS2INDEX(rank - 1, maskShapeInfo + 1, coords + 1, maskOffst);
+  COORDS2INDEX(rank - 1, c0ShapeInfo + 1, coords + 1, c0Offset);
+  COORDS2INDEX(rank - 1, gradCtShapeInfo + 1, coords + 1, gradCtOffset);
+  COORDS2INDEX(rank - 1, gradC0ShapeInfo + 1, coords + 1, gradC0Offset);
+  COORDS2INDEX(rank - 1, bShapeInfo + 2, coords + 2, bFOffset);
+  bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
+  gradBFOffset = coords[1] * gradBShapeInfo[3] / 2 + coords[2] * gradBShapeInfo[4];
+  gradBROffset = gradBFOffset + gradBShapeInfo[3];
 
   const bool flip = coords[2] >= K;
 
@@ -337,18 +339,20 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
   else
     coords[0] = time - 1;
 
-  auto xOffset = shape::getOffset(xShapeInfo, coords);
-  auto ctOffset = shape::getOffset(ctShapeInfo, coords);
-  auto gradIOffset = shape::getOffset(gradIShapeInfo, coords);
-  auto gradHtOffset = shape::getOffset(gradHtShapeInfo, coords);
+  LongType xOffset, ctOffset, gradIOffset, gradHtOffset;
+  COORDS2INDEX(rank, xShapeInfo, coords, xOffset);
+  COORDS2INDEX(rank, ctShapeInfo, coords, ctOffset);
+  COORDS2INDEX(rank, gradIShapeInfo, coords, gradIOffset);
+  COORDS2INDEX(rank, gradHtShapeInfo, coords, gradHtOffset);
 
   coords[2] *= 3;
-  auto gradWiOffset0 = shape::getOffset(gradWiShapeInfo, coords);
-  auto gradWiOffset1 = gradWiOffset0 + gradWiShapeInfo[rank + 3];  // add last stride
-  auto gradWiOffset2 = gradWiOffset1 + gradWiShapeInfo[rank + 3];  // add last stride
-  auto wiOffset0 = shape::getOffset(wiShapeInfo, coords);
-  auto wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
-  auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
+  LongType gradWiOffset0, gradWiOffset1, gradWiOffset2, wiOffset0, wiOffset1, wiOffset2;
+  COORDS2INDEX(rank, gradWiShapeInfo, coords, gradWiOffset0);
+  gradWiOffset1 = gradWiOffset0 + gradWiShapeInfo[rank + 3];  // add last stride
+  gradWiOffset2 = gradWiOffset1 + gradWiShapeInfo[rank + 3];  // add last stride
+  COORDS2INDEX(rank, wiShapeInfo, coords, wiOffset0);
+  wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
+  wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
   const T xVal = x[xOffset];
   const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
@@ -392,7 +396,7 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
     gradWi[gradWiOffset1] = gft;
     gbF += gft;
 
-    // grad wrt c_previous
+    // grad wrt c\_previous
     gradCtVal = gradC0Val * ft;
 
     if (flip) {

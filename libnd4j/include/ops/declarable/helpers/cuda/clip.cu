@@ -59,15 +59,18 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    shape::index2coords(i, zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
-    const T actualNorm = useAverage ? norm[shape::getOffset(normShapeInfo, normCoords)] / tadLen
-                                    : norm[shape::getOffset(normShapeInfo, normCoords)];
+    LongType normOffset, zOffset;
+    COORDS2INDEX(shape::rank(normShapeInfo), shape::shapeOf(normShapeInfo), normCoords, normOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
-    if (actualNorm > clipNorm) z[shape::getOffset(zShapeInfo, zCoords)] *= clipNorm / actualNorm;
+    const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
+
+    if (actualNorm > clipNorm) z[zOffset] *= clipNorm / actualNorm;
   }
 }
 
@@ -98,7 +101,7 @@ void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output, const s
   if (dims.empty()) {
     std::vector<LongType> empty;
     NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &empty) / z->lengthOf()
-                                          : z->reduceAlongDimension(reduce::Norm2, &empty);
+                                    : z->reduceAlongDimension(reduce::Norm2, &empty);
 
     if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
   } else {
@@ -170,28 +173,41 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    shape::index2coords(i, zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
-    const auto yOffset = sameOffsets ? zOffset : shape::getOffset(yShapeInfo, zCoords);
+    LongType zOffset, yOffset;
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    if(sameOffsets) {
+      yOffset = zOffset;
+    } else {
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), zCoords, yOffset);
+    }
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
-    const T actualNorm = useAverage ? norm[shape::getOffset(normShapeInfo, normCoords)] / tadLen
-                                    : norm[shape::getOffset(normShapeInfo, normCoords)];
+    LongType normOffset;
+    COORDS2INDEX(shape::rank(normShapeInfo), shape::shapeOf(normShapeInfo), normCoords, normOffset);
+
+    const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
 
     if (actualNorm > clipNorm) {
-      const T sumVal = sum[shape::getOffset(sumShapeInfo, normCoords)];
-      const auto xOffset = sameOffsets ? zOffset : shape::getOffset(xShapeInfo, zCoords);
+      LongType sumOffset, xOffset;
+      COORDS2INDEX(shape::rank(sumShapeInfo), shape::shapeOf(sumShapeInfo), normCoords, sumOffset);
+      if(sameOffsets) {
+        xOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), zCoords, xOffset);
+      }
 
+      const T sumVal = sum[sumOffset];
       z[zOffset] = (clipNorm / actualNorm) * y[yOffset] *
                    (static_cast<T>(1.f) - (x[xOffset] * sumVal) / (actualNorm * actualNorm));
-    } else
+    } else {
       z[zOffset] = y[yOffset];
+    }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void clipByNormBp_(LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
@@ -324,14 +340,22 @@ static void SD_KERNEL clipByValueKernel(void* input, const LongType* inputShape,
       else
         outputBuf[e] = inputBuf[e];
     } else {
-      auto inputOffset = shape::getIndexOffset(e, inputShape);
-      auto outputOffset = shape::getIndexOffset(e, outputShape);
+      LongType inputCoords[SD_MAX_RANK];
+      LongType outputCoords[SD_MAX_RANK];
+      LongType inputOffset;
+      LongType outputOffset;
+
+      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+
       if (inputBuf[inputOffset] > rightBound)
         outputBuf[outputOffset] = (T)rightBound;
       else if (inputBuf[inputOffset] < leftBound)
         outputBuf[outputOffset] = (T)leftBound;
       else
-        outputBuf[outputOffset] = inputBuf[outputOffset];
+        outputBuf[outputOffset] = inputBuf[inputOffset];
     }
   }
 }

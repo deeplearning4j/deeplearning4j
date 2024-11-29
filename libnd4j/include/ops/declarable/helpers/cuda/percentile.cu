@@ -42,6 +42,10 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[t];
     auto z = reinterpret_cast<X*>(vz);
 
+    LongType xCoords[SD_MAX_RANK];
+    LongType zCoords[SD_MAX_RANK];
+    LongType t0, t1, zOffset, positionOffset;
+
     // sort tad
     if (tadLength > 1) {
       for (int m = 0; m < tadLength; m++) {
@@ -49,8 +53,10 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
           for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
             auto top = 2 * tid + 1;
             if (top < tadLength) {
-              auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo);
-              auto t1 = shape::getIndexOffset(top, xTadShapeInfo);
+              INDEX2COORDS(top - 1, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, t0);
+              INDEX2COORDS(top, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, t1);
 
               if (x[t0] > x[t1]) {
                 // swap values
@@ -64,8 +70,10 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
           for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
             auto top = 2 * tid + 2;
             if (top < tadLength) {
-              auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo);
-              auto t1 = shape::getIndexOffset(top, xTadShapeInfo);
+              INDEX2COORDS(top - 1, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, t0);
+              INDEX2COORDS(top, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, t1);
 
               if (x[t0] > x[t1]) {
                 // swap values
@@ -81,7 +89,13 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
     }
 
     // saving final value
-    if (threadIdx.x == 0) z[shape::getIndexOffset(t, zShapeInfo)] = x[shape::getIndexOffset(position, xTadShapeInfo)];
+    if (threadIdx.x == 0) {
+      INDEX2COORDS(t, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(position, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, positionOffset);
+      z[zOffset] = x[positionOffset];
+    }
     __syncthreads();
   }
 }

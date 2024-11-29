@@ -415,7 +415,7 @@ class SD_LIB_EXPORT NDArray {
    */
   void  *bufferWithOffset(LongType offset);
 
-  void const *specialBufferWithOffset(LongType offset);
+  void  *specialBufferWithOffset(LongType offset);
   /**
    *  copy assignment operator
    *  in particular, when dataType() != other.dataType() and both shapes are the same, there will be allocation of new
@@ -519,10 +519,16 @@ class SD_LIB_EXPORT NDArray {
    */
   void *platformBuffer();
 
+
   template <typename T>
   T *bufferAsT();
 
 
+  template <typename T>
+  T * specialBufferasT();
+
+  template <typename T>
+  T * specialBufferasTWithOffset(LongType offset);
 
   template <typename T>
   T *  bufferasTWithOffset(LongType offset);
@@ -1979,7 +1985,7 @@ DataBuffer * NDArray::dataBuffer() { return _buffer; }
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
- return reinterpret_cast<void *>(buffer->primaryAtOffset<T>(offset));
+  return reinterpret_cast<void *>(buffer->primaryAtOffset<T>(offset));
 }
 
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers

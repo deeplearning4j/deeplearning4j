@@ -1128,14 +1128,14 @@ TEST_F(NDArrayTest2, reduce_1) {
       for (int x = 0; x < 4; x++) {
         for (int y = 0; y < 4; y++) {
           LongType indices[] = {0, 0, x, y, i, j};
-          LongType offset = shape::getOffset(arr6.shapeInfo(), indices);
+          LongType offset;
+          COORDS2INDEX(arr6.rankOf(), arr6.stridesOf(), indices, offset);
           sum += ((double *)arr6.buffer())[offset];
         }
       }
       exp.p<double>(0, 0, i, j, sum);
     }
   }
-
 
   ASSERT_TRUE(exp.equalsTo(arr6s));
 }

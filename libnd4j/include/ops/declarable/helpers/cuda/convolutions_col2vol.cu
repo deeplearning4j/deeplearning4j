@@ -64,9 +64,10 @@ static SD_KERNEL void col2volCuda(const void* columns, const LongType* colShapeI
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < volLen; i += gridDim.x * blockDim.x) {
-    shape::index2coords(i, volShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(volShapeInfo), volShapeInfo, coords);
 
-    const auto volOffset = shape::getOffset(volShapeInfo, coords);
+    sd::LongType volOffset;
+    COORDS2INDEX(shape::rank(volShapeInfo), shape::shapeOf(volShapeInfo), coords, volOffset);
 
     const auto bSiCoffset = coords[0] * colShapeInfo[9] + coords[1] * colShapeInfo[10];
 

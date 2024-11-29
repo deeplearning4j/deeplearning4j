@@ -96,16 +96,60 @@ static void amsGradUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& ini
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (sd::LongType  i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
-      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-      const auto initVOffset = bXInVSame ? xOffset : shape::getOffset(initStateV.shapeInfo(), coords);
-      const auto stVOffset = bXStVSame ? xOffset : shape::getOffset(stateV.shapeInfo(), coords);
-      const auto initMOffset = bXInMSame ? xOffset : shape::getOffset(initStateM.shapeInfo(), coords);
-      const auto stMOffset = bXStMSame ? xOffset : shape::getOffset(stateM.shapeInfo(), coords);
-      const auto initHOffset = bXInHSame ? xOffset : shape::getOffset(initStateH.shapeInfo(), coords);
-      const auto stHOffset = bXStHSame ? xOffset : shape::getOffset(stateH.shapeInfo(), coords);
+    for (sd::LongType i = start; i < stop; i++) {
+      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+
+      sd::LongType xOffset;
+      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
+
+      sd::LongType zOffset;
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
+      }
+
+      sd::LongType initVOffset;
+      if (bXInVSame) {
+        initVOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateV.rankOf(), shape::stride(initStateV.shapeInfo()), coords, initVOffset);
+      }
+
+      sd::LongType stVOffset;
+      if (bXStVSame) {
+        stVOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateV.rankOf(), shape::stride(stateV.shapeInfo()), coords, stVOffset);
+      }
+
+      sd::LongType initMOffset;
+      if (bXInMSame) {
+        initMOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateM.rankOf(), shape::stride(initStateM.shapeInfo()), coords, initMOffset);
+      }
+
+      sd::LongType stMOffset;
+      if (bXStMSame) {
+        stMOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateM.rankOf(), shape::stride(stateM.shapeInfo()), coords, stMOffset);
+      }
+
+      sd::LongType initHOffset;
+      if (bXInHSame) {
+        initHOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateH.rankOf(), shape::stride(initStateH.shapeInfo()), coords, initHOffset);
+      }
+
+      sd::LongType stHOffset;
+      if (bXStHSame) {
+        stHOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateH.rankOf(), shape::stride(stateH.shapeInfo()), coords, stHOffset);
+      }
 
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * mbeta1;
       stV[stVOffset] = beta2 * initV[initVOffset] + grad[xOffset] * grad[xOffset] * mbeta2;

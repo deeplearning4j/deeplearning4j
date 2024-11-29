@@ -397,14 +397,12 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index) {
       leftOverIndex++;
     }
   }
-
   // sub for indices
-  index2coords(index, leftOverIndexLen, tadShape, sub);
+  INDEX2COORDS(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {
     ret[leftOverIndexes[i]] = sub[i];
   }
-
   if (ptrManager == nullptr) {
     delete[] tadShape;
     delete[] leftOverIndexes;
@@ -474,22 +472,22 @@ SD_INLINE sd::LongType TAD::tadOffset(sd::LongType index) {
 
   if (dimensionLength > 1) {
     sd::LongType *tad2Sub = this->tad2Sub(index, ptrManager);
-
-    sd::LongType ret = getOffset(shapeInfo, tad2Sub);
+    sd::LongType ret;
+    COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), tad2Sub, ret);
 
     if (ret < 0) {
-     if (ptrManager == nullptr) delete[] tad2Sub;
+      if (ptrManager == nullptr) delete[] tad2Sub;
       return -1;
     }
-   if (ptrManager == nullptr) delete[] tad2Sub;
+    if (ptrManager == nullptr) delete[] tad2Sub;
 
     return ret;
 
   } else {
     sd::LongType *tad2Sub = this->tad2Sub(index, ptrManager);
 
-    sd::LongType ret = getOffset(shapeInfo, tad2Sub);
-
+    sd::LongType ret;
+    COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), tad2Sub, ret);
     if (ptrManager == nullptr) delete[] tad2Sub;
 
     return ret;
@@ -556,7 +554,7 @@ SD_INLINE sd::LongType *TAD::tad2Sub(sd::LongType index, void *ptrManager) {
   }
 
   // sub for indices
-  index2coords(index, leftOverIndexLen, tadShape, sub);
+  INDEX2COORDS(index, leftOverIndexLen, tadShape, sub);
 
   for (int i = 0; i < leftOverIndexLen; i++) {
     ret[leftOverIndexes[i]] = sub[i];

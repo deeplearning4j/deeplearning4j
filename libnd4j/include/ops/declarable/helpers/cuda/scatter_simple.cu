@@ -48,9 +48,23 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, c
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
   for (int i = tid; i < iLength; i += blockDim.x * gridDim.x) {
     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
-    auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
+    LongType idxCoords[SD_MAX_RANK];
+    LongType idxOffset;
+    INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, idxCoords);
+    COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), idxCoords, idxOffset);
+    auto idx = indices[idxOffset];
 
-    x[shape::getIndexOffset(idx, xTadShape)] = u[shape::getIndexOffset(i, uShapeInfo)];
+    LongType xCoords[SD_MAX_RANK];
+    LongType xOffset;
+    INDEX2COORDS(idx, shape::rank(xTadShape), xTadShape, xCoords);
+    COORDS2INDEX(shape::rank(xTadShape), shape::shapeOf(xTadShape), xCoords, xOffset);
+
+    LongType uCoords[SD_MAX_RANK];
+    LongType uOffset;
+    INDEX2COORDS(i, shape::rank(uShapeInfo), uShapeInfo, uCoords);
+    COORDS2INDEX(shape::rank(uShapeInfo), shape::shapeOf(uShapeInfo), uCoords, uOffset);
+
+    x[xOffset] = u[uOffset];
   }
 }
 

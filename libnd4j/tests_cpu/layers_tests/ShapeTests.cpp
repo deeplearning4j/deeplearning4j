@@ -81,19 +81,19 @@ TEST_F(ShapeTests, Test_ShapeEquality_2) {
 TEST_F(ShapeTests, Test_Ind2SubC_1) {
   LongType shape[] = {3, 5};
   LongType c0[2];
-  shape::index2coords(0, 2, shape, c0);
+  INDEX2COORDS(0, 2, shape, c0);
 
   ASSERT_EQ(0, c0[0]);
   ASSERT_EQ(0, c0[1]);
 
   LongType c1[2];
-  shape::index2coords(1, 2, shape, c1);
+  INDEX2COORDS(1, 2, shape, c1);
 
   ASSERT_EQ(0, c1[0]);
   ASSERT_EQ(1, c1[1]);
 
   LongType c6[2];
-  shape::index2coords(5, 2, shape, c6);
+  INDEX2COORDS(5, 2, shape, c6);
 
   ASSERT_EQ(1, c6[0]);
   ASSERT_EQ(0, c6[1]);

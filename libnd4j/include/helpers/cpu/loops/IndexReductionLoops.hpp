@@ -219,50 +219,6 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
     } break;
 
       //*********************************************//
-    case sd::LoopKind::X_EWSNONZERO: {
-      sd::LongType castZShapeInfo[SD_MAX_RANK];
-      const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::LongType>(zShapeInfo, castZShapeInfo);
-
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-          auto tad = const_cast<X*>(x) + tadOffsets[i];
-          auto indexValue = OpType::startingIndexValue(tad);
-
-          for (sd::LongType j = 0; j < tadLen; j++) {
-            functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
-            indexValue = OpType::update(indexValue, comp, extraParams);
-          }
-
-          auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
-          z[zOffset] = (Z)indexValue.index;
-        }
-      };
-
-      samediff::Threads::parallel_tad(func, 0, zLen);
-    } break;
-
-      //*********************************************//
-    case sd::LoopKind::Z_EWSNONZERO: {
-      sd::LongType castTadShapeInfo[SD_MAX_RANK];
-      const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeInfo, castTadShapeInfo);
-
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-          auto tad = const_cast<X*>(x) + tadOffsets[i];
-          auto indexValue = OpType::startingIndexValue(tad);
-
-          for (sd::LongType j = 0; j < tadLen; j++) {
-            auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
-            functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
-            indexValue = OpType::update(indexValue, comp, extraParams);
-          }
-
-          z[i * zEws] = (Z)indexValue.index;
-        }
-      };
-
-      samediff::Threads::parallel_tad(func, 0, zLen);
-    } break;
 
       //*********************************************//
     default: {
@@ -277,16 +233,21 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
           auto indexValue = OpType::startingIndexValue(tad);
 
           for (sd::LongType j = 0; j < tadLen; j++) {
-            auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
+            LongType coords[SD_MAX_RANK];
+            INDEX2COORDS(j, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), coords);
+            LongType tadOffset;
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), coords, tadOffset);
             functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
             indexValue = OpType::update(indexValue, comp, extraParams);
           }
 
-          auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
+          LongType coords[SD_MAX_RANK];
+          INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+          LongType zOffset;
+          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
           z[zOffset] = (Z)indexValue.index;
         }
       };
-
       samediff::Threads::parallel_tad(func, 0, zLen);
     }
   }

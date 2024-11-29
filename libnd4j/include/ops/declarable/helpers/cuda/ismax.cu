@@ -58,7 +58,8 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
     dim3 launchDims = getLaunchDims("ismaxFill");
     BUILD_SINGLE_SELECTOR(
         zType, fillIsMaxGeneric,
-        (launchDims, stream, output->specialBuffer(), output->specialShapeInfo(), output->lengthOf(), targetIdx),
+        (launchDims, stream, output->specialBuffer(),
+         const_cast<sd::LongType *>(output->specialShapeInfo()), output->lengthOf(), targetIdx),
         SD_COMMON_TYPES);
     manager.synchronize();
 
@@ -81,8 +82,10 @@ static void ismax_(LaunchContext* context, NDArray* input, NDArray* output,
     // at this point, all IMax indexes are gathered, and we execute filler
     BUILD_SINGLE_SELECTOR(
         zType, fillDimensionalIsMaxGeneric,
-        (launchDims, stream, indexMaxArr.specialBuffer(), output->specialBuffer(), output->specialShapeInfo(),
-         packZ->specialShapeInfo(), dimension, dimensionLength, packZ->specialOffsets()),
+        (launchDims, stream, indexMaxArr.specialBuffer(), output->specialBuffer(),
+         const_cast<sd::LongType *>(output->specialShapeInfo()),
+         const_cast<sd::LongType *>(packZ->specialShapeInfo()),
+         dimension, dimensionLength, const_cast<sd::LongType *>(packZ->specialOffsets())),
         SD_COMMON_TYPES);
     manager.synchronize();
   }

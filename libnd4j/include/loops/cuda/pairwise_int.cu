@@ -39,47 +39,31 @@ SD_KERNEL static void pairwiseSimpleShaped(void const* vx, sd::LongType const* x
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  __shared__ int xEws;
-  __shared__ int yEws;
-  __shared__ int zEws;
-  __shared__ char xOrder;
-  __shared__ char yOrder;
-  __shared__ char zOrder;
   __shared__ sd::LongType len;
 
   if (threadIdx.x == 0) {
-    xEws = shape::elementWiseStride(xShapeInfo);
-    yEws = shape::elementWiseStride(yShapeInfo);
-    zEws = shape::elementWiseStride(zShapeInfo);
-    xOrder = shape::order(xShapeInfo);
-    yOrder = shape::order(yShapeInfo);
-    zOrder = shape::order(zShapeInfo);
     len = shape::length(xShapeInfo);
   }
   __syncthreads();
 
-  if (xEws >= 1 && yEws >= 1 && zEws >= 1 && xOrder == yOrder && xOrder == zOrder) {
-    for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
-      z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
-    }
-  } else if (vx == vz) {
-    for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
-      auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-      auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+  for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType yOffset;
+    sd::LongType zOffset;
 
-      z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-    }
-  } else {
-    for (sd::LongType i = tid; i < len; i += gridDim.x * blockDim.x) {
-      auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-      auto yOffset = shape::getIndexOffset(i, yShapeInfo);
-      auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
-      z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
-    }
+    z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }
 }
-
 namespace functions {
 namespace pairwise_transforms {
 

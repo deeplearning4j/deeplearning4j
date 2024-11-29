@@ -27,50 +27,44 @@ namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_DEVICE void pullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType const *tadShapeInfo,
-                              LongType const *tadOffsets, LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
+SD_DEVICE void pullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType  *tadShapeInfo,
+                              LongType  *tadOffsets, LongType  *zTadShapeInfo, LongType  *zTadOffsets) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
-  auto xEWS = shape::elementWiseStride(tadShapeInfo);
-  auto zEWS = shape::elementWiseStride(zTadShapeInfo);
   auto tadLength = shape::length(tadShapeInfo);
 
-  if (xEWS >= 1 && zEWS >= 1) {
-    for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-      T *rX = x + tadOffsets[indexes[idx]];
-      T *rZ = z + zTadOffsets[idx];
+  for (size_t idx = blockIdx.x; idx < len; idx += gridDim.x) {
+    T *rX = x + tadOffsets[indexes[idx]];
+    T *rZ = z + zTadOffsets[idx];
 
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        rZ[i * zEWS] = rX[i * xEWS];
-      }
-    }
-  } else {
-    for (int idx = blockIdx.x; idx < len; idx += gridDim.x) {
-      T *rX = x + tadOffsets[indexes[idx]];
-      T *rZ = z + zTadOffsets[idx];
+    for (size_t i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType zOffset;
 
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, tadShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, zTadShapeInfo);
-        rZ[zOffset] = rX[xOffset];
-      }
+      INDEX2COORDS(i, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zOffset);
+
+      rZ[zOffset] = rX[xOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL void execPullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType const *tadShapeInfo,
-                                  LongType const *tadOffsets, LongType const *zTadShapeInfo,
-                                  LongType const *zTadOffsets) {
+SD_KERNEL void execPullRowsKernel(void *vx, void *vz, LongType len, LongType *indexes, LongType  *tadShapeInfo,
+                                  LongType  *tadOffsets, LongType  *zTadShapeInfo,
+                                  LongType  *zTadOffsets) {
   pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
 ///////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, void *vz, LongType len,
-                                   LongType *indexes, LongType const *tadShapeInfo, LongType const *tadOffsets,
-                                   LongType const *zTadShapeInfo, LongType const *zTadOffsets) {
+                                   LongType *indexes, LongType  *tadShapeInfo, LongType  *tadOffsets,
+                                   LongType  *zTadShapeInfo, LongType  *zTadOffsets) {
   execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo,
                                                                                tadOffsets, zTadShapeInfo, zTadOffsets);
   DebugHelper::checkErrorCode(stream, "pullRows(...) failed");
@@ -78,7 +72,7 @@ SD_HOST void pullRowsKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void 
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsKernelGeneric,
                       (dim3 & launchDims, cudaStream_t *stream, void *vx, void *vz, sd::LongType len,
-                       sd::LongType *indexes, sd::LongType const *tadShapeInfo, sd::LongType const *tadOffsets,
-                       sd::LongType const *zTadShapeInfo, sd::LongType const *zTadOffsets),
+                       sd::LongType *indexes, sd::LongType  *tadShapeInfo, sd::LongType  *tadOffsets,
+                       sd::LongType  *zTadShapeInfo, sd::LongType  *zTadOffsets),
                       SD_COMMON_TYPES);
 }  // namespace sd

@@ -42,13 +42,23 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
 
+  LongType inputCoords[SD_MAX_RANK];
+  LongType outputCoords[SD_MAX_RANK];
+  LongType inputOffset;
+  LongType outputOffset;
+
   // trivial idea: loop through all elements, get independent probability for each element to be nullified
   for (LongType e = 0; e < inLen; ++e) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
 
     // if probability is ok - we're saving scaled value
-    if (double(val) < probVal)
-      output[shape::getIndexOffset(e, outputShape)] = T(input[shape::getIndexOffset(e, inputShape)] / probVal);
+    if (double(val) < probVal) {
+      INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      output[outputOffset] = T(input[inputOffset] / probVal);
+    }
   }
 }
 
@@ -152,11 +162,19 @@ static SD_KERNEL void dropoutBPKernel(void* outputBuf, LongType const* outputSha
   auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
+  LongType outputCoords[SD_MAX_RANK];
+  LongType gradOutCoords[SD_MAX_RANK];
+  LongType zOffset;
+  LongType gradOutOffset;
+
   for (int e = tid; e < len; e += step) {
-    const auto zOffset = shape::getIndexOffset(e, outputShape);
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(gradOutShape), gradOutShape, gradOutCoords);
+    COORDS2INDEX(shape::rank(gradOutShape), shape::shapeOf(gradOutShape), gradOutCoords, gradOutOffset);
 
     // if probability was non-zero on FF step, we'll scale grads back
-    if (output[zOffset] != T(0.)) output[zOffset] = T(input[shape::getIndexOffset(e, gradOutShape)] / probValue);
+    if (output[zOffset] != T(0.)) output[zOffset] = T(input[gradOutOffset] / probValue);
   }
 }
 template <typename T>
@@ -192,11 +210,18 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
 
+  LongType inputCoords[SD_MAX_RANK];
+  LongType outputCoords[SD_MAX_RANK];
+  LongType inputOffset;
+  LongType outputOffset;
+
   for (auto e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
-    T xVal = input[shape::getIndexOffset(e, inputShape)];
-    output[shape::getIndexOffset(e, outputShape)] =
-        (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xVal + alpha1));
+    INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    output[outputOffset] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)input[inputOffset] + alpha1));
   }
 }
 template <typename T>

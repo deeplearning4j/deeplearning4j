@@ -66,14 +66,10 @@ SD_DEVICE void ScalarIntTransform<X>::transformCuda(void const* vscalar, void co
   auto z = reinterpret_cast<X*>(vz);
 
   auto yRank = shape::rank(yShapeInfo);
-  auto yEWS = shape::elementWiseStride(yShapeInfo);
   auto yShape = shape::shapeOf(yShapeInfo);
-  auto yStride = shape::stride(yShapeInfo);
 
   auto zRank = shape::rank(zShapeInfo);
-  auto zEWS = shape::elementWiseStride(zShapeInfo);
   auto zShape = shape::shapeOf(zShapeInfo);
-  auto zStride = shape::stride(zShapeInfo);
 
   int totalThreads = gridDim.x * blockDim.x;
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -82,11 +78,18 @@ SD_DEVICE void ScalarIntTransform<X>::transformCuda(void const* vscalar, void co
   if (threadIdx.x == 0) len = shape::length(yShapeInfo);
   __syncthreads();
 
-  if (yEWS >= 1 && zEWS >= 1 && shape::order(yShapeInfo) == shape::order(zShapeInfo)) {
-    transformCuda<OpType>(len, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer);
-  } else {
-    for (sd::LongType i = tid; i < len; i += totalThreads)
-      z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo)], scalar, params);
+  for (sd::LongType i = tid; i < len; i += totalThreads) {
+    sd::LongType yCoords[SD_MAX_RANK];
+    sd::LongType yOffset;
+    INDEX2COORDS(i, yRank, yShapeInfo, yCoords);
+    COORDS2INDEX(yRank, yShape, yCoords, yOffset);
+
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType zOffset;
+    INDEX2COORDS(i, zRank, zShapeInfo, zCoords);
+    COORDS2INDEX(zRank, zShape, zCoords, zOffset);
+
+    z[zOffset] = OpType::op(y[yOffset], scalar, params);
   }
 }
 
@@ -131,34 +134,27 @@ SD_DEVICE void ScalarIntTransform<X>::transformCuda(void const* vx, sd::LongType
     tadOffsetsZ = tadOffsets;
   }
 
-  // tad preparation
-  auto tadEws = shape::elementWiseStride(tadShapeInfo);
-  auto zEws = shape::elementWiseStride(tadShapeInfoZ);
   auto tadLength = shape::length(tadShapeInfo);
   auto numTads = shape::length(xShapeInfo) / tadLength;
 
-  if (tadEws > 0 && zEws > 0 && shape::order(tadShapeInfo) == shape::order(zShapeInfo)) {
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-      X* oZ = z + tadOffsetsZ[r];
-      auto oX = x + tadOffsets[r];
+  for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+    X* oZ = z + tadOffsetsZ[r];
+    auto oX = x + tadOffsets[r];
 
-      auto s = scalars[r];
+    auto s = scalars[r];
 
-      for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-        oZ[f * zEws] = OpType::op(oX[f * tadEws], s, extraParams);
-    }
-  } else {
-    // main loop, rolling over tads
-    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-      X* oZ = z + tadOffsetsZ[r];
-      auto oX = x + tadOffsets[r];
+    for (int f = threadIdx.x; f < tadLength; f += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType zOffset;
 
-      auto s = scalars[r];
+      INDEX2COORDS(f, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(f, shape::rank(tadShapeInfoZ), tadShapeInfoZ, zCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfoZ), shape::shapeOf(tadShapeInfoZ), zCoords, zOffset);
 
-      for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-        oZ[shape::getIndexOffset(f, tadShapeInfoZ)] =
-            OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo)], s, extraParams);
+      oZ[zOffset] = OpType::op(oX[xOffset], s, extraParams);
     }
   }
 }

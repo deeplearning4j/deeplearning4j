@@ -123,8 +123,6 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
   __shared__ volatile int resultScalar;
 
-  __shared__ int xElementWiseStride;
-
   int numElements = blockDim.x;
   // shared memory space for storing intermediate results
   __shared__ SummaryStatsData<X> sPartials[SD_CUDA_BLOCK_SIZE];
@@ -160,100 +158,61 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
 
     if (resultLength == 1) resultScalar = 1;
 
-    auto xStride = shape::stride(xShapeInfo);
-    auto xOrder = shape::order(xShapeInfo);
-
-    if (dimension != nullptr && (dimension[0] != SD_MAX_DIMENSION && dimensionLength == 1)) {
-      xElementWiseStride = xStride[dimension[0]];
-    } else {
-      xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-    }
-
     xLength = shape::length(xShapeInfo);
   }
   __syncthreads();
   if (!resultScalar) {
     __shared__ int tadLength;
-    __shared__ int tadEWS;
     __shared__ int numTads;
 
     if (threadIdx.x == 0) {
       tadLength = shape::length(tadOnlyShapeInfo);
-      tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
       numTads = shape::length(xShapeInfo) / tadLength;
     }
     __syncthreads();
 
-    if (tadEWS == 0) {
-      for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-        auto tadOffsetForBlock = tadOffsets[r];
+    for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
+      auto tadOffsetForBlock = tadOffsets[r];
 
-        val.initWithValue(startingVal);
-        val.n = 0;
-        sPartials[threadIdx.x] = val;
+      val.initWithValue(startingVal);
+      val.n = 0;
+      sPartials[threadIdx.x] = val;
 
-        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-          auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
-          SummaryStatsData<X> indexVal2;
-          indexVal2.initWithValue(dx[xOffset]);
+      for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType xOffset;
+        INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+        auto xOffsetFinal = tadOffsetForBlock + xOffset;
+        SummaryStatsData<X> indexVal2;
+        indexVal2.initWithValue(dx[xOffsetFinal]);
 
-          sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
-        }
-        __syncthreads();
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLength), extraParams);
-
-        __syncthreads();
-        if (threadIdx.x == 0) {
-          z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
-        }
-        __syncthreads();
+        sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
       }
-    } else {
-      for (int i = blockIdx.x; i < numTads; i += gridDim.x) {
-        auto tadOffsetForBlock = tadOffsets[i];
+      __syncthreads();
+      aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLength), extraParams);
 
-        val.initWithValue(startingVal);
-        val.n = 0;
-        sPartials[threadIdx.x] = val;
-
-        for (int x = threadIdx.x; x < tadLength; x += blockDim.x) {
-          auto indexX = tadOffsetForBlock + x * tadEWS;
-          SummaryStatsData<X> indexVal2;
-          indexVal2.initWithValue(dx[indexX]);
-          sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
-        }
-
-        __syncthreads();
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, tadLength), extraParams);
-
-        __syncthreads();
-        if (threadIdx.x == 0) {
-          z[i] = OpType::getValue(postProcessOrNot,
-                                  sPartials[threadIdx.x]);  // postProcess(sPartials[0],tadLength ,extraParams);
-        }
+      __syncthreads();
+      if (threadIdx.x == 0) {
+        z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
       }
+      __syncthreads();
     }
   } else if (resultScalar) {
     __shared__ int n;
     if (threadIdx.x == 0) {
-      xElementWiseStride = shape::elementWiseStride(xShapeInfo);
       n = shape::length(xShapeInfo);
     }
     __syncthreads();
 
-    if (xElementWiseStride >= 1) {
-      for (sd::LongType i = tid; i < n; i += (blockDim.x * gridDim.x)) {
-        SummaryStatsData<X> indexVal2;
-        indexVal2.initWithValue(dx[i * xElementWiseStride]);
-        reduction = update(reduction, indexVal2, extraParams);
-      }
-    } else {
-      for (sd::LongType i = tid; i < n; i += blockDim.x * gridDim.x) {
-        auto offset = shape::getIndexOffset(i, xShapeInfo);
-        SummaryStatsData<X> indexVal2;
-        indexVal2.initWithValue(dx[offset]);
-        reduction = update(reduction, indexVal2, extraParams);
-      }
+    for (sd::LongType i = tid; i < n; i += blockDim.x * gridDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      SummaryStatsData<X> indexVal2;
+      indexVal2.initWithValue(dx[xOffset]);
+      reduction = update(reduction, indexVal2, extraParams);
     }
     sPartials[threadIdx.x] = reduction;
 
@@ -306,7 +265,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
       if (tid == 0) {
         unsigned int* tc = (unsigned*)reductionBuffer;
         tc[16384] = 0;
-        z[0] = z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
+        z[0] = OpType::getValue(postProcessOrNot, sPartials[0]);
       }
     }
   }

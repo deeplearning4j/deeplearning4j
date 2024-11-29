@@ -97,23 +97,7 @@ struct ZipCoordsState<0> {
 #define ZIP_OF_ADJUST1(x, index) ((x).::sd::ZipCoordsState<(index)>::adjust1)
 #define ZIP_OF_ADJUST2(x, index) ((x).::sd::ZipCoordsState<(index)>::adjust2)
 
-SD_INLINE SD_HOST_DEVICE void index2coords_C(LongType index, const LongType rank, const LongType* bases,
-                                             LongType* coords) {
-  for (size_t i = rank - 1; i > 0; --i) {
-    coords[i] = index % bases[i];
-    index /= bases[i];
-  }
-  coords[0] = index;  // last iteration
-}
 
-SD_INLINE SD_HOST_DEVICE void index2coords_F(LongType index, const LongType rank, const LongType* bases,
-                                             LongType* coords) {
-  for (size_t i = 0; i < rank - 1; i++) {
-    coords[i] = index % bases[i];
-    index /= bases[i];
-  }
-  coords[rank - 1] = index;  // last iteration
-}
 
 SD_INLINE SD_HOST_DEVICE size_t offset_from_coords(const LongType* strides, const LongType* coords,
                                                    const LongType& rank) {
@@ -779,7 +763,6 @@ struct ZipGenericCoordsConstMovementSecondStrideN
   LongType FirstImpl() { return offset1; };
   LongType SecondImpl() { return offset2; };
 };
-
 template <bool LastIndexFaster = true>
 struct ZipGenericCoordsMovementSecondStrideN
     : CoordsBaseMovement<ZipGenericCoordsMovementSecondStrideN<LastIndexFaster>> {
@@ -803,18 +786,14 @@ struct ZipGenericCoordsMovementSecondStrideN
       offset = {0, 0};
 
     } else {
-      if (LastIndexFaster) {
-        index2coords_C(start, rank, bases, (LongType*)&coords);
-      } else {
-        index2coords_F(start, rank, bases, (LongType*)&coords);
-      }
-      offset.first = offset_from_coords(strides1, (LongType*)&coords, rank);
+      INDEX2COORDS(start, rank, bases, coords);
+      COORDS2INDEX(rank, strides1, coords, offset.first);
       offset.second = start * _stride2;
     }
   }
 
   void incrementImpl(int skipRank = 0) {
-    offset.first = inc_coords<LastIndexFaster>(_bases, _strides1, (LongType*)&coords, offset.first, _rank, skipRank);
+    offset.first = inc_coords<LastIndexFaster>(_bases, _strides1, coords, offset.first, _rank, skipRank);
     offset.second += _stride2;
   }
 
@@ -844,23 +823,19 @@ struct ZipGenericCoordsMovement : CoordsBaseMovement<ZipGenericCoordsMovement<La
       offset = {0, 0};
 
     } else {
-      if (LastIndexFaster) {
-        index2coords_C(start, rank, bases, (LongType*)&coords);
-      } else {
-        index2coords_F(start, rank, bases, (LongType*)&coords);
-      }
-      offset = offset_from_coords(strides1, strides2, (LongType*)&coords, rank);
+      INDEX2COORDS(start, rank, bases, coords);
+      COORDS2INDEX(rank, strides1, coords, offset.first);
+      COORDS2INDEX(rank, strides2, coords, offset.second);
     }
   }
 
   void incrementImpl(int skipRank = 0) {
-    offset = inc_coords<LastIndexFaster>(_bases, _strides1, _strides2, (LongType*)&coords, offset, _rank, skipRank);
+    offset = inc_coords<LastIndexFaster>(_bases, _strides1, _strides2, coords, offset, _rank, skipRank);
   }
 
   LongType FirstImpl() { return offset.first; };
   LongType SecondImpl() { return offset.second; };
 };
-
 }  // namespace sd
 
 #endif

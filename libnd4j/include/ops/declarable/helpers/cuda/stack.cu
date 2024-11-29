@@ -51,7 +51,11 @@ static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const LongType* zSha
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
     const T* x = reinterpret_cast<const T*>(reinterpret_cast<void**>(pVx)[i]);
-    z[shape::getIndexOffset(i, zShapeInfo)] = *x;
+    LongType zOffset;
+    LongType zCoords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    z[zOffset] = *x;
   }
 }
 
@@ -62,7 +66,6 @@ SD_HOST static void stackScalarsCudaLauncher(const int blocksPerGrid, const int 
                                              const LongType* zShapeInfo) {
   stackScalarsCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, vz, zShapeInfo);
   DebugHelper::checkGlobalErrorCode("stackScalar failed(...) failed");
-
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -98,8 +101,9 @@ static void stack_(LaunchContext* context, const std::vector<NDArray*>& inArrs, 
 
       NativeOpExecutioner::execTransformAny(context, transform::Assign, nullptr, inArrs[i]->shapeInfo(),
                                             inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(), nullptr,
-                                            zTadShapeInfo, zBuff, zTadPack->specialShapeInfo(), nullptr, nullptr,
-                                            nullptr, false /*allowParallelism*/);
+                                            zTadShapeInfo, zBuff, zTadPack->specialShapeInfo(),
+                                            nullptr,
+                                            false);
     }
   }
 
@@ -130,12 +134,16 @@ static SD_KERNEL void unstackScalarsCuda(const void* vx, const LongType* xShapeI
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType xOffset;
+
   for (LongType i = tid; i < xLen; i += totalThreads) {
     T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[i]);
-    *z = x[shape::getIndexOffset(i, xShapeInfo)];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    *z = x[xOffset];
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void unstackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
@@ -183,7 +191,7 @@ static void unstack_(LaunchContext* context, NDArray& input, const std::vector<N
       NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign, nullptr, xTadShapeInfo, xBuff,
                                             xTadPack->specialShapeInfo(), nullptr, outArrs[i]->shapeInfo(),
                                             outArrs[i]->specialBuffer(), outArrs[i]->specialShapeInfo(), nullptr,
-                                            nullptr, nullptr, false /*allowParallelism*/);
+                                            false);
     }
   }
 

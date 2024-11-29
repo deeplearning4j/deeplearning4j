@@ -50,7 +50,10 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
                                      LongType left, LongType right, LongType cutoff, bool descending) {
   sd::LongType i = left, j = right;
   X ktmp;
-  X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo)];
+  LongType pivotCoords[] = {(left + right) / 2};
+  LongType pivotIndex;
+  COORDS2INDEX(1, shape::stride(xShapeInfo), pivotCoords, pivotIndex);
+  X pivot = key[pivotIndex];
 
   Y vtmp;
 
@@ -58,31 +61,59 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
     /* PARTITION PART */
     while (i <= j) {
       if (descending) {
-        while (key[shape::getIndexOffset(i, xShapeInfo)] > pivot) i++;
-        while (key[shape::getIndexOffset(j, xShapeInfo)] < pivot) j--;
+        LongType iIndex, jIndex;
+        LongType iCoords[] = {i};
+        LongType jCoords[] = {j};
+        COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iIndex);
+        COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jIndex);
+        while (key[iIndex] > pivot) {
+          i++;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iIndex);
+        }
+        while (key[jIndex] < pivot) {
+          j--;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jIndex);
+        }
         if (i <= j) {
-          ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
-          key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
-          key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
+          ktmp = key[iIndex];
+          key[iIndex] = key[jIndex];
+          key[jIndex] = ktmp;
 
-          vtmp = values[shape::getIndexOffset(i, yShapeInfo)];
-          values[shape::getIndexOffset(i, yShapeInfo)] = values[shape::getIndexOffset(j, yShapeInfo)];
-          values[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
+          LongType iValueIndex, jValueIndex;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iValueIndex);
+          COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jValueIndex);
+          vtmp = values[iValueIndex];
+          values[iValueIndex] = values[jValueIndex];
+          values[jValueIndex] = vtmp;
 
           i++;
           j--;
         }
       } else {
-        while (key[shape::getIndexOffset(i, xShapeInfo)] < pivot) i++;
-        while (key[shape::getIndexOffset(j, xShapeInfo)] > pivot) j--;
+        LongType iIndex, jIndex;
+        LongType iCoords[] = {i};
+        LongType jCoords[] = {j};
+        COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iIndex);
+        COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jIndex);
+        while (key[iIndex] < pivot) {
+          i++;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iIndex);
+        }
+        while (key[jIndex] > pivot) {
+          j--;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jIndex);
+        }
         if (i <= j) {
-          ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
-          key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
-          key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
+          ktmp = key[iIndex];
+          key[iIndex] = key[jIndex];
+          key[jIndex] = ktmp;
 
-          vtmp = values[shape::getIndexOffset(i, yShapeInfo)];
-          values[shape::getIndexOffset(i, yShapeInfo)] = values[shape::getIndexOffset(j, yShapeInfo)];
-          values[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
+          LongType iValueIndex, jValueIndex;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iValueIndex);
+          COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jValueIndex);
+          vtmp = values[iValueIndex];
+          values[iValueIndex] = values[jValueIndex];
+          values[jValueIndex] = vtmp;
 
           i++;
           j--;
@@ -91,8 +122,6 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
     }
   }
 
-  //
-
   if (((right - left) < cutoff)) {
     if (left < j) {
       quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, left, j, cutoff, descending);
@@ -100,7 +129,6 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
     if (i < right) {
       quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, i, right, cutoff, descending);
     }
-
   } else {
     PRAGMA_OMP_TASK {
       quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, left, j, cutoff, descending);
@@ -110,13 +138,15 @@ void quickSort_parallel_internal_key(X *key, sd::LongType const *xShapeInfo, Y *
     }
   }
 }
-
 template <typename X, typename Y>
 void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y *value, sd::LongType const *yShapeInfo,
                                        LongType left, LongType right, LongType cutoff, bool descending) {
   sd::LongType i = left, j = right;
   X ktmp;
-  Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo)];
+  LongType pivotCoords[] = {(left + right) / 2};
+  LongType pivotIndex;
+  COORDS2INDEX(1, shape::stride(yShapeInfo), pivotCoords, pivotIndex);
+  Y pivot = value[pivotIndex];
 
   Y vtmp;
 
@@ -124,31 +154,59 @@ void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y
     /* PARTITION PART */
     while (i <= j) {
       if (descending) {
-        while (value[shape::getIndexOffset(i, yShapeInfo)] > pivot) i++;
-        while (value[shape::getIndexOffset(j, yShapeInfo)] < pivot) j--;
+        LongType iIndex, jIndex;
+        LongType iCoords[] = {i};
+        LongType jCoords[] = {j};
+        COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iIndex);
+        COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jIndex);
+        while (value[iIndex] > pivot) {
+          i++;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iIndex);
+        }
+        while (value[jIndex] < pivot) {
+          j--;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jIndex);
+        }
         if (i <= j) {
-          ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
-          key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
-          key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
+          LongType iKeyIndex, jKeyIndex;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iKeyIndex);
+          COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jKeyIndex);
+          ktmp = key[iKeyIndex];
+          key[iKeyIndex] = key[jKeyIndex];
+          key[jKeyIndex] = ktmp;
 
-          vtmp = value[shape::getIndexOffset(i, yShapeInfo)];
-          value[shape::getIndexOffset(i, yShapeInfo)] = value[shape::getIndexOffset(j, yShapeInfo)];
-          value[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
+          vtmp = value[iIndex];
+          value[iIndex] = value[jIndex];
+          value[jIndex] = vtmp;
 
           i++;
           j--;
         }
       } else {
-        while (value[shape::getIndexOffset(i, yShapeInfo)] < pivot) i++;
-        while (value[shape::getIndexOffset(j, yShapeInfo)] > pivot) j--;
+        LongType iIndex, jIndex;
+        LongType iCoords[] = {i};
+        LongType jCoords[] = {j};
+        COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iIndex);
+        COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jIndex);
+        while (value[iIndex] < pivot) {
+          i++;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), iCoords, iIndex);
+        }
+        while (value[jIndex] > pivot) {
+          j--;
+          COORDS2INDEX(1, shape::stride(yShapeInfo), jCoords, jIndex);
+        }
         if (i <= j) {
-          ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
-          key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
-          key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
+          LongType iKeyIndex, jKeyIndex;
+          COORDS2INDEX(1, shape::stride(xShapeInfo), iCoords, iKeyIndex);
+          COORDS2INDEX(1, shape::stride(xShapeInfo), jCoords, jKeyIndex);
+          ktmp = key[iKeyIndex];
+          key[iKeyIndex] = key[jKeyIndex];
+          key[jKeyIndex] = ktmp;
 
-          vtmp = value[shape::getIndexOffset(i, yShapeInfo)];
-          value[shape::getIndexOffset(i, yShapeInfo)] = value[shape::getIndexOffset(j, yShapeInfo)];
-          value[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
+          vtmp = value[iIndex];
+          value[iIndex] = value[jIndex];
+          value[jIndex] = vtmp;
 
           i++;
           j--;
@@ -157,8 +215,6 @@ void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y
     }
   }
 
-  //
-
   if (((right - left) < cutoff)) {
     if (left < j) {
       quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, left, j, cutoff, descending);
@@ -166,7 +222,6 @@ void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y
     if (i < right) {
       quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, i, right, cutoff, descending);
     }
-
   } else {
     PRAGMA_OMP_TASK {
       quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, left, j, cutoff, descending);
@@ -176,7 +231,6 @@ void quickSort_parallel_internal_value(X *key, sd::LongType const *xShapeInfo, Y
     }
   }
 }
-
 template <typename X, typename Y>
 static void quickSort_parallel_key(NDArray *x, NDArray *y, sd::LongType lenArray, int numThreads,
                                    bool descending) {

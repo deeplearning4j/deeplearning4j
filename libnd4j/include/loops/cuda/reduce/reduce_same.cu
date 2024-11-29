@@ -111,17 +111,24 @@ SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(const void *vx, const sd::
   sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-    shape::index2coords(r, outerXTadShapeInfo, coords);
-    const auto outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
-    const auto zOffset = sameOffsets ? outerOffset : shape::getOffset(zShapeInfo, coords);
+    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
+    sd::LongType outerOffset;
+    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
+    sd::LongType zOffset;
+    if(sameOffsets) {
+      sameOffsets = outerOffset;
+    } else {
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    }
 
     const X *xTad = x + outerOffset;
     sPartials[threadIdx.x] = OpType::startingValue(xTad);
 
-    for (int i = threadIdx.x; i < tadLen; i += blockDim.x)
-      sPartials[threadIdx.x] =
-          OpType::update(sPartials[threadIdx.x],
-                         OpType::op(xTad[shape::getIndexOffset(i, innerXTadShapeInfo)], extraParams), extraParams);
+    for (int i = threadIdx.x; i < tadLen; i += blockDim.x) {
+      sd::LongType innerOffset;
+      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::shapeOf(innerXTadShapeInfo), coords, innerOffset);
+      sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(xTad[innerOffset], extraParams), extraParams);
+    }
     __syncthreads();
 
     // aggregate. do NOT reduce for elements > tadLen
@@ -158,24 +165,21 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(void const *vx, sd::LongTyp
 
   // shared memory space for storing intermediate results
   __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
-  __shared__ sd::LongType xEws;
   __shared__ sd::LongType len;
 
   if (threadIdx.x == 0) {
-    xEws = shape::elementWiseStride(xShapeInfo);
     len = shape::length(xShapeInfo);
   }
   __syncthreads();
   sPartials[threadIdx.x] = OpType::startingValue(x);
 
-  if (xEws > 0)
-    for (int i = tid; i < len; i += (blockDim.x * gridDim.x))
-      sPartials[threadIdx.x] =
-          OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
-  else
-    for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-      sPartials[threadIdx.x] = OpType::update(
-          sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
+  for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
+  }
 
   __syncthreads();
   aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::sd_min<int>(blockDim.x, len), extraParams);
@@ -222,7 +226,6 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(void const *vx, sd::LongTyp
     }
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
@@ -245,7 +248,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_t
 
     // scalar assign
     scalar::ScalarTransform<X, X, X>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hXShapeInfo,
-                                                                   z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
+                                                        z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
   } else {
     const sd::LongType zRank = shape::rank(hZShapeInfo);
     const sd::LongType tadRank = shape::rank(hXShapeInfo) - zRank;
@@ -316,7 +319,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceXD(dim3 launchDims, cudaStream_t *
                                                  const sd::LongType *dims) {
   if (shape::length(hZShapeInfo) == 1) {
     execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z,
-                                            dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
+                     dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_T(intermediateXD,
                         PARAMS(launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z,

@@ -180,8 +180,9 @@ static SD_KERNEL void upperAdjointKernel(T const* input, T* output, LongType bat
       for (auto c = threadIdx.y; c <= r; c += blockDim.y) {
         LongType zPos[] = {r, c};
         LongType xPos[] = {c, r};
-        auto zIndex = shape::getOffset(outputTads, zPos);
-        auto xIndex = shape::getOffset(inputTads, xPos);
+        LongType zIndex, xIndex;
+        COORDS2INDEX(2, outputTads + 1, zPos, zIndex);
+        COORDS2INDEX(2, inputTads + 1, xPos, xIndex);
         outputPart[zIndex] = inputPart[xIndex];
       }
     }
@@ -199,8 +200,9 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
       for (auto c = r + threadIdx.y; c < columns; c += blockDim.y) {
         LongType zPos[] = {r, c};
         LongType xPos[] = {c, r};
-        auto zIndex = shape::getOffset(outputTads, zPos);
-        auto xIndex = shape::getOffset(inputTads, xPos);
+        LongType zIndex, xIndex;
+        COORDS2INDEX(2, outputTads + 1, zPos, zIndex);
+        COORDS2INDEX(2, inputTads + 1, xPos, xIndex);
         outputPart[zIndex] = inputPart[xIndex];
       }
     }

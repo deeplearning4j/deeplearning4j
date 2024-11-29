@@ -49,7 +49,8 @@ static SD_KERNEL void setDiagValueUpperKernel(void* buffer, LongType* shape, T v
   for (LongType i = blockIdx.x; i < rows; i += gridDim.x) {
     for (int j = threadIdx.x; j < cols; j += blockDim.x) {
       LongType coords[2] = {i, j};
-      LongType xOffset = shape::getOffset(shape, coords);
+      LongType xOffset;
+      COORDS2INDEX(rank, shape::stride(shape), coords, xOffset);
       if (i + diagonal <= j) array[xOffset] = value;
     }
   }
@@ -71,7 +72,8 @@ static SD_KERNEL void setDiagValueLowerKernel(void* buffer, LongType* shape, T v
   for (LongType i = blockIdx.x; i < rows; i += gridDim.x) {
     for (int j = threadIdx.x; j < cols; j += totalThreads) {
       LongType coords[2] = {i, j};
-      auto xOffset = shape::getOffset(shape, coords);
+      LongType xOffset;
+      COORDS2INDEX(rank, shape::stride(shape), coords, xOffset);
       if (i + diagonal >= j) *(reinterpret_cast<T*>(buffer) + xOffset) = value;
     }
   }

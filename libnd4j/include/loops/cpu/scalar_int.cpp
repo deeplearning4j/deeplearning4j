@@ -115,42 +115,42 @@ void ScalarIntTransform<X>::transform(const int opNum, const void *x, const sd::
 template <typename X>
 template <typename OpType>
 void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vz,
-                                     const sd::LongType *zShapeInfo, const void *vscalar, void *vextraParams,
-                                     const sd::LongType start, const sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto z = reinterpret_cast<X *>(vz);
- auto scalar = reinterpret_cast<const X *>(vscalar)[0];
- auto extraParams = reinterpret_cast<X *>(vextraParams);
+                                      const sd::LongType *zShapeInfo, const void *vscalar, void *vextraParams,
+                                      const sd::LongType start, const sd::LongType stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<X *>(vz);
+  auto scalar = reinterpret_cast<const X *>(vscalar)[0];
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
- auto xEws = shape::elementWiseStride(xShapeInfo);
- auto zEws = shape::elementWiseStride(zShapeInfo);
- auto len = shape::length(xShapeInfo);
+  auto len = shape::length(xShapeInfo);
 
- sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+  sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
- if (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) {
-   transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, start, stop);
-   return;
- }
+  if (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) {
+    transform<OpType>(x, 1, z, 1, vscalar, extraParams, len, start, stop);
+    return;
+  }
 
- if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-   PRAGMA_OMP_SIMD
-   for (auto i = start; i < stop; i++) {
-     sd::LongType coords[SD_MAX_RANK];
-     shape::index2coords(i, xShapeInfo, coords);
-     auto offset = shape::getOffset(xShapeInfo, coords);
-     z[offset] = OpType::op(x[offset], scalar, extraParams);
-   };
- } else {
-   PRAGMA_OMP_SIMD
-   for (auto i = start; i < stop; i++) {
-     sd::LongType coords[SD_MAX_RANK];
-     shape::index2coords(i, xShapeInfo, coords);
-     auto xOffset = shape::getOffset(xShapeInfo, coords);
-     auto zOffset = shape::getOffset(zShapeInfo, coords);
-     z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
-   };
- }
+  if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      sd::LongType offset;
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+      z[offset] = OpType::op(x[offset], scalar, extraParams);
+    };
+  } else {
+    PRAGMA_OMP_SIMD
+    for (auto i = start; i < stop; i++) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      sd::LongType xOffset, zOffset;
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
+    };
+  }
 }
 
 template <typename X>

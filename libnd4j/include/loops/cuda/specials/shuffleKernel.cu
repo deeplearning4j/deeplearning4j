@@ -35,7 +35,6 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
 
   __shared__ int tadLength;
   __shared__ int xRank;
-  __shared__ int tadEWS;
   __shared__ int numTads;
   __shared__ LongType *xShapeInfo;
   __shared__ LongType xLength;
@@ -46,7 +45,6 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
 
     if (threadIdx.x == 0) {
       tadLength = shape::length(tadOnlyShapeInfo[f]);
-      tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
       xShapeInfo = dxShapeInfo[f];
       xRank = shape::rank(xShapeInfo);
       xLength = shape::length(xShapeInfo);
@@ -59,11 +57,19 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
       for (int r = tid; r < xLength; r += gridDim.x * blockDim.x) {
         auto swapIndex = shuffleMap[r];
         if (swapIndex >= 0 && swapIndex < xLength) {
-          int idx = r * tadEWS;
-          int swap = swapIndex * tadEWS;
-          T oldX = x[idx];
-          x[idx] = x[swap];
-          x[swap] = oldX;
+          sd::LongType xCoords[SD_MAX_RANK];
+          sd::LongType swapCoords[SD_MAX_RANK];
+          sd::LongType xOffset;
+          sd::LongType swapOffset;
+
+          INDEX2COORDS(r, xRank, xShapeInfo, xCoords);
+          COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(swapIndex, xRank, xShapeInfo, swapCoords);
+          COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), swapCoords, swapOffset);
+
+          T oldX = x[xOffset];
+          x[xOffset] = x[swapOffset];
+          x[swapOffset] = oldX;
         }
       }
     } else {
@@ -79,24 +85,23 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
           auto zX = z + oldOffset;
           auto zY = z + newOffset;
 
-          // so we're going to change TAD[oldOffset] with TAD[newOffset]
-          if (tadEWS == 1) {
-            for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-              T oldX = rX[i];
-              rX[i] = rY[i];
-              zY[i] = oldX;
-            }
+          for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            sd::LongType xCoords[SD_MAX_RANK];
+            sd::LongType yCoords[SD_MAX_RANK];
+            sd::LongType xOffset;
+            sd::LongType yOffset;
 
-          } else {
-            for (LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-              auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-              auto yOffset = newOffset + xOffset;
-              xOffset += oldOffset;
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), tadOnlyShapeInfo[f], xCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), xCoords, xOffset);
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), tadOnlyShapeInfo[f], yCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), yCoords, yOffset);
 
-              T oldX = x[xOffset];
-              z[xOffset] = x[yOffset];
-              z[yOffset] = oldX;
-            }
+            xOffset += oldOffset;
+            yOffset += newOffset;
+
+            T oldX = x[xOffset];
+            z[xOffset] = x[yOffset];
+            z[yOffset] = oldX;
           }
         }
       }
@@ -104,7 +109,6 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
     __syncthreads();
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST void shuffleKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vdX, LongType **xShapeInfo,

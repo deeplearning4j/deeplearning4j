@@ -81,11 +81,13 @@ TEST_F(LoopCoordsHelper, Init_Tests) {
   }
 
   // init our base coords
-  index2coords_C(test_Index, Rank, shape, coords);
-  index2coords_F(test_Index, Rank, shape, coords_f);
+  INDEX2COORDS(test_Index, Rank, shape, coords);
+  INDEX2COORDS(test_Index, Rank, shape, coords_f);
 
-  size_t offset_calc = offset_from_coords(strides_c, coords, Rank);
-  size_t offset_calc_f = offset_from_coords(strides_f, coords_f, Rank);
+  size_t offset_calc;
+  COORDS2INDEX(Rank, strides_c, coords, offset_calc);
+  size_t offset_calc_f;
+  COORDS2INDEX(Rank, strides_f, coords_f, offset_calc_f);
 
   CoordsState<Rank - 1> cts;
   CoordsState<Rank - 1> cts_f;
@@ -168,11 +170,13 @@ TEST_F(LoopCoordsHelper, Increment_Use_Tests) {
   zip_size_t zoffset2_f = {};
 
   for (int j = 0; j < total; j++) {
-    index2coords_C(j, Rank, shape, coords);
-    index2coords_F(j, Rank, shape, coords_f);
+    INDEX2COORDS(j, Rank, shape, coords);
+    INDEX2COORDS(j, Rank, shape, coords_f);
 
-    size_t offset_calc = offset_from_coords(strides_c, coords, Rank);
-    size_t offset_calc_f = offset_from_coords(strides_f, coords_f, Rank);
+    size_t offset_calc;
+    COORDS2INDEX(Rank, strides_c, coords, offset_calc);
+    size_t offset_calc_f;
+    COORDS2INDEX(Rank, strides_f, coords_f, offset_calc_f);
 
     ASSERT_TRUE(eq_coords<Rank>(cts, coords));
     ASSERT_TRUE(eq_coords<Rank>(cts_f, coords_f));

@@ -68,11 +68,31 @@ static void nesterovsUpdater_(NDArray& gradient, NDArray& initState, NDArray& up
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (auto i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
-      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-      const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
-      const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateV.shapeInfo(), coords);
+      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+
+      sd::LongType xOffset;
+      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
+
+      sd::LongType zOffset;
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
+      }
+
+      sd::LongType initOffset;
+      if (bXInSame) {
+        initOffset = xOffset;
+      } else {
+        COORDS2INDEX(initState.rankOf(), shape::stride(initState.shapeInfo()), coords, initOffset);
+      }
+
+      sd::LongType stOffset;
+      if (bXStSame) {
+        stOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateV.rankOf(), shape::stride(stateV.shapeInfo()), coords, stOffset);
+      }
 
       T prevState = momentum * init[initOffset];
       st[stOffset] = prevState - lr * grad[xOffset];

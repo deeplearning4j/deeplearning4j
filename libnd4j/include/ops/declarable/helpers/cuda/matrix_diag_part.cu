@@ -38,11 +38,11 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // put diagonals from input batched matrices to output batched vectors
 template <typename T>
-static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, LongType numTads,
-                                           LongType inputLength, const LongType* tadOnlyInputShapeInfo,
-                                           const LongType* tadInputOffsets,
-                                           const LongType* tadOnlyOutputShapeInfo,
-                                           const LongType* tadOutputOffsets) {
+static SD_KERNEL void matrixDiagPartKernel(void* inputBuffer, void* outputBuffer, LongType numTads,
+                                           LongType inputLength,  LongType* tadOnlyInputShapeInfo,
+                                            LongType* tadInputOffsets,
+                                            LongType* tadOnlyOutputShapeInfo,
+                                            LongType* tadOutputOffsets) {
 
   if(blockIdx.x >= numTads)
     return;
@@ -55,12 +55,15 @@ static SD_KERNEL void matrixDiagPartKernel(void const* inputBuffer, void* output
     auto xOffset = tadOutputOffsets[i];
     for (LongType j = threadIdx.x; j < inputLength; j += totalThreads) {
       LongType coords[2] = {j, j};
-      LongType tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
-      *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) =
+      LongType tadOffset, indexOffset;
+      COORDS2INDEX(shape::rank(tadOnlyInputShapeInfo), shape::stride(tadOnlyInputShapeInfo), coords, tadOffset);
+      COORDS2INDEX(shape::rank(tadOnlyOutputShapeInfo), shape::stride(tadOnlyOutputShapeInfo), coords, indexOffset);
+      *(reinterpret_cast<T*>(outputBuffer) + xOffset + indexOffset) =
           *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
     }
   }
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
@@ -94,8 +97,10 @@ static Status _matrixDiagPart(LaunchContext* context, NDArray* input, NDArray* o
 
   dim3 launchDims = getLaunchDims("matrixDiag");
   matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-      input->specialBuffer(), output->specialBuffer(),numTads, lastDimension, packX->specialShapeInfo(),
-      packX->specialOffsets(), packZ->specialShapeInfo(), packZ->specialOffsets());
+      input->specialBuffer(),
+      output->specialBuffer(),numTads, lastDimension, const_cast<sd::LongType *>(packX->specialShapeInfo()),
+      const_cast<sd::LongType *>(packX->specialOffsets()),
+      const_cast<sd::LongType *>(packZ->specialShapeInfo()), const_cast<sd::LongType *>(packZ->specialOffsets()));
 
   sd::DebugHelper::checkErrorCode(stream, "matrixDiagPartKernel failed");
 

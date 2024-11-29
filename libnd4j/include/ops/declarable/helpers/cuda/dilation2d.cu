@@ -72,9 +72,10 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
   auto xzCoords = sharedMem + threadIdx.x * (xzRank + yRank);
   auto yCoords = xzCoords + xzRank;
 
-  shape::index2coords(zInd, zShapeInfo, xzCoords);
+  INDEX2COORDS(zInd, xzRank, zShapeInfo, xzCoords);
 
-  const auto zOffset = shape::getOffset(zShapeInfo, xzCoords);
+  LongType zOffset;
+  COORDS2INDEX(xzRank, shape::shapeOf(zShapeInfo), xzCoords, zOffset);
 
   yCoords[2] = xzCoords[3];  // iC coordinate is same for x, y and z
 
@@ -91,14 +92,17 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
       xzCoords[2] = ow * sW - pW + yCoords[1] * dW;
       if (xzCoords[2] < 0 || xzCoords[2] >= iW) continue;
 
-      const X val = x[shape::getOffset(xShapeInfo, xzCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
+      LongType xOffset, yOffset;
+      COORDS2INDEX(xzRank, shape::shapeOf(xShapeInfo), xzCoords, xOffset);
+      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+
+      const X val = x[xOffset] + y[yOffset];
       if (val > max) max = val;
     }
   }
 
   z[zOffset] = static_cast<Z>(max);
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

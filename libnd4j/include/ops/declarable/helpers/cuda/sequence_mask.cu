@@ -42,12 +42,22 @@ static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const LongType* i
   }
   __syncthreads();
 
-  for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
-    for (auto k = threadIdx.x; k < inputLen; k += blockDim.x)
-      if (i < input[shape::getIndexOffset(k, inputShape)])
-        output[shape::getIndexOffset(k * maxIndex + i, outputShape)] = B(true);
-}
+  LongType inputCoords[SD_MAX_RANK];
+  LongType outputCoords[SD_MAX_RANK];
+  LongType inputOffset;
+  LongType outputOffset;
 
+  for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
+    for (auto k = threadIdx.x; k < inputLen; k += blockDim.x) {
+      INDEX2COORDS(k, shape::rank(inputShape), inputShape, inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      if (i < input[inputOffset]) {
+        INDEX2COORDS(k * maxIndex + i, shape::rank(outputShape), outputShape, outputCoords);
+        COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+        output[outputOffset] = B(true);
+      }
+    }
+}
 template <typename I, typename B>
 static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
   dim3 launchDims = getSequenceMaskLaunchDims(maxIndex,*input);

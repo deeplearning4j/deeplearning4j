@@ -86,19 +86,51 @@ static void adaMaxUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& init
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (sd::LongType  i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
-      const auto xOffset = shape::getOffset(gradient.shapeInfo(), coords);
-      const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
-      const auto initUOffset = bXInVSame ? xOffset : shape::getOffset(initStateU.shapeInfo(), coords);
-      const auto stUOffset = bXStVSame ? xOffset : shape::getOffset(stateU.shapeInfo(), coords);
-      const auto initMOffset = bXInMSame ? xOffset : shape::getOffset(initStateM.shapeInfo(), coords);
-      const auto stMOffset = bXStMSame ? xOffset : shape::getOffset(stateM.shapeInfo(), coords);
+    for (sd::LongType i = start; i < stop; i++) {
+      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+
+      sd::LongType xOffset;
+      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
+
+      sd::LongType zOffset;
+      if (bXZsame) {
+        zOffset = xOffset;
+      } else {
+        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
+      }
+
+      sd::LongType initUOffset;
+      if (bXInVSame) {
+        initUOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateU.rankOf(), shape::stride(initStateU.shapeInfo()), coords, initUOffset);
+      }
+
+      sd::LongType stUOffset;
+      if (bXStVSame) {
+        stUOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateU.rankOf(), shape::stride(stateU.shapeInfo()), coords, stUOffset);
+      }
+
+      sd::LongType initMOffset;
+      if (bXInMSame) {
+        initMOffset = xOffset;
+      } else {
+        COORDS2INDEX(initStateM.rankOf(), shape::stride(initStateM.shapeInfo()), coords, initMOffset);
+      }
+
+      sd::LongType stMOffset;
+      if (bXStMSame) {
+        stMOffset = xOffset;
+      } else {
+        COORDS2INDEX(stateM.rankOf(), shape::stride(stateM.shapeInfo()), coords, stMOffset);
+      }
 
       // m = B_1 * m + (1-B_1)*grad
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
       // u = max(B_2 * u, |grad|)
-      stU[stUOffset] = sd::math::sd_max((beta2 * initU[initUOffset]), sd::math::sd_abs<T,T>(grad[xOffset])) + 1e-32;
+      stU[stUOffset] = sd::math::sd_max((beta2 * initU[initUOffset]), sd::math::sd_abs<T, T>(grad[xOffset])) + 1e-32;
 
       up[zOffset] = stM[stMOffset] * epsilonT / stU[stUOffset];
     }

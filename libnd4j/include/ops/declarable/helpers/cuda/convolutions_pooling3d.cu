@@ -73,9 +73,10 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  shape::index2coords(zInd, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
 
-  const auto zOffset = shape::getOffset(zShapeInfo, coords);
+  LongType zOffset;
+  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
   int dstart = coords[2] * sD - pD;
   int hstart = coords[3] * sH - pH;
@@ -98,7 +99,9 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
-            T val = x[shape::getOffset(xShapeInfo, coords)];
+            LongType xOffset;
+            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            T val = x[xOffset];
             if (val > max) max = val;
           }
         }
@@ -111,14 +114,17 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
       T sum = static_cast<T>(0.);
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
-          for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) sum += x[shape::getOffset(xShapeInfo, coords)];
+          for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
+            LongType xOffset;
+            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            sum += x[xOffset];
+          }
 
       if (extraParam0 == 0) {  // Exclude padding
         LongType a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
         LongType b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
         LongType c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
-        sum /= static_cast<T>(
-            a * b * c); //Accounts for dilation
+        sum /= static_cast<T>(a * b * c);  // Accounts for dilation
       } else if (extraParam0 == 1)  // Include padding
         sum /= kProd;
 
@@ -130,8 +136,11 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
       T sum = static_cast<T>(0.);
       for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
-          for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-            sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+          for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
+            LongType xOffset;
+            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            sum += math::sd_pow<T, T, T>(math::sd_abs<T, T>(x[xOffset]), extraParam0);
+          }
 
       sum = math::sd_pow<T, T, T>(sum, (T)1.f / extraParam0);
 

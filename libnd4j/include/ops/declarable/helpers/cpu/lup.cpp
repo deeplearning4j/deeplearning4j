@@ -46,8 +46,13 @@ static void swapRows(T* matrixBuf, sd::LongType const* matrixShape, sd::LongType
       for (auto i = start; i < stop; i++) {
         sd::LongType theFirstPos[] = {theFirst, i};
         sd::LongType theSecondPos[] = {theSecond, i};
-        auto theFirstIndex = shape::getOffset(matrixShape, theFirstPos, 0);
-        auto theSecondIndex = shape::getOffset(matrixShape, theSecondPos, 0);
+
+        sd::LongType theFirstIndex;
+        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theFirstPos, theFirstIndex);
+
+        sd::LongType theSecondIndex;
+        COORDS2INDEX(shape::rank(matrixShape), shape::stride(matrixShape), theSecondPos, theSecondIndex);
+
         math::sd_swap(matrixBuf[theFirstIndex], matrixBuf[theSecondIndex]);
       }
     };
@@ -204,7 +209,8 @@ template <typename T, typename I>
 static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShape) {
   auto rowNum = shape::sizeAt(compoundShape, static_cast<sd::LongType>(0));
   sd::LongType xInitial[] = {column, column};
-  auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
+  sd::LongType xInitialIndex;
+  COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xInitial, xInitialIndex);
   auto maxValue = T(0);
   auto result = -1;
   auto start = column;
@@ -212,7 +218,8 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
   auto increment = 1;
   for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
     sd::LongType xPos[] = {rowCounter, column};
-    auto xIndex = shape::getOffset(compoundShape, xPos, 0);
+    sd::LongType xIndex;
+    COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xPos, xIndex);
     if (sd::math::sd_abs<T,T>(compoundBuffer[xIndex]) > maxValue) {
       maxValue = sd::math::sd_max(maxValue, sd::math::sd_abs<T,T>(compoundBuffer[xIndex]));
       result = rowCounter;
@@ -225,17 +232,20 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
 template <typename T>
 void processColumns(sd::LongType currentRow, sd::LongType rowNum, T* compoundBuf, sd::LongType const* compoundShape) {
   sd::LongType xDiag[] = {currentRow, currentRow};
-  auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
+  sd::LongType diagIndex;
+  COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xDiag, diagIndex);
   auto loop = PRAGMA_THREADS_FOR {
     for (auto j = start; j < stop; j++) {
       sd::LongType xRow[] = {j, currentRow};
-      auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
+      sd::LongType rowIndex;
+      COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), xRow, rowIndex);
       compoundBuf[rowIndex] /= compoundBuf[diagIndex];  // output->t<T>(i, i);
       for (sd::LongType k = currentRow + 1; k < rowNum; k++) {
         sd::LongType yRow[] = {j, k};
         sd::LongType yCol[] = {currentRow, k};
-        auto rowIndexY = shape::getOffset(compoundShape, yRow, 0);
-        auto colIndex = shape::getOffset(compoundShape, yCol, 0);
+        sd::LongType rowIndexY, colIndex;
+        COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), yRow, rowIndexY);
+        COORDS2INDEX(shape::rank(compoundShape), shape::stride(compoundShape), yCol, colIndex);
         compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
       }
     }
@@ -286,8 +296,17 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
       if (pivotIndex < 0) {
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
-      math::sd_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
-                    permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+      sd::LongType firstIndexCoords[SD_MAX_RANK];
+      sd::LongType secondIndexCoords[SD_MAX_RANK];
+      sd::LongType firstIndex;
+      sd::LongType secondIndex;
+
+      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, firstIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), firstIndexCoords, firstIndex);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, secondIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), secondIndexCoords, secondIndex);
+
+      math::sd_swap(permutationBuf[firstIndex], permutationBuf[secondIndex]);
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
       processColumns(i, rowNum, compoundBuf, compoundShape);

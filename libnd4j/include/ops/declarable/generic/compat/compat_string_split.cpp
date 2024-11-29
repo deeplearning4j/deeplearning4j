@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
     auto s = input->e<std::string>(e);
 
     // getting base index
-    shape::index2coordsCPU(0, e, input->shapeInfo(), icoords.data());
+    INDEX2COORDS(e, input->rankOf(), input->shapeInfo(), icoords.data());
 
     // getting number of substrings
     auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length());

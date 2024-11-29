@@ -41,7 +41,6 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
     z[0] = OpType::startingValue(x);
@@ -54,30 +53,27 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
 
     for (sd::LongType i = 0; i < length; i++) {
 #if defined(PRINT_INDICES)
-       shape::printShapeInfo(xShapeInfo);
-        printf("i: %lld\n", i);
+      shape::printShapeInfo(xShapeInfo);
+      printf("i: %lld\n", i);
 #endif
       z[i] = startingVal;
     }
     return;
   }
 
-  if (xEws >= 1) {
-    z[0] = execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  auto startingValue = OpType::startingValue(x);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++) {
-      startingValue = OpType::update(
-          startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
-          extraParams);
-    }
-    z[0] = OpType::postProcess(startingValue, length, extraParams);
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    sd::LongType offset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
+  z[0] = OpType::postProcess(startingValue, length, extraParams);
 }
-
 template <typename X, typename Z>
 template <typename OpType>
 Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
@@ -85,22 +81,19 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
 
-  if (xEws >= 1) {
-    return execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
-    auto startingValue = OpType::startingValue(x);
-    sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+  auto startingValue = OpType::startingValue(x);
+  sd::LongType xShapeInfoCast[SD_MAX_RANK];
+  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-    for (sd::LongType i = 0; i < length; i++) {
-      startingValue = OpType::update(
-          startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams),
-          extraParams);
-    }
-    return OpType::postProcess(startingValue, length, extraParams);
+  for (sd::LongType i = 0; i < length; i++) {
+    sd::LongType coords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    sd::LongType offset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
+  return OpType::postProcess(startingValue, length, extraParams);
 }
 
 template <typename X, typename Y>

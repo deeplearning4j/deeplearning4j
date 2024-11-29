@@ -262,7 +262,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
   auto res2 = sumOp.evaluate({&e}, {1.}, {1});
   ASSERT_EQ(res2.status(), sd::Status::OK);
   auto out = res2.at(0);
-  ASSERT_TRUE(std::isnan(out->e<float>(0)));
+  ASSERT_TRUE(std::isnan<X>(out->e<float>(0)));
 }
 
 TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_1) {

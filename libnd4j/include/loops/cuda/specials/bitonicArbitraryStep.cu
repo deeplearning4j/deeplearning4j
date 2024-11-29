@@ -40,7 +40,6 @@ SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShap
   }
   __syncthreads();
 
-
   int firstPosition;
   int firstStep;
   int secondPosition;
@@ -76,24 +75,32 @@ SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShap
       int it = (reverse) ? i + j + half : i + window - j - 1;
       int ij = i + j;
       if (it < length && ij < length) {
-        int posIT = shape::getIndexOffset(it, xShapeInfo);
-        int posIJ = shape::getIndexOffset(ij, xShapeInfo);
+        sd::LongType itCoords[SD_MAX_RANK];
+        sd::LongType ijCoords[SD_MAX_RANK];
+        sd::LongType itOffset;
+        sd::LongType ijOffset;
 
-        X v0 = x[posIJ];
-        X v1 = x[posIT];
+        INDEX2COORDS(it, shape::rank(xShapeInfo), xShapeInfo, itCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords, itOffset);
+        INDEX2COORDS(ij, shape::rank(xShapeInfo), xShapeInfo, ijCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords, ijOffset);
+
+        X v0 = x[ijOffset];
+        X v1 = x[itOffset];
 
         if (!descending == (v0 > v1)) {
-          x[posIJ] = v1;
-          x[posIT] = v0;
+          x[ijOffset] = v1;
+          x[itOffset] = v0;
 
-          Y ytemp = y[posIJ];
-          y[posIJ] = y[posIT];
-          y[posIT] = ytemp;
+          Y ytemp = y[ijOffset];
+          y[ijOffset] = y[itOffset];
+          y[itOffset] = ytemp;
         }
       }
     }
   }
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -148,15 +155,22 @@ SD_KERNEL void execBitonicArbitraryStepKernel(void *vx, sd::LongType const *xSha
       int it = (reverse) ? i + j + half : i + window - j - 1;
       int ij = i + j;
       if (it < length && ij < length) {
-        int posIT = shape::getIndexOffset(it, xShapeInfo);
-        int posIJ = shape::getIndexOffset(ij, xShapeInfo);
+        sd::LongType itCoords[SD_MAX_RANK];
+        sd::LongType ijCoords[SD_MAX_RANK];
+        sd::LongType itOffset;
+        sd::LongType ijOffset;
 
-        shmem[threadIdx.x] = x[posIJ];
-        shmem[threadIdx.x + blockDim.x] = x[posIT];
+        INDEX2COORDS(it, shape::rank(xShapeInfo), xShapeInfo, itCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords, itOffset);
+        INDEX2COORDS(ij, shape::rank(xShapeInfo), xShapeInfo, ijCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords, ijOffset);
+
+        shmem[threadIdx.x] = x[ijOffset];
+        shmem[threadIdx.x + blockDim.x] = x[itOffset];
 
         if (!descending == (shmem[threadIdx.x] > shmem[threadIdx.x + blockDim.x])) {
-          x[posIJ] = shmem[threadIdx.x + blockDim.x];
-          x[posIT] = shmem[threadIdx.x];
+          x[ijOffset] = shmem[threadIdx.x + blockDim.x];
+          x[itOffset] = shmem[threadIdx.x];
         }
       }
     }

@@ -176,23 +176,12 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
   auto z = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
-  // decompose in to several sub tads after
-  // moving all dimensions (in sorted order)
-  // to the back.
-  // permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType xEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
-
     tadLength = shape::length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(yShapeInfo) / tadLength;
-    xEWS = shape::elementWiseStride(xShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
   }
   __syncthreads();
 
@@ -200,18 +189,22 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
     auto rZ = z + tadOffsetsZ[r];
     auto rY = y + tadOffsets[r];
 
-    if (tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1) {
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x)
-        rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS], extraParams);
-    } else {
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      sd::LongType zOffset;
 
-        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
-      }
+      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), tadOnlyShapeInfoZ, zCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords, zOffset);
+
+      rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
     }
   }
 }
@@ -235,22 +228,12 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
   auto z = reinterpret_cast<Z*>(vz);
   auto extraParams = reinterpret_cast<X*>(vextraParams);
 
-  // decompose in to several sub tads after
-  // moving all dimensions (in sorted order)
-  // to the back.
-  // permuted version of the x shape info for setting up the tad problem
   __shared__ sd::LongType tadLength;
-  __shared__ sd::LongType tadEWS;
   __shared__ int numTads;
-  __shared__ sd::LongType yEWS;
-  __shared__ sd::LongType zEWS;
 
   if (threadIdx.x == 0) {
     tadLength = shape::length(tadOnlyShapeInfo);
-    tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
     numTads = shape::length(xShapeInfo) / tadLength;
-    yEWS = shape::elementWiseStride(yShapeInfo);
-    zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
   }
   __syncthreads();
 
@@ -264,23 +247,18 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
     }
     __syncthreads();
 
-    if (tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
-      for (int i = threadIdx.x; i < tadLength; i += blockDim.x)
-        rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS], extraParams);
-    } else {
+    for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, coords);
+      sd::LongType xOffset, yOffset, zOffset;
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), coords, zOffset);
 
-      // it is expected that x and z tads and y array all have the same length
-      for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
-        auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
-        auto yOffset = shape::getIndexOffset(i, yShapeInfo);
-        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
-
-        rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset], extraParams);
-      }
+      rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset], extraParams);
     }
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
@@ -312,18 +290,25 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
     sd::LongType coords[SD_MAX_RANK];
-    shape::index2coords(i, zShapeInfo, coords);
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
-    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
-    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
-    z[zOffset] = OpType::op(x[xOffset], y[yOffset],extraParams);
+    INDEX2COORDS(i, zRank, zShapeInfo, coords);
+    sd::LongType zOffset, xOffset, yOffset;
+    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    if (xzSameOffsets) {
+      xOffset = zOffset;
+    } else {
+      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    }
 
+    if (yzSameOffsets) {
+      yOffset = zOffset;
+    } else {
+      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    }
+    z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }
 }
-
 BUILD_DOUBLE_TEMPLATE(template class BroadcastBool, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 }  // namespace broadcast
 }  // namespace functions

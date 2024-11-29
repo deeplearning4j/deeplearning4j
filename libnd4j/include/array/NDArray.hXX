@@ -97,6 +97,9 @@ std::u32string NDArray::e(sd::LongType i)  {
   return r;
 }
 
+LongType NDArray::getOffset(const LongType i) {
+  return _offset + i;
+}
 
 template <>
 std::string NDArray::e(const sd::LongType i)  {
@@ -1934,7 +1937,8 @@ void NDArray::templatedSet(void *buffer,  sd::LongType *indices,  void *value) {
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
 
-  auto xOffset = shape::getOffset(shapeInfo(), indices);
+  sd::LongType xOffset;
+  COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), indices, xOffset);
   t[xOffset] = y;
   NDArray::registerPrimaryUse({this}, {this});
 }
@@ -1967,6 +1971,12 @@ void NDArray::setContext(sd::LaunchContext *context) {
 
 
 //////////////////////////////////////////////////////////////////////////
+
+void *NDArray::specialBufferWithOffset(sd::LongType offset) {
+  return const_cast<int8_t *>(specialBuffer() != nullptr ? static_cast<const int8_t *>(specialBuffer()) + (offset * sizeOfT())
+                                                         : nullptr);
+}
+
 void *NDArray::bufferWithOffset(sd::LongType offset) {
   return const_cast<int8_t *>(buffer() != nullptr ? static_cast<const int8_t *>(buffer()) + (offset * sizeOfT())
                                                   : nullptr);
@@ -2567,7 +2577,7 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
                                           other.specialBuffer(),
                                           otherShapeInfo,
                                           nullptr
-                                          , allowParallelism);
+        , allowParallelism);
     thisArray.registerSpecialUse({&thisArray}, {&other}); // Registering through the instance
   }
 }
@@ -2832,6 +2842,23 @@ bool NDArray::isUnitary() {
 //////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////
+
+
+template <typename T>
+T *NDArray::specialBufferasTWithOffset(LongType offset) {
+  return reinterpret_cast<T *>(specialBufferWithOffset(offset));
+}
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::specialBufferasTWithOffset(LongType), SD_COMMON_TYPES);
+
+
+template <typename T>
+T *NDArray::specialBufferasT() {
+  return specialBufferasTWithOffset<T>(0);
+}
+
+BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, *NDArray::specialBufferasT(), SD_COMMON_TYPES);
+
 
 template <typename T>
 T *NDArray::bufferAsT() {
@@ -3451,8 +3478,8 @@ double NDArray::getTrace()  {
   sd::LongType indices[SD_MAX_RANK];
   for (int j = 0; j < rank; ++j) indices[j] = 1;
 
-  auto offset = shape::getOffset(shapeInfo(), indices);
-
+  sd::LongType offset;
+  COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), indices, offset);
   for (int i = 0; i < rank; ++i)
     if (minDim > shape[i]) minDim = shape[i];
 
@@ -4605,7 +4632,7 @@ BUILD_SINGLE_UNCHAINED_TEMPLATE(template SD_LIB_EXPORT, NDArray::e(sd::LongType)
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes
 template <typename T>
-T NDArray::e( sd::LongType i,  sd::LongType j)  {
+T NDArray::e(sd::LongType i, sd::LongType j) {
   if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1]) {
     std::string errorMessage;
     errorMessage += "NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !";
@@ -4621,9 +4648,10 @@ T NDArray::e( sd::LongType i,  sd::LongType j)  {
     errorMessage += ordering();
     THROW_EXCEPTION(errorMessage.c_str());
   }
-  sd::LongType indices[2] = {i,j};
-  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
-  if(xOffset >= this->getDataBuffer()->getNumElements()) {
+  sd::LongType indices[2] = {i, j};
+  sd::LongType xOffset;
+  COORDS2INDEX(rankOf(), shape::stride(shapeInfo()), indices, xOffset);
+  if (xOffset >= getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::e: index is out of array length !";
     errorMessage += " Requested index: ";
@@ -4640,17 +4668,17 @@ T NDArray::e( sd::LongType i,  sd::LongType j)  {
     errorMessage += ordering();
     errorMessage += ", offset: ";
     errorMessage += StringUtils::valueToString<sd::LongType>(xOffset);
-    auto shapeInfoString = shape::shapeInfoString(this->shapeInfo());
+    auto shapeInfoString = shape::shapeInfoString(shapeInfo());
     errorMessage += ", shapeInfo: ";
     errorMessage += shapeInfoString;
     errorMessage += "data buffer num elements: ";
-    errorMessage += StringUtils::valueToString<sd::LongType>(this->getDataBuffer()->getNumElements());
+    errorMessage += StringUtils::valueToString<sd::LongType>(getDataBuffer()->getNumElements());
     THROW_EXCEPTION(errorMessage.c_str());
   }
   NDArray::preparePrimaryUse({}, {this});
   NDArray::registerPrimaryUse({}, {this});
 
-  if(getDataBuffer() != nullptr)
+  if (getDataBuffer() != nullptr)
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), return templatedGet<, T>(buffer(), xOffset), SD_COMMON_TYPES_ALL);
 
   return static_cast<T>(119);
@@ -4683,7 +4711,8 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k)  
   }
 
   sd::LongType indices[3] = {i,j,k};
-  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
+  sd::LongType xOffset;
+  COORDS2INDEX(this->rankOf(), shape::stride(this->shapeInfo()), indices, xOffset);
   if (xOffset >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::e: index is out of array length !";
@@ -4720,7 +4749,8 @@ T NDArray::e(const sd::LongType i, const sd::LongType j, const sd::LongType k, c
     THROW_EXCEPTION("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
   sd::LongType indices[4] = {i,j,k,l};
-  const auto xOffset = shape::getOffset(this->shapeInfo(),indices,0);
+  sd::LongType xOffset;
+  COORDS2INDEX(this->rankOf(), shape::stride(this->shapeInfo()), indices, xOffset);
   if (xOffset >= this->getDataBuffer()->getNumElements()) {
     std::string errorMessage;
     errorMessage += "NDArray::e: index is out of array length !";
@@ -5625,8 +5655,8 @@ void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k
   }
 
   sd::LongType coords[4] = {i, j, k, l};
-  auto xOffset = shape::getOffset(shapeInfo(), coords);
-
+  sd::LongType xOffset;
+  COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), coords, xOffset);
   NDArray::preparePrimaryUse({this}, {&scalar}, true);
   BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (this->buffer(), xOffset, scalar.dataType(), scalar.buffer()),
                         SD_COMMON_TYPES);
@@ -5916,20 +5946,6 @@ ResultSet NDArray::allExamples()  {
 }
 
 ////////////////////////////////////////////////////////////////////////
-sd::LongType NDArray::getOffset(const sd::LongType i)  {
-  if(this->isEmpty() || isScalar() && i == 0)
-    return 0;
-  if (i >= this->getDataBuffer()->getNumElements()) {
-    std::string errorMessage;
-    errorMessage += "NDArray::getOffset: input index is out of array length: [";
-    errorMessage += std::to_string(i);
-    errorMessage += "] vs ";
-    errorMessage += std::to_string(lengthOf());
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  return shape::getIndexOffset(i, _shapeInfo);
-}
 
 ////////////////////////////////////////////////////////////////////////
 NDArray &NDArray::like() {
@@ -5967,8 +5983,8 @@ NDArray NDArray::diagonal(const char type)  {
       indices[i] = 1;
     }
 
-    auto step = shape::getOffset(shapeInfo(), indices);
-
+    sd::LongType step;
+    COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), indices, step);
     if (type == 'c') {
       outShapeInfo[1] = diagSize;
       outShapeInfo[2] = 1;
@@ -6120,8 +6136,7 @@ NDArray& NDArray::operator()(const sd::LongType subArrIdx,
     std::vector<sd::LongType> shapeOfSubArr(subArrRank), indexes(subArrRank);
     for (sd::LongType i = 0; i < subArrRank; ++i) shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
 
-    shape::index2coords(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
-
+    INDEX2COORDS(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
     for (sd::LongType i = 0; i < subArrRank; ++i) {
       sd::LongType currIdx = 2 * dimsToExclude[i];
       idxRanges[currIdx] = indexes[i];
@@ -6226,24 +6241,24 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
 // addition operator array + scalar
 template <typename T, typename>
 NDArray operator+(NDArray &&arr,  T scalar) {
-  if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
-    return std::move(arr + scalar);  // arr is lvalue inside function body
+if (arr.isView())                  // do not use resources of arrays which use buffers of other original arrays
+return std::move(arr + scalar);  // arr is lvalue inside function body
 
-  if (arr.isS())
-    THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
-  if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
-    THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+if (arr.isS())
+THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+THROW_EXCEPTION("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
 
-  auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
 
-  NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
-  NativeOpExecutioner::execScalar(arr.getContext(), sd::scalar::Add, arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
-                                  arr.specialShapeInfo(), arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
-                                  arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(),
-                                  tmp.specialShapeInfo(), nullptr);
-  NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+NativeOpExecutioner::execScalar(arr.getContext(), sd::scalar::Add, arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
+    arr.specialShapeInfo(), arr.buffer(), arr.shapeInfo(), arr.specialBuffer(),
+    arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(),
+    tmp.specialShapeInfo(), nullptr);
+NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
 
-  return std::move(arr);
+return std::move(arr);
 }
 template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  double scalar);
 template SD_LIB_EXPORT NDArray operator+(NDArray &&arr,  float scalar);

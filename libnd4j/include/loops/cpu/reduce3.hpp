@@ -36,96 +36,96 @@ namespace reduce3 {
 template <typename X, typename Z>
 template <typename OpType>
 void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
-                              const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
- auto x = reinterpret_cast<const X *>(vx);
- auto y = reinterpret_cast<const X *>(vy);
- auto z = reinterpret_cast<Z *>(vz);
- auto extraParams = reinterpret_cast<Z *>(vextraParams);
+                               const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const X *>(vy);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
- auto length = shape::length(xShapeInfo);
- auto xEws = shape::elementWiseStride(xShapeInfo);
- auto yEws = shape::elementWiseStride(yShapeInfo);
+  auto length = shape::length(xShapeInfo);
 
- if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY ||
-     sd::ArrayOptions::arrayType(yShapeInfo) == sd::ArrayType::EMPTY) {
-   if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
-   const auto startingVal = OpType::startingValue(x);
+  if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY ||
+      sd::ArrayOptions::arrayType(yShapeInfo) == sd::ArrayType::EMPTY) {
+    if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
+    const auto startingVal = OpType::startingValue(x);
 
-   for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
+    for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
 
-   return;
- }
+    return;
+  }
 
- Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
+  Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
 
- Z startingVal = OpType::startingValue(x);
- int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
- Z intermediate[64];
- Z extraParamsLocal[3 * 64];
+  Z startingVal = OpType::startingValue(x);
+  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
+  Z intermediate[64];
+  Z extraParamsLocal[3 * 64];
 
- PRAGMA_OMP_SIMD
- for (int e = 0; e < maxThreads; e++) intermediate[e] = startingVal;
+  PRAGMA_OMP_SIMD
+  for (int e = 0; e < maxThreads; e++) intermediate[e] = startingVal;
 
- memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
- if (extraParams != nullptr) {
-   PRAGMA_OMP_SIMD
-   // mostly for future reference
-   for (int e = 0; e < maxThreads; e++) {
-     extraParamsLocal[3 * e] = extraParams[0];
-     extraParamsLocal[3 * e + 1] = extraParams[1];
-     extraParamsLocal[3 * e + 2] = extraParams[2];
-   }
- }
+  memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
+  if (extraParams != nullptr) {
+    PRAGMA_OMP_SIMD
+    // mostly for future reference
+    for (int e = 0; e < maxThreads; e++) {
+      extraParamsLocal[3 * e] = extraParams[0];
+      extraParamsLocal[3 * e + 1] = extraParams[1];
+      extraParamsLocal[3 * e + 2] = extraParams[2];
+    }
+  }
 
- sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
+  sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
 
- if (kindOfLoop == sd::LoopKind::EWS1) {
-   auto func = PRAGMA_THREADS_FOR {
-     for (auto i = start; i < stop; i++) {
-       intermediate[thread_id] =
-           OpType::update(intermediate[thread_id], OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
-                          extraParamsLocal + 3 * thread_id);
-     }
-   };
+  if (kindOfLoop == sd::LoopKind::EWS1) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] =
+            OpType::update(intermediate[thread_id], OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
+                           extraParamsLocal + 3 * thread_id);
+      }
+    };
 
-   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
- } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-   auto func = PRAGMA_THREADS_FOR {
-     for (auto i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto offset = shape::getOffset(xShapeInfo, coords);
-       intermediate[thread_id] =
-           OpType::update(intermediate[thread_id], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * thread_id),
-                          extraParamsLocal + 3 * thread_id);
-     }
-   };
+  } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType offset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        intermediate[thread_id] =
+            OpType::update(intermediate[thread_id], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * thread_id),
+                           extraParamsLocal + 3 * thread_id);
+      }
+    };
 
-   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
- } else {
-   auto func = PRAGMA_THREADS_FOR {
-     for (auto i = start; i < stop; i++) {
-       sd::LongType coords[SD_MAX_RANK];
-       shape::index2coords(i, xShapeInfo, coords);
-       auto xOffset = shape::getOffset(xShapeInfo, coords);
-       auto yOffset = shape::getOffset(yShapeInfo, coords);
-       intermediate[thread_id] = OpType::update(intermediate[thread_id],
-                                                OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
-                                                extraParamsLocal + 3 * thread_id);
-     }
-   };
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        sd::LongType xOffset, yOffset;
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
+    };
 
-   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
- }
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+  }
 
- // merge step
- for (int e = 0; e < maxThreads; e++) OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
+  // merge step
+  for (int e = 0; e < maxThreads; e++) OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
 
- for (int e = 0; e < maxThreads; e++) startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
+  for (int e = 0; e < maxThreads; e++) startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
 
- // writing out result
- z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
+  // writing out result
+  z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
 }
 
 //////////////////////////////////////////////////////////////////////////

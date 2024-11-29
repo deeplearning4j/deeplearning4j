@@ -26,12 +26,15 @@
 #ifndef __UTIL_TYPES_BFLOAT16__H__
 #define __UTIL_TYPES_BFLOAT16__H__
 
+#include <system/common.h>
+#include <types/float16.h>
 
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
-#include <system/common.h>
-#include <types/float16.h>
+
+#include "bfloat16.h"
+#include "float16.h"
 
 template <typename T>
 struct isNumericType {
@@ -75,12 +78,12 @@ struct bfloat16 {
   }
 
   SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const float& rhs) {
-#ifdef __CUDACC__
-    if (::isnan(rhs)) {
+//#ifdef __CUDACC__
+    if (static_cast<bfloat16>(rhs) == nan()) {
       _data = bfloat16::nan();
       return *this;
     }
-#endif
+//#endif
     auto x = *reinterpret_cast<int32_t*>(&const_cast<float&>(rhs));
     uint32_t lsb = (x >> 16) & 1;
     uint32_t rounding_bias = 0x7fff + lsb;

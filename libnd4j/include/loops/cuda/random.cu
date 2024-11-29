@@ -123,9 +123,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
     return;
   } else {
     __shared__ sd::LongType length;
-    __shared__ int xEWS;
-    __shared__ int yEWS;
-    __shared__ int zEWS;
     __shared__ char xOrder;
     __shared__ char yOrder;
     __shared__ char zOrder;
@@ -136,9 +133,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
     sd::graph::RandomGenerator* devBuffer;
     if (threadIdx.x == 0) {
       length = shape::length(zShapeBuffer);
-      xEWS = shape::elementWiseStride(xShapeBuffer);
-      yEWS = shape::elementWiseStride(yShapeBuffer);
-      zEWS = shape::elementWiseStride(zShapeBuffer);
       xOrder = shape::order(xShapeBuffer);
       yOrder = shape::order(yShapeBuffer);
       zOrder = shape::order(zShapeBuffer);
@@ -158,21 +152,25 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
 
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (xEWS >= 1 && yEWS >= 1 && zEWS >= 1 && xOrder == yOrder && xOrder == zOrder) {
-      for (sd::LongType e = tid; e < length; e += blockDim.x * gridDim.x) {
-        z[e * zEWS] = OpClass::op(x[e * xEWS], y[e * yEWS], e, length, buffer, extraArguments);
-      }
-    } else {
-      for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
-        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer);
-        auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer);
-        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
+    for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
+      sd::LongType xCoords[SD_MAX_RANK];
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
+      sd::LongType xOffset;
+      sd::LongType yOffset;
+      sd::LongType zOffset;
 
-        z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
-      }
+      INDEX2COORDS(i, shape::rank(xShapeBuffer), xShapeBuffer, xCoords);
+      COORDS2INDEX(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(yShapeBuffer), yShapeBuffer, yCoords);
+      COORDS2INDEX(shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
+      COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+
+      z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, buffer, extraArguments);
     }
   }
-};
+}
 
 template <typename T>
 template <typename OpClass>
@@ -183,8 +181,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
   auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
   __shared__ sd::LongType length;
-  __shared__ int xEWS;
-  __shared__ int zEWS;
   __shared__ char xOrder;
   __shared__ char zOrder;
 
@@ -201,8 +197,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
     dB = reinterpret_cast<unsigned char*>(state);
 
     length = shape::length(zShapeBuffer);
-    xEWS = shape::elementWiseStride(xShapeBuffer);
-    zEWS = shape::elementWiseStride(zShapeBuffer);
     xOrder = shape::order(xShapeBuffer);
     zOrder = shape::order(zShapeBuffer);
   }
@@ -213,20 +207,20 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
 
   __syncthreads();
 
-  if (xEWS >= 1 && zEWS >= 1 && xOrder == zOrder) {
-    for (sd::LongType e = blockIdx.x * blockDim.x + threadIdx.x; e < length; e += blockDim.x * gridDim.x) {
-      z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
-    }
-  } else {
-    for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
-      auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer);
-      auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
+  for (sd::LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
+    sd::LongType xCoords[SD_MAX_RANK];
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType xOffset;
+    sd::LongType zOffset;
 
-      z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
-    }
+    INDEX2COORDS(i, shape::rank(xShapeBuffer), xShapeBuffer, xCoords);
+    COORDS2INDEX(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
+    COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+
+    z[zOffset] = OpClass::op(x[xOffset], i, length, buffer, extraArguments);
   }
 }
-
 template <typename T>
 template <typename OpClass>
 void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz, sd::LongType const* zShapeBuffer,
@@ -235,7 +229,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz,
   auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
   __shared__ sd::LongType length;
-  __shared__ sd::LongType ews;
   __shared__ sd::graph::RandomGenerator* buffer;
   __shared__ unsigned char* cB;
   __shared__ unsigned char* dB;
@@ -248,7 +241,6 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz,
     devBuffer = reinterpret_cast<sd::graph::RandomGenerator*>(state);
     dB = reinterpret_cast<unsigned char*>(state);
     length = shape::length(zShapeBuffer);
-    ews = shape::elementWiseStride(zShapeBuffer);
   }
   __syncthreads();
 
@@ -259,15 +251,14 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz,
 
   int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if (ews > 0) {
-    for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
-      z[i * ews] = OpClass::op(i, length, buffer, extraArguments);
-    }
-  } else {
-    for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
-      auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
-      z[zOffset2] = OpClass::op(i, length, buffer, extraArguments);
-    }
+  for (sd::LongType i = tid; i < length; i += blockDim.x * gridDim.x) {
+    sd::LongType zCoords[SD_MAX_RANK];
+    sd::LongType zOffset;
+
+    INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
+    COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+
+    z[zOffset] = OpClass::op(i, length, buffer, extraArguments);
   }
 }
 

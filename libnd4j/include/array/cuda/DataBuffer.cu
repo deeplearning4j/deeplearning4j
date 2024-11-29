@@ -379,10 +379,6 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 }
 
 
-void DataBuffer::memcpyPointer(std::shared_ptr<DataBuffer>   dst, std::shared_ptr<DataBuffer>  src) {
-  std::memcpy(dst->_primaryBuffer, src->_primaryBuffer, src->_lenInBytes);
-  dst->readPrimary();
-}
 
 /////////////////////////
 

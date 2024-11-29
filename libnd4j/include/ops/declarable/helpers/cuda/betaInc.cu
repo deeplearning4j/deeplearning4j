@@ -87,16 +87,14 @@ SD_DEVICE T continuedFractionCuda(const T a, const T b, const T x) {
 template <typename T>
 SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, const void* vb,
                                    const LongType* bShapeInfo, const void* vx, const LongType* xShapeInfo,
-                                   void* vz,
-                                   const LongType* zShapeInfo) {
+                                   void* vz, const LongType* zShapeInfo) {
   extern __shared__ unsigned char shmem[];
   T* sharedMem = reinterpret_cast<T*>(shmem);
-  T *z = reinterpret_cast<T *>(vz);
-  __shared__ LongType aLen,bLen,xLen,zLen,aOffset,bOffset,xOffset,zOffset;
+  T* z = reinterpret_cast<T*>(vz);
+  __shared__ LongType aLen, bLen, xLen, zLen, aOffset, bOffset, xOffset, zOffset;
   const LongType j = blockIdx.x;  // one block per each element
 
   __shared__ T a, b, x;
-
   __shared__ bool symmCond;
 
   if (threadIdx.x == 0) {
@@ -105,12 +103,21 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
     xLen = shape::length(xShapeInfo);
     zLen = shape::length(zShapeInfo);
 
-    aOffset = shape::getIndexOffset(j, aShapeInfo);
-    bOffset = shape::getIndexOffset(j, bShapeInfo);
-    xOffset = shape::getIndexOffset(j, xShapeInfo);
-    zOffset = shape::getIndexOffset(j, zShapeInfo);
+    LongType aCoords[SD_MAX_RANK];
+    LongType bCoords[SD_MAX_RANK];
+    LongType xCoords[SD_MAX_RANK];
+    LongType zCoords[SD_MAX_RANK];
 
-    if(aOffset >= aLen || bOffset >= bLen || xOffset >= xLen || zOffset >= zLen)
+    INDEX2COORDS(j, shape::rank(aShapeInfo), aShapeInfo, aCoords);
+    COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords, aOffset);
+    INDEX2COORDS(j, shape::rank(bShapeInfo), bShapeInfo, bCoords);
+    COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords, bOffset);
+    INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+
+    if (aOffset >= aLen || bOffset >= bLen || xOffset >= xLen || zOffset >= zLen)
       return;
 
     a = *(reinterpret_cast<const T*>(va) + aOffset);

@@ -183,23 +183,19 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    if (dimC == (rank - 1) && 'c' == shape::order(xShapeInfo) && 1 == shape::elementWiseStride(xShapeInfo) &&
-        'c' == shape::order(zShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo)) {
-      const auto xStep = i * 3;
-      z[i] = 0.2989f * x[xStep] + 0.5870f * x[xStep + 1] + 0.1140f * x[xStep + 2];
-    } else {
-      shape::index2coords(i, zShapeInfo, coords);
+    INDEX2COORDS(i, rank, zShapeInfo, coords);
 
-      const auto zOffset = shape::getOffset(zShapeInfo, coords);
-      const auto xOffset0 = shape::getOffset(xShapeInfo, coords);
-      const auto xOffset1 = xOffset0 + shape::stride(xShapeInfo)[dimC];
-      const auto xOffset2 = xOffset1 + shape::stride(xShapeInfo)[dimC];
+    LongType zOffset;
+    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
 
-      z[zOffset] = 0.2989f * x[xOffset0] + 0.5870f * x[xOffset1] + 0.1140f * x[xOffset2];
-    }
+    LongType xOffset0;
+    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset0);
+    const auto xOffset1 = xOffset0 + shape::stride(xShapeInfo)[dimC];
+    const auto xOffset2 = xOffset1 + shape::stride(xShapeInfo)[dimC];
+
+    z[zOffset] = 0.2989f * x[xOffset0] + 0.5870f * x[xOffset1] + 0.1140f * x[xOffset2];
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void rgbToGrsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

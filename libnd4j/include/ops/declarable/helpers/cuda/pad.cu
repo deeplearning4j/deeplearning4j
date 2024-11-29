@@ -76,13 +76,17 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
   if (mode == 0) {  // CONSTANT case
 
     for (LongType i = tid; i < zLen; i += totalThreads) {
-      shape::index2coords(i, zShapeInfo, xzCoord);
-      const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
+      INDEX2COORDS(i, rank, zShapeInfo, xzCoord);
+      LongType zOffset;
+      COORDS2INDEX(rank, zShape, xzCoord, zOffset);
 
       bool within = true;
       for (int j = rankMinusOne; j >= 0; --j) {
         if (xShape[j] == zShape[j]) continue;
-        const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo)];
+        LongType leftOffset;
+        LongType leftCoords[] = {yStride0 * j};
+        COORDS2INDEX(1, shape::shapeOf(yShapeInfo), leftCoords, leftOffset);
+        const auto left = y[leftOffset];
         if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
           within = false;
           break;
@@ -91,34 +95,39 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
         }
       }
 
-      if (within)
-        z[zOffset] = x[shape::getOffset(xShapeInfo, xzCoord)];
-      else
+      if (within) {
+        LongType xOffset;
+        COORDS2INDEX(rank, xShape, xzCoord, xOffset);
+        z[zOffset] = x[xOffset];
+      } else {
         z[zOffset] = padVal;
+      }
     }
   } else {  // REFLECT and SYMMETRIC cases
 
     for (LongType i = tid; i < zLen; i += totalThreads) {
-      shape::index2coords(i, zShapeInfo, xzCoord);
-      const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
+      INDEX2COORDS(i, rank, zShapeInfo, xzCoord);
+      LongType zOffset;
+      COORDS2INDEX(rank, zShape, xzCoord, zOffset);
 
       for (int j = rankMinusOne; j >= 0; --j) {
         if (xShape[j] == zShape[j]) continue;
-        xzCoord[j] =
-            xzCoord[j] - y[shape::getIndexOffset(
-                yStride0 * j, yShapeInfo)];  // are ready to fill middle (within input dimension range)
+        LongType leftOffset;
+        LongType leftCoords[] = {yStride0 * j};
+        COORDS2INDEX(1, shape::shapeOf(yShapeInfo), leftCoords, leftOffset);
+        xzCoord[j] = xzCoord[j] - y[leftOffset];  // are ready to fill middle (within input dimension range)
         if (xzCoord[j] < 0)
           xzCoord[j] = -xzCoord[j] - shift1;  // means fill from left
         else if (xzCoord[j] >= xShape[j])
           xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2;  // means fill from right
       }
 
-      const auto xOffset = shape::getOffset(xShapeInfo, xzCoord);
+      LongType xOffset;
+      COORDS2INDEX(rank, xShape, xzCoord, xOffset);
       z[zOffset] = x[xOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -169,20 +178,29 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
+
   for (int i = start; i < zLen; i += step) {
-    auto zIndex = shape::getIndexOffset(i, zShape);
-    auto xIndex = shape::getIndexOffset(len - i, xShape);
-    if (i < leftSide)  // left side
-      xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape);
+    INDEX2COORDS(i, shape::rank(zShape), zShape, zCoords);
+    COORDS2INDEX(shape::rank(zShape), shape::shapeOf(zShape), zCoords, zOffset);
+    INDEX2COORDS(len - i, shape::rank(xShape), xShape, xCoords);
+    COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
 
-    else if (i >= leftSide && i < leftSide + xLen)  // middle
-      xIndex = shape::getIndexOffset(i - leftSide, xShape);
+    if (i < leftSide) {  // left side
+      INDEX2COORDS(leftSideCorrected - i, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+    } else if (i >= leftSide && i < leftSide + xLen) {  // middle
+      INDEX2COORDS(i - leftSide, shape::rank(xShape), xShape, xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+    }
 
-    if(zIndex >= 0 && xIndex >= 0 && zIndex < zLen && xIndex < xLen)
-      z[zIndex] = x[xIndex];
+    if (zOffset >= 0 && xOffset >= 0 && zOffset < zLen && xOffset < xLen)
+      z[zOffset] = x[xOffset];
   }
 }
-
 template <typename F, typename I>
 static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, void* vz, const LongType* zShape,
                                       LongType outLen, void const* paddings, const LongType* paddingShape,
@@ -205,14 +223,19 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, vo
   auto start = threadIdx.x + blockIdx.x * blockDim.x;
   auto step = blockDim.x * gridDim.x;
 
+  LongType coords[2];
+
   for (LongType i = start; i < outLen; i += step) {
     auto xzCoord = xIdx + threadIdx.x * rank;
-    shape::index2coords(i, zShape, xzCoord);
-    auto outOffset = shape::getOffset(zShape, xzCoord);
+    INDEX2COORDS(i, rank, zShape, xzCoord);
+    LongType outOffset;
+    COORDS2INDEX(rank, shape::shapeOf(zShape), xzCoord, outOffset);
     for (LongType j = 0; j < rank; j++) {
       const LongType inLen = shape::sizeAt(xShape, j);
-      LongType coords[2] = {j, 0};
-      auto padOffset = shape::getOffset(paddingShape, coords);  // padding already has rank 2
+      coords[0] = j;
+      coords[1] = 0;
+      LongType padOffset;
+      COORDS2INDEX(2, shape::shapeOf(paddingShape), coords, padOffset);  // padding already has rank 2
       const auto leftSide = pads[padOffset];
       const auto leftSideCorrected = leftSide - reflBorder;
       const LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
@@ -229,7 +252,8 @@ static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, vo
         xzCoord[j] = xzCoord[j] - len;
     }
 
-    auto inOffset = shape::getOffset(xShape, xzCoord);
+    LongType inOffset;
+    COORDS2INDEX(rank, shape::shapeOf(xShape), xzCoord, inOffset);
     z[outOffset] = x[inOffset];
   }
 }

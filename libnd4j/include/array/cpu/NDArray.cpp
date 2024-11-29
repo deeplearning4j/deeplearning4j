@@ -50,15 +50,12 @@ void* NDArray::platformBuffer() { return buffer(); }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction,const bool includeEdges) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction, const bool includeEdges) {
   if (isS()) THROW_EXCEPTION("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
 
   if (!isSameShape(target) &&
       !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
     throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
-
-
-
 
   const T value = static_cast<T>(val);
   const auto x = reinterpret_cast<const T*>(buffer());
@@ -73,47 +70,45 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
-    //track input vector coordinates, only used in specific cases
-    sd::LongType vectorCoord[1];
-    vectorCoord[0] = 0;
+    sd::LongType vectorCoord[1] = {0};
     sd::LongType targetRank = target.rankOf();
     sd::LongType thisRank = this->rankOf();
     bool notVectorScalar = targetRank == 2 && thisRank == 2;
     bool thisNotVectorScalar = !shape::isScalar(this->shapeInfo()) && !shape::isVector(this->shapeInfo());
-    bool targetNotVectorScalar =  !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
+    bool targetNotVectorScalar = !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
+
     for (sd::LongType i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
-      sd::LongType row = targetNotVectorScalar ?  coords[zRank - 2] : 0;
-      sd::LongType col = targetNotVectorScalar ? coords[zRank - 1]: 1;
-      auto zOffset = 0;
-      auto xOffset = 0;
-      if(target.rankOf() < 2) {
-        zOffset = shape::getOffset(target.shapeInfo(),vectorCoord);
+      INDEX2COORDS(i, target.rankOf(), target.shapeInfo(), coords);
+      sd::LongType row = targetNotVectorScalar ? coords[zRank - 2] : 0;
+      sd::LongType col = targetNotVectorScalar ? coords[zRank - 1] : 1;
+      sd::LongType zOffset, xOffset;
+
+      if (target.rankOf() < 2) {
+        COORDS2INDEX(target.rankOf(), shape::shapeOf(target.shapeInfo()), vectorCoord, zOffset);
       } else {
-        zOffset = shape::getOffset(target.shapeInfo(), coords);
+        COORDS2INDEX(target.rankOf(), shape::shapeOf(target.shapeInfo()), coords, zOffset);
       }
 
-      if(!areSameOffsets && rankOf() < 2) {
-        //rotate count of elements based on how many times accessed
-        xOffset = shape::getOffset(shapeInfo(),vectorCoord);
-      } else if(areSameOffsets) {
+      if (!areSameOffsets && rankOf() < 2) {
+        COORDS2INDEX(rankOf(), shape::shapeOf(shapeInfo()), vectorCoord, xOffset);
+      } else if (areSameOffsets) {
         xOffset = zOffset;
       } else {
-        xOffset = shape::getOffset(shapeInfo(), coords);
+        COORDS2INDEX(rankOf(), shape::shapeOf(shapeInfo()), coords, xOffset);
       }
-
 
       bool rowExclusive = this->rankOf() == target.rankOf();
       bool colExclusive = this->rankOf() == target.rankOf();
       auto lCompare = includeEdges ? row <= (col - lower) : row < (col - lower);
-      auto uCompare = includeEdges ? row >= (col - upper): row > (col - upper);
-      if (direction == 'u' && lCompare  || direction == 'l' && uCompare ) {
+      auto uCompare = includeEdges ? row >= (col - upper) : row > (col - upper);
+
+      if (direction == 'u' && lCompare || direction == 'l' && uCompare) {
         z[zOffset] = value;
-      }  else  {
+      } else {
         z[zOffset] = x[xOffset];
       }
 
-      if(this != &target) {
+      if (this != &target) {
         if (xRank != zRank) {
           temp = coords[0];
           coords[0] = coords[1];
@@ -123,8 +118,8 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
           coords[0] = temp;
       }
 
-      if(vectorCoord[0] == this->lengthOf() - 1) {
-        vectorCoord[0] = (int) 0;
+      if (vectorCoord[0] == this->lengthOf() - 1) {
+        vectorCoord[0] = 0;
       } else {
         vectorCoord[0] = vectorCoord[0] + 1;
       }
@@ -148,7 +143,8 @@ void NDArray::setIdentity() {
   sd::LongType indices[SD_MAX_RANK];
   for (int j = 0; j < rank; ++j) indices[j] = 1;
 
-  sd::LongType offset = shape::getOffset(shapeInfo(), indices);
+  sd::LongType offset;
+  COORDS2INDEX(rank, shape::stride(shapeInfo()), indices, offset);
 
   for (int i = 0; i < rank; ++i)
     if (minDim > shape[i]) minDim = shape[i];
@@ -167,21 +163,43 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   const bool isSameOrders = shape::order(xShapeInfo) == shape::order(xShapeInfo);
 
-  const auto xEws = shape::elementWiseStride(xShapeInfo);
-  const auto yEws = shape::elementWiseStride(yShapeInfo);
-
   auto func = PRAGMA_THREADS_FOR {
-    if (isSameOrders && xEws > 0 && yEws > 0) {
-      for (sd::LongType i = start; i < stop; i++) sd::math::sd_swap(x[i * xEws], y[i * yEws]);
+    if (isSameOrders) {
+      for (sd::LongType i = start; i < stop; i++) {
+        LongType xCoords[SD_MAX_RANK];
+        LongType yCoords[SD_MAX_RANK];
+        LongType xOffset;
+        LongType yOffset;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+
+        sd::math::sd_swap(x[xOffset], y[yOffset]);
+      }
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
       for (sd::LongType i = start; i < stop; i++) {
-        const auto ind = shape::getIndexOffset(i, xShapeInfo);
+        LongType coords[SD_MAX_RANK];
+        LongType ind;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, ind);
+
         sd::math::sd_swap(x[ind], y[ind]);
       }
     } else {
       for (sd::LongType i = start; i < stop; i++) {
-        const auto xInd = shape::getIndexOffset(i, xShapeInfo);
-        const auto yInd = shape::getIndexOffset(i, yShapeInfo);
+        LongType xCoords[SD_MAX_RANK];
+        LongType yCoords[SD_MAX_RANK];
+        LongType xInd;
+        LongType yInd;
+
+        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xInd);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yInd);
+
         sd::math::sd_swap(x[xInd], y[yInd]);
       }
     }
@@ -477,8 +495,9 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i++) {
-      shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
-      const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
+      INDEX2COORDS(i, output.rankOf(), output.shapeInfo(), coords);
+      sd::LongType zOffset;
+      COORDS2INDEX(output.rankOf(), shape::shapeOf(output.shapeInfo()), coords, zOffset);
 
       temp = coords[axis];
 
@@ -493,7 +512,10 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
       } else
         coords[axis] /= repeats[0];
 
-      z[zOffset] = x[shape::getOffset(input.shapeInfo(), coords)];
+      sd::LongType xOffset;
+      COORDS2INDEX(input.rankOf(), shape::shapeOf(input.shapeInfo()), coords, xOffset);
+
+      z[zOffset] = x[xOffset];
 
       coords[axis] = temp;
     }

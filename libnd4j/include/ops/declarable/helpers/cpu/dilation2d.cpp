@@ -30,6 +30,7 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////
+
 template <typename X, typename Z>
 static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH, const sd::LongType sW, const sd::LongType pH,
                         const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {
@@ -71,17 +72,26 @@ static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const
                 const int iw = ow * sW - pW + kw * dW;
                 if (iw < 0 || iw >= iW) continue;
 
-                sd::LongType  xCoords[4] = {static_cast<sd::LongType >(b), static_cast<sd::LongType >(ih),
-                                           static_cast<sd::LongType >(iw), c};
-                sd::LongType  yCoords[3] = {kh, kw, c};
+                sd::LongType xCoords[4] = {static_cast<sd::LongType>(b), static_cast<sd::LongType>(ih),
+                                           static_cast<sd::LongType>(iw), c};
+                sd::LongType yCoords[3] = {kh, kw, c};
 
-                const X val = x[shape::getOffset(xShapeInfo, xCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
+                sd::LongType xOffset;
+                COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+
+                sd::LongType yOffset;
+                COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+
+                const X val = x[xOffset] + y[yOffset];
                 if (val > max) max = val;
               }
             }
 
-            sd::LongType  zCoords[4] = {static_cast<sd::LongType >(b), static_cast<sd::LongType >(oh), ow, c};
-            z[shape::getOffset(zShapeInfo, zCoords)] = static_cast<Z>(max);
+            sd::LongType zCoords[4] = {static_cast<sd::LongType>(b), static_cast<sd::LongType>(oh), ow, c};
+            sd::LongType zOffset;
+            COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+
+            z[zOffset] = static_cast<Z>(max);
           }
         }
       }
@@ -90,6 +100,7 @@ static void dilation2d_(NDArray* input, NDArray* weights, NDArray* output, const
 
   samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
+
 
 void dilation2d(sd::LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, const sd::LongType sH,
                 const sd::LongType sW, const sd::LongType pH, const sd::LongType pW, const sd::LongType dH, const sd::LongType dW) {

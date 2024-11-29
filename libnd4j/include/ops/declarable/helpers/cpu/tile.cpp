@@ -35,32 +35,21 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   auto gradOBuff = reinterpret_cast<T const*>(gradO.buffer());
   const sd::LongType gradILen = gradI.lengthOf();
   const sd::LongType gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
-  const sd::LongType gradIEWS = sd::math::sd_abs<sd::LongType,sd::LongType>(gradI.ews());
-  const sd::LongType gradOEWS = gradO.ews();
 
   // initial zeroing of gradI content
-  if (gradIEWS == 1)
-    memset(gradIBuff, 0, gradILen * sizeof(T));
-  else {
-    for (sd::LongType i = 0; i < gradILen * gradIEWS; i += gradIEWS) gradIBuff[i] = static_cast<T>(0.f);
-  }
+  memset(gradIBuff, 0, gradILen * sizeof(T));
 
-  if (gradO.ordering() == 'c' && gradOEWS == 1) {
-    for (sd::LongType i = 0; i < gradOLen; ++i) {
-      auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-      gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
-    }
-  } else if (gradO.ordering() == 'c' && gradOEWS > 1) {
-    for (sd::LongType i = 0; i < gradOLen; ++i) {
-      sd::LongType idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-      gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
-    }
-  } else {
-    for (sd::LongType i = 0; i < gradOLen; ++i) {
-      sd::LongType fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
-      sd::LongType  outIdx = shape::getIndexOffset(i, gradO.shapeInfo());
-      gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[outIdx]);
-    }
+  LongType gradOCoords[SD_MAX_RANK];
+  LongType gradICoords[SD_MAX_RANK];
+  LongType gradOOffset;
+  LongType gradIOffset;
+
+  for (sd::LongType i = 0; i < gradOLen; ++i) {
+    INDEX2COORDS(i, shape::rank(gradO.shapeInfo()), gradO.shapeInfo(), gradOCoords);
+    COORDS2INDEX(shape::rank(gradO.shapeInfo()), shape::shapeOf(gradO.shapeInfo()), gradOCoords, gradOOffset);
+    INDEX2COORDS(i, shape::rank(gradI.shapeInfo()), gradI.shapeInfo(), gradICoords);
+    COORDS2INDEX(shape::rank(gradI.shapeInfo()), shape::shapeOf(gradI.shapeInfo()), gradICoords, gradIOffset);
+    gradI.p(gradIOffset, gradI.e<T>(gradIOffset) + gradOBuff[gradOOffset]);
   }
 }
 

@@ -55,9 +55,14 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
   auto step = blockDim.x * gridDim.x;
 
   for (LongType j = start; j < zLen; j += step) {
-    auto zIndex = shape::getIndexOffset(j, zShapeInfo);
-    auto yIndex = shape::getIndexOffset(j, yShapeInfo);
-    auto xIndex = shape::getIndexOffset(y[yIndex], xShapeInfo);
+    LongType zIndex, yIndex, xIndex;
+    LongType zCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zIndex);
+    INDEX2COORDS(j, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yIndex);
+    INDEX2COORDS(y[yIndex], shape::rank(xShapeInfo), xShapeInfo, xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xIndex);
     z[zIndex] = x[xIndex];
   }
 }
@@ -74,15 +79,26 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
   const LongType len = shape::length(xShapeInfo);
   for (LongType i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
     if (threadIdx.x == 0) {
-      x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo)]];
-      z = reinterpret_cast<X*>(vz) + zOffsets[i];
+      LongType yIndex, xOffset, zOffset;
+      LongType yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yIndex);
+      INDEX2COORDS(y[yIndex], shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      x = reinterpret_cast<const X*>(vx) + xOffsets[xOffset];
+      z = reinterpret_cast<X*>(vz) + zOffsets[zOffset];
     }
     __syncthreads();
 
-
     for (LongType j = threadIdx.x; j < len; j += blockDim.x) {
-      auto zIndex = shape::getIndexOffset(j, zShapeInfo);
-      auto xIndex = shape::getIndexOffset(j, xShapeInfo);
+      LongType zIndex, xIndex;
+      LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
+      INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zIndex);
+      INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xIndex);
       z[zIndex] = x[xIndex];
     }
     __syncthreads();

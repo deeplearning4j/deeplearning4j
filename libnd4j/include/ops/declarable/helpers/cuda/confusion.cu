@@ -50,32 +50,35 @@ SD_KERNEL static void copyBuffers(LongType* destination, void const* source, Lon
 
 template <typename T>
 SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* predictionBuffer, LongType bufferLength, void const* weightsBuffer, void* outputBuffer,
-                                            const LongType* tadShape, const LongType* tadOffsets) {
- __shared__ int arrIdx, blocksPerArr;
- __shared__ T* z;
- __shared__ T const* w;
- __shared__ LongType *zShapeInfo, *xShapeInfo, arrLen;
+                                             const LongType* tadShape, const LongType* tadOffsets) {
+  __shared__ int arrIdx, blocksPerArr;
+  __shared__ T* z;
+  __shared__ T const* w;
+  __shared__ LongType *zShapeInfo, *xShapeInfo, arrLen;
 
- if (threadIdx.x == 0) {
-   z = reinterpret_cast<T*>(outputBuffer);
-   w = reinterpret_cast<T const*>(weightsBuffer);
-   arrLen = shape::length(tadShape);
- }
- __syncthreads();
+  if (threadIdx.x == 0) {
+    z = reinterpret_cast<T*>(outputBuffer);
+    w = reinterpret_cast<T const*>(weightsBuffer);
+    arrLen = shape::length(tadShape);
+  }
+  __syncthreads();
 
- const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
- const auto step = gridDim.x * blockDim.x;
- for (int t = tid; t < bufferLength; t += step) {
-   auto label = labelsBuffer[t];     //->e<sd::LongType>(j);
-   auto pred = predictionBuffer[t];  //->e<sd::LongType>(j);
-   auto tZ = z + tadOffsets[label];
-   T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto step = gridDim.x * blockDim.x;
+  LongType predCoords[SD_MAX_RANK];
+  LongType predOffset;
 
-   auto idx = shape::getIndexOffset(pred, tadShape);
-   tZ[idx] = val;
- }
+  for (int t = tid; t < bufferLength; t += step) {
+    auto label = labelsBuffer[t];
+    auto pred = predictionBuffer[t];
+    auto tZ = z + tadOffsets[label];
+    T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+
+    INDEX2COORDS(pred, shape::rank(tadShape), tadShape, predCoords);
+    COORDS2INDEX(shape::rank(tadShape), shape::shapeOf(tadShape), predCoords, predOffset);
+    tZ[predOffset] = val;
+  }
 }
-
 template <typename X, typename Z>
 void _confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,
                       NDArray* output) {

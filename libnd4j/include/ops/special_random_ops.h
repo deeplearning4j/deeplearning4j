@@ -38,21 +38,24 @@ class Choice {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
         T prob = rng->relativeT<T>(e);
         T cumProb = (T)0.0f;
         for (sd::LongType f = 0; f < yLength; f++) {
           sd::LongType yCoords[SD_MAX_RANK];
-          shape::index2coords(f, yShapeBuffer, yCoords);
-          auto yOffset = shape::getOffset(yShapeBuffer, yCoords);
+          INDEX2COORDS(f, shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer), yCoords);
+          sd::LongType yOffset;
+          COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), yCoords, yOffset);
           T relProb = y[yOffset];
           cumProb += relProb;
 
           if (prob <= cumProb || f == yLength - 1) {
             sd::LongType xCoords[SD_MAX_RANK];
-            shape::index2coords(f, xShapeBuffer, xCoords);
-            auto xOffset = shape::getOffset(xShapeBuffer, xCoords);
+            INDEX2COORDS(f, shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords);
+            sd::LongType xOffset;
+            COORDS2INDEX(shape::rank(xShapeBuffer), shape::stride(xShapeBuffer), xCoords, xOffset);
             z[zOffset] = x[xOffset];
             break;
           }
@@ -101,24 +104,26 @@ class GaussianDistribution {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
         auto epm = e + middle;
 
         // we need to get random values
         T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
         T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-        auto yOffset = shape::getOffset(yShapeBuffer, coords);
+        sd::LongType yOffset;
+        COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
         T realMean0 = y == z ? mean : y[yOffset];
 
         z[zOffset] = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                       sd::math::sd_cos<T, T>(two_pi * r1)) * stddev + realMean0;
 
         if (epm < zLength) {
-          shape::index2coords(epm, zShapeBuffer, coords);
-          zOffset = shape::getOffset(zShapeBuffer, coords);
-          yOffset = shape::getOffset(yShapeBuffer, coords);
+          INDEX2COORDS(epm, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+          COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
+          COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
           T realMean1 = y == z ? mean : y[yOffset];
           z[zOffset] = (sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                         sd::math::sd_sin<T, T>(two_pi * r1)) * stddev + realMean1;
@@ -163,14 +168,16 @@ class BinomialDistribution {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
         int success = 0;
         for (int t = 1; t <= trials; t++) {
           T randVal = rng->relativeT<T>((e + 1) * t);
           if (y != z) {
             // we're using external probs
-            auto yOffset = shape::getOffset(yShapeBuffer, coords);
+            sd::LongType yOffset;
+            COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
             prob = y[yOffset];
           }
 
@@ -219,14 +226,16 @@ class BinomialDistributionEx {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
         int success = 0;
         for (int t = 1; t <= trials; t++) {
           T randVal = rng->relativeT<T>((e + 1) * t);
           if (y != z) {
             // we're using external probs
-            auto yOffset = shape::getOffset(yShapeBuffer, coords);
+            sd::LongType yOffset;
+            COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
             prob = y[yOffset];
           }
 
@@ -305,12 +314,12 @@ class TruncatedNormalDistribution {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
 
         if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) {
           z[zOffset] = step(rng, mean, stddev, e, middle, z[zOffset]);
-
 
           if (z[zOffset] > mean + ds || z[zOffset] < mean - ds) z[zOffset] = mean + sd::DataTypeUtils::min_positive<T>();
         }
@@ -358,15 +367,17 @@ class LogNormalDistribution {
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {
         sd::LongType coords[SD_MAX_RANK];
-        shape::index2coords(e, zShapeBuffer, coords);
-        auto zOffset = shape::getOffset(zShapeBuffer, coords);
+        INDEX2COORDS(e, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+        sd::LongType zOffset;
+        COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
         auto epm = e + middle;
 
         // we need to get random values
         T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
         T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-        auto yOffset = shape::getOffset(yShapeBuffer, coords);
+        sd::LongType yOffset;
+        COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
         T realMean = y == z ? mean : y[yOffset];
 
         z[zOffset] =
@@ -376,9 +387,9 @@ class LogNormalDistribution {
                                    realMean);
 
         if (epm < zLength) {
-          shape::index2coords(epm, zShapeBuffer, coords);
-          zOffset = shape::getOffset(zShapeBuffer, coords);
-          yOffset = shape::getOffset(yShapeBuffer, coords);
+          INDEX2COORDS(epm, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), coords);
+          COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), coords, zOffset);
+          COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), coords, yOffset);
           realMean = y == z ? mean : y[yOffset];
           z[zOffset] =
               sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *

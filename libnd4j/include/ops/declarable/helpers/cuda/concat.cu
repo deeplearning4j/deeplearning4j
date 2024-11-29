@@ -60,9 +60,10 @@ SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const s
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    shape::index2coords(i, zShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+    LongType zOffset;
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
 
     int inArrIdx = 0;
     LongType* xShapeInfo = reinterpret_cast<sd::LongType**>(pxShapeInfo)[inArrIdx];
@@ -73,7 +74,8 @@ SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const s
     }
 
     const auto* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
+    LongType xOffset;
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
 
     z[zOffset] = x[xOffset];
   }

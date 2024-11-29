@@ -37,58 +37,43 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
   T prevSum = op == scalar::Add ? (T)0 : (T)1;
   T sum = prevSum;
 
+  LongType xCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+  LongType xOffset;
+  LongType zOffset;
+
   if (reverse) {
-    if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
-        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-      for (sd::LongType e = length - 1; e >= 0; --e) {
-        sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
-        if (!exclusive) prevSum = sum;
+    for (sd::LongType e = length - 1; e >= 0; --e) {
+      INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
-        z[e] = prevSum;
+      sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
+                              : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
-        prevSum = sum;
-      }
-    } else {
-      for (sd::LongType e = length - 1; e >= 0; --e) {
-        auto xOffset = shape::getIndexOffset(e, xShapeInfo);
-        auto zOffset = shape::getIndexOffset(e, zShapeInfo);
-        sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
-                                : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
+      if (!exclusive) prevSum = sum;
 
-        if (!exclusive) prevSum = sum;
-
-        z[zOffset] = prevSum;
-        prevSum = sum;
-      }
+      z[zOffset] = prevSum;
+      prevSum = sum;
     }
   } else {
-    if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
-        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-      for (sd::LongType e = 0; e < length; e++) {
-        sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
+    for (sd::LongType e = 0; e < length; e++) {
+      INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
 
-        if (!exclusive) prevSum = sum;
+      sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
+                              : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
-        z[e] = prevSum;
+      if (!exclusive) prevSum = sum;
 
-        prevSum = sum;
-      }
-    } else {
-      for (sd::LongType e = 0; e < length; e++) {
-        auto xOffset = shape::getIndexOffset(e, xShapeInfo);
-        auto zOffset = shape::getIndexOffset(e, zShapeInfo);
-        sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
-                                : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
-
-        if (!exclusive) prevSum = sum;
-
-        z[zOffset] = prevSum;
-        prevSum = sum;
-      }
+      z[zOffset] = prevSum;
+      prevSum = sum;
     }
   }
-};
-
+}
 template <typename T>
 static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, const std::vector<LongType>& dims, bool exclusive,
                     bool reverse) {
