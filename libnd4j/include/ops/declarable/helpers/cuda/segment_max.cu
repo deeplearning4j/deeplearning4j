@@ -60,12 +60,12 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, LongType const* inputS
 
     if (segment < numOfClasses) {
       LongType segmentCoords[] = {segment};
-      COORDS2INDEX(1, shape::shapeOf(outputShape), segmentCoords, zIndex);
+      COORDS2INDEX(1, shape::stride(outputShape), segmentCoords, zIndex);
       start = starts[segment];
       finish = start + lengths[segment];
       LongType startCoords[] = {start};
       LongType xOffset;
-      COORDS2INDEX(1, shape::shapeOf(inputShape), startCoords, xOffset);
+      COORDS2INDEX(1, shape::stride(inputShape), startCoords, xOffset);
       z[zIndex] = x[xOffset];
       val[segment] = z[zIndex];
     }
@@ -75,7 +75,7 @@ static SD_KERNEL void segmentMaxLinearKernel(void* input, LongType const* inputS
   for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
     LongType eCoords[] = {e};
     LongType xIndex;
-    COORDS2INDEX(1, shape::shapeOf(inputShape), eCoords, xIndex);
+    COORDS2INDEX(1, shape::stride(inputShape), eCoords, xIndex);
     math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
   }
 }
@@ -100,11 +100,11 @@ static SD_KERNEL void unsortedSegmentMaxLinearKernel(void* input, LongType const
     zLen = shape::length(outputShape);
 
     LongType segmentCoords[] = {segment};
-    COORDS2INDEX(1, shape::shapeOf(outputShape), segmentCoords, zIndex);
+    COORDS2INDEX(1, shape::stride(outputShape), segmentCoords, zIndex);
     if (lengths[segment] > 0) {
       LongType startCoords[] = {starts[segment]};
       LongType xOffset;
-      COORDS2INDEX(1, shape::shapeOf(inputShape), startCoords, xOffset);
+      COORDS2INDEX(1, shape::stride(inputShape), startCoords, xOffset);
       z[zIndex] = x[xOffset];
     } else {
       z[zIndex] = -DataTypeUtils::max<T>();
@@ -115,9 +115,9 @@ static SD_KERNEL void unsortedSegmentMaxLinearKernel(void* input, LongType const
     for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
       LongType eCoords[] = {e};
       LongType xIndex;
-      COORDS2INDEX(1, shape::shapeOf(inputShape), eCoords, xIndex);
+      COORDS2INDEX(1, shape::stride(inputShape), eCoords, xIndex);
       LongType yIndex;
-      COORDS2INDEX(1, shape::shapeOf(indicesShape), eCoords, yIndex);
+      COORDS2INDEX(1, shape::stride(indicesShape), eCoords, yIndex);
       if (y[yIndex] == segment) {
         math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
@@ -161,10 +161,10 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
         LongType xIndex;
         LongType zIndex;
 
-        INDEX2COORDS(e, shape::rank(inputTads), inputTads, xCoords);
-        COORDS2INDEX(shape::rank(inputTads), shape::shapeOf(inputTads), xCoords, xIndex);
-        INDEX2COORDS(e, shape::rank(outputTads), outputTads, zCoords);
-        COORDS2INDEX(shape::rank(outputTads), shape::shapeOf(outputTads), zCoords, zIndex);
+        INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), xCoords);
+        COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), xCoords, xIndex);
+        INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), zCoords);
+        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zCoords, zIndex);
 
         math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
@@ -175,10 +175,10 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
         LongType xIndex;
         LongType zIndex;
 
-        INDEX2COORDS(e, shape::rank(inputTads), inputTads, xCoords);
-        COORDS2INDEX(shape::rank(inputTads), shape::shapeOf(inputTads), xCoords, xIndex);
-        INDEX2COORDS(e, shape::rank(outputTads), outputTads, zCoords);
-        COORDS2INDEX(shape::rank(outputTads), shape::shapeOf(outputTads), zCoords, zIndex);
+        INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), xCoords);
+        COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), xCoords, xIndex);
+        INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), zCoords);
+        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zCoords, zIndex);
 
         if (lengths[segment]) math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
@@ -338,17 +338,17 @@ static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, LongType const* i
     LongType gradOffsetI;
     LongType gradOffsetO;
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(indicesShape), indicesShape, yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
     auto classIndex = y[yOffset];
-    INDEX2COORDS(classIndex, shape::rank(forwardShape), forwardShape, gradICoords);
-    COORDS2INDEX(shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords, gradOffsetI);
-    INDEX2COORDS(classIndex, shape::rank(epsShape), epsShape, gradOCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords, gradOffsetO);
+    INDEX2COORDS(classIndex, shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords);
+    COORDS2INDEX(shape::rank(forwardShape), shape::stride(forwardShape), gradICoords, gradOffsetI);
+    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords);
+    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), gradOCoords, gradOffsetO);
 
     if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
       z[zOffset] = gradOut[gradOffsetO];
@@ -417,14 +417,14 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inpu
       sd::LongType gradOutIndex;
       sd::LongType outIndex;
 
-      INDEX2COORDS(e, shape::rank(inputTadShapeInfo), inputTadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(inputTadShapeInfo), shape::shapeOf(inputTadShapeInfo), xCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(gradInTadShapeInfo), gradInTadShapeInfo, gradInCoords);
-      COORDS2INDEX(shape::rank(gradInTadShapeInfo), shape::shapeOf(gradInTadShapeInfo), gradInCoords, gradInIndex);
-      INDEX2COORDS(e, shape::rank(gradOutTadShapeInfo), gradOutTadShapeInfo, gradOutCoords);
-      COORDS2INDEX(shape::rank(gradOutTadShapeInfo), shape::shapeOf(gradOutTadShapeInfo), gradOutCoords, gradOutIndex);
-      INDEX2COORDS(e, shape::rank(outTadShapeInfo), outTadShapeInfo, outCoords);
-      COORDS2INDEX(shape::rank(outTadShapeInfo), shape::shapeOf(outTadShapeInfo), outCoords, outIndex);
+      INDEX2COORDS(e, shape::rank(inputTadShapeInfo), shape::shapeOf(inputTadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(inputTadShapeInfo), shape::stride(inputTadShapeInfo), xCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(gradInTadShapeInfo), shape::shapeOf(gradInTadShapeInfo), gradInCoords);
+      COORDS2INDEX(shape::rank(gradInTadShapeInfo), shape::stride(gradInTadShapeInfo), gradInCoords, gradInIndex);
+      INDEX2COORDS(e, shape::rank(gradOutTadShapeInfo), shape::shapeOf(gradOutTadShapeInfo), gradOutCoords);
+      COORDS2INDEX(shape::rank(gradOutTadShapeInfo), shape::stride(gradOutTadShapeInfo), gradOutCoords, gradOutIndex);
+      INDEX2COORDS(e, shape::rank(outTadShapeInfo), shape::shapeOf(outTadShapeInfo), outCoords);
+      COORDS2INDEX(shape::rank(outTadShapeInfo), shape::stride(outTadShapeInfo), outCoords, outIndex);
 
       if (math::sd_abs<T, T>(gradIn2[gradInIndex] - current2[xIndex]) <= T(1.e-6)) {
         currentOut2[outIndex] = currentGradOut2[gradOutIndex];

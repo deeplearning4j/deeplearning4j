@@ -57,10 +57,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
   if (inArr == outArr) {
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
-        INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
-        INDEX2COORDS(sLength - e, shape::rank(inShapeBuffer), inShapeBuffer, outCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), outCoords, outOffset);
+        INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
+        INDEX2COORDS(sLength - e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), outCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), outCoords, outOffset);
         swap(const_cast<T*>(inArr), inOffset, outOffset);
       }
     };
@@ -69,10 +69,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     // single step phase here
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
-        INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
-        INDEX2COORDS(sLength - e, shape::rank(outShapeBuffer), outShapeBuffer, outCoords);
-        COORDS2INDEX(shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords, outOffset);
+        INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
+        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
+        INDEX2COORDS(sLength - e, shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords);
+        COORDS2INDEX(shape::rank(outShapeBuffer), shape::stride(outShapeBuffer), outCoords, outOffset);
         outArr[outOffset] = inArr[inOffset];
       }
     };
@@ -81,10 +81,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     if (inLength != numOfElemsToReverse) {
       auto f2 = PRAGMA_THREADS_FOR {
         for (sd::LongType e = start; e < stop; e++) {
-          INDEX2COORDS(e, shape::rank(inShapeBuffer), inShapeBuffer, inCoords);
-          COORDS2INDEX(shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords, inOffset);
-          INDEX2COORDS(e, shape::rank(outShapeBuffer), outShapeBuffer, outCoords);
-          COORDS2INDEX(shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords, outOffset);
+          INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
+          COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
+          INDEX2COORDS(e, shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords);
+          COORDS2INDEX(shape::rank(outShapeBuffer), shape::stride(outShapeBuffer), outCoords, outOffset);
           outArr[outOffset] = inArr[inOffset];
         }
       };

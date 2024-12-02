@@ -77,24 +77,13 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
 
   sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
 
-  if (kindOfLoop == sd::LoopKind::EWS1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        intermediate[thread_id] =
-            OpType::update(intermediate[thread_id], OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
-                           extraParamsLocal + 3 * thread_id);
-      }
-    };
-
-    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-  } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
         intermediate[thread_id] =
             OpType::update(intermediate[thread_id], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * thread_id),
                            extraParamsLocal + 3 * thread_id);
@@ -106,10 +95,10 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
         sd::LongType xOffset, yOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
         intermediate[thread_id] = OpType::update(intermediate[thread_id],
                                                  OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
                                                  extraParamsLocal + 3 * thread_id);

@@ -96,7 +96,7 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (auto i = start; i < stop; i += increment) {
-      INDEX2COORDS(i, input.rankOf(), input.shapeInfo(), coords);
+      INDEX2COORDS(i, input.rankOf(), shape::shapeOf(input.shapeInfo()), coords);
       sd::LongType xOffset;
       COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), coords, xOffset);
 

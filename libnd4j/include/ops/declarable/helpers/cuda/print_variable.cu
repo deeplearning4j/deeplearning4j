@@ -40,8 +40,8 @@ static SD_KERNEL void print_device(const void *special, const LongType *shapeInf
   LongType offset;
 
   for (uint64_t e = 0; e < length; e++) {
-    INDEX2COORDS(e, shape::rank(shapeInfo), shapeInfo, coords);
-    COORDS2INDEX(shape::rank(shapeInfo), shape::shapeOf(shapeInfo), coords, offset);
+    INDEX2COORDS(e, shape::rank(shapeInfo), shape::shapeOf(shapeInfo), coords);
+    COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), coords, offset);
     printf("%f", (float)x[offset]);
 
     if (e < length - 1) printf(", ");

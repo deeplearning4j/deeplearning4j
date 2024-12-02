@@ -66,10 +66,10 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   z[zOffset] = 0;
 
@@ -81,7 +81,7 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
     for (coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
       for (coords[dimID + 2] = zCoord4; coords[dimID + 2] < zCoord4 + factorW; ++coords[dimID + 2]) {
         LongType xOffset;
-        COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
         z[zOffset] += x[xOffset];
       }
 }

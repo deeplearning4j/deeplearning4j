@@ -61,8 +61,8 @@ static SD_KERNEL void segmentProdLinearKernel(void* input, LongType const* input
   LongType zIndex;
 
   for (auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
-    INDEX2COORDS(segment, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, zIndex);
+    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, zIndex);
     if(zIndex >= zLen)
       continue;
     auto start = starts[segment];
@@ -71,8 +71,8 @@ static SD_KERNEL void segmentProdLinearKernel(void* input, LongType const* input
       continue;
     }
     for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, xIndex);
       if (xIndex >= xLen) return;
       math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
     }
@@ -101,16 +101,16 @@ static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, LongType const* 
   LongType zIndex;
 
   for (auto idx = start; idx < xLen; idx += step) {
-    INDEX2COORDS(idx, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xIndex);
+    INDEX2COORDS(idx, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xIndex);
 
-    INDEX2COORDS(idx, shape::rank(indicesShape), indicesShape, yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
+    INDEX2COORDS(idx, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yIndex);
 
     auto segment = indices[yIndex];
 
-    INDEX2COORDS(segment, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
     if (lengths[segment] == 0) {
       continue;
@@ -151,10 +151,10 @@ static SD_KERNEL void segmentProdTadKernel(void* inputBuf, LongType const* input
     auto finish = start + lengths[segment];
     if (lengths[segment] == 0) continue;
     for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(inputTads), inputTads, inputCoords);
-      COORDS2INDEX(shape::rank(inputTads), shape::shapeOf(inputTads), inputCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(outputTads), outputTads, outputCoords);
-      COORDS2INDEX(shape::rank(outputTads), shape::shapeOf(outputTads), outputCoords, zIndex);
+      INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), inputCoords);
+      COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), inputCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), outputCoords);
+      COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), outputCoords, zIndex);
       math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
     }
   }
@@ -303,22 +303,22 @@ static SD_KERNEL void segmentProdBPLinearKernel(void* inputBuf, LongType const* 
   LongType gradOffsetO;
 
   for (auto e = start; e < xLen; e += step) {
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
 
-    INDEX2COORDS(e, shape::rank(indicesShape), indicesShape, yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
 
     auto classIndex = y[yOffset];
 
-    INDEX2COORDS(classIndex, shape::rank(forwardShape), forwardShape, gradICoords);
-    COORDS2INDEX(shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords, gradOffsetI);
+    INDEX2COORDS(classIndex, shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords);
+    COORDS2INDEX(shape::rank(forwardShape), shape::stride(forwardShape), gradICoords, gradOffsetI);
 
-    INDEX2COORDS(classIndex, shape::rank(epsShape), epsShape, gradOCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords, gradOffsetO);
+    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords);
+    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), gradOCoords, gradOffsetO);
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
 
     z[zOffset] = gradOut[gradOffsetO] * gradIn[gradOffsetI] / x[xOffset];
   }
@@ -356,7 +356,7 @@ static SD_KERNEL void segmentProdBPTadKernel(void* inputBuf, LongType const* inp
   for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
     LongType yCoords[SD_MAX_RANK];
     LongType yIndex;
-    INDEX2COORDS(i, shape::rank(indicesShape), indicesShape, yCoords);
+    INDEX2COORDS(i, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
     COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
     auto segment = y[yIndex];
     T* current = x + inputOffsets[i];

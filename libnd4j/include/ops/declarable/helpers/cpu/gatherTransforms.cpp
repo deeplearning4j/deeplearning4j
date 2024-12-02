@@ -53,16 +53,16 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, output.rankOf(), output.shapeInfo(), zCoords);
+      INDEX2COORDS(i, output.rankOf(), shape::shapeOf(output.shapeInfo()), zCoords);
 
       sd::LongType zOffset;
-      COORDS2INDEX(output.rankOf(), shape::shapeOf(output.shapeInfo()), zCoords, zOffset);
+      COORDS2INDEX(output.rankOf(), shape::stride(output.shapeInfo()), zCoords, zOffset);
 
       temp = zCoords[yRank - 1];
       zCoords[yRank - 1] = 0;
 
       sd::LongType yOffset;
-      COORDS2INDEX(indices.rankOf(), shape::shapeOf(indices.shapeInfo()), zCoords, yOffset);
+      COORDS2INDEX(indices.rankOf(), shape::stride(indices.shapeInfo()), zCoords, yOffset);
 
       zCoords[yRank - 1] = temp;
 
@@ -77,7 +77,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
         xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];  // last stride
 
       sd::LongType xOffset;
-      COORDS2INDEX(input.rankOf(), shape::shapeOf(input.shapeInfo()), xCoords, xOffset);
+      COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }

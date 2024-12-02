@@ -74,8 +74,8 @@ SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* p
     auto tZ = z + tadOffsets[label];
     T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
-    INDEX2COORDS(pred, shape::rank(tadShape), tadShape, predCoords);
-    COORDS2INDEX(shape::rank(tadShape), shape::shapeOf(tadShape), predCoords, predOffset);
+    INDEX2COORDS(pred, shape::rank(tadShape), shape::shapeOf(tadShape), predCoords);
+    COORDS2INDEX(shape::rank(tadShape), shape::stride(tadShape), predCoords, predOffset);
     tZ[predOffset] = val;
   }
 }

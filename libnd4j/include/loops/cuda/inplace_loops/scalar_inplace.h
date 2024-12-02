@@ -74,10 +74,10 @@ SD_INLINE SD_DEVICE void ScalarInplace<X, Y, Z>::transformCuda(void *vscalar, vo
     sd::LongType yOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = OpType::op(y[yOffset], scalar, params);
   }

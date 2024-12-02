@@ -62,17 +62,17 @@ SD_KERNEL static void upsampling3dCuda(const void* vx, const LongType* xShapeInf
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   coords[dimID] /= factorD;
   coords[dimID + 1] /= factorH;
   coords[dimID + 2] /= factorW;
 
   LongType xOffset;
-  COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
   z[zOffset] = x[xOffset];
 }

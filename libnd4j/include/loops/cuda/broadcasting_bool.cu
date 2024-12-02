@@ -197,12 +197,12 @@ SD_DEVICE void BroadcastBool<X, Z>::transformInverseCuda(
       sd::LongType yOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, yCoords);
-      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), yCoords, yOffset);
-      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), tadOnlyShapeInfoZ, zCoords);
-      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords, zOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), yCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::stride(tadOnlyShapeInfoZ), zCoords, zOffset);
 
       rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
     }
@@ -249,11 +249,11 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(void const* vx, sd::LongType c
 
     for (sd::LongType i = threadIdx.x; i < tadLength; i += blockDim.x) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, coords);
+      INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords);
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
-      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), coords, zOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::stride(tadOnlyShapeInfoZ), coords, zOffset);
 
       rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset], extraParams);
     }
@@ -292,19 +292,19 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(const void* vx,
 
   for (sd::LongType i = tid; i < zLen; i += blockDim.x * gridDim.x) {
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(i, zRank, zShapeInfo, coords);
+    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), coords);
     sd::LongType zOffset, xOffset, yOffset;
-    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
     if (xzSameOffsets) {
       xOffset = zOffset;
     } else {
-      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
     }
 
     if (yzSameOffsets) {
       yOffset = zOffset;
     } else {
-      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(yRank, shape::stride(yShapeInfo), coords, yOffset);
     }
     z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }

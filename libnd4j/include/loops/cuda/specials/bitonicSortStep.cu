@@ -49,10 +49,10 @@ SD_KERNEL void bitonicSortStepKernelKey(void *vx, sd::LongType const *xShapeInfo
     sd::LongType iOffset;
     sd::LongType ixjOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, iCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords, iOffset);
-    INDEX2COORDS(ixj, shape::rank(xShapeInfo), xShapeInfo, ixjCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords, ixjOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), iCoords, iOffset);
+    INDEX2COORDS(ixj, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), ixjCoords, ixjOffset);
 
     if ((i & k) == 0) {
       /* Sort ascending */
@@ -107,10 +107,10 @@ SD_KERNEL void bitonicSortStepKernel(void *vx, sd::LongType const *xShapeInfo, i
     sd::LongType iOffset;
     sd::LongType ixjOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, iCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords, iOffset);
-    INDEX2COORDS(ixj, shape::rank(xShapeInfo), xShapeInfo, ixjCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords, ixjOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), iCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), iCoords, iOffset);
+    INDEX2COORDS(ixj, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ixjCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), ixjCoords, ixjOffset);
 
     if ((i & k) == 0) {
       /* Sort ascending */

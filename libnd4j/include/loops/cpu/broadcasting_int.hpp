@@ -132,9 +132,9 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), xTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
         oZ[offset] = OpType::op(oX[offset], y[offset]);
       }
     };
@@ -146,10 +146,10 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), xTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
         sd::LongType offset, zOffset;
-        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
         oZ[zOffset] = OpType::op(oX[offset], y[offset]);
       }
     };
@@ -161,10 +161,10 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), xTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords);
         sd::LongType offset, yOffset;
-        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
         oZ[offset] = OpType::op(oX[offset], y[yOffset]);
       }
     };
@@ -176,10 +176,10 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(yShapeInfo), yShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords);
         sd::LongType xOffset, offset;
-        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, offset);
         oZ[offset] = OpType::op(oX[xOffset], y[offset]);
       }
     };
@@ -191,11 +191,11 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(zTadShapeInfo), zTadShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords);
         sd::LongType xOffset, yOffset, zOffset;
-        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::shapeOf(xTadShapeShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
         oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
       }
     };
@@ -270,9 +270,9 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(yTadShapeShapeInfo), yTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::stride(yTadShapeShapeInfo), coords, offset);
         oZ[offset] = OpType::op(x[offset], oY[offset]);
       }
     };
@@ -283,10 +283,10 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
 
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(yTadShapeShapeInfo), yTadShapeShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords);
         sd::LongType offset, zOffset;
-        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::stride(yTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
         oZ[zOffset] = OpType::op(x[offset], oY[offset]);
       }
     };
@@ -300,8 +300,8 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
         sd::LongType coords[SD_MAX_RANK];
         INDEX2COORDS(f, shape::rank(yTadShapeShapeInfo), yTadShapeShapeInfo, coords);
         sd::LongType offset, xOffset;
-        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::stride(yTadShapeShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
         oZ[offset] = OpType::op(x[xOffset], oY[offset]);
       }
     };
@@ -313,10 +313,10 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(xShapeInfo), xShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
         sd::LongType yOffset, offset;
-        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::shapeOf(yTadShapeShapeInfo), coords, yOffset);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::stride(yTadShapeShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
         oZ[offset] = OpType::op(x[offset], oY[yOffset]);
       }
     };
@@ -328,7 +328,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
       PRAGMA_OMP_SIMD
       for (sd::LongType f = 0; f < tadLength; f++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(f, shape::rank(zTadShapeInfo), zTadShapeInfo, coords);
+        INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords);
         sd::LongType xOffset, yOffset, zOffset;
         COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
         COORDS2INDEX(shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), coords, yOffset);
@@ -544,11 +544,19 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const X *y, 
     sd::LongType xOffset, yOffset, zOffset;
 
     for (auto i = start; i < stop; ++i) {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
-      xOffset = xzSameOffsets ? zOffset : COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-      yOffset = yzSameOffsets ? zOffset : COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
+      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      if (xzSameOffsets) {
+        xOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+      }
 
+      if (yzSameOffsets) {
+        yOffset = zOffset;
+      } else {
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+      }
       z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
     }
   };

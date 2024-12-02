@@ -118,8 +118,6 @@ class ScalarBoolTransform {
                         const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start,
                         sd::LongType stop);
 
-  static void transform(int opNum, const void *x, sd::LongType xStride, void *result, sd::LongType resultStride,
-                        const void *scalar, void *extraParams, sd::LongType n, sd::LongType start, sd::LongType stop);
 
   /*
    * ScalarOp along dimension
@@ -142,21 +140,7 @@ class ScalarBoolTransform {
                         const sd::LongType *resultShapeInfo, const void *scalar, void *extraParams, sd::LongType start,
                         sd::LongType stop);
 
-  /**
-   * CPU implementation of scalar operation
-   * @param x the input
-   * @param xStride the stride for the input
-   * @param result the result buffer
-   * @param resultStride the stride for the result
-   * @param scalar the scalar to apply
-   * @param extraParams the extra parameters where
-   * neccssary
-   * @param n the number of elements to loop over
-   */
 
-  template <typename OpType>
-  static void transform(const void *x, sd::LongType xStride, void *result, sd::LongType resultStride,
-                        const void *scalar, void *extraParams, sd::LongType n, sd::LongType start, sd::LongType stop);
 #endif
 };
 }  // namespace scalar

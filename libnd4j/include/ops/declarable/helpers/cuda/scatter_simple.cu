@@ -50,19 +50,19 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, c
     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
     LongType idxCoords[SD_MAX_RANK];
     LongType idxOffset;
-    INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, idxCoords);
-    COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), idxCoords, idxOffset);
+    INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), idxCoords);
+    COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), idxCoords, idxOffset);
     auto idx = indices[idxOffset];
 
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(idx, shape::rank(xTadShape), xTadShape, xCoords);
-    COORDS2INDEX(shape::rank(xTadShape), shape::shapeOf(xTadShape), xCoords, xOffset);
+    INDEX2COORDS(idx, shape::rank(xTadShape), shape::shapeOf(xTadShape), xCoords);
+    COORDS2INDEX(shape::rank(xTadShape), shape::stride(xTadShape), xCoords, xOffset);
 
     LongType uCoords[SD_MAX_RANK];
     LongType uOffset;
-    INDEX2COORDS(i, shape::rank(uShapeInfo), uShapeInfo, uCoords);
-    COORDS2INDEX(shape::rank(uShapeInfo), shape::shapeOf(uShapeInfo), uCoords, uOffset);
+    INDEX2COORDS(i, shape::rank(uShapeInfo), shape::shapeOf(uShapeInfo), uCoords);
+    COORDS2INDEX(shape::rank(uShapeInfo), shape::stride(uShapeInfo), uCoords, uOffset);
 
     x[xOffset] = u[uOffset];
   }

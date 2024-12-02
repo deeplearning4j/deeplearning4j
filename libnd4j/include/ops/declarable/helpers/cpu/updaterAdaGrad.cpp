@@ -69,30 +69,30 @@ static void adaGradUpdater_(NDArray& gradient, NDArray& initState, NDArray& upda
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+      INDEX2COORDS(i, gradient.rankOf(), shape::shapeOf(gradient.shapeInfo()), coords);
 
       sd::LongType xOffset;
-      COORDS2INDEX(gradient.rankOf(), shape::shapeOf(gradient.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
 
       sd::LongType zOffset;
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(update.rankOf(), shape::shapeOf(update.shapeInfo()), coords, zOffset);
+        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
       }
 
       sd::LongType initOffset;
       if (bXInSame) {
         initOffset = xOffset;
       } else {
-        COORDS2INDEX(initState.rankOf(), shape::shapeOf(initState.shapeInfo()), coords, initOffset);
+        COORDS2INDEX(initState.rankOf(), shape::stride(initState.shapeInfo()), coords, initOffset);
       }
 
       sd::LongType stOffset;
       if (bXStSame) {
         stOffset = xOffset;
       } else {
-        COORDS2INDEX(stateH.rankOf(), shape::shapeOf(stateH.shapeInfo()), coords, stOffset);
+        COORDS2INDEX(stateH.rankOf(), shape::stride(stateH.shapeInfo()), coords, stOffset);
       }
 
       st[stOffset] = init[initOffset] + grad[xOffset] * grad[xOffset];

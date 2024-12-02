@@ -80,10 +80,10 @@ SD_KERNEL void bitonicArbitraryStepKernelKey(void *vx, sd::LongType const *xShap
         sd::LongType itOffset;
         sd::LongType ijOffset;
 
-        INDEX2COORDS(it, shape::rank(xShapeInfo), xShapeInfo, itCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords, itOffset);
-        INDEX2COORDS(ij, shape::rank(xShapeInfo), xShapeInfo, ijCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords, ijOffset);
+        INDEX2COORDS(it, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), itCoords, itOffset);
+        INDEX2COORDS(ij, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), ijCoords, ijOffset);
 
         X v0 = x[ijOffset];
         X v1 = x[itOffset];
@@ -160,10 +160,10 @@ SD_KERNEL void execBitonicArbitraryStepKernel(void *vx, sd::LongType const *xSha
         sd::LongType itOffset;
         sd::LongType ijOffset;
 
-        INDEX2COORDS(it, shape::rank(xShapeInfo), xShapeInfo, itCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords, itOffset);
-        INDEX2COORDS(ij, shape::rank(xShapeInfo), xShapeInfo, ijCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords, ijOffset);
+        INDEX2COORDS(it, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), itCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), itCoords, itOffset);
+        INDEX2COORDS(ij, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), ijCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), ijCoords, ijOffset);
 
         shmem[threadIdx.x] = x[ijOffset];
         shmem[threadIdx.x + blockDim.x] = x[itOffset];

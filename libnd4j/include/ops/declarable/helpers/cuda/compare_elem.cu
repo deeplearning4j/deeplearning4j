@@ -41,10 +41,10 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
 
   // each thread will compare 2 elements: E and E+1
   for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset0);
-    INDEX2COORDS(e + 1, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset1);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset0);
+    INDEX2COORDS(e + 1, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset1);
 
     auto val0 = x[xOffset0];
     auto val1 = x[xOffset1];

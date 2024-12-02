@@ -52,14 +52,14 @@ static void rgbToGrs_(NDArray& input, NDArray& output, const int dimC) {
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (auto i = start; i < stop; i++) {
-      INDEX2COORDS(i, rank, output.shapeInfo(), coords);
+      INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), coords);
       sd::LongType zOffset, xOffset0, xOffset1, xOffset2;
-      COORDS2INDEX(rank, shape::shapeOf(output.shapeInfo()), coords, zOffset);
-      COORDS2INDEX(rank, shape::shapeOf(input.shapeInfo()), coords, xOffset0);
+      COORDS2INDEX(rank, shape::stride(output.shapeInfo()), coords, zOffset);
+      COORDS2INDEX(rank, shape::stride(input.shapeInfo()), coords, xOffset0);
       coords[dimC]++;
-      COORDS2INDEX(rank, shape::shapeOf(input.shapeInfo()), coords, xOffset1);
+      COORDS2INDEX(rank, shape::stride(input.shapeInfo()), coords, xOffset1);
       coords[dimC]++;
-      COORDS2INDEX(rank, shape::shapeOf(input.shapeInfo()), coords, xOffset2);
+      COORDS2INDEX(rank, shape::stride(input.shapeInfo()), coords, xOffset2);
       z[zOffset] = 0.2989f * x[xOffset0] + 0.5870f * x[xOffset1] + 0.1140f * x[xOffset2];
     }
   };

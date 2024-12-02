@@ -48,8 +48,8 @@ static void flatten_(std::vector<NDArray *> &inputs, NDArray *output, const char
     for (sd::LongType i = 0; i < xLength; i++) {
       sd::LongType xOffset;
       sd::LongType xCoords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
       z[i] = xBuffer[xOffset];
     }
   }

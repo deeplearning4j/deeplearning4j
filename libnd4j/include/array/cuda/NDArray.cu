@@ -116,10 +116,10 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
   bool dirU = direction == 'u';
   bool dirL = direction == 'l';
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, zRank, zShapeInfo, coords);
+    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), coords);
 
     LongType zOffset;
-    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
 
     auto row = coords[zRank - 2];
     auto col = coords[zRank - 1];
@@ -130,7 +130,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
     } else if (vx != vz) {  // when x and z are different arrays
       if (xRank != zRank) coords[0] = coords[1];
       LongType xOffset;
-      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
       z[zOffset] = x[xOffset];
     }
   }
@@ -188,9 +188,9 @@ SD_KERNEL static void identityMatrixCuda(void* vx, const LongType* xShapeInfo, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, rank, xShapeInfo, coords);
+    INDEX2COORDS(i, rank, shape::shapeOf(xShapeInfo), coords);
     LongType offset;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, offset);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, offset);
 
     if (coords[rank - 2] == coords[rank - 1])  // row == col -> on diagonal
       x[offset] = val;

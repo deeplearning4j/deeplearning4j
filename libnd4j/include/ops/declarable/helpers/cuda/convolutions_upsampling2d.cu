@@ -61,16 +61,16 @@ SD_KERNEL static void upsampling2dCuda(const void* vx, const LongType* xShapeInf
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   coords[dimIH] /= factorH;
   coords[dimIH + 1] /= factorW;
 
   LongType xOffset;
-  COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
   z[zOffset] = x[xOffset];
 }

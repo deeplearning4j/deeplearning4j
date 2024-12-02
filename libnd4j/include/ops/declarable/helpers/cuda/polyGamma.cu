@@ -59,21 +59,21 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
   LongType zOffset;
 
   for (int i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(nShapeInfo), nShapeInfo, nCoords);
-    COORDS2INDEX(shape::rank(nShapeInfo), shape::shapeOf(nShapeInfo), nCoords, nOffset);
+    INDEX2COORDS(i, shape::rank(nShapeInfo), shape::shapeOf(nShapeInfo), nCoords);
+    COORDS2INDEX(shape::rank(nShapeInfo), shape::stride(nShapeInfo), nCoords, nOffset);
 
     if (sameOffsetNX) {
       xOffset = nOffset;
     } else {
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     }
 
     if (sameOffsetNZ) {
       zOffset = nOffset;
     } else {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     }
 
     const T order = n[nOffset];

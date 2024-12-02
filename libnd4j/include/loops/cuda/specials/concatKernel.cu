@@ -103,21 +103,21 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
         LongType sub[SD_MAX_RANK];
 
-        INDEX2COORDS(arrOffset, shape::rank(zTadShape), zTadShape, sub);
+        INDEX2COORDS(arrOffset, shape::rank(zTadShape), shape::shapeOf(zTadShape), sub);
 
         LongType baseOffset;
-        COORDS2INDEX(shape::rank(zTadShape), shape::shapeOf(zTadShape), sub, baseOffset);
+        COORDS2INDEX(shape::rank(zTadShape), shape::stride(zTadShape), sub, baseOffset);
 
         resultTAD += baseOffset;
 
         auto yRank = shape::rank(currentTad);
         auto tadRank = shape::rank(zTadShape);
 
-        INDEX2COORDS(0, yRank, currentTad, sub);
+        INDEX2COORDS(0, yRank, shape::shapeOf(currentTad), sub);
 
         LongType yOffset;
-        COORDS2INDEX(yRank, shape::shapeOf(currentTad), sub, yOffset);
-        COORDS2INDEX(tadRank, shape::shapeOf(zTadShape), sub, resultOffset);
+        COORDS2INDEX(yRank, shape::stride(currentTad), sub, yOffset);
+        COORDS2INDEX(tadRank, shape::stride(zTadShape), sub, resultOffset);
 
         resultTAD[resultOffset] = dataTAD[yOffset];
       }
@@ -131,9 +131,9 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
 
         LongType sub[SD_MAX_RANK];
 
-        INDEX2COORDS(arrOffset, shape::rank(zTadShape), zTadShape, sub);
+        INDEX2COORDS(arrOffset, shape::rank(zTadShape), shape::shapeOf(zTadShape), sub);
         LongType baseOffset;
-        COORDS2INDEX(shape::rank(zTadShape), shape::shapeOf(zTadShape), sub, baseOffset);
+        COORDS2INDEX(shape::rank(zTadShape), shape::stride(zTadShape), sub, baseOffset);
 
         resultTAD += baseOffset;
 
@@ -173,8 +173,8 @@ SD_DEVICE void concatKernel(int numArrays, Pointer *data, Pointer *inputShapeInf
             LongType yIdx[SD_MAX_RANK];
 
             for (LongType i = threadIdx.x; i < yLength; i += blockDim.x) {
-              INDEX2COORDS(i, shape::rank(currentTad), currentTad, yIdx);
-              INDEX2COORDS(i, shape::rank(zTadShape), zTadShape, zIdx);
+              INDEX2COORDS(i, shape::rank(currentTad), shape::shapeOf(currentTad), yIdx);
+              INDEX2COORDS(i, shape::rank(zTadShape), shape::shapeOf(zTadShape), zIdx);
 
               LongType yOffset;
               COORDS2INDEX(shape::rank(currentTad), shape::shapeOf(currentTad), yIdx, yOffset);

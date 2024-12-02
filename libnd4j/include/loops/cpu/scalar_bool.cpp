@@ -98,12 +98,6 @@ void ScalarBoolTransform<X, Y>::transform(int opNum, const void *x, const sd::Lo
                       SCALAR_BOOL_OPS);
 }
 
-template <typename X, typename Y>
-void ScalarBoolTransform<X, Y>::transform(const int opNum, const void *x, sd::LongType xEws, void *z, sd::LongType zEws,
-                                         const void *scalar, void *extraParams, const sd::LongType n, const sd::LongType start,
-                                         const sd::LongType stop) {
- DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xEws, z, zEws, scalar, extraParams, n, start, stop), SCALAR_BOOL_OPS);
-}
 
 template <typename X, typename Y>
 void ScalarBoolTransform<X, Y>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
@@ -127,50 +121,30 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 
   sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
-  if (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) {
-    transform<OpType>(x, 1, z, 1, vscalar, extraParams, len, start, stop);
-    return;
-  }
+
 
   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
       sd::LongType offset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
       z[offset] = OpType::op(x[offset], scalar, extraParams);
     };
   } else {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
       sd::LongType xOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
     };
   }
 }
-template <typename X, typename Z>
-template <typename OpType>
-void ScalarBoolTransform<X, Z>::transform(const void *vx, sd::LongType xEws, void *vz, sd::LongType zEws,
-                                         const void *vscalar, void *vextraParams, const sd::LongType len,
-                                         const sd::LongType start, const sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto z = reinterpret_cast<Z *>(vz);
- auto scalar = reinterpret_cast<const X *>(vscalar)[0];
- auto extraParams = reinterpret_cast<X *>(vextraParams);
 
- if (xEws == 1 && zEws == 1) {
-   PRAGMA_OMP_SIMD
-   for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], scalar, extraParams);
- } else {
-   PRAGMA_OMP_SIMD
-   for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
- }
-}
 
 BUILD_DOUBLE_TEMPLATE(template class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 

@@ -84,35 +84,35 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
     INDEX2COORDS(i, shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
     }
 
     if (bXInUSame) {
       initUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initUOffset);
+      COORDS2INDEX(shape::rank(invShapeInfo), shape::stride(invShapeInfo), coords, initUOffset);
     }
 
     if (bXStUSame) {
       stUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stUOffset);
+      COORDS2INDEX(shape::rank(stvShapeInfo), shape::stride(stvShapeInfo), coords, stUOffset);
     }
 
     if (bXInMSame) {
       initMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+      COORDS2INDEX(shape::rank(inmShapeInfo), shape::stride(inmShapeInfo), coords, initMOffset);
     }
 
     if (bXStMSame) {
       stMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+      COORDS2INDEX(shape::rank(stmShapeInfo), shape::stride(stmShapeInfo), coords, stMOffset);
     }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);

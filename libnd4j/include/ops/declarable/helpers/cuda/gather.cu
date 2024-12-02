@@ -57,12 +57,12 @@ SD_KERNEL static void gatherCudaLinearKernel(const void* vx, const LongType* xSh
   for (LongType j = start; j < zLen; j += step) {
     LongType zIndex, yIndex, xIndex;
     LongType zCoords[SD_MAX_RANK], yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
-    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zIndex);
-    INDEX2COORDS(j, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yIndex);
+    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zIndex);
+    INDEX2COORDS(j, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yIndex);
     INDEX2COORDS(y[yIndex], shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xIndex);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xIndex);
     z[zIndex] = x[xIndex];
   }
 }
@@ -81,12 +81,12 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
     if (threadIdx.x == 0) {
       LongType yIndex, xOffset, zOffset;
       LongType yCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yIndex);
-      INDEX2COORDS(y[yIndex], shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yIndex);
+      INDEX2COORDS(y[yIndex], shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
       x = reinterpret_cast<const X*>(vx) + xOffsets[xOffset];
       z = reinterpret_cast<X*>(vz) + zOffsets[zOffset];
     }
@@ -95,10 +95,10 @@ SD_KERNEL static void gatherCuda(const int numOfSubArrs, const void* vx, const L
     for (LongType j = threadIdx.x; j < len; j += blockDim.x) {
       LongType zIndex, xIndex;
       LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
-      INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zIndex);
-      INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xIndex);
+      INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zIndex);
+      INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xIndex);
       z[zIndex] = x[xIndex];
     }
     __syncthreads();

@@ -66,15 +66,15 @@ SD_KERNEL static void onehotCuda(const void *vx, const LongType *xShapeInfo, voi
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, zRank, zShapeInfo, coord);
+    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), coord);
     sd::LongType zOffset;
-    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coord, zOffset);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coord, zOffset);
     const auto depthCoord = coord[axis];
 
     for (LongType j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
 
     sd::LongType xOffset;
-    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coord, xOffset);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coord, xOffset);
     const LongType idx = x[xOffset];
     z[zOffset] = depthCoord == idx ? on : off;
   }

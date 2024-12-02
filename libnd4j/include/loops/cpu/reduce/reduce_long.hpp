@@ -55,10 +55,6 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
     return;
   }
-
-  if (xEws >= 1) {
-    z[0] = execScalar<OpType>(x, xEws, length, extraParams);
-  } else {
     auto startingValue = OpType::startingValue(x);
     sd::LongType xShapeInfoCast[SD_MAX_RANK];
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
@@ -87,7 +83,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
 
     // write out results
     z[0] = OpType::postProcess(intermediate[0], length, extraParams);
-  }
+
 }
 
 template <typename X, typename Z>

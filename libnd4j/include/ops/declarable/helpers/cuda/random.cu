@@ -152,16 +152,16 @@ static SD_KERNEL void fillGammaKernel(T const* uList, LongType uLength, T const*
       LongType bIndex;
       LongType zIndex;
 
-      INDEX2COORDS(e, shape::rank(alphaShape), alphaShape, aCoords);
-      COORDS2INDEX(shape::rank(alphaShape), shape::shapeOf(alphaShape), aCoords, aIndex);
+      INDEX2COORDS(e, shape::rank(alphaShape), shape::shapeOf(alpha), aCoords);
+      COORDS2INDEX(shape::rank(alphaShape), shape::stride(alphaShape), aCoords, aIndex);
       if (betaShape) {
-        INDEX2COORDS(e, shape::rank(betaShape), betaShape, bCoords);
-        COORDS2INDEX(shape::rank(betaShape), shape::shapeOf(betaShape), bCoords, bIndex);
+        INDEX2COORDS(e, shape::rank(betaShape), shape::shapeOf(beta), bCoords);
+        COORDS2INDEX(shape::rank(betaShape), shape::stride(betaShape), bCoords, bIndex);
       } else {
         bIndex = -1LL;
       }
-      INDEX2COORDS(e + pos, shape::rank(outputShape), outputShape, zCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+      INDEX2COORDS(e + pos, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
       auto betaV = T(beta != nullptr ? beta[bIndex] : T(1.f));
       output[zIndex] = alpha[aIndex] > T(1.f) ? gammaGreat(uList, pos, uLength, alpha[aIndex], betaV)
@@ -262,10 +262,10 @@ static SD_KERNEL void fillPoissonKernel(T* uList, LongType uLength, T* lambda, c
       LongType lIndex;
       LongType zIndex;
 
-      INDEX2COORDS(e, shape::rank(lambdaShape), lambdaShape, lCoords);
-      COORDS2INDEX(shape::rank(lambdaShape), shape::shapeOf(lambdaShape), lCoords, lIndex);
-      INDEX2COORDS(e + pos, shape::rank(outputShape), outputShape, zCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+      INDEX2COORDS(e, shape::rank(lambdaShape), shape::shapeOf(lambdaShape), lCoords);
+      COORDS2INDEX(shape::rank(lambdaShape), shape::stride(lambdaShape), lCoords, lIndex);
+      INDEX2COORDS(e + pos, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
       while (u > s) {
         x += T(1.);
@@ -331,8 +331,8 @@ static SD_KERNEL void fillUniformKernel(graph::RandomGenerator* devRng, T from, 
     LongType zCoords[SD_MAX_RANK];
     LongType zIndex;
 
-    INDEX2COORDS(i, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+    INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
     output[zIndex] = devRng->relativeT<T>(i, from, to);
   }

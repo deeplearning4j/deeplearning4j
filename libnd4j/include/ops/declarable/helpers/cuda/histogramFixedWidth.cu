@@ -57,8 +57,8 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
   for (LongType i = tid; i < xLen; i += totalThreads) {
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
 
     const X value = x[xOffset];
 
@@ -73,8 +73,8 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
 
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
-    INDEX2COORDS(zIndex, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(zIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     math::atomics::sd_atomicAdd<Z>(&z[zOffset], 1);
   }

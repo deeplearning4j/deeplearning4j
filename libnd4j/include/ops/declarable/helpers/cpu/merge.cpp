@@ -136,10 +136,10 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
-      INDEX2COORDS(e, shape::rank(gradShape), gradShape, coords);
+      INDEX2COORDS(e, shape::rank(gradShape), shape::shapeOf(gradShape), coords);
 
       sd::LongType gradOffset;
-      COORDS2INDEX(shape::rank(gradShape), shape::shapeOf(gradShape), coords, gradOffset);
+      COORDS2INDEX(shape::rank(gradShape), shape::stride(gradShape), coords, gradOffset);
 
       T max = -DataTypeUtils::max<T>();
       sd::LongType nMaxIndex = 0;
@@ -149,7 +149,7 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
         if (vbSameShaepeAndStrides[i]) {
           xOffset = gradOffset;
         } else {
-          COORDS2INDEX(shape::rank(inArrs[i]->shapeInfo()), shape::shapeOf(inArrs[i]->shapeInfo()), coords, xOffset);
+          COORDS2INDEX(shape::rank(inArrs[i]->shapeInfo()), shape::stride(inArrs[i]->shapeInfo()), coords, xOffset);
         }
         const T* v = inArrs[i]->bufferAsT<T>();
         if (v[xOffset] > max) {
@@ -162,7 +162,7 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
       if (vbSameShaepeAndStrides[nMaxIndex]) {
         zOffset = gradOffset;
       } else {
-        COORDS2INDEX(shape::rank(outArrs[nMaxIndex]->shapeInfo()), shape::shapeOf(outArrs[nMaxIndex]->shapeInfo()), coords, zOffset);
+        COORDS2INDEX(shape::rank(outArrs[nMaxIndex]->shapeInfo()), shape::stride(outArrs[nMaxIndex]->shapeInfo()), coords, zOffset);
       }
 
       T* z = outArrs[nMaxIndex]->bufferAsT<T>();

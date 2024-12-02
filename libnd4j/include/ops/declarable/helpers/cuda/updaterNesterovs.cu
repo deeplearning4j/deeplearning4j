@@ -66,24 +66,24 @@ SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initOffset, stOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
     }
 
     if (bXInSame) {
       initOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords, initOffset);
+      COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, initOffset);
     }
 
     if (bXStSame) {
       stOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stShapeInfo), shape::shapeOf(stShapeInfo), coords, stOffset);
+      COORDS2INDEX(shape::rank(stShapeInfo), shape::stride(stShapeInfo), coords, stOffset);
     }
     T prevState = momentum * init[initOffset];
     st[stOffset] = prevState - lr * grad[xOffset];

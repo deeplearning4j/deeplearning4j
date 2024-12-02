@@ -78,23 +78,23 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
     bool targetNotVectorScalar = !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, target.rankOf(), target.shapeInfo(), coords);
+      INDEX2COORDS(i, target.rankOf(), shape::shapeOf(target.shapeInfo()), coords);
       sd::LongType row = targetNotVectorScalar ? coords[zRank - 2] : 0;
       sd::LongType col = targetNotVectorScalar ? coords[zRank - 1] : 1;
       sd::LongType zOffset, xOffset;
 
       if (target.rankOf() < 2) {
-        COORDS2INDEX(target.rankOf(), shape::shapeOf(target.shapeInfo()), vectorCoord, zOffset);
+        COORDS2INDEX(target.rankOf(), shape::stride(target.shapeInfo()), vectorCoord, zOffset);
       } else {
-        COORDS2INDEX(target.rankOf(), shape::shapeOf(target.shapeInfo()), coords, zOffset);
+        COORDS2INDEX(target.rankOf(), shape::stride(target.shapeInfo()), coords, zOffset);
       }
 
       if (!areSameOffsets && rankOf() < 2) {
-        COORDS2INDEX(rankOf(), shape::shapeOf(shapeInfo()), vectorCoord, xOffset);
+        COORDS2INDEX(rankOf(), shape::stride(shapeInfo()), vectorCoord, xOffset);
       } else if (areSameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(rankOf(), shape::shapeOf(shapeInfo()), coords, xOffset);
+        COORDS2INDEX(rankOf(), shape::stride(shapeInfo()), coords, xOffset);
       }
 
       bool rowExclusive = this->rankOf() == target.rankOf();
@@ -171,10 +171,10 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType xOffset;
         LongType yOffset;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
 
         sd::math::sd_swap(x[xOffset], y[yOffset]);
       }
@@ -183,8 +183,8 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType coords[SD_MAX_RANK];
         LongType ind;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, ind);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, ind);
 
         sd::math::sd_swap(x[ind], y[ind]);
       }
@@ -195,10 +195,10 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType xInd;
         LongType yInd;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xInd);
-        INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yInd);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xInd);
+        INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yInd);
 
         sd::math::sd_swap(x[xInd], y[yInd]);
       }
@@ -347,9 +347,6 @@ void* NDArray::specialBuffer() {
 }
 
 
-const void* NDArray::specialBufferWithOffset(LongType offset) {
-  return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
-}
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<sd::LongType>& reps)  {
@@ -495,9 +492,9 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, output.rankOf(), output.shapeInfo(), coords);
+      INDEX2COORDS(i, output.rankOf(), shape::shapeOf(output.shapeInfo()), coords);
       sd::LongType zOffset;
-      COORDS2INDEX(output.rankOf(), shape::shapeOf(output.shapeInfo()), coords, zOffset);
+      COORDS2INDEX(output.rankOf(), shape::stride(output.shapeInfo()), coords, zOffset);
 
       temp = coords[axis];
 
@@ -513,7 +510,7 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
         coords[axis] /= repeats[0];
 
       sd::LongType xOffset;
-      COORDS2INDEX(input.rankOf(), shape::shapeOf(input.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), coords, xOffset);
 
       z[zOffset] = x[xOffset];
 

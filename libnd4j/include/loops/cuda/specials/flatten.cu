@@ -45,8 +45,8 @@ SD_KERNEL void flattenKernel(Pointer *extraPointers, int dOffset, char order, vo
   for (auto i = tid; i < lenY; i += gridDim.x * blockDim.x) {
     LongType yOffset;
     sd::LongType yCoords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
     z[i + dOffset] = y[yOffset];
   }
 }

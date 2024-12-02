@@ -72,7 +72,7 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
   auto xzCoords = sharedMem + threadIdx.x * (xzRank + yRank);
   auto yCoords = xzCoords + xzRank;
 
-  INDEX2COORDS(zInd, xzRank, zShapeInfo, xzCoords);
+  INDEX2COORDS(zInd, xzRank, shape::shapeOf(zShapeInfo), xzCoords);
 
   LongType zOffset;
   COORDS2INDEX(xzRank, shape::shapeOf(zShapeInfo), xzCoords, zOffset);
@@ -93,8 +93,8 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
       if (xzCoords[2] < 0 || xzCoords[2] >= iW) continue;
 
       LongType xOffset, yOffset;
-      COORDS2INDEX(xzRank, shape::shapeOf(xShapeInfo), xzCoords, xOffset);
-      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), yCoords, yOffset);
+      COORDS2INDEX(xzRank, shape::stride(xShapeInfo), xzCoords, xOffset);
+      COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
 
       const X val = x[xOffset] + y[yOffset];
       if (val > max) max = val;

@@ -57,10 +57,10 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongTyp
 
   LongType coords[SD_MAX_RANK];
 
-  INDEX2COORDS(colInd, colRank, colShapeInfo, coords);
+  INDEX2COORDS(colInd, colRank, shape::shapeOf(colShapeInfo), coords);
 
   LongType colOffset;
-  COORDS2INDEX(colRank, shape::shapeOf(colShapeInfo), coords, colOffset);
+  COORDS2INDEX(colRank, shape::stride(colShapeInfo), coords, colOffset);
 
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
@@ -72,7 +72,7 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongTyp
       col[colOffset] = zeroPadVal;
   } else {
     LongType imOffset;
-    COORDS2INDEX(imRank, shape::shapeOf(imShapeInfo), coords, imOffset);
+    COORDS2INDEX(imRank, shape::stride(imShapeInfo), coords, imOffset);
     if (imOffset < imLen && colOffset < colLen)
       col[colOffset] = im[imOffset];
   }

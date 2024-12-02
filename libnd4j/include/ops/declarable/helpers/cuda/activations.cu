@@ -61,7 +61,7 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
     INDEX2COORDS(i, xzRank,shape::shapeOf(xShapeInfo), coords);
 
     LongType xzOffset;
-    COORDS2INDEX(xzRank, shape::shapeOf(xShapeInfo), coords, xzOffset);
+    COORDS2INDEX(xzRank, shape::stride(xShapeInfo), coords, xzOffset);
     const auto xVal = x[xzOffset];
 
     if (xVal < 0) {
@@ -134,12 +134,12 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < inLen; i += totalThreads) {
-    INDEX2COORDS(i, inRank, inShapeInfo, coords);
+    INDEX2COORDS(i, inRank, shape::shapeOf(inShapeInfo), coords);
 
     LongType inOffset, dLdOOffset, dLdIOffset;
-    COORDS2INDEX(inRank, shape::shapeOf(inShapeInfo), coords, inOffset);
-    COORDS2INDEX(inRank, shape::shapeOf(dLdOShapeInfo), coords, dLdOOffset);
-    COORDS2INDEX(inRank, shape::shapeOf(dLdIShapeInfo), coords, dLdIOffset);
+    COORDS2INDEX(inRank, shape::stride(inShapeInfo), coords, inOffset);
+    COORDS2INDEX(inRank, shape::stride(dLdOShapeInfo), coords, dLdOOffset);
+    COORDS2INDEX(inRank, shape::stride(dLdIShapeInfo), coords, dLdIOffset);
 
     const auto xVal = in[inOffset];
     const auto grO = dLdO[dLdOOffset];
@@ -149,8 +149,8 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
         if (alphaShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       LongType alphaOffset, dLdAOffset;
-      COORDS2INDEX(alphaRank, shape::shapeOf(alphaShapeInfo), coords + 1, alphaOffset);
-      COORDS2INDEX(alphaRank, shape::shapeOf(dLdAShapeInfo), coords + 1, dLdAOffset);
+      COORDS2INDEX(alphaRank, shape::stride(alphaShapeInfo), coords + 1, alphaOffset);
+      COORDS2INDEX(alphaRank, shape::stride(dLdAShapeInfo), coords + 1, dLdAOffset);
 
       dLdI[dLdIOffset] = grO * alpha[alphaOffset];
 
@@ -223,8 +223,8 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
 
   // Calculate max
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     max = math::sd_max<T>(max, inBuff[xOffset]);
   }
 
@@ -233,19 +233,19 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
 
   // Calculate exp(x - max) and sum
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     T temp = math::sd_exp<T, T>(inBuff[xOffset] - max);
-    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     outBuff[zOffset] = temp;
     sum += temp;
   }
 
   // Final division step
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     outBuff[zOffset] /= sum;
   }
 }
@@ -453,8 +453,8 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
@@ -480,8 +480,8 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
       z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else {
@@ -503,8 +503,8 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
     const LongType elemIdx = i * blockDim.x + threadIdx.x;
     LongType offset;
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-    COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+    COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
     z[offset] = math::sd_log<T, T>(z[offset] / shmem[0]);
   }
 }
@@ -575,8 +575,8 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
@@ -602,8 +602,8 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
       z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else {
@@ -626,8 +626,8 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
     if (elemIdx >= len) continue;
     LongType offset;
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), xzShapeInfo, coords);
-    COORDS2INDEX(shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords, offset);
+    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
+    COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
     z[offset] /= shmem[0];
     z[offset] *= (1.f - z[offset]);  // derivative
   }

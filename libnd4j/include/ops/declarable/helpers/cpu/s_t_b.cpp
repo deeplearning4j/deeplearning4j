@@ -127,7 +127,7 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
+      INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), zCoords);
 
       memcpy(xCoords, zCoords, rank * sizeof(sd::LongType));
 
@@ -136,8 +136,8 @@ static void batchToSpaceND_(NDArray& input, NDArray& crop, NDArray& output,
         xCoords[j] += crop.e<sd::LongType>(j - 1, 0);  // add crop left
 
       sd::LongType zOffset, xOffset;
-      COORDS2INDEX(rank, shape::shapeOf(output.shapeInfo()), zCoords, zOffset);
-      COORDS2INDEX(rank, shape::shapeOf(input.shapeInfo()), xCoords, xOffset);
+      COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);
+      COORDS2INDEX(rank, shape::stride(input.shapeInfo()), xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }
@@ -308,7 +308,7 @@ static void spaceToBatchND_(NDArray& input, NDArray& padding, NDArray& output,
     sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
+      INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), zCoords);
 
       sd::LongType zOffset;
       COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);

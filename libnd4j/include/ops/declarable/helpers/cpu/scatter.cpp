@@ -46,7 +46,7 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
     sd::LongType xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      INDEX2COORDS(i, xRank, xShapeInfo, xCoords);
+      INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), xCoords);
 
       sd::LongType xOffset;
       COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);

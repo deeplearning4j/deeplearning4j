@@ -45,10 +45,10 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   LongType gradIOffset;
 
   for (sd::LongType i = 0; i < gradOLen; ++i) {
-    INDEX2COORDS(i, shape::rank(gradO.shapeInfo()), gradO.shapeInfo(), gradOCoords);
-    COORDS2INDEX(shape::rank(gradO.shapeInfo()), shape::shapeOf(gradO.shapeInfo()), gradOCoords, gradOOffset);
-    INDEX2COORDS(i, shape::rank(gradI.shapeInfo()), gradI.shapeInfo(), gradICoords);
-    COORDS2INDEX(shape::rank(gradI.shapeInfo()), shape::shapeOf(gradI.shapeInfo()), gradICoords, gradIOffset);
+    INDEX2COORDS(i, shape::rank(gradO.shapeInfo()), shape::shapeOf(gradO.shapeInfo()), gradOCoords);
+    COORDS2INDEX(shape::rank(gradO.shapeInfo()), shape::stride(gradO.shapeInfo()), gradOCoords, gradOOffset);
+    INDEX2COORDS(i, shape::rank(gradI.shapeInfo()), shape::shapeOf(gradI.shapeInfo()), gradICoords);
+    COORDS2INDEX(shape::rank(gradI.shapeInfo()), shape::stride(gradI.shapeInfo()), gradICoords, gradIOffset);
     gradI.p(gradIOffset, gradI.e<T>(gradIOffset) + gradOBuff[gradOOffset]);
   }
 }

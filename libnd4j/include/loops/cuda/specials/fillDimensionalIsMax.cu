@@ -50,8 +50,8 @@ SD_DEVICE void fillDimensionalIsMax(const void *vdX, void *vdZ, const LongType *
       for (LongType e = threadIdx.x; e < tadLength; e += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
-        INDEX2COORDS(e, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(e, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), xCoords, xOffset);
         auto finalOffset = tadOffsetForBlock + xOffset;
         dZ[finalOffset] = (e == highestElement ? (T)1 : (T)0);
       }
@@ -59,8 +59,8 @@ SD_DEVICE void fillDimensionalIsMax(const void *vdX, void *vdZ, const LongType *
       for (LongType e = threadIdx.x; e < tadLength; e += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
-        INDEX2COORDS(e, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(e, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), xCoords, xOffset);
         auto finalOffset = tadOffsetForBlock + xOffset;
         dZ[finalOffset] = (e == highestElement ? (T)1 : (T)0);
       }

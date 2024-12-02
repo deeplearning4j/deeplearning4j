@@ -53,8 +53,8 @@ static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const LongType* zSha
     const T* x = reinterpret_cast<const T*>(reinterpret_cast<void**>(pVx)[i]);
     LongType zOffset;
     LongType zCoords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     z[zOffset] = *x;
   }
 }
@@ -139,8 +139,8 @@ static SD_KERNEL void unstackScalarsCuda(const void* vx, const LongType* xShapeI
 
   for (LongType i = tid; i < xLen; i += totalThreads) {
     T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[i]);
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     *z = x[xOffset];
   }
 }

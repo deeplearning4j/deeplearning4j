@@ -49,11 +49,11 @@ static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const LongType* i
 
   for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
     for (auto k = threadIdx.x; k < inputLen; k += blockDim.x) {
-      INDEX2COORDS(k, shape::rank(inputShape), inputShape, inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(k, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
       if (i < input[inputOffset]) {
-        INDEX2COORDS(k * maxIndex + i, shape::rank(outputShape), outputShape, outputCoords);
-        COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+        INDEX2COORDS(k * maxIndex + i, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+        COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
         output[outputOffset] = B(true);
       }
     }

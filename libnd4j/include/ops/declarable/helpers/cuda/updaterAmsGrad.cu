@@ -92,48 +92,48 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
         stHOffset = i;
 
     if (!bOrdering) {
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
       }
 
       if (bXInMSame) {
         initMOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(inmShapeInfo), shape::shapeOf(inmShapeInfo), coords, initMOffset);
+        COORDS2INDEX(shape::rank(inmShapeInfo), shape::stride(inmShapeInfo), coords, initMOffset);
       }
 
       if (bXStMSame) {
         stMOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(stmShapeInfo), shape::shapeOf(stmShapeInfo), coords, stMOffset);
+        COORDS2INDEX(shape::rank(stmShapeInfo), shape::stride(stmShapeInfo), coords, stMOffset);
       }
 
       if (bXInUSame) {
         initVOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(invShapeInfo), shape::shapeOf(invShapeInfo), coords, initVOffset);
+        COORDS2INDEX(shape::rank(invShapeInfo), shape::stride(invShapeInfo), coords, initVOffset);
       }
 
       if (bXStUSame) {
         stVOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(stvShapeInfo), shape::shapeOf(stvShapeInfo), coords, stVOffset);
+        COORDS2INDEX(shape::rank(stvShapeInfo), shape::stride(stvShapeInfo), coords, stVOffset);
       }
 
       if (bXInHSame) {
         initHOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(inhShapeInfo), shape::shapeOf(inhShapeInfo), coords, initHOffset);
+        COORDS2INDEX(shape::rank(inhShapeInfo), shape::stride(inhShapeInfo), coords, initHOffset);
       }
 
       if (bXStHSame) {
         stHOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(sthShapeInfo), shape::shapeOf(sthShapeInfo), coords, stHOffset);
+        COORDS2INDEX(shape::rank(sthShapeInfo), shape::stride(sthShapeInfo), coords, stHOffset);
       }
     }
 

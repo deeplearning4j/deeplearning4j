@@ -59,14 +59,14 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
     LongType normOffset, zOffset;
-    COORDS2INDEX(shape::rank(normShapeInfo), shape::shapeOf(normShapeInfo), normCoords, normOffset);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(shape::rank(normShapeInfo), shape::stride(normShapeInfo), normCoords, normOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
 
@@ -173,31 +173,31 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
 
     LongType zOffset, yOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     if(sameOffsets) {
       yOffset = zOffset;
     } else {
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), zCoords, yOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
     }
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
     LongType normOffset;
-    COORDS2INDEX(shape::rank(normShapeInfo), shape::shapeOf(normShapeInfo), normCoords, normOffset);
+    COORDS2INDEX(shape::rank(normShapeInfo), shape::stride(normShapeInfo), normCoords, normOffset);
 
     const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
 
     if (actualNorm > clipNorm) {
       LongType sumOffset, xOffset;
-      COORDS2INDEX(shape::rank(sumShapeInfo), shape::shapeOf(sumShapeInfo), normCoords, sumOffset);
+      COORDS2INDEX(shape::rank(sumShapeInfo), shape::stride(sumShapeInfo), normCoords, sumOffset);
       if(sameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), zCoords, xOffset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
       }
 
       const T sumVal = sum[sumOffset];
@@ -345,10 +345,10 @@ static void SD_KERNEL clipByValueKernel(void* input, const LongType* inputShape,
       LongType inputOffset;
       LongType outputOffset;
 
-      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
-      INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
 
       if (inputBuf[inputOffset] > rightBound)
         outputBuf[outputOffset] = (T)rightBound;

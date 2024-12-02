@@ -31,12 +31,12 @@ SD_KERNEL static void assignKernel(const void* vx, const LongType* xShapeInfo, v
   LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, rank, zShapeInfo, zCoords);
-    INDEX2COORDS(i, rank, xShapeInfo, xCoords);
+    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), zCoords);
+    INDEX2COORDS(i, rank, shape::shapeOf(xShapeInfo), xCoords);
 
     LongType xIndex, zIndex;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), xCoords, xIndex);
-    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), zCoords, zIndex);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), xCoords, xIndex);
+    COORDS2INDEX(rank, shape::stride(zShapeInfo), zCoords, zIndex);
 
     z[zIndex] = static_cast<Z>(x[xIndex]);
   }

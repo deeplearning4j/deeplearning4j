@@ -43,8 +43,8 @@ static SD_KERNEL void tileKernel(void const* inputBuffer, LongType const* inputS
       sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType yOffset;
 
-      INDEX2COORDS(i, shape::rank(outputShape), outputShape, yCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), yCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), yCoords, yOffset);
 
       *(reinterpret_cast<T*>(outputBuffer) + i) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset);
     }
@@ -55,10 +55,10 @@ static SD_KERNEL void tileKernel(void const* inputBuffer, LongType const* inputS
       sd::LongType xOffset;
       sd::LongType yOffset;
 
-      INDEX2COORDS(i, shape::rank(outputShape), outputShape, xCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(inputShape), inputShape, yCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), xCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(inputShape), shape::shapeOf(inputShape), yCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), yCoords, yOffset);
 
       *(reinterpret_cast<T*>(outputBuffer) + xOffset) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset);
     }
@@ -101,8 +101,8 @@ static SD_KERNEL void tileKernelDouble(void const* inputBuffer, LongType const* 
       sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType yOffset;
 
-      INDEX2COORDS(i, shape::rank(outputShape), outputShape, yCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), yCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), yCoords, yOffset);
 
       *(reinterpret_cast<X*>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));
     }
@@ -113,9 +113,9 @@ static SD_KERNEL void tileKernelDouble(void const* inputBuffer, LongType const* 
       sd::LongType xOffset;
       sd::LongType yOffset;
 
-      INDEX2COORDS(i, shape::rank(outputShape), outputShape, xCoords);
+      INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), xCoords);
       COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(inputShape), inputShape, yCoords);
+      INDEX2COORDS(i, shape::rank(inputShape), shape::shapeOf(inputShape), yCoords);
       COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), yCoords, yOffset);
 
       *(reinterpret_cast<X*>(outputBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const*>(inputBuffer) + yOffset));

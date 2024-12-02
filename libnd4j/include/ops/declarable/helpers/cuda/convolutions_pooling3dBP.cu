@@ -76,10 +76,10 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(yInd, rank, yShapeInfo, coords);
+  INDEX2COORDS(yInd, rank, shape::shapeOf(yShapeInfo), coords);
 
   LongType yOffset;
-  COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
+  COORDS2INDEX(rank, shape::stride(yShapeInfo), coords, yOffset);
 
   int dstart = coords[2] * sD - pD;
   int hstart = coords[3] * sH - pH;
@@ -103,7 +103,7 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType xOffset;
-            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
             T val = x[xOffset];
             if (val > max) {
               max = val;
@@ -118,7 +118,7 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
       coords[3] = coord3;
       coords[4] = coord4;
       LongType zOffset;
-      COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
       math::atomics::sd_atomicAdd<T>(&z[zOffset], y[yOffset]);
     } break;
 
@@ -138,7 +138,7 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType zOffset;
-            COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+            COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
             math::atomics::sd_atomicAdd<T>(&z[zOffset], val);
           }
     } break;
@@ -152,7 +152,7 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType xOffset;
-            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
             sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[xOffset]), extraParam0);
           }
 
@@ -162,8 +162,8 @@ SD_KERNEL static void pooling3dBPCuda(const void* vx, const LongType* xShapeInfo
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType xOffset, zOffset;
-            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
-            COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+            COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+            COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
             math::atomics::sd_atomicAdd<T>(
                 &z[zOffset], val * math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[xOffset]), extraParam0 - 1.f) *
                                  math::sd_sgn<T, T>(x[xOffset]));

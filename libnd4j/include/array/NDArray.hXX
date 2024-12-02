@@ -6136,7 +6136,7 @@ NDArray& NDArray::operator()(const sd::LongType subArrIdx,
     std::vector<sd::LongType> shapeOfSubArr(subArrRank), indexes(subArrRank);
     for (sd::LongType i = 0; i < subArrRank; ++i) shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
 
-    INDEX2COORDS(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
+    INDEX2COORDS(subArrIdx, subArrRank, shape::shapeOf(shapeOfSubArr.data()), indexes.data());
     for (sd::LongType i = 0; i < subArrRank; ++i) {
       sd::LongType currIdx = 2 * dimsToExclude[i];
       idxRanges[currIdx] = indexes[i];
