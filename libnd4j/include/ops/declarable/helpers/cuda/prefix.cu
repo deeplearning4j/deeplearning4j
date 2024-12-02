@@ -49,10 +49,10 @@ static void prefix_(scalar::Ops op, const void* vx, LongType const* xShapeInfo, 
 
   if (reverse) {
     for (LongType e = length - 1; e >= 0; --e) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
       sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
       if (!exclusive) prevSum = sum;
@@ -62,10 +62,10 @@ static void prefix_(scalar::Ops op, const void* vx, LongType const* xShapeInfo, 
     }
   } else {
     for (LongType e = 0; e < length; e++) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
       sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
       if (!exclusive) prevSum = sum;

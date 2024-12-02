@@ -52,12 +52,12 @@ SD_KERNEL static void zetaCuda(const void *vx, const LongType *xShapeInfo, const
     LongType qOffset;
     LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(qShapeInfo), qShapeInfo, qCoords);
-    COORDS2INDEX(shape::rank(qShapeInfo), shape::shapeOf(qShapeInfo), qCoords, qOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(qShapeInfo), shape::shapeOf(qShapeInfo), qCoords);
+    COORDS2INDEX(shape::rank(qShapeInfo), shape::stride(qShapeInfo), qCoords, qOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
   }

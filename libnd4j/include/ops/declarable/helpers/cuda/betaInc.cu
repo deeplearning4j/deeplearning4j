@@ -108,14 +108,14 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
     LongType xCoords[SD_MAX_RANK];
     LongType zCoords[SD_MAX_RANK];
 
-    INDEX2COORDS(j, shape::rank(aShapeInfo), aShapeInfo, aCoords);
-    COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords, aOffset);
-    INDEX2COORDS(j, shape::rank(bShapeInfo), bShapeInfo, bCoords);
-    COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords, bOffset);
-    INDEX2COORDS(j, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(j, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(j, shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords);
+    COORDS2INDEX(shape::rank(aShapeInfo), shape::stride(aShapeInfo), aCoords, aOffset);
+    INDEX2COORDS(j, shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords);
+    COORDS2INDEX(shape::rank(bShapeInfo), shape::stride(bShapeInfo), bCoords, bOffset);
+    INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     if (aOffset >= aLen || bOffset >= bLen || xOffset >= xLen || zOffset >= zLen)
       return;

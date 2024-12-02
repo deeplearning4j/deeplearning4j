@@ -62,9 +62,6 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
   }
 
   auto startingValue = OpType::startingValue(x);
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
     INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
@@ -83,9 +80,6 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   const sd::LongType length = shape::length(xShapeInfo);
 
   auto startingValue = OpType::startingValue(x);
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
     INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
@@ -116,50 +110,6 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(const void *x, const sd::LongType *x
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
 }
 
-template <typename X, typename Z>
-template <typename OpType>
-Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, sd::LongType xEws, sd::LongType length,
-                                               void *vextraParams) {
-  auto x = reinterpret_cast<const X *>(vx);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
-  int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  Z intermediate[64];
-
-  PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) {
-#if defined(PRINT_INDICES)
-        printf("e: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", e,xEws);
-#endif
-    intermediate[e] = OpType::startingValue(x);
-  }
-
-  auto func = PRAGMA_THREADS_FOR {
-    if (xEws == 1) {
-      for (auto i = start; i < stop; i++) {
-#if defined(PRINT_INDICES)
-    printf("i: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", i,xEws);
-#endif
-        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
-      }
-    } else {
-      for (auto i = start; i < stop; i++) {
-#if defined(PRINT_INDICES)
-        printf("i: %lld xEws %lld ReduceBoolFunction<X, Z>::execScalar\n", i,xEws);
-#endif
-        intermediate[thread_id] =
-            OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
-      }
-    }
-  };
-
-  maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-  // merge results
-  for (sd::LongType e = 1; e < maxThreads; e++) intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
-
-  // return result
-  return OpType::postProcess(intermediate[0], length, extraParams);
-}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>

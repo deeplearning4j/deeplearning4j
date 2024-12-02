@@ -90,14 +90,14 @@ static void adaBeliefUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& i
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType  i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), gradient.shapeInfo(), coords);
+      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords);
       sd::LongType xOffset, zOffset, initUOffset, stUOffset, initMOffset, stMOffset;
-      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords, xOffset);
-      COORDS2INDEX(shape::rank(update.shapeInfo()), shape::shapeOf(update.shapeInfo()), coords, zOffset);
-      COORDS2INDEX(shape::rank(initStateU.shapeInfo()), shape::shapeOf(initStateU.shapeInfo()), coords, initUOffset);
-      COORDS2INDEX(shape::rank(stateU.shapeInfo()), shape::shapeOf(stateU.shapeInfo()), coords, stUOffset);
-      COORDS2INDEX(shape::rank(initStateM.shapeInfo()), shape::shapeOf(initStateM.shapeInfo()), coords, initMOffset);
-      COORDS2INDEX(shape::rank(stateM.shapeInfo()), shape::shapeOf(stateM.shapeInfo()), coords, stMOffset);
+      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::stride(gradient.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(shape::rank(update.shapeInfo()), shape::stride(update.shapeInfo()), coords, zOffset);
+      COORDS2INDEX(shape::rank(initStateU.shapeInfo()), shape::stride(initStateU.shapeInfo()), coords, initUOffset);
+      COORDS2INDEX(shape::rank(stateU.shapeInfo()), shape::stride(stateU.shapeInfo()), coords, stUOffset);
+      COORDS2INDEX(shape::rank(initStateM.shapeInfo()), shape::stride(initStateM.shapeInfo()), coords, initMOffset);
+      COORDS2INDEX(shape::rank(stateM.shapeInfo()), shape::stride(stateM.shapeInfo()), coords, stMOffset);
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
       stU[stUOffset] = beta2 * initU[initUOffset] +
                        (grad[xOffset] - stM[stMOffset]) * (grad[xOffset] - stM[stMOffset]) * (1 - beta2) + epsilon;

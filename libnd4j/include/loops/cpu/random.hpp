@@ -65,9 +65,9 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
         sd::LongType xOffset, yOffset, zOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords, yOffset);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
         z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
       }
     };
@@ -93,7 +93,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, offset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
         z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
       }
     };
@@ -105,8 +105,8 @@ void RandomFunction<X>::execTransform(sd::Pointer state, const void *vx, const s
       for (auto i = start; i < stop; i++) {
         INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
         sd::LongType xOffset, zOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
         z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
       }
     };
@@ -130,7 +130,7 @@ void RandomFunction<X>::execTransform(sd::Pointer state, void *vz, const sd::Lon
     for (auto i = start; i < stop; i++) {
       INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
       sd::LongType offset;
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, offset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, offset);
       z[offset] = OpClass::op(i, length, rng, extraArguments);
     }
   };

@@ -312,8 +312,8 @@ static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const v
     LongType coords[SD_MAX_RANK];
     LongType xIndex;
 
-    INDEX2COORDS(k, shape::rank(inputShape), inputShape, coords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), coords, xIndex);
+    INDEX2COORDS(k, shape::rank(inputShape), shape::shapeOf(inputShape), coords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), coords, xIndex);
 
     matrix[j] = (F)inputBuf[xIndex];
   }
@@ -341,8 +341,8 @@ static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, co
     LongType zCoords[SD_MAX_RANK];
     LongType zIndex;
 
-    INDEX2COORDS(k, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+    INDEX2COORDS(k, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
     outputBuf[zIndex] = matrix[j];
   }
@@ -635,9 +635,9 @@ static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutatio
 
       sd::LongType permIndex1, permIndex2;
       sd::LongType permCoords1[SD_MAX_RANK], permCoords2[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, permCoords1);
-      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords1, permIndex1);
-      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, permCoords2);
+      INDEX2COORDS(i, shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords1);
+      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), permCoords1, permIndex1);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2);
       COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2, permIndex2);
 
       math::sd_swap(permutationBuf[permIndex1], permutationBuf[permIndex2]);
@@ -700,8 +700,8 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
     lup_<T, int>(context, &matrix, nullptr, nullptr);
     sd::LongType offset;
     sd::LongType offsetCoords[SD_MAX_RANK];
-    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
-    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
+    INDEX2COORDS(e, shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords);
+    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::stride(output->shapeInfo()), offsetCoords, offset);
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);

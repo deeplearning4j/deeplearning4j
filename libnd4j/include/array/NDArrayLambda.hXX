@@ -124,10 +124,10 @@ static SD_KERNEL void lambdaKernel(const void *vx, const sd::LongType *xShapeInf
     sd::LongType xOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(x[xOffset]);
   }
@@ -149,10 +149,10 @@ static SD_KERNEL void lambdaIndexedKernel(const void *vx, const sd::LongType *xS
     sd::LongType xOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(e, x[xOffset]);
   }
@@ -179,12 +179,12 @@ static SD_KERNEL void lambdaIndexedPairwiseKernel(const void *vx, const sd::Long
     sd::LongType yOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(e, x[xOffset], y[yOffset]);
   }
@@ -211,12 +211,12 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *vx, const sd::LongType *x
     sd::LongType yOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(x[xOffset], y[yOffset]);
   }
@@ -241,10 +241,10 @@ static SD_KERNEL void lambdaPairwiseKernel(const void *scalarPtr, const void *vx
     sd::LongType xOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(x[xOffset], yVal);
   }
@@ -274,14 +274,14 @@ static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType 
     sd::LongType yOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(wShapeInfo), wShapeInfo, wCoords);
-    COORDS2INDEX(shape::rank(wShapeInfo), shape::shapeOf(wShapeInfo), wCoords, wOffset);
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(wShapeInfo), shape::shapeOf(wShapeInfo), wCoords);
+    COORDS2INDEX(shape::rank(wShapeInfo), shape::stride(wShapeInfo), wCoords, wOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = lambda(w[wOffset], x[xOffset], y[yOffset]);
   }

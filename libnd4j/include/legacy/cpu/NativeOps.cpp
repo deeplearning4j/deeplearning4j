@@ -345,10 +345,10 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
       sd::LongType xOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(idx, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(idx, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(idx, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(idx, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
 
       for (LongType i = 0; i < tadLength; i++) {
         hZ[zOffset + i] = hX[xOffset + i];
@@ -403,10 +403,10 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
         sd::LongType xOffset;
         sd::LongType zOffset;
 
-        INDEX2COORDS(j, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
-        INDEX2COORDS(j, shape::rank(hZShapeInfo), hZShapeInfo, zCoords);
-        COORDS2INDEX(shape::rank(hZShapeInfo), shape::shapeOf(hZShapeInfo), zCoords, zOffset);
+        INDEX2COORDS(j, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(j, shape::rank(hZShapeInfo), shape::shapeOf(hZShapeInfo), zCoords);
+        COORDS2INDEX(shape::rank(hZShapeInfo), shape::stride(hZShapeInfo), zCoords, zOffset);
 
         hZ[zOffset] = s[xOffset];
       }
@@ -503,10 +503,10 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffl
           sd::LongType xOffset;
           sd::LongType zOffset;
 
-          INDEX2COORDS(r, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-          INDEX2COORDS(swapIdx, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-          COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+          INDEX2COORDS(r, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(swapIdx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
           math::sd_swap<T>(hX2[xOffset], hZ2[zOffset]);
         }
@@ -526,10 +526,10 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffl
             sd::LongType xOffset;
             sd::LongType zOffset;
 
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoX), tadOnlyShapeInfoX, xCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfoX), shape::shapeOf(tadOnlyShapeInfoX), xCoords, xOffset);
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), tadOnlyShapeInfoZ, zCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords, zOffset);
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoX), shape::shapeOf(tadOnlyShapeInfoX), xCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfoX), shape::stride(tadOnlyShapeInfoX), xCoords, xOffset);
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::stride(tadOnlyShapeInfoZ), zCoords, zOffset);
 
             math::sd_swap<T>(rX[xOffset], rZ[zOffset]);
           }
@@ -1475,6 +1475,8 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
 void execScalar(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                 NDArray *scalar, void *extraParams) {
   try {
+    printf("Trying to run exec scalar op num %d\n",opNum);
+    fflush(stdout);
     NativeOpExecutioner::execScalar(nullptr, opNum,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                     z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),

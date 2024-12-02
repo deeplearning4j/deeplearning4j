@@ -64,11 +64,11 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const LongType* xSha
   LongType zOffset;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     const LongType index = x[xOffset];
-    INDEX2COORDS(index, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(index, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     z[zOffset] = i;
   }
 }
@@ -122,16 +122,16 @@ SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void
 
   for (LongType m = blockIdx.x; m < zLen; m += gridDim.x) {  // one block per each element of z, that is per each matrix
 
-    INDEX2COORDS(m, zRank, zShapeInfo, coords);
+    INDEX2COORDS(m, zRank, shape::shapeOf(zShapeInfo), coords);
     LongType zOffset;
-    COORDS2INDEX(zRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
 
     sharedMem[threadIdx.x] = 0;
 
     for (LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
       coords[zRank] = coords[zRank + 1] = i;
       LongType xOffset;
-      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
       sharedMem[threadIdx.x] += x[xOffset];
     }
 
@@ -202,16 +202,16 @@ SD_KERNEL static void triuBPCuda(const void* vx, const LongType* xShapeInfo, voi
   const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
 
     sd::LongType zOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
 
     if ((coords[rank - 2] + diag > coords[rank - 1]))  // row + diag > col
       z[zOffset] = 0;
     else {
       sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
       z[zOffset] = x[areSameOffsets ? zOffset : xOffset];
     }
   }
@@ -278,8 +278,8 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff, nullptr);
 

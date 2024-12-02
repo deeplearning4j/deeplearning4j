@@ -73,10 +73,10 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, zShapeInfo, coords);
+  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   int dstart = coords[2] * sD - pD;
   int hstart = coords[3] * sH - pH;
@@ -100,7 +100,7 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType xOffset;
-            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
             T val = x[xOffset];
             if (val > max) max = val;
           }
@@ -116,7 +116,7 @@ SD_KERNEL static void pooling3dCuda(const void* vx, const LongType* xShapeInfo, 
         for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
           for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
             LongType xOffset;
-            COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+            COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
             sum += x[xOffset];
           }
 

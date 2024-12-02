@@ -768,7 +768,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, 
   sd::LongType N, minI, maxI;
 
   // calculate min per-dim-indices which corresponds to absolute minIdx index
-  INDEX2COORDS(minIdx, rankMin, minShapeInfo, indices);
+  INDEX2COORDS(minIdx, rankMin, shape::shapeOf(minShapeInfo), indices);
 
   // transform storage indices to contain per-dim max indices, purpose - memory saving
   // fill increment array as well
@@ -1132,7 +1132,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void getOffsetBroadcast(const sd::LongType &star
       return;
     }
 
-    INDEX2COORDS(startInd, rank(shapeInfo1), shape1, coords);
+    INDEX2COORDS(startInd, rank(shapeInfo1), shape::shapeOf(shape1), coords);
     COORDS2INDEX(rank(shapeInfo1), strides1, coords, offset1);
 
     if (sameOffsets12)

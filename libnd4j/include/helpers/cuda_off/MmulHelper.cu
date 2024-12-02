@@ -75,7 +75,7 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
 
   for (LongType i = tid; i < cLen; i += totalThreads) {
     // evaluate C coordinates
-    INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords);
+    INDEX2COORDS(i, shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords);
 
     // evaluate A coordinates
     aCoords[aMaxis] = cCoords[cMaxis];
@@ -86,8 +86,8 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
     bCoords[bNaxis] = cCoords[cNaxis];
 
     LongType aOffset, bOffset, cOffset;
-    COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords, aOffset);
-    COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords, bOffset);
+    COORDS2INDEX(shape::rank(aShapeInfo), shape::stride(aShapeInfo), aCoords, aOffset);
+    COORDS2INDEX(shape::rank(bShapeInfo), shape::stride(bShapeInfo), bCoords, bOffset);
 
     T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -97,7 +97,7 @@ static SD_KERNEL void usualCudaGemm(const void* vA, const LongType* aShapeInfo, 
       val = val + A[aOffset] * B[bOffset];
     }
 
-    COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords, cOffset);
+    COORDS2INDEX(shape::rank(cShapeInfo), shape::stride(cShapeInfo), cCoords, cOffset);
 
     if (betaPresent)
       C[cOffset] = alphaZ * val + betaZ * C[cOffset];
@@ -566,19 +566,19 @@ static SD_KERNEL void batchedCudaGemm(const void* vA, const LongType* aShapeInfo
 
   for (LongType i = tid; i < cLen; i += totalThreads) {
     // evaluate C coordinates
-    INDEX2COORDS(i, cRank, cShapeInfo, cCoords);
+    INDEX2COORDS(i, cRank, shape::shapeOf(cShapeInfo), cCoords);
 
     // calculate index of current batch
     LongType batchInd;
-    if (cBatchDims != nullptr) COORDS2INDEX(cRank - 2, shape::shapeOf(cShapeInfo), cCoords, batchInd);
+    if (cBatchDims != nullptr) COORDS2INDEX(cRank - 2, shape::stride(cShapeInfo), cCoords, batchInd);
 
     // evaluate A coordinates
-    if (aBatchDims != nullptr) INDEX2COORDS(batchInd, aRank - 2, aShapeInfo, aCoords);
+    if (aBatchDims != nullptr) INDEX2COORDS(batchInd, aRank - 2, shape::shapeOf(aShapeInfo), aCoords);
     aCoords[aMaxis] = cCoords[cMaxis];
     aCoords[aKaxis] = 0;
 
     // evaluate B coordinates
-    if (bBatchDims != nullptr) INDEX2COORDS(batchInd, bRank - 2, bShapeInfo, bCoords);
+    if (bBatchDims != nullptr) INDEX2COORDS(batchInd, bRank - 2, shape::shapeOf(bShapeInfo), bCoords);
     bCoords[bKaxis] = 0;
     bCoords[bNaxis] = cCoords[cNaxis];
 

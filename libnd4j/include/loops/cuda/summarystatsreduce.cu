@@ -181,8 +181,8 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
       for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
-        INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), xCoords, xOffset);
         auto xOffsetFinal = tadOffsetForBlock + xOffset;
         SummaryStatsData<X> indexVal2;
         indexVal2.initWithValue(dx[xOffsetFinal]);
@@ -208,8 +208,8 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void const* vx, sd::LongType 
     for (sd::LongType i = tid; i < n; i += blockDim.x * gridDim.x) {
       sd::LongType xCoords[SD_MAX_RANK];
       sd::LongType xOffset;
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
       SummaryStatsData<X> indexVal2;
       indexVal2.initWithValue(dx[xOffset]);
       reduction = update(reduction, indexVal2, extraParams);

@@ -54,12 +54,12 @@ SD_KERNEL static void pairwiseSimpleShaped(void const* vx, sd::LongType const* x
     sd::LongType yOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
   }

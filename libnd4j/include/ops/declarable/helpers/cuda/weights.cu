@@ -40,14 +40,14 @@ static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* in
   LongType yOffset;
 
   for (LongType e = tid; e < inputLength; e += blockDim.x) {
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
     if (xOffset >= inputLength) return;
     LongType current = *(reinterpret_cast<LongType*>(inputBuffer) + xOffset);
     if (current == val) {
       if (weightsBuffer != nullptr) {
-        INDEX2COORDS(e, shape::rank(weightsShape), weightsShape, yCoords);
-        COORDS2INDEX(shape::rank(weightsShape), shape::shapeOf(weightsShape), yCoords, yOffset);
+        INDEX2COORDS(e, shape::rank(weightsShape), shape::shapeOf(weightsShape), yCoords);
+        COORDS2INDEX(shape::rank(weightsShape), shape::stride(weightsShape), yCoords, yOffset);
         math::atomics::sd_atomicAdd(
             reinterpret_cast<T*>(outputBuffer),
             reinterpret_cast<T*>(weightsBuffer)[yOffset]);
@@ -71,8 +71,8 @@ static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, LongType const* inp
   for (LongType e = blockIdx.x; e < outputLength; e += threadCount) {
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
     T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
     adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ, inputLength,
                             outputLength, (int)zOffset);

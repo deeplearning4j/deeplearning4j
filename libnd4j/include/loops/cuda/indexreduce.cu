@@ -235,8 +235,8 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         for (sd::LongType i = threadIdxX; i < tadLength; i += blockDimX) {
           sd::LongType xCoords[SD_MAX_RANK];
           sd::LongType xOffset;
-          INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-          COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+          COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), xCoords, xOffset);
           IndexValue<X> comp{dx[tadOffsetForBlock + xOffset], i};
           sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
         }
@@ -259,8 +259,8 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
         for (sd::LongType x = threadIdxX; x < tadLength; x += blockDimX) {
           sd::LongType xCoords[SD_MAX_RANK];
           sd::LongType xOffset;
-          INDEX2COORDS(x, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-          COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(x, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+          COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::stride(tadOnlyShapeInfo), xCoords, xOffset);
           IndexValue<X> comp{dx[tadOffsetForBlock + xOffset], x};
           sPartials[threadIdxX] = OpType::update(sPartials[threadIdxX], comp, extraParams);
         }
@@ -280,8 +280,8 @@ SD_DEVICE void IndexReduce<X, Z>::transform(void const *vdx, sd::LongType const 
     for (sd::LongType i = tid; i < n; i += (gridDimX * blockDimX)) {
       sd::LongType xCoords[SD_MAX_RANK];
       sd::LongType xOffset;
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
       IndexValue<X> comp{dx[xOffset], i};
       reduction = OpType::update(reduction, comp, extraParams);
     }

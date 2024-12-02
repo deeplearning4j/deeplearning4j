@@ -58,10 +58,10 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < imLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, shape::rank(imShapeInfo), imShapeInfo, coords);
+    INDEX2COORDS(i, shape::rank(imShapeInfo), shape::shapeOf(imShapeInfo), coords);
 
     LongType imOffset;
-    COORDS2INDEX(shape::rank(imShapeInfo), shape::shapeOf(imShapeInfo), coords, imOffset);
+    COORDS2INDEX(shape::rank(imShapeInfo), shape::stride(imShapeInfo), coords, imOffset);
 
     const auto bSiCoffset = coords[0] * colShapeInfo[7] + coords[1] * colShapeInfo[8];
 
@@ -85,7 +85,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
         if (coords[3] % dW != 0) continue;
 
         LongType colOffset;
-        COORDS2INDEX(shape::rank(colShapeInfo), shape::shapeOf(colShapeInfo), coords, colOffset);
+        COORDS2INDEX(shape::rank(colShapeInfo), shape::stride(colShapeInfo), coords, colOffset);
 
         val += col[bSiCoffset + colOffset];
       }

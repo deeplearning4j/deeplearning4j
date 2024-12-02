@@ -20,7 +20,7 @@
 
 package org.datavec.api.transform.schema;
 
-import au.com.bytecode.opencsv.CSVParser;
+import com.opencsv.CSVParser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 

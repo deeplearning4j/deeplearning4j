@@ -148,10 +148,10 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
       sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType xOffset;
       sd::LongType yOffset;
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
       sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
     }
   } else {
@@ -162,10 +162,10 @@ SD_DEVICE void Reduce3<X,Z>::execScalarCuda( void const* vx, sd::LongType const*
       sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType xOffset;
       sd::LongType yOffset;
-      INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      INDEX2COORDS(i, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
       sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
     }
   }
@@ -283,8 +283,8 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
     if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
       sd::LongType xCoords[SD_MAX_RANK];
       sd::LongType xOffset;
-      INDEX2COORDS(threadIdx.x, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(threadIdx.x, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
       tempX[threadIdx.x] = x[xOffset];
     }
     __syncthreads();
@@ -307,16 +307,16 @@ SD_DEVICE void Reduce3<X,Z>::transformAll( void const* vx, sd::LongType const* x
           if (threadIdx.x + (t * maxBlock) < xTadLength) {
             sd::LongType xCoords[SD_MAX_RANK];
             sd::LongType xOffset;
-            INDEX2COORDS(threadIdx.x + (t * maxBlock), shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
-            COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xOffset);
+            INDEX2COORDS(threadIdx.x + (t * maxBlock), shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
+            COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
             tempX[threadIdx.x] = x[xOffset];
           }
 
         for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {
           sd::LongType yCoords[SD_MAX_RANK];
           sd::LongType yOffset;
-          INDEX2COORDS(f, shape::rank(yTadShapeInfo), yTadShapeInfo, yCoords);
-          COORDS2INDEX(shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), yCoords, yOffset);
+          INDEX2COORDS(f, shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), yCoords);
+          COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), yCoords, yOffset);
           sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yOffset], extraZ), extraZ);
         }
 
@@ -405,8 +405,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
         sd::LongType yCoords[SD_MAX_RANK];
         sd::LongType xOffset2;
         sd::LongType yOffset2;
-        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), yTadOnlyShapeInfo, yCoords);
+        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords);
         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset2);
         COORDS2INDEX(shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords, yOffset2);
         sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ), extraZ);
@@ -440,8 +440,8 @@ SD_DEVICE void Reduce3<X,Z>::transform(void const* vx, sd::LongType const* xShap
         sd::LongType yCoords[SD_MAX_RANK];
         sd::LongType xOffset2;
         sd::LongType yOffset2;
-        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), tadOnlyShapeInfo, xCoords);
-        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), yTadOnlyShapeInfo, yCoords);
+        INDEX2COORDS(j, shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords);
+        INDEX2COORDS(j, shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords);
         COORDS2INDEX(shape::rank(tadOnlyShapeInfo), shape::shapeOf(tadOnlyShapeInfo), xCoords, xOffset2);
         COORDS2INDEX(shape::rank(yTadOnlyShapeInfo), shape::shapeOf(yTadOnlyShapeInfo), yCoords, yOffset2);
         sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset + xOffset2], y[yOffset + yOffset2], extraZ), extraZ);

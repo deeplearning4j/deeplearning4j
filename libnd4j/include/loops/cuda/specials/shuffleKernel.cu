@@ -62,10 +62,10 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
           sd::LongType xOffset;
           sd::LongType swapOffset;
 
-          INDEX2COORDS(r, xRank, xShapeInfo, xCoords);
-          COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), xCoords, xOffset);
-          INDEX2COORDS(swapIndex, xRank, xShapeInfo, swapCoords);
-          COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), swapCoords, swapOffset);
+          INDEX2COORDS(r, xRank, shape::shapeOf(xShapeInfo), xCoords);
+          COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(swapIndex, xRank, shape::shapeOf(xShapeInfo), swapCoords);
+          COORDS2INDEX(xRank, shape::stride(xShapeInfo), swapCoords, swapOffset);
 
           T oldX = x[xOffset];
           x[xOffset] = x[swapOffset];
@@ -91,10 +91,10 @@ SD_KERNEL void execShuffleKernel(void **vdX, LongType **dxShapeInfo, void **vdZ,
             sd::LongType xOffset;
             sd::LongType yOffset;
 
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), tadOnlyShapeInfo[f], xCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), xCoords, xOffset);
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), tadOnlyShapeInfo[f], yCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), yCoords, yOffset);
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), xCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::stride(tadOnlyShapeInfo[f]), xCoords, xOffset);
+            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfo[f]), shape::shapeOf(tadOnlyShapeInfo[f]), yCoords);
+            COORDS2INDEX(shape::rank(tadOnlyShapeInfo[f]), shape::stride(tadOnlyShapeInfo[f]), yCoords, yOffset);
 
             xOffset += oldOffset;
             yOffset += newOffset;

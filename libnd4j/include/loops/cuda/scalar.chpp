@@ -55,10 +55,10 @@ SD_KERNEL static void scalarSimpleShaped(void const* x, void const* y, sd::LongT
     sd::LongType xOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     z2[zOffset] = OpType::op(x2[xOffset], scalar, params2);
   }
@@ -99,10 +99,10 @@ SD_KERNEL static void scalarAlongDimension(void const* x, sd::LongType const* xS
       sd::LongType xOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(f, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(f, shape::rank(tadShapeInfoZ), tadShapeInfoZ, zCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfoZ), shape::shapeOf(tadShapeInfoZ), zCoords, zOffset);
+      INDEX2COORDS(f, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(f, shape::rank(tadShapeInfoZ), shape::shapeOf(tadShapeInfoZ), zCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfoZ), shape::stride(tadShapeInfoZ), zCoords, zOffset);
 
       oZ[zOffset] = OpType::op(oX[xOffset], s, extraParams2);
     }

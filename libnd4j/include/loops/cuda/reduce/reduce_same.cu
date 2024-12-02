@@ -111,14 +111,14 @@ SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(const void *vx, const sd::
   sd::LongType coords[SD_MAX_RANK];
 
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
-    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), outerXTadShapeInfo, coords);
+    INDEX2COORDS(r, shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords);
     sd::LongType outerOffset;
-    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::shapeOf(outerXTadShapeInfo), coords, outerOffset);
+    COORDS2INDEX(shape::rank(outerXTadShapeInfo), shape::stride(outerXTadShapeInfo), coords, outerOffset);
     sd::LongType zOffset;
     if(sameOffsets) {
       sameOffsets = outerOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
     }
 
     const X *xTad = x + outerOffset;
@@ -126,7 +126,7 @@ SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(const void *vx, const sd::
 
     for (int i = threadIdx.x; i < tadLen; i += blockDim.x) {
       sd::LongType innerOffset;
-      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::shapeOf(innerXTadShapeInfo), coords, innerOffset);
+      COORDS2INDEX(shape::rank(innerXTadShapeInfo), shape::stride(innerXTadShapeInfo), coords, innerOffset);
       sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(xTad[innerOffset], extraParams), extraParams);
     }
     __syncthreads();
@@ -176,8 +176,8 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(void const *vx, sd::LongTyp
   for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
     sd::LongType xCoords[SD_MAX_RANK];
     sd::LongType xOffset;
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
   }
 

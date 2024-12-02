@@ -59,16 +59,16 @@ SD_KERNEL static void batchToSpaceCuda(const void* vx, const LongType* xShapeInf
 
   if (i >= zLen) return;
 
-  INDEX2COORDS(i, rank, zShapeInfo, coords);
+  INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   coords[1] += cropBottom;
   coords[2] += cropLeft;
 
   LongType xOffset;
-  COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
   z[zOffset] = x[xOffset];
 }
@@ -161,10 +161,10 @@ SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const LongType* xShapeI
   LongType* coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, rank, zShapeInfo, coords);
+    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
 
     LongType zOffset;
-    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
     // evaluate spatial coordinates for x
     for (LongType j = 1; j <= numOfSpatialDims; ++j) {
@@ -173,7 +173,7 @@ SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const LongType* xShapeI
     }
 
     LongType xOffset;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
     z[zOffset] = x[xOffset];
   }
@@ -297,10 +297,10 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const LongType* xShapeInf
 
   if (i >= zLen) return;
 
-  INDEX2COORDS(i, rank, zShapeInfo, coords);
+  INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
   if (coords[1] >= padBottom && coords[1] < zShapeInfo[2] - padTop && coords[2] >= padLeft &&
       coords[2] < zShapeInfo[3] - padRight) {
@@ -308,7 +308,7 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const LongType* xShapeInf
     coords[2] -= padLeft;
 
     LongType xOffset;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
     z[zOffset] = x[xOffset];
   } else
@@ -411,10 +411,10 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, rank, zShapeInfo, coords);
+    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
 
     LongType zOffset;
-    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
 
     bool within = true;
 
@@ -433,7 +433,7 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
     }
 
     LongType xOffset;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
 
     if (within)
       z[zOffset] = x[xOffset];

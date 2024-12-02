@@ -35,18 +35,18 @@ static NDArray DefaultColorTable(int depth, LaunchContext* context) {
   const LongType kDefaultTableLength = 10;
   const LongType kDefaultChannelLength = 4;
   std::vector<sd::LongType> shape = {kDefaultTableLength, kDefaultChannelLength};
- std::vector<double> table =   {
-                                1,   1,   0,   1,  // yellow
-                                0,   0,   1,   1,  // 1: blue
-                                1,   0,   0,   1,  // 2: red
-                                0,   1,   0,   1,  // 3: lime
-                                0.5, 0,   0.5, 1,  // 4: purple
-                                0.5, 0.5, 0,   1,  // 5: olive
-                                0.5, 0,   0,   1,  // 6: maroon
-                                0,   0,   0.5, 1,  // 7: navy blue
-                                0,   1,   1,   1,  // 8: aqua
-                                1,   0,   1,   1   // 9: fuchsia
-                            };
+  std::vector<double> table =   {
+      1,   1,   0,   1,  // yellow
+      0,   0,   1,   1,  // 1: blue
+      1,   0,   0,   1,  // 2: red
+      0,   1,   0,   1,  // 3: lime
+      0.5, 0,   0.5, 1,  // 4: purple
+      0.5, 0.5, 0,   1,  // 5: olive
+      0.5, 0,   0,   1,  // 6: maroon
+      0,   0,   0.5, 1,  // 7: navy blue
+      0,   1,   1,   1,  // 8: aqua
+      1,   0,   1,   1   // 9: fuchsia
+  };
   NDArray colorTable('c', shape,
                      table,
                      FLOAT32, context);
@@ -74,10 +74,10 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
       LongType indices3[] = {batch, boxIndex, 3};
 
       LongType rowStartOffset, rowEndOffset, colStartOffset, colEndOffset;
-      COORDS2INDEX(3, boxesShape + 1, indices0, rowStartOffset);
-      COORDS2INDEX(3, boxesShape + 1, indices2, rowEndOffset);
-      COORDS2INDEX(3, boxesShape + 1, indices1, colStartOffset);
-      COORDS2INDEX(3, boxesShape + 1, indices3, colEndOffset);
+      COORDS2INDEX(3, shape::stride(boxesShape), indices0, rowStartOffset);
+      COORDS2INDEX(3, shape::stride(boxesShape), indices2, rowEndOffset);
+      COORDS2INDEX(3,shape::stride(boxesShape), indices1, colStartOffset);
+      COORDS2INDEX(3, shape::stride(boxesShape), indices3, colEndOffset);
 
       auto rowStart = LongType((height - 1) * boxes[rowStartOffset]);
       auto rowStartBound = math::sd_max(LongType(0), rowStart);
@@ -102,8 +102,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, rowStart, j, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
-            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
+            COORDS2INDEX(2,  shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -114,8 +114,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, rowEnd, j, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
-            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
+            COORDS2INDEX(2,  shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -127,8 +127,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, i, colStart, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
-            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
+            COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }
@@ -139,8 +139,8 @@ static SD_KERNEL void drawBoundingBoxesKernel(T const* images, const LongType* i
             LongType zPos[] = {batch, i, colEnd, c};
             LongType cPos[] = {colorIndex, c};
             LongType cIndex, zIndex;
-            COORDS2INDEX(2, colorTableShape + 1, cPos, cIndex);
-            COORDS2INDEX(4, outputShape + 1, zPos, zIndex);
+            COORDS2INDEX(2, shape::stride(colorTableShape), cPos, cIndex);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zIndex);
             output[zIndex] = (T)colorTable[cIndex];
           }
       }

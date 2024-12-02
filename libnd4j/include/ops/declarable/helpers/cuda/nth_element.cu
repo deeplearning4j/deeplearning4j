@@ -55,10 +55,10 @@ static SD_KERNEL void fillUpElementKernel(void* outputBuffer, LongType const* ou
     LongType zCoords[SD_MAX_RANK];
     LongType xCoords[SD_MAX_RANK];
 
-    INDEX2COORDS(t, shape::rank(outputShapeInfo), outputShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(outputShapeInfo), shape::shapeOf(outputShapeInfo), zCoords, zOffset);
-    INDEX2COORDS(n, shape::rank(pTadShape), pTadShape, xCoords);
-    COORDS2INDEX(shape::rank(pTadShape), shape::shapeOf(pTadShape), xCoords, xOffset);
+    INDEX2COORDS(t, shape::rank(outputShapeInfo), shape::shapeOf(outputShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(outputShapeInfo), shape::stride(outputShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(n, shape::rank(pTadShape), shape::shapeOf(pTadShape), xCoords);
+    COORDS2INDEX(shape::rank(pTadShape), shape::stride(pTadShape), xCoords, xOffset);
 
     z[zOffset] = tX[xOffset];
   }

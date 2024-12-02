@@ -84,12 +84,12 @@ SD_DEVICE void ScalarBoolTransform<X, Z>::transformCuda(void const* vscalar, voi
   for (sd::LongType i = tid; i < len; i += totalThreads) {
     sd::LongType yCoords[SD_MAX_RANK];
     sd::LongType yOffset;
-    INDEX2COORDS(i, yRank, yShapeInfo, yCoords);
+    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
     COORDS2INDEX(yRank, yShape, yCoords, yOffset);
 
     sd::LongType zCoords[SD_MAX_RANK];
     sd::LongType zOffset;
-    INDEX2COORDS(i, zRank, zShapeInfo, zCoords);
+    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), zCoords);
     COORDS2INDEX(zRank, zShape, zCoords, zOffset);
 
     z[zOffset] = OpType::op(y[yOffset], scalar, params);
@@ -147,13 +147,13 @@ SD_DEVICE void ScalarBoolTransform<X, Z>::transformCuda(
     for (int f = threadIdx.x; f < tadLength; f += blockDim.x) {
       sd::LongType xCoords[SD_MAX_RANK];
       sd::LongType xOffset;
-      INDEX2COORDS(f, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(f, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
 
       sd::LongType zCoords[SD_MAX_RANK];
       sd::LongType zOffset;
-      INDEX2COORDS(f, shape::rank(tadShapeInfoZ), tadShapeInfoZ, zCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfoZ), shape::shapeOf(tadShapeInfoZ), zCoords, zOffset);
+      INDEX2COORDS(f, shape::rank(tadShapeInfoZ), shape::shapeOf(tadShapeInfoZ), zCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfoZ), shape::stride(tadShapeInfoZ), zCoords, zOffset);
 
       oZ[zOffset] = OpType::op(oX[xOffset], s, extraParams);
     }

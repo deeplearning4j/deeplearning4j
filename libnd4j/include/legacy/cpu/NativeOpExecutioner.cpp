@@ -796,6 +796,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext *lc, int opNum, const voi
   };
 
   auto zLen = shape::length(hZShapeInfo);
+ printf("Start %lld Stop %lld\n", 0, zLen);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       !allowParallelism

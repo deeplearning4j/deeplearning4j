@@ -67,10 +67,10 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     LongType fOffset;
     LongType lOffset;
 
-    INDEX2COORDS(idx, shape::rank(inputTadShape), inputTadShape, fCoords);
-    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), fCoords, fOffset);
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(inputTadShape), inputTadShape, lCoords);
-    COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape),lCoords, lOffset);
+    INDEX2COORDS(idx, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), fCoords);
+    COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape), fCoords, fOffset);
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), lCoords);
+    COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape),lCoords, lOffset);
 
     // now we're storing input values
     auto v1 = tadInput[fOffset];
@@ -81,10 +81,10 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
     LongType zfOffset;
     LongType zlOffset;
 
-    INDEX2COORDS(idx, shape::rank(outputTadShape), outputTadShape, zfCoords);
-    COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zfCoords, zfOffset);
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(outputTadShape), outputTadShape, zlCoords);
-    COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zlCoords, zlOffset);
+    INDEX2COORDS(idx, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zfCoords);
+    COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zfCoords, zfOffset);
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zlCoords);
+    COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zlCoords, zlOffset);
 
     // and saving values to output arrays
     tadOutput[zfOffset] = v2;
@@ -102,10 +102,10 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
       LongType xOffset;
       LongType zOffset;
 
-      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(inputTadShape), inputTadShape, xCoords);
-      COORDS2INDEX(shape::rank(inputTadShape), shape::shapeOf(inputTadShape), xCoords, xOffset);
-      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(outputTadShape), outputTadShape, zCoords);
-      COORDS2INDEX(shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zCoords, zOffset);
+      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), xCoords);
+      COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape), xCoords, xOffset);
+      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zCoords);
+      COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zCoords, zOffset);
 
       tadOutput[zOffset] = tadInput[xOffset];
     }
@@ -138,10 +138,10 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
     LongType fOffset;
     LongType lOffset;
 
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, fCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), fCoords, fOffset);
-    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(inputShape), inputShape, lCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), lCoords, lOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), fCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), fCoords, fOffset);
+    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(inputShape), shape::shapeOf(inputShape), lCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), lCoords, lOffset);
 
     auto v1 = inputArr[fOffset];
     auto v2 = inputArr[lOffset];
@@ -151,10 +151,10 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
     LongType zfOffset;
     LongType zlOffset;
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zfCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zfCoords, zfOffset);
-    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(outputShape), outputShape, zlCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zlCoords, zlOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(shape::shapeOf(zShapeInfo)outputShape), zfCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zfCoords, zfOffset);
+    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(outputShape), shape::shapeOf(outputShape), zlCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zlCoords, zlOffset);
 
     outputArr[zfOffset] = v2;
     outputArr[zlOffset] = v1;
@@ -166,10 +166,10 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
     LongType xOffset;
     LongType zOffset;
 
-    INDEX2COORDS(limit, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
-    INDEX2COORDS(limit, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
+    INDEX2COORDS(limit, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+    INDEX2COORDS(limit, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
 
     outputArr[zOffset] = inputArr[xOffset];
   }

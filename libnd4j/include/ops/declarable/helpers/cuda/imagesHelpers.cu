@@ -183,7 +183,7 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, rank, zShapeInfo, coords);
+    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
 
     LongType zOffset;
     COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);

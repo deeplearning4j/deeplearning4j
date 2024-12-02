@@ -49,15 +49,15 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const LongType *
   for (LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
     int sourceIndex = fullLength - actualShift + i;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffsetB);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetA);
+    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetB);
 
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffsetB);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetA);
+    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetB);
 
     auto eA = x[xOffsetA];
     auto eB = x[xOffsetB];
@@ -94,15 +94,15 @@ static void SD_KERNEL rollKernelLinearStage2(const void *vx, const LongType *xSh
       int destinationIndex = fullLength - (count + 1) * actualShift + i;
       int sourceIndex = fullLength - count * actualShift + i;
 
-      INDEX2COORDS(destinationIndex, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffsetA);
-      INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffsetB);
+      INDEX2COORDS(destinationIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetA);
+      INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetB);
 
-      INDEX2COORDS(destinationIndex, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffsetA);
-      INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffsetB);
+      INDEX2COORDS(destinationIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetA);
+      INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetB);
 
       auto eA = x[xOffsetB];
       auto eB = x[xOffsetA];
@@ -137,15 +137,15 @@ static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xSh
     LongType zOffsetA;
     LongType zOffsetB;
 
-    INDEX2COORDS(remainIdx, shape::rank(xShapeInfo), xShapeInfo, xCoordsA);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsA, xOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), xShapeInfo, xCoordsB);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsB, xOffsetB);
+    INDEX2COORDS(remainIdx, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsA);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoordsA, xOffsetA);
+    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsB);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoordsB, xOffsetB);
 
-    INDEX2COORDS(remainIdx, shape::rank(zShapeInfo), zShapeInfo, zCoordsA);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsA, zOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), zShapeInfo, zCoordsB);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsB, zOffsetB);
+    INDEX2COORDS(remainIdx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsA);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoordsA, zOffsetA);
+    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsB);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoordsB, zOffsetB);
 
     auto eA = x[xOffsetA];
     auto eB = x[xOffsetB];
@@ -166,8 +166,8 @@ static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const LongType *zShapeI
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
 
-    INDEX2COORDS(e, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
     auto eA = x[zOffset];
     auto eB = z[zOffset];

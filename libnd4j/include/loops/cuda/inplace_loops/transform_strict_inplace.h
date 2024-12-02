@@ -72,10 +72,10 @@ SD_INLINE SD_DEVICE void TransformStrictInplace<X>::transformCuda(void *vdy, sd:
     sd::LongType xOffset2;
     sd::LongType zOffset2;
 
-    INDEX2COORDS(i, shape::rank(shapeInfo), shapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(shapeInfo), shape::shapeOf(shapeInfo), xCoords, xOffset2);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset2);
+    INDEX2COORDS(i, shape::rank(shapeInfo), shape::shapeOf(shapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), xCoords, xOffset2);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset2);
 
     result[zOffset2] = OpType::op(dy[xOffset2], params);
   }

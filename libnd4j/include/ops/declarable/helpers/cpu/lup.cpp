@@ -301,10 +301,10 @@ static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutatio
       sd::LongType firstIndex;
       sd::LongType secondIndex;
 
-      INDEX2COORDS(i, shape::rank(permutationShape), permutationShape, firstIndexCoords);
-      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), firstIndexCoords, firstIndex);
-      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), permutationShape, secondIndexCoords);
-      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), secondIndexCoords, secondIndex);
+      INDEX2COORDS(i, shape::rank(permutationShape), shape::shapeOf(permutationShape), firstIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), firstIndexCoords, firstIndex);
+      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), shape::shapeOf(permutationShape), secondIndexCoords);
+      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), secondIndexCoords, secondIndex);
 
       math::sd_swap(permutationBuf[firstIndex], permutationBuf[secondIndex]);
       swapRows(compoundBuf, compoundShape, i, pivotIndex);

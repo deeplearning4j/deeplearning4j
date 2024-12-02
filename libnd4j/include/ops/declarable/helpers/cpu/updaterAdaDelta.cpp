@@ -83,7 +83,7 @@ static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType i = start; i < gradient.lengthOf(); i++) {
-      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+      INDEX2COORDS(i, gradient.rankOf(), shape::shapeOf(gradient.shapeInfo()), coords);
 
       sd::LongType xOffset;
       COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);

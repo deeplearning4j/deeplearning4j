@@ -65,8 +65,8 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
       if (e < iLength) {
         LongType iOffset;
         LongType iCoords[SD_MAX_RANK];
-        INDEX2COORDS(e, shape::rank(iShapeInfo), iShapeInfo, iCoords);
-        COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+        INDEX2COORDS(e, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
+        COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
         rawIndices[threadIdx.x] = i[iOffset];
       }
       __syncthreads();
@@ -88,8 +88,8 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
         if (trueIndices[threadIdx.x] >= 0) {
           LongType xOffset;
           LongType xCoords[SD_MAX_RANK];
-          INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
           z[trueIndices[threadIdx.x]] = x[xOffset];
         }
       }
@@ -117,8 +117,8 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *
     for (LongType e = 0; e < iLength; e++) {
       LongType iCoords[SD_MAX_RANK];
       LongType iOffset;
-      INDEX2COORDS(e, shape::rank(iShapeInfo), iShapeInfo, iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+      INDEX2COORDS(e, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
 
       if (indices[iOffset] == i) {
         auto dx = x + xTadOffsets[e];
@@ -128,10 +128,10 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *
           LongType fCoords[SD_MAX_RANK];
           LongType xOffset;
           LongType zOffset;
-          INDEX2COORDS(f, shape::rank(xTadShapeInfo), xTadShapeInfo, fCoords);
-          COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), fCoords, xOffset);
-          INDEX2COORDS(f, shape::rank(zTadShapeInfos[i]), zTadShapeInfos[i], fCoords);
-          COORDS2INDEX(shape::rank(zTadShapeInfos[i]), shape::shapeOf(zTadShapeInfos[i]), fCoords, zOffset);
+          INDEX2COORDS(f, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), fCoords);
+          COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), fCoords, xOffset);
+          INDEX2COORDS(f, shape::rank(zTadShapeInfos[i]), shape::shapeOf(zTadShapeInfos[i]), fCoords);
+          COORDS2INDEX(shape::rank(zTadShapeInfos[i]), shape::stride(zTadShapeInfos[i]), fCoords, zOffset);
 
           dz[zOffset] = dx[xOffset];
         }
@@ -242,16 +242,16 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfo
       LongType xOffset;
       LongType zOffset;
 
-      INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+      INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
 
       auto idx = indices[iOffset];
       if (idx >= 0 && idx < zLength) {
-        INDEX2COORDS(idx, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+        INDEX2COORDS(idx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
 
         z[zOffset] = x[xOffset];
       }
@@ -287,8 +287,8 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfo
     for (int i = 0; i < iLength; i++) {
       LongType iCoords[SD_MAX_RANK];
       LongType iOffset;
-      INDEX2COORDS(i, shape::rank(iShapeInfo), iShapeInfo, iCoords);
-      COORDS2INDEX(shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords, iOffset);
+      INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
+      COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
 
       auto idx = indices[iOffset];
 
@@ -301,10 +301,10 @@ static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfo
         LongType xIdx;
         LongType zIdx;
 
-        INDEX2COORDS(j, shape::rank(xTadShapeInfo), xTadShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords, xIdx);
-        INDEX2COORDS(j, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zIdx);
+        INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xIdx);
+        INDEX2COORDS(j, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
+        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zIdx);
 
         if (xIdx < xTadLength && xIdx >= 0 && zIdx < zLength && zIdx >= 0) zTad[zIdx] = x[xIdx];
       }

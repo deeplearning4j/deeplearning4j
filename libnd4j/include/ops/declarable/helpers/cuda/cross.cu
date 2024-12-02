@@ -58,13 +58,13 @@ SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, cons
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
-    INDEX2COORDS(i, rank - 1, xShapeInfo + 1, coords);
+    INDEX2COORDS(i, rank - 1, shape::shapeOf(xShapeInfo), coords);
 
     coords[rank - 1] = 0;
 
     LongType xOffset, yOffset, zOffset;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset);
-    COORDS2INDEX(rank, shape::shapeOf(yShapeInfo), coords, yOffset);
+    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, shape::stride(yShapeInfo), coords, yOffset);
 
     const auto x0 = x[xOffset];
     const auto y0 = y[yOffset];
@@ -81,7 +81,7 @@ SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, cons
     const auto x2 = x[xOffset];
     const auto y2 = y[yOffset];
 
-    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
     z[zOffset] = x1 * y2 - x2 * y1;
 
     zOffset += shape::stride(zShapeInfo)[rank - 1];

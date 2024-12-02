@@ -69,7 +69,7 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
 
     for (auto i = start; i < stop; i++) {
       // evaluate C coordinates
-      INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords.data());
+      INDEX2COORDS(i, shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data());
 
       // evaluate A coordinates
       aCoords[aMaxis] = cCoords[cMaxis];
@@ -80,8 +80,8 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
       bCoords[bNaxis] = cCoords[cNaxis];
 
       sd::LongType aOffset, bOffset, cOffset;
-      COORDS2INDEX(shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords.data(), aOffset);
-      COORDS2INDEX(shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords.data(), bOffset);
+      COORDS2INDEX(shape::rank(aShapeInfo), shape::stride(aShapeInfo), aCoords.data(), aOffset);
+      COORDS2INDEX(shape::rank(bShapeInfo), shape::stride(bShapeInfo), bCoords.data(), bOffset);
 
       T3 val = A[aOffset] * B[bOffset];  // first iteration
 
@@ -91,7 +91,7 @@ static void usualGemm(NDArray* vA, NDArray* vB, NDArray* vC, const int aMaxis, c
         val += A[aOffset] * B[bOffset];
       }
 
-      COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data(), cOffset);
+      COORDS2INDEX(shape::rank(cShapeInfo), shape::stride(cShapeInfo), cCoords.data(), cOffset);
       if (betaPresent) {
         C[cOffset] = alphaZ * val + betaZ * C[cOffset];
       } else {
@@ -474,19 +474,19 @@ static void batchedGemm(NDArray* vA, NDArray* vB, NDArray* vC, LongType* aBatchD
 
     for (sd::LongType i = start; i < stop; ++i) {
       // evaluate C coordinates
-      INDEX2COORDS(i, shape::rank(cShapeInfo), cShapeInfo, cCoords.data());
+      INDEX2COORDS(i, shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data());
 
       // calculate index of current batch
       sd::LongType batchInd;
-      if (cRank > 2) COORDS2INDEX(shape::rank(cShapeInfo), shape::shapeOf(cShapeInfo), cCoords.data(), batchInd);
+      if (cRank > 2) COORDS2INDEX(shape::rank(cShapeInfo), shape::stride(cShapeInfo), cCoords.data(), batchInd);
 
       // evaluate A coordinates
-      if (aRank > 2) INDEX2COORDS(batchInd, shape::rank(aShapeInfo), aShapeInfo, aCoords.data());
+      if (aRank > 2) INDEX2COORDS(batchInd, shape::rank(aShapeInfo), shape::shapeOf(aShapeInfo), aCoords.data());
       aCoords[aMaxis] = cCoords[cMaxis];
       aCoords[aKaxis] = 0;
 
       // evaluate B coordinates
-      if (bRank > 2) INDEX2COORDS(batchInd, shape::rank(bShapeInfo), bShapeInfo, bCoords.data());
+      if (bRank > 2) INDEX2COORDS(batchInd, shape::rank(bShapeInfo), shape::shapeOf(bShapeInfo), bCoords.data());
       bCoords[bKaxis] = 0;
       bCoords[bNaxis] = cCoords[cNaxis];
 

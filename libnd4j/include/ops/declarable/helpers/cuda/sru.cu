@@ -155,12 +155,12 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
 
   if (tid >= len) return;
 
-  INDEX2COORDS(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
+  INDEX2COORDS(tid, rank - 1, shape::shapeOf(xShapeInfo), coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
 
   LongType maskOffst, c0Offset, bFOffset, bROffset;
-  COORDS2INDEX(rank - 1, maskShapeInfo + 1, coords + 1, maskOffst);
-  COORDS2INDEX(rank - 1, c0ShapeInfo + 1, coords + 1, c0Offset);
-  COORDS2INDEX(rank - 1, bShapeInfo + 2, coords + 2, bFOffset);
+  COORDS2INDEX(rank - 1, shape::stride(maskShapeInfo), coords + 1, maskOffst);
+  COORDS2INDEX(rank - 1, shape::stride(c0ShapeInfo), coords + 1, c0Offset);
+  COORDS2INDEX(rank - 1, shape::stride(bShapeInfo), coords + 2, bFOffset);
   bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
 
   const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
@@ -176,13 +176,13 @@ SD_KERNEL static void sruBICuda(const void* vx, const LongType* xShapeInfo, cons
     coords[0] = 0;
 
   LongType xOffset, htOffset, ctOffset;
-  COORDS2INDEX(rank, xShapeInfo, coords, xOffset);
-  COORDS2INDEX(rank, htShapeInfo, coords, htOffset);
-  COORDS2INDEX(rank, ctShapeInfo, coords, ctOffset);
+  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, shape::stride(htShapeInfo), coords, htOffset);
+  COORDS2INDEX(rank, shape::stride(ctShapeInfo), coords, ctOffset);
 
   coords[2] *= 3;
   LongType wiOffset0, wiOffset1, wiOffset2;
-  COORDS2INDEX(rank, wiShapeInfo, coords, wiOffset0);
+  COORDS2INDEX(rank, shape::stride(wiShapeInfo), coords, wiOffset0);
   wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
   wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 
@@ -320,14 +320,14 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
 
   if (tid >= len) return;
 
-  INDEX2COORDS(tid, rank - 1, xShapeInfo + 2, coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
+  INDEX2COORDS(tid, rank - 1, shape::shapeOf(xShapeInfo), coords + 1);  // loop through last two dimensions of x : {bS, 2*K}
 
   LongType maskOffst, c0Offset, gradCtOffset, gradC0Offset, bFOffset, bROffset, gradBFOffset, gradBROffset;
-  if (mask) COORDS2INDEX(rank - 1, maskShapeInfo + 1, coords + 1, maskOffst);
-  COORDS2INDEX(rank - 1, c0ShapeInfo + 1, coords + 1, c0Offset);
-  COORDS2INDEX(rank - 1, gradCtShapeInfo + 1, coords + 1, gradCtOffset);
-  COORDS2INDEX(rank - 1, gradC0ShapeInfo + 1, coords + 1, gradC0Offset);
-  COORDS2INDEX(rank - 1, bShapeInfo + 2, coords + 2, bFOffset);
+  if (mask) COORDS2INDEX(rank - 1, shape::stride(maskShapeInfo), coords + 1, maskOffst);
+  COORDS2INDEX(rank - 1, shape::stride(c0ShapeInfo), coords + 1, c0Offset);
+  COORDS2INDEX(rank - 1, shape::stride(gradCtShapeInfo), coords + 1, gradCtOffset);
+  COORDS2INDEX(rank - 1, shape::stride(gradC0ShapeInfo), coords + 1, gradC0Offset);
+  COORDS2INDEX(rank - 1, shape::stride(bShapeInfo), coords + 2, bFOffset);
   bROffset = bFOffset + 2 * K * bShapeInfo[2];  // 2*K*b_stride
   gradBFOffset = coords[1] * gradBShapeInfo[3] / 2 + coords[2] * gradBShapeInfo[4];
   gradBROffset = gradBFOffset + gradBShapeInfo[3];
@@ -340,17 +340,17 @@ SD_KERNEL static void sruBIBPCuda(const void* vx, const LongType* xShapeInfo, co
     coords[0] = time - 1;
 
   LongType xOffset, ctOffset, gradIOffset, gradHtOffset;
-  COORDS2INDEX(rank, xShapeInfo, coords, xOffset);
-  COORDS2INDEX(rank, ctShapeInfo, coords, ctOffset);
-  COORDS2INDEX(rank, gradIShapeInfo, coords, gradIOffset);
-  COORDS2INDEX(rank, gradHtShapeInfo, coords, gradHtOffset);
+  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, shape::stride(ctShapeInfo), coords, ctOffset);
+  COORDS2INDEX(rank, shape::stride(gradIShapeInfo), coords, gradIOffset);
+  COORDS2INDEX(rank, shape::stride(gradHtShapeInfo), coords, gradHtOffset);
 
   coords[2] *= 3;
   LongType gradWiOffset0, gradWiOffset1, gradWiOffset2, wiOffset0, wiOffset1, wiOffset2;
-  COORDS2INDEX(rank, gradWiShapeInfo, coords, gradWiOffset0);
+  COORDS2INDEX(rank, shape::stride(gradWiShapeInfo), coords, gradWiOffset0);
   gradWiOffset1 = gradWiOffset0 + gradWiShapeInfo[rank + 3];  // add last stride
   gradWiOffset2 = gradWiOffset1 + gradWiShapeInfo[rank + 3];  // add last stride
-  COORDS2INDEX(rank, wiShapeInfo, coords, wiOffset0);
+  COORDS2INDEX(rank, shape::stride(wiShapeInfo), coords, wiOffset0);
   wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];  // add last stride
   wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];  // add last stride
 

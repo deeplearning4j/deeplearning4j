@@ -56,8 +56,8 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
 
       auto val = x[xOffset];
       if (mVal < val) {
@@ -69,8 +69,8 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
     LongType outputCoords[SD_MAX_RANK];
     LongType outputOffset;
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
 
     output[outputOffset] = mIdx;
   }
@@ -128,8 +128,8 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
 
       auto val = x[xOffset];
       if (mVal < val) {
@@ -140,8 +140,8 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
     LongType outputCoords[SD_MAX_RANK];
     LongType outputOffset;
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
 
     output[outputOffset] = mVal;
   }
@@ -197,8 +197,8 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
     LongType xOffset, zOffset, gradOffset;
 
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), gradientShape, coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::shapeOf(gradientShape), coords, gradOffset);
+      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
+      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
     } else {
       gradOffset = e;
     }
@@ -208,7 +208,7 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
 
       if (!bSameOrderAndEws1) {
         auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
-        COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), coords, xOffset);
+        COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), coords, xOffset);
       } else {
         xOffset = e;
       }
@@ -223,7 +223,7 @@ static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, con
     // outputs have to be pre-nullify
     if (!bSameOrderAndEws1) {
       auto outShape = reinterpret_cast<LongType*>(outShapes[nMaxIndex]);
-      COORDS2INDEX(shape::rank(outShape), shape::shapeOf(outShape), coords, zOffset);
+      COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
     } else {
       zOffset = e;
     }
@@ -312,8 +312,8 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
 
       sum += x[xOffset];
     }
@@ -321,8 +321,8 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
     LongType outputCoords[SD_MAX_RANK];
     LongType outputOffset;
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
 
     output[outputOffset] = sum / numArrays;
   }
@@ -374,8 +374,8 @@ static SD_KERNEL void mergeAvgBpCudaLauncher(const void* vgradient, const LongTy
   for (LongType e = tid; e < length; e += step) {
     LongType gradOffset;
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), gradientShape, coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::shapeOf(gradientShape), coords, gradOffset);
+      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
+      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
     } else {
       gradOffset = e;
     }
@@ -384,7 +384,7 @@ static SD_KERNEL void mergeAvgBpCudaLauncher(const void* vgradient, const LongTy
       LongType zOffset;
       if (!bSameOrderAndEws1) {
         auto outShape = reinterpret_cast<LongType*>(outShapes[i]);
-        COORDS2INDEX(shape::rank(outShape), shape::shapeOf(outShape), coords, zOffset);
+        COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
       } else {
         zOffset = e;
       }
@@ -464,8 +464,8 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
       LongType xOffset;
       sd::LongType xCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(e, shape::rank(xShape), xShape, xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::shapeOf(xShape), xCoords, xOffset);
+      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
+      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
 
       sum += x[xOffset];
     }
@@ -473,8 +473,8 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
     LongType outputOffset;
     sd::LongType outputCoords[SD_MAX_RANK];
 
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
 
     output[outputOffset] = sum;
   }
@@ -531,8 +531,8 @@ static SD_KERNEL void mergeAddBpCudaLauncher(const void* vgradient, const LongTy
   for (LongType e = tid; e < length; e += step) {
     LongType gradOffset;
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), gradientShape, coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::shapeOf(gradientShape), coords, gradOffset);
+      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
+      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
     } else {
       gradOffset = e;
     }
@@ -541,7 +541,7 @@ static SD_KERNEL void mergeAddBpCudaLauncher(const void* vgradient, const LongTy
       LongType zOffset;
       if (!bSameOrderAndEws1) {
         auto outShape = reinterpret_cast<LongType*>(outShapes[i]);
-        COORDS2INDEX(shape::rank(outShape), shape::shapeOf(outShape), coords, zOffset);
+        COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
       } else {
         zOffset = e;
       }

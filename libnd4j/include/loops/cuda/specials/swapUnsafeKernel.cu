@@ -57,10 +57,10 @@ static SD_KERNEL void swapUnsafeKernel(void* theFirstBuffer, LongType const* the
     sd::LongType xOffset;
     sd::LongType yOffset;
 
-    INDEX2COORDS(i, shape::rank(theFirstShape), theFirstShape, xCoords);
-    COORDS2INDEX(shape::rank(theFirstShape), shape::shapeOf(theFirstShape), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(theSecondShape), theSecondShape, yCoords);
-    COORDS2INDEX(shape::rank(theSecondShape), shape::shapeOf(theSecondShape), yCoords, yOffset);
+    INDEX2COORDS(i, shape::rank(theFirstShape), shape::shapeOf(theFirstShape), xCoords);
+    COORDS2INDEX(shape::rank(theFirstShape), shape::stride(theFirstShape), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(theSecondShape), shape::shapeOf(theSecondShape), yCoords);
+    COORDS2INDEX(shape::rank(theSecondShape), shape::stride(theSecondShape), yCoords, yOffset);
 
     if (sameOrders && xOffset >= 0 && yOffset >= 0) {
       math::sd_swap(output[xOffset], input[yOffset]);

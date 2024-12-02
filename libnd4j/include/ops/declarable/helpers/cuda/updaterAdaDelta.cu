@@ -76,36 +76,36 @@ SD_KERNEL void adaDeltaUpdaterCuda(const void* vx, const LongType* xShapeInfo, c
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMsgOffset, initMsdxOffset, stMsgOffset, stMsdxOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
     }
 
     if (bXInMsgSame) {
       initMsgOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inMsgShapeInfo), shape::shapeOf(inMsgShapeInfo), coords, initMsgOffset);
+      COORDS2INDEX(shape::rank(inMsgShapeInfo), shape::stride(inMsgShapeInfo), coords, initMsgOffset);
     }
 
     if (bXStMsgSame) {
       stMsgOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stMsgShapeInfo), shape::shapeOf(stMsgShapeInfo), coords, stMsgOffset);
+      COORDS2INDEX(shape::rank(stMsgShapeInfo), shape::stride(stMsgShapeInfo), coords, stMsgOffset);
     }
 
     if (bXInMsdxSame) {
       initMsdxOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inMsdxShapeInfo), shape::shapeOf(inMsdxShapeInfo), coords, initMsdxOffset);
+      COORDS2INDEX(shape::rank(inMsdxShapeInfo), shape::stride(inMsdxShapeInfo), coords, initMsdxOffset);
     }
 
     if (bXStMsdxSame) {
       stMsdxOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stMsdxShapeInfo), shape::shapeOf(stMsdxShapeInfo), coords, stMsdxOffset);
+      COORDS2INDEX(shape::rank(stMsdxShapeInfo), shape::stride(stMsdxShapeInfo), coords, stMsdxOffset);
     }
     stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;
 

@@ -53,10 +53,10 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
 
     // if probability is ok - we're saving scaled value
     if (double(val) < probVal) {
-      INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
-      INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
+      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
+      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
       output[outputOffset] = T(input[inputOffset] / probVal);
     }
   }
@@ -168,10 +168,10 @@ static SD_KERNEL void dropoutBPKernel(void* outputBuf, LongType const* outputSha
   LongType gradOutOffset;
 
   for (int e = tid; e < len; e += step) {
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(gradOutShape), gradOutShape, gradOutCoords);
-    COORDS2INDEX(shape::rank(gradOutShape), shape::shapeOf(gradOutShape), gradOutCoords, gradOutOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(gradOutShape), shape::shapeOf(gradOutShape), gradOutCoords);
+    COORDS2INDEX(shape::rank(gradOutShape), shape::stride(gradOutShape), gradOutCoords, gradOutOffset);
 
     // if probability was non-zero on FF step, we'll scale grads back
     if (output[zOffset] != T(0.)) output[zOffset] = T(input[gradOutOffset] / probValue);
@@ -217,10 +217,10 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
 
   for (auto e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, inputCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords, inputOffset);
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
     output[outputOffset] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)input[inputOffset] + alpha1));
   }
 }

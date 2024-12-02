@@ -68,11 +68,11 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const LongType* xShapeInfo,
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < xLen; i += totalThreads) {
-    INDEX2COORDS(i, xRank, xShapeInfo, coords);
+    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
 
     LongType xOffset, zOffset;
-    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
-    COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(xRank, shape::stride(zShapeInfo), coords, zOffset);
 
     if (minRank == xRank) {
       for (LongType i = 0, j = 0; i < xRank; ++i) {
@@ -85,14 +85,14 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const LongType* xShapeInfo,
       coords[0] = coords[dims[0]];
 
     LongType meanOffset, varianceOffset;
-    COORDS2INDEX(minRank, shape::shapeOf(meanShapeInfo), coords, meanOffset);
-    COORDS2INDEX(minRank, shape::shapeOf(varianceShapeInfo), coords, varianceOffset);
+    COORDS2INDEX(minRank, shape::stride(meanShapeInfo), coords, meanOffset);
+    COORDS2INDEX(minRank, shape::stride(varianceShapeInfo), coords, varianceOffset);
 
     T sigmaInvGam = 1. / math::sd_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
     if (gamma != nullptr) {
       LongType gammaOffset;
-      COORDS2INDEX(minRank, shape::shapeOf(gammaShapeInfo), coords, gammaOffset);
+      COORDS2INDEX(minRank, shape::stride(gammaShapeInfo), coords, gammaOffset);
       sigmaInvGam *= gamma[gammaOffset];
     }
 
@@ -100,7 +100,7 @@ SD_KERNEL static void batchnormCuda2(const void* vx, const LongType* xShapeInfo,
 
     if (beta != nullptr) {
       LongType betaOffset;
-      COORDS2INDEX(minRank, shape::shapeOf(betaShapeInfo), coords, betaOffset);
+      COORDS2INDEX(minRank, shape::stride(betaShapeInfo), coords, betaOffset);
       z[zOffset] += beta[betaOffset];
     }
   }

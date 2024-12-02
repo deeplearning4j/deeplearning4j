@@ -140,16 +140,6 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
   static void SD_HOST exec(const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *result,
                            const sd::LongType *resultShapeInfo);
 
-  /**
-   * Reduce down to 1 number
-   * @param x the input
-   * @param xShapeInfo the shape information
-   * for the input
-   * @param extraParams the extra params
-   * @return
-   */
-  template <typename OpType>
-  static Z SD_HOST execScalar(const void *x, sd::LongType xElementWiseStride, sd::LongType length, void *extraParams);
 #endif
 };
 

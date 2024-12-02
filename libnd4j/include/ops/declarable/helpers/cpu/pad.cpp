@@ -166,7 +166,7 @@ void pad_(const int mode, NDArray& input, NDArray& paddings, NDArray& output, ND
       sd::LongType zCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK];
 
       for (auto i = start; i < stop; i++) {
-        INDEX2COORDS(i, rank, output.shapeInfo(), zCoords);
+        INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), zCoords);
         sd::LongType zOffset;
         COORDS2INDEX(rank, shape::stride(output.shapeInfo()), zCoords, zOffset);
 
@@ -229,7 +229,7 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
       sd::LongType inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
 
       for (sd::LongType i = start; i < stop; i++) {
-        INDEX2COORDS(i, rank, output.shapeInfo(), outIdx);
+        INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), outIdx);
 
         for (int j = 0; j < rank; ++j) {
           const sd::LongType inLen = input.sizeAt(j);

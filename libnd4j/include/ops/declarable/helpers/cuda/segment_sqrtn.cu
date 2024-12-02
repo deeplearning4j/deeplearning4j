@@ -59,14 +59,14 @@ static SD_KERNEL void unsortedSegmentSqrtNLinearKernel(T* input, LongType const*
   LongType xIndex;
 
   for (auto idx = start; idx < xLen; idx += step) {
-    INDEX2COORDS(idx, shape::rank(indicesShape), indicesShape, yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
+    INDEX2COORDS(idx, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yIndex);
     auto segment = indices[yIndex];
-    INDEX2COORDS(segment, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zIndex);
+    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
     if (lengths[segment] == 0) continue;
-    INDEX2COORDS(idx, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xIndex);
+    INDEX2COORDS(idx, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xIndex);
     if (xIndex >= xLen) continue;
     math::atomics::sd_atomicAdd(&output[zIndex], input[xIndex] / math::sd_sqrt<LongType, T>(lengths[segment]));
   }
@@ -103,10 +103,10 @@ static SD_KERNEL void segmentSqrtNTadKernel(T* inputBuf, LongType const* inputSh
     auto finish = start + lengths[segment];
 
     for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(inputTads), inputTads, inputCoords);
-      COORDS2INDEX(shape::rank(inputTads), shape::shapeOf(inputTads), inputCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(outputTads), outputTads, outputCoords);
-      COORDS2INDEX(shape::rank(outputTads), shape::shapeOf(outputTads), outputCoords, zIndex);
+      INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), inputCoords);
+      COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), inputCoords, xIndex);
+      INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), outputCoords);
+      COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), outputCoords, zIndex);
       math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex] / math::sd_sqrt<LongType, T>(lengths[segment]));
     }
   }
@@ -197,15 +197,15 @@ static SD_KERNEL void segmentSqrtNBPLinearKernel(void* inputBuf, LongType const*
   LongType gradOffsetO;
 
   for (auto e = start; e < xLen; e += step) {
-    INDEX2COORDS(e, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(indicesShape), indicesShape, yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
+    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
     auto classIndex = y[yOffset];
-    INDEX2COORDS(classIndex, shape::rank(epsShape), epsShape, zCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::shapeOf(epsShape), zCoords, gradOffsetO);
+    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), zCoords);
+    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), zCoords, gradOffsetO);
 
     z[zOffset] = T(gradOut[gradOffsetO] / math::sd_sqrt<LongType, float>(lengths[classIndex]));
   }
@@ -248,10 +248,10 @@ static SD_KERNEL void segmentSqrtNBPTadKernel(void* inputBuf, LongType const* in
       LongType zIndex;
       LongType gradIndex;
 
-      INDEX2COORDS(e, shape::rank(outTad), outTad, zCoords);
-      COORDS2INDEX(shape::rank(outTad), shape::shapeOf(outTad), zCoords, zIndex);
-      INDEX2COORDS(e, shape::rank(gradOutTad), gradOutTad, gradCoords);
-      COORDS2INDEX(shape::rank(gradOutTad), shape::shapeOf(gradOutTad), gradCoords, gradIndex);
+      INDEX2COORDS(e, shape::rank(outTad), shape::shapeOf(outTad), zCoords);
+      COORDS2INDEX(shape::rank(outTad), shape::stride(outTad), zCoords, zIndex);
+      INDEX2COORDS(e, shape::rank(gradOutTad), shape::shapeOf(gradOutTad), gradCoords);
+      COORDS2INDEX(shape::rank(gradOutTad), shape::stride(gradOutTad), gradCoords, gradIndex);
 
       if (lengths[segment] > 0)
         currentOut[zIndex] = T(outGrad[gradIndex] / math::sd_sqrt<LongType, float>(lengths[segment]));

@@ -160,12 +160,12 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
       sd::LongType yOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(i, shape::rank(xShapeBuffer), xShapeBuffer, xCoords);
-      COORDS2INDEX(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(yShapeBuffer), yShapeBuffer, yCoords);
-      COORDS2INDEX(shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer), yCoords, yOffset);
-      INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
-      COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+      INDEX2COORDS(i, shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords);
+      COORDS2INDEX(shape::rank(xShapeBuffer), shape::stride(xShapeBuffer), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(yShapeBuffer), shape::shapeOf(yShapeBuffer), yCoords);
+      COORDS2INDEX(shape::rank(yShapeBuffer), shape::stride(yShapeBuffer), yCoords, yOffset);
+      INDEX2COORDS(i, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords);
+      COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), zCoords, zOffset);
 
       z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, buffer, extraArguments);
     }
@@ -213,10 +213,10 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void cons
     sd::LongType xOffset;
     sd::LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeBuffer), xShapeBuffer, xCoords);
-    COORDS2INDEX(shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
-    COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(xShapeBuffer), shape::shapeOf(xShapeBuffer), xCoords);
+    COORDS2INDEX(shape::rank(xShapeBuffer), shape::stride(xShapeBuffer), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords);
+    COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), zCoords, zOffset);
 
     z[zOffset] = OpClass::op(x[xOffset], i, length, buffer, extraArguments);
   }
@@ -255,8 +255,8 @@ void SD_DEVICE RandomFunction<T>::execTransformCuda(sd::Pointer state, void* vz,
     sd::LongType zCoords[SD_MAX_RANK];
     sd::LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(zShapeBuffer), zShapeBuffer, zCoords);
-    COORDS2INDEX(shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(zShapeBuffer), shape::shapeOf(zShapeBuffer), zCoords);
+    COORDS2INDEX(shape::rank(zShapeBuffer), shape::stride(zShapeBuffer), zCoords, zOffset);
 
     z[zOffset] = OpClass::op(i, length, buffer, extraArguments);
   }

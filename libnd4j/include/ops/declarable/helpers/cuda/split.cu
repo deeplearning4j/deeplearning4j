@@ -60,17 +60,17 @@ SD_KERNEL static void splitCuda(const void* vx, const LongType* xShapeInfo, void
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = tid; i < xLen; i += totalThreads) {
-    INDEX2COORDS(i, xRank, xShapeInfo, coords);
+    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
 
     LongType xOffset;
-    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
 
     auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[coords[axis] / zDim]);
 
     coords[axis] %= zDim;
 
     LongType zOffset;
-    COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords, zOffset);
+    COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
 
     z[zOffset] = x[xOffset];
   }

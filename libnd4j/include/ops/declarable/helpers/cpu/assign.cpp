@@ -35,12 +35,12 @@ static void assign_(const void* vx, const sd::LongType* xShapeInfo,
   sd::LongType zCoords[SD_MAX_RANK];
 
   for (sd::LongType i = start; i < stop; i++) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
 
     sd::LongType xOffset, zOffset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
     z[zOffset] = static_cast<Z>(x[xOffset]);
   }
 }

@@ -48,10 +48,10 @@ static SD_KERNEL void _hammingKernel(const void *vx, const LongType *xShapeInfo,
   LongType yOffset;
 
   for (LongType e = tid; e < length; e += blockDim.x * gridDim.x) {
-    INDEX2COORDS(e, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(yShapeInfo), yShapeInfo, yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(e, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
 
     auto _x = static_cast<unsigned long long>(x[xOffset]);
     auto _y = static_cast<unsigned long long>(y[yOffset]);

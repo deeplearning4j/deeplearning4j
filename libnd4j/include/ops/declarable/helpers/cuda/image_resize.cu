@@ -933,10 +933,10 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
     LongType y2Pos[] = {b, 2};
     LongType x2Pos[] = {b, 3};
     LongType y1Offset, x1Offset, y2Offset, x2Offset;
-    COORDS2INDEX(2, boxesShape, y1Pos, y1Offset);
-    COORDS2INDEX(2, boxesShape, x1Pos, x1Offset);
-    COORDS2INDEX(2, boxesShape, y2Pos, y2Offset);
-    COORDS2INDEX(2, boxesShape, x2Pos, x2Offset);
+    COORDS2INDEX(2, shape::stride(boxesShape), y1Pos, y1Offset);
+    COORDS2INDEX(2, shape::stride(boxesShape), x1Pos, x1Offset);
+    COORDS2INDEX(2, shape::stride(boxesShape), y2Pos, y2Offset);
+    COORDS2INDEX(2, shape::stride(boxesShape), x2Pos, x2Offset);
     Z y1 = boxes[y1Offset];
     Z x1 = boxes[x1Offset];
     Z y2 = boxes[y2Offset];
@@ -960,7 +960,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
           for (int d = start; d < depth; d += step) {
             LongType zPos[] = {b, y, x, d};
             LongType zOffset;
-            COORDS2INDEX(4, outputShape, zPos, zOffset);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
             output[zOffset] = (Z)extrapolationVal;
           }
         }
@@ -981,7 +981,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             for (int d = start; d < depth; d += step) {
               LongType zPos[] = {b, y, x, d};
               LongType zOffset;
-              COORDS2INDEX(4, outputShape, zPos, zOffset);
+              COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
               output[zOffset] = (Z)extrapolationVal;
             }
             continue;
@@ -998,10 +998,10 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             LongType bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
             LongType bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
             LongType topLeftOffset, topRightOffset, bottomLeftOffset, bottomRightOffset;
-            COORDS2INDEX(4, imagesShape, topLeftPos, topLeftOffset);
-            COORDS2INDEX(4, imagesShape, topRightPos, topRightOffset);
-            COORDS2INDEX(4, imagesShape, bottomLeftPos, bottomLeftOffset);
-            COORDS2INDEX(4, imagesShape, bottomRightPos, bottomRightOffset);
+            COORDS2INDEX(4, shape::stride(imagesShape), topLeftPos, topLeftOffset);
+            COORDS2INDEX(4, shape::stride(imagesShape), topRightPos, topRightOffset);
+            COORDS2INDEX(4, shape::stride(imagesShape), bottomLeftPos, bottomLeftOffset);
+            COORDS2INDEX(4, shape::stride(imagesShape), bottomRightPos, bottomRightOffset);
             const T topLeft = images[topLeftOffset];
             const T topRight = images[topRightOffset];
             const T bottomLeft = images[bottomLeftOffset];
@@ -1010,7 +1010,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
             LongType zPos[] = {b, y, x, d};
             LongType zOffset;
-            COORDS2INDEX(4, outputShape, zPos, zOffset);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
             output[zOffset] = Z(top + (bottom - top) * y_lerp);
           }
         }
@@ -1024,7 +1024,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             for (int d = start; d < depth; d += step) {
               LongType zPos[] = {b, y, x, d};
               LongType zOffset;
-              COORDS2INDEX(4, outputShape, zPos, zOffset);
+              COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
               output[zOffset] = (Z)extrapolationVal;
             }
             continue;
@@ -1037,8 +1037,8 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
             LongType zPos[] = {b, y, x, d};
             LongType xPos[] = {bIn, closestYIndex, closestXIndex, d};
             LongType zOffset, xOffset;
-            COORDS2INDEX(4, outputShape, zPos, zOffset);
-            COORDS2INDEX(4, imagesShape, xPos, xOffset);
+            COORDS2INDEX(4, shape::stride(outputShape), zPos, zOffset);
+            COORDS2INDEX(4, shape::stride(imagesShape), xPos, xOffset);
             output[zOffset] = images[xOffset];
           }
         }

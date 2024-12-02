@@ -97,7 +97,7 @@ static void amsGradUpdater_(NDArray& gradient, NDArray& initStateV, NDArray& ini
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, gradient.rankOf(), gradient.shapeInfo(), coords);
+      INDEX2COORDS(i, gradient.rankOf(), shape::shapeOf(gradient.shapeInfo()), coords);
 
       sd::LongType xOffset;
       COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);

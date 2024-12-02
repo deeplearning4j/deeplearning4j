@@ -113,8 +113,8 @@ SD_INLINE void SD_DEVICE ReduceSameInplace<X>::execScalarCuda(void *vx, sd::Long
   for (int i = tid; i < len; i += blockDim.x * gridDim.x) {
     sd::LongType xCoords[SD_MAX_RANK];
     sd::LongType xOffset;
-    INDEX2COORDS(i, shape::rank(xShapeInfo), xShapeInfo, xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
+    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
     sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
   }
 

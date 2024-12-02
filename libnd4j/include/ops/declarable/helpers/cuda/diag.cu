@@ -61,10 +61,10 @@ static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const LongType* outp
   LongType xOffset;
 
   for (int t = tid; t < inputLength; t += step) {  // for all vals in input, put all on diagonal position to output
-    INDEX2COORDS(t * (inputLength + 1), shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
-    INDEX2COORDS(t, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(t * (inputLength + 1), shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(t, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
     z[zOffset] = x[xOffset];
   }
 }
@@ -99,10 +99,10 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const LongType* 
   LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
 
   for (int t = tid; t < outputLength && i < inputLength; t += step) {  // loop by output, but input matrix may not be square
-    INDEX2COORDS(t, shape::rank(outputShape), outputShape, zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::shapeOf(outputShape), zCoords, zOffset);
-    INDEX2COORDS(i, shape::rank(inputShape), inputShape, xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::shapeOf(inputShape), xCoords, xOffset);
+    INDEX2COORDS(t, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
+    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(i, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
     z[zOffset] = x[xOffset];
     i += outputLength + 1;  // shift to next diagonal value
   }

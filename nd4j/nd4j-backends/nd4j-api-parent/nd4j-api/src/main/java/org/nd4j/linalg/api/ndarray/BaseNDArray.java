@@ -1701,7 +1701,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         logBeforePutIfNeccessary();
         if (rank() > 2)
             throw new IllegalStateException("Cannot use putScalar(int,int,double) on a rank " + rank() + " INDArray");
-        long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, row, col);
+        long offset = Shape.getOffsetUnsafe(jvmShapeInfo.javaShapeInformation, row, col) + offset();
         data.put(offset, value);
 
         logPutIfNeccessary();
@@ -4539,7 +4539,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if(startingOffset < length() &&  i > 0 && offset >= length() || inIdx >= rank()) {
                 if(startingOffset >= length() &&  offset >= length())
                     return Nd4j.empty(dataType());
-                else if(indexes.length > 1 && outShape[0] > 0 && !(indexes[i] instanceof NewAxis) && !(indexes[i] instanceof NDArrayIndexAll)) {
+                else if(indexes.length > 1 && outShape.length > 0 && outShape[0] > 0 && !(indexes[i] instanceof NewAxis) && !(indexes[i] instanceof NDArrayIndexAll)) {
                     //more indices to process but we've exhausted this list
                     //use the offset we have and process further indices
                     //recursively

@@ -56,10 +56,10 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
             sd::LongType t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset;
             sd::LongType t1Offset;
-            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
-            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t1Coords, t1Offset);
 
             if (!descending == (dx[t0Offset] > dx[t1Offset])) {
               X dt0 = dx[t0Offset];
@@ -80,10 +80,10 @@ SD_KERNEL void execOesTadKernelKey(void *vx, sd::LongType const *xShapeInfo, voi
             sd::LongType t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset;
             sd::LongType t1Offset;
-            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
-            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t1Coords, t1Offset);
 
             if (!descending == (dx[t0Offset] > dx[t1Offset])) {
               X dt0 = dx[t0Offset];
@@ -135,8 +135,8 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::Lo
       for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
-        INDEX2COORDS(tid, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-        COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(tid, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+        COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
         shmem[tid] = dx[xOffset];
       }
 
@@ -153,10 +153,10 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::Lo
             sd::LongType t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset;
             sd::LongType t1Offset;
-            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
-            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t0Coords, t0Offset);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords);
+            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), t1Coords, t1Offset);
 
             if (!descending == (dx[t0Offset] > dx[t1Offset])) {
               T dt0 = dx[t0Offset];
@@ -173,9 +173,9 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::Lo
             sd::LongType t1Coords[SD_MAX_RANK];
             sd::LongType t0Offset;
             sd::LongType t1Offset;
-            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), tadShapeInfo, t0Coords);
+            INDEX2COORDS(top - 1, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords);
             COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t0Coords, t0Offset);
-            INDEX2COORDS(top, shape::rank(tadShapeInfo), tadShapeInfo, t1Coords);
+            INDEX2COORDS(top, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords);
             COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), t1Coords, t1Offset);
 
             if (!descending == (dx[t0Offset] > dx[t1Offset])) {
@@ -194,7 +194,7 @@ SD_KERNEL void execOesTadKernel(void *vx, sd::LongType const *xShapeInfo, sd::Lo
       for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType xOffset;
-        INDEX2COORDS(tid, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
+        INDEX2COORDS(tid, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
         COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
         dx[xOffset] = shmem[tid];
       }

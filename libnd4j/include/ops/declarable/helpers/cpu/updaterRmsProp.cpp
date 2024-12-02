@@ -66,23 +66,23 @@ static void rmsPropUpdater_(NDArray& gradient, NDArray& initState, NDArray& upda
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), gradient.shapeInfo(), coords);
+      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords);
       sd::LongType xOffset, zOffset, initOffset, stOffset;
-      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::stride(gradient.shapeInfo()), coords, xOffset);
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(update.shapeInfo()), shape::shapeOf(update.shapeInfo()), coords, zOffset);
+        COORDS2INDEX(shape::rank(update.shapeInfo()), shape::stride(update.shapeInfo()), coords, zOffset);
       }
       if (bXInSame) {
         initOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(initState.shapeInfo()), shape::shapeOf(initState.shapeInfo()), coords, initOffset);
+        COORDS2INDEX(shape::rank(initState.shapeInfo()), shape::stride(initState.shapeInfo()), coords, initOffset);
       }
       if (bXStSame) {
         stOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(stateG.shapeInfo()), shape::shapeOf(stateG.shapeInfo()), coords, stOffset);
+        COORDS2INDEX(shape::rank(stateG.shapeInfo()), shape::stride(stateG.shapeInfo()), coords, stOffset);
       }
 
       st[stOffset] = init[initOffset] * rmsDecay + grad[xOffset] * grad[xOffset] * (1 - rmsDecay);

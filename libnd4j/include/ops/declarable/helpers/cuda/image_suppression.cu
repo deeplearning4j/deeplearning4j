@@ -57,14 +57,14 @@ static SD_DEVICE bool needToSuppressWithThreshold(T* boxes, LongType const* boxe
   LongType prevOffset0, prevOffset1, prevOffset2, prevOffset3;
   LongType nextOffset0, nextOffset1, nextOffset2, nextOffset3;
 
-  COORDS2INDEX(2, boxesShape + 1, previous0, prevOffset0);
-  COORDS2INDEX(2, boxesShape + 1, previous1, prevOffset1);
-  COORDS2INDEX(2, boxesShape + 1, previous2, prevOffset2);
-  COORDS2INDEX(2, boxesShape + 1, previous3, prevOffset3);
-  COORDS2INDEX(2, boxesShape + 1, next0, nextOffset0);
-  COORDS2INDEX(2, boxesShape + 1, next1, nextOffset1);
-  COORDS2INDEX(2, boxesShape + 1, next2, nextOffset2);
-  COORDS2INDEX(2, boxesShape + 1, next3, nextOffset3);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous0, prevOffset0);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous1, prevOffset1);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous2, prevOffset2);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous3, prevOffset3);
+  COORDS2INDEX(2, shape::stride(boxesShape), next0, nextOffset0);
+  COORDS2INDEX(2, shape::stride(boxesShape), next1, nextOffset1);
+  COORDS2INDEX(2, shape::stride(boxesShape), next2, nextOffset2);
+  COORDS2INDEX(2, shape::stride(boxesShape), next3, nextOffset3);
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 
@@ -137,14 +137,14 @@ static SD_DEVICE T similirityV3(T* boxes, LongType const* boxesShape, int previo
   LongType prevOffset0, prevOffset1, prevOffset2, prevOffset3;
   LongType nextOffset0, nextOffset1, nextOffset2, nextOffset3;
 
-  COORDS2INDEX(2, boxesShape + 1, previous0, prevOffset0);
-  COORDS2INDEX(2, boxesShape + 1, previous1, prevOffset1);
-  COORDS2INDEX(2, boxesShape + 1, previous2, prevOffset2);
-  COORDS2INDEX(2, boxesShape + 1, previous3, prevOffset3);
-  COORDS2INDEX(2, boxesShape + 1, next0, nextOffset0);
-  COORDS2INDEX(2, boxesShape + 1, next1, nextOffset1);
-  COORDS2INDEX(2, boxesShape + 1, next2, nextOffset2);
-  COORDS2INDEX(2, boxesShape + 1, next3, nextOffset3);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous0, prevOffset0);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous1, prevOffset1);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous2, prevOffset2);
+  COORDS2INDEX(2, shape::stride(boxesShape), previous3, prevOffset3);
+  COORDS2INDEX(2, shape::stride(boxesShape), next0, nextOffset0);
+  COORDS2INDEX(2, shape::stride(boxesShape), next1, nextOffset1);
+  COORDS2INDEX(2, shape::stride(boxesShape), next2, nextOffset2);
+  COORDS2INDEX(2, shape::stride(boxesShape), next3, nextOffset3);
 
   // we have rectangle with given max values. Compute vexes of rectangle first
 

@@ -181,8 +181,8 @@ static SD_KERNEL void upperAdjointKernel(T const* input, T* output, LongType bat
         LongType zPos[] = {r, c};
         LongType xPos[] = {c, r};
         LongType zIndex, xIndex;
-        COORDS2INDEX(2, outputTads + 1, zPos, zIndex);
-        COORDS2INDEX(2, inputTads + 1, xPos, xIndex);
+        COORDS2INDEX(2, shape::stride(outputTads), zPos, zIndex);
+        COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
         outputPart[zIndex] = inputPart[xIndex];
       }
     }
@@ -201,8 +201,8 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
         LongType zPos[] = {r, c};
         LongType xPos[] = {c, r};
         LongType zIndex, xIndex;
-        COORDS2INDEX(2, outputTads + 1, zPos, zIndex);
-        COORDS2INDEX(2, inputTads + 1, xPos, xIndex);
+        COORDS2INDEX(2, shape::stride(outputTads), zPos, zIndex);
+        COORDS2INDEX(2, shape::stride(inputTads), xPos, xIndex);
         outputPart[zIndex] = inputPart[xIndex];
       }
     }

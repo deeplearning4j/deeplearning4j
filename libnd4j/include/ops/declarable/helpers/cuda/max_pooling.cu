@@ -37,8 +37,8 @@ static SD_KERNEL void indicesFiller(void* vz, LongType const* zShapeInfo, LongTy
     for (LongType e = threadIdx.x; e < part; e += blockDim.x) {
       LongType zCoords[SD_MAX_RANK];
       LongType zOffset;
-      INDEX2COORDS(e + b * part, shape::rank(zShapeInfo), zShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e + b * part, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
       z[zOffset] = static_cast<Z>(e);
     }
   }

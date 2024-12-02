@@ -43,10 +43,10 @@ SD_DEVICE void pullRowsKernel(void *vx, void *vz, LongType len, LongType *indexe
       sd::LongType xOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(i, shape::rank(tadShapeInfo), tadShapeInfo, xCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(zTadShapeInfo), zTadShapeInfo, zCoords);
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(i, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
+      COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(i, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
+      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
 
       rZ[zOffset] = rX[xOffset];
     }

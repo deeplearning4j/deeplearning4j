@@ -52,22 +52,22 @@ void matrixSetDiag_(NDArray& input, NDArray& diagonal, NDArray& output, const bo
     sd::LongType coords[SD_MAX_RANK];
 
     for (sd::LongType i = 0; i < xLen; ++i) {
-      INDEX2COORDS(i, xRank, xShapeInfo, coords);
+      INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
 
       sd::LongType xOffset;
-      COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
 
       sd::LongType zOffset;
       if (areSameOffsets) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(xRank, shape::stride(zShapeInfo), coords, zOffset);
       }
 
       // condition to be on diagonal of innermost matrix
       if (coords[xRank - 2] == coords[xRank - 1]) {
         sd::LongType yOffset;
-        COORDS2INDEX(xRank - 1, shape::shapeOf(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(xRank - 1, shape::stride(yShapeInfo), coords, yOffset);
         z[zOffset] = y[yOffset];
       } else {
         z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];

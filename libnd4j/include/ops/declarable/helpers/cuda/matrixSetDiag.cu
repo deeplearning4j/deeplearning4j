@@ -67,18 +67,18 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const LongType* xShapeIn
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, xRank, xShapeInfo, coords);
+    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
 
     LongType xOffset, zOffset, yOffset;
-    COORDS2INDEX(xRank, shape::shapeOf(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
     if (areSameOffsets) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(xRank, shape::shapeOf(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(xRank, shape::stride(zShapeInfo), coords, zOffset);
     }
     // condition to be on diagonal of innermost matrix
     if (coords[xRank - 2] == coords[xRank - 1]) {
-      COORDS2INDEX(xRank - 1, shape::shapeOf(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(xRank - 1, shape::stride(yShapeInfo), coords, yOffset);
       z[zOffset] = y[yOffset];
     } else {
       z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
