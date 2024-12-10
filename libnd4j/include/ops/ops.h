@@ -460,8 +460,8 @@ class FloorMod {
   SD_OP_DEF static Z op(X d1, Y d2) {
     Z m = sd::math::sd_fmod<X,Y,Z>(d1, d2);
     return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0))
-               ? m
-               : sd::math::sd_fmod<Z,Y,Z>(m + static_cast<Z>(d2), d2);
+           ? m
+           : sd::math::sd_fmod<Z,Y,Z>(m + static_cast<Z>(d2), d2);
   }
 
   SD_OP_DEF static Z op(X d1, Y d2, Z *params) {
@@ -1131,7 +1131,7 @@ class BinaryMinimumAbsoluteRelativeError {
     X thresholdAbsolute = params[2];
     return sd::math::sd_re<X>(d1, d2) > thresholdRelative
            ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                               : static_cast<Z>(1))
+                                                                                 : static_cast<Z>(1))
            : static_cast<Z>(0);
   }
 
@@ -1140,7 +1140,7 @@ class BinaryMinimumAbsoluteRelativeError {
     X thresholdAbsolute = params[1];
     return sd::math::sd_re<X>(d1, d2) > thresholdRelative
            ? (sd::math::sd_abs<X,X>(d1 - static_cast<X>(d2)) < thresholdAbsolute ? static_cast<Z>(0)
-                                                                               : static_cast<Z>(1))
+                                                                                 : static_cast<Z>(1))
            : static_cast<Z>(0);
   }
 
@@ -3201,13 +3201,20 @@ class EqualsWithEps {
     // no-op
   }
 
-  SD_OP_DEF static Z startingValue(const X *input) { return static_cast<Z>(0.0f); }
+  SD_OP_DEF static Z startingValue(const X *input) {
+    return static_cast<Z>(1.0f);
+  }
 
-  SD_OP_DEF static Z postProcess(Z reduction, sd::LongType n, Z *extraParamsRef) { return reduction; }
+  SD_OP_DEF static Z postProcess(Z reduction, sd::LongType n, Z *extraParamsRef) {
+    return reduction;
+  }
 
   SD_OP_DEF static Z op(X d1, X d2, Z *extraParamsRef) {
-    double eps = sd::math::sd_abs<double,double>(extraParamsRef[2]);
-    return static_cast<Z>(!sd::math::sd_eq<X,X>(d1, d2, eps));
+    //x is already type promoted within sd_eq
+    X eps = static_cast<X>(extraParamsRef[2]);
+    auto result = sd::math::sd_eq<X,X>(d1, d2, eps);
+    auto finalResult = static_cast<Z>(result);
+    return finalResult;
   }
 
 #ifdef __CUDACC__
@@ -3215,7 +3222,11 @@ class EqualsWithEps {
   static inline Z opAtomic(X d1, X d2, Z *extraParamsRef) { return op(d1, d2, extraParamsRef); }
 #endif
 
-  SD_OP_DEF static Z update(Z old, Z opOutput, Z *extraParamsRef) { return opOutput + old; }
+  SD_OP_DEF static Z update(Z old, Z opOutput, Z *extraParamsRef) {
+    printf("update equal with eps opOutput %f old %f\n", (double)opOutput, (double)old);
+    fflush(stdout);
+    return opOutput && old;
+  }
 
   SD_OP_DEF static Z merge(X old, Z opOutput, Z *extraParamsRef) { return update(old, opOutput, extraParamsRef); }
 
@@ -3298,7 +3309,7 @@ class IndexAbsoluteMax {
     old.value = sd::math::sd_abs<X,X>(old.value);
     if (opOutput.value > old.value) return opOutput;
 #ifdef __CUDACC__
-      // workaround for cuda race condition at merge phase
+    // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3458,7 +3469,7 @@ class IndexMax {
       return opOutput;
     }
 #ifdef __CUDACC__
-      // workaround for cuda race condition at merge phase
+    // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3519,7 +3530,7 @@ class IndexAbsoluteMin {
     if (opOutput.value < old.value) return opOutput;
 
 #ifdef __CUDACC__
-      // workaround for cuda race condition at merge phase
+    // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)
@@ -3569,7 +3580,7 @@ class IndexMin {
     if (opOutput.value < old.value) return opOutput;
 
 #ifdef __CUDACC__
-      // workaround for cuda race condition at merge phase
+    // workaround for cuda race condition at merge phase
     else if (opOutput.value == old.value && opOutput.index < old.index)
       return opOutput;
 #elif defined(__GNUC__)

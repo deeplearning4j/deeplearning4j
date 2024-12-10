@@ -154,7 +154,7 @@
         <freemarker.version>2.3.23</freemarker.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.9.8</stream.analytics.version>
-        <opencsv.version>3.10</opencsv.version>
+        <opencsv.version>5.9</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
         <jtransforms.version>3.1</jtransforms.version>
         <fastutil.version>6.5.7</fastutil.version>

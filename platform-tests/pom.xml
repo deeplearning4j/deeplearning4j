@@ -102,6 +102,7 @@
         <netty.version>4.1.74.Final</netty.version>
         <test.heap.size>32g</test.heap.size>
         <test.offheap.size>32g</test.offheap.size>
+        <!-- Note this will not use the embedded java shell script if forks is set to 0. Uset fork count 0 with address sanitizer only.-->
         <surefire.forks>1</surefire.forks>
         <surefire.threads>1</surefire.threads>
 
@@ -109,7 +110,7 @@
         <test.prefix></test.prefix>
         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
-        <test.asan.options>detect_leaks=0:verbose=0:halt_on_error=0:alloc_dealloc_mismatch=1:log_path=conv2d_log.txt</test.asan.options>
+        <test.asan.options></test.asan.options>
         <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
         <excludedTests>large-resources,downloads,long-running-test</excludedTests>
         <!--
@@ -1099,6 +1100,7 @@
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
+                        <PRINT_MATH_FUNCTION_NAME></PRINT_MATH_FUNCTION_NAME>
                         <MALLOC_CONF>${jemalloc.mallocconf}</MALLOC_CONF>
                         <ASAN_OPTIONS>${test.asan.options}</ASAN_OPTIONS>
                         <!-- For usage with the wrapper script in bin. Do NOT delete that script. See the readme in the bin directory for more information.-->

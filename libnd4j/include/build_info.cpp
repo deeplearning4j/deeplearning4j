@@ -99,7 +99,7 @@ const char *buildInfo() {
 
 
 #if defined(SD_PRINT_MATH)
-  ret += "Use PRINT_MATH_FUNCTION_NAME to specify which math function you want to track.";
+  ret += "\nUse PRINT_MATH_FUNCTION_NAME to specify which math function you want to track.";
 #endif
 
   std::string *ret2 =  new std::string(ret);

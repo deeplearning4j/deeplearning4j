@@ -139,31 +139,7 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext *lc, int opNum, const 
         SD_COMMON_TYPES);
   };
 
-  sd::LongType numTads = 0;
-
-  switch (loopKind) {
-    case sd::LoopKind::BROADCAST_SCALAR_X: {
-      numTads = shape::length(hXShapeInfo);
-    } break;
-    case sd::LoopKind::BROADCAST_SCALAR_Y: {
-      numTads = shape::length(hYShapeInfo);
-    } break;
-    case sd::LoopKind::BROADCAST_3D: {
-      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0));
-    } break;
-    case sd::LoopKind::BROADCAST_4D: {
-      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0)) * shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(1));
-    } break;
-    case sd::LoopKind::BROADCAST_5D: {
-      numTads = shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(0)) * shape::sizeAt(hZShapeInfo, static_cast<sd::LongType>(1));
-    } break;
-    default: {
-      auto xLen = shape::length(hXShapeInfo);
-      auto yLen = shape::length(hYShapeInfo);
-      numTads = xLen / yLen;
-    }
-  }
-
+  sd::LongType numTads = shape::tensorsAlongDimension(hXShapeInfo, dimension, dimensionLength);
   samediff::Threads::parallel_tad(func, 0, numTads);
 }
 

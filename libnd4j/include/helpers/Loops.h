@@ -1071,12 +1071,6 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
     xTadOffsets = tadPackX->primaryOffsets();
   }
 
-  const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
-
-  const auto xTadEws = shape::elementWiseStride(xTadShapeInfo);
-  const auto yTadEws = shape::elementWiseStride(yTadShapeInfo);
-  const auto zEws = shape::elementWiseStride(zShapeInfo);
-
   const auto zLen = shape::length(zShapeInfo);
   const auto tadLen = shape::length(xTadShapeInfo);
 
@@ -1086,276 +1080,46 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
 
   int numThreads = OmpLaunchHelper::tadThreads(tadLen, zLen);
 
-  switch (kindOfLoop) {
-    //*********************************************//
-    case LoopKind::EWS1: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
+  LongType castXTadShapeInfo[SD_MAX_RANK];
+  const bool canCastXTad = DataTypeUtils::castShapeInfo<LongType>(xTadShapeInfo, castXTadShapeInfo);
+  LongType castYTadShapeInfo[SD_MAX_RANK];
+  const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
 
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
+  Z extraParams[3];
+  for (auto i = start; i < stop; i++) {
+    extraParams[0] = param0;
+    extraParams[1] = param1;
+    extraParams[2] = param2;
 
-        for (LongType j = 0; j < tadLen; ++j) {
-#if defined(PRINT_INDICES)
-          shape::printShapeInfo(xTadShapeInfo);
-          shape::printShapeInfo(yTadShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3\n", i,j);
-#endif
-          s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
-        }
-        z[i] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
+    const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+    const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+    auto s = OpType::startingValue(xTad);
 
-      //*********************************************//
-    case LoopKind::EWSNONZERO: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
+    // Calculate z coordinates for this iteration
+    LongType zCoords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    LongType zOffset;
+    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType j = 0; j < tadLen; ++j) {
-#if defined(PRINT_INDICES)
-          shape::printShapeInfo(xTadShapeInfo);
-          shape::printShapeInfo(yTadShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3\n", i,j);
-#endif
-          s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
-        }
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK1: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
-
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType i0 = 0; i0 < tadLen; ++i0) {
-          const auto xTadOffset = i0 * xTadStride[0];
-          const auto yTadOffset = i0 * yTadStride[0];
-#if defined(PRINT_INDICES)
-          shape::printShapeInfo(xTadShapeInfo);
-          shape::printShapeInfo(yTadShapeInfo);
-          printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3\n", i,i0 * zEws);
-#endif
-          s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-        }
-
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK2: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
-
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-          for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-            const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
-            const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
-#if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
-#endif
-            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-          }
-        }
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK3: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
-
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-          for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-            for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-              const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
-              const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
-#if defined(PRINT_INDICES)
-              shape::printShapeInfo(xTadShapeInfo);
-              shape::printShapeInfo(yTadShapeInfo);
-              printf("Index is %lld offset is %lld loop kind: RANK3 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
-#endif
-              s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-            }
-          }
-        }
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK4: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
-
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-          for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-            for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-              for (LongType i3 = 0; i3 < tadShape[3]; ++i3) {
-                const auto xTadOffset =
-                    i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
-                const auto yTadOffset =
-                    i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
-#if defined(PRINT_INDICES)
-                shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK4 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
-#endif
-                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-              }
-            }
-          }
-        }
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK5: {
-      Z extraParams[3];
-      for (auto i = start; i < stop; i++) {
-        extraParams[0] = param0;
-        extraParams[1] = param1;
-        extraParams[2] = param2;
-
-        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-        auto s = OpType::startingValue(xTad);
-
-        for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-          for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-            for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-              for (LongType i3 = 0; i3 < tadShape[3]; ++i3) {
-                for (LongType i4 = 0; i4 < tadShape[4]; ++i4) {
-                  const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] +
-                                          i3 * xTadStride[3] + i4 * xTadStride[4];
-                  const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] +
-                                          i3 * yTadStride[3] + i4 * yTadStride[4];
-#if defined(PRINT_INDICES)
-                  shape::printShapeInfo(xTadShapeInfo);
-                  shape::printShapeInfo(yTadShapeInfo);
-                  printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3\n", i,i * zEws);
-#endif
-
-                  s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-                }
-              }
-            }
-          }
-        }
-        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-      };
-    } break;
-
-      //*********************************************//
-    default: {
-      LongType castXTadShapeInfo[SD_MAX_RANK];
-      const bool canCastXTad = DataTypeUtils::castShapeInfo<LongType>(xTadShapeInfo, castXTadShapeInfo);
-
-      if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
-        Z extraParams[3];
-        for (auto i = start; i < stop; i++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-          const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-          auto s = OpType::startingValue(xTad);
-
-          for (LongType j = 0; j < tadLen; ++j) {
-            LongType coords[SD_MAX_RANK];
-            INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-            LongType xTadOffset, yTadOffset;
-            COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-            COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
-#if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
-#endif
-            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-          }
-
-          z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        };
-      } else {
-        LongType castYTadShapeInfo[SD_MAX_RANK];
-        const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
-
-        Z extraParams[3];
-        for (auto i = start; i < stop; i++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-          const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-          auto s = OpType::startingValue(xTad);
-
-          for (LongType j = 0; j < tadLen; ++j) {
-            LongType coords[SD_MAX_RANK];
-            INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-            LongType xTadOffset, yTadOffset;
-            COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-            COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
+    for (LongType j = 0; j < tadLen; ++j) {
+      LongType coords[SD_MAX_RANK];
+      LongType  yCoords[SD_MAX_RANK];
+      INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
+      INDEX2COORDS(j, shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), yCoords);
+      LongType xTadOffset, yTadOffset;
+      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
+      COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), yCoords, yTadOffset);
 
 #if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
+      shape::printShapeInfo(xTadShapeInfo);
+      shape::printShapeInfo(yTadShapeInfo);
+      printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
-            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-          }
-          z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        };
-      }
+      s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
     }
-  }
+
+    z[zOffset] = OpType::postProcess(s, tadLen, extraParams);
+  };
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1371,11 +1135,7 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
   Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)),
       param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
 
-  const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
 
-  const auto xTadEws = shape::elementWiseStride(xTadShapeInfo);
-  const auto yTadEws = shape::elementWiseStride(yTadShapeInfo);
-  const auto zEws = shape::elementWiseStride(zShapeInfo);
 
   const auto zLen = shape::length(zShapeInfo);
   const auto tadLen = shape::length(xTadShapeInfo);
@@ -1391,297 +1151,39 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
 
   int numThreads = OmpLaunchHelper::tadThreads(tadLen, numXTads * numYTads);
 
-  switch (kindOfLoop) {
-    //*********************************************//
-    case LoopKind::EWS1: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
+  //*********************************************//
+  LongType castXTadShapeInfo[SD_MAX_RANK];
+  LongType castYTadShapeInfo[SD_MAX_RANK];
+  const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
 
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
+  Z extraParams[3];
+  for (LongType ix = 0; ix < numXTads; ix++) {
+    for (LongType iy = 0; iy < numYTads; iy++) {
+      extraParams[0] = param0;
+      extraParams[1] = param1;
+      extraParams[2] = param2;
 
-          for (LongType j = 0; j < tadLen; ++j) {
+      const auto xTad = x + xTadOffsets[ix];
+      const auto yTad = y + yTadOffsets[iy];
+      auto s = startVal;
+
+      for (LongType j = 0; j < tadLen; ++j) {
+        LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
+        LongType xTadOffset, yTadOffset;
+        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
+        COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
 #if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: EWS1 Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
+        shape::printShapeInfo(xTadShapeInfo);
+        shape::printShapeInfo(yTadShapeInfo);
+        printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", ix * numYTads + iy, j);
 #endif
-            s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
-          }
-          z[zInd] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::EWSNONZERO: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType j = 0; j < tadLen; ++j) {
-#if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: EWSNONZERO Reduction3Loops<X, Z>::loopReduce3All\n", j,zInd);
-#endif
-            s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
-          }
-          z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK1: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType i0 = 0; i0 < tadLen; ++i0) {
-            const auto xTadOffset = i0 * xTadStride[0];
-            const auto yTadOffset = i0 * yTadStride[0];
-#if defined(PRINT_INDICES)
-            shape::printShapeInfo(xTadShapeInfo);
-            shape::printShapeInfo(yTadShapeInfo);
-            printf("Index is %lld offset is %lld loop kind: RANK1 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
-#endif
-            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-          }
-          z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK2: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-            for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-              const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
-              const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
-#if defined(PRINT_INDICES)
-              shape::printShapeInfo(xTadShapeInfo);
-              shape::printShapeInfo(yTadShapeInfo);
-              printf("Index is %lld offset is %lld loop kind: RANK2 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
-#endif
-              s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-            }
-          }
-          z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK3: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-            for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-              for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-                const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
-                const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
-#if defined(PRINT_INDICES)
-                shape::printShapeInfo(xTadShapeInfo);
-                shape::printShapeInfo(yTadShapeInfo);
-                printf("Index is %lld offset is %lld loop kind: RANK3 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
-#endif
-                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-              }
-            }
-          }
-          z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK4: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-            for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-              for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-                for (LongType i3 = 0; i3 < tadShape[3]; ++i3) {
-                  const auto xTadOffset =
-                      i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
-                  const auto yTadOffset =
-                      i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
-#if defined(PRINT_INDICES)
-                  shape::printShapeInfo(xTadShapeInfo);
-                  shape::printShapeInfo(yTadShapeInfo);
-                  printf("Index is %lld offset is %lld loop kind: RANK4 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
-#endif
-                  s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-                }
-              }
-            }
-          }
-          z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    case LoopKind::RANK5: {
-      Z extraParams[3];
-      for (LongType ix = 0; ix < numXTads; ix++) {
-        for (LongType iy = 0; iy < numYTads; iy++) {
-          extraParams[0] = param0;
-          extraParams[1] = param1;
-          extraParams[2] = param2;
-
-          const auto xTad = x + xTadOffsets[ix];
-          const auto yTad = y + yTadOffsets[iy];
-          const auto zInd = ix * numYTads + iy;
-          auto s = startVal;
-
-          for (LongType i0 = 0; i0 < tadShape[0]; ++i0) {
-            for (LongType i1 = 0; i1 < tadShape[1]; ++i1) {
-              for (LongType i2 = 0; i2 < tadShape[2]; ++i2) {
-                for (LongType i3 = 0; i3 < tadShape[3]; ++i3) {
-                  for (LongType i4 = 0; i4 < tadShape[4]; ++i4) {
-                    const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] +
-                                            i3 * xTadStride[3] + i4 * xTadStride[4];
-                    const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] +
-                                            i3 * yTadStride[3] + i4 * yTadStride[4];
-#if defined(PRINT_INDICES)
-                    shape::printShapeInfo(xTadShapeInfo);
-                    shape::printShapeInfo(yTadShapeInfo);
-                    printf("Index is %lld offset is %lld loop kind: RANK5 Reduction3Loops<X, Z>::loopReduce3All\n", zInd,i0 * zEws);
-#endif
-                    s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-                  }
-                }
-              }
-            }
-          }
-          z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
-        }
-      };
-    } break;
-
-      //*********************************************//
-    default: {
-      LongType castXTadShapeInfo[SD_MAX_RANK];
-      const bool canCastXTad = DataTypeUtils::castShapeInfo<LongType>(xTadShapeInfo, castXTadShapeInfo);
-
-      if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
-        Z extraParams[3];
-        for (LongType ix = 0; ix < numXTads; ix++) {
-          for (LongType iy = 0; iy < numYTads; iy++) {
-            extraParams[0] = param0;
-            extraParams[1] = param1;
-            extraParams[2] = param2;
-
-            const auto xTad = x + xTadOffsets[ix];
-            const auto yTad = y + yTadOffsets[iy];
-            auto s = startVal;
-
-            for (LongType j = 0; j < tadLen; ++j) {
-              LongType coords[SD_MAX_RANK];
-              INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-              LongType xTadOffset, yTadOffset;
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-              COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
-#if defined(PRINT_INDICES)
-              shape::printShapeInfo(xTadShapeInfo);
-              shape::printShapeInfo(yTadShapeInfo);
-              printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", ix * numYTads + iy, j);
-#endif
-              s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-            }
-            z[ix * numYTads + iy] = OpType::postProcess(s, tadLen, extraParams);
-          }
-        }
-      } else {
-        LongType castYTadShapeInfo[SD_MAX_RANK];
-        const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
-
-        Z extraParams[3];
-        for (LongType ix = 0; ix < numXTads; ix++) {
-          for (LongType iy = 0; iy < numYTads; iy++) {
-            extraParams[0] = param0;
-            extraParams[1] = param1;
-            extraParams[2] = param2;
-
-            const auto xTad = x + xTadOffsets[ix];
-            const auto yTad = y + yTadOffsets[iy];
-            auto s = startVal;
-
-            for (LongType j = 0; j < tadLen; ++j) {
-              LongType coords[SD_MAX_RANK];
-              INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-              LongType xTadOffset, yTadOffset;
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-              COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
-#if defined(PRINT_INDICES)
-              shape::printShapeInfo(xTadShapeInfo);
-              shape::printShapeInfo(yTadShapeInfo);
-              printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3All\n", ix * numYTads + iy, j);
-#endif
-              s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
-            }
-            z[ix * numYTads + iy] = OpType::postProcess(s, tadLen, extraParams);
-          }
-        }
+        s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
       }
+      z[ix * numYTads + iy] = OpType::postProcess(s, tadLen, extraParams);
     }
   }
+
 }
 
 }  // namespace sd

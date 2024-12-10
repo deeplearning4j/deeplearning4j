@@ -77,7 +77,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    calc_type promoted_val1 = static_cast<calc_type>(val1);             \
    calc_type promoted_val2 = static_cast<calc_type>(val2);             \
    calc_type result = BODY;                                            \
-   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result); \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                      \
 }
 
@@ -89,7 +89,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
    calc_type promoted_val2 = static_cast<calc_type>(val2);              \
    calc_type promoted_eps = static_cast<calc_type>(eps);                \
    calc_type result = BODY;                                             \
-   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result); \
+   SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                       \
 }
 
@@ -209,7 +209,7 @@ SD_HOST_DEVICE SD_INLINE float copysignfk(float x, float y) {
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sigmoid(T val) {
  Z result = (Z)1.0f / ((Z)1.0f + sd_exp<T, Z>(-val));
- SD_PRINT_MATH_FUNC("sd_sigmoid", val, result);
+ SD_PRINT_MATH_FUNC("sd_sigmoid", val, result,Z);
  return result;
 }
 
@@ -220,7 +220,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_elu(T val, T alpha) {
    result = val;
  else
    result = static_cast<Z>(alpha) * (sd_exp<T, Z>(val) - static_cast<Z>(1.0f));
- SD_PRINT_MATH_FUNC2("sd_elu", val, alpha, result);
+ SD_PRINT_MATH_FUNC2("sd_elu", val, alpha, result,Z);
  return result;
 }
 
@@ -231,7 +231,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_leakyrelu(T val, T alpha) {
    result = alpha * val;
  else
    result = val;
- SD_PRINT_MATH_FUNC2("sd_leakyrelu", val, alpha, result);
+ SD_PRINT_MATH_FUNC2("sd_leakyrelu", val, alpha, result,Z);
  return result;
 }
 
@@ -242,7 +242,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_eluderivative(T val, T alpha) {
    result = static_cast<Z>(1.0f);
  else
    result = static_cast<Z>(alpha) * sd_exp<T, Z>(val);
- SD_PRINT_MATH_FUNC2("sd_eluderivative", val, alpha, result);
+ SD_PRINT_MATH_FUNC2("sd_eluderivative", val, alpha, result,Z);
  return result;
 }
 
@@ -255,7 +255,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_sinh(T val);
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
  Z result = sd_log<T, Z>((Z)1.0f + sd_exp<T, Z>(val));
- SD_PRINT_MATH_FUNC("sd_softplus", val, result);
+ SD_PRINT_MATH_FUNC("sd_softplus", val, result,Z);
  return result;
 }
 
@@ -263,7 +263,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_softplus(T val) {
 template <typename X, typename Z>
 SD_HOST_DEVICE inline Z sd_floor(X val) {
   Z result = static_cast<Z>(p_floor<X>(val));
-  SD_PRINT_MATH_FUNC("sd_floor", val, result);
+  SD_PRINT_MATH_FUNC("sd_floor", val, result,Z);
   return result;
 }
 
@@ -271,21 +271,21 @@ SD_HOST_DEVICE inline Z sd_floor(X val) {
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log(X val) {
   Z result = static_cast<Z>(p_log<X>(val));
-  SD_PRINT_MATH_FUNC("sd_log", val, result);
+  SD_PRINT_MATH_FUNC("sd_log", val, result,Z);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
   Z result = static_cast<Z>(p_log2<X>(val));
-  SD_PRINT_MATH_FUNC("sd_log2", val, result);
+  SD_PRINT_MATH_FUNC("sd_log2", val, result,Z);
   return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softsign(T val) {
  Z result = val / ((T)1.0f + sd::math::sd_abs<T, T>(val));
- SD_PRINT_MATH_FUNC("sd_softsign", val, result);
+ SD_PRINT_MATH_FUNC("sd_softsign", val, result,Z);
  return result;
 }
 
@@ -304,14 +304,14 @@ SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2);
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_atan2(X val1, X val2) {
  Z result = p_atan2<Z>(static_cast<Z>(val1), static_cast<Z>(val2));
- SD_PRINT_MATH_FUNC2("sd_atan2", val1, val2, result);
+ SD_PRINT_MATH_FUNC2("sd_atan2", val1, val2, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tan(T value) {
  Z result = p_tan<Z>(static_cast<Z>(value));
- SD_PRINT_MATH_FUNC("sd_tan", value, result);
+ SD_PRINT_MATH_FUNC("sd_tan", value, result,Z);
  return result;
 }
 
@@ -319,7 +319,7 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tanhderivative(T val) {
  Z tanh_val = sd_tanh<T, Z>(val);
  Z result = (Z)1.0f - tanh_val * tanh_val;
- SD_PRINT_MATH_FUNC("sd_tanhderivative", val, result);
+ SD_PRINT_MATH_FUNC("sd_tanhderivative", val, result,Z);
  return result;
 }
 
@@ -327,7 +327,7 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sigmoidderivative(T val) {
  Z sigmoid = sd_sigmoid<T, Z>(val);
  T result = sigmoid * ((Z)1.0f - sigmoid);
- SD_PRINT_MATH_FUNC("sd_sigmoidderivative", val, result);
+ SD_PRINT_MATH_FUNC("sd_sigmoidderivative", val, result,Z);
  return result;
 }
 
@@ -335,28 +335,28 @@ template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_softsignderivative(T val) {
  T y = (T)1.0f + sd_abs<T, T>(val);
  T result = (Z)1.0f / (y * y);
- SD_PRINT_MATH_FUNC("sd_softsignderivative", val, result);
+ SD_PRINT_MATH_FUNC("sd_softsignderivative", val, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE T sd_sgn(T val) {
  Z result = val < (T)0.0f ? (Z)-1.0f : val > (T)0.0f ? (Z)1.0f : (Z)0.0f;
- SD_PRINT_MATH_FUNC("sd_sgn", val, result);
+ SD_PRINT_MATH_FUNC("sd_sgn", val, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sign(T val) {
  Z result = sd_sgn<T, Z>(val);
- SD_PRINT_MATH_FUNC("sd_sign", val, result);
+ SD_PRINT_MATH_FUNC("sd_sign", val, result,Z);
  return result;
 }
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_signum(T val) {
  Z result = sd_sgn<T, Z>(val);
- SD_PRINT_MATH_FUNC("sd_signum", val, result);
+ SD_PRINT_MATH_FUNC("sd_signum", val, result,Z);
  return result;
 }
 
@@ -372,7 +372,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_dot(X* x, Y* y, int length) {
  for (int e = 0; e < length; e++) {
    dot += static_cast<Z>(x[e]) * static_cast<Z>(y[e]);
  }
- SD_PRINT_MATH_FUNC("sd_dot", length, dot);
+ SD_PRINT_MATH_FUNC("sd_dot", length, dot,Z);
  return dot;
 }
 
@@ -394,7 +394,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val);
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_asinh(T val) {
  Z result = sd_log<Z, Z>(sd_sqrt<Z, Z>(sd_pow<T, T, Z>(val, (T)2) + (Z)1.f) + (Z)val);
- SD_PRINT_MATH_FUNC("sd_asinh", val, result);
+ SD_PRINT_MATH_FUNC("sd_asinh", val, result,Z);
  return result;
 }
 
@@ -416,193 +416,192 @@ SD_HOST_DEVICE SD_INLINE float16 sd_abs<float16, float16>(float16 value) {
 #else
  float16 result = (float16)fabsf((float)value);
 #endif
- SD_PRINT_MATH_FUNC("sd_abs<float16>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<float16>", value, result,float16);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bfloat16 sd_abs<bfloat16, bfloat16>(bfloat16 value) {
  bfloat16 result = (bfloat16)fabsf((float)value);
- SD_PRINT_MATH_FUNC("sd_abs<bfloat16>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<bfloat16>", value, result,bfloat16);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_abs<float, float>(float value) {
  float result = fabsf(value);
- SD_PRINT_MATH_FUNC("sd_abs<float>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<float>", value, result,float);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE double sd_abs<double, double>(double value) {
  double result = fabs(value);
- SD_PRINT_MATH_FUNC("sd_abs<double>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<double>", value, result,double);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int sd_abs<int, int>(int value) {
  int result = abs(value);
- SD_PRINT_MATH_FUNC("sd_abs<int>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<int>", value, result,int);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::LongType value) {
  sd::LongType result = llabs(value);
- SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result,sd::LongType);
  return result;
 }
 
-// ... Continue adding print statements to other specializations and functions ...
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_abs<bool>(bool value) {
- SD_PRINT_MATH_FUNC("sd_abs<bool>", value, value);
+ SD_PRINT_MATH_FUNC("sd_abs<bool>", value, value,bool);
  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint8_t sd_abs<uint8_t>(uint8_t value) {
- SD_PRINT_MATH_FUNC("sd_abs<uint8_t>", value, value);
+ SD_PRINT_MATH_FUNC("sd_abs<uint8_t>", value, value,uint8_t);
  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint16_t sd_abs<uint16_t>(uint16_t value) {
- SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value);
+ SD_PRINT_MATH_FUNC("sd_abs<uint16_t>", value, value,uint16_t);
  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
- SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value);
+ SD_PRINT_MATH_FUNC("sd_abs<uint32_t>", value, value,uint32_t);
  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value);
+ SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
  return value;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int8_t sd_abs<int8_t>(int8_t value) {
  int8_t result = value < 0 ? -value : value;
- SD_PRINT_MATH_FUNC("sd_abs<int8_t>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<int8_t>", value, result,int8_t);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int16_t sd_abs<int16_t>(int16_t value) {
  int16_t result = value < 0 ? -value : value;
- SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result);
+ SD_PRINT_MATH_FUNC("sd_abs<int16_t>", value, result,int16_t);
  return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float16>(float16 value) {
   bool result = *(value.data.getXP()) == 0x7fffU;
-  SD_PRINT_MATH_FUNC("sd_isnan<float16>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<float16>", value, result,bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bfloat16>(bfloat16 value) {
   bool result = value == bfloat16::nan();  // 0x7fffU;
-  SD_PRINT_MATH_FUNC("sd_isnan<bfloat16>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<bfloat16>", value, result,bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<float>(float value) {
   bool result = value != value;
-  SD_PRINT_MATH_FUNC("sd_isnan<float>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<float>", value, result,bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<double>(double value) {
   bool result = value != value;
-  SD_PRINT_MATH_FUNC("sd_isnan<double>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<double>", value, result,double);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int>(int value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<int>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<int>", value, result,int);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint32_t>(uint32_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<uint32_t>", value, result,uint32_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint16_t>(uint16_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<uint16_t>", value, result,uint16_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<uint8_t>(uint8_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<uint8_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<uint8_t>", value, result,uint8_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int16_t>(int16_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<int16_t>", value, result,int16_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<int8_t>(int8_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<int8_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<int8_t>", value, result,int8_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<bool>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<bool>", value, result,bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::LongType>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::LongType>", value, result,sd::LongType);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
   bool result = value < (float16)-HALF_MAX_VALUE || value > (float16)HALF_MAX_VALUE;
-  SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result,float16);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
   bool result = value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
-  SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result,bfloat16);
   return result;
 }
 
@@ -613,7 +612,7 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<float>(float value) {
 #else
   bool result = std::isinf(value);
 #endif
-  SD_PRINT_MATH_FUNC("sd_isinf<float>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<float>", value, result,float);
   return result;
 }
 
@@ -624,112 +623,112 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<double>(double value) {
 #else
   bool result = std::isinf(value);
 #endif
-  SD_PRINT_MATH_FUNC("sd_isinf<double>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<double>", value, result,double);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int>(int value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<int>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<int>", value, result,int);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint32_t>(uint32_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<uint32_t>", value, result,uint32_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint16_t>(uint16_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<uint16_t>", value, result,uint16_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<uint8_t>(uint8_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<uint8_t>", value, result,uint8_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int16_t>(int16_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<int16_t>", value, result,int16_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<int8_t>(int8_t value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<int8_t>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<int8_t>", value, result,int8_t);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<bool>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<bool>", value, result,bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::LongType>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::LongType>", value, result,sd::LongType);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result);
+  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
   return result;
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
   bool result = !sd_isnan<T>(value) && !sd_isinf<T>(value);
-  SD_PRINT_MATH_FUNC("sd_isfin", value, result);
+  SD_PRINT_MATH_FUNC("sd_isfin", value, result,T);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float16 sd_copysign<float16>(float16 val1, float16 val2) {
   float16 result = (float16)copysignf((float)val1, (float)val2);
-  SD_PRINT_MATH_FUNC2("sd_copysign<float16>", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_copysign<float16>", val1, val2, result,float16);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_copysign<float>(float val1, float val2) {
   float result = copysignf(val1, val2);
-  SD_PRINT_MATH_FUNC2("sd_copysign<float>", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_copysign<float>", val1, val2, result,float);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE double sd_copysign<double>(double val1, double val2) {
   double result = copysign(val1, val2);
-  SD_PRINT_MATH_FUNC2("sd_copysign<double>", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_copysign<double>", val1, val2, result,double);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
   int result = (val2 < 0) ? -(sd_abs<int,int>(val1)) : sd_abs<int,int>(val1);
-  SD_PRINT_MATH_FUNC2("sd_copysign<int>", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_copysign<int>", val1, val2, result,int);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
   sd::LongType result = (val2 < 0) ? -(sd_abs<sd::LongType,sd::LongType>(val1)) : sd_abs<sd::LongType,sd::LongType>(val1);
-  SD_PRINT_MATH_FUNC2("sd_copysign<sd::LongType>", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_copysign<sd::LongType>", val1, val2, result,sd::LongType);
   return result;
 }
 
@@ -751,7 +750,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
     }
     result = aim * sum;
   }
-  SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result);
+  SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result,Z);
   return result;
 }
 
@@ -759,7 +758,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
   Z result = Z(1.) - sd_igamma<X, Y, Z>(a, x);
-  SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result);
+  SD_PRINT_MATH_FUNC2("sd_igammac", a, x, result,Z);
   return result;
 }
 
@@ -776,21 +775,21 @@ SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
 template <>
 SD_HOST_DEVICE SD_INLINE float sd_pow(float val, float val2) {
   float result = p_pow<float>(val, val2);
-  SD_PRINT_MATH_FUNC2("sd_pow float", val, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_pow float", val, val2, result,float);
   return result;
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
   Z result = p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
-  SD_PRINT_MATH_FUNC2("sd_pow", val, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_pow", val, val2, result,Z);
   return result;
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_floordiv(X val, Y val2) {
   Z result = static_cast<Z>(std::floor(static_cast<double>(val) / static_cast<double>(val2)));
-  SD_PRINT_MATH_FUNC2("sd_floordiv", val, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_floordiv", val, val2, result,Z);
   return result;
 }
 
@@ -885,7 +884,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_lgamma(X x) {
 
     result = Z((double(x) - 0.5) * sd_log<X, double>(x) - double(x) + halfLogTwoPi + series);
   }
-  SD_PRINT_MATH_FUNC("sd_lgamma", x, result);
+  SD_PRINT_MATH_FUNC("sd_lgamma", x, result,Z);
   return result;
 }
 
@@ -896,21 +895,21 @@ SD_HOST_DEVICE SD_INLINE T sd_re(T val1, T val2) {
     result = (T)0.0f;
   else
     result = sd_abs<T,T>(val1 - val2) / (sd_abs<T,T>(val1) + sd_abs<T,T>(val2));
-  SD_PRINT_MATH_FUNC2("sd_re", val1, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_re", val1, val2, result,T);
   return result;
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_remainder(X val, Y val2) {
   Z result = p_remainder<Z>(static_cast<Z>(val), static_cast<Z>(val2));
-  SD_PRINT_MATH_FUNC2("sd_remainder", val, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_remainder", val, val2, result,Z);
   return result;
 }
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
   Z result = p_fmod<Z>(static_cast<Z>(val), static_cast<Z>(val2));
-  SD_PRINT_MATH_FUNC2("sd_fmod", val, val2, result);
+  SD_PRINT_MATH_FUNC2("sd_fmod", val, val2, result,Z);
   return result;
 }
 
@@ -919,14 +918,14 @@ SD_HOST_DEVICE SD_INLINE Z sd_fmod(X val, Y val2) {
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sin(X val) {
   Z result = p_sin<Z>(static_cast<Z>(val));
-  SD_PRINT_MATH_FUNC("sd_sin", val, result);
+  SD_PRINT_MATH_FUNC("sd_sin", val, result,Z);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sqrt(X val) {
   Z result = p_sqrt<Z>(static_cast<Z>(val));
-  SD_PRINT_MATH_FUNC("sd_sqrt", val, result);
+  SD_PRINT_MATH_FUNC("sd_sqrt", val, result,Z);
   return result;
 }
 
@@ -938,7 +937,7 @@ SD_HOST_DEVICE SD_INLINE X neg_tanh(X val) {
 
   auto p = sd::math::sd_pow<X, X, X>(e, val * t);
   X result = (p - o) / (p + o);
-  SD_PRINT_MATH_FUNC("neg_tanh", val, result);
+  SD_PRINT_MATH_FUNC("neg_tanh", val, result,X);
   return result;
 }
 
@@ -950,7 +949,7 @@ SD_HOST_DEVICE SD_INLINE X pos_tanh(X val) {
 
   auto p = sd::math::sd_pow<X, X, X>(e, val * t);
   X result = (o - p) / (o + p);
-  SD_PRINT_MATH_FUNC("pos_tanh", val, result);
+  SD_PRINT_MATH_FUNC("pos_tanh", val, result,X);
   return result;
 }
 
@@ -959,7 +958,7 @@ SD_HOST_DEVICE SD_INLINE float neu_tanh(float val, float sign) {
   float av = sign * val;
   auto p = sd::math::sd_pow<float, float, float>(e, -av * 2.f);
   float result = (1 - p) / (1 + p);
-  SD_PRINT_MATH_FUNC2("neu_tanh", val, sign, result);
+  SD_PRINT_MATH_FUNC2("neu_tanh", val, sign, result,float);
   return result;
 }
 
@@ -967,42 +966,42 @@ template <>
 SD_HOST_DEVICE SD_INLINE float sd_tanh(float val) {
   float sign = copysignfk(1.0f, val);
   float result = sign * neu_tanh(val, sign);
-  SD_PRINT_MATH_FUNC("sd_tanh<float>", val, result);
+  SD_PRINT_MATH_FUNC("sd_tanh<float>", val, result,float);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_tanh(X val) {
   Z result = val <= 0 ? neg_tanh(val) : pos_tanh(val);
-  SD_PRINT_MATH_FUNC("sd_tanh", val, result);
+  SD_PRINT_MATH_FUNC("sd_tanh", val, result,Z);
   return result;
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T sd_rotl(T val, T shift) {
   T result = p_rotl<T>(val, shift);
-  SD_PRINT_MATH_FUNC2("sd_rotl", val, shift, result);
+  SD_PRINT_MATH_FUNC2("sd_rotl", val, shift, result,T);
   return result;
 }
 
 template <typename T>
 SD_HOST_DEVICE SD_INLINE T sd_rotr(T val, T shift) {
   T result = p_rotr<T>(val, shift);
-  SD_PRINT_MATH_FUNC2("sd_rotr", val, shift, result);
+  SD_PRINT_MATH_FUNC2("sd_rotr", val, shift, result,T);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erf(X val) {
   Z result = p_erf<Z>(static_cast<Z>(val));
-  SD_PRINT_MATH_FUNC("sd_erf", val, result);
+  SD_PRINT_MATH_FUNC("sd_erf", val, result,Z);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_erfc(X val) {
   Z result = p_erfc<Z>(static_cast<Z>(val));
-  SD_PRINT_MATH_FUNC("sd_erfc", val, result);
+  SD_PRINT_MATH_FUNC("sd_erfc", val, result,Z);
   return result;
 }
 
@@ -1069,7 +1068,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
       result = sd::math::sd_exp<Z, Z>(sd::math::sd_lgamma<X, Z>(a));
     }
   }
-  SD_PRINT_MATH_FUNC("sd_gamma", a, result);
+  SD_PRINT_MATH_FUNC("sd_gamma", a, result,Z);
   return result;
 }
 

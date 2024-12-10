@@ -78,12 +78,12 @@ struct bfloat16 {
   }
 
   SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const float& rhs) {
-//#ifdef __CUDACC__
+#ifdef __CUDACC__
     if (static_cast<bfloat16>(rhs) == nan()) {
       _data = bfloat16::nan();
       return *this;
     }
-//#endif
+#endif
     auto x = *reinterpret_cast<int32_t*>(&const_cast<float&>(rhs));
     uint32_t lsb = (x >> 16) & 1;
     uint32_t rounding_bias = 0x7fff + lsb;
