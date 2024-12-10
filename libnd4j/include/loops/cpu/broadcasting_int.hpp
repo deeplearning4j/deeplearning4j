@@ -107,23 +107,7 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
   const sd::LoopKind::Kind kindOfLoop =
       sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
-  if (kindOfLoop == sd::LoopKind::EWS1) {
-    for (auto i = start; i < stop; i++) {
-      auto oX = x + tadOffsets[i];
-      auto oZ = z + zTadOffset[i];
-
-      PRAGMA_OMP_SIMD
-      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], y[f]);
-    };
-  } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
-    for (auto i = start; i < stop; i++) {
-      auto oX = x + tadOffsets[i];
-      auto oZ = z + zTadOffset[i];
-
-      PRAGMA_OMP_SIMD
-      for (sd::LongType f = 0; f < tadLength; f++) oZ[f * shape::elementWiseStride(zTadShapeInfo)] = OpType::op(oX[f * shape::elementWiseStride(xTadShapeShapeInfo)], y[f * shape::elementWiseStride(yShapeInfo)]);
-    };
-  } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
+    if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
              shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
     for (auto i = start; i < stop; i++) {
       auto oZ = z + zTadOffset[i];
@@ -245,23 +229,7 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
   const sd::LoopKind::Kind kindOfLoop =
       sd::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
 
-  if (kindOfLoop == sd::LoopKind::EWS1) {
-    for (auto i = start; i < stop; i++) {
-      auto oY = y + tadOffsets[i];
-      auto oZ = z + zTadOffset[i];
-
-      PRAGMA_OMP_SIMD
-      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
-    };
-  } else if (kindOfLoop == sd::LoopKind::EWSNONZERO) {
-    for (auto i = start; i < stop; i++) {
-      auto oY = y + tadOffsets[i];
-      auto oZ = z + zTadOffset[i];
-
-      PRAGMA_OMP_SIMD
-      for (sd::LongType f = 0; f < tadLength; f++) oZ[f] = OpType::op(x[f], oY[f]);
-    };
-  } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
+   if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
              shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
     for (auto i = start; i < stop; i++) {
       auto oY = y + tadOffsets[i];

@@ -128,9 +128,15 @@ void execReduce3(Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extra
     auto dbZ = z->dataBuffer();
 
     x->preparePrimaryUse({z}, {x,y});
-    NativeOpExecutioner::execReduce3(nullptr, opNum, dbX != nullptr ? dbX->primary() : nullptr, x->shapeInfo(), dbX != nullptr ? dbX->special() : nullptr, x->specialShapeInfo(),
-                                     extraParams, dbY->primary(), y->shapeInfo(), dbY->special(), y->specialShapeInfo(),
-                                     dbZ != nullptr ? dbZ->primary() : nullptr, z->shapeInfo(), dbZ != nullptr ? dbZ->special() : nullptr, z->specialShapeInfo());
+    NativeOpExecutioner::execReduce3(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
+                                     x->shapeInfo(), dbX != nullptr ? dbX->special() : nullptr,
+                                     x->specialShapeInfo(),
+                                     extraParams, y->buffer(),
+                                     y->shapeInfo(), y->specialBuffer(),
+                                     y->specialShapeInfo(),
+                                     dbZ != nullptr ? dbZ->primary() : nullptr, z->shapeInfo(),
+                                     dbZ != nullptr ? z->specialBuffer() : nullptr,
+                                     z->specialShapeInfo());
     x->registerPrimaryUse({z}, {x,y});
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -151,11 +157,15 @@ void execReduce3Scalar(Pointer *extraPointers, int opNum, OpaqueNDArray x,  void
     auto dbX = x->dataBuffer();
     auto dbY = y->dataBuffer();
     auto dbZ = z->dataBuffer();
-
     x->preparePrimaryUse({z}, {x, y});
-    NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX != nullptr ? dbX->primary() : nullptr, x->shapeInfo(), dbX != nullptr ? dbX->special() : nullptr, x->specialShapeInfo(),
-                                           extraParams, dbY->primary(), y->shapeInfo(), dbY->special(), y->specialShapeInfo(),
-                                           dbZ != nullptr ? dbZ->primary() : nullptr, z->shapeInfo(), dbZ != nullptr ? dbZ->special() : nullptr, z->specialShapeInfo());
+    NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
+                                           x->shapeInfo(),
+                                           dbX != nullptr ? x->specialBuffer() : nullptr, x->specialShapeInfo(),
+                                           extraParams, y->buffer(), y->shapeInfo(),
+                                           dbY->special(), y->specialShapeInfo(),
+                                           dbZ != nullptr ? z->buffer() : nullptr,
+                                           z->shapeInfo(), dbZ != nullptr ? dbZ->special() : nullptr,
+                                           z->specialShapeInfo());
     x->registerPrimaryUse({z}, {x, y});
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1066,8 +1076,8 @@ void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, 
     BUILD_SINGLE_SELECTOR(
         iType, _scatterUpdate,
         (extraPointers, opCode, indices->lengthOf(), array->buffer(), array->shapeInfo(), hTADOffsetsArray, array->specialBuffer(), array->specialShapeInfo(), hTADOffsetsArray,
-         updates->buffer(), updates->shapeInfo(), hTADOffsetsUpdates, updates->specialBuffer(), updates->specialShapeInfo(), hTADOffsetsUpdates,
-         indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo()),
+            updates->buffer(), updates->shapeInfo(), hTADOffsetsUpdates, updates->specialBuffer(), updates->specialShapeInfo(), hTADOffsetsUpdates,
+            indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo()),
         SD_INDEXING_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1114,7 +1124,7 @@ void sortByValue(Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bool d
 }
 
 void sortTadByKey(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
-                 OpaqueNDArray dimension, bool descending) {
+                  OpaqueNDArray dimension, bool descending) {
   try {
     auto xType = x->dataType();
     auto yType = y->dataType();
@@ -1157,7 +1167,7 @@ void execIndexReduceScalar(Pointer *extraPointers, int opNum, NDArray *x,void *e
 void execIndexReduce(Pointer *extraPointers, int opNum, NDArray *x,
                      void *extraParams,
                      NDArray *z, NDArray *dimension
-                     ) {
+) {
   try {
     auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                      dimension->bufferAsT<sd::LongType>(),
@@ -1184,11 +1194,19 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
-                                                                      dimension->lengthOf());
+                                                                      dimension->lengthOf(),true);
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
-                                                                      dimension->lengthOf());
+                                                                      dimension->lengthOf(),true);
 
+#if defined(PRINT_INDICES)
+    printf("broadcast exec tad full x\n");
+    shape::printShapeInfo(x->shapeInfo());
+    printf("broadcast exec tad full y\n");
+    shape::printShapeInfo(y->shapeInfo());
+    printf("broadcast exec tad full z\n");
+    shape::printShapeInfo(z->shapeInfo());
+#endif
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
     auto hTADOffsets = tadPackX->primaryOffsets();
     auto hTADShapeInfoZ = tadPackZ->primaryShapeInfo();
@@ -1849,8 +1867,8 @@ void _printHostBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
 
   sd_printf("\n",0);
 }
- void printDeviceBuffer(OpaqueDataBuffer *buffer)  {
-        printDeviceBuffer(buffer, 0);
+void printDeviceBuffer(OpaqueDataBuffer *buffer)  {
+  printDeviceBuffer(buffer, 0);
 }
 void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
   if(buffer->special() != nullptr) {
@@ -1874,9 +1892,9 @@ void printDeviceBuffer(OpaqueDataBuffer *buffer, sd::LongType offset) {
 
 
 
-    BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
-                          (OpaqueNDArray, OpaqueNDArray, const int, OpaqueNDArray, sd::LongType),
-                          SD_COMMON_TYPES);
+BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric,
+                      (OpaqueNDArray, OpaqueNDArray, const int, OpaqueNDArray, sd::LongType),
+                      SD_COMMON_TYPES);
 
 
 

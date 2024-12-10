@@ -181,7 +181,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
 
         if (z.isScalar()) {
-            Nd4j.getNativeOps().execIndexReduceScalar(dummy,op.opNum(),xb,zb,null);
+            Nd4j.getNativeOps().execIndexReduceScalar(dummy,
+                    op.opNum(),
+                    xb,
+                    getPointerForExtraArgs(op,x.dataType()),
+                    zb);
         } else {
             OpaqueNDArray fromDims = OpaqueNDArray.fromINDArray(op.dimensions());
             Nd4j.getNativeOps().execIndexReduce(dummy,op.opNum(),xb,zb,fromDims, null);
@@ -301,7 +305,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
-
         /**
          * Note because dimension arrays don't change,
          * we use an {@link ConstantHandler} which knows how to reserve memory
@@ -312,18 +315,23 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
         if (op instanceof Variance) {
             if (ret.isScalar()) {
-                Nd4j.getNativeOps().execSummaryStatsScalar(null,op.opNum(),xb,zb,null,((Variance) op).isBiasCorrected());
+                Nd4j.getNativeOps().execSummaryStatsScalar(extraz.get(),
+                        op.opNum(),
+                        xb,
+                        getPointerForExtraArgs(op,x.dataType()),
+                        zb,
+                        ((Variance) op).isBiasCorrected());
 
             } else {
                 try {
 
                     Nd4j.getNativeOps().execSummaryStatsTad(
-                            null,op.
-                                    opNum(),
+                            extraz.get(),
+                            op.opNum(),
                             xb,
+                            getPointerForExtraArgs(op,x.dataType()),
                             zb,
-                            OpaqueNDArray.fromINDArray(op.dimensions())
-                            ,null,
+                            OpaqueNDArray.fromINDArray(op.dimensions()),
                             ((Variance) op).isBiasCorrected());
 
                 } catch (Throwable t) {
@@ -345,7 +353,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     //use opaque ndarrays instead here
                     Nd4j.getNativeOps().execReduce3All(null,
                             op.opNum(),
-                            xb,yb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),null);
+                            xb,yb,zb,OpaqueNDArray.fromINDArray(op.dimensions()),getPointerForExtraArgs(op,x.dataType()));
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
                     StringBuilder errorMessage = new StringBuilder();
@@ -355,10 +363,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     throw new RuntimeException(errorMessage.toString());
                 }
             } else if (ret.isScalar()) {
-                Nd4j.getNativeOps().execReduce3Scalar(null,op.opNum(),xb,null,yb,zb);
+                Nd4j.getNativeOps().execReduce3Scalar(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()),yb,zb);
             } else {
                 try {
-                    Nd4j.getNativeOps().execReduce3Tad(null,op.opNum(),xb,null, yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                    Nd4j.getNativeOps().execReduce3Tad(extraz.get(),op.opNum(),xb,getPointerForExtraArgs(op,x.dataType()), yb, zb, OpaqueNDArray.fromINDArray(op.dimensions()));
 
                 } catch (Throwable t) {
                     String str = opInfoString(op, Optional.of(dimension));
@@ -379,16 +387,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        Nd4j.getNativeOps().execReduceFloat(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        Nd4j.getNativeOps().execReduceFloat(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_BOOL:
-                        Nd4j.getNativeOps().execReduceBool(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        Nd4j.getNativeOps().execReduceBool(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
                         break;
                     case REDUCE_SAME:
-                        Nd4j.getNativeOps().execReduceSame(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
+                        Nd4j.getNativeOps().execReduceSame(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb);
                         break;
                     case REDUCE_LONG:
-                        Nd4j.getNativeOps().execReduceLong(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
+                        Nd4j.getNativeOps().execReduceLong(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb,dims);
                         break;
                     default:
                         throw new UnsupportedOperationException("Unsupported op used in reduce: " + op.getOpType());
@@ -398,16 +406,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     extraz.set(new PointerPointer(32));
                 switch (op.getOpType()) {
                     case REDUCE_FLOAT:
-                        Nd4j.getNativeOps().execReduceFloat2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb,OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceFloat2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()), zb,OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_LONG:
-                        Nd4j.getNativeOps().execReduceLong2(null, op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceLong2(extraz.get(), op.opNum(), xb,getPointerForExtraArgs(op, x.dataType()), zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_SAME:
-                        Nd4j.getNativeOps().execReduceSame2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceSame2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
                     case REDUCE_BOOL:
-                        Nd4j.getNativeOps().execReduceBool2(null, op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
+                        Nd4j.getNativeOps().execReduceBool2(extraz.get(), op.opNum(), xb, getPointerForExtraArgs(op, x.dataType()),zb, OpaqueNDArray.fromINDArray(op.dimensions()));
                         break;
 
                     default:
@@ -710,43 +718,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val dimension = op.dimensions().toLongVector();
 
-        /**
-         * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
-         * and the associated offsets for each {@link INDArray#tensorAlongDimension(int, int...)}
-         * The first item is the shape information. The second one is the offsets.
-         */
-        Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(x, dimension);
-
-        Pointer hostTadShapeInfo = tadBuffers.getFirst().addressPointer();
-        Pointer hostTadOffsets = tadBuffers.getSecond().addressPointer();
-
-        Pointer devTadShapeInfoZ = null;
-        Pointer devTadOffsetsZ = null;
-
-        // that's the place where we're going to have second TAD in place
-        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(z, dimension);
-
-        devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
-        devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
-
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
-
-
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
         OpaqueNDArray dimArray = OpaqueNDArray.fromINDArray(op.dimensions());
         switch (op.getOpType()) {
             case BROADCAST:
-                Nd4j.getNativeOps().execBroadcast(dummy,op.opNum(),xb, yb, zb,extraz.get(),dimArray);
-
+                Nd4j.getNativeOps().execBroadcast(extraz.get(),op.opNum(),xb, yb, zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
                 break;
             case BROADCAST_BOOL:
-                Nd4j.getNativeOps().execBroadcastBool(dummy,op.opNum(),xb, yb,zb,extraz.get(),dimArray);
+                Nd4j.getNativeOps().execBroadcastBool(extraz.get(),op.opNum(),xb, yb,zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
@@ -950,9 +931,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     }
 
-   
 
-  
+
+
 
     @Override
     public ExecutionerType type() {

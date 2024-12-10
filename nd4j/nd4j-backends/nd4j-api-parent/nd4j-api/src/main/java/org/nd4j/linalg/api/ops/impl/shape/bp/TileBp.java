@@ -30,9 +30,9 @@ import java.util.*;
 
 public class TileBp extends DynamicCustomOp {
 
-    private int[] repeat;
+    private long[] repeat;
 
-    public TileBp(SameDiff sameDiff, SDVariable in, SDVariable grad, int[] repeat) {
+    public TileBp(SameDiff sameDiff, SDVariable in, SDVariable grad, long[] repeat) {
         super(null,sameDiff, new SDVariable[]{in, grad}, false);
         this.repeat = repeat;
         addArguments();

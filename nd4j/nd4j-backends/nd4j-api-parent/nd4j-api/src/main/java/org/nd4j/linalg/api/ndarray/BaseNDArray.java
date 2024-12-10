@@ -1267,7 +1267,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        return Shape.elementWiseStride(shapeInfoDataBuffer());
+        return 0;
     }
 
     @Override
@@ -3063,11 +3063,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     private void applyBroadcastOp(INDArray vector, final char operation) {
         Nd4j.getCompressor().autoDecompress(this);
-        int alongDimension = Shape.isRowVectorShape(vector.shape()) ? 1 : 0;
-
-        // FIXME: probably this is wrong, because strict equality is always false in current DataBuffer mechanics
-        if (this.data() == vector.data())
-            vector = vector.dup();
+        int alongDimension = Shape.isRowVectorShape(vector.shape()) ?
+               -1 : -0;
         switch (operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));
@@ -4446,7 +4443,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         else if (isColumnVector() && c > 0)
             throw new IllegalArgumentException("Illegal index for column");
         Preconditions.checkArgument(this.rank() == 2, "getColumn() can be called on 2D arrays only");
-        return tensorAlongDimension(c, 0);
+        INDArray ret =  tensorAlongDimension(c, 0);
+        return ret.reshape(ret.length(),1);
     }
 
     @Override
@@ -4884,7 +4882,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             Nd4j.exec(op);
             val diff = op.z().getDouble(0);
 
-            return diff < 0.5;
+            return Math.abs(1.0 - diff) < eps;
         }
 
         if (!Arrays.equals(this.shape(), n.shape()))
@@ -4899,19 +4897,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slices() != n.slices())
             return false;
 
-        if (n.ordering() == ordering()) {
-            EqualsWithEps op = new EqualsWithEps(this, n, eps);
-            Nd4j.getExecutioner().exec(op);
-            double diff = op.z().getDouble(0);
+        EqualsWithEps op = new EqualsWithEps(this, n, eps);
+        Nd4j.getExecutioner().exec(op);
+        double diff = op.z().getDouble(0);
 
-            return diff < 0.5;
-        } else {
-            EqualsWithEps op = new EqualsWithEps(this, n, eps);
-            Nd4j.getExecutioner().exec(op);
-            double diff = op.z().getDouble(0);
-
-            return diff < 0.5;
-        }
+        return Math.abs(1.0 - diff) < eps;
     }
 
     @Override

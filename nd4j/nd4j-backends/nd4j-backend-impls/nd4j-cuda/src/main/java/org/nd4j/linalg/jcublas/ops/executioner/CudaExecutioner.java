@@ -156,6 +156,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction(), context.getBufferScalar(), context.getBufferSpecial(),
                 hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets,
                 devTadShapeInfoZ, devTadOffsetsZ);
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(argsType), context) : null;
 
         switch (op.getOpType()) {
             case BROADCAST:
@@ -163,7 +164,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         x,
                         y,
                         z,
-                        null,
+                        extraArgs,
                         dimension);
                 break;
             case BROADCAST_BOOL:
@@ -171,7 +172,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         x,
                         y,
                         z,
-                        null,
+                        extraArgs,
                         dimension);
                 break;
             default:
@@ -406,7 +407,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
             //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
             //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
-            if(op.z() != null){
+            if(op.z() != null) {
                 Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
                         " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
                 op.z().assign(op.x());
@@ -677,7 +678,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
         val dimension = OpaqueNDArray.fromINDArray(op.dimensions().castTo(DataType.LONG));
-
+        Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(argsType), context) : null;
 
         switch (op.getOpType()) {
             case BROADCAST:
@@ -685,7 +686,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         xb,
                         yb,
                         zb,
-                        null,
+                        extraArgs,
                         dimension);
                 break;
             case BROADCAST_BOOL:
@@ -693,7 +694,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         xb,
                         yb,
                         zb,
-                        null,
+                        extraArgs,
                         dimension);
                 break;
             default:
@@ -1607,7 +1608,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val t = ArrayOptionsHelper.arrayType(shape);
         return LongShapeDescriptor.fromShape(Shape.shape(shape), Shape.stride(shape), Shape.elementWiseStride(shape), Shape.order(shape), ArrayOptionsHelper.dataType(shape), t == ArrayType.EMPTY);
     }
-    
+
     /**
      * This method executes given CustomOp
      *
@@ -1675,7 +1676,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(message.toString(), e);
         }
     }
-    
+
 
     @Override
     public ExecutionerType type() {

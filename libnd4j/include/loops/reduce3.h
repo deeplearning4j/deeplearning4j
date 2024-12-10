@@ -180,8 +180,6 @@ class SD_LIB_HIDDEN Reduce3 {
 }  // namespace reduce3
 }  // namespace functions
 
-#ifdef __CUDACC__
 
-#endif
 
 #endif /* REDUCE3_H_ */

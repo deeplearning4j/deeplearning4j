@@ -200,7 +200,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
         endif()
 
         # Set C++ compiler and flags
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -g -O0 -fPIC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all -g -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions -g -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()

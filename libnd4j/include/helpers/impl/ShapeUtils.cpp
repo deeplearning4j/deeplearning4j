@@ -410,8 +410,7 @@ bool ShapeUtils::copyVectorPart(std::vector<LongType>& target, std::vector<LongT
 
 //////////////////////////////////////////////////////////////////////////
 // return new (shorter) sorted dimensions array without dimensions that are present in input vector
-std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const LongType dimsLen,
-                                                     const LongType* dimensions) {
+std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const LongType dimsLen, const LongType* dimensions) {
   std::vector<LongType>* newDimensions = new std::vector<LongType>();
   if (dimsLen == 0) {  // if input vector is empty then return whole shape range
     newDimensions->resize(rank);
@@ -430,7 +429,6 @@ std::vector<LongType>* ShapeUtils::evalDimsToExclude(const LongType rank, const 
       if (isAbsent) newDimensions->emplace_back(i);
     }
   }
-
   return newDimensions;
 }
 

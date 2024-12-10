@@ -24,12 +24,14 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -39,10 +41,10 @@ import java.util.stream.Collectors;
 
 public class Tile extends DynamicCustomOp {
 
-    private int[] jaxis;
+    private long[] jaxis;
     private boolean is_static_reps = false;
 
-    public Tile(SameDiff sameDiff, SDVariable i_v, int[] axis) {
+    public Tile(SameDiff sameDiff, SDVariable i_v, long[] axis) {
         super(null,sameDiff, new SDVariable[]{i_v}, false);
         this.jaxis = axis;
         addArguments();
@@ -53,7 +55,7 @@ public class Tile extends DynamicCustomOp {
         this.jaxis = null;
     }
 
-    public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis, boolean is_static_reps) {
+    public Tile(INDArray[] inputs, INDArray[] outputs, long[] axis, boolean is_static_reps) {
         super(null, inputs, outputs);
         this.jaxis = axis;
         this.is_static_reps = is_static_reps;
@@ -61,7 +63,7 @@ public class Tile extends DynamicCustomOp {
     }
 
 
-    public Tile(INDArray[] inputs, INDArray[] outputs, int[] axis) {
+    public Tile(INDArray[] inputs, INDArray[] outputs, long[] axis) {
         this(inputs,outputs,axis,false);
     }
 
@@ -70,7 +72,7 @@ public class Tile extends DynamicCustomOp {
         this.jaxis = null;
     }
 
-    public Tile(INDArray inputs, int... axis){
+    public Tile(INDArray inputs, long... axis) {
         super(null, new INDArray[] {inputs}, null);
         this.jaxis = axis;
         this.is_static_reps = true;
@@ -78,6 +80,28 @@ public class Tile extends DynamicCustomOp {
     }
 
     public Tile() {}
+
+    public Tile(INDArray x, int[] repeat) {
+        this(x, ArrayUtil.toLongArray(repeat));
+    }
+
+    public Tile(SameDiff sd, SDVariable x, int[] repeat) {
+        this(sd, x, ArrayUtil.toLongArray(repeat));
+    }
+
+    public Tile(INDArray[] indArrays, INDArray[] indArrays1, int[] repeat) {
+        this(indArrays, indArrays1, ArrayUtil.toLongArray(repeat));
+    }
+
+    public Tile(INDArray input, INDArray result, int...axes) {
+        this(input, result, ArrayUtil.toLongArray(axes));
+    }
+
+    public Tile(INDArray input, INDArray result, long[] longArray) {
+        super(null, new INDArray[]{input}, new INDArray[]{result});
+        this.jaxis = longArray;
+        addArguments();
+    }
 
     private void addArguments() {
         this.is_static_reps = true;
@@ -92,7 +116,7 @@ public class Tile extends DynamicCustomOp {
     @Override
     public void configureFromArguments() {
         if(!iArguments.isEmpty()) {
-            this.jaxis = Ints.toArray(iArguments);
+            this.jaxis = Longs.toArray(iArguments);
         }
     }
 
@@ -100,7 +124,7 @@ public class Tile extends DynamicCustomOp {
     public void setPropertiesForFunction(Map<String, Object> properties) {
         if(properties.containsKey("dimensions")) {
             Long dimension = (Long) properties.get("dimensions");
-            this.jaxis = Ints.toArray(Arrays.asList(dimension.intValue()));
+            this.jaxis = Longs.toArray(Arrays.asList(dimension.intValue()));
         }
     }
 
