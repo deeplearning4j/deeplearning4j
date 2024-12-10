@@ -1496,6 +1496,8 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
 void execScalar(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                 NDArray *scalar, void *extraParams) {
   try {
+    printf("Trying to run exec scalar op num %d\n",opNum);
+    fflush(stdout);
     NativeOpExecutioner::execScalar(nullptr, opNum,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                     z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
