@@ -157,9 +157,6 @@ void execReduce3Scalar(Pointer *extraPointers, int opNum, OpaqueNDArray x,  void
     auto dbX = x->dataBuffer();
     auto dbY = y->dataBuffer();
     auto dbZ = z->dataBuffer();
-
-    x->printIndexedBuffer("reduce 3 X");
-    y->printIndexedBuffer("reduce 3 Y");
     x->preparePrimaryUse({z}, {x, y});
     NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
                                            x->shapeInfo(),
