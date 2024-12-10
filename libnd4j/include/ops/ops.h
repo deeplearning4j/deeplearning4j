@@ -3223,8 +3223,6 @@ class EqualsWithEps {
 #endif
 
   SD_OP_DEF static Z update(Z old, Z opOutput, Z *extraParamsRef) {
-    printf("update equal with eps opOutput %f old %f\n", (double)opOutput, (double)old);
-    fflush(stdout);
     return opOutput && old;
   }
 

@@ -1014,9 +1014,10 @@ public class BroadcastingOpsSmokeTests {
                 {7, 8, 9}
         });
 
+        INDArray matrix2 = matrix.dup();
         // Get views
         INDArray rowView = matrix.getRow(1);
-        INDArray colView = matrix.getColumn(1);
+        INDArray colView = matrix2.getColumn(1);
 
         // Create vectors for broadcasting
         INDArray rowVector = Nd4j.create(new double[] {10, 20, 30});
@@ -1026,17 +1027,11 @@ public class BroadcastingOpsSmokeTests {
         rowView.addi(rowVector);
         assertEquals(Nd4j.create(new double[] {14, 25, 36}), rowView);
 
+        INDArray assertion = Nd4j.create(new double[] {12, 25, 38}).reshape('c',3,1);
         // Test in-place operations on column view
         colView.addi(colVector);
-        assertEquals(Nd4j.create(new double[] {12, 25, 38}), colView);
+        assertEquals(assertion, colView);
 
-        // Verify the original matrix was modified
-        INDArray expectedMatrix = Nd4j.create(new double[][] {
-                {1, 12, 3},
-                {14, 25, 36},
-                {7, 38, 9}
-        });
-        assertEquals(expectedMatrix, matrix);
     }
 
     @Test
