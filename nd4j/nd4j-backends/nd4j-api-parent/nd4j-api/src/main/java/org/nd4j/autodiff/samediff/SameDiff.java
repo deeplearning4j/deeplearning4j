@@ -2180,6 +2180,7 @@ public class SameDiff extends SDBaseOps {
         for (Listener l1 : activeListeners)
             l1.operationEnd(this, Operation.TRAINING);
 
+
         return history.getReport();
     }
 

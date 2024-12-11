@@ -451,7 +451,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         val dimension = op.dimensions().toLongVector();
 
-        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));

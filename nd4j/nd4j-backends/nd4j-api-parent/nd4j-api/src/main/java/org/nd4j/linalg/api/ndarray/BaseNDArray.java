@@ -112,6 +112,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected static ThreadLocal<Boolean> callingToString = initWithFalse();
     protected long offset = 0;
 
+    protected OpaqueNDArray opaqueNDArray;
+
     public BaseNDArray(DataBuffer data, long[] newShape, long[] newStride, long offset, long ews, char ordering, DataType dataType, boolean isView) {
         this.data = data;
 
@@ -3064,7 +3066,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     private void applyBroadcastOp(INDArray vector, final char operation) {
         Nd4j.getCompressor().autoDecompress(this);
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ?
-               -1 : -0;
+                -1 : -0;
         switch (operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));
@@ -6150,6 +6152,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public OpaqueNDArray getOrCreateOpaqueNDArray() {
+        if(opaqueNDArray != null) {
+            return opaqueNDArray;
+        }
+        DataBuffer buffer = data();
+        DataBuffer shapeInfo = shapeInfoDataBuffer();
+
+        OpaqueNDArray ret =  OpaqueNDArray.create(
+                shapeInfo.opaqueBuffer(),
+                isEmpty() ? null : buffer.opaqueBuffer(),
+                isEmpty() ? null :buffer.opaqueBuffer(),
+                offset()
+        );
+
+        return ret;
+    }
+
+    @Override
     public void close() {
         // empty arrays have no buffer at all
         if (released || isEmpty() || !closeable())
@@ -6167,6 +6187,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     .stackTrace(allocationTrace)
 
                     .build());
+        }
+
+        if(opaqueNDArray != null) {
+            opaqueNDArray.close();
         }
         data.close();
 
