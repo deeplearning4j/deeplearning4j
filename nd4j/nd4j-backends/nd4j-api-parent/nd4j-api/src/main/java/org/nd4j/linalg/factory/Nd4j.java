@@ -5245,7 +5245,7 @@ public class Nd4j {
     /**
      * Initializes nd4j
      */
-    private synchronized void initContext() {
+    private  void initContext() {
         try {
             defaultFloatingPointDataType = new AtomicReference<>();
             defaultFloatingPointDataType.set(DataType.FLOAT);

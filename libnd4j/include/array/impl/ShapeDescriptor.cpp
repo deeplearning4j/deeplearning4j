@@ -59,7 +59,6 @@ LongType *ShapeDescriptor::toShapeInfo() const {
 ShapeDescriptor::~ShapeDescriptor() {
   // no-op
   if(_shape_strides != nullptr && this->ownsShapeStrides) {
-    delete[] _shape_strides;
     _shape_strides = nullptr;
   }
 

@@ -27,7 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
-import org.nd4j.nativeblas.NativeOpsHolder;
 @Slf4j
 public class CpuBackend extends Nd4jBackend {
 
@@ -72,7 +71,10 @@ public class CpuBackend extends Nd4jBackend {
 
     @Override
     public String buildInfo() {
-        return Nd4j.getNativeOps().buildInfo();
+        StringBuilder sb = new StringBuilder();
+        sb.append("PID: " + ProcessHandle.current().pid() + "\n");
+        sb.append(Nd4j.getNativeOps().buildInfo());
+        return sb.toString();
     }
 
     @Override
@@ -82,7 +84,7 @@ public class CpuBackend extends Nd4jBackend {
 
         if(logInit) {
             try {
-                log.info("Backend build information:\n {}", buildInfo()); 
+                log.info("Backend build information:\n {} IP: {}", buildInfo(),ProcessHandle.current().pid());
             } catch (Throwable t) {
                 log.debug("Error logging CPU backend ", t);
             }

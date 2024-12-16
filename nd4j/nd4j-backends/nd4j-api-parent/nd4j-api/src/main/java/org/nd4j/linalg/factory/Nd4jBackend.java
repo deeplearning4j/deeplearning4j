@@ -38,7 +38,6 @@ public abstract class Nd4jBackend {
 
     public static final int BACKEND_PRIORITY_CPU;
     public static final int BACKEND_PRIORITY_GPU;
-    public static final int BACKEND_PRIORITY_AURORA;
     /**
      * @deprecated Use {@link ND4JEnvironmentVars#BACKEND_DYNAMIC_LOAD_CLASSPATH}
      */
@@ -127,7 +126,6 @@ public abstract class Nd4jBackend {
         }
 
 
-        BACKEND_PRIORITY_AURORA = n;
     }
 
 
@@ -265,7 +263,7 @@ public abstract class Nd4jBackend {
      * @param jar the jar file to add
      * @throws NoAvailableBackendException
      */
-    public static synchronized void loadLibrary(File jar) throws NoAvailableBackendException {
+    public static  void loadLibrary(File jar) throws NoAvailableBackendException {
         try {
             /*We are using reflection here to circumvent encapsulation; addURL is not public*/
             URLClassLoader loader = (URLClassLoader) ND4JClassLoading.getNd4jClassloader();

@@ -625,47 +625,11 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *toShapeBuffer(ShapeInformation *info)
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *toShapeBuffer(ShapeInformation *info, sd::LongType *ret);
 
 
-
-/** Given an linear index, element wise stride
-* and the length of each tad
-* map a linear index to a tad
-* @param i the index to map
-* @param the element wise stride for the tads
-* @param numElementsPerTad the number of elements
-* per tad
-*/
-SD_LIB_EXPORT SD_HOST_DEVICE int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
-
-/**
-* Map a tad to a
-* reduction index.
-* @param tadIndexForOriginal the original tad index for the
-* split up problem (eg: split is dimension 3 mapping to a 2,3 problem)
-* @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
-* @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
-*/
-SD_LIB_EXPORT SD_HOST_DEVICE int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal);
-
-
 /**
 * Returns the prod of the data
 * up to the given length
 */
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType prodLong(const sd::LongType *data, int length);
-
-
-
-// all three arrays should have same rank
-// all three arrays should have same dimensions or some of them are 1 (that is satisfy broadcasting principle), strides
-// may be different shapeInfo1 - first array should have max length compared to rest of two arrays
-SD_LIB_EXPORT SD_HOST_DEVICE void getOffsetBroadcast(const sd::LongType &startInd, const sd::LongType ind,
-                                                     const sd::LongType *shapeInfo1, const sd::LongType *shapeInfo2,
-                                                     const sd::LongType *shapeInfo3, const bool sameOffsets12,
-                                                     const bool sameOffsets13, sd::LongType *coords,
-                                                     sd::LongType &offset1, sd::LongType &offset2,
-                                                     sd::LongType &offset3);
-
-
 
 
 SD_LIB_EXPORT SD_HOST_DEVICE void printShapeInfo(const sd::LongType *shapeInfo);
@@ -2656,19 +2620,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadsPerReduceIndex(int tadsForReduce,
   return tadsForOriginal / tadsForReduce;
 }
 
-/**
-* Maps a linear index to a reduction index
-* @param i the linear index to map
-* @param elementWiseStride the element wise stride
-* for the multiple problem
-* @param tadNum the number of tads for the shrunken problem
-* @param originalTadNum the tad number for the reduced version of the problem
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad, int tadNum,
-                                                                   int originalTadNum) {
-  int tad = tadIndex(i, elementWiseStride, numElementsPerTad);
-  return reductionIndexForTad(tad, tadNum, originalTadNum);
-}
+
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *createScalarShapeInfo() {
   auto shape = new sd::LongType[1];

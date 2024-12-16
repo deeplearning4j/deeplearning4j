@@ -39,8 +39,20 @@ import java.util.List;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayEvent;
 import org.nd4j.linalg.string.NDArrayStrings;
+import org.nd4j.nativeblas.OpaqueNDArray;
 
 public interface INDArray extends Serializable, AutoCloseable {
+
+
+    /**
+     * Create an {@link OpaqueNDArray}
+     * and cache the result.
+     * This created array will
+     * be destroyed when {@link INDArray#close()}
+     * is called.
+     * @return
+     */
+    OpaqueNDArray getOrCreateOpaqueNDArray();
 
 
     /**

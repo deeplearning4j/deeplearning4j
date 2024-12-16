@@ -115,7 +115,7 @@ else()
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
     if (SD_SANITIZE)
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}  -ftls-model=local-dynamic  -fno-sanitize-recover=all -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -static-libasan   -ftls-model=local-dynamic  -fno-sanitize-recover=all -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow")
 
     else()
         # CUDA?

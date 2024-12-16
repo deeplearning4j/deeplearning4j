@@ -451,7 +451,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         val dimension = op.dimensions().toLongVector();
 
-        Pair<DataBuffer, DataBuffer> tadBuffersZ = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -857,7 +856,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
+    public  Map<String, CustomOpDescriptor> getCustomOperations() {
         if (customOps == null) {
             String list = Nd4j.getNativeOps().getAllCustomOps();
 

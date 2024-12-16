@@ -157,6 +157,7 @@ void execReduce3Scalar(Pointer *extraPointers, int opNum, OpaqueNDArray x,  void
     auto dbX = x->dataBuffer();
     auto dbY = y->dataBuffer();
     auto dbZ = z->dataBuffer();
+
     x->preparePrimaryUse({z}, {x, y});
     NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, dbX != nullptr ? x->buffer() : nullptr,
                                            x->shapeInfo(),
@@ -1493,8 +1494,6 @@ void execReduce3Tad(Pointer *extraPointers, int opNum, NDArray *x, void *extraPa
 void execScalar(Pointer *extraPointers, int opNum, NDArray *x, NDArray *z,
                 NDArray *scalar, void *extraParams) {
   try {
-    printf("Trying to run exec scalar op num %d\n",opNum);
-    fflush(stdout);
     NativeOpExecutioner::execScalar(nullptr, opNum,
                                     x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                                     z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),

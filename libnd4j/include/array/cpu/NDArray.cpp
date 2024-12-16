@@ -426,7 +426,6 @@ void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target)  {
   const int ews = target.ews();
   const auto targetLen = target.lengthOf();
   if (target.ordering() == 'c' && ews == 1) {  //  ews == 1 always here
-    //#pragma omp parallel for simd if(targetLen > Environment::getInstance().elementwiseThreshold()) schedule(guided)
     for (sd::LongType i = 0; i < targetLen; ++i) {
       auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
       BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,

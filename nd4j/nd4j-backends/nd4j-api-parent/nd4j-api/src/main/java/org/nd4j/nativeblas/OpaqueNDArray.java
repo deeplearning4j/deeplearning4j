@@ -178,6 +178,7 @@ public class OpaqueNDArray extends Pointer {
         delete(this);
     }
 
+
     /**
      * Converts an INDArray to an OpaqueNDArray.
      * This method uses {@link Nd4j#getNativeOps()} to create the OpaqueNDArray.
@@ -185,7 +186,7 @@ public class OpaqueNDArray extends Pointer {
      * @param array The INDArray to convert.
      * @return The corresponding OpaqueNDArray.
      */
-    public static OpaqueNDArray fromINDArray(INDArray array) {
+    public static OpaqueNDArray fromINDArrayUncached(INDArray array) {
         if (array == null) {
             return null;
         }
@@ -199,6 +200,19 @@ public class OpaqueNDArray extends Pointer {
                 array.isEmpty() ? null :buffer.opaqueBuffer(),
                 array.offset()
         );
+    }
+    /**
+     * Converts an INDArray to an OpaqueNDArray.
+     * This method uses {@link Nd4j#getNativeOps()} to create the OpaqueNDArray.
+     *
+     * @param array The INDArray to convert.
+     * @return The corresponding OpaqueNDArray.
+     */
+    public static OpaqueNDArray fromINDArray(INDArray array) {
+        if (array == null) {
+            return array.getOrCreateOpaqueNDArray();
+        }
+        return fromINDArrayUncached(array);
     }
 
     /**
