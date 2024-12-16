@@ -10,12 +10,15 @@ public class MemoryPressureTest {
     public static void main(String...args) throws Exception {
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
         for (int i = 0; i < threads.length; i++) {
+            INDArray arrOne = Nd4j.ones(200);
+            INDArray arrTwo = Nd4j.ones(200);
             threads[i] = new Thread(() -> {
                 AtomicInteger atomicInteger = new AtomicInteger(0);
                 while (atomicInteger.incrementAndGet() < 100000) {
-                    INDArray arrOne = Nd4j.ones(200);
-                    INDArray arrTwo = Nd4j.ones(200);
+
                     arrOne.addi(arrTwo);
+                    System.out.println("Completed " + atomicInteger.get() + " iterations");
+
                 }
             });
             threads[i].start();

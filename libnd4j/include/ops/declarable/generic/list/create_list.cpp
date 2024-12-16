@@ -62,7 +62,6 @@ LIST_OP_IMPL(create_list, -2, 2, 0, -2) {
 
   }
   setupResultList(list, block);
-  //            OVERWRITE_RESULT(list);
   auto scalar = NDArrayFactory::create_(list->counter());
   block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
 

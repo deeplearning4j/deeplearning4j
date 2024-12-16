@@ -61,7 +61,6 @@ public class DifferentialFunctionClassHolder {
 
     private static  List<Class<?>> fnClasses;
 
-    private static AtomicBoolean initDone = new AtomicBoolean(false);
 
     private static Map<String,Map<String,Field>> fieldsForFunction;
 
@@ -82,7 +81,7 @@ public class DifferentialFunctionClassHolder {
 
 
     public static void initInstance() throws IOException {
-        System.out.println("Initializing DifferentialClassHolder");
+        log.trace("Initializing DifferentialClassHolder");
         if(initialized.get())
             return;
         classesToIgnore = new HashSet<>(Arrays.<Class>asList(
@@ -90,10 +89,10 @@ public class DifferentialFunctionClassHolder {
         ));
         classFieldsToIgnore = new ConcurrentHashMap<>();
         classFieldsToIgnore.put(BaseOp.class, new HashSet<>(Arrays.asList("x", "y", "z", "n", "numProcessed", "xVertexId", "yVertexId", "zVertexId", "extraArgz")));
-        System.out.println("Initialized class fields");
-        System.out.println("Initializing import class mapping");
+        log.trace("Initialized class fields");
+        log.trace("Initializing import class mapping");
         OP_NAME_MAP = new ConcurrentHashMap<>();
-        System.out.println("Creating fn classes");
+        log.trace("Creating fn classes");
         fnClasses = new ArrayList<>(Arrays.<Class<?>>asList(
                 org.nd4j.linalg.api.ops.DynamicCustomOp.class,
                 org.nd4j.linalg.api.ops.NoOp.class,
@@ -718,26 +717,26 @@ public class DifferentialFunctionClassHolder {
                 org.nd4j.linalg.api.ops.custom.Logdet.class
         ));
 
-        System.out.println("Created fn classes");
+        log.trace("Created fn classes");
         // Get a list of all classes annotated with @UserDefinedOp,
         if(System.getProperties().containsKey(ND4JSystemProperties.UDF_NAME_SPACES)) {
-            System.out.println("In udf namespaces with scanning");
+            log.trace("In udf namespaces with scanning");
             String[] packageNames = System.getProperty(ND4JSystemProperties.UDF_NAME_SPACES).split(",");
-            System.out.println("Package names " + Arrays.toString(packageNames));
+            log.trace("Package names " + Arrays.toString(packageNames));
             ClassLoader nd4jClassloader = ND4JClassLoading.getNd4jClassloader();
-            System.out.println("Nd4j class loader " + nd4jClassloader);
+            log.trace("Nd4j class loader " + nd4jClassloader);
             List<Class<?>> classModules = AnnotationDetector.scanClassPath(nd4jClassloader,packageNames)
                     .forAnnotations(UserDefinedOp.class)  // one or more annotations
                     .on(ElementType.TYPE) // optional, default ElementType.TYPE. One ore more element types
                     .collect(AnnotationDefaults.getType);
-            System.out.println("Class modules " + classModules);
+            log.trace("Class modules " + classModules);
             classModules.forEach(udf -> fnClasses.add(udf));
-            System.out.println("Done with scanning");
+            log.trace("Done with scanning");
         }
 
 
 
-        System.out.println("Populating op map");
+        log.trace("Populating op map");
         OP_NAME_MAP = new ConcurrentHashMap<>();
         for(Class<?> c : fnClasses) {
             try {
@@ -753,7 +752,7 @@ public class DifferentialFunctionClassHolder {
             }
         }
 
-        System.out.println("Populated op map");
+        log.trace("Populated op map");
 
 
         fieldNamesOpsIgnore = new LinkedHashSet<>() {{
@@ -773,7 +772,7 @@ public class DifferentialFunctionClassHolder {
             add("sameDiff");
             add("ownName");
         }};
-        System.out.println("Initialized field names ops ignore");
+        log.trace("Initialized field names ops ignore");
 
 
         fieldsForFunction = new LinkedHashMap<>();
@@ -955,7 +954,7 @@ public class DifferentialFunctionClassHolder {
 
 
         INSTANCE = new DifferentialFunctionClassHolder();
-        System.out.println("Initialized instance");
+        log.trace("Initialized instance");
 
         initialized.set(true);
     }
@@ -1006,7 +1005,7 @@ public class DifferentialFunctionClassHolder {
     }
 
     public Class<?> customOpClassForHashAndName(long customOpHash, String name) {
-        System.out.println("Finding custom op class name");
+        log.trace("Finding custom op class name");
         switch (name) {
             case CreateView.OP_NAME:
                 return CreateView.class;
@@ -1042,7 +1041,7 @@ public class DifferentialFunctionClassHolder {
     }
 
     public static synchronized DifferentialFunctionClassHolder getInstance() {
-        System.out.println("Returning class holder instance");
+        log.trace("Returning class holder instance");
         return INSTANCE;
     }
 

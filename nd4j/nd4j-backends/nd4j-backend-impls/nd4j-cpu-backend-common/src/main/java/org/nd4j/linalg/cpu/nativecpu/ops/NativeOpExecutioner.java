@@ -856,7 +856,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
+    public  Map<String, CustomOpDescriptor> getCustomOperations() {
         if (customOps == null) {
             String list = Nd4j.getNativeOps().getAllCustomOps();
 

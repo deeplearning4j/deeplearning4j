@@ -6165,6 +6165,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 isEmpty() ? null :buffer.opaqueBuffer(),
                 offset()
         );
+        opaqueNDArray = ret;
 
         return ret;
     }

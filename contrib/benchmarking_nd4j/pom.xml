@@ -35,9 +35,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jmh.version>1.37</jmh.version>
-        <javac.target>1.8</javac.target>
+        <javac.target>11</javac.target>
         <uberjar.name>benchmarks</uberjar.name>
-
+        <java.compiler.version>11</java.compiler.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
@@ -68,6 +68,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+        <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>1.5.12</version>
@@ -83,8 +88,8 @@
                 <version>3.8.1</version>
                 <configuration>
                     <compilerVersion>${javac.target}</compilerVersion>
-                    <source>${javac.target}</source>
-                    <target>${javac.target}</target>
+                    <source>9</source>
+                    <target>9</target>
                 </configuration>
             </plugin>
             <plugin>

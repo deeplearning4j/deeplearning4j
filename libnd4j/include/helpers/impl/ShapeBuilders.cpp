@@ -41,7 +41,6 @@ LongType* ShapeBuilders::createShapeInfoFrom(ShapeDescriptor* descriptor) {
     shape::setOrder(ret,'c');
   }
 
-  shape::setElementWiseStride(ret, descriptor->ews());
   shape::setExtra(ret, descriptor->extra());
   if(ArrayOptions::dataType(ret) != descriptor->dataType()) {
     ArrayOptions::setDataType(ret, descriptor->dataType());
