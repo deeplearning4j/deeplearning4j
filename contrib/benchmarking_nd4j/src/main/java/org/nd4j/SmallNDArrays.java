@@ -16,7 +16,7 @@ public class SmallNDArrays {
     private INDArray arrayOne;
     private INDArray arrayTwo;
     @Setup(Level.Trial)
-    @Fork(value = 0, warmups = 1)
+    @Fork(value = 3, warmups = 3)
     public void setup() {
         System.out.println("Setting up PID: " + ProcessHandle.current().pid());
         arrayOne = Nd4j.ones(200);
