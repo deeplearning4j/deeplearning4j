@@ -377,7 +377,7 @@ OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongT
                                         sd::LongType ews, sd::LongType extras) {
   try {
 
-    auto desc = new sd::ShapeDescriptor(dtype, order, shape, strides, rank, extras);
+    auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
   } catch (std::exception &e) {

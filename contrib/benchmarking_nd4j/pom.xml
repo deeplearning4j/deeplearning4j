@@ -36,6 +36,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jmh.version>1.37</jmh.version>
         <javac.target>11</javac.target>
+        <java.version>11</java.version>
+        <java.compiler.version>11</java.compiler.version>
+
         <uberjar.name>benchmarks</uberjar.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
@@ -85,6 +88,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
+                    <source>11</source>
+                    <target>11</target>
                     <compilerVersion>${javac.target}</compilerVersion>
                 </configuration>
             </plugin>

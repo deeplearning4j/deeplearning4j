@@ -277,16 +277,9 @@ void mergeMaxBp(LaunchContext* context, const std::vector<NDArray*>& inArrs, std
 
   NDArray::prepareSpecialUse(out, inArrs);
 
-  bool bSameOrderAndEws1 = (1 == inArrs[nArrSize]->ews());
+  bool bSameOrderAndEws1 = false;
   auto ordering = inArrs[nArrSize]->ordering();
 
-  for (int i = 0; i < nArrSize; ++i) {
-    bSameOrderAndEws1 &= (ordering == inArrs[i]->ordering());
-    bSameOrderAndEws1 &= (1 == inArrs[i]->ews());
-
-    bSameOrderAndEws1 &= (ordering == outArrs[i]->ordering());
-    bSameOrderAndEws1 &= (1 == outArrs[i]->ews());
-  }
 
   BUILD_SINGLE_SELECTOR(inArrs[nArrSize]->dataType(), mergeMaxBp_,
                         (context, inArrs, outArrs, nArrSize, bSameOrderAndEws1), SD_COMMON_TYPES);
@@ -432,12 +425,11 @@ void mergeAvgBp(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>
 
   NDArray::prepareSpecialUse(out, {&gradient});
 
-  bool bSameOrderAndEws1 = (1 == gradient.ews());
+  bool bSameOrderAndEws1 = false;
   auto ordering = gradient.ordering();
 
   for (const auto& v : outArrs) {
     bSameOrderAndEws1 &= (ordering == v->ordering());
-    bSameOrderAndEws1 &= (1 == v->ews());
   }
 
   BUILD_SINGLE_SELECTOR(gradient.dataType(), mergeAvgBp_, (context, gradient, outArrs, bSameOrderAndEws1),
@@ -589,12 +581,11 @@ void mergeAddBp(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>
   const std::vector<NDArray*>& out = reinterpret_cast<const std::vector<NDArray*>&>(outArrs);
   NDArray::prepareSpecialUse(out, {&gradient});
 
-  bool bSameOrderAndEws1 = (1 == gradient.ews());
+  bool bSameOrderAndEws1 = false;
   auto ordering = gradient.ordering();
 
   for (const auto& v : outArrs) {
     bSameOrderAndEws1 &= (ordering == v->ordering());
-    bSameOrderAndEws1 &= (1 == v->ews());
   }
 
   BUILD_SINGLE_SELECTOR(gradient.dataType(), mergeAddBp_, (context, gradient, outArrs, bSameOrderAndEws1),

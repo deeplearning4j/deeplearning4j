@@ -45,42 +45,27 @@ ShapeList *BroadcastableBoolOp::calculateOutputShape(ShapeList *inputShape, sd::
 
     const sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    auto desc = new ShapeDescriptor(newshape, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
     if (shape::rank(x) >= shape::rank(y)) {
-      auto desc = new ShapeDescriptor(x, dtype, false);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-      delete desc;
+      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
     } else {
-      auto desc = new ShapeDescriptor(y, dtype, false);
-      shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-      delete desc;
+      shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
+
     }
   } else if (shape::equalsSoft(x, y)) {
-    auto desc = new ShapeDescriptor(x, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
   } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-    auto desc = new ShapeDescriptor(y, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(y)->primary());
+
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-    auto desc = new ShapeDescriptor(x, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
     const sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-    auto desc = new ShapeDescriptor(newshape, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
   } else {
-    // in this case we'll throw exception later
-    auto desc = new ShapeDescriptor(x, dtype, false);
-    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
 
   }
 

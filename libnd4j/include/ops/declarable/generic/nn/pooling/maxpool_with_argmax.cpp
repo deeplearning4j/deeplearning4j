@@ -54,14 +54,11 @@ DECLARE_TYPES(max_pool_with_argmax) {
 DECLARE_SHAPE_FN(max_pool_with_argmax) {
   auto in = inputShape->at(0);
   auto dtype = block.numD() ? D_ARG(0) : INT64;
-  auto desc = new ShapeDescriptor(in, false);
-  auto desc2 = new ShapeDescriptor(in, dtype, false);
-  auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-  if (Environment::getInstance().isDeleteShapeInfo()) {
-    delete desc;
-    delete desc2;
-  }
+  // First shape info uses original data type from 'in'
+  auto valuesShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(in)->primary();
+  // Second one needs to be cast to dtype
+  auto indicesShape = ConstantShapeHelper::getInstance().castToDataType(valuesShape, dtype);
+
   return SHAPELIST(valuesShape, indicesShape);
 }
 }  // namespace ops

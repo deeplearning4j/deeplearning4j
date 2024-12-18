@@ -136,7 +136,6 @@ PLATFORM_CHECK(maxpool2d_bp, ENGINE_CUDA) {
 
   Requirements req("CUDNN MAXPOOL2d_BP OP");
   req.expectEq(makeInfoVariable(input->ordering(), ORDERING_MSG_INPUT), 'c') &&
-      req.expectEq(makeInfoVariable(input->ews(), EWS_MSG_INPUT), 1) &&
       req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
                    makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT1)) &&
       req.expectEq(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT),

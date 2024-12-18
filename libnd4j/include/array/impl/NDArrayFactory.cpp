@@ -203,7 +203,7 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
                      context->getWorkspace(),
                      true);
 
-  auto desc = ShapeDescriptor::scalarDescriptor(DataTypeUtils::fromT<T>());
+  auto desc = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::fromT<T>());
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   NDArray* res = new NDArray(buffer, recast, context);
@@ -338,7 +338,7 @@ template <typename T>
 NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* context) {
   DataBuffer *  buffer =
       new DataBuffer(length * sizeof(T), DataTypeUtils::fromT<T>(), context->getWorkspace(), true);
-  auto desc = ShapeDescriptor::vectorDescriptor(length, DataTypeUtils::fromT<T>());
+  auto desc = ShapeBuilders::createVectorShapeInfo(DataTypeUtils::fromT<T>(),length);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   auto recast = const_cast<LongType*>(constDesc->primary());
   auto res = new NDArray(buffer, recast, context);
@@ -496,8 +496,6 @@ NDArray NDArrayFactory::create(T* buffer, const char order, const std::initializ
       buffer, descriptor->arrLength() * sizeof(T), descriptor->dataType(), false, context->getWorkspace());
 
   NDArray result(pBuffer, descriptor, context);
-  // Note we used to delete descriptor here but due to double deletions we avoid that due to reuse in the Constant
-  // ShapeHelpoer
   return result;
 }
 

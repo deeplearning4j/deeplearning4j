@@ -85,23 +85,22 @@ static void svdQR(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, ND
 
   std::vector<NDArray*> toDelete;
 
-  if (pA->ews() != 1 || pA->ordering() == 'c') {
+  if (pA->ordering() == 'c') {
     pA = new NDArray(A->dup('f'));
     toDelete.push_back(pA);
   }
 
-  if (S->ews() != 1) {
     pS = new NDArray(S->dup('f'));
     toDelete.push_back(pS);
-  }
+
 
   if (calcUV) {
-    if (pU->ews() != 1 || pU->ordering() == 'c') {
+    if (pU->ordering() == 'c') {
       pU = new NDArray(U->dup('f'));
       toDelete.push_back(pU);
     }
 
-    if (pVT->ews() != 1 || pVT->ordering() == 'c') {
+    if (pVT->ordering() == 'c') {
       pVT = new NDArray(VT->dup('f'));
       toDelete.push_back(pVT);
     }
@@ -239,10 +238,9 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   NDArray* pS = S;
 
-  if (S->ews() != 1) {
     pS = new NDArray(S->dup('f'));
     toDelete.push_back(pS);
-  }
+
 
   NDArray *pU(nullptr), *pV(nullptr);
 
@@ -362,7 +360,7 @@ static void svdJcb(LaunchContext* context, NDArray* A, NDArray* S, NDArray* U, N
 
   NDArray::registerSpecialUse({pS, pU, pV}, {pA});
 
-  if (S->ews() != 1) S->assign(*pS);
+   S->assign(*pS);
 
   if (calcUV) {
     if (!uForder) U->assign(transA ? *pV : *pU);
@@ -416,23 +414,22 @@ static void svdBatched(LaunchContext* context, NDArray* A, NDArray* S, NDArray* 
 
   std::vector<NDArray*> toDelete;
 
-  if (pA->ews() != 1 || pA->ordering() == 'c') {
+  if (pA->ordering() == 'c') {
     pA = new NDArray(A->dup('f'));
     toDelete.push_back(pA);
   }
 
-  if (S->ews() != 1) {
     pS = new NDArray(S->dup('f'));
     toDelete.push_back(pS);
-  }
+
 
   if (calcUV) {
-    if (pU->ews() != 1 || pU->ordering() == 'c') {
+    if (pU->ordering() == 'c') {
       pU = new NDArray(U->dup('f'));
       toDelete.push_back(pU);
     }
 
-    if (pV->ews() != 1 || pV->ordering() == 'c') {
+    if (pV->ordering() == 'c') {
       pV = new NDArray(V->dup('f'));
       toDelete.push_back(pV);
     }

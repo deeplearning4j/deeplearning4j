@@ -97,17 +97,9 @@ DECLARE_SHAPE_FN(svd) {
     auto desc1 = new ShapeDescriptor(sShapeInfo, false);
     auto desc2 = new ShapeDescriptor(uShapeInfo, false);
     auto desc3 = new ShapeDescriptor(vShapeInfo, false);
-    auto result = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc1),
-                            ConstantShapeHelper::getInstance().createShapeInfo(desc2),
-                            ConstantShapeHelper::getInstance().createShapeInfo(desc3));
-    RELEASE(sShapeInfo, block.workspace());
-    RELEASE(uShapeInfo, block.workspace());
-    RELEASE(vShapeInfo, block.workspace());
-    if (Environment::getInstance().isDeleteShapeInfo()) {
-      delete desc1;
-      delete desc2;
-      delete desc3;
-    }
+    auto result = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(sShapeInfo)->primary(),
+                            ConstantShapeHelper::getInstance().bufferForShapeInfo(uShapeInfo)->primary(),
+                            ConstantShapeHelper::getInstance().bufferForShapeInfo(vShapeInfo)->primary());
     return result;
   }
 

@@ -76,9 +76,57 @@ LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const Lo
   return newShape;
 }
 
+
+LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank,
+                                           const LongType* shapeOnly,
+                                           const LongType *strideOnly,
+                                           memory::Workspace* workspace, sd::LongType extras) {
+  LongType* shapeInfo = nullptr;
+
+  if (rank == 0) {  // scalar case
+    shapeInfo = createScalarShapeInfo(dataType, workspace);
+  } else {
+    shapeInfo = new LongType[shape::shapeInfoLength(rank)];
+    shapeInfo[0] = rank;
+    for (int i = 0; i < rank; i++) {
+      shapeInfo[i + 1] = shapeOnly[i];
+    }
+
+    for (int i = 0; i < rank; i++) {
+      shapeInfo[i + 1 + rank] = strideOnly[i];
+    }
+  }
+
+  ArrayOptions::setExtra(shapeInfo, extras);
+  ArrayOptions::setDataType(shapeInfo, dataType);
+  shape::setOrder(shapeInfo, order);
+  return shapeInfo;
+
+}
+
+LongType* ShapeBuilders::copyShapeInfoWithNewType(const LongType* inShapeInfo, const DataType newType) {
+  int rank = shape::rank(inShapeInfo);
+  LongType* newShapeInfo = new LongType[shape::shapeInfoLength(rank)];
+
+  // Copy the basic shape structure
+  memcpy(newShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
+
+  // Update the data type while preserving other properties
+  LongType currentExtra = ArrayOptions::extra(inShapeInfo);
+  LongType newExtra = ArrayOptions::setDataTypeValue(
+      ArrayOptions::propertyWithoutDataTypeValue(currentExtra),
+      newType
+  );
+  ArrayOptions::setExtra(newShapeInfo, newExtra);
+
+  return newShapeInfo;
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
- LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shapeOnly,
-                                    memory::Workspace* workspace, bool empty)  {
+LongType  * ShapeBuilders::createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shapeOnly,
+                                           memory::Workspace* workspace, bool empty)  {
   LongType* shapeInfo = nullptr;
 
   if (rank == 0) {  // scalar case

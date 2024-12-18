@@ -148,10 +148,9 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
   if (INT_ARG(0) != 0) {  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   } else {  // in this case output has the same shape as labels and predictions
-    auto desc = new ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo),
-                                    shape::rank(labelsShapeInfo));
-    outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+    outShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(outType, shape::order(labelsShapeInfo),
+                                                                         shape::rank(labelsShapeInfo),
+                                                                         shape::shapeOf(labelsShapeInfo))->primary();
   }
 
   return SHAPELIST(outShapeInfo);

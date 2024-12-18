@@ -46,11 +46,11 @@ static void softmaxMKLDNN(NDArray* x, NDArray* z, const sd::LongType axis) {
 
   // optimized cases
   if (2 == xRank && 0 == axis) {
-    if (x->ews() == 1) xFormat = dnnl::memory::format_tag::ba;
-    if (z->ews() == 1) zFormat = dnnl::memory::format_tag::ba;
+    xFormat = dnnl::memory::format_tag::ba;
+    zFormat = dnnl::memory::format_tag::ba;
   } else if (4 == xRank && 1 == axis && (x->sizeAt(2) * x->sizeAt(3)) > 1) {
-    if (x->ews() == 1) xFormat = dnnl::memory::format_tag::acdb;
-    if (z->ews() == 1) zFormat = dnnl::memory::format_tag::acdb;
+    xFormat = dnnl::memory::format_tag::acdb;
+   zFormat = dnnl::memory::format_tag::acdb;
   }
 
   dnnl::memory::data_type xType = dnnl::memory::data_type::f32;

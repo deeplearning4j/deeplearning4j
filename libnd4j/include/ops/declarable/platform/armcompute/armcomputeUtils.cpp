@@ -189,18 +189,7 @@ void copyFromTensor(const Arm_Tensor& inTensor, sd::NDArray& output) {
   int element_size = inTensor.info()->element_size();
   window.use_tensor_dimensions(inTensor.info()->tensor_shape(), /* first_dimension =*/arm_compute::Window::DimY);
 
-  if (output.ews() == 1) {
-    auto copySize = width * element_size;
-    auto dest = outputBuffer;
-    arm_compute::execute_window_loop(
-        window,
-        [&](const arm_compute::Coordinates& id) {
-          auto src = tensor_it.ptr();
-          memcpy(dest, src, copySize);
-          dest += copySize;
-        },
-        tensor_it);
-  } else {
+
     sd::LongType coords[SD_MAX_RANK] = {};
     auto copySize = width * element_size;
     arm_compute::execute_window_loop(
@@ -212,7 +201,7 @@ void copyFromTensor(const Arm_Tensor& inTensor, sd::NDArray& output) {
           offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
         },
         tensor_it);
-  }
+
 }
 
 void copyToTensor(const sd::NDArray& input, Arm_Tensor& outTensor) {
@@ -231,18 +220,6 @@ void copyToTensor(const sd::NDArray& input, Arm_Tensor& outTensor) {
 
   window.use_tensor_dimensions(outTensor.info()->tensor_shape(), /* first_dimension =*/arm_compute::Window::DimY);
 
-  if (input.ews() == 1) {
-    auto copySize = width * element_size;
-    auto src = inputBuffer;
-    arm_compute::execute_window_loop(
-        window,
-        [&](const arm_compute::Coordinates& id) {
-          auto dest = tensor_it.ptr();
-          memcpy(dest, src, copySize);
-          src += copySize;
-        },
-        tensor_it);
-  } else {
     sd::LongType coords[SD_MAX_RANK] = {};
     auto copySize = width * element_size;
     arm_compute::execute_window_loop(
@@ -254,7 +231,7 @@ void copyToTensor(const sd::NDArray& input, Arm_Tensor& outTensor) {
           offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
         },
         tensor_it);
-  }
+
 }
 
 // armcompute should be built with debug option

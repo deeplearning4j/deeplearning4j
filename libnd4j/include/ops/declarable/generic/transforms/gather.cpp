@@ -159,9 +159,8 @@ DECLARE_SHAPE_FN(gather) {
 
   auto desc = new ShapeDescriptor(outputShapeInfo, false);
 
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outputShapeInfo)->primary();
   RELEASE(outputShapeInfo, block.getWorkspace());
-  delete desc;
   return SHAPELIST(result);
 }
 

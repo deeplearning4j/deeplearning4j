@@ -53,11 +53,9 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Cont
     newShape[6] = 1;
     newShape[7] = 99;
 
-    auto desc = new ShapeDescriptor(newShape, INT64, false);
-    auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+    auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShape);
     RELEASE(newShape, block.getWorkspace());
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
-    return SHAPELIST(result);
+    return SHAPELIST(result->primary());
   } else if (block.getAxis()->size()) {
     // in this case we're building proper shape for reduction
     auto array = INPUT_VARIABLE(0);
@@ -89,11 +87,10 @@ ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, Cont
       newShape[6] = 1;
       newShape[7] = 99;
 
-      auto desc = new ShapeDescriptor(newShape, INT64, false);
-      auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+      auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShape);
+
       RELEASE(newShape, block.getWorkspace());
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
-      return SHAPELIST(result);
+      return SHAPELIST(result->primary());
     } else {
       // in this case we're building proper shape for reduction
       auto array = INPUT_VARIABLE(0);

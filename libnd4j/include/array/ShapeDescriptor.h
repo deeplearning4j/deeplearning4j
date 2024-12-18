@@ -44,7 +44,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
  private:
   int _rank = 0;
   LongType * _shape_strides = nullptr;
-  LongType _ews = 1;
   char _order = 'c';
   DataType _dataType;
   LongType _extraProperties = 0;
@@ -53,7 +52,9 @@ class SD_LIB_EXPORT ShapeDescriptor {
 
  public:
   bool ownsShapeStrides = false;
-
+  // Hash caching
+  mutable uint64_t _cached_hash;
+  mutable bool _hash_computed;
 #ifndef __JAVACPP_HACK__
 #if defined(SD_GCC_FUNCTRACE)
   StackTrace st;
@@ -81,7 +82,15 @@ class SD_LIB_EXPORT ShapeDescriptor {
   ~ShapeDescriptor();
 #endif
   int rank() const;
-  LongType ews() const;
+
+  void invalidateHash() const {
+    _hash_computed = false;
+    _cached_hash = 0;
+  }
+
+  uint64_t getCachedHash() const {
+    return _cached_hash;
+  }
   LongType arrLength() const;
   LongType offset();
   char order() const;
@@ -103,8 +112,40 @@ class SD_LIB_EXPORT ShapeDescriptor {
   LongType validate() const;
 
   // we use default copy assignment operator
-  ShapeDescriptor &operator=(const ShapeDescriptor &other) = default;
+  // Modify assignment operator to reset hash cache:
+  ShapeDescriptor& operator=(const ShapeDescriptor& other) {
+    if (this != &other) {
+      // Existing cleanup code
+      if (_shape_strides != nullptr && ownsShapeStrides) {
+        delete[] _shape_strides;
+        _shape_strides = nullptr;
+      }
 
+      // Copy all basic members
+      _rank = other._rank;
+      _extraProperties = other._extraProperties;
+      _dataType = other._dataType;
+      _order = other._order;
+      _paddedAllocSize = other._paddedAllocSize;
+      _offset = other._offset;
+
+      // Reset hash cache
+      _cached_hash = 0;
+      _hash_computed = false;
+
+      // Handle shape_strides - make a deep copy if source has data
+      if (other._shape_strides != nullptr) {
+        const int size = (_rank < 1 ? 1 : _rank) * 2;
+        _shape_strides = new LongType[size];
+        std::memcpy(_shape_strides, other._shape_strides, size * sizeof(LongType));
+        ownsShapeStrides = true;
+      } else {
+        _shape_strides = nullptr;
+        ownsShapeStrides = false;
+      }
+    }
+    return *this;
+  }
   // we use default move assignment operator
   ShapeDescriptor &operator=(ShapeDescriptor &&other) noexcept = default;
 
@@ -132,8 +173,6 @@ class SD_LIB_EXPORT ShapeDescriptor {
     }
     message += "Data type:";
     message += std::to_string(_dataType);
-    message += " EWS:";
-    message += std::to_string(_ews);
     message += " Order:";
     message += std::to_string(_order);
     message += " Extra Properties:";

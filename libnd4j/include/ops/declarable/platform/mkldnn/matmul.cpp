@@ -125,30 +125,27 @@ static void matmulMKLDNN(NDArray* x, NDArray* y, NDArray* z, const bool transX, 
 
   // x
   x_user_md = x_mkl_md = dnnl::memory::desc(xShape, xType, xFormat);
-  if (xTR->ews() != 1) {
     x_user_md.data.format_kind = dnnl_blocked;  // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = xRank == 1 ? 1 : xTR->strideAt(0);
     x_user_md.data.format_desc.blocking.strides[1] = xRank == 1 ? xTR->strideAt(0) : xTR->strideAt(1);
     if (xRank > 2) x_user_md.data.format_desc.blocking.strides[2] = xTR->strideAt(2);
-  }
+
 
   // y
   y_user_md = y_mkl_md = dnnl::memory::desc(yShape, yType, yFormat);
-  if (yTR->ews() != 1) {
     y_user_md.data.format_kind = dnnl_blocked;  // overrides format
     y_user_md.data.format_desc.blocking.strides[0] = yRank == 1 ? 1 : yTR->strideAt(0);
     y_user_md.data.format_desc.blocking.strides[1] = yRank == 1 ? yTR->strideAt(0) : yTR->strideAt(1);
     if (yRank > 2) y_user_md.data.format_desc.blocking.strides[2] = yTR->strideAt(2);
-  }
+
 
   // z
   z_user_md = z_mkl_md = dnnl::memory::desc(zShape, zType, zFormat);
-  if (zR->ews() != 1) {
     z_user_md.data.format_kind = dnnl_blocked;  // overrides format
     z_user_md.data.format_desc.blocking.strides[0] = zRank == 1 ? 1 : zR->strideAt(0);
     z_user_md.data.format_desc.blocking.strides[1] = zRank == 1 ? zR->strideAt(0) : zR->strideAt(1);
     if (zRank > 2) z_user_md.data.format_desc.blocking.strides[2] = zR->strideAt(2);
-  }
+
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -301,20 +298,6 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
   // we're skipping if result order is F or arrays are not continuous
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectLess(makeInfoVariable(x->rankOf(), RANK_MSG_INPUT0), 3);
-  // NOTE: here is the old check. will be removed
-  if (z->rankOf() == 2) {
-    req.setPrefix("ONEDNN MATMUL OP: case#1").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1) &&
-        req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1) &&
-        req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1) &&
-        req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f');
-  } else if (z->rankOf() == 3) {
-    req.setPrefix("ONEDNN MATMUL OP: case#2").expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1) &&
-        req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_INPUT1), 1) &&
-        req.expectEq(makeInfoVariable(y->ews(), EWS_MSG_OUTPUT1), 1) &&
-        req.expectNotEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'f') &&
-        req.expectNotEq(makeInfoVariable(y->ordering(), ORDERING_MSG_INPUT1), 'f') &&
-        req.expectNotEq(makeInfoVariable(z->ordering(), ORDERING_MSG_OUTPUT), 'f');
-  }
 
   req.setPrefix("ONEDNN MATMUL OP")
       .expectTrue(

@@ -37,8 +37,6 @@ public class Small_NDArray {
 
         @Setup
         public void setup(){
-           Nd4j.getNativeOps().setElementThreshold(16384);
-           Nd4j.getNativeOps().setTADThreshold(64);
         }
     }
 

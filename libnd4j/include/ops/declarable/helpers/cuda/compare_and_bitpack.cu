@@ -159,7 +159,7 @@ static SD_HOST void cmpBitpackCudaLauncher(graph::Context& block, NDArray& input
   dim3 compareAndBitpackDims = getCompareAndBitpackDims(output.lengthOf());
   PointersManager manager(block.launchContext(), "compare_and_bitpack");
   NDArray::prepareSpecialUse({&output}, {&input});
-  if (input.ews() > 0 && output.ews() > 0 && input.ordering() == 'c' && output.ordering() == 'c') {
+  if (input.ordering() == 'c' && output.ordering() == 'c') {
     cmpBitpackEws<T><<<compareAndBitpackDims.y, compareAndBitpackDims.x,compareAndBitpackDims.z>>>(input.specialBuffer(), output.specialBuffer(),
                                                          output.lengthOf(), inStrides[rank - 1],
                                                          output.stridesOf()[rank - 1], threshold);

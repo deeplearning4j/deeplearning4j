@@ -55,7 +55,7 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, N
   PointersManager manager(context, __func__);
   // input descriptor
   CudnnTensor x;
-  if (input->ews() == 1 && input->ordering() == 'c')
+  if (input->ordering() == 'c')
     x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
   else
     x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
@@ -67,7 +67,7 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context, NDArray* input, N
 
   // output descriptor
   CudnnTensor z;
-  if (output->ews() == 1 && output->ordering() == 'c')
+  if (output->ordering() == 'c')
     z.set4D(format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
   else
     z.set4DEx(cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC),
@@ -155,7 +155,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
   PointersManager manager(context, __func__);
   // input descriptor
   CudnnTensor x;
-  if (input->ews() == 1 && input->ordering() == 'c')
+  if (input->ordering() == 'c')
     x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
   else
     x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
@@ -163,7 +163,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   // gradO descriptor
   CudnnTensor dz;
-  if (gradO->ews() == 1 && gradO->ordering() == 'c')
+  if (gradO->ordering() == 'c')
     dz.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
   else
     dz.set4DEx(cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC),
@@ -171,7 +171,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context, NDArray* input,
 
   // gradI descriptor
   CudnnTensor dx;
-  if (gradI->ews() == 1 && gradI->ordering() == 'c')
+  if (gradI->ordering() == 'c')
     dx.set4D(format, cudnnDataType(gradI->dataType()), bS, iC, iH, iW);
   else
     dx.set4DEx(cudnnDataType(gradI->dataType()), bS, iC, iH, iW, gradI->strideAt(0), gradI->strideAt(indIOioC),

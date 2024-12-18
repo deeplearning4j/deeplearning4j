@@ -168,13 +168,13 @@ static void randomShuffle_(LaunchContext* context, NDArray& input, NDArray& outp
     NDArray::prepareSpecialUse({arr}, {arr});
 
     fisherYatesCuda<T><<<fisherDims.y, fisherDims.x, fisherDims.z, *context->getCudaStream()>>>(
-        pRng, arr->specialBuffer(), arr->ews(), len, power);
+        pRng, arr->specialBuffer(),0, len, power);
     sd::DebugHelper::checkErrorCode(context->getCudaStream(), "fisherYatesCuda failed");
 
     for (LongType j = 1, i = 1; j < blocksPerGrid; j += j, ++i) {
       dim3 mergeShuffleDims = randomShuffleMergeDims(j, power);
       mergeShuffleCuda<T><<<mergeShuffleDims.x, mergeShuffleDims.y, mergeShuffleDims.z, *context->getCudaStream()>>>(
-          pRng, arr->specialBuffer(), arr->ews(), len, power, i);
+          pRng, arr->specialBuffer(), 0, len, power, i);
       sd::DebugHelper::checkErrorCode(context->getCudaStream(), "mergeShuffleCuda failed");
 
       NDArray::registerSpecialUse({arr}, {arr});

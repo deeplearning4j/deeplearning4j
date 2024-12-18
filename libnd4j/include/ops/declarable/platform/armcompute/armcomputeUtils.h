@@ -119,7 +119,7 @@ class ArmFunction {
     }
     armFunction.configure(&in, &out, std::forward<Args>(args)...);
     if (!inputHasPaddedBuffer) {
-      if (in.info()->has_padding() || input->ews() != 1) {
+      if (in.info()->has_padding()) {
         // allocate and copy
         in.allocator()->allocate();
         inputNd = input;
@@ -130,7 +130,7 @@ class ArmFunction {
       }
     }
     if (!outputHasPaddedBuffer) {
-      if (out.info()->has_padding() || output->ews() != 1) {
+      if (out.info()->has_padding()) {
         // store pointer to our array to copy after run
         out.allocator()->allocate();
         outNd = output;
@@ -219,7 +219,7 @@ class ArmFunctionWeighted {
     }
     // import buffer
     if (!inputHasPaddedBuffer) {
-      if (in.info()->has_padding() || input->ews() != 1) {
+      if (in.info()->has_padding()) {
         // allocate and copy
         in.allocator()->allocate();
         inputNd = input;
@@ -229,7 +229,7 @@ class ArmFunctionWeighted {
       }
     }
     if (!weightsHasPaddedBuffer) {
-      if (w.info()->has_padding() || weights->ews() != 1) {
+      if (w.info()->has_padding()) {
         // store pointer to our array to copy after run
         w.allocator()->allocate();
         wNd = weights;
@@ -239,7 +239,7 @@ class ArmFunctionWeighted {
       }
     }
     if (biases && !biasesHasPaddedBuffer) {
-      if (b.info()->has_padding() || biases->ews() != 1) {
+      if (b.info()->has_padding()) {
         // store pointer to our array to copy after run
         b.allocator()->allocate();
         bNd = biases;
@@ -249,7 +249,7 @@ class ArmFunctionWeighted {
       }
     }
     if (!outputHasPaddedBuffer) {
-      if (out.info()->has_padding() || output->ews() != 1) {
+      if (out.info()->has_padding()) {
         // store pointer to our array to copy after run
         out.allocator()->allocate();
         outNd = output;

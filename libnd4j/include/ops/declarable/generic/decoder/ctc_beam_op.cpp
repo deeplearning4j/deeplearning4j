@@ -129,19 +129,14 @@ DECLARE_SHAPE_FN(ctc_beam) {
 
   auto dtype_float = ArrayOptions::dataType(logitShapeInfo);
   auto dtype_index = ArrayOptions::dataType(sequenceShapeInfo);
-  auto desc = new  ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len, max_t});
-  auto output0 = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  auto desc2 = new ShapeDescriptor(dtype_float, 'c', {batch_size, nbest_len});
+  auto desc =  ShapeBuilders::createShapeInfo(dtype_index, 'c', {batch_size, nbest_len, max_t});
+  auto output0 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  auto desc2 = ShapeBuilders::createShapeInfo(dtype_float, 'c', {batch_size, nbest_len});
   auto output1 =
-      ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-  auto desc3 = new ShapeDescriptor(dtype_index, 'c', {batch_size, nbest_len});
-  auto output2 = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
-  if (Environment::getInstance().isDeleteShapeInfo()) {
-    delete desc;
-    delete desc2;
-    delete desc3;
-  }
-  return SHAPELIST(output0, output1, output2);
+      ConstantShapeHelper::getInstance().bufferForShapeInfo(desc2);
+  auto desc3 = ShapeBuilders::createShapeInfo(dtype_index, 'c', {batch_size, nbest_len});
+  auto output2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc3);
+  return SHAPELIST(output0->primary(), output1->primary(), output2->primary());
 }
 
 }  // namespace ops

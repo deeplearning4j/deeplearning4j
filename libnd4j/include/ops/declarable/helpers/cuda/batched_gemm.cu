@@ -86,23 +86,16 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   std::vector<NDArray*> toDelete;
 
   for (int i = 0; i < bS; ++i) {
-    if (vA[i]->ews() != 1) {
       pA[i] = new NDArray(vA[i]->dup('f'));
       toDelete.emplace_back(pA[i]);
-    } else
-      pA[i] = vA[i];
 
-    if (vB[i]->ews() != 1) {
+
       pB[i] = new NDArray(vB[i]->dup('f'));
       toDelete.emplace_back(pB[i]);
-    } else
-      pB[i] = vB[i];
 
-    if (vC[i]->ews() != 1) {
       pC[i] = new NDArray(vC[i]->dup('f'));
       toDelete.emplace_back(pC[i]);
-    } else
-      pC[i] = vC[i];
+
 
     if (pC[i]->ordering() != 'f') {
       auto temp = pA[i];
@@ -205,7 +198,7 @@ void bgemm( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std::vector
   }
 
   for (int i = 0; i < bS; ++i)
-    if (vC[i]->ews() != 1) vC[i]->assign(*pC[i]);
+    vC[i]->assign(*pC[i]);
 
   for (int i = toDelete.size() - 1; i >= 0; --i) delete toDelete[i];
 }
