@@ -8,9 +8,19 @@ Proposed by: Adam Gibson (19-12-2024)
 Discussed with: Paul Dubs
 
 ## Context
-The libnd4j library requires efficient storage and lookup of shape information for neural network operations. Shape information is frequently accessed during computation and needs to be managed efficiently to prevent memory leaks and optimize performance. Previously, we used a ShapeDescriptor-based cache with an unordered map, which created unnecessary object allocations. The primary challenges include:
+The libnd4j library requires efficient storage and lookup of shape 
+information for neural network operations. Shape information is 
+usually calculated multilple times per operation and can be expensive
+to maintain.
+One goal is to reduce the overhead by getting rid of ShapeDescriptors
+which were unnecessary extra allocations rather than just using only the shape
+buffers.
+This was all stored in a ShapeDescriptor-based cache with an unordered map,
 
-1. Frequent shape buffer allocations and deallocations during neural network operations
+The primary challenges include:
+
+1. Frequent shape buffer allocations and deallocations during neural
+network operations
 2. Need for fast shape lookup during computation
 3. Memory management of redundant shape information
 4. Thread safety requirements for parallel execution
@@ -18,14 +28,16 @@ The libnd4j library requires efficient storage and lookup of shape information f
 6. Memory overhead from unordered map storage
 
 ## Decision
-We implement a shape buffer trie data structure (`DirectShapeTrie`) to manage and cache shape information, replacing the previous unordered map implementation. The trie structure is chosen for the following characteristics:
+We implement a shape buffer trie data structure (`DirectShapeTrie`) to manage and
+cache shape information, replacing the previous unordered map implementation. 
+The trie structure is chosen for the following characteristics:
 
 ### Key Components
 - A trie node structure containing:
   - Shape buffer pointer
   - Child node pointers
   - Reference counting mechanism
-- Striped thread safety using an array of mutexes
+- [Striped thread safety](https://www.baeldung.com/java-lock-stripping) using an array of mutexes
 - Direct memory management of shape buffers
 - Sequential shape information exploitation similar to word tries
 
@@ -142,21 +154,8 @@ void decrementRef(const sd::LongType* buffer);
 1. Hash Table Implementation (Previous Approach):
    - Pros: Simpler implementation, O(1) average lookup
    - Cons: More memory usage, ShapeDescriptor overhead, potential hash collisions
-   - Removed due to ShapeDescriptor creation overhead and memory concerns
-
-2. Simple Buffer Pool:
-   - Pros: Simpler implementation, direct access
-   - Cons: Less memory efficient, slower lookups, no shape value exploitation
-
-3. Lock-free Data Structure:
-   - Pros: Better concurrent performance
-   - Cons: Much higher implementation complexity, harder to maintain
-
-4. Retain ShapeDescriptor with Different Structure:
-   - Pros: Familiar API, existing code compatibility
-   - Cons: Continued object creation overhead, memory pressure
-
-5. Alternative Locking Strategies:
+   - Remov
+2. Alternative Locking Strategies:
    - Single Global Mutex:
      - Pros: Simplest implementation
      - Cons: High contention under load
@@ -169,7 +168,3 @@ void decrementRef(const sd::LongType* buffer);
 
 
 
-## References
-- ConstantShapeHelper.cpp implementation
-- DirectShapeTrie.h interface
-- Existing shape management system documentation
