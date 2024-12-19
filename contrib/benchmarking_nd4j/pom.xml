@@ -35,13 +35,13 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jmh.version>1.37</jmh.version>
-        <javac.target>11</javac.target>
-        <java.version>11</java.version>
-        <java.compiler.version>11</java.compiler.version>
+        <source>${java.version}</source>
+        <target>${javac.target}</target>
+        <compilerVersion>${java.compiler.version}</compilerVersion>
 
         <uberjar.name>benchmarks</uberjar.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>1.0.0-M2.1</nd4j.version>
+        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
     </properties>
 
 
