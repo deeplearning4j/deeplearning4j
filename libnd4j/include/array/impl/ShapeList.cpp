@@ -23,9 +23,7 @@
 #include <array/ShapeList.h>
 
 namespace sd {
-// ShapeList::ShapeList(bool autoRemovable) {
-//        _autoremovable = autoRemovable;
-//    }
+
 
 ShapeList::ShapeList(const LongType* shape) {
   if (shape != nullptr) push_back(shape);
