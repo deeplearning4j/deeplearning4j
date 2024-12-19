@@ -23,7 +23,7 @@
 #include <array/ShapeDescriptor.h>
 #include <helpers/ShapeBuilders.h>
 #include <helpers/shape.h>
-
+#include <helpers/ModularHasher.h>
 #include "helpers/ShapeUtils.h"
 
 namespace sd {
@@ -723,85 +723,35 @@ size_t hash<sd::ShapeDescriptor>::operator()(sd::ShapeDescriptor k) const {
   if (k._hash_computed) {
     return k._cached_hash;
   }
-  constexpr uint64_t GOLDEN_RATIO = 0x9e3779b97f4a7c15ULL;
-  uint64_t hash = 14695981039346656037ULL;  // FNV offset basis
+  // Check cache first
+  if (k._hash_computed) {
+    return k._cached_hash;
+  }
 
-  // Combine order and dataType efficiently
-  hash = (hash ^ (static_cast<uint64_t>(k.order()) |
-                  (static_cast<uint64_t>(k.dataType()) << 8)));
-  hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  using namespace sd::helpers::detail;
 
+  // Combine order and dataType into initial hash
+  uint64_t hash = ModularHasher::combine_hashes({
+      static_cast<uint64_t>(k.order()),
+      static_cast<uint64_t>(k.dataType()) << 8
+  });
+
+  // Hash the shape and strides array
   sd::LongType* shape_strides = k.shape_strides();
   const int stop = k.rank() * 2;
 
-#if defined(__ARM_NEON)
-  const uint64x2_t golden = vdupq_n_u64(GOLDEN_RATIO);
-  uint64x2_t hash_vec = vdupq_n_u64(hash);
-
-  // Process 2 elements at a time with NEON
-  for (int j = 0; j < stop - 1; j += 2) {
-    uint64x2_t data = vld1q_u64(reinterpret_cast<uint64_t*>(shape_strides + j));
-    hash_vec = veorq_u64(hash_vec, data);
-    hash_vec = vmulq_u64(hash_vec, golden);
+  if (shape_strides != nullptr) {
+    hash = DataChunkHasher<sd::LongType>::hash_data(
+        shape_strides,
+        stop,
+        hash
+    );
   }
 
-  uint64_t hash_array[2];
-  vst1q_u64(hash_array, hash_vec);
-  hash = hash_array[0] ^ hash_array[1];
-#elif defined(__AVX2__)
-  const __m256i golden_vec = _mm256_set1_epi64x(GOLDEN_RATIO);
-  __m256i hash_vec = _mm256_set1_epi64x(hash);
-
-  // Process 4 elements at a time with AVX2
-  for (int j = 0; j < stop - 3; j += 4) {
-    __m256i data = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(shape_strides + j));
-    hash_vec = _mm256_xor_si256(hash_vec, data);
-    hash_vec = _mm256_mul_epi32(hash_vec, golden_vec);
-  }
-
-  uint64_t hash_array[4];
-  _mm256_storeu_si256(reinterpret_cast<__m256i*>(hash_array), hash_vec);
-  hash = hash_array[0] ^ hash_array[1] ^ hash_array[2] ^ hash_array[3];
-#elif defined(__SSE4_2__)
-  const __m128i golden_vec = _mm_set1_epi64x(GOLDEN_RATIO);
-  __m128i hash_vec = _mm_set1_epi64x(hash);
-
-  // Process 2 elements at a time with SSE4.2
-  for (int j = 0; j < stop - 1; j += 2) {
-    __m128i data = _mm_loadu_si128(reinterpret_cast<const __m128i*>(shape_strides + j));
-    hash_vec = _mm_xor_si128(hash_vec, data);
-    hash_vec = _mm_mul_epi32(hash_vec, golden_vec);
-  }
-
-  uint64_t hash_array[2];
-  _mm_storeu_si128(reinterpret_cast<__m128i*>(hash_array), hash_vec);
-  hash = hash_array[0] ^ hash_array[1];
-#else
-  // Scalar fallback with unrolling
-  for (int j = 0; j < stop - 3; j += 4) {
-    hash ^= shape_strides[j];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= shape_strides[j+1];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= shape_strides[j+2];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= shape_strides[j+3];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-  }
-#endif
-
-// Handle remaining elements
-#if defined(__ARM_NEON) || defined(__AVX2__) || defined(__SSE4_2__)
-  int start = ((stop / 4) * 4);
-  for (int j = start; j < stop; j++) {
-    hash ^= shape_strides[j];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-  }
-#endif
-
-  // Store computed hash
+  // Cache the computed hash
   k._cached_hash = hash;
   k._hash_computed = true;
 
-  return hash;}
+  return hash;
+}
 }  // namespace std
