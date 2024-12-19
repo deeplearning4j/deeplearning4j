@@ -638,7 +638,6 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CUDA) {
   // restriction that comes either from not setting Descriptor or not handling manipulation:
   // restrict0: the same types
   req.expectEq(makeInfoVariable(x->ordering(), ORDERING_MSG_INPUT0), 'c') &&
-      req.expectEq(makeInfoVariable(x->ews(), EWS_MSG_INPUT0), 1) &&
       req.expectEq(makeInfoVariable(WxType, TYPE_MSG_INPUT1), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
       req.expectEq(makeInfoVariable(WrType, TYPE_MSG_INPUT2), makeInfoVariable(xType, TYPE_MSG_INPUT0));
   if (b)
@@ -646,27 +645,22 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CUDA) {
   if (hI) {
     req.expectEq(makeInfoVariable(hI->dataType(), TYPE_MSG_INPUT_ "#hI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
         req.expectEq(makeInfoVariable(hI->ordering(), ORDERING_MSG_INPUT_ "#hI"), 'c') &&
-        req.expectEq(makeInfoVariable(hI->ews(), EWS_MSG_INPUT_ "#hI"), 1);
   }
   if (cI) {
     req.expectEq(makeInfoVariable(cI->dataType(), TYPE_MSG_INPUT_ "#cI"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
         req.expectEq(makeInfoVariable(cI->ordering(), ORDERING_MSG_INPUT_ "#cI"), 'c') &&
-        req.expectEq(makeInfoVariable(cI->ews(), EWS_MSG_INPUT_ "#cI"), 1);
   }
   if (h) {
     req.expectEq(makeInfoVariable(h->dataType(), TYPE_MSG_OUTPUT_ "#h"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
         req.expectEq(makeInfoVariable(h->ordering(), ORDERING_MSG_OUTPUT_ "#h"), 'c') &&
-        req.expectEq(makeInfoVariable(h->ews(), EWS_MSG_OUTPUT_ "#h"), 1);
   }
   if (hL) {
     req.expectEq(makeInfoVariable(hL->dataType(), TYPE_MSG_OUTPUT_ "#hL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
         req.expectEq(makeInfoVariable(hL->ordering(), ORDERING_MSG_OUTPUT_ "#hL"), 'c') &&
-        req.expectEq(makeInfoVariable(hL->ews(), EWS_MSG_OUTPUT_ "#hL"), 1);
   }
   if (cL) {
     req.expectEq(makeInfoVariable(cL->dataType(), TYPE_MSG_OUTPUT_ "#cL"), makeInfoVariable(xType, TYPE_MSG_INPUT0)) &&
         req.expectEq(makeInfoVariable(cL->ordering(), ORDERING_MSG_OUTPUT_ "#cL"), 'c') &&
-        req.expectEq(makeInfoVariable(cL->ews(), EWS_MSG_OUTPUT_ "#cL"), 1);
   }
   req.logTheSuccess();
   return req;

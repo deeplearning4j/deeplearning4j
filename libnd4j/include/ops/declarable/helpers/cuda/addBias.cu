@@ -124,7 +124,7 @@ void addBias(graph::Context& block, NDArray& input, NDArray& bias, NDArray& outp
   NDArray::prepareSpecialUse({&output}, {&input, &bias});
 
   if (input.rankOf() == 2 && bias.rankOf() == 1 && input.ordering() == 'c' && output.ordering() == 'c' &&
-      input.ews() == 1 && bias.ews() == 1 && input.sizeAt(1) == bias.sizeAt(0)) {
+  input.sizeAt(1) == bias.sizeAt(0)) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias2DCudaLauncher,
                           (block.launchContext()->getCudaStream(), input.specialBuffer(), bias.specialBuffer(),
                               output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),

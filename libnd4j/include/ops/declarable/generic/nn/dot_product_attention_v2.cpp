@@ -168,21 +168,14 @@ DECLARE_SHAPE_FN(dot_product_attention_v2) {
 
 
 
-  ShapeDescriptor *descriptor = new ShapeDescriptor(firstInputType,'c',outShape);
-  auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary();
-  ShapeDescriptor *scoresShape = new ShapeDescriptor(firstInputType,'c',scoresShape1);
-  auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
-  auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(scoresShape)->primary();
+  auto constOutputScores = ConstantShapeHelper::getInstance().bufferForShapeInfo(firstInputType, 'c', outShape)->primary();
+  auto attentionScoresShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(firstInputType, 'c', scoresShape1)->primary();
+  auto attentionLogitsShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(firstInputType, 'c', scoresShape1)->primary();
+
   if(dropout > 0) {
-    delete descriptor;
-    delete scoresShape;
-    return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape,attentionScoresShape);
-
+    return SHAPELIST(constOutputScores, attentionScoresShape, attentionLogitsShape, attentionScoresShape);
   } else {
-    delete descriptor;
-    delete scoresShape;
-    return SHAPELIST(constOutputScores,attentionScoresShape,attentionLogitsShape);
-
+    return SHAPELIST(constOutputScores, attentionScoresShape, attentionLogitsShape);
   }
 
 

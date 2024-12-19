@@ -155,10 +155,8 @@ DECLARE_SHAPE_FN(sru) {
   newShapeInfo1[3] = time;
 
   ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
-  ShapeDescriptor *descriptor = new ShapeDescriptor(newShapeInfo1, false);
+  auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo1)->primary();
   RELEASE(newShapeInfo1, block.getWorkspace());
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
   return SHAPELIST(result, result);
 }
 
@@ -359,22 +357,16 @@ DECLARE_SHAPE_FN(sru_bp) {
   auto time = inShape[3];
   char order = (char)(inShape[9]);
 
-  ShapeDescriptor *descriptor1 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {bS, inSize, time});
-  ShapeDescriptor *descriptor2 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {bS, 3 * inSize, inSize});
-  ShapeDescriptor *descriptor3 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
-  ShapeDescriptor *descriptor4 = new ShapeDescriptor(ArrayOptions::dataType(inShape), order, {bS, inSize});
-
-  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1),
-                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor2),
-                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor3),
-                        ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
-
-  if (Environment::getInstance().isDeleteShapeInfo()) {
-  delete descriptor1;
-  delete descriptor2;
-  delete descriptor3;
-  delete descriptor4;
-  }
+  auto ret = SHAPELIST(
+      ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(inShape), order,
+                                                            std::vector<sd::LongType>{bS, inSize, time})->primary(),
+      ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(inShape), order,
+                                                            std::vector<sd::LongType>{bS, 3 * inSize, inSize})->primary(),
+      ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(inShape), order,
+                                                            std::vector<sd::LongType>{1, 2 * inSize})->primary(),
+      ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(inShape), order,
+                                                            std::vector<sd::LongType>{bS, inSize})->primary()
+  );
   return ret;
 }
 

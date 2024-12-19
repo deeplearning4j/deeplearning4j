@@ -149,9 +149,10 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
     outputShape[4] = iC;
   }
 
-  auto desc = new ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5);
-  auto ret = SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(ArrayOptions::dataType(inputShapeInfo),
+                                                                             shape::order(inputShapeInfo),
+                                                                             5,
+                                                                             outputShape)->primary());
   return ret;
 }
 

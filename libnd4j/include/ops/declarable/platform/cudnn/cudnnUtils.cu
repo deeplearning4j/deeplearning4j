@@ -113,13 +113,13 @@ void pooling2dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
 
   // input descriptor, output descriptor
   CudnnTensor x, z;
-  if (input->ews() == 1 && input->ordering() == 'c')
+  if (input->ordering() == 'c')
     x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
   else
     x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
               input->strideAt(indIiH), input->strideAt(indIiH + 1));
 
-  if (output->ews() == 1 && output->ordering() == 'c')
+  if (output->ordering() == 'c')
     z.set4D(format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
   else
     z.set4DEx(cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC),
@@ -167,7 +167,7 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
 
   // input and gradI descriptor
   CudnnTensor x;
-  if (input->ews() == 1 && input->ordering() == 'c')
+  if (input->ordering() == 'c')
     x.set4D(format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
   else
     x.set4DEx(cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC),
@@ -175,7 +175,7 @@ void pooling2dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
 
   // gradO descriptor
   CudnnTensor dz;
-  if (gradO->ews() == 1 && gradO->ordering() == 'c')
+  if (gradO->ordering() == 'c')
     dz.set4D(format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
   else
     dz.set4DEx(cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC),
@@ -239,7 +239,7 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
 
   // input descriptor, output descriptor
   CudnnTensor x, z;
-  if (input->ews() == 1 && input->ordering() == 'c') {
+  if (input->ordering() == 'c') {
     int newShape[5];
     for(int i = 0; i < 5; i++) {
       newShape[i] = static_cast<int>(xShape[i]);
@@ -259,7 +259,7 @@ void pooling3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* outpu
   }
 
 
-  if (output->ews() == 1 && output->ordering() == 'c') {
+  if (output->ordering() == 'c') {
     int newShape[5];
     int newStrides[5];
     for(int i = 0; i < 5; i++) {
@@ -337,14 +337,14 @@ void pooling3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray* gra
 
   // input and gradI descriptor
   CudnnTensor x;
-  if (input->ews() == 1 && input->ordering() == 'c') {
+  if ( input->ordering() == 'c') {
     x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape);
   } else {
     x.set(cudnnDataType(input->dataType()), numDims, xShape, xStrides);
   }
   // gradO descriptor
   CudnnTensor dz;
-  if (gradO->ews() == 1 && gradO->ordering() == 'c')
+  if ( gradO->ordering() == 'c')
     dz.setEx(format, cudnnDataType(gradO->dataType()), numDims, dzShape);
   else
     dz.set(cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);

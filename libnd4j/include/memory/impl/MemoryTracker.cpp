@@ -133,15 +133,13 @@ void MemoryTracker::countOut(Pointer ptr) {
 
     _locker.lock();
     if (_released.count(lptr) > 0) {
-      // THROW_EXCEPTION("Double free!");
+       THROW_EXCEPTION("Double free!");
     }
 
     if (_allocations.count(lptr) > 0) {
-      // auto entry = _allocations[lptr];
-      // std::string stack("new stack");
-      // std::pair<sd::LongType, AllocationEntry> pair(lptr, entry);
-      //_released.insert(pair);
-
+       auto entry = _allocations[lptr];
+       std::pair<sd::LongType, AllocationEntry> pair(lptr, entry);
+      _released.insert(pair);
       _allocations.erase(lptr);
     }
 

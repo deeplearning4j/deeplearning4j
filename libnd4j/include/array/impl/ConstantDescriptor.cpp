@@ -64,21 +64,14 @@ LongType ConstantDescriptor::length() const {
 
 namespace std {
 size_t hash<sd::ConstantDescriptor>::operator()(const sd::ConstantDescriptor &k) const {
-  using std::hash;
-  // Compute individual hash values for first,
-  // second and third and combine them using XOR
-  // and bit shifting:
-  size_t hashVal = 0;
-  size_t i = 0;
+  uint64_t hash = ModularHasher::hash_scalar(k.isInteger());
+
+  // Hash the appropriate vector based on type
   if (k.isInteger()) {
-    for (auto v : k.integerValues()) {
-      hashVal ^= std::hash<sd::LongType>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-    }
+    hash = ModularHasher::hash_vector(k.integerValues(), hash);
   } else {
-    for (auto v : k.floatValues()) {
-      hashVal ^= std::hash<double>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
-    }
+    hash = ModularHasher::hash_vector(k.floatValues(), hash);
   }
-  return hashVal;
+
 }
 }  // namespace std

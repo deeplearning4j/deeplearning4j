@@ -39,9 +39,6 @@ std::vector<LongType> Intervals::operator[](const LongType i) const { return *(_
 int Intervals::size() const { return _content.size(); }
 
 //////////////////////////////////////////////////////////////////////////
-// modifying operator
-// std::vector<int>& Intervals::operator()(const int i) {
-//     return _content[i];
-// }
+
 
 }  // namespace sd

@@ -352,10 +352,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::LongType *shap
 */
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType rank(const sd::LongType *shapeInfo);
 
-/**
-*  returns pointer on elementWiseStride
-*/
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType ews(const sd::LongType *shapeInfo);
 
 /**
 * Converts a raw int buffer of the layout:
@@ -674,44 +670,61 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, 
   return ret;
 }
 
-#define INDEX2COORDS(linear_index, rank, shape, coords)              \
-    do {                                                             \
-        sd::LongType idx = (linear_index);                           \
-        for (sd::LongType i = (rank) - 1; i > 0; --i) {              \
-            (coords)[i] = idx % (shape)[i];                          \
-            idx /= (shape)[i];                                       \
-        }                                                            \
-        (coords)[0] = idx;                                           \
+// Optimized version with special cases for common ranks
+#define INDEX2COORDS(linear_index, rank, shape, coords)                    \
+    do {                                                                   \
+        sd::LongType idx = (linear_index);                                \
+        if ((rank) == 2) {                                                \
+            (coords)[1] = idx % (shape)[1];                               \
+            (coords)[0] = idx / (shape)[1];                               \
+        }                                                                  \
+        else if ((rank) == 3) {                                           \
+            (coords)[2] = idx % (shape)[2];                               \
+            idx /= (shape)[2];                                            \
+            (coords)[1] = idx % (shape)[1];                               \
+            (coords)[0] = idx / (shape)[1];                               \
+        }                                                                  \
+        else if ((rank) == 4) {                                           \
+            (coords)[3] = idx % (shape)[3];                               \
+            idx /= (shape)[3];                                            \
+            (coords)[2] = idx % (shape)[2];                               \
+            idx /= (shape)[2];                                            \
+            (coords)[1] = idx % (shape)[1];                               \
+            (coords)[0] = idx / (shape)[1];                               \
+        }                                                                  \
+        else {                                                            \
+            for (sd::LongType i = (rank) - 1; i > 0; --i) {              \
+                (coords)[i] = idx % (shape)[i];                           \
+                idx /= (shape)[i];                                        \
+            }                                                             \
+            (coords)[0] = idx;                                            \
+        }                                                                 \
     } while (0)
 
-#define COORDS2INDEX(rank, strides, coords, index_var)               \
-    do {                                                             \
-        (index_var) = 0;                                             \
-        for (sd::LongType i = 0; i < (rank); ++i) {                  \
-            (index_var) += (coords)[i] * (strides)[i];               \
-        }                                                            \
+#define COORDS2INDEX(rank, strides, coords, index_var)                    \
+    do {                                                                  \
+        if ((rank) == 2) {                                               \
+            (index_var) = (coords)[0] * (strides)[0] +                   \
+                         (coords)[1] * (strides)[1];                      \
+        }                                                                 \
+        else if ((rank) == 3) {                                          \
+            (index_var) = (coords)[0] * (strides)[0] +                   \
+                         (coords)[1] * (strides)[1] +                     \
+                         (coords)[2] * (strides)[2];                      \
+        }                                                                 \
+        else if ((rank) == 4) {                                          \
+            (index_var) = (coords)[0] * (strides)[0] +                   \
+                         (coords)[1] * (strides)[1] +                     \
+                         (coords)[2] * (strides)[2] +                     \
+                         (coords)[3] * (strides)[3];                      \
+        }                                                                 \
+        else {                                                           \
+            (index_var) = 0;                                             \
+            for (sd::LongType i = 0; i < (rank); ++i) {                  \
+                (index_var) += (coords)[i] * (strides)[i];               \
+            }                                                            \
+        }                                                                \
     } while (0)
-
-#define SET_OFFSETS(INDEX, RANK, SHAPE, X_STRIDES, Y_STRIDES, Z_STRIDES, X_OFFSET, Y_OFFSET, Z_OFFSET) \
-    do {                                                                                               \
-        sd::LongType coords[SD_MAX_RANK];                                                              \
-        if ((RANK) == 1) {                                                                             \
-            coords[0] = (INDEX);                                                                       \
-        } else if ((RANK) == 2) {                                                                      \
-            coords[0] = (INDEX) / (SHAPE)[1];                                                          \
-            coords[1] = (INDEX) % (SHAPE)[1];                                                          \
-        } else if ((RANK) == 3) {                                                                      \
-            coords[0] = (INDEX) / ((SHAPE)[1] * (SHAPE)[2]);                                           \
-            coords[1] = ((INDEX) / (SHAPE)[2]) % (SHAPE)[1];                                           \
-            coords[2] = (INDEX) % (SHAPE)[2];                                                          \
-        } else {                                                                                       \
-            INDEX2COORDS((INDEX), (RANK), (SHAPE), coords);                                            \
-        }                                                                                              \
-        COORDS2INDEX((RANK), (X_STRIDES), coords, (X_OFFSET));                                         \
-        COORDS2INDEX((RANK), (Y_STRIDES), coords, (Y_OFFSET));                                         \
-        COORDS2INDEX((RANK), (Z_STRIDES), coords, (Z_OFFSET));                                         \
-    } while (0)
-
 
 /////
 template <typename T>
@@ -1989,18 +2002,10 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::Long
 * an information buffer
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType rank(const sd::LongType *buffer) {
-  if(buffer == nullptr) {
-    THROW_EXCEPTION("rank:  shapebuffer is nullptr");
-  }
   return static_cast<sd::LongType>(buffer[0]);
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType ews(const sd::LongType *shapeInfo) {
-  if(shapeInfo == nullptr) {
-    THROW_EXCEPTION("rank:  shapebuffer is nullptr");
-  }
-  return shapeInfo[2 * shapeInfo[0] + 2];
-}
+
 
 /**
 * Converts a raw int buffer of the layout:

@@ -94,10 +94,8 @@ DECLARE_SHAPE_FN(eye) {
 
   shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]), false);
   auto desc = new ShapeDescriptor(outShapeInfo, dtype, false);
-  auto result = ConstantShapeHelper::getInstance().createShapeInfo(desc);
-  RELEASE(outShapeInfo, block.getWorkspace());
-  auto ret =  SHAPELIST(result);
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  auto result = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo);
+  auto ret =  SHAPELIST(result->primary());
   return ret;
 }
 

@@ -406,7 +406,7 @@ NDArray::NDArray(void *buffer, char order, std::vector<LongType> &shape, DataTyp
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  auto desc = new ShapeDescriptor(dtype, order, shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, order, shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -462,8 +462,7 @@ NDArray::NDArray(const sd::LongType *shapeInfo, const sd::DataType dtype, const 
   _context = context;
 
   if (copyStrides) {
-    auto desc = new ShapeDescriptor(shapeInfo, dtype, false);
-    auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
   } else {
@@ -683,7 +682,7 @@ NDArray::NDArray(DataBuffer *buffer, ShapeDescriptor *descriptor, sd::LaunchCont
     THROW_EXCEPTION("Unable to create array with unknown data type.");
   }
 
-  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor->toShapeInfo());
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
   _buffer = buffer;
@@ -813,7 +812,7 @@ NDArray::NDArray(const std::u16string &u16string, sd::DataType dtype, sd::Launch
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+  auto desc = ShapeBuilders::createScalarShapeInfo(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -867,7 +866,7 @@ NDArray::NDArray(const std::u32string &u32string, sd::DataType dtype, sd::Launch
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+  auto desc = ShapeBuilders::createScalarShapeInfo(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -922,7 +921,7 @@ NDArray::NDArray(const std::string &str, sd::DataType dtype, sd::LaunchContext *
 
   _context = context;
   _isAttached = getContext()->getWorkspace() != nullptr;
-  auto desc = ShapeDescriptor::scalarDescriptor(dtype);
+  auto desc = ShapeBuilders::createScalarShapeInfo(dtype);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -993,7 +992,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char *> &
 
   _context = context;
 
-  auto desc = new ShapeDescriptor(dtype, 'c', shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, 'c', shape);
   //note we don't delete this because this can get stored in the cache.
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
@@ -1061,8 +1060,8 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::string
 
   _context = context;
 
-  auto desc = new ShapeDescriptor(dataType, 'c', shape);
-  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  auto buff = ShapeBuilders::createShapeInfo(dataType,'c',shape);
+  auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(buff);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
 
@@ -1127,7 +1126,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<std::u16string>
 
   _context = context;
   int len = isScalar() ? 1 : lengthOf();
-  auto desc = new ShapeDescriptor(dtype, 'c', shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -1197,7 +1196,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char16_t 
 
   _context = context;
 
-  auto desc = new ShapeDescriptor(dtype, 'c', shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -1264,7 +1263,7 @@ NDArray::NDArray(std::vector<sd::LongType> &shape, const std::vector<std::u32str
   _buffer = new DataBuffer(headerLength + dataLength, dtype, context->getWorkspace(), true);
 
   _context = context;
-  auto desc = new ShapeDescriptor(dtype, 'c', shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -1334,7 +1333,7 @@ NDArray::NDArray(std::vector<LongType> &shape, const std::vector<const char32_t 
 
   _context = context;
 
-  auto desc = new ShapeDescriptor(dtype, 'c', shape);
+  auto desc = ShapeBuilders::createShapeInfo(dtype, 'c', shape);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -1532,8 +1531,7 @@ NDArray &NDArray::operator=(NDArray &other) {
     }
   } else {
     _context = other._context;
-    auto desc = new ShapeDescriptor(other.dataType(), other.ordering(), other.shapeOf(), other.rankOf());
-    auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+    auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(other.shapeInfo());
     _shapeInfo = constDesc->primary();
     _shapeInfoD = constDesc->special();
     if (!other.isEmpty()) {
@@ -1846,8 +1844,7 @@ NDArray *NDArray::detach() {
   if (!isAttached()) return this;
 
   DataBuffer *  newBuffer = new DataBuffer(lengthOf() * sizeOfT(), dataType());
-  auto desc = new ShapeDescriptor(dataType(), ordering(), shapeOf(), rankOf());
-  auto constantBuff = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  auto constantBuff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo());
   auto recastShapeInfo = const_cast<sd::LongType *>(constantBuff->primary());
   auto result = new NDArray(newBuffer, recastShapeInfo, getContext());
   result->assign(*this);
@@ -2291,10 +2288,8 @@ BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void *NDArray::templatedPointerShif
 //////////////////////////////////////////////////////////////////////////
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
 NDArray NDArray::transpose()  & {
-  auto desc = new ShapeDescriptor(shapeInfo(), false);
-  NDArray newArr(getDataBuffer(), desc, getContext(), offset());
+  NDArray newArr(getDataBuffer(), shapeInfo(), getContext(), offset());
   newArr.transposei();
-  delete desc;
   return newArr;
 }
 
@@ -2502,7 +2497,7 @@ void NDArray::enforce(std::vector<sd::LongType> &dimensions, char o) {
   }
 
   char order = o == 'a' ? this->ordering() : o;
-  auto desc = new ShapeDescriptor(dataType(), order, dimensions);
+  auto desc = ShapeBuilders::createShapeInfo(dataType(), order, dimensions);
   auto constDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
   _shapeInfo = constDesc->primary();
   _shapeInfoD = constDesc->special();
@@ -6169,9 +6164,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclud
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
   if (shapeInfo != nullptr) {
-    ShapeDescriptor *descriptor = new ShapeDescriptor(shapeInfo, false);
-    descriptor->validate();
-    auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor);
+    auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
     _shapeInfoBuffer = shapeBuffer;
     _shapeInfo = shapeBuffer->primary();
     if(!shape::shapeEquals(_shapeInfo, shapeBuffer->primary())) {
@@ -6186,7 +6179,6 @@ void NDArray::setShapeInfo(const sd::LongType *shapeInfo) {
     _shapeInfoD = shapeBuffer->special();
 #endif
 
-    if (Environment::getInstance().isDeleteShapeInfo()) delete descriptor;
     if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)
       _length = 0;
     else
@@ -6202,7 +6194,7 @@ void NDArray::setShapeInfo(ShapeDescriptor *descriptor) {
     THROW_EXCEPTION("NDArray:setShapeInfo Passed in descriptor can't be null!");
   }
 
-  auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(const_cast<ShapeDescriptor *>(descriptor));
+  auto shapeBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor->toShapeInfo());
   _shapeInfoBuffer = shapeBuffer;
   _shapeInfo = shapeBuffer->primary();
   if(!shape::shapeEquals(_shapeInfo, descriptor->toShapeInfo())) {

@@ -122,7 +122,7 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=gnu++11 -D__APPLE_OS__=true -DSD_APPLE_BUILD=true")
+    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=gnu++17 -D__APPLE_OS__=true -DSD_APPLE_BUILD=true")
 elseif(WIN32)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -g -fPIC -Wa,-mbig-obj")

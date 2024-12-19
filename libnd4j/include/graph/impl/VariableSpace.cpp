@@ -240,14 +240,12 @@ void sd::graph::VariableSpace::putVariable(int id, Variable* variable) {
   variable->setId(id);
 
   if (variable->getName() != nullptr && variable->getName()->length() != 0) {
-    // std::pair<std::string, sd::graph::Variable *> pair(*(variable->getName()), variable);
     _symbolic[*(variable->getName())] = variable;
   }
 
   // we have special list for external variables to ensure graph completeness
 
   if (id < 0) {
-    // if (variable->isExternal())
     _external.push_back(variable);
 
     _variables[id] = variable;

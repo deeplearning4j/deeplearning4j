@@ -102,9 +102,7 @@ DECLARE_TYPES(crelu_bp) {
 
 DECLARE_SHAPE_FN(crelu_bp) {
   auto inShape = inputShape->at(0);
-  auto desc = new ShapeDescriptor(inShape, false);
-  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(inShape)->primary());
   return ret;
 }
 }  // namespace ops

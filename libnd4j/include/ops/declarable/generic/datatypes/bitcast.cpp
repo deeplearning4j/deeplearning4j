@@ -66,16 +66,12 @@ DECLARE_SHAPE_FN(bitcast) {
   auto outputSize = DataTypeUtils::sizeOf(newType);
 
   if (shape::length(inShape) == 0) {
-    auto desc = new ShapeDescriptor(inShape, newType, false);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    auto ret = SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, newType));
     return ret;
   }
   if (inputSize == outputSize) {
     // only type should be changed
-    auto desc = new ShapeDescriptor(inShape, newType, false);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    auto ret = SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape, newType));
     return ret;
   } else if (inputSize > outputSize) {
     // range of output increased by 1 with inputSize / outputSize as last dimension
@@ -85,7 +81,7 @@ DECLARE_SHAPE_FN(bitcast) {
       shapeOf[i] = inShape[i + 1];
     }
     shapeOf[i] = inputSize / outputSize;
-    auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(newType, shape::order(inShape), shapeOf);
+    auto outputShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(newType, shape::order(inShape), shapeOf)->primary();
     return SHAPELIST(outputShape);
   }
   REQUIRE_TRUE(shape::sizeAt(inShape, static_cast<sd::LongType>(-1)) == outputSize / inputSize, 0,

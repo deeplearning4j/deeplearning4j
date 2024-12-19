@@ -51,11 +51,9 @@ DECLARE_SHAPE_FN(test_scalar) {
   newShape[7] = 99;
 
   ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
-  auto desc = new ShapeDescriptor(newShape, false);
-  auto shape = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  auto shape = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShape)->primary();
   RELEASE(newShape, block.getWorkspace());
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
-  return SHAPELIST(shape);
+  return SHAPELIST(shape);;
 }
 
 DECLARE_TYPES(test_scalar) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(true); }

@@ -73,26 +73,16 @@ static void batchnormCUDNN(const LaunchContext* context, NDArray* input, NDArray
   cudnnTensorFormat_t format = CUDNN_TENSOR_NCHW;
 
   // input descriptor
-  CudnnTensor x;
-  if (input->ews() == 1) {
-    x.setEx(format, dataType, xRank, xShape.data());
-  } else {
     x.set(dataType, xRank, xShape.data(), xStrides.data());
-  }
+
   // output descriptor
   CudnnTensor z;
-  if (output->ews() == 1) {
-    z.setEx(format, dataType, xRank, xShape.data());
-  } else {
     z.set(dataType, xRank, xShape.data(), zStrides.data());
-  }
+
   // mean, variance, gamma and beta descriptor, the same descriptor for all of them
   CudnnTensor params;
-  if (mean->ews() == 1) {
-    params.setEx(format, dataType, xRank, paramsShape.data());
-  } else {
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
-  }
+
   // provide scaling parameters
   const float alpha32(1), beta32(0);
   const double alpha64(1), beta64(0);
@@ -168,32 +158,21 @@ static void batchnormBpCUDNN(const LaunchContext* context, NDArray* input, NDArr
 
   // input descriptor
   CudnnTensor x;
-  if (input->ews() == 1)
-    x.setEx(format, dataType, xRank, xShape.data());
-  else
+
     x.set(dataType, xRank, xShape.data(), xStrides.data());
 
   // gradO descriptor
   CudnnTensor dz;
-  if (gradO->ews() == 1)
-    dz.setEx(format, dataType, xRank, xShape.data());
-  else
     dz.set(dataType, xRank, xShape.data(), dzStrides.data());
 
   // gradI descriptor
   CudnnTensor dx;
-  if (input->ews() == 1)
-    dx.setEx(format, dataType, xRank, xShape.data());
-  else
     dx.set(dataType, xRank, xShape.data(), dxStrides.data());
 
   // mean, variance, gamma, gradG and gradB descriptor, the same descriptor for all of them
   CudnnTensor params;
-  if (mean->ews() == 1) {
-    params.setEx(format, dataType, xRank, paramsShape.data());
-  } else {
     params.set(dataType, xRank, paramsShape.data(), paramsStrides.data());
-  }
+
   // provide scaling parameters
   const float alpha32(1), beta32(0);
   double alpha64(1), beta64(0);

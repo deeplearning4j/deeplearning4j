@@ -27,7 +27,7 @@
 #include <array/ShapeDescriptor.h>
 #include <memory/Workspace.h>
 #include <system/op_boilerplate.h>
-
+#include "DirectShapeTrie.h"
 #include <map>
 #include <mutex>
 #include <vector>
@@ -38,6 +38,7 @@ class SD_LIB_EXPORT ConstantShapeHelper {
  private:
   std::mutex _mutex;
   std::vector<SD_MAP_IMPL<ShapeDescriptor , ConstantShapeBuffer *>> _cache;
+  DirectShapeTrie _shapeTrie;
 
   ConstantShapeHelper();
 
@@ -100,6 +101,10 @@ class SD_LIB_EXPORT ConstantShapeHelper {
 
     return total;
   }
+
+  ConstantShapeBuffer* storeAndWrapBuffer(const LongType* shapeInfo);
+  const LongType* castToDataType(const LongType* shapeInfo, const DataType newType);
+
   ConstantShapeBuffer* storeAndWrapBuffer(ShapeDescriptor* descriptor);
   ShapeDescriptor* findBufferForShapeInfo(ShapeDescriptor *descriptor);
   const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);

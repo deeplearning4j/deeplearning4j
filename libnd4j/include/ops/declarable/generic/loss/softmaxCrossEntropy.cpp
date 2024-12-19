@@ -416,20 +416,17 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
 
   auto outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-  auto desc1 = new ShapeDescriptor(
-      outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo));
-  auto desc2 = new ShapeDescriptor(
-      outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo));
-  auto desc3 = new ShapeDescriptor(
-      outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo));
-  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc1);
-  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc2);
-  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc3);
-  if (Environment::getInstance().isDeleteShapeInfo()) {
-    delete desc1;
-    delete desc2;
-    delete desc3;
-  }
+  auto dLdpShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(outType, shape::order(logitsShapeInfo),
+                                                                             shape::rank(logitsShapeInfo),
+                                                                             shape::shapeOf(logitsShapeInfo))->primary();
+
+  auto dLdwShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(outType, shape::order(weightsShapeInfo),
+                                                                             shape::rank(weightsShapeInfo),
+                                                                             shape::shapeOf(weightsShapeInfo))->primary();
+
+  auto dLdlShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(outType, shape::order(labelsShapeInfo),
+                                                                             shape::rank(labelsShapeInfo),
+                                                                             shape::shapeOf(labelsShapeInfo))->primary();
   return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }
 

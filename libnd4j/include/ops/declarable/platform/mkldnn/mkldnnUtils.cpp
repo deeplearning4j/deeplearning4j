@@ -70,7 +70,7 @@ dnnl::memory::format_tag getFormat(NDArray& arr) {
 
 //////////////////////////////////////////////////////////////////////
 void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut) {
-  if (array.ews() != 1 || (array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty()) {
+  if ((array.rankOf() > 3 && array.ordering() == 'f') || !permut.empty()) {
     mklMd.data.format_kind = dnnl_blocked;  // overrides format
 
     if (permut.empty())

@@ -67,9 +67,9 @@ DECLARE_SHAPE_FN(repeat) {
 
   auto outShape = ShapeUtils::evalRepeatShape(axis, repeats, *input);
 
-  auto desc = new ShapeDescriptor(input->dataType(), input->ordering(), outShape);
-  auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-  if (Environment::getInstance().isDeleteShapeInfo()) delete desc;
+  auto ret = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(input->dataType(),
+                                                                             input->ordering(),
+                                                                             outShape)->primary());
   return ret;
 }
 }  // namespace ops

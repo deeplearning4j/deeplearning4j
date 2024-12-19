@@ -97,17 +97,7 @@ void concat(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray
 
   NDArray::prepareSpecialUse({&output}, inArrs);
 
-  bool luckCase1 =
-      ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) &&
-          output.ews() == 1 ||
-      inArrs[0]->lengthOf() < 1;
-
-  if (luckCase1) {
-    for (LongType i = 0; i < numInArrs; ++i) {
-      luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
-      if (!luckCase1) break;
-    }
-  }
+  bool luckCase1 = false;
 
   // prepare arrays of pointers on buffers and shapes
   std::vector<const void*> hInBuffers(numInArrs);

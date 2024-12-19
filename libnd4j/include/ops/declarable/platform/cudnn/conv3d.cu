@@ -64,9 +64,6 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
   PointersManager manager(context, __func__);
   // input descriptor
   CudnnTensor x;
-  if (input->ews() == 1)
-    x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape.data());
-  else
     x.set(cudnnDataType(input->dataType()), numDims, xShape.data(), xStrides.data());
 
   // weights descriptor
@@ -75,9 +72,6 @@ static void conv3dCUDNN(const LaunchContext* context, NDArray* input, NDArray* w
 
   // output descriptor
   CudnnTensor z;
-  if (output->ews() == 1)
-    z.setEx(format, cudnnDataType(output->dataType()), numDims, zShape.data());
-  else
     z.set(cudnnDataType(output->dataType()), numDims, zShape.data(), zStrides.data());
 
   // description of convolution
@@ -169,19 +163,10 @@ static void conv3dBpCUDNN(const LaunchContext* context, NDArray* input, NDArray*
   PointersManager manager(context, __func__);
   // input descriptor, gradO descriptor, gradI descriptor
   CudnnTensor x, dz, dx;
-  if (input->ews() == 1)
-    x.setEx(format, cudnnDataType(input->dataType()), numDims, xShape.data());
-  else
     x.set(cudnnDataType(input->dataType()), numDims, xShape.data(), xStrides.data());
 
-  if (gradO->ews() == 1)
-    dz.setEx(format, cudnnDataType(gradO->dataType()), numDims, dzShape.data());
-  else
     dz.set(cudnnDataType(gradO->dataType()), numDims, dzShape.data(), dzStrides.data());
 
-  if (gradI->ews() == 1)
-    dx.setEx(format, cudnnDataType(gradI->dataType()), numDims, xShape.data());
-  else
     dx.set(cudnnDataType(gradI->dataType()), numDims, xShape.data(), dxStrides.data());
 
   // gradW descriptor

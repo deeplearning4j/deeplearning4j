@@ -35,6 +35,11 @@ namespace sd {
 class SD_LIB_EXPORT ShapeBuilders {
  public:
 
+  static LongType* createShapeInfo(const DataType dataType, const char order, int rank, const LongType* shape,
+                     memory::Workspace* workspace = nullptr, bool empty = false);
+
+  static LongType* copyShapeInfoWithNewType(const LongType* inShapeInfo, const DataType newType);
+
   static LongType* createShapeInfoFrom(ShapeDescriptor* descriptor);
 
   static LongType* createScalarShapeInfo(DataType dataType, memory::Workspace* workspace = nullptr);
@@ -42,18 +47,19 @@ class SD_LIB_EXPORT ShapeBuilders {
   static LongType* createVectorShapeInfo(const DataType dataType, const LongType length,
                                          memory::Workspace* workspace = nullptr);
 
-  /**
-   *   create shapeInfo for given order basing on shape stored in shapeOnly vector
-   *   memory allocation for shapeInfo is on given workspace
-   */
-  static LongType* createShapeInfo(const DataType dataType, const char order, int rank,
-                                   const LongType* shapeOnly, memory::Workspace* workspace, bool empty);
+
   static LongType* createShapeInfo(const DataType dataType, const char order,
                                        const std::vector<LongType>& shapeOnly,
                                        memory::Workspace* workspace = nullptr);
   static LongType* createShapeInfo(const DataType dataType, const char order,
                                        const std::initializer_list<LongType>& shapeOnly,
                                        memory::Workspace* workspace = nullptr);
+
+  static LongType  * createShapeInfo(const DataType dataType, const char order, int rank,
+                                           const LongType* shapeOnly,
+                                           const LongType *strideOnly,
+                                           memory::Workspace* workspace, sd::LongType extras);
+
 
   /**
    *   allocates memory for new shapeInfo and copy all information from inShapeInfo to new shapeInfo

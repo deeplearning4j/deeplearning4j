@@ -75,11 +75,10 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
   T *zBuff = output.bufferAsT<T>();
 
   bool shapeExtendedWithOnes = isShapeExtendedWithOnes(output, axis);
-  bool followEws1 = output.ews() == 1;
+  bool followEws1 = false;
   bool matchesOutputOrdering = true;
   for (int i = 0; i < numOfInArrs; ++i) {
     shapeExtendedWithOnes = shapeExtendedWithOnes && isShapeExtendedWithOnes(*inArrs[i], axis);
-    followEws1 = followEws1 && inArrs[i]->ews() == 1;
     matchesOutputOrdering = matchesOutputOrdering && inArrs[i]->ordering() == output.ordering();
   }
 
@@ -223,14 +222,8 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
   const auto sizeofT = input.sizeOfT();
   auto xBuff = input.bufferAsT<T>();
 
-  bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
+  bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f'));
 
-  if (luckCase1) {
-    for (sd::LongType i = 0; i < numSplits; ++i) {
-      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
-      if (!luckCase1) break;
-    }
-  }
 
   if (luckCase1) {
     T* x = const_cast<T*>(xBuff);

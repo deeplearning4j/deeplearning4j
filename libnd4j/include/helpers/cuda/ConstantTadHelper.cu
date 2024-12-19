@@ -152,7 +152,7 @@ TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
 
     }
 
-    delete dimsToExclude;
+    delete[] dimsToExclude;
 
 
   }

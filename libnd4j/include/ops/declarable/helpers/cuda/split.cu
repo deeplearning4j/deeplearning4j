@@ -97,13 +97,11 @@ void split(LaunchContext* context, NDArray& input, std::vector<NDArray*>& outArr
   for (int i = 0; i < numOfSubArrs; ++i) outArrs[i]->syncToDevice();
   input.syncToDevice();
 
-  bool luckCase1 =
-      ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) &&
-      input.ews() == 1;
+  bool luckCase1 = false;
 
   if (luckCase1) {
     for (LongType i = 0; i < numOfSubArrs; ++i) {
-      luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
+      luckCase1 &= outArrs[i]->ordering() == input.ordering();
       if (!luckCase1) break;
     }
   }

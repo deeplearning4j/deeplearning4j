@@ -37,16 +37,6 @@ std::vector<int> getConcatTargets(NDArray&targetLabels, NDArray&targetLabelLengt
   std::vector<int> labels;
   labels.resize(targetLabels.lengthOf());
   int j = 0;
-  if (targetLabels.ews()) {
-    for (int i = 0; i < batchCount; i++) {
-      int count = tlens[i];
-      for (int k = 0; k < count; k++) {
-        labels[j] = tlabels[k];
-        j++;
-      }
-      tlabels += nextOffset;
-    }
-  } else {
     for (int i = 0; i < batchCount; i++) {
       int count = tlens[i];
       for (int k = 0; k < count; k++) {
@@ -55,7 +45,7 @@ std::vector<int> getConcatTargets(NDArray&targetLabels, NDArray&targetLabelLengt
       }
       tlabels += nextOffset;
     }
-  }
+
   return labels;
 }
 
@@ -144,10 +134,6 @@ PLATFORM_CHECK(ctc_loss, ENGINE_CUDA) {
   req.expectEq(makeInfoVariable(blankIndex, "Blank Index"), 0) &&
       req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), FLOAT32) &&
       req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), INT32) &&
-      req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
-      req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
-      req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&
-      req.expectEq(makeInfoVariable(outputLosses->ews(), EWS_MSG_OUTPUT), 1) &&
       req.expectTrue(
           makeInfoVariable(checkLabelLength<int32_t>(*targetLabelLengths), "target Label lengthes should be <= 256"),
           NO_MSG);
@@ -191,10 +177,6 @@ PLATFORM_CHECK(ctc_loss_grad, ENGINE_CUDA) {
   req.expectEq(makeInfoVariable(blankIndex, "Blank Index"), 0) &&
       req.expectEq(makeInfoVariable(logitInput->dataType(), TYPE_MSG_INPUT1), FLOAT32) &&
       req.expectEq(makeInfoVariable(targetLabelLengths->dataType(), TYPE_MSG_INPUT2), INT32) &&
-      req.expectEq(makeInfoVariable(targetLabels->ews(), EWS_MSG_INPUT0), 1) &&
-      req.expectEq(makeInfoVariable(targetLabelLengths->ews(), EWS_MSG_INPUT2), 1) &&
-      req.expectEq(makeInfoVariable(logitInputLengths->ews(), EWS_MSG_INPUT3), 1) &&
-      req.expectEq(makeInfoVariable(outputGrads->ews(), EWS_MSG_OUTPUT), 1) &&
       req.expectTrue(
           makeInfoVariable(checkLabelLength<int32_t>(*targetLabelLengths), "target Label lengthes should be <= 256"),
           NO_MSG);

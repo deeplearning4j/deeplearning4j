@@ -23,32 +23,41 @@
 #include <array/ShapeDescriptor.h>
 #include <helpers/ShapeBuilders.h>
 #include <helpers/shape.h>
-
+#include <helpers/ModularHasher.h>
 #include "helpers/ShapeUtils.h"
 
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // equal to operator
-bool ShapeDescriptor::operator==(const ShapeDescriptor &other) const {
-  if (_extraProperties != other._extraProperties) return false;
-  if (_rank != other._rank) return false;
-  if (_order != other._order) return false;
-  if (_dataType != other._dataType) return false;
-  if(_offset != other._offset) return false;
-  if(_shape_strides == nullptr && other._shape_strides == nullptr) {
+bool ShapeDescriptor::operator==(const ShapeDescriptor& other) const {
+  // First check scalar values to fail fast
+  if (_rank != other._rank ||
+      _dataType != other._dataType ||
+      _order != other._order ||
+      _extraProperties != other._extraProperties ||
+      _offset != other._offset) {
+    return false;
+  }
+
+  // Handle null pointers
+  if (_shape_strides == nullptr && other._shape_strides == nullptr) {
     return true;
   }
-  if (_shape_strides != other._shape_strides) return false;
+  if (_shape_strides == nullptr || other._shape_strides == nullptr) {
+    return false;
+  }
 
-  return true;
+  // Compare shape and strides
+  const int total_length = (_rank < 1 ? 1 : _rank) * 2;
+  return memcmp(_shape_strides, other._shape_strides, total_length * sizeof(LongType)) == 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // less than operator
 bool ShapeDescriptor::operator<(const ShapeDescriptor &other) const {
-  return std::tie(_extraProperties, _rank, _dataType, _ews, _order, _shape_strides) <
-         std::tie(other._extraProperties, other._rank, other._dataType, other._ews, other._order, other._shape_strides);
+  return std::tie(_extraProperties, _rank, _dataType, _order, _shape_strides) <
+         std::tie(other._extraProperties, other._rank, other._dataType,  other._order, other._shape_strides);
 }
 
 LongType *ShapeDescriptor::toShapeInfo() const {
@@ -69,7 +78,7 @@ LongType ShapeDescriptor::offset() {
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const LongType *shape, const LongType rank)
-    : _dataType(type), _order(order), _rank(rank), _ews(1) {
+    : _dataType(type), _order(order), _rank(rank) {
   int rank2 = rank < 1 ? 1 : rank;
   _shape_strides = new LongType[2 * rank2];
   this->ownsShapeStrides = true;
@@ -120,7 +129,6 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
     _order = order;
     _rank = rank;
     _extraProperties = extras;
-    _ews = 1;
     auto _shape = _shape_strides;
     auto _strides = _shape_strides + rank;
     for (int e = 0; e < rank; e++) {
@@ -159,7 +167,6 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
   int rank2 = shape.size() < 1 ? 1 : shape.size();
   _shape_strides = new LongType [2 * rank2];
   this->ownsShapeStrides = true;
-  _ews = 1;
   if(_rank > 0) {
     auto _shape = _shape_strides;
     for (int i = 0; i < _rank; i++) {
@@ -193,7 +200,6 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape,
                                  const std::vector<LongType> &strides, const LongType ews)
     : ShapeDescriptor(type, order, shape, strides) {
-  _ews = ews;
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
@@ -203,7 +209,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
-    : _dataType(type), _ews(1), _order('c'), _rank(1), _extraProperties(0) {
+    : _dataType(type),  _order('c'), _rank(1), _extraProperties(0) {
   _shape_strides = new LongType [2];
   _shape_strides[0] = length;
   _shape_strides[1] = 1;  //{shape, stride}
@@ -260,7 +266,6 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
 
   }
 
-  _ews = shape::elementWiseStride(shapeInfo);
   _rank = static_cast<sd::LongType >(rankVal);
   _extraProperties = shape::extra(shapeInfo);
   _dataType = ArrayOptions::dataType(shapeInfo);
@@ -413,7 +418,6 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
 
 int ShapeDescriptor::rank() const { return _rank; }
 
-LongType ShapeDescriptor::ews() const { return _ews; }
 
 LongType ShapeDescriptor::arrLength() const {
   if(_shape_strides== nullptr) {
@@ -437,7 +441,7 @@ void ShapeDescriptor::print() const {
     printf("%lld", _shape_strides[i]);
     if (i < 2 * _rank - 1) printf(", ");
   }
-  printf("], %c, %lld, %s, %lld\n", _order, _ews, DataTypeUtils::asString(_dataType).c_str(), _extraProperties);
+  printf("], %c, %lld, %s, %lld\n", _order, DataTypeUtils::asString(_dataType).c_str(), _extraProperties);
 }
 
 LongType ShapeDescriptor::allocLength() const {
@@ -447,7 +451,7 @@ LongType ShapeDescriptor::allocLength() const {
   int rank2 = _rank < 1 ? 1 : _rank;
 
   LongType len = 1;
-  if (_ews == 1 && _rank > 1) {
+  if (_rank > 1) {
     // calculate using max stride
     int ind = _order == 'c' ? 0 : rank2 - 1;
     return _shape[ind] * _strides[ind];
@@ -509,9 +513,6 @@ LongType ShapeDescriptor::validate() const {
 
     int index = (_order == 'c') ? _rank - 1 : 0;
     auto correctEws = is_continous ? _strides[index] : 0;
-    if (correctEws != _ews)  {
-      status = status | SHAPE_DESC_INCORRECT_EWS;
-    }
   }
 
   if(isEmpty()) {
@@ -558,7 +559,6 @@ const LongType *ShapeDescriptor::stridesPtr() const {
 
 ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
   _rank = other._rank;
-  _ews = other._ews;
   _extraProperties = other._extraProperties;
   if(other._dataType == UNKNOWN)
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
@@ -607,7 +607,6 @@ ShapeDescriptor  * ShapeDescriptor::emptyDescriptor(const DataType type) {
   descriptor->_extraProperties = ARRAY_EMPTY | ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
   descriptor->_order = 'c';
-  descriptor->_ews = 1;
   descriptor->ownsShapeStrides = true;
   descriptor->_shape_strides = new LongType [1];
   descriptor->_shape_strides[0] = 0;
@@ -622,7 +621,6 @@ ShapeDescriptor * ShapeDescriptor::scalarDescriptor(const DataType type) {
   descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
   descriptor->_rank = 0;
   descriptor->_order = 'c';
-  descriptor->_ews = 1;
   descriptor->ownsShapeStrides = true;
   descriptor->_shape_strides = new LongType [2];
   descriptor->_shape_strides[0] = 0;
@@ -653,7 +651,6 @@ ShapeDescriptor * ShapeDescriptor::vectorDescriptor(const LongType length, const
   }
 
   descriptor->_order = 'c';
-  descriptor->_ews = 1;
   descriptor->_rank = 1;
 
   return descriptor;
@@ -672,7 +669,6 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
   descriptor->_extraProperties = ArrayOptions::flagForDataType(type);
   descriptor->ownsShapeStrides = true;
   if (descriptor->_rank < 1) {
-    descriptor->_ews = 1;
     return descriptor;
   }
 
@@ -715,7 +711,6 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
     }
   }
 
-  descriptor->_ews = is_continous ? 1 : 0;
   if (!is_continous) descriptor->_extraProperties |= ARRAY_HAS_PADDED_BUFFER;
   return descriptor;
 }
@@ -724,16 +719,39 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
 
 namespace std {
 size_t hash<sd::ShapeDescriptor>::operator()(sd::ShapeDescriptor k) const {
-  auto res = std::hash<char>()(k.order());
-  res ^= std::hash<int>()((int)k.dataType()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-  sd::LongType * shape_strides = k.shape_strides();
-  auto ptr = shape_strides;
-  //dont include strides if its' ews==1
-  int stop =  k.rank() * 2;
-  for (int j = 0; j < stop; j++) {
-    res ^= std::hash<sd::LongType>()(ptr[j]) + 0x9e3779b9 + (res << 6) + (res >> 2);
+  // Check cache first
+  if (k._hash_computed) {
+    return k._cached_hash;
+  }
+  // Check cache first
+  if (k._hash_computed) {
+    return k._cached_hash;
   }
 
-  return res;
+  using namespace sd::helpers::detail;
+
+  // Combine order and dataType into initial hash
+  uint64_t hash = ModularHasher::combine_hashes({
+      static_cast<uint64_t>(k.order()),
+      static_cast<uint64_t>(k.dataType()) << 8
+  });
+
+  // Hash the shape and strides array
+  sd::LongType* shape_strides = k.shape_strides();
+  const int stop = k.rank() * 2;
+
+  if (shape_strides != nullptr) {
+    hash = DataChunkHasher<sd::LongType>::hash_data(
+        shape_strides,
+        stop,
+        hash
+    );
+  }
+
+  // Cache the computed hash
+  k._cached_hash = hash;
+  k._hash_computed = true;
+
+  return hash;
 }
 }  // namespace std

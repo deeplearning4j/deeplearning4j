@@ -16,6 +16,10 @@ if (WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_WINDOWS_BUILD=true")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 17)
+
+
 option(SD_NATIVE "Optimize for build machine (might not work on others)" OFF)
 option(SD_CHECK_VECTORIZATION "checks for vectorization" OFF)
 option(SD_BUILD_TESTS "Build tests" OFF)
@@ -131,11 +135,7 @@ if (SD_CUDA)
     if("$ENV{CLION_IDE}")
         add_compile_definitions(__CUDA_CC__)
     endif()
-    if(CMAKE_CXX_COMPILER MATCHES "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "19.29" )
-        message("Working around windows build failure with visual studio. Visual studio 16.10 introduced a compiler bug with compiling CUDA code with C++14. Set the cuda standard to 17 as a workaround.")
-        set(CMAKE_CXX_STANDARD 11)
-        set(CMAKE_CUDA_STANDARD 11)
-    endif()
+
 
     message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
