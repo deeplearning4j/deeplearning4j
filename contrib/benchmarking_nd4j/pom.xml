@@ -9,6 +9,20 @@
 
     <name>ND4J Benchmarks</name>
 
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jmh.version>1.37</jmh.version>
+        <javac.target>11</javac.target>
+        <java.version>11</java.version>
+        <java.compiler.version>11</java.compiler.version>
+
+        <uberjar.name>benchmarks</uberjar.name>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
+    </properties>
+
+
     <!--
        This is the demo/sample template build script for building Java benchmarks with JMH.
        Edit as needed.
@@ -31,18 +45,6 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jmh.version>1.37</jmh.version>
-        <source>${java.version}</source>
-        <target>${javac.target}</target>
-        <compilerVersion>${java.compiler.version}</compilerVersion>
-
-        <uberjar.name>benchmarks</uberjar.name>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
-    </properties>
 
 
     <dependencies>
@@ -88,9 +90,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                    <compilerVersion>${javac.target}</compilerVersion>
+                    <source>${java.version}</source>
+                    <target>${javac.target}</target>
+                    <compilerVersion>${java.compiler.version}</compilerVersion>
                 </configuration>
             </plugin>
             <plugin>
