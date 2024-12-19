@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-@Warmup(iterations = 0, time = 3)
+@Warmup(iterations = 3, time = 3)
 @Measurement(iterations = 5, time = 3, timeUnit = TimeUnit.NANOSECONDS)
 public class SmallNDArrays {
     private INDArray arrayOne;

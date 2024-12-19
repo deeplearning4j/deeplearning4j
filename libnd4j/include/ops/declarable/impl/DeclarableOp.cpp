@@ -434,12 +434,10 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
     delete var->getNDArray();
-    auto desc = new ShapeDescriptor(__shape, false);
+    auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
     DataBuffer * buffer =
-        new DataBuffer(len * sizeof(int8_t), desc->dataType(), workspace);
-    var->setNDArray(new NDArray(buffer, desc, block.launchContext()));
-    delete desc;
-  }
+        new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
+    var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));}
 
   return true;
 }

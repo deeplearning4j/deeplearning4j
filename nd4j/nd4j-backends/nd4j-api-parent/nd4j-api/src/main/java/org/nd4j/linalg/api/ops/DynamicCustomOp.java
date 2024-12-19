@@ -63,27 +63,27 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     protected double[] tArgumentsArr;
 
-    protected List<Double> tArguments = new ArrayList<>();
+    protected List<Double> tArguments;
 
 
     protected long[] iArgumentsArr;
 
-    protected List<Long> iArguments = new ArrayList<>();
+    protected List<Long> iArguments;
 
 
     protected boolean[] bArgumentsArr;
 
-    protected List<Boolean> bArguments = new ArrayList<>();
+    protected List<Boolean> bArguments;
 
 
 
     protected DataType[] dArgumentsArr;
 
-    protected List<DataType> dArguments = new ArrayList<>();
+    protected List<DataType> dArguments;
 
 
     protected String[] sArgumentsArr;
-    protected List<String> sArguments = new ArrayList<>();
+    protected List<String> sArguments;
 
 
     protected List<Integer> axis = new ArrayList<>();

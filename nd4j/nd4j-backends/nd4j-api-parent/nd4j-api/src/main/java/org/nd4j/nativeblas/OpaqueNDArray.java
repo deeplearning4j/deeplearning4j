@@ -209,10 +209,7 @@ public class OpaqueNDArray extends Pointer {
      * @return The corresponding OpaqueNDArray.
      */
     public static OpaqueNDArray fromINDArray(INDArray array) {
-        if (array == null) {
-            return array.getOrCreateOpaqueNDArray();
-        }
-        return fromINDArrayUncached(array);
+        return array.getOrCreateOpaqueNDArray();
     }
 
     /**

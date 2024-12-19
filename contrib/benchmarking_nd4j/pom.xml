@@ -41,7 +41,7 @@
 
         <uberjar.name>benchmarks</uberjar.name>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
+        <nd4j.version>1.0.0-M2.1</nd4j.version>
     </properties>
 
 

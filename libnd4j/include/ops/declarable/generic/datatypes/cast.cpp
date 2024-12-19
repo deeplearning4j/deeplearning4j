@@ -69,13 +69,9 @@ DECLARE_SHAPE_FN(cast) {
     return ret;
 
   } else {
-    printf("block d arguments is empty trying to use int\n");
-    fflush(stdout);
     auto it = INT_ARG(0);
     DataType newType = DataTypeUtils::fromInt(it);
-    auto desc = new ShapeDescriptor(inShape, newType, false);
-    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(desc));
-    delete desc;
+    auto ret =  SHAPELIST(ConstantShapeHelper::getInstance().castToDataType(inShape,newType));
     return ret;
   }
 }

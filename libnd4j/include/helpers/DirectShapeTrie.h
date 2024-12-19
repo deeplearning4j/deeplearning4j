@@ -29,6 +29,7 @@
 #include "exceptions/backward.hpp"
 
 namespace sd {
+#ifndef __JAVACPP_HACK__
 
 class ConstantShapeBuffer;
 
@@ -58,11 +59,18 @@ public:
     void collectStoreStackTrace();
 };
 
+//mainly a workaround for javacpp
+#if __cplusplus >= 201703L
+#define MUTEX_TYPE std::shared_mutex
+#else
+#define MUTEX_TYPE std::mutex
+#endif
+
 class SD_LIB_EXPORT DirectShapeTrie {
 private:
     static const size_t NUM_STRIPES = 32;
     std::array<std::unique_ptr<ShapeTrieNode>, NUM_STRIPES> _roots;
-    mutable std::array<std::shared_mutex, NUM_STRIPES> _mutexes;  // Marked mutable for const member functions
+    mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes;  // Marked mutable for const member functions
 
     struct ThreadCache {
         static const size_t CACHE_SIZE = 1024;
@@ -90,5 +98,5 @@ public:
 };
 
 }  // namespace sd
-
+#endif
 #endif //LIBND4J_DIRECTSHAPETRIE_H
