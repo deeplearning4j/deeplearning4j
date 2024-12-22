@@ -2002,7 +2002,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::Long
 * an information buffer
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType rank(const sd::LongType *buffer) {
-  return static_cast<sd::LongType>(buffer[0]);
+  return buffer[0];
 }
 
 

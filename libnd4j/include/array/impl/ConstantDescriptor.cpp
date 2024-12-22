@@ -21,7 +21,7 @@
 //
 #include <array/ConstantDescriptor.h>
 #include <array/DataTypeUtils.h>
-
+#include <helpers/ModularHasher.h>
 #include <stdexcept>
 
 namespace sd {
@@ -64,14 +64,16 @@ LongType ConstantDescriptor::length() const {
 
 namespace std {
 size_t hash<sd::ConstantDescriptor>::operator()(const sd::ConstantDescriptor &k) const {
-  uint64_t hash = ModularHasher::hash_scalar(k.isInteger());
+  uint64_t hash = sd::helpers::detail::ModularHasher::hash_scalar(k.isInteger());
 
   // Hash the appropriate vector based on type
   if (k.isInteger()) {
-    hash = ModularHasher::hash_vector(k.integerValues(), hash);
+    hash = sd::helpers::detail::ModularHasher::hash_vector(k.integerValues(), hash);
   } else {
-    hash = ModularHasher::hash_vector(k.floatValues(), hash);
+    hash = sd::helpers::detail::ModularHasher::hash_vector(k.floatValues(), hash);
   }
+
+  return hash;
 
 }
 }  // namespace std
