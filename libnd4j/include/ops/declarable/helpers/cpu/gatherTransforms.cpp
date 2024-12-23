@@ -49,20 +49,31 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
   const int diff = zRank - xRank;
   const bool bEqual = yLastDim == xRank;
 
+  sd::LongType outputRank = output.rankOf();
+  sd::LongType* outputShape = shape::shapeOf(output.shapeInfo());
+  sd::LongType* outputStride = shape::stride(output.shapeInfo());
+  sd::LongType indicesRank = indices.rankOf();
+  sd::LongType* indicesShape = shape::shapeOf(indices.shapeInfo());
+  sd::LongType* indicesStride = shape::stride(indices.shapeInfo());
+
+  sd::LongType inputRank = input.rankOf();
+  sd::LongType* inputShape = shape::shapeOf(input.shapeInfo());
+  sd::LongType* inputStride = shape::stride(input.shapeInfo());
+
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, output.rankOf(), shape::shapeOf(output.shapeInfo()), zCoords);
+      INDEX2COORDS(i, outputRank, outputShape, zCoords);
 
       sd::LongType zOffset;
-      COORDS2INDEX(output.rankOf(), shape::stride(output.shapeInfo()), zCoords, zOffset);
+      COORDS2INDEX(outputRank, outputStride, zCoords, zOffset);
 
       temp = zCoords[yRank - 1];
       zCoords[yRank - 1] = 0;
 
       sd::LongType yOffset;
-      COORDS2INDEX(indices.rankOf(), shape::stride(indices.shapeInfo()), zCoords, yOffset);
+      COORDS2INDEX(indicesRank, indicesStride, zCoords, yOffset);
 
       zCoords[yRank - 1] = temp;
 
@@ -74,10 +85,10 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
         memcpy(xCoords - diff, zCoords, zRank * sizeof(sd::LongType));
 
       for (sd::LongType j = 0; j < yLastDim; ++j)
-        xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];  // last stride
+        xCoords[j] = y[yOffset + j * indicesStride[yRank - 1]];  // last stride
 
       sd::LongType xOffset;
-      COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), xCoords, xOffset);
+      COORDS2INDEX(inputRank, inputStride, xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }

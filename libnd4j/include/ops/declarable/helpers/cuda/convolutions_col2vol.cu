@@ -42,6 +42,9 @@ static SD_KERNEL void col2volCuda(const void* columns, const LongType* colShapeI
 
   __shared__ LongType kD, kH, kW, oD, oH, oW, *sharedMem;
   __shared__ LongType volLen;
+  __shared__ LongType volRank;
+  __shared__ LongType* volShape;
+  __shared__ LongType* volStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -56,6 +59,11 @@ static SD_KERNEL void col2volCuda(const void* columns, const LongType* colShapeI
     kW = dW * (colShapeInfo[5] - 1) + 1;
 
     volLen = shape::length(volShapeInfo);
+
+    // Cache shape information
+    volRank = shape::rank(volShapeInfo);
+    volShape = shape::shapeOf(volShapeInfo);
+    volStride = shape::stride(volShapeInfo);
   }
   __syncthreads();
 
@@ -64,10 +72,10 @@ static SD_KERNEL void col2volCuda(const void* columns, const LongType* colShapeI
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < volLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, shape::rank(volShapeInfo), shape::shapeOf(volShapeInfo), coords);
+    INDEX2COORDS(i, volRank, volShape, coords);
 
     sd::LongType volOffset;
-    COORDS2INDEX(shape::rank(volShapeInfo), shape::stride(volShapeInfo), coords, volOffset);
+    COORDS2INDEX(volRank, volStride, coords, volOffset);
 
     const auto bSiCoffset = coords[0] * colShapeInfo[9] + coords[1] * colShapeInfo[10];
 

@@ -292,16 +292,23 @@ static SD_KERNEL void determinantLogKernel(T *compound, T *result, LongType len)
 template <typename T, typename F>
 static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const void *input, const LongType *inputShape,
                                  LongType pos, LongType rowLen) {
+  // Shared memory caching for rank, shape, and stride
   __shared__ F *matrix;
   __shared__ const T *inputBuf;
   __shared__ LongType inputLen;
   __shared__ LongType n2;
+  __shared__ LongType inputRank;
+  __shared__ const LongType *inputShapePtr;
+  __shared__ const LongType *inputStridePtr;
 
   if (threadIdx.x == 0) {
     matrix = reinterpret_cast<F *>(output);
     inputBuf = reinterpret_cast<const T *>(input);
     inputLen = shape::length(inputShape);
     n2 = rowLen * rowLen;
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
   }
   __syncthreads();
 
@@ -312,28 +319,39 @@ static SD_KERNEL void fillMatrix(void *output, const LongType *outShape, const v
     LongType coords[SD_MAX_RANK];
     LongType xIndex;
 
-    INDEX2COORDS(k, shape::rank(inputShape), shape::shapeOf(inputShape), coords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), coords, xIndex);
+    // Use cached rank, shape, and stride
+    INDEX2COORDS(k, inputRank, inputShapePtr, coords);
+    COORDS2INDEX(inputRank, inputStridePtr, coords, xIndex);
 
-    matrix[j] = (F)inputBuf[xIndex];
+    matrix[j] = static_cast<F>(inputBuf[xIndex]);
   }
 }
+
 
 // ------------------------------------------------------------------------------------------------------------------ //
 // same as above, but without type conversion
 template <typename T>
 static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, const void *input,
                                    const LongType *inputShape, LongType pos, LongType rowLen) {
+  // Shared memory caching for rank, shape, and stride
   __shared__ LongType outputLen;
   __shared__ LongType n2;
+  __shared__ LongType outputRank;
+  __shared__ const LongType *outputShapePtr;
+  __shared__ const LongType *outputStridePtr;
+
   auto matrix = reinterpret_cast<const T *>(input);
   auto outputBuf = reinterpret_cast<T *>(output);
 
   if (threadIdx.x == 0) {
     outputLen = shape::length(inputShape);
     n2 = rowLen * rowLen;
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
   }
   __syncthreads();
+
   auto start = blockIdx.x * blockDim.x + threadIdx.x;
   auto step = blockDim.x * gridDim.x;
 
@@ -341,12 +359,14 @@ static SD_KERNEL void returnMatrix(void *output, const LongType *outputShape, co
     LongType zCoords[SD_MAX_RANK];
     LongType zIndex;
 
-    INDEX2COORDS(k, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
+    // Use cached rank, shape, and stride
+    INDEX2COORDS(k, outputRank, outputShapePtr, zCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zIndex);
 
     outputBuf[zIndex] = matrix[j];
   }
 }
+
 
 // ------------------------------------------------------------------------------------------------------------------ //
 // fill up permutaion matrix kernel. Permutation matrix filled with zeros and ones
@@ -619,39 +639,51 @@ static I argmaxCol(I column, T* compoundBuffer, sd::LongType const* compoundShap
 template <typename T, typename I>
 static void luNN_(LaunchContext *context, NDArray *compound, NDArray *permutation, LongType rowNum) {
   NDArray::preparePrimaryUse({compound}, {permutation});
+
   if (permutation) {  // LUP algorithm
-    // TODO: note: this is the cpu implementation.
-    // cuda has enough edge cases that this will need to be revisited.
     permutation->linspace(0);
+
+    // Cache rank, shape, and stride values
+    sd::LongType permRank = shape::rank(permutation->shapeInfo());
+    const sd::LongType* permShape = shape::shapeOf(permutation->shapeInfo());
+    const sd::LongType* permStride = shape::stride(permutation->shapeInfo());
+
     auto permutationBuf = permutation->bufferAsT<I>();
     auto compoundBuf = compound->bufferAsT<T>();
     auto compoundShape = compound->shapeInfo();
-    auto permutationShape = permutation->shapeInfo();
+
     for (LongType i = 0; i < rowNum - 1; i++) {
       auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
       if (pivotIndex < 0) {
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
 
+      // Precompute coordinates and offsets for permutation swaps
       sd::LongType permIndex1, permIndex2;
       sd::LongType permCoords1[SD_MAX_RANK], permCoords2[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords1);
-      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), permCoords1, permIndex1);
-      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2);
-      COORDS2INDEX(shape::rank(permutationShape), shape::shapeOf(permutationShape), permCoords2, permIndex2);
 
+      INDEX2COORDS(i, permRank, permShape, permCoords1);
+      COORDS2INDEX(permRank, permStride, permCoords1, permIndex1);
+
+      INDEX2COORDS(pivotIndex, permRank, permShape, permCoords2);
+      COORDS2INDEX(permRank, permStride, permCoords2, permIndex2);
+
+      // Swap permutation elements
       math::sd_swap(permutationBuf[permIndex1], permutationBuf[permIndex2]);
 
+      // Swap rows in the compound matrix
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
+      // Process the columns for LU decomposition
       processColumns(i, rowNum, compoundBuf, compoundShape);
     }
-  } else {  // Doolitle algorithm with LU decomposition
+  } else {  // Doolittle algorithm with LU decomposition
     doolitleLU<T>(context, compound, rowNum);
   }
 
   NDArray::registerPrimaryUse({compound}, {permutation});
 }
+
 
 template <typename T, typename I>
 static void lu_(LaunchContext *context, NDArray *input, NDArray *output, NDArray *permutationVectors) {
@@ -691,26 +723,41 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
   float one = 1.f;
   output->assign(one);
+
+  // Cache rank, shape, and stride outside the loop
+  sd::LongType outputRank = shape::rank(output->shapeInfo());
+  const sd::LongType* outputShape = shape::shapeOf(output->shapeInfo());
+  const sd::LongType* outputStride = shape::stride(output->shapeInfo());
+
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
+
+    // Fill matrix using the CUDA kernel
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
         matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
+    // Perform LU decomposition
     lup_<T, int>(context, &matrix, nullptr, nullptr);
-    sd::LongType offset;
-    sd::LongType offsetCoords[SD_MAX_RANK];
-    INDEX2COORDS(e, shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords);
-    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::stride(output->shapeInfo()), offsetCoords, offset);
-    auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
-    auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
+
+    // Precompute coordinates and offsets
+    LongType offsetCoords[SD_MAX_RANK];
+    LongType offset;
+    INDEX2COORDS(e, outputRank, outputShape, offsetCoords);
+    COORDS2INDEX(outputRank, outputStride, offsetCoords, offset);
+
+    // Execute determinant kernel
+    auto inputBuf = reinterpret_cast<T*>(matrix.specialBuffer());
+    auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()) + offset;
     determinantKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
     sd::DebugHelper::checkErrorCode(stream, "determinantKernel failed");
   }
+
   NDArray::registerSpecialUse({output}, {input});
 
   return Status::OK;
 }
+
 
 Status determinant(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});
@@ -734,6 +781,12 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
   float zero = 0.f;
   output->assign(zero);
+
+  // Cache rank, shape, and stride outside the loop
+  sd::LongType outputRank = shape::rank(output->shapeInfo());
+  const sd::LongType* outputShape = shape::shapeOf(output->shapeInfo());
+  const sd::LongType* outputStride = shape::stride(output->shapeInfo());
+
   for (int e = 0; e < output->lengthOf(); e++) {
     LongType pos = e * n2;
     fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
@@ -741,19 +794,24 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
     sd::DebugHelper::checkErrorCode(stream, "fillMatrix failed");
 
     lup_<T, int>(context, &matrix, nullptr, nullptr);
+
+    // Precompute coordinates and offsets
+    LongType offsetCoords[SD_MAX_RANK];
     LongType offset;
-    sd::LongType offsetCoords[SD_MAX_RANK];
-    INDEX2COORDS(e, shape::rank(output->shapeInfo()), output->shapeInfo(), offsetCoords);
-    COORDS2INDEX(shape::rank(output->shapeInfo()), shape::shapeOf(output->shapeInfo()), offsetCoords, offset);
+    INDEX2COORDS(e, outputRank, outputShape, offsetCoords);
+    COORDS2INDEX(outputRank, outputStride, offsetCoords, offset);
+
     auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
     auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
     determinantLogKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
     sd::DebugHelper::checkErrorCode(stream, "determinantLogKernel failed");
   }
+
   NDArray::registerSpecialUse({output}, {input});
 
   return Status::OK;
 }
+
 
 Status logAbsDeterminant(LaunchContext *context, NDArray *input, NDArray *output) {
   NDArray::prepareSpecialUse({output}, {input});

@@ -42,25 +42,43 @@ static SD_KERNEL void dropoutSimpleKernel(void const* inputBuf, LongType const* 
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
 
+  __shared__ LongType inputRank, outputRank;
+  __shared__ const LongType *inputShapePtr, *inputStridePtr;
+  __shared__ const LongType *outputShapePtr, *outputStridePtr;
+
+  if (threadIdx.x == 0) {
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+  }
+  __syncthreads();
+
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
   LongType inputOffset;
   LongType outputOffset;
 
-  // trivial idea: loop through all elements, get independent probability for each element to be nullified
-  for (LongType e = 0; e < inLen; ++e) {
+  // Loop through all elements and nullify based on probability
+  for (LongType e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
 
-    // if probability is ok - we're saving scaled value
+    // If probability is acceptable, save the scaled value
     if (double(val) < probVal) {
-      INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
+      INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
+      COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
+
+      INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
+      COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
+
       output[outputOffset] = T(input[inputOffset] / probVal);
     }
   }
 }
+
 
 template <typename T>
 static void dropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, double probValue,
@@ -144,18 +162,30 @@ Status dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* outp
   NDArray::registerSpecialUse({output}, {input});
 }
 
-/////////////////////////////////// backrpopagations ///////////////////////////////////////////////
+/////////////////////////////////// backpropagations ///////////////////////////////////////////////
 template <typename T>
 static SD_KERNEL void dropoutBPKernel(void* outputBuf, LongType const* outputShape, void* gradOutBuf,
                                       LongType const* gradOutShape, double probValue) {
   __shared__ T* output;
   __shared__ T* input;
-  __shared__ int len;
+  __shared__ LongType len;
+  __shared__ LongType outputRank, gradOutRank;
+  __shared__ const LongType *outputShapePtr, *outputStridePtr;
+  __shared__ const LongType *gradOutShapePtr, *gradOutStridePtr;
 
   if (threadIdx.x == 0) {
     len = shape::length(outputShape);
+
     output = reinterpret_cast<T*>(outputBuf);
     input = reinterpret_cast<T*>(gradOutBuf);
+
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    gradOutRank = shape::rank(gradOutShape);
+    gradOutShapePtr = shape::shapeOf(gradOutShape);
+    gradOutStridePtr = shape::stride(gradOutShape);
   }
   __syncthreads();
 
@@ -167,16 +197,20 @@ static SD_KERNEL void dropoutBPKernel(void* outputBuf, LongType const* outputSha
   LongType zOffset;
   LongType gradOutOffset;
 
-  for (int e = tid; e < len; e += step) {
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(gradOutShape), shape::shapeOf(gradOutShape), gradOutCoords);
-    COORDS2INDEX(shape::rank(gradOutShape), shape::stride(gradOutShape), gradOutCoords, gradOutOffset);
+  for (LongType e = tid; e < len; e += step) {
+    INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, zOffset);
 
-    // if probability was non-zero on FF step, we'll scale grads back
-    if (output[zOffset] != T(0.)) output[zOffset] = T(input[gradOutOffset] / probValue);
+    INDEX2COORDS(e, gradOutRank, gradOutShapePtr, gradOutCoords);
+    COORDS2INDEX(gradOutRank, gradOutStridePtr, gradOutCoords, gradOutOffset);
+
+    // Scale gradients back if the output wasn't zero
+    if (output[zOffset] != T(0.)) {
+      output[zOffset] = T(input[gradOutOffset] / probValue);
+    }
   }
 }
+
 template <typename T>
 static Status dropOutFunctorBP_(sd::graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                                 NDArray* reduceShape, int seed, double probValue, NDArray* mask) {
@@ -210,6 +244,21 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
   T const* input = reinterpret_cast<T const*>(inputBuf);
   T* output = reinterpret_cast<T*>(outputBuf);
 
+  __shared__ LongType inputRank, outputRank;
+  __shared__ const LongType *inputShapePtr, *inputStridePtr;
+  __shared__ const LongType *outputShapePtr, *outputStridePtr;
+
+  if (threadIdx.x == 0) {
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+  }
+  __syncthreads();
+
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
   LongType inputOffset;
@@ -217,13 +266,19 @@ static SD_KERNEL void alphaDropoutSimpleKernel(void const* inputBuf, LongType co
 
   for (auto e = tid; e < inLen; e += step) {
     T val = nodeRng->relativeT(e, T(0.f), T(1.f));
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-    output[outputOffset] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)input[inputOffset] + alpha1));
+
+    INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
+    COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
+
+    INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
+
+    output[outputOffset] = (val >= T(probValue)
+                                ? T(alpha * beta + alpha1)
+                                : T(alpha * static_cast<double>(input[inputOffset]) + alpha1));
   }
 }
+
 template <typename T>
 static void alphaDropoutSimple(LaunchContext* context, NDArray * input, NDArray* output, int seed,
                                double probValue, double alpha, double alpha1, double beta) {

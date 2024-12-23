@@ -44,24 +44,29 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
   const X* y = reinterpret_cast<const X*>(vy);
   Z* z = reinterpret_cast<Z*>(vz);
 
-  __shared__ LongType xzRank, yRank, *sharedMem;
-  __shared__ LongType iH, iW, kH, kW;
-  __shared__ LongType zLen;
+  __shared__ LongType xRank, yRank, zRank;
+  __shared__ const LongType *xShape, *xStride, *yShape, *yStride, *zShape, *zStride;
+  __shared__ LongType iH, iW, kH, kW, zLen;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
+    xRank = shape::rank(xShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
 
     zLen = shape::length(zShapeInfo);
 
-    xzRank = shape::rank(xShapeInfo);
-    yRank = shape::rank(yShapeInfo);
+    iH = xShape[1];
+    iW = xShape[2];
 
-    iH = xShapeInfo[2];
-    iW = xShapeInfo[3];
-
-    kH = yShapeInfo[1];
-    kW = yShapeInfo[2];
+    kH = yShape[0];
+    kW = yShape[1];
   }
   __syncthreads();
 
@@ -69,32 +74,31 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
 
   if (zInd >= zLen) return;
 
-  auto xzCoords = sharedMem + threadIdx.x * (xzRank + yRank);
-  auto yCoords = xzCoords + xzRank;
-
-  INDEX2COORDS(zInd, xzRank, shape::shapeOf(zShapeInfo), xzCoords);
-
+  LongType zCoords[SD_MAX_RANK];
+  LongType yCoords[SD_MAX_RANK];
+  LongType xCoords[SD_MAX_RANK];
   LongType zOffset;
-  COORDS2INDEX(xzRank, shape::shapeOf(zShapeInfo), xzCoords, zOffset);
 
-  yCoords[2] = xzCoords[3];  // iC coordinate is same for x, y and z
+  INDEX2COORDS(zInd, zRank, zShape, zCoords);
+  COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-  const auto oh = xzCoords[1];
-  const auto ow = xzCoords[2];
+  yCoords[2] = zCoords[3]; // iC coordinate is the same for x, y, and z
+  const auto oh = zCoords[1];
+  const auto ow = zCoords[2];
 
   X max = -DataTypeUtils::max<X>();
 
   for (yCoords[0] = 0; yCoords[0] < kH; ++yCoords[0]) {
-    xzCoords[1] = oh * sH - pH + yCoords[0] * dH;
-    if (xzCoords[1] < 0 || xzCoords[1] >= iH) continue;
+    xCoords[1] = oh * sH - pH + yCoords[0] * dH;
+    if (xCoords[1] < 0 || xCoords[1] >= iH) continue;
 
     for (yCoords[1] = 0; yCoords[1] < kW; ++yCoords[1]) {
-      xzCoords[2] = ow * sW - pW + yCoords[1] * dW;
-      if (xzCoords[2] < 0 || xzCoords[2] >= iW) continue;
+      xCoords[2] = ow * sW - pW + yCoords[1] * dW;
+      if (xCoords[2] < 0 || xCoords[2] >= iW) continue;
 
       LongType xOffset, yOffset;
-      COORDS2INDEX(xzRank, shape::stride(xShapeInfo), xzCoords, xOffset);
-      COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
       const X val = x[xOffset] + y[yOffset];
       if (val > max) max = val;
@@ -103,6 +107,7 @@ SD_KERNEL static void dilation2dCuda(const void* vx, const LongType* xShapeInfo,
 
   z[zOffset] = static_cast<Z>(max);
 }
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

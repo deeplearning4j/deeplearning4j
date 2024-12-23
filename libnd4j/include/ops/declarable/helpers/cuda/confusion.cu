@@ -51,33 +51,41 @@ SD_KERNEL static void copyBuffers(LongType* destination, void const* source, Lon
 template <typename T>
 SD_KERNEL static void confusionFunctorKernel(LongType* labelsBuffer, LongType* predictionBuffer, LongType bufferLength, void const* weightsBuffer, void* outputBuffer,
                                              const LongType* tadShape, const LongType* tadOffsets) {
-  __shared__ int arrIdx, blocksPerArr;
-  __shared__ T* z;
-  __shared__ T const* w;
-  __shared__ LongType *zShapeInfo, *xShapeInfo, arrLen;
+ __shared__ int arrIdx, blocksPerArr;
+ __shared__ T* z;
+ __shared__ T const* w;
+ __shared__ LongType *zShapeInfo, *xShapeInfo, arrLen;
+ __shared__ LongType tadRank;
+ __shared__ LongType* tadShapePtr;
+ __shared__ LongType* tadStridePtr;
 
-  if (threadIdx.x == 0) {
-    z = reinterpret_cast<T*>(outputBuffer);
-    w = reinterpret_cast<T const*>(weightsBuffer);
-    arrLen = shape::length(tadShape);
-  }
-  __syncthreads();
+ if (threadIdx.x == 0) {
+   z = reinterpret_cast<T*>(outputBuffer);
+   w = reinterpret_cast<T const*>(weightsBuffer);
+   arrLen = shape::length(tadShape);
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-  const auto step = gridDim.x * blockDim.x;
-  LongType predCoords[SD_MAX_RANK];
-  LongType predOffset;
+   // Cache shape information
+   tadRank = shape::rank(tadShape);
+   tadShapePtr = shape::shapeOf(tadShape);
+   tadStridePtr = shape::stride(tadShape);
+ }
+ __syncthreads();
 
-  for (int t = tid; t < bufferLength; t += step) {
-    auto label = labelsBuffer[t];
-    auto pred = predictionBuffer[t];
-    auto tZ = z + tadOffsets[label];
-    T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+ const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+ const auto step = gridDim.x * blockDim.x;
+ LongType predCoords[SD_MAX_RANK];
+ LongType predOffset;
 
-    INDEX2COORDS(pred, shape::rank(tadShape), shape::shapeOf(tadShape), predCoords);
-    COORDS2INDEX(shape::rank(tadShape), shape::stride(tadShape), predCoords, predOffset);
-    tZ[predOffset] = val;
-  }
+ for (int t = tid; t < bufferLength; t += step) {
+   auto label = labelsBuffer[t];
+   auto pred = predictionBuffer[t];
+   auto tZ = z + tadOffsets[label];
+   T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
+
+   INDEX2COORDS(pred, tadRank, tadShapePtr, predCoords);
+   COORDS2INDEX(tadRank, tadStridePtr, predCoords, predOffset);
+   tZ[predOffset] = val;
+ }
 }
 template <typename X, typename Z>
 void _confusionFunctor(LaunchContext* context, NDArray* labels, NDArray* predictions, NDArray* weights,

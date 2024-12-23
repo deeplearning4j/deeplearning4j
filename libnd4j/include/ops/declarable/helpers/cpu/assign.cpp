@@ -31,19 +31,28 @@ static void assign_(const void* vx, const sd::LongType* xShapeInfo,
   auto x = reinterpret_cast<const X*>(vx);
   auto z = reinterpret_cast<Z*>(vz);
 
+  const sd::LongType xRank = shape::rank(xShapeInfo);
+  const sd::LongType zRank = shape::rank(zShapeInfo);
+  const sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+  const sd::LongType* zShape = shape::shapeOf(zShapeInfo);
+  const sd::LongType* xStride = shape::stride(xShapeInfo);
+  const sd::LongType* zStride = shape::stride(zShapeInfo);
+
   sd::LongType xCoords[SD_MAX_RANK];
   sd::LongType zCoords[SD_MAX_RANK];
 
   for (sd::LongType i = start; i < stop; i++) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
 
     sd::LongType xOffset, zOffset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+
     z[zOffset] = static_cast<Z>(x[xOffset]);
   }
 }
+
 
 SD_LIB_HIDDEN void assign(sd::LaunchContext* context, sd::NDArray* target, sd::NDArray* source) {
   if (target->lengthOf() != source->lengthOf()) {

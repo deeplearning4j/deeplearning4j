@@ -37,32 +37,55 @@ SD_KERNEL static void zetaCuda(const void *vx, const LongType *xShapeInfo, const
   auto z = reinterpret_cast<T *>(vz);
 
   __shared__ LongType len;
+  __shared__ LongType xRank, qRank, zRank;
+  __shared__ LongType *sharedMem;
+  __shared__ const LongType *xShape, *qShape, *zShape;
+  __shared__ const LongType *xStride, *qStride, *zStride;
 
-  if (threadIdx.x == 0) len = shape::length(xShapeInfo);
+  if (threadIdx.x == 0) {
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<LongType*>(shmem);
+
+    len = shape::length(xShapeInfo);
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    qRank = shape::rank(qShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    // Cache shape pointers
+    xShape = shape::shapeOf(xShapeInfo);
+    qShape = shape::shapeOf(qShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+
+    // Cache stride pointers
+    xStride = shape::stride(xShapeInfo);
+    qStride = shape::stride(qShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
-  for (LongType i = tid; i < len; i += totalThreads) {
-    LongType xCoords[SD_MAX_RANK];
-    LongType qCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-    LongType xOffset;
-    LongType qOffset;
-    LongType zOffset;
+  // Use shared memory for coordinates
+  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(qShapeInfo), shape::shapeOf(qShapeInfo), qCoords);
-    COORDS2INDEX(shape::rank(qShapeInfo), shape::stride(qShapeInfo), qCoords, qOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+  for (LongType i = tid; i < len; i += totalThreads) {
+    LongType xOffset, qOffset, zOffset;
+
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
+    INDEX2COORDS(i, qRank, qShape, coords);
+    COORDS2INDEX(qRank, qStride, coords, qOffset);
+
+    INDEX2COORDS(i, zRank, zShape, coords);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
     z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void zetaCudaLauncher(const int blocksPerGrid, const int sharedMemory, const int threadsPerBlock,

@@ -49,9 +49,24 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const LongType* xSha
 
   __shared__ LongType len, totalThreads;
 
+  // Cache shape information in shared memory
+  __shared__ int xRank, zRank;
+  __shared__ LongType *xShape, *zShape;
+  __shared__ LongType *xStride, *zStride;
+
   if (threadIdx.x == 0) {
     len = shape::length(xShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
 
   __syncthreads();
@@ -64,11 +79,11 @@ SD_KERNEL static void invertPermutationCuda(const void* vx, const LongType* xSha
   LongType zOffset;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
     const LongType index = x[xOffset];
-    INDEX2COORDS(index, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(index, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     z[zOffset] = i;
   }
 }
@@ -110,28 +125,37 @@ SD_KERNEL static void traceCuda(const void* vx, const LongType* xShapeInfo, void
   __shared__ int xRank, zRank;  // xRank = zRank + 2
   __shared__ LongType xLen, zLen;
 
+  // Cache shape information in shared memory
+  __shared__ LongType *xShape, *zShape;
+  __shared__ LongType *xStride, *zStride;
+
   if (threadIdx.x == 0) {
     xRank = shape::rank(xShapeInfo);
     zRank = shape::rank(zShapeInfo);
     xLen = shape::length(xShapeInfo);
     zLen = shape::length(zShapeInfo);  // corresponds to number of matrices
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
   LongType coords[SD_MAX_RANK];
 
   for (LongType m = blockIdx.x; m < zLen; m += gridDim.x) {  // one block per each element of z, that is per each matrix
-
-    INDEX2COORDS(m, zRank, shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(m, zRank, zShape, coords);
     LongType zOffset;
-    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
     sharedMem[threadIdx.x] = 0;
 
     for (LongType i = threadIdx.x; i < diagLen; i += blockDim.x) {
       coords[zRank] = coords[zRank + 1] = i;
       LongType xOffset;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
       sharedMem[threadIdx.x] += x[xOffset];
     }
 
@@ -188,11 +212,26 @@ SD_KERNEL static void triuBPCuda(const void* vx, const LongType* xShapeInfo, voi
   __shared__ int rank, areSameOffsets;
   __shared__ LongType len, totalThreads;  // xLen = zLen
 
+  // Cache shape information in shared memory
+  __shared__ LongType *xShape, *zShape;
+  __shared__ LongType *xStride, *zStride;
+  __shared__ int xRank, zRank;
+
   if (threadIdx.x == 0) {
     areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     rank = shape::rank(xShapeInfo);
     len = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
 
   __syncthreads();
@@ -202,21 +241,20 @@ SD_KERNEL static void triuBPCuda(const void* vx, const LongType* xShapeInfo, voi
   const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(i, zRank, zShape, coords);
 
     sd::LongType zOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
     if ((coords[rank - 2] + diag > coords[rank - 1]))  // row + diag > col
       z[zOffset] = 0;
     else {
       sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
       z[zOffset] = x[areSameOffsets ? zOffset : xOffset];
     }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -255,8 +293,12 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
   const auto x = reinterpret_cast<const T*>(vx);  // gradO
   auto z = reinterpret_cast<T*>(vz);              // gradI
 
-  __shared__ int xRank, zRank;                                // xRank >= zRank
-  __shared__ LongType numOfXOffsets, zLen, totalThreads;  // xLen >= zLen
+  __shared__ int xRank, zRank;                               // xRank >= zRank
+  __shared__ LongType numOfXOffsets, zLen, totalThreads;     // xLen >= zLen
+
+  // Cache shape information in shared memory
+  __shared__ LongType *xShape, *zShape;
+  __shared__ LongType *xStride, *zStride;
 
   if (threadIdx.x == 0) {
     xRank = shape::rank(zShapeInfo);
@@ -265,6 +307,12 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
     numOfXOffsets = shape::length(xShapeInfo) / zLen;
 
     totalThreads = gridDim.x * blockDim.x;
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
 
   __syncthreads();
@@ -278,13 +326,13 @@ SD_KERNEL static void tileBPCuda(const void* vx, const LongType* xShapeInfo, voi
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
 
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
     shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff, nullptr);
 
     z[zOffset] = x[xOffsets[0]];                      // first offset
-    for (LongType j = 1; j < numOfXOffsets; ++j)  // rest offsets
+    for (LongType j = 1; j < numOfXOffsets; ++j)      // rest offsets
       z[zOffset] += x[xOffsets[j]];
   }
 }

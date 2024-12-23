@@ -43,81 +43,188 @@ template <typename T, typename I>
 static SD_KERNEL void segmentProdLinearKernel(void* input, LongType const* inputShape, LongType* starts,
                                               LongType* lengths, LongType numOfClasses, void* output,
                                               LongType const* outputShape) {
-  __shared__ LongType xLen, zLen;
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType outputRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
   __shared__ T* x;
   __shared__ T* z;
+  __shared__ LongType xLen;
+  __shared__ LongType zLen;
 
   if (threadIdx.x == 0) {
-    x = reinterpret_cast<T*>(input);
-    z = reinterpret_cast<T*>(output);
+    // Cache rank, shape, and stride for inputShape
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache lengths
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
+
+    // Initialize pointers
+    x = reinterpret_cast<T*>(input);
+    z = reinterpret_cast<T*>(output);
   }
   __syncthreads();
 
+  // Calculate global thread index and step size
+  LongType startIdx = threadIdx.x + blockIdx.x * blockDim.x;
+  LongType step = blockDim.x * gridDim.x;
+
+  // Coordinate arrays
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
+
+  // Offset variables
   LongType xIndex;
   LongType zIndex;
 
-  for (auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
-    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, zIndex);
-    if(zIndex >= zLen)
+  // Iterate over each class segment assigned to this block
+  for (LongType segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
+    // Convert segment index to coordinates for outputShape
+    INDEX2COORDS(segment, outputRank, outputShapePtr, outputCoords);
+    // Convert coordinates back to linear index for outputShape
+    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, zIndex);
+
+    // Skip processing if zIndex is out of bounds
+    if (zIndex >= zLen)
       continue;
+
+    // Retrieve start and finish indices for the current segment
     auto start = starts[segment];
     auto finish = start + lengths[segment];
+
+    // Skip processing if the length for the segment is zero
     if (lengths[segment] == 0) {
       continue;
     }
-    for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, xIndex);
-      if (xIndex >= xLen) return;
+
+    // Iterate over elements within the segment, distributing work among threads
+    for (LongType e = startIdx; e < finish; e += step) {
+      // Convert linear index to coordinates for inputShape
+      INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
+      // Convert coordinates back to linear index for inputShape
+      COORDS2INDEX(inputRank, inputStridePtr, inputCoords, xIndex);
+
+      // Skip processing if xIndex is out of bounds
+      if (xIndex >= xLen)
+        continue;
+
+      // Perform atomic multiplication on the output buffer
       math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
     }
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void unsortedSegmentProdLinearKernel(T* input, LongType const* inputShape, I* indices,
                                                       LongType const* indicesShape, LongType* starts, LongType* lengths,
                                                       LongType numOfClasses, T* output, LongType const* outputShape) {
-  __shared__ LongType xLen, zLen;
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType indicesRank;
+  __shared__ const LongType* indicesShapePtr;
+  __shared__ const LongType* indicesStridePtr;
+
+  __shared__ LongType outputRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
+  __shared__ T* x;
+  __shared__ I* y;
+  __shared__ T* z;
+  __shared__ LongType xLen;
+  __shared__ LongType zLen;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputShape
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for indicesShape
+    indicesRank = shape::rank(indicesShape);
+    indicesShapePtr = shape::shapeOf(indicesShape);
+    indicesStridePtr = shape::stride(indicesShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache lengths
     xLen = shape::length(inputShape);
     zLen = shape::length(outputShape);
+
+    // Initialize pointers
+    x = input;
+    y = indices;
+    z = output;
   }
   __syncthreads();
-  auto start = threadIdx.x + blockIdx.x * blockDim.x;
-  auto step = blockDim.x * gridDim.x;
 
+  // Calculate global thread index and step size
+  LongType startIdx = threadIdx.x + blockIdx.x * blockDim.x;
+  LongType step = blockDim.x * gridDim.x;
+
+  // Coordinate arrays
   LongType xCoords[SD_MAX_RANK];
   LongType yCoords[SD_MAX_RANK];
   LongType zCoords[SD_MAX_RANK];
+
+  // Offset variables
   LongType xIndex;
   LongType yIndex;
   LongType zIndex;
 
-  for (auto idx = start; idx < xLen; idx += step) {
-    INDEX2COORDS(idx, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xIndex);
+  for (LongType idx = startIdx; idx < xLen; idx += step) {
+    // Convert linear index to coordinates for inputShape
+    INDEX2COORDS(idx, inputRank, inputShapePtr, xCoords);
+    // Convert coordinates back to linear index for inputShape
+    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xIndex);
 
-    INDEX2COORDS(idx, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yIndex);
+    // Convert linear index to coordinates for indicesShape
+    INDEX2COORDS(idx, indicesRank, indicesShapePtr, yCoords);
+    // Convert coordinates back to linear index for indicesShape
+    COORDS2INDEX(indicesRank, indicesStridePtr, yCoords, yIndex);
 
-    auto segment = indices[yIndex];
+    // Retrieve the segment index from indices
+    auto segment = y[yIndex];
 
-    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
+    // Convert segment index to coordinates for outputShape
+    INDEX2COORDS(segment, outputRank, outputShapePtr, zCoords);
+    // Convert coordinates back to linear index for outputShape
+    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zIndex);
 
+    // Skip processing if the length for the segment is zero
     if (lengths[segment] == 0) {
       continue;
     }
-    math::atomics::sd_atomicMul(&output[zIndex], input[xIndex]);
+
+    // Perform atomic multiplication on the output buffer
+    math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 // SegmentProd kernel
 template <typename T, typename I>
@@ -128,37 +235,109 @@ static SD_KERNEL void segmentProdTadKernel(void* inputBuf, LongType const* input
                                            LongType const* outputShape, LongType const* outputTads,
                                            LongType const* outputTadOffsets, LongType indicesLen) {
 
-  if(blockIdx.x >= indicesLen)
+  // Early exit if block index is out of range
+  if (blockIdx.x >= indicesLen)
     return;
-  __shared__ LongType len, total;
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputTadRank;
+  __shared__ const LongType* inputTadShapePtr;
+  __shared__ const LongType* inputTadStridePtr;
+
+  __shared__ LongType outputTadRank;
+  __shared__ const LongType* outputTadShapePtr;
+  __shared__ const LongType* outputTadStridePtr;
+
+  __shared__ LongType inputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType outputRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
+  __shared__ T* x;
+  __shared__ T* z;
+  __shared__ LongType len;
+  __shared__ LongType total;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputTads
+    inputTadRank = shape::rank(inputTads);
+    inputTadShapePtr = shape::shapeOf(inputTads);
+    inputTadStridePtr = shape::stride(inputTads);
+
+    // Cache rank, shape, and stride for outputTads
+    outputTadRank = shape::rank(outputTads);
+    outputTadShapePtr = shape::shapeOf(outputTads);
+    outputTadStridePtr = shape::stride(outputTads);
+
+    // Cache rank, shape, and stride for inputShape
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache lengths and total size
     total = shape::sizeAt(inputShape, 0);
     len = shape::length(inputTads);
+
+    // Initialize pointers
+    x = reinterpret_cast<T*>(inputBuf);
+    z = reinterpret_cast<T*>(outputBuf);
   }
   __syncthreads();
 
+  // Calculate global thread index and step size
+  LongType startIdx = blockIdx.x;
+  LongType step = gridDim.x;
+
+  // Coordinate arrays
   LongType inputCoords[SD_MAX_RANK];
   LongType outputCoords[SD_MAX_RANK];
+
+  // Offset variables
   LongType xIndex;
   LongType zIndex;
 
-  for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
-    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
+  for (auto idx = startIdx; idx < total; idx += step) {
+    // Retrieve the segment index from indices
     auto segment = indices[idx];
-    auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-    auto start = starts[segment];
-    auto finish = start + lengths[segment];
+
+    // Pointers to the current input and output TADs
+    T* current = x + inputTadOffsets[idx];
+    T* currentOut = z + outputTadOffsets[segment];
+
+    // Retrieve start and finish indices for the current segment
+    LongType start = starts[segment];
+    LongType finish = start + lengths[segment];
+
+    // Skip processing if the length for the segment is zero
     if (lengths[segment] == 0) continue;
+
+    // Iterate over elements within the TAD
     for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), inputCoords);
-      COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), inputCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), outputCoords);
-      COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), outputCoords, zIndex);
-      math::atomics::sd_atomicMul(&z[zIndex], x[xIndex]);
+      // Convert linear index to coordinates for inputTads
+      INDEX2COORDS(e, inputTadRank, inputTadShapePtr, inputCoords);
+      // Convert coordinates back to linear index for inputTads
+      COORDS2INDEX(inputTadRank, inputTadStridePtr, inputCoords, xIndex);
+
+      // Convert linear index to coordinates for outputTads
+      INDEX2COORDS(e, outputTadRank, outputTadShapePtr, outputCoords);
+      // Convert coordinates back to linear index for outputTads
+      COORDS2INDEX(outputTadRank, outputTadStridePtr, outputCoords, zIndex);
+
+      // Perform atomic multiplication on the output buffer
+      math::atomics::sd_atomicMul(&currentOut[zIndex], current[xIndex]);
     }
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
@@ -268,61 +447,132 @@ void unsortedSegmentProdFunctor(LaunchContext* context, NDArray* input, NDArray*
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void segmentProdBPLinearKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
-                                                LongType const* forwardShape, void* eps, LongType const* epsShape, void* indicesBuf, LongType const* indicesShape, void* outputBuf,
+                                                LongType const* forwardShape, void* eps, LongType const* epsShape,
+                                                void* indicesBuf, LongType const* indicesShape, void* outputBuf,
                                                 LongType const* outputShape) {
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType forwardRank;
+  __shared__ const LongType* forwardShapePtr;
+  __shared__ const LongType* forwardStridePtr;
+
+  __shared__ LongType epsRank;
+  __shared__ const LongType* epsShapePtr;
+  __shared__ const LongType* epsStridePtr;
+
+  __shared__ LongType indicesRank;
+  __shared__ const LongType* indicesShapePtr;
+  __shared__ const LongType* indicesStridePtr;
+
+  __shared__ LongType outputRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
   __shared__ T* x;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
   __shared__ I* y;
   __shared__ T* z;
-  __shared__ LongType xLen, gradLen;
+  __shared__ LongType xLen;
+  __shared__ LongType gradLen;
+  __shared__ LongType currentLen;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputShape
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for forwardShape
+    forwardRank = shape::rank(forwardShape);
+    forwardShapePtr = shape::shapeOf(forwardShape);
+    forwardStridePtr = shape::stride(forwardShape);
+
+    // Cache rank, shape, and stride for epsShape
+    epsRank = shape::rank(epsShape);
+    epsShapePtr = shape::shapeOf(epsShape);
+    epsStridePtr = shape::stride(epsShape);
+
+    // Cache rank, shape, and stride for indicesShape
+    indicesRank = shape::rank(indicesShape);
+    indicesShapePtr = shape::shapeOf(indicesShape);
+    indicesStridePtr = shape::stride(indicesShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Initialize pointers and lengths
     xLen = shape::length(inputShape);
+    gradLen = shape::length(epsShape);
+    currentLen = shape::length(outputShape); // Assuming 'currentLen' corresponds to outputShape
+
     x = reinterpret_cast<T*>(inputBuf);
     y = reinterpret_cast<I*>(indicesBuf);
     z = reinterpret_cast<T*>(outputBuf);
     gradIn = reinterpret_cast<T*>(forwardOutput);
     gradOut = reinterpret_cast<T*>(eps);
-    gradLen = shape::length(epsShape);
   }
   __syncthreads();
 
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = gridDim.x * blockDim.x;
+  // Calculate global thread index and step size
+  LongType start = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType step = gridDim.x * blockDim.x;
 
+  // Coordinate arrays
   LongType xCoords[SD_MAX_RANK];
   LongType yCoords[SD_MAX_RANK];
   LongType zCoords[SD_MAX_RANK];
   LongType gradICoords[SD_MAX_RANK];
   LongType gradOCoords[SD_MAX_RANK];
+
+  // Offset variables
   LongType xOffset;
   LongType yOffset;
   LongType zOffset;
   LongType gradOffsetI;
   LongType gradOffsetO;
 
-  for (auto e = start; e < xLen; e += step) {
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+  for (LongType e = start; e < xLen; e += step) {
+    // Convert linear index to coordinates for inputShape
+    INDEX2COORDS(e, inputRank, inputShapePtr, xCoords);
+    // Convert coordinates back to linear index for inputShape
+    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xOffset);
 
-    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
+    // Convert linear index to coordinates for indicesShape
+    INDEX2COORDS(e, indicesRank, indicesShapePtr, yCoords);
+    // Convert coordinates back to linear index for indicesShape
+    COORDS2INDEX(indicesRank, indicesStridePtr, yCoords, yOffset);
 
+    // Retrieve the class index from indices
     auto classIndex = y[yOffset];
 
-    INDEX2COORDS(classIndex, shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords);
-    COORDS2INDEX(shape::rank(forwardShape), shape::stride(forwardShape), gradICoords, gradOffsetI);
+    // Convert class index to coordinates for forwardShape
+    INDEX2COORDS(classIndex, forwardRank, forwardShapePtr, gradICoords);
+    // Convert coordinates back to linear index for forwardShape
+    COORDS2INDEX(forwardRank, forwardStridePtr, gradICoords, gradOffsetI);
 
-    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), gradOCoords, gradOffsetO);
+    // Convert class index to coordinates for epsShape
+    INDEX2COORDS(classIndex, epsRank, epsShapePtr, gradOCoords);
+    // Convert coordinates back to linear index for epsShape
+    COORDS2INDEX(epsRank, epsStridePtr, gradOCoords, gradOffsetO);
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    // Convert linear index to coordinates for outputShape
+    INDEX2COORDS(e, outputRank, outputShapePtr, zCoords);
+    // Convert coordinates back to linear index for outputShape
+    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zOffset);
 
+    // Perform the computation: z[zOffset] = gradOut[gradOffsetO] * gradIn[gradOffsetI] / x[xOffset];
     z[zOffset] = gradOut[gradOffsetO] * gradIn[gradOffsetI] / x[xOffset];
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void segmentProdBPTadKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
@@ -333,42 +583,149 @@ static SD_KERNEL void segmentProdBPTadKernel(void* inputBuf, LongType const* inp
                                              LongType const* gradInOffsets, LongType const* gradOutTad,
                                              LongType const* gradOutOffsets, LongType const* outTad,
                                              LongType const* outOffsets) {
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType forwardRank;
+  __shared__ const LongType* forwardShapePtr;
+  __shared__ const LongType* forwardStridePtr;
+
+  __shared__ LongType epsRank;
+  __shared__ const LongType* epsShapePtr;
+  __shared__ const LongType* epsStridePtr;
+
+  __shared__ LongType indicesRank;
+  __shared__ const LongType* indicesShapePtr;
+  __shared__ const LongType* indicesStridePtr;
+
+  __shared__ LongType outputRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  __shared__ LongType inputTadRank;
+  __shared__ const LongType* inputTadShapePtr;
+  __shared__ const LongType* inputTadStridePtr;
+
+  __shared__ LongType gradInTadRank;
+  __shared__ const LongType* gradInTadShapePtr;
+  __shared__ const LongType* gradInTadStridePtr;
+
+  __shared__ LongType gradOutTadRank;
+  __shared__ const LongType* gradOutTadShapePtr;
+  __shared__ const LongType* gradOutTadStridePtr;
+
+  __shared__ LongType outTadRank;
+  __shared__ const LongType* outTadShapePtr;
+  __shared__ const LongType* outTadStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
   __shared__ T* x;
   __shared__ T* gradIn;
   __shared__ T* gradOut;
   __shared__ I* y;
   __shared__ T* z;
-  __shared__ LongType xLen, yLen, gradLen, currentLen;
+  __shared__ LongType xLen;
+  __shared__ LongType yLen;
+  __shared__ LongType gradLen;
+  __shared__ LongType currentLen;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputShape
+    inputRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for forwardShape
+    forwardRank = shape::rank(forwardShape);
+    forwardShapePtr = shape::shapeOf(forwardShape);
+    forwardStridePtr = shape::stride(forwardShape);
+
+    // Cache rank, shape, and stride for epsShape
+    epsRank = shape::rank(epsShape);
+    epsShapePtr = shape::shapeOf(epsShape);
+    epsStridePtr = shape::stride(epsShape);
+
+    // Cache rank, shape, and stride for indicesShape
+    indicesRank = shape::rank(indicesShape);
+    indicesShapePtr = shape::shapeOf(indicesShape);
+    indicesStridePtr = shape::stride(indicesShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache rank, shape, and stride for inputTad
+    inputTadRank = shape::rank(inputTad);
+    inputTadShapePtr = shape::shapeOf(inputTad);
+    inputTadStridePtr = shape::stride(inputTad);
+
+    // Cache rank, shape, and stride for gradInTad
+    gradInTadRank = shape::rank(gradInTad);
+    gradInTadShapePtr = shape::shapeOf(gradInTad);
+    gradInTadStridePtr = shape::stride(gradInTad);
+
+    // Cache rank, shape, and stride for gradOutTad
+    gradOutTadRank = shape::rank(gradOutTad);
+    gradOutTadShapePtr = shape::shapeOf(gradOutTad);
+    gradOutTadStridePtr = shape::stride(gradOutTad);
+
+    // Cache rank, shape, and stride for outTad
+    outTadRank = shape::rank(outTad);
+    outTadShapePtr = shape::shapeOf(outTad);
+    outTadStridePtr = shape::stride(outTad);
+
+    // Initialize pointers and lengths
     xLen = shape::length(inputShape);
+    yLen = shape::length(indicesShape);
+    gradLen = shape::length(epsShape);
+    currentLen = shape::length(outTad);
+
     x = reinterpret_cast<T*>(inputBuf);
     y = reinterpret_cast<I*>(indicesBuf);
     z = reinterpret_cast<T*>(outputBuf);
-    yLen = shape::length(indicesShape);
     gradOut = reinterpret_cast<T*>(eps);
     gradIn = reinterpret_cast<T*>(forwardOutput);
-    gradLen = shape::length(epsShape);
-    currentLen = shape::length(outTad);
   }
   __syncthreads();
 
-  for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-    LongType yCoords[SD_MAX_RANK];
-    LongType yIndex;
-    INDEX2COORDS(i, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords, yIndex);
+  // Calculate global thread index and step size
+  LongType startIdx = blockIdx.x;
+  LongType step = gridDim.x;
+
+  // Coordinate arrays
+  LongType yCoords[SD_MAX_RANK];
+  LongType yIndex;
+
+  // Iterate over all relevant indices
+  for (auto i = startIdx; i < yLen; i += step) {
+    // Convert linear index to coordinates for indicesShape
+    INDEX2COORDS(i, indicesRank, indicesShapePtr, yCoords);
+    // Convert coordinates back to linear index for indicesShape
+    COORDS2INDEX(indicesRank, indicesStridePtr, yCoords, yIndex);
+
+    // Retrieve the segment index from indices
     auto segment = y[yIndex];
+
+    // Pointers to the current input and output TADs
     T* current = x + inputOffsets[i];
     T* currentOut = z + outOffsets[i];
+
+    // Pointers to the corresponding gradIn and gradOut TADs
     T* in = gradIn + gradInOffsets[segment];
     T* outGrad = gradOut + gradOutOffsets[segment];
 
+    // Perform element-wise computation within the current TAD
     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
+      // Compute output: currentOut[e] = outGrad[e] * in[e] / current[e];
       currentOut[e] = outGrad[e] * in[e] / current[e];
     }
   }
 }
+
 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>

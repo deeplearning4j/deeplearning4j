@@ -36,75 +36,68 @@ namespace scalar {
 template <typename X, typename Z>
 template <typename OpType>
 void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                         const sd::LongType *zShapeInfo, const void *vscalars,
-                                         sd::LongType *dimension,
-                                         sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
-                                         const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                         const sd::LongType *zTadOffsets, const sd::LongType start, const sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto z = reinterpret_cast<Z *>(vz);
- auto scalars = reinterpret_cast<const X *>(vscalars);
- auto extraParams = reinterpret_cast<X *>(vextraParams);
+                                          const sd::LongType *zShapeInfo, const void *vscalars,
+                                          sd::LongType *dimension,
+                                          sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
+                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
+                                          const sd::LongType *zTadOffsets, const sd::LongType start, const sd::LongType stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto scalars = reinterpret_cast<const X *>(vscalars);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
- if (zTadShapeInfo == nullptr) {
-   zTadShapeInfo = xTadShapeInfo;
-   zTadOffsets = xTadOffsets;
- }
+  if (zTadShapeInfo == nullptr) {
+    zTadShapeInfo = xTadShapeInfo;
+    zTadOffsets = xTadOffsets;
+  }
 
- // tad preparation
- const int xTadEws = shape::elementWiseStride(xTadShapeInfo);
- const int zTadEws = shape::elementWiseStride(zTadShapeInfo);
- const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
- const int numTads = shape::length(xShapeInfo) / tadLength;
+  // Cache shape-related values for TAD operations
+  sd::LongType xTadRank = shape::rank(xTadShapeInfo);
+  sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+  sd::LongType *xTadShape = shape::shapeOf(xTadShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(zTadShapeInfo);
+  sd::LongType *xTadStride = shape::stride(xTadShapeInfo);
+  sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
 
- sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
+  const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+  const int numTads = shape::length(xShapeInfo) / tadLength;
+  int num_threads = sd::math::sd_min<int>(numTads, sd::Environment::getInstance().maxThreads());
 
- if (kindOfLoop != sd::LoopKind::EWS1 && kindOfLoop != sd::LoopKind::EWSNONZERO) {
-   printf("ScalarBoolTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
-   return;
- }
+  for (auto r = start; r < stop; r++) {
+    auto oZ = z + zTadOffsets[r];
+    auto oX = x + xTadOffsets[r];
 
- int num_threads = sd::math::sd_min<int>(numTads, sd::Environment::getInstance().maxThreads());
-
- if (kindOfLoop == sd::LoopKind::EWS1) {
-   for (auto r = start; r < stop; r++) {
-     auto oZ = z + zTadOffsets[r];
-     auto oX = x + xTadOffsets[r];
-
-     PRAGMA_OMP_SIMD
-     for (int f = 0; f < tadLength; f++) oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
-   };
- } else {
-   for (auto r = start; r < stop; r++) {
-     auto oZ = z + zTadOffsets[r];
-     auto oX = x + xTadOffsets[r];
-
-     PRAGMA_OMP_SIMD
-     for (int f = 0; f < tadLength; f++) oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
-   };
- }
+    PRAGMA_OMP_SIMD
+    for (int f = 0; f < tadLength; f++) {
+      sd::LongType coords[SD_MAX_RANK];
+      sd::LongType xOffset, zOffset;
+      INDEX2COORDS(f, xTadRank, xTadShape, coords);
+      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
+      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+      oZ[zOffset] = OpType::op(oX[xOffset], scalars[r], extraParams);
+    }
+  }
 }
 
 template <typename X, typename Y>
 void ScalarBoolTransform<X, Y>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
-                                         void *z, const sd::LongType *zShapeInfo, const void *scalars,
-                                         sd::LongType *dimension,
-                                         sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
-                                         const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
-                                         const sd::LongType *zTadOffsets, const sd::LongType start, const sd::LongType stop) {
- DISPATCH_BY_OPNUM_TT(transform,
-                      PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
-                             xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),
-                      SCALAR_BOOL_OPS);
+                                          void *z, const sd::LongType *zShapeInfo, const void *scalars,
+                                          sd::LongType *dimension,
+                                          sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
+                                          const sd::LongType *xTadOffsets, const sd::LongType *zTadShapeInfo,
+                                          const sd::LongType *zTadOffsets, const sd::LongType start, const sd::LongType stop) {
+  DISPATCH_BY_OPNUM_TT(transform,
+                       PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength,
+                              xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop),
+                       SCALAR_BOOL_OPS);
 }
-
 
 template <typename X, typename Y>
 void ScalarBoolTransform<X, Y>::transform(const int opNum, const void *x, const sd::LongType *xShapeInfo, void *z,
-                                         const sd::LongType *zShapeInfo, const void *scalar, void *extraParams,
-                                         const sd::LongType start, const sd::LongType stop) {
- DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop),
-                      SCALAR_BOOL_OPS);
+                                          const sd::LongType *zShapeInfo, const void *scalar, void *extraParams,
+                                          const sd::LongType start, const sd::LongType stop) {
+  DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop),
+                       SCALAR_BOOL_OPS);
 }
 
 template <typename X, typename Z>
@@ -117,34 +110,35 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
   auto scalar = reinterpret_cast<const X *>(vscalar)[0];
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-  auto len = shape::length(xShapeInfo);
-
-  sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
-
-
+  // Cache shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
 
   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      INDEX2COORDS(i, xRank, xShape, coords);
       sd::LongType offset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+      COORDS2INDEX(xRank, xStride, coords, offset);
       z[offset] = OpType::op(x[offset], scalar, extraParams);
     };
   } else {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      INDEX2COORDS(i, xRank, xShape, coords);
       sd::LongType xOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
     };
   }
 }
-
 
 BUILD_DOUBLE_TEMPLATE(template class ScalarBoolTransform, , SD_COMMON_TYPES, SD_BOOL_TYPES);
 

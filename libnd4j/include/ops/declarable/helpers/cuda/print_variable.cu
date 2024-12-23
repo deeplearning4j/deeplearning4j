@@ -30,25 +30,37 @@ namespace ops {
 namespace helpers {
 template <typename T>
 static SD_KERNEL void print_device(const void *special, const LongType *shapeInfo) {
-  auto length = shape::length(shapeInfo);
-  auto x = reinterpret_cast<const T *>(special);
+  __shared__ LongType length;
+  __shared__ LongType rank;
+  __shared__ const LongType *shape, *stride;
+  const auto x = reinterpret_cast<const T *>(special);
 
-  // TODO: add formatting here
-  printf("[");
-
-  LongType coords[SD_MAX_RANK];
-  LongType offset;
-
-  for (uint64_t e = 0; e < length; e++) {
-    INDEX2COORDS(e, shape::rank(shapeInfo), shape::shapeOf(shapeInfo), coords);
-    COORDS2INDEX(shape::rank(shapeInfo), shape::stride(shapeInfo), coords, offset);
-    printf("%f", (float)x[offset]);
-
-    if (e < length - 1) printf(", ");
+  if (threadIdx.x == 0) {
+    length = shape::length(shapeInfo);
+    rank = shape::rank(shapeInfo);
+    shape = shape::shapeOf(shapeInfo);
+    stride = shape::stride(shapeInfo);
   }
+  __syncthreads();
 
-  printf("]\n");
+  if (threadIdx.x == 0 && blockIdx.x == 0) {
+    printf("[");
+
+    LongType coords[SD_MAX_RANK];
+    LongType offset;
+
+    for (LongType e = 0; e < length; e++) {
+      INDEX2COORDS(e, rank, shape, coords);
+      COORDS2INDEX(rank, stride, coords, offset);
+
+      printf("%f", static_cast<float>(x[offset]));
+      if (e < length - 1) printf(", ");
+    }
+
+    printf("]\n");
+  }
 }
+
 
 template <typename T>
 static SD_HOST void exec_print_device(LaunchContext &ctx, const void *special, const LongType *shapeInfo) {

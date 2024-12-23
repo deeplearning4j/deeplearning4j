@@ -35,12 +35,15 @@ template <typename T>
 SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongType *imShapeInfo,
                                  const LongType *colShapeInfo, const LongType sH, const LongType sW, const LongType pH,
                                  const LongType pW, const LongType dH, const LongType dW, const double zeroPadValD) {
-  T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding. Usually 0 but not always
+  T zeroPadVal = static_cast<T>(zeroPadValD);  // Value to use when value is padding
   const auto im = reinterpret_cast<const T *>(image);
   auto col = reinterpret_cast<T *>(columns);
 
+  // Shared memory caching
   __shared__ LongType colLen, imLen, iH, iW;
   __shared__ LongType imRank, colRank;
+  __shared__ const LongType *imShapePtr, *imStridePtr;
+  __shared__ const LongType *colShapePtr, *colStridePtr;
 
   if (threadIdx.x == 0) {
     colRank = 6;
@@ -48,31 +51,40 @@ SD_KERNEL static void im2colCuda(const void *image, void *columns, const LongTyp
 
     colLen = shape::length(colShapeInfo);
     imLen = shape::length(imShapeInfo);
-    iH = imShapeInfo[3];
-    iW = imShapeInfo[4];
+
+    iH = shape::shapeOf(imShapeInfo)[2];
+    iW = shape::shapeOf(imShapeInfo)[3];
+
+    imShapePtr = shape::shapeOf(imShapeInfo);
+    imStridePtr = shape::stride(imShapeInfo);
+
+    colShapePtr = shape::shapeOf(colShapeInfo);
+    colStridePtr = shape::stride(colShapeInfo);
   }
   __syncthreads();
 
   const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
 
+  if (colInd >= colLen) return;  // Boundary check for threads
+
   LongType coords[SD_MAX_RANK];
 
-  INDEX2COORDS(colInd, colRank, shape::shapeOf(colShapeInfo), coords);
+  // Calculate coordinates and offsets
+  INDEX2COORDS(colInd, colRank, colShapePtr, coords);
 
   LongType colOffset;
-  COORDS2INDEX(colRank, shape::stride(colShapeInfo), coords, colOffset);
+  COORDS2INDEX(colRank, colStridePtr, coords, colOffset);
 
   coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;  // imH
   coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;  // imW
 
-  if (static_cast<LongType>(coords[2]) >= static_cast<LongType>(iH) ||
-      static_cast<LongType>(coords[3]) >= static_cast<LongType>(iW) ||
-      coords[2] < 0 || coords[3] < 0) {
+  // Check bounds and assign appropriate values
+  if (coords[2] >= iH || coords[3] >= iW || coords[2] < 0 || coords[3] < 0) {
     if (colOffset < colLen)
       col[colOffset] = zeroPadVal;
   } else {
     LongType imOffset;
-    COORDS2INDEX(imRank, shape::stride(imShapeInfo), coords, imOffset);
+    COORDS2INDEX(imRank, imStridePtr, coords, imOffset);
     if (imOffset < imLen && colOffset < colLen)
       col[colOffset] = im[imOffset];
   }

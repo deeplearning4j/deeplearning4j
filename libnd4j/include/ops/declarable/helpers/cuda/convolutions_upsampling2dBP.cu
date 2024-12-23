@@ -35,15 +35,16 @@ namespace ops {
 template <typename T>
 SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                          const LongType* zShapeInfo, const bool isNCHW) {
-  // x (gradO) has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
-  // z (gradI) has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
-
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ LongType rank, dimIH;
   __shared__ LongType factorH, factorW;
   __shared__ LongType zLen, *sharedMem;
+  __shared__ LongType* xShape;
+  __shared__ LongType* zShape;
+  __shared__ LongType* xStride;
+  __shared__ LongType* zStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -55,6 +56,12 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeI
 
     factorH = xShapeInfo[dimIH + 1] / zShapeInfo[dimIH + 1];
     factorW = xShapeInfo[dimIH + 2] / zShapeInfo[dimIH + 2];
+
+    // Cache shape information
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -64,10 +71,10 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeI
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
+  INDEX2COORDS(zInd, rank, zShape, coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, zStride, coords, zOffset);
 
   z[zOffset] = 0;
 
@@ -77,7 +84,7 @@ SD_KERNEL static void upsampling2dBPCuda(const void* vx, const LongType* xShapeI
   for (coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
     for (coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1]) {
       LongType xOffset;
-      COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(rank, xStride, coords, xOffset);
       z[zOffset] += x[xOffset];
     }
 }

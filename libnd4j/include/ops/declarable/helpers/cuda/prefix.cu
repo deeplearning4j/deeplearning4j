@@ -34,47 +34,63 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void prefix_(scalar::Ops op, const void* vx, LongType const* xShapeInfo, void* vz, LongType const* zShapeInfo, bool exclusive, bool reverse) {
+static void prefix_(scalar::Ops op, const void* vx, const LongType* xShapeInfo, void* vz, const LongType* zShapeInfo, bool exclusive, bool reverse) {
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
-  auto length = shape::length(xShapeInfo);
 
-  T prevSum = op == scalar::Add ? (T)0 : (T)1;
+  const auto length = shape::length(xShapeInfo);
+  const auto rankX = shape::rank(xShapeInfo);
+  const auto rankZ = shape::rank(zShapeInfo);
+  const auto shapeX = shape::shapeOf(xShapeInfo);
+  const auto strideX = shape::stride(xShapeInfo);
+  const auto shapeZ = shape::shapeOf(zShapeInfo);
+  const auto strideZ = shape::stride(zShapeInfo);
+
+  T prevSum = (op == scalar::Add) ? static_cast<T>(0) : static_cast<T>(1);
   T sum = prevSum;
 
-  LongType xCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-  LongType xOffset;
-  LongType zOffset;
+  LongType coordsX[SD_MAX_RANK];
+  LongType coordsZ[SD_MAX_RANK];
 
   if (reverse) {
     for (LongType e = length - 1; e >= 0; --e) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      LongType offsetX, offsetZ;
 
-      sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
+      // Compute input and output offsets
+      INDEX2COORDS(e, rankX, shapeX, coordsX);
+      COORDS2INDEX(rankX, strideX, coordsX, offsetX);
+      INDEX2COORDS(e, rankZ, shapeZ, coordsZ);
+      COORDS2INDEX(rankZ, strideZ, coordsZ, offsetZ);
+
+      // Perform operation
+      sum = (op == scalar::Add) ? simdOps::Add<T, T, T>::op(sum, x[offsetX]) : simdOps::Multiply<T, T, T>::op(sum, x[offsetX]);
+
       if (!exclusive) prevSum = sum;
 
-      z[zOffset] = prevSum;
+      z[offsetZ] = prevSum;
       prevSum = sum;
     }
   } else {
-    for (LongType e = 0; e < length; e++) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    for (LongType e = 0; e < length; ++e) {
+      LongType offsetX, offsetZ;
 
-      sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
+      // Compute input and output offsets
+      INDEX2COORDS(e, rankX, shapeX, coordsX);
+      COORDS2INDEX(rankX, strideX, coordsX, offsetX);
+      INDEX2COORDS(e, rankZ, shapeZ, coordsZ);
+      COORDS2INDEX(rankZ, strideZ, coordsZ, offsetZ);
+
+      // Perform operation
+      sum = (op == scalar::Add) ? simdOps::Add<T, T, T>::op(sum, x[offsetX]) : simdOps::Multiply<T, T, T>::op(sum, x[offsetX]);
+
       if (!exclusive) prevSum = sum;
 
-      z[zOffset] = prevSum;
+      z[offsetZ] = prevSum;
       prevSum = sum;
     }
   }
 }
+
 template <typename T>
 static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, const std::vector<LongType>& dims, bool exclusive,
                     bool reverse) {

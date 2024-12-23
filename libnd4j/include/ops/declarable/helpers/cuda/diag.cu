@@ -42,13 +42,22 @@ static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const LongType* outp
                                         const LongType* inputShape, LongType inputLength) {
   __shared__ T* z;
   __shared__ T const* x;
-  __shared__ LongType outputLength;
+  __shared__ LongType outputRank, inputRank, outputLength;
+  __shared__ const LongType *outputShapePtr, *outputStridePtr;
+  __shared__ const LongType *inputShapePtr, *inputStridePtr;
 
   if (threadIdx.x == 0) {
     z = reinterpret_cast<T*>(outputBuffer);
     x = reinterpret_cast<T const*>(inputBuffer);
 
+    outputRank = shape::rank(outputShape);
+    inputRank = shape::rank(inputShape);
     outputLength = shape::length(outputShape);
+
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
   }
   __syncthreads();
 
@@ -60,14 +69,20 @@ static SD_KERNEL void diagFunctorKernel(void* outputBuffer, const LongType* outp
   LongType zOffset;
   LongType xOffset;
 
-  for (int t = tid; t < inputLength; t += step) {  // for all vals in input, put all on diagonal position to output
-    INDEX2COORDS(t * (inputLength + 1), shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
-    INDEX2COORDS(t, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+  for (LongType t = tid; t < inputLength; t += step) {
+    // Compute coordinates and offsets for output
+    INDEX2COORDS(t * (inputLength + 1), outputRank, outputShapePtr, zCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zOffset);
+
+    // Compute coordinates and offsets for input
+    INDEX2COORDS(t, inputRank, inputShapePtr, xCoords);
+    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xOffset);
+
+    // Assign the value to the diagonal position
     z[zOffset] = x[xOffset];
   }
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // diag part functor cuda kernel
@@ -83,30 +98,50 @@ static SD_KERNEL void diagPartFunctorKernel(void* outputBuffer, const LongType* 
                                             void const* inputBuffer, const LongType* inputShape, LongType outputLength, LongType inputLength) {
   __shared__ T* z;
   __shared__ T const* x;
+  __shared__ LongType outputRank, inputRank;
+  __shared__ const LongType *outputShapePtr, *outputStridePtr;
+  __shared__ const LongType *inputShapePtr, *inputStridePtr;
 
   if (threadIdx.x == 0) {
     z = reinterpret_cast<T*>(outputBuffer);
     x = reinterpret_cast<T const*>(inputBuffer);
+
+    outputRank = shape::rank(outputShape);
+    inputRank = shape::rank(inputShape);
+
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
   }
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
+
   LongType zCoords[SD_MAX_RANK];
   LongType xCoords[SD_MAX_RANK];
   LongType zOffset;
   LongType xOffset;
-  LongType i = threadIdx.x * (outputLength + 1);  // pos to diagonal value
+  LongType i = tid * (outputLength + 1);  // position of the diagonal value in the input
 
-  for (int t = tid; t < outputLength && i < inputLength; t += step) {  // loop by output, but input matrix may not be square
-    INDEX2COORDS(t, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
-    INDEX2COORDS(i, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+  for (LongType t = tid; t < outputLength && i < inputLength; t += step) {
+    // Compute coordinates and offsets for output
+    INDEX2COORDS(t, outputRank, outputShapePtr, zCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, zCoords, zOffset);
+
+    // Compute coordinates and offsets for input
+    INDEX2COORDS(i, inputRank, inputShapePtr, xCoords);
+    COORDS2INDEX(inputRank, inputStridePtr, xCoords, xOffset);
+
+    // Assign diagonal value
     z[zOffset] = x[xOffset];
-    i += outputLength + 1;  // shift to next diagonal value
+
+    // Move to the next diagonal value
+    i += outputLength + 1;
   }
 }
+
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page:

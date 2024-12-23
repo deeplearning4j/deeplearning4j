@@ -37,28 +37,41 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const LongType *
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  __shared__ LongType rank;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
+
+  if (threadIdx.x == 0) {
+    rank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
 
   LongType xCoords[SD_MAX_RANK];
   LongType zCoords[SD_MAX_RANK];
-  LongType xOffsetA;
-  LongType xOffsetB;
-  LongType zOffsetA;
-  LongType zOffsetB;
 
-  for (LongType i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-    int sourceIndex = fullLength - actualShift + i;
+  for (LongType i = threadIdx.x + blockIdx.x * blockDim.x; i < actualShift; i += blockDim.x * gridDim.x) {
+    LongType sourceIndex = fullLength - actualShift + i;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetB);
+    LongType xOffsetA, xOffsetB, zOffsetA, zOffsetB;
 
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetB);
+    // Calculate input offsets
+    INDEX2COORDS(i, rank, xShape, xCoords);
+    COORDS2INDEX(rank, xStride, xCoords, xOffsetA);
 
+    INDEX2COORDS(sourceIndex, rank, xShape, xCoords);
+    COORDS2INDEX(rank, xStride, xCoords, xOffsetB);
+
+    // Calculate output offsets
+    INDEX2COORDS(i, rank, zShape, zCoords);
+    COORDS2INDEX(rank, zStride, zCoords, zOffsetA);
+
+    INDEX2COORDS(sourceIndex, rank, zShape, zCoords);
+    COORDS2INDEX(rank, zStride, zCoords, zOffsetB);
+
+    // Perform element swap
     auto eA = x[xOffsetA];
     auto eB = x[xOffsetB];
 
@@ -67,52 +80,11 @@ static void SD_DEVICE rollKernelLinearStage1Dev(const void *vx, const LongType *
   }
 }
 
+
 template <typename T>
 static void SD_KERNEL rollKernelLinearStage1(const void *vx, const LongType *xShapeInfo, void *vz,
                                              const LongType *zShapeInfo, LongType fullLength, int actualShift) {
   rollKernelLinearStage1Dev<T>(vx, xShapeInfo, vz, zShapeInfo, fullLength, actualShift);
-}
-
-template <typename T>
-static void SD_KERNEL rollKernelLinearStage2(const void *vx, const LongType *xShapeInfo, void *vz,
-                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
-                                             int shiftCount) {
-  auto x = reinterpret_cast<const T *>(vx);
-  auto z = reinterpret_cast<T *>(vz);
-
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-  LongType xCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-  LongType xOffsetA;
-  LongType xOffsetB;
-  LongType zOffsetA;
-  LongType zOffsetB;
-
-  for (int count = 1; count < shiftCount; ++count) {
-    for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-      int destinationIndex = fullLength - (count + 1) * actualShift + i;
-      int sourceIndex = fullLength - count * actualShift + i;
-
-      INDEX2COORDS(destinationIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetA);
-      INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffsetB);
-
-      INDEX2COORDS(destinationIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetA);
-      INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffsetB);
-
-      auto eA = x[xOffsetB];
-      auto eB = x[xOffsetA];
-
-      z[zOffsetA] = eA;
-      z[zOffsetB] = eB;
-    }
-
-    __syncthreads();
-  }
 }
 
 template <typename T>
@@ -122,31 +94,43 @@ static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xSh
   auto x = reinterpret_cast<const T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  __shared__ LongType rank;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
 
-  for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
-    int remainIdx = i + actualShift;
-    int sourceIndex = remainIdx + remainShift;
+  if (threadIdx.x == 0) {
+    rank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
 
-    LongType xCoordsA[SD_MAX_RANK];
-    LongType xCoordsB[SD_MAX_RANK];
-    LongType zCoordsA[SD_MAX_RANK];
-    LongType zCoordsB[SD_MAX_RANK];
-    LongType xOffsetA;
-    LongType xOffsetB;
-    LongType zOffsetA;
-    LongType zOffsetB;
+  LongType xCoordsA[SD_MAX_RANK];
+  LongType xCoordsB[SD_MAX_RANK];
+  LongType zCoordsA[SD_MAX_RANK];
+  LongType zCoordsB[SD_MAX_RANK];
 
-    INDEX2COORDS(remainIdx, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsA);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoordsA, xOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoordsB);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoordsB, xOffsetB);
+  for (LongType i = threadIdx.x + blockIdx.x * blockDim.x; i < actualShift; i += blockDim.x * gridDim.x) {
+    LongType remainIdx = i + actualShift;
+    LongType sourceIndex = remainIdx + remainShift;
 
-    INDEX2COORDS(remainIdx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsA);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoordsA, zOffsetA);
-    INDEX2COORDS(sourceIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoordsB);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoordsB, zOffsetB);
+    LongType xOffsetA, xOffsetB, zOffsetA, zOffsetB;
 
+    // Calculate offsets for input and output
+    INDEX2COORDS(remainIdx, rank, xShape, xCoordsA);
+    COORDS2INDEX(rank, xStride, xCoordsA, xOffsetA);
+
+    INDEX2COORDS(sourceIndex, rank, xShape, xCoordsB);
+    COORDS2INDEX(rank, xStride, xCoordsB, xOffsetB);
+
+    INDEX2COORDS(remainIdx, rank, zShape, zCoordsA);
+    COORDS2INDEX(rank, zStride, zCoordsA, zOffsetA);
+
+    INDEX2COORDS(sourceIndex, rank, zShape, zCoordsB);
+    COORDS2INDEX(rank, zStride, zCoordsB, zOffsetB);
+
+    // Swap the elements
     auto eA = x[xOffsetA];
     auto eB = x[xOffsetB];
 
@@ -155,20 +139,83 @@ static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xSh
   }
 }
 
+
+template <typename T>
+static void SD_KERNEL rollKernelLinearStage3(const void *vx, const LongType *xShapeInfo, void *vz,
+                                             const LongType *zShapeInfo, LongType fullLength, int actualShift,
+                                             int remainShift) {
+  auto x = reinterpret_cast<const T *>(vx);
+  auto z = reinterpret_cast<T *>(vz);
+
+  __shared__ LongType rank;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
+
+  if (threadIdx.x == 0) {
+    rank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
+
+  LongType xCoordsA[SD_MAX_RANK];
+  LongType xCoordsB[SD_MAX_RANK];
+  LongType zCoordsA[SD_MAX_RANK];
+  LongType zCoordsB[SD_MAX_RANK];
+
+  for (LongType i = threadIdx.x + blockIdx.x * blockDim.x; i < actualShift; i += blockDim.x * gridDim.x) {
+    LongType remainIdx = i + actualShift;
+    LongType sourceIndex = remainIdx + remainShift;
+
+    LongType xOffsetA, xOffsetB, zOffsetA, zOffsetB;
+
+    // Calculate offsets for input and output
+    INDEX2COORDS(remainIdx, rank, xShape, xCoordsA);
+    COORDS2INDEX(rank, xStride, xCoordsA, xOffsetA);
+
+    INDEX2COORDS(sourceIndex, rank, xShape, xCoordsB);
+    COORDS2INDEX(rank, xStride, xCoordsB, xOffsetB);
+
+    INDEX2COORDS(remainIdx, rank, zShape, zCoordsA);
+    COORDS2INDEX(rank, zStride, zCoordsA, zOffsetA);
+
+    INDEX2COORDS(sourceIndex, rank, zShape, zCoordsB);
+    COORDS2INDEX(rank, zStride, zCoordsB, zOffsetB);
+
+    // Swap the elements
+    auto eA = x[xOffsetA];
+    auto eB = x[xOffsetB];
+
+    z[zOffsetA] = eB;
+    z[zOffsetB] = eA;
+  }
+}
+
+
 template <typename T>
 static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const LongType *zShapeInfo, LongType tadLength) {
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  __shared__ LongType rank, *zShape, *zStride;
 
-  for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-    LongType zCoords[SD_MAX_RANK];
+  if (threadIdx.x == 0) {
+    rank = shape::rank(zShapeInfo);
+    zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
+    zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
+  }
+  __syncthreads();
+
+  LongType zCoords[SD_MAX_RANK];
+
+  for (LongType e = threadIdx.x + blockIdx.x * blockDim.x; e < tadLength; e += gridDim.x * blockDim.x) {
+    INDEX2COORDS(e, rank, zShape, zCoords);
+
     LongType zOffset;
+    COORDS2INDEX(rank, zStride, zCoords, zOffset);
 
-    INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
-
+    // Swap the elements
     auto eA = x[zOffset];
     auto eB = z[zOffset];
 
@@ -176,6 +223,7 @@ static void SD_DEVICE swapTadsKernel(void *vx, void *vz, const LongType *zShapeI
     z[zOffset] = eA;
   }
 }
+
 
 template <typename T>
 static void SD_KERNEL rollKernelFullAnyDimensionStage1(const void *vx, const LongType *xTadShapeInfo,

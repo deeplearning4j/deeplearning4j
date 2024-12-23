@@ -42,16 +42,24 @@ namespace helpers {
 ///
 ///
 
-
 template <typename T>
 SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const sd::LongType* zShapeInfo,
                                  const int axis) {
   T* z = reinterpret_cast<T*>(vz);
+
   __shared__ LongType zLen, totalThreads;
+  __shared__ LongType zRank;
+  __shared__ LongType* zShape;
+  __shared__ LongType* zStride;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    // Cache shape information
+    zRank = shape::rank(zShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -60,22 +68,29 @@ SD_KERNEL static void concatCuda(void* pVx, void* pxShapeInfo, void* vz, const s
   LongType coords[SD_MAX_RANK];
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(i, zRank, zShape, coords);
 
     LongType zOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
     int inArrIdx = 0;
     LongType* xShapeInfo = reinterpret_cast<sd::LongType**>(pxShapeInfo)[inArrIdx];
 
+    // Cache the input array's shape information for the current iteration
+    LongType xRank = shape::rank(xShapeInfo);
+    LongType* xStride = shape::stride(xShapeInfo);
+
     while (coords[axis] >= xShapeInfo[axis + 1]) {
       coords[axis] -= xShapeInfo[axis + 1];
       xShapeInfo = reinterpret_cast<sd::LongType**>(pxShapeInfo)[++inArrIdx];
+      // Update shape information for new input array
+      xRank = shape::rank(xShapeInfo);
+      xStride = shape::stride(xShapeInfo);
     }
 
     const auto* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
     LongType xOffset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
 
     z[zOffset] = x[xOffset];
   }

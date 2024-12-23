@@ -35,34 +35,49 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static SD_KERNEL void fillUpElementKernel(void* outputBuffer, LongType const* outputShapeInfo, void* inputBuffer,
-                                          LongType const* inputShapeInfo, LongType const* pTadShape,
-                                          LongType const* pTadOffsets, LongType n) {
+static SD_KERNEL void fillUpElementKernel(void* outputBuffer, const LongType* outputShapeInfo, void* inputBuffer,
+                                          const LongType* inputShapeInfo, const LongType* pTadShape,
+                                          const LongType* pTadOffsets, LongType n) {
   __shared__ LongType bufferLength;
+  __shared__ int rankOutput, rankTad;
+  __shared__ const LongType *shapeOutput, *strideOutput, *shapeTad, *strideTad;
 
   auto z = reinterpret_cast<T*>(outputBuffer);
   auto x = reinterpret_cast<T*>(inputBuffer);
 
-  if (threadIdx.x == 0) bufferLength = shape::length(outputShapeInfo);
-
+  if (threadIdx.x == 0) {
+    bufferLength = shape::length(outputShapeInfo);
+    rankOutput = shape::rank(outputShapeInfo);
+    rankTad = shape::rank(pTadShape);
+    shapeOutput = shape::shapeOf(outputShapeInfo);
+    strideOutput = shape::stride(outputShapeInfo);
+    shapeTad = shape::shapeOf(pTadShape);
+    strideTad = shape::stride(pTadShape);
+  }
   __syncthreads();
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
-  for (int t = tid; t < bufferLength; t += step) {
-    auto tX = x + pTadOffsets[t];
-    LongType zOffset, xOffset;
-    LongType zCoords[SD_MAX_RANK];
-    LongType xCoords[SD_MAX_RANK];
 
-    INDEX2COORDS(t, shape::rank(outputShapeInfo), shape::shapeOf(outputShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(outputShapeInfo), shape::stride(outputShapeInfo), zCoords, zOffset);
-    INDEX2COORDS(n, shape::rank(pTadShape), shape::shapeOf(pTadShape), xCoords);
-    COORDS2INDEX(shape::rank(pTadShape), shape::stride(pTadShape), xCoords, xOffset);
+  LongType zCoords[SD_MAX_RANK];
+  LongType xCoords[SD_MAX_RANK];
 
-    z[zOffset] = tX[xOffset];
+  for (LongType t = tid; t < bufferLength; t += step) {
+    // Compute output coordinates and offset
+    INDEX2COORDS(t, rankOutput, shapeOutput, zCoords);
+    LongType zOffset;
+    COORDS2INDEX(rankOutput, strideOutput, zCoords, zOffset);
+
+    // Compute input coordinates and offset
+    INDEX2COORDS(n, rankTad, shapeTad, xCoords);
+    LongType xOffset;
+    COORDS2INDEX(rankTad, strideTad, xCoords, xOffset);
+
+    // Access and assign the value
+    z[zOffset] = x[pTadOffsets[t] + xOffset];
   }
 }
+
 template <typename T>
 void nthElementFunctor_(LaunchContext* context, NDArray* input, LongType n, NDArray* output, bool reverse) {
   NDArray::prepareSpecialUse({output}, {input});

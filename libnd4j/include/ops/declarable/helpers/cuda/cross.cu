@@ -37,60 +37,68 @@ SD_KERNEL static void crossCuda(const void* vx, const LongType* xShapeInfo, cons
   __shared__ const T* x;
   __shared__ const T* y;
   __shared__ T* z;
-  __shared__ LongType rank, *sharedMem;
+  __shared__ LongType rank;
   __shared__ LongType lenWithoutLastDim, totalThreads;
+  __shared__ const LongType *xShape, *xStride, *yShape, *yStride, *zStride;
 
   if (threadIdx.x == 0) {
     x = reinterpret_cast<const T*>(vx);
     y = reinterpret_cast<const T*>(vy);
     z = reinterpret_cast<T*>(vz);
 
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-    totalThreads = gridDim.x * blockDim.x;
-
     rank = shape::rank(xShapeInfo);
     lenWithoutLastDim = shape::length(xShapeInfo) / xShapeInfo[rank];
+    totalThreads = gridDim.x * blockDim.x;
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
+  extern __shared__ LongType sharedMem[];
   auto coords = sharedMem + threadIdx.x * rank;
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < lenWithoutLastDim; i += totalThreads) {
-    INDEX2COORDS(i, rank - 1, shape::shapeOf(xShapeInfo), coords);
-
+    // Compute coordinates without the last dimension
+    INDEX2COORDS(i, rank - 1, xShape, coords);
     coords[rank - 1] = 0;
 
     LongType xOffset, yOffset, zOffset;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
-    COORDS2INDEX(rank, shape::stride(yShapeInfo), coords, yOffset);
+    COORDS2INDEX(rank, xStride, coords, xOffset);
+    COORDS2INDEX(rank, yStride, coords, yOffset);
 
+    // Fetch elements for cross product
     const auto x0 = x[xOffset];
     const auto y0 = y[yOffset];
 
-    xOffset += shape::stride(xShapeInfo)[rank - 1];
-    yOffset += shape::stride(yShapeInfo)[rank - 1];
+    xOffset += xStride[rank - 1];
+    yOffset += yStride[rank - 1];
 
     const auto x1 = x[xOffset];
     const auto y1 = y[yOffset];
 
-    xOffset += shape::stride(xShapeInfo)[rank - 1];
-    yOffset += shape::stride(yShapeInfo)[rank - 1];
+    xOffset += xStride[rank - 1];
+    yOffset += yStride[rank - 1];
 
     const auto x2 = x[xOffset];
     const auto y2 = y[yOffset];
 
-    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+    // Compute offsets for output
+    COORDS2INDEX(rank, zStride, coords, zOffset);
     z[zOffset] = x1 * y2 - x2 * y1;
 
-    zOffset += shape::stride(zShapeInfo)[rank - 1];
+    zOffset += zStride[rank - 1];
     z[zOffset] = x2 * y0 - x0 * y2;
 
-    zOffset += shape::stride(zShapeInfo)[rank - 1];
+    zOffset += zStride[rank - 1];
     z[zOffset] = x0 * y1 - x1 * y0;
   }
 }
+
 
 template <typename T>
 SD_HOST static void crossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

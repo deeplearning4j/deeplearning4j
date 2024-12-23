@@ -39,143 +39,423 @@ namespace helpers {
 // Segment ops linear kernels
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void segmentSumLinearKernel(const void* input, const LongType* inputShape, LongType* starts,
-                                             LongType* lengths, LongType numOfClasses, void* output,
-                                             const LongType* outputShape) {
-  __shared__ T* val;
-  __shared__ LongType xLen, zLen, segment, zIndex;
-  __shared__ const T* x;
-  __shared__ T* z;
-  __shared__ int threadsPerSegment, start, finish;
+__global__ static void segmentSumLinearKernel(const void* inputBuf, const LongType* inputShape, LongType* starts,
+                                              LongType* lengths, LongType numOfClasses, void* outputBuf,
+                                              const LongType* outputShape) {
+  // Reinterpret input and output buffers
+  const T* input = reinterpret_cast<const T*>(inputBuf);
+  T* output = reinterpret_cast<T*>(outputBuf);
+
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  // Pointers within shared memory
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_inputLen;
+  __shared__ LongType shared_outputLen;
+  __shared__ int shared_inputRank;
+  __shared__ int shared_outputRank;
+  __shared__ LongType shared_zDim;
+  __shared__ LongType shared_totalThreads;
+  __shared__ int shared_threadsPerSegment;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_inputShape;
+  __shared__ const LongType* shared_inputStride;
+  __shared__ const LongType* shared_outputShape;
+  __shared__ const LongType* shared_outputStride;
 
   if (threadIdx.x == 0) {
-    threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-    segment = blockIdx.x / threadsPerSegment;
-    x = reinterpret_cast<const T*>(input);
-    z = reinterpret_cast<T*>(output);
+    // Cache input tensor shape and stride
+    shared_inputRank = shape::rank(inputShape);
+    shared_inputShape = shape::shapeOf(inputShape);
+    shared_inputStride = shape::stride(inputShape);
 
-    xLen = shape::length(inputShape);
-    zLen = shape::length(outputShape);
+    // Cache output tensor shape and stride
+    shared_outputRank = shape::rank(outputShape);
+    shared_outputShape = shape::shapeOf(outputShape);
+    shared_outputStride = shape::stride(outputShape);
 
-    if (segment < numOfClasses) {
-      LongType zCoords[SD_MAX_RANK];
-      INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
-      if(zIndex >= zLen)
-        return;
-      start = starts[segment];
-      finish = start + lengths[segment];
-      LongType xCoords[SD_MAX_RANK];
-      INDEX2COORDS(start, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-      LongType xOffset;
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-      z[zIndex] = x[xOffset];
-    }
+    // Cache lengths
+    shared_inputLen = shape::length(inputShape);
+    shared_outputLen = shape::length(outputShape);
+
+    // Calculate threads per segment
+    shared_threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
+
+    // Calculate total number of threads across all blocks
+    shared_totalThreads = gridDim.x * blockDim.x;
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  // Allocate space in shared memory for coordinates (if needed)
+  // Not used in this kernel as per the original implementation
+  // LongType* coords = sharedMem + threadIdx.x * shared_inputRank;
+
+  // Determine the segment this block is responsible for
+  LongType segment = blockIdx.x / shared_threadsPerSegment;
+
+  // Each block handles one segment
+  if (threadIdx.x == 0 && segment < numOfClasses) {
+    // Calculate zCoords based on the current segment
+    LongType zCoords[SD_MAX_RANK];
+    INDEX2COORDS(segment, shared_outputRank, shared_outputShape, zCoords);
+
+    // Convert zCoords to linear index
+    LongType zIndex;
+    COORDS2INDEX(shared_outputRank, shared_outputStride, zCoords, zIndex);
+
+    // Boundary check for zIndex
+    if (zIndex >= shared_outputLen) {
+      // Invalid zIndex; exit early
+      return;
+    }
+
+    // Get the start and finish indices for this segment
+    LongType start = starts[segment];
+    LongType finish = start + lengths[segment];
+
+    // Convert start index to coordinates
     LongType xCoords[SD_MAX_RANK];
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
+    INDEX2COORDS(start, shared_inputRank, shared_inputShape, xCoords);
+
+    // Convert xCoords to linear index
     LongType xOffset;
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-    if (xOffset >= xLen) return;
-    math::atomics::sd_atomicAdd(&z[zIndex], x[xOffset]);
+    COORDS2INDEX(shared_inputRank, shared_inputStride, xCoords, xOffset);
+
+    // Initialize the output at zIndex with the first value from the segment
+    if (xOffset < shared_inputLen) {
+      output[zIndex] = input[xOffset];
+    } else {
+      // Handle out-of-bounds access if necessary
+      output[zIndex] = static_cast<T>(0);
+    }
+  }
+
+  // Ensure the initialization is complete before proceeding
+  __syncthreads();
+
+  // Now, each thread will handle adding elements to the output[zIndex]
+  // We need to ensure that only threads handling valid segments proceed
+  if (segment >= numOfClasses) return;
+
+  // Get the start and finish indices for this segment
+  LongType start = starts[segment];
+  LongType finish = start + lengths[segment];
+
+  // Calculate zCoords and zIndex again for use in the loop
+  LongType zCoords[SD_MAX_RANK];
+  INDEX2COORDS(segment, shared_outputRank, shared_outputShape, zCoords);
+  LongType zIndex;
+  COORDS2INDEX(shared_outputRank, shared_outputStride, zCoords, zIndex);
+
+  if (zIndex >= shared_outputLen) return;
+
+  // Loop over the elements in the segment assigned to this thread
+  for (LongType k = tid; k < finish; k += shared_totalThreads) {
+    if (k >= shared_inputLen) continue;
+
+    // Convert linear index 'k' to multi-dimensional coordinates
+    LongType xCoords[SD_MAX_RANK];
+    INDEX2COORDS(k, shared_inputRank, shared_inputShape, xCoords);
+
+    // Convert coordinates to linear index for input tensor
+    LongType xOffset;
+    COORDS2INDEX(shared_inputRank, shared_inputStride, xCoords, xOffset);
+
+    if (xOffset >= shared_inputLen) continue;
+
+    // Atomic add to ensure correct summation across threads
+    math::atomics::sd_atomicAdd(&output[zIndex], input[xOffset]);
   }
 }
-// -------------------------------------------------------------------------------------------------------------- //
 
+// -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
-static SD_KERNEL void unsortedSegmentSumLinearKernel(const void* input, const LongType* inputShape,
-                                                     const void* indices, const LongType* indicesShape, LongType* starts, LongType* lengths,
-                                                     LongType numOfClasses, void* output,
-                                                     const LongType* outputShape) {
-  __shared__ T* val;
-  __shared__ LongType xLen, zLen, segment, zIndex;
-  __shared__ const T* x;
-  __shared__ T* z;
-  __shared__ const I* y;
+__global__ static void unsortedSegmentSumLinearKernel(const void* inputBuf, const LongType* inputShape,
+                                                      const void* indicesBuf, const LongType* indicesShape,
+                                                      LongType* starts, LongType* lengths,
+                                                      LongType numOfClasses, void* outputBuf,
+                                                      const LongType* outputShape) {
+  // Reinterpret input and output buffers
+  const T* input = reinterpret_cast<const T*>(inputBuf);
+  const I* indices = reinterpret_cast<const I*>(indicesBuf);
+  T* output = reinterpret_cast<T*>(outputBuf);
+
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  // Pointers within shared memory
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_inputLen;
+  __shared__ LongType shared_outputLen;
+  __shared__ int shared_inputRank;
+  __shared__ int shared_outputRank;
+  __shared__ int shared_indicesRank;
+  __shared__ LongType shared_totalThreads;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_inputShape;
+  __shared__ const LongType* shared_inputStride;
+  __shared__ const LongType* shared_outputShape;
+  __shared__ const LongType* shared_outputStride;
+  __shared__ const LongType* shared_indicesShape;
+  __shared__ const LongType* shared_indicesStride;
 
   if (threadIdx.x == 0) {
-    segment = blockIdx.x;
-    x = reinterpret_cast<const T*>(input);
-    z = reinterpret_cast<T*>(output);
-    y = reinterpret_cast<const I*>(indices);
-    xLen = shape::length(inputShape);
-    zLen = shape::length(outputShape);
+    // Cache input tensor shape and stride
+    shared_inputRank = shape::rank(inputShape);
+    shared_inputShape = shape::shapeOf(inputShape);
+    shared_inputStride = shape::stride(inputShape);
 
-    LongType zCoords[SD_MAX_RANK];
-    INDEX2COORDS(segment, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
-    if (lengths[segment] > 0) {
-      LongType xCoords[SD_MAX_RANK];
-      LongType xOffset;
-      INDEX2COORDS(starts[segment], shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-      z[zIndex] = x[xOffset];
-    } else {
-      z[zIndex] = 0;
-    }
+    // Cache indices tensor shape and stride
+    shared_indicesRank = shape::rank(indicesShape);
+    shared_indicesShape = shape::shapeOf(indicesShape);
+    shared_indicesStride = shape::stride(indicesShape);
+
+    // Cache output tensor shape and stride
+    shared_outputRank = shape::rank(outputShape);
+    shared_outputShape = shape::shapeOf(outputShape);
+    shared_outputStride = shape::stride(outputShape);
+
+    // Cache lengths
+    shared_inputLen = shape::length(inputShape);
+    shared_outputLen = shape::length(outputShape);
+
+    // Calculate total number of threads across all blocks
+    shared_totalThreads = gridDim.x * blockDim.x;
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  if (lengths[segment] > 0) {
-    for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  // Allocate space in shared memory for coordinates
+  // Assuming maximum rank is defined and consistent
+  LongType* coords = sharedMem + threadIdx.x * shared_inputRank;
+
+  // Each block is responsible for a specific class (segment)
+  const LongType segment = blockIdx.x;
+
+  // Boundary check for segment
+  if (segment >= numOfClasses) return;
+
+  // Calculate zCoords based on the current segment
+  LongType zCoords[SD_MAX_RANK];
+  INDEX2COORDS(segment, shared_outputRank, shared_outputShape, zCoords);
+
+  // Convert zCoords to linear index
+  LongType zIndex;
+  COORDS2INDEX(shared_outputRank, shared_outputStride, zCoords, zIndex);
+
+  // Boundary check for zIndex
+  if (zIndex >= shared_outputLen) return;
+
+  // Initialize the output at zIndex with the first value from the segment if length > 0, else 0
+  if (threadIdx.x == 0) {
+    if (lengths[segment] > 0) {
+      LongType start = starts[segment];
       LongType xCoords[SD_MAX_RANK];
+      INDEX2COORDS(start, shared_inputRank, shared_inputShape, xCoords);
+      LongType xOffset;
+      COORDS2INDEX(shared_inputRank, shared_inputStride, xCoords, xOffset);
+      if (xOffset < shared_inputLen) {
+        output[zIndex] = input[xOffset];
+      } else {
+        // Handle out-of-bounds access if necessary
+        output[zIndex] = static_cast<T>(0);
+      }
+    } else {
+      output[zIndex] = static_cast<T>(0);
+    }
+  }
+
+  // Ensure the initialization is complete before proceeding
+  __syncthreads();
+
+  // Proceed only if the segment has elements
+  if (lengths[segment] > 0) {
+    // Each thread handles multiple elements based on stride
+    for (LongType e = tid; e < shared_inputLen; e += shared_totalThreads) {
+      // Convert linear index 'e' to multi-dimensional coordinates for input
+      INDEX2COORDS(e, shared_inputRank, shared_inputShape, coords);
+
+      // Convert coordinates to linear index for input tensor
+      LongType xOffset;
+      COORDS2INDEX(shared_inputRank, shared_inputStride, coords, xOffset);
+
+      // Boundary check for xOffset
+      if (xOffset >= shared_inputLen) continue;
+
+      // Convert linear index 'e' to multi-dimensional coordinates for indices
       LongType yCoords[SD_MAX_RANK];
-      LongType xIndex;
+      INDEX2COORDS(e, shared_indicesRank, shared_indicesShape, yCoords);
+
+      // Convert coordinates to linear index for indices tensor
       LongType yIndex;
+      COORDS2INDEX(shared_indicesRank, shared_indicesStride, yCoords, yIndex);
 
-      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-      COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yIndex);
+      // Boundary check for yIndex
+      if (yIndex >= shape::length(indicesShape)) continue;
 
-      if (y[yIndex] == segment && e != starts[segment]) {
-        math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+      // Check if the index corresponds to the current segment and is not the start
+      if (indices[yIndex] == static_cast<I>(segment) && e != starts[segment]) {
+        // Atomic add to ensure correct summation across threads
+        math::atomics::sd_atomicAdd(&output[zIndex], input[xOffset]);
       }
     }
   }
 }
-// -------------------------------------------------------------------------------------------------------------- //
-// SegmentSum kernel
-template <typename T, typename I>
-static SD_KERNEL void segmentSumTadKernel(void* inputBuf, const LongType* inputShape,
-                                          const LongType* inputTads, const LongType* inputTadOffsets,
-                                          const I* indices, LongType* starts,
-                                          LongType* lengths, LongType numOfClasses, void* outputBuf, const LongType* outputShape,
-                                          const LongType* outputTads, const LongType* outputTadOffsets, LongType numIndices) {
 
-  __shared__ LongType len, total;
+// -------------------------------------------------------------------------------------------------------------- //
+// SegmentSumTad Kernel Refactored
+template <typename T, typename I>
+__global__ static void segmentSumTadKernel(void* inputBuf, const LongType* inputShape,
+                                           const LongType* inputTads, const LongType* inputTadOffsets,
+                                           const I* indices, LongType* starts,
+                                           LongType* lengths, LongType numOfClasses, void* outputBuf,
+                                           const LongType* outputShape,
+                                           const LongType* outputTads, const LongType* outputTadOffsets,
+                                           LongType numIndices) {
+  // Reinterpret input and output buffers
+  const T* input = reinterpret_cast<const T*>(inputBuf);
+  T* output = reinterpret_cast<T*>(outputBuf);
+  const I* idx = reinterpret_cast<const I*>(indices);
+
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  // Pointers within shared memory
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_len;
+  __shared__ LongType shared_total;
+  __shared__ int shared_inputRank;
+  __shared__ int shared_outputRank;
+  __shared__ LongType shared_numOfClasses;
+  __shared__ LongType shared_numIndices;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_inputShape;
+  __shared__ const LongType* shared_inputStride;
+  __shared__ const LongType* shared_outputShape;
+  __shared__ const LongType* shared_outputStride;
+  __shared__ const LongType* shared_inputTads;
+  __shared__ const LongType* shared_inputTadOffsets;
+  __shared__ const LongType* shared_outputTads;
+  __shared__ const LongType* shared_outputTadOffsets;
 
   if (threadIdx.x == 0) {
-    total = shape::sizeAt(inputShape, 0);
-    len = shape::length(inputTads);
+    // Cache ranks
+    shared_inputRank = shape::rank(inputShape);
+    shared_outputRank = shape::rank(outputShape);
+
+    // Cache shape and stride pointers
+    shared_inputShape = shape::shapeOf(inputShape);
+    shared_inputStride = shape::stride(inputShape);
+    shared_outputShape = shape::shapeOf(outputShape);
+    shared_outputStride = shape::stride(outputShape);
+
+    // Cache TAD information
+    shared_inputTads = inputTads;
+    shared_inputTadOffsets = inputTadOffsets;
+    shared_outputTads = outputTads;
+    shared_outputTadOffsets = outputTadOffsets;
+
+    // Cache lengths
+    shared_len = shape::length(inputTads); // Assuming shape::length(inputTads) is valid
+    shared_total = shape::sizeAt(inputShape, 0); // e.g., number of segments or batches
+
+    // Cache additional parameters
+    shared_numOfClasses = numOfClasses;
+    shared_numIndices = numIndices;
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
-    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-    auto segment = indices[idx];
-    auto z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-    auto start = starts[segment];
-    auto finish = start + lengths[segment];
-    if (lengths[segment] == 0) continue;
-    for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-      LongType xCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
-      LongType xIndex;
-      LongType zIndex;
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-      INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), xCoords);
-      COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), xCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), zCoords);
-      COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zCoords, zIndex);
+  // Each block handles one segment (class)
+  for (LongType segment = blockIdx.x; segment < shared_numOfClasses; segment += gridDim.x) {
+    // Retrieve the input and output TAD offsets
+    LongType inputTadOffset = shared_inputTadOffsets[segment];
+    LongType outputTadOffset = shared_outputTadOffsets[segment];
 
-      math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+    // Pointer to the input and output TAD
+    const T* x = input + inputTadOffset;
+    T* z = output + outputTadOffset;
+
+    // Retrieve the start and finish indices for this segment
+    LongType start = starts[segment];
+    LongType finish = start + lengths[segment];
+
+    // Initialize the output for this segment
+    if (threadIdx.x == 0) {
+      if (lengths[segment] > 0) {
+        LongType xOffset = start;
+        if (xOffset < shared_len) {
+          z[0] = x[xOffset];
+        } else {
+          // Handle out-of-bounds access if necessary
+          z[0] = static_cast<T>(0);
+        }
+      } else {
+        z[0] = static_cast<T>(0);
+      }
     }
+
+    // Ensure the initialization is complete before proceeding
+    __syncthreads();
+
+    // Proceed only if the segment has elements
+    if (lengths[segment] > 0) {
+      // Each thread handles multiple elements based on stride
+      for (LongType e = tid; e < finish; e += shared_totalThreads) {
+        if (e >= shared_len) continue;
+
+        // Retrieve the corresponding index for this element
+        I class_idx = idx[e];
+
+        // Check if the current element belongs to this segment
+        if (class_idx == static_cast<I>(segment) && e != start) {
+          // Convert linear index 'e' to multi-dimensional coordinates for input TAD
+          LongType inputCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, shared_inputRank, shared_inputShape, inputCoords);
+
+          // Convert coordinates to linear index for input TAD
+          LongType xIndex;
+          COORDS2INDEX(shared_inputRank, shared_inputStride, inputCoords, xIndex);
+
+          // Convert linear index to multi-dimensional coordinates for output TAD
+          LongType outputCoords[SD_MAX_RANK];
+          INDEX2COORDS(e - start, shared_outputRank, shared_outputShape, outputCoords);
+
+          // Convert coordinates to linear index for output TAD
+          LongType zIndex;
+          COORDS2INDEX(shared_outputRank, shared_outputStride, outputCoords, zIndex);
+
+          // Atomic add to accumulate the sum
+          math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+        }
+      }
+    }
+
+    // Optional: Synchronize threads if necessary (depends on specific requirements)
+    __syncthreads();
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
@@ -284,48 +564,142 @@ void unsortedSegmentSumFunctor(LaunchContext* context, NDArray* input, NDArray* 
 // Backpropagate ops
 // -------------------------------------------------------------------------------------------------------------- //
 // Sorted sum backpropagate
+// SegmentSumTad Kernel Refactored
 template <typename T, typename I>
-static SD_KERNEL void segmentSumBPLinearKernel(const void* inputBuf, const LongType* inputShape, const void* eps,
-                                               const LongType* epsShape, const void* indicesBuf,
-                                               const LongType* indicesShape, void* outputBuf,
-                                               const LongType* outputShape) {
-  auto x = reinterpret_cast<const T*>(inputBuf);
-  auto y = reinterpret_cast<const I*>(indicesBuf);
-  auto z = reinterpret_cast<T*>(outputBuf);
-  auto gradOut = reinterpret_cast<const T*>(eps);
-  __shared__ LongType xLen, gradLen;
+static SD_KERNEL void segmentSumTadKernel(void* inputBuf, const LongType* inputShape,
+                                          const LongType* inputTads, const LongType* inputTadOffsets,
+                                          const I* indices, LongType* starts,
+                                          LongType* lengths, LongType numOfClasses, void* outputBuf,
+                                          const LongType* outputShape,
+                                          const LongType* outputTads, const LongType* outputTadOffsets,
+                                          LongType numIndices) {
+  // Reinterpret input and output buffers
+  const T* input = reinterpret_cast<const T*>(inputBuf);
+  T* output = reinterpret_cast<T*>(outputBuf);
+  const I* idx = reinterpret_cast<const I*>(indices);
+
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  // Pointers within shared memory
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_len;
+  __shared__ LongType shared_total;
+  __shared__ int shared_inputRank;
+  __shared__ int shared_outputRank;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_inputShapePtr;
+  __shared__ const LongType* shared_inputStridePtr;
+  __shared__ const LongType* shared_outputShapePtr;
+  __shared__ const LongType* shared_outputStridePtr;
+  __shared__ const LongType* shared_inputTadsPtr;
+  __shared__ const LongType* shared_inputTadOffsetsPtr;
+  __shared__ const LongType* shared_outputTadsPtr;
+  __shared__ const LongType* shared_outputTadOffsetsPtr;
 
   if (threadIdx.x == 0) {
-    xLen = shape::length(inputShape);
-    gradLen = shape::length(epsShape);
+    // Cache ranks
+    shared_inputRank = shape::rank(inputShape);
+    shared_outputRank = shape::rank(outputShape);
+
+    // Cache shape and stride pointers
+    shared_inputShapePtr = shape::shapeOf(inputShape);
+    shared_inputStridePtr = shape::stride(inputShape);
+    shared_outputShapePtr = shape::shapeOf(outputShape);
+    shared_outputStridePtr = shape::stride(outputShape);
+
+    // Cache TAD information
+    shared_inputTadsPtr = inputTads;
+    shared_inputTadOffsetsPtr = inputTadOffsets;
+    shared_outputTadsPtr = outputTads;
+    shared_outputTadOffsetsPtr = outputTadOffsets;
+
+    // Cache lengths
+    shared_len = shape::length(inputTads); // Assuming shape::length(inputTads) is valid
+    shared_total = shape::sizeAt(inputShape, 0); // e.g., number of segments or batches
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = gridDim.x * blockDim.x;
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (auto e = start; e < xLen; e += step) {
-    LongType zCoords[SD_MAX_RANK];
-    LongType xCoords[SD_MAX_RANK];
-    LongType yCoords[SD_MAX_RANK];
-    LongType zOffset;
-    LongType xOffset;
-    LongType yOffset;
-    LongType gradOffsetO;
+  // Each block handles one or multiple segments (classes)
+  for (LongType idxSegment = blockIdx.x; idxSegment < numOfClasses; idxSegment += gridDim.x) {
+    // Boundary check for segment
+    if (idxSegment >= numOfClasses) continue;
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
-    auto classIndex = y[yOffset];
-    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), zCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), zCoords, gradOffsetO);
+    // Retrieve the input and output TAD offsets
+    LongType inputTadOffset = shared_inputTadOffsetsPtr[idxSegment];
+    LongType outputTadOffset = shared_outputTadOffsetsPtr[idxSegment];
 
-    z[zOffset] = gradOut[gradOffsetO];
+    // Pointer to the input and output TAD
+    const T* x = input + inputTadOffset;
+    T* z = output + outputTadOffset;
+
+    // Retrieve the start and finish indices for this segment
+    LongType start = starts[idxSegment];
+    LongType finish = start + lengths[idxSegment];
+
+    // Initialize the output for this segment if lengths > 0
+    if (threadIdx.x == 0) {
+      if (lengths[idxSegment] > 0) {
+        LongType firstElementOffset = start;
+        if (firstElementOffset < shared_len) {
+          z[0] = x[firstElementOffset];
+        } else {
+          // Handle out-of-bounds access if necessary
+          z[0] = static_cast<T>(0);
+        }
+      } else {
+        z[0] = static_cast<T>(0);
+      }
+    }
+
+    // Ensure the initialization is complete before proceeding
+    __syncthreads();
+
+    // Proceed only if the segment has elements
+    if (lengths[idxSegment] > 0) {
+      // Each thread handles multiple elements based on stride
+      for (LongType e = tid; e < finish; e += shared_total) {
+        if (e >= shared_len) continue;
+
+        // Retrieve the corresponding index for this element
+        I class_idx = idx[e];
+
+        // Check if the current element belongs to this segment
+        if (class_idx == static_cast<I>(idxSegment) && e != start) {
+          // Convert linear index 'e' to multi-dimensional coordinates for input TAD
+          LongType xCoords[SD_MAX_RANK];
+          INDEX2COORDS(e, shared_inputRank, shared_inputShapePtr, xCoords);
+
+          // Convert coordinates to linear index for input TAD
+          LongType xIndex;
+          COORDS2INDEX(shared_inputRank, shared_inputStridePtr, xCoords, xIndex);
+
+          // Convert linear index to multi-dimensional coordinates for output TAD
+          LongType zCoords[SD_MAX_RANK];
+          INDEX2COORDS(e - start, shared_outputRank, shared_outputShapePtr, zCoords);
+
+          // Convert coordinates to linear index for output TAD
+          LongType zIndex;
+          COORDS2INDEX(shared_outputRank, shared_outputStridePtr, zCoords, zIndex);
+
+          // Atomic add to accumulate the sum
+          math::atomics::sd_atomicAdd(&z[zIndex], x[xIndex]);
+        }
+      }
+    }
+
+    // Optional: Synchronize threads if necessary (depends on specific requirements)
+    __syncthreads();
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void segmentSumBPTadKernel(const void* inputBuf, const LongType* inputShape, const void* eps,

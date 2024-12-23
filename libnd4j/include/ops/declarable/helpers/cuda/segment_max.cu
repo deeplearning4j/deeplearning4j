@@ -132,18 +132,37 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
                                           LongType const* outputShape, LongType const* outputTads,
                                           LongType const* outputTadOffsets, T filler, LongType indicesLength,
                                           LongType numInputTads, LongType numOutputTads) {
-  __shared__ T* val;
-  __shared__ LongType len, zIndex, total, zLen;
+
+  // Shared memory caching
   __shared__ T* z;
-  __shared__ int start, finish;
+  __shared__ LongType inputTadsRank;
+  __shared__ const LongType* inputTadsShape;
+  __shared__ const LongType* inputTadsStride;
+
+  __shared__ LongType outputTadsRank;
+  __shared__ const LongType* outputTadsShape;
+  __shared__ const LongType* outputTadsStride;
+
+  __shared__ LongType len, start, finish, total, zLen;
   __shared__ I segment;
 
+  // Initialize shared memory variables in thread 0
   if (threadIdx.x == 0 && blockIdx.x < indicesLength) {
     segment = indices[blockIdx.x];
+
+    // Cache inputTads and outputTads shapes and strides
+    inputTadsRank = shape::rank(inputTads);
+    inputTadsShape = shape::shapeOf(inputTads);
+    inputTadsStride = shape::stride(inputTads);
+
+    outputTadsRank = shape::rank(outputTads);
+    outputTadsShape = shape::shapeOf(outputTads);
+    outputTadsStride = shape::stride(outputTads);
+
+    // Cache segment-related properties
     zLen = shape::length(outputShape);
-    auto zOffset = outputTadOffsets[segment];
-    z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
     len = shape::length(inputTads);
+    z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
 
     start = starts[segment];
     finish = start + lengths[segment];
@@ -151,40 +170,30 @@ static SD_KERNEL void segmentMaxTadKernel(void* inputBuf, LongType const* inputS
   }
   __syncthreads();
 
-  auto idx = blockIdx.x;
-  if (idx < numInputTads) {
-    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[idx];
-    if (blockIdx.x == start) {
-      for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        LongType xIndex;
-        LongType zIndex;
+  // Ensure we are processing a valid segment
+  if (blockIdx.x < numInputTads) {
+    auto x = reinterpret_cast<T*>(inputBuf) + inputTadOffsets[blockIdx.x];
 
-        INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), xCoords);
-        COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), xCoords, xIndex);
-        INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), zCoords);
-        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zCoords, zIndex);
+    // Process each element in the TAD
+    for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+      LongType xCoords[SD_MAX_RANK];
+      LongType zCoords[SD_MAX_RANK];
+      LongType xIndex, zIndex;
 
+      // Compute coordinates and indices for input and output TADs
+      INDEX2COORDS(e, inputTadsRank, inputTadsShape, xCoords);
+      COORDS2INDEX(inputTadsRank, inputTadsStride, xCoords, xIndex);
+      INDEX2COORDS(e, outputTadsRank, outputTadsShape, zCoords);
+      COORDS2INDEX(outputTadsRank, outputTadsStride, zCoords, zIndex);
+
+      // Update the output buffer with the maximum value
+      if (blockIdx.x == start || lengths[segment]) {
         math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
-      }
-    } else {
-      for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        LongType xIndex;
-        LongType zIndex;
-
-        INDEX2COORDS(e, shape::rank(inputTads), shape::shapeOf(inputTads), xCoords);
-        COORDS2INDEX(shape::rank(inputTads), shape::stride(inputTads), xCoords, xIndex);
-        INDEX2COORDS(e, shape::rank(outputTads), shape::shapeOf(outputTads), zCoords);
-        COORDS2INDEX(shape::rank(outputTads), shape::stride(outputTads), zCoords, zIndex);
-
-        if (lengths[segment]) math::atomics::sd_atomicMax<T>(&z[zIndex], x[xIndex]);
       }
     }
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 
 template <typename T, typename I>
@@ -303,58 +312,154 @@ void unsortedSegmentMaxFunctor(LaunchContext* context, NDArray* input, NDArray* 
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void segmentMaxBPLinearKernel(void* inputBuf, LongType const* inputShape, void* forwardOutput,
-                                               LongType const* forwardShape, void* eps, LongType const* epsShape, void* indicesBuf, LongType const* indicesShape, void* outputBuf,
+                                               LongType const* forwardShape, void* eps, LongType const* epsShape,
+                                               void* indicesBuf, LongType const* indicesShape, void* outputBuf,
                                                LongType const* outputShape, LongType indicesLen) {
-  __shared__ T* x;
-  __shared__ T* gradIn;
-  __shared__ T* gradOut;
+
+  // Early exit if block index is out of range
+  if (blockIdx.x >= indicesLen)
+    return;
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputShapeRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType forwardShapeRank;
+  __shared__ const LongType* forwardShapePtr;
+  __shared__ const LongType* forwardStridePtr;
+
+  __shared__ LongType epsShapeRank;
+  __shared__ const LongType* epsShapePtr;
+  __shared__ const LongType* epsStridePtr;
+
+  __shared__ LongType indicesShapeRank;
+  __shared__ const LongType* indicesShapePtr;
+  __shared__ const LongType* indicesStridePtr;
+
+  __shared__ LongType outputShapeRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
+  __shared__ const T* x;
   __shared__ I* y;
   __shared__ T* z;
-  __shared__ LongType xLen, gradLen;
+  __shared__ T* gradIn;
+  __shared__ T* gradOut;
+  __shared__ LongType xLen;
+  __shared__ LongType yLen;
+  __shared__ LongType gradLen;
+  __shared__ LongType currentLen;
+  __shared__ LongType gradOutLen;
+  __shared__ LongType inLen;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputShape
+    inputShapeRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for forwardShape
+    forwardShapeRank = shape::rank(forwardShape);
+    forwardShapePtr = shape::shapeOf(forwardShape);
+    forwardStridePtr = shape::stride(forwardShape);
+
+    // Cache rank, shape, and stride for epsShape
+    epsShapeRank = shape::rank(epsShape);
+    epsShapePtr = shape::shapeOf(epsShape);
+    epsStridePtr = shape::stride(epsShape);
+
+    // Cache rank, shape, and stride for indicesShape
+    indicesShapeRank = shape::rank(indicesShape);
+    indicesShapePtr = shape::shapeOf(indicesShape);
+    indicesStridePtr = shape::stride(indicesShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputShapeRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache lengths
     xLen = shape::length(inputShape);
-    x = reinterpret_cast<T*>(inputBuf);
+    yLen = shape::length(indicesShape);
+    gradLen = shape::length(epsShape);
+    inLen = shape::length(gradInTadShapeInfo);
+    gradOutLen = shape::length(gradOutTadShapeInfo);
+    currentLen = shape::length(inputTadShapeInfo);
+
+    // Initialize pointers
+    x = reinterpret_cast<const T*>(inputBuf);
     y = reinterpret_cast<I*>(indicesBuf);
     z = reinterpret_cast<T*>(outputBuf);
     gradIn = reinterpret_cast<T*>(forwardOutput);
     gradOut = reinterpret_cast<T*>(eps);
-    gradLen = shape::length(epsShape);
   }
   __syncthreads();
 
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = gridDim.x * blockDim.x;
+  // Calculate global thread index and step size
+  LongType start = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType step = gridDim.x * blockDim.x;
 
-  for (auto e = start; e < indicesLen; e += step) {
-    LongType zCoords[SD_MAX_RANK];
-    LongType xCoords[SD_MAX_RANK];
-    LongType yCoords[SD_MAX_RANK];
-    LongType gradICoords[SD_MAX_RANK];
-    LongType gradOCoords[SD_MAX_RANK];
-    LongType zOffset;
-    LongType xOffset;
-    LongType yOffset;
-    LongType gradOffsetI;
-    LongType gradOffsetO;
+  // Iterate over all segments assigned to this thread
+  for (LongType e = start; e < indicesLen; e += step) {
+    // Retrieve the current segment index
+    I segment = y[e];
+    T* current = x;
+    T* currentOut = z;
+    auto classNum = segment;
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-    INDEX2COORDS(e, shape::rank(indicesShape), shape::shapeOf(indicesShape), yCoords);
-    COORDS2INDEX(shape::rank(indicesShape), shape::stride(indicesShape), yCoords, yOffset);
-    auto classIndex = y[yOffset];
-    INDEX2COORDS(classIndex, shape::rank(forwardShape), shape::shapeOf(forwardShape), gradICoords);
-    COORDS2INDEX(shape::rank(forwardShape), shape::stride(forwardShape), gradICoords, gradOffsetI);
-    INDEX2COORDS(classIndex, shape::rank(epsShape), shape::shapeOf(epsShape), gradOCoords);
-    COORDS2INDEX(shape::rank(epsShape), shape::stride(epsShape), gradOCoords, gradOffsetO);
+    // Calculate offsets
+    LongType currentOffset = inputOffsets[e];
+    LongType currentOutOffset = outOffsets[e];
+    LongType currentGradOutOffset = gradOutOffsets[classNum];
+    LongType bPTensorOffset = gradInOffsets[classNum];
 
-    if (math::sd_abs<T,T>(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
-      z[zOffset] = gradOut[gradOffsetO];
+    // Pointers to the current input and gradOut data
+    T* gradIn2 = gradIn + bPTensorOffset;
+    T* current2 = current + currentOffset;
+    T* currentGradOut2 = gradOut + currentGradOutOffset;
+    T* currentOut2 = currentOut + currentOutOffset;
+
+    // Iterate over elements within the current TAD, distributing work among threads
+    for (LongType idx = threadIdx.x; idx < currentLen; idx += blockDim.x) {
+      // Convert linear index to coordinates for inputTadShapeInfo
+      LongType xCoords[SD_MAX_RANK];
+      INDEX2COORDS(idx, inputTadShapeRank, inputTadShapePtr, xCoords);
+      // Convert coordinates back to linear index for inputTadShapeInfo
+      LongType xIndex;
+      COORDS2INDEX(inputTadShapeRank, inputTadStridePtr, xCoords, xIndex);
+
+      // Convert linear index to coordinates for gradInTadShapeInfo
+      LongType gradInCoords[SD_MAX_RANK];
+      INDEX2COORDS(idx, gradInTadShapeRank, gradInTadShapePtr, gradInCoords);
+      // Convert coordinates back to linear index for gradInTadShapeInfo
+      LongType gradInIndex;
+      COORDS2INDEX(gradInTadShapeRank, gradInTadStridePtr, gradInCoords, gradInIndex);
+
+      // Convert linear index to coordinates for gradOutTadShapeInfo
+      LongType gradOutCoords[SD_MAX_RANK];
+      INDEX2COORDS(idx, gradOutTadShapeRank, gradOutTadShapePtr, gradOutCoords);
+      // Convert coordinates back to linear index for gradOutTadShapeInfo
+      LongType gradOutIndex;
+      COORDS2INDEX(gradOutTadShapeRank, gradOutTadStridePtr, gradOutCoords, gradOutIndex);
+
+      // Convert linear index to coordinates for outTadShapeInfo
+      LongType outCoords[SD_MAX_RANK];
+      INDEX2COORDS(idx, outTadShapeRank, outTadShapePtr, outCoords);
+      // Convert coordinates back to linear index for outTadShapeInfo
+      LongType outIndex;
+      COORDS2INDEX(outTadShapeRank, outTadStridePtr, outCoords, outIndex);
+
+      // Compute the absolute difference and apply the condition
+      if (math::sd_abs<T, T>(gradIn2[gradInIndex] - current2[xIndex]) <= static_cast<T>(1.e-6)) {
+        // Assign the corresponding gradOut value to the output buffer
+        currentOut2[outIndex] = currentGradOut2[gradOutIndex];
+      }
     }
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inputShape,
@@ -368,32 +473,127 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inpu
                                             LongType const* gradInOffsets, LongType const* gradOutTadShapeInfo,
                                             LongType const* gradOutOffsets, LongType const* outTadShapeInfo,
                                             LongType const* outOffsets, LongType indicesLen) {
-  __shared__ T* x;
-  __shared__ I *indices;
-  __shared__ T* gradIn;
-  __shared__ T* gradOut;
+
+  // Early exit if block index is out of range
+  if (blockIdx.x >= indicesLen)
+    return;
+
+  // Shared memory for caching shape, stride, and rank information
+  __shared__ LongType inputShapeRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+
+  __shared__ LongType forwardShapeRank;
+  __shared__ const LongType* forwardShapePtr;
+  __shared__ const LongType* forwardStridePtr;
+
+  __shared__ LongType epsShapeRank;
+  __shared__ const LongType* epsShapePtr;
+  __shared__ const LongType* epsStridePtr;
+
+  __shared__ LongType indicesShapeRank;
+  __shared__ const LongType* indicesShapePtr;
+  __shared__ const LongType* indicesStridePtr;
+
+  __shared__ LongType outputShapeRank;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+
+  __shared__ LongType inputTadShapeRank;
+  __shared__ const LongType* inputTadShapePtr;
+  __shared__ const LongType* inputTadStridePtr;
+
+  __shared__ LongType gradInTadShapeRank;
+  __shared__ const LongType* gradInTadShapePtr;
+  __shared__ const LongType* gradInTadStridePtr;
+
+  __shared__ LongType gradOutTadShapeRank;
+  __shared__ const LongType* gradOutTadShapePtr;
+  __shared__ const LongType* gradOutTadStridePtr;
+
+  __shared__ LongType outTadShapeRank;
+  __shared__ const LongType* outTadShapePtr;
+  __shared__ const LongType* outTadStridePtr;
+
+  // Shared memory for pointers and lengths initialized by thread 0
+  __shared__ const T* x;
   __shared__ I* y;
   __shared__ T* z;
-  __shared__ LongType xLen, yLen, gradLen, currentLen, gradOutLen, inLen;
+  __shared__ T* gradIn;
+  __shared__ T* gradOut;
+  __shared__ LongType xLen;
+  __shared__ LongType yLen;
+  __shared__ LongType gradLen;
+  __shared__ LongType currentLen;
+  __shared__ LongType gradOutLen;
+  __shared__ LongType inLen;
 
   if (threadIdx.x == 0) {
+    // Cache rank, shape, and stride for inputShape
+    inputShapeRank = shape::rank(inputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    // Cache rank, shape, and stride for forwardShape
+    forwardShapeRank = shape::rank(forwardShape);
+    forwardShapePtr = shape::shapeOf(forwardShape);
+    forwardStridePtr = shape::stride(forwardShape);
+
+    // Cache rank, shape, and stride for epsShape
+    epsShapeRank = shape::rank(epsShape);
+    epsShapePtr = shape::shapeOf(epsShape);
+    epsStridePtr = shape::stride(epsShape);
+
+    // Cache rank, shape, and stride for indicesShape
+    indicesShapeRank = shape::rank(indicesShape);
+    indicesShapePtr = shape::shapeOf(indicesShape);
+    indicesStridePtr = shape::stride(indicesShape);
+
+    // Cache rank, shape, and stride for outputShape
+    outputShapeRank = shape::rank(outputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    // Cache rank, shape, and stride for inputTadShapeInfo
+    inputTadShapeRank = shape::rank(inputTadShapeInfo);
+    inputTadShapePtr = shape::shapeOf(inputTadShapeInfo);
+    inputTadStridePtr = shape::stride(inputTadShapeInfo);
+
+    // Cache rank, shape, and stride for gradInTadShapeInfo
+    gradInTadShapeRank = shape::rank(gradInTadShapeInfo);
+    gradInTadShapePtr = shape::shapeOf(gradInTadShapeInfo);
+    gradInTadStridePtr = shape::stride(gradInTadShapeInfo);
+
+    // Cache rank, shape, and stride for gradOutTadShapeInfo
+    gradOutTadShapeRank = shape::rank(gradOutTadShapeInfo);
+    gradOutTadShapePtr = shape::shapeOf(gradOutTadShapeInfo);
+    gradOutTadStridePtr = shape::stride(gradOutTadShapeInfo);
+
+    // Cache rank, shape, and stride for outTadShapeInfo
+    outTadShapeRank = shape::rank(outTadShapeInfo);
+    outTadShapePtr = shape::shapeOf(outTadShapeInfo);
+    outTadStridePtr = shape::stride(outTadShapeInfo);
+
+    // Cache lengths
     xLen = shape::length(inputShape);
-    indices = reinterpret_cast<I*>(indicesBuf);
-    x = reinterpret_cast<T*>(inputBuf);
-    y = reinterpret_cast<I*>(indicesBuf);
-    z = reinterpret_cast<T*>(outputBuf);
     yLen = shape::length(indicesShape);
-    gradOut = reinterpret_cast<T*>(eps);
-    gradIn = reinterpret_cast<T*>(forwardOutput);
     gradLen = shape::length(epsShape);
     inLen = shape::length(gradInTadShapeInfo);
     gradOutLen = shape::length(gradOutTadShapeInfo);
     currentLen = shape::length(inputTadShapeInfo);
+
+    // Initialize pointers
+    x = reinterpret_cast<const T*>(inputBuf);
+    y = reinterpret_cast<I*>(indicesBuf);
+    z = reinterpret_cast<T*>(outputBuf);
+    gradIn = reinterpret_cast<T*>(forwardOutput);
+    gradOut = reinterpret_cast<T*>(eps);
   }
   __syncthreads();
 
-  for (auto i = blockIdx.x; i < indicesLen; i += gridDim.x) {
-    I segment = indices[i];
+  // Iterate over segments assigned to this block
+  for (LongType i = blockIdx.x; i < indicesLen; i += gridDim.x) {
+    I segment = y[i];
     T* current = x;
     T* currentOut = z;
     auto classNum = segment;
@@ -402,36 +602,51 @@ static SD_KERNEL void segmentMaxBPTadKernel(void* inputBuf, LongType const* inpu
     auto currentGradOutOffset = gradOutOffsets[classNum];
     auto bPTensorOffset = gradInOffsets[classNum];
 
-    auto gradIn2 = gradIn + bPTensorOffset;
-    auto current2 = current + currentOffset;
-    auto currentGradOut2 = gradOut + currentGradOutOffset;
-    auto currentOut2 = currentOut + currentOutOffset;
+    // Pointers to the current input and gradOut data
+    T* gradIn2 = gradIn + bPTensorOffset;
+    T* current2 = current + currentOffset;
+    T* currentGradOut2 = gradOut + currentGradOutOffset;
+    T* currentOut2 = currentOut + currentOutOffset;
 
-    for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-      sd::LongType xCoords[SD_MAX_RANK];
-      sd::LongType gradInCoords[SD_MAX_RANK];
-      sd::LongType gradOutCoords[SD_MAX_RANK];
-      sd::LongType outCoords[SD_MAX_RANK];
-      sd::LongType xIndex;
-      sd::LongType gradInIndex;
-      sd::LongType gradOutIndex;
-      sd::LongType outIndex;
+    // Iterate over elements within the current TAD, distributing work among threads
+    for (LongType e = threadIdx.x; e < currentLen; e += blockDim.x) {
+      // Convert linear index to coordinates for inputTadShapeInfo
+      LongType xCoords[SD_MAX_RANK];
+      INDEX2COORDS(e, inputTadShapeRank, inputTadShapePtr, xCoords);
+      // Convert coordinates back to linear index for inputTadShapeInfo
+      LongType xIndex;
+      COORDS2INDEX(inputTadShapeRank, inputTadStridePtr, xCoords, xIndex);
 
-      INDEX2COORDS(e, shape::rank(inputTadShapeInfo), shape::shapeOf(inputTadShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(inputTadShapeInfo), shape::stride(inputTadShapeInfo), xCoords, xIndex);
-      INDEX2COORDS(e, shape::rank(gradInTadShapeInfo), shape::shapeOf(gradInTadShapeInfo), gradInCoords);
-      COORDS2INDEX(shape::rank(gradInTadShapeInfo), shape::stride(gradInTadShapeInfo), gradInCoords, gradInIndex);
-      INDEX2COORDS(e, shape::rank(gradOutTadShapeInfo), shape::shapeOf(gradOutTadShapeInfo), gradOutCoords);
-      COORDS2INDEX(shape::rank(gradOutTadShapeInfo), shape::stride(gradOutTadShapeInfo), gradOutCoords, gradOutIndex);
-      INDEX2COORDS(e, shape::rank(outTadShapeInfo), shape::shapeOf(outTadShapeInfo), outCoords);
-      COORDS2INDEX(shape::rank(outTadShapeInfo), shape::stride(outTadShapeInfo), outCoords, outIndex);
+      // Convert linear index to coordinates for gradInTadShapeInfo
+      LongType gradInCoords[SD_MAX_RANK];
+      INDEX2COORDS(e, gradInTadShapeRank, gradInTadShapePtr, gradInCoords);
+      // Convert coordinates back to linear index for gradInTadShapeInfo
+      LongType gradInIndex;
+      COORDS2INDEX(gradInTadShapeRank, gradInTadStridePtr, gradInCoords, gradInIndex);
 
-      if (math::sd_abs<T, T>(gradIn2[gradInIndex] - current2[xIndex]) <= T(1.e-6)) {
+      // Convert linear index to coordinates for gradOutTadShapeInfo
+      LongType gradOutCoords[SD_MAX_RANK];
+      INDEX2COORDS(e, gradOutTadShapeRank, gradOutTadShapePtr, gradOutCoords);
+      // Convert coordinates back to linear index for gradOutTadShapeInfo
+      LongType gradOutIndex;
+      COORDS2INDEX(gradOutTadShapeRank, gradOutTadStridePtr, gradOutCoords, gradOutIndex);
+
+      // Convert linear index to coordinates for outTadShapeInfo
+      LongType outCoords[SD_MAX_RANK];
+      INDEX2COORDS(e, outTadShapeRank, outTadShapePtr, outCoords);
+      // Convert coordinates back to linear index for outTadShapeInfo
+      LongType outIndex;
+      COORDS2INDEX(outTadShapeRank, outTadStridePtr, outCoords, outIndex);
+
+      // Compute the absolute difference and apply the condition
+      if (math::sd_abs<T, T>(gradIn2[gradInIndex] - current2[xIndex]) <= static_cast<T>(1.e-6)) {
+        // Assign the corresponding gradOut value to the output buffer
         currentOut2[outIndex] = currentGradOut2[gradOutIndex];
       }
     }
   }
 }
+
 // -------------------------------------------------------------------------------------------------------------- //
 template <typename T, typename I>
 Status segmentMaxFunctorBP_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut,

@@ -52,6 +52,14 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
     zTadOffsets = xTadOffsets;
   }
 
+  // Cache shape-related values for TAD operations
+  sd::LongType xTadRank = shape::rank(xTadShapeInfo);
+  sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+  sd::LongType *xTadShape = shape::shapeOf(xTadShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(zTadShapeInfo);
+  sd::LongType *xTadStride = shape::stride(xTadShapeInfo);
+  sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
+
   const int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
   for (auto r = start; r < stop; r++) {
     auto oZ = z + zTadOffsets[r];
@@ -60,14 +68,15 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
     for (int f = 0; f < tadLength; f++) {
       sd::LongType coords[SD_MAX_RANK];
       sd::LongType xOffset, zOffset;
-      INDEX2COORDS(f, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-      INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
+      INDEX2COORDS(f, xTadRank, xTadShape, coords);
+      INDEX2COORDS(f, zTadRank, zTadShape, coords);
+      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
+      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
       oZ[zOffset] = OpType::op(oX[xOffset], scalars[r], extraParams);
     }
   }
 }
+
 ////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(int opNum, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
@@ -103,22 +112,27 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, const sd::LongType *xSh
   auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
+  // Cache shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
+
   PRAGMA_OMP_SIMD
   for (auto i = start; i < stop; i++) {
     sd::LongType coords[SD_MAX_RANK];
     sd::LongType zCoords[SD_MAX_RANK];
     sd::LongType xOffset, zOffset;
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
   };
-
 }
 ////////////////////////////////////////////////////////////////////////
-
-
 
 }  // namespace scalar
 }  // namespace functions

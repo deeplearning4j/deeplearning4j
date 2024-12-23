@@ -35,14 +35,12 @@ template <typename T>
 SD_KERNEL static void batchToSpaceCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                        const LongType* zShapeInfo, const LongType cropBottom,
                                        const LongType cropLeft) {
-  // input [bS, H * blockSize, W * blockSize, iC]
-  // output [bS, H * blockSize - cropBottom - cropTop, W * blockSize - cropLeft - cropRight, iC]
-
   const auto x = reinterpret_cast<const T*>(vx);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ LongType rank, *sharedMem;
-  __shared__ LongType zLen;
+  __shared__ LongType rank, zLen;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
+  __shared__ LongType* sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -50,28 +48,34 @@ SD_KERNEL static void batchToSpaceCuda(const void* vx, const LongType* xShapeInf
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
   LongType* coords = sharedMem + threadIdx.x * rank;
 
-  const LongType i = blockIdx.x * blockDim.x + threadIdx.x;
+  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
+    INDEX2COORDS(i, rank, zShape, coords);
 
-  if (i >= zLen) return;
+    LongType zOffset;
+    COORDS2INDEX(rank, zStride, coords, zOffset);
 
-  INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
+    // Adjust spatial coordinates for cropping
+    coords[1] += cropBottom;
+    coords[2] += cropLeft;
 
-  LongType zOffset;
-  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+    LongType xOffset;
+    COORDS2INDEX(rank, xStride, coords, xOffset);
 
-  coords[1] += cropBottom;
-  coords[2] += cropLeft;
-
-  LongType xOffset;
-  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
-
-  z[zOffset] = x[xOffset];
+    // Assign the value from input to output
+    z[zOffset] = x[xOffset];
+  }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void batchToSpaceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -131,22 +135,15 @@ template <typename X, typename Y>
 SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
                                          const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
                                          const LongType numOfSpatialDims) {
-  // 4D example, numOfSpatialDims = 2
-  // input [bS, H * blockShape[0], W * blockShape[1], iC]
-  // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
-
-  // if (cropTop = cropBottom = cropRight = cropLeft = 0) shapes are the same
-  // else:
-  // oH -> [cropBottom, iH - cropTop]
-  // oW -> [cropLeft,   iH - cropRight]
-  // xLen >= zLen
+  // x - input, y - crop, z - output
 
   const auto x = reinterpret_cast<const X*>(vx);
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  __shared__ LongType rank, *sharedMem;
-  __shared__ LongType zLen;
+  __shared__ LongType rank, zLen;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
+  __shared__ LongType* sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -154,30 +151,35 @@ SD_KERNEL static void batchToSpaceNDCuda(const void* vx, const LongType* xShapeI
 
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
-  }
 
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
   __syncthreads();
 
   LongType* coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(i, rank, zShape, coords);
 
     LongType zOffset;
-    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, zStride, coords, zOffset);
 
-    // evaluate spatial coordinates for x
+    // Adjust spatial coordinates for cropping
     for (LongType j = 1; j <= numOfSpatialDims; ++j) {
       const LongType yOffset = (j - 1) * yShapeInfo[3];  // yRank = 2, calculate offset manually
-      coords[j] += y[yOffset];                       // add crop left
+      coords[j] += y[yOffset];  // Add crop offset (cropLeft for each spatial dimension)
     }
 
     LongType xOffset;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, xStride, coords, xOffset);
 
     z[zOffset] = x[xOffset];
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
@@ -380,22 +382,13 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
                                          const LongType numOfSpatialDims) {
   // x - input, y - padding, z - output
 
-  // 4D example
-  // input [bS, H * blockShape[0] - padBottom - padTop, W * blockShape[1] - padLeft - padRight, iC]
-  // output [bS, H * blockShape[0], W * blockShape[1], iC]
-
-  // if (padTop = padBottom = padRight = padLeft = 0) shapes are the same
-  // else:
-  // iH -> [padBottom, oH - padTop]
-  // iW -> [padLeft,   oW - padRight]
-  // zLen > xLen
-
   const auto x = reinterpret_cast<const X*>(vx);
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<X*>(vz);
 
-  __shared__ LongType rank, *sharedMem;  // xRank = zRank, yRank = 2;
-  __shared__ LongType zLen, totalThreads;
+  __shared__ LongType rank, zLen, totalThreads;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
+  __shared__ LongType *sharedMem;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -404,6 +397,11 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
     rank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
 
   __syncthreads();
@@ -411,30 +409,32 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(i, rank, zShape, coords);
 
     LongType zOffset;
-    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, zStride, coords, zOffset);
 
     bool within = true;
 
     for (LongType j = 1; j <= numOfSpatialDims; ++j) {
-      // yRank = 2, calculate offset manually
-      const auto yOffset = (j - 1) * yShapeInfo[3];
-      const auto padLeft = y[yOffset];
-      const auto padRight = y[yOffset + yShapeInfo[4]];
+      // Manually calculate y offsets for padding
+      const LongType yOffset = (j - 1) * yShapeInfo[3];
+      const LongType padLeft = y[yOffset];
+      const LongType padRight = y[yOffset + yShapeInfo[4]];
 
-      within &=
-          (coords[j] >= padLeft && coords[j] < shape::shapeOf(const_cast<LongType*>(zShapeInfo))[j] - padRight);
+      // Check if coordinates are within the valid range
+      within &= (coords[j] >= padLeft && coords[j] < zShape[j] - padRight);
 
       if (!within) break;
 
-      coords[j] -= padLeft;  // get coordinates for x
+      // Adjust coordinates for x
+      coords[j] -= padLeft;
     }
 
     LongType xOffset;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+    COORDS2INDEX(rank, xStride, coords, xOffset);
 
+    // Assign values to z
     if (within)
       z[zOffset] = x[xOffset];
     else

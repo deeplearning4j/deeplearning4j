@@ -68,33 +68,39 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
   const bool areSameOffsets = shape::haveSameShapeAndStrides(shapeInfo(), target.shapeInfo());
 
+  sd::LongType *targetShape = shape::shapeOf(target.shapeInfo());
+  sd::LongType *targetStride = shape::stride(target.shapeInfo());
+  sd::LongType targetRank = target.rankOf();
+
+  sd::LongType *xShape = shape::shapeOf(shapeInfo());
+  sd::LongType *xStride = shape::stride(shapeInfo());
+  sd::LongType thisRank = this->rankOf();
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
     sd::LongType vectorCoord[1] = {0};
-    sd::LongType targetRank = target.rankOf();
-    sd::LongType thisRank = this->rankOf();
+
     bool notVectorScalar = targetRank == 2 && thisRank == 2;
     bool thisNotVectorScalar = !shape::isScalar(this->shapeInfo()) && !shape::isVector(this->shapeInfo());
     bool targetNotVectorScalar = !shape::isScalar(target.shapeInfo()) && !shape::isVector(target.shapeInfo());
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, target.rankOf(), shape::shapeOf(target.shapeInfo()), coords);
+      INDEX2COORDS(i, targetRank,targetShape, coords);
       sd::LongType row = targetNotVectorScalar ? coords[zRank - 2] : 0;
       sd::LongType col = targetNotVectorScalar ? coords[zRank - 1] : 1;
       sd::LongType zOffset, xOffset;
 
       if (target.rankOf() < 2) {
-        COORDS2INDEX(target.rankOf(), shape::stride(target.shapeInfo()), vectorCoord, zOffset);
+        COORDS2INDEX(targetRank, targetStride, vectorCoord, zOffset);
       } else {
-        COORDS2INDEX(target.rankOf(), shape::stride(target.shapeInfo()), coords, zOffset);
+        COORDS2INDEX(targetRank, targetStride, coords, zOffset);
       }
 
       if (!areSameOffsets && rankOf() < 2) {
-        COORDS2INDEX(rankOf(), shape::stride(shapeInfo()), vectorCoord, xOffset);
+        COORDS2INDEX(thisRank, xStride, vectorCoord, xOffset);
       } else if (areSameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(rankOf(), shape::stride(shapeInfo()), coords, xOffset);
+        COORDS2INDEX(thisRank, xStride, coords, xOffset);
       }
 
       bool rowExclusive = this->rankOf() == target.rankOf();
@@ -163,6 +169,13 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
 
   const bool isSameOrders = shape::order(xShapeInfo) == shape::order(xShapeInfo);
 
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType yRank = shape::rank(yShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
+
   auto func = PRAGMA_THREADS_FOR {
     if (isSameOrders) {
       for (sd::LongType i = start; i < stop; i++) {
@@ -171,10 +184,10 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType xOffset;
         LongType yOffset;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-        INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+        COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(i, yRank,yShape, yCoords);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
         sd::math::sd_swap(x[xOffset], y[yOffset]);
       }
@@ -183,8 +196,8 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType coords[SD_MAX_RANK];
         LongType ind;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, ind);
+        INDEX2COORDS(i, xRank, xShape, coords);
+        COORDS2INDEX(xRank, xStride, coords, ind);
 
         sd::math::sd_swap(x[ind], y[ind]);
       }
@@ -195,10 +208,10 @@ static void templatedSwap(void* xBuffer, void* yBuffer, const sd::LongType* xSha
         LongType xInd;
         LongType yInd;
 
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xInd);
-        INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yInd);
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+        COORDS2INDEX(xRank, xStride, xCoords, xInd);
+        INDEX2COORDS(i, yRank, yShape, yCoords);
+        COORDS2INDEX(yRank, yStride, yCoords, yInd);
 
         sd::math::sd_swap(x[xInd], y[yInd]);
       }
@@ -231,66 +244,6 @@ void NDArray::swapUnsafe(NDArray& other) {
 
 ////////////////////////////////////////////////////////////////////////
 
-#if defined(HAVE_VEDA)
-
-void NDArray::syncToDevice() const {}
-
-void NDArray::syncToHost() const { 
-  _buffer->syncToPrimary(getContext()); 
-  }
-
-void NDArray::tickWriteHost() const { _buffer->writePrimary(); }
-void NDArray::tickWriteDevice() const { _buffer->writeSpecial(); }
-void NDArray::tickReadHost() const { _buffer->readPrimary(); }
-void NDArray::tickReadDevice() const { _buffer->readSpecial(); }
-
-void NDArray::tickBothActual() const {
-  _buffer->writePrimary();
-  _buffer->readSpecial();
-}
-bool NDArray::isActualOnHostSide() const { return _buffer->isPrimaryActual(); }
-bool NDArray::isActualOnDeviceSide() const { return _buffer->isSpecialActual(); }
-void NDArray::makeBothBuffersActual() const {
-  if (!isActualOnHostSide()) syncToHost();
-  if (!isActualOnDeviceSide()) syncToDevice();
-}
-
-
-//logic to defer buffer sync between the host and veda devices
-
-void NDArray::synchronize(const char* msg) const {
-  // no-op
-}
-
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::preparePrimaryUse(const std::vector<NDArray*>& writeList,
-                                const std::vector<NDArray*>& readList, bool synchronizeWritables) {
-  for (const auto& a : readList)
-    if (a) a->syncToHost();
-
-  for (const auto& a : writeList) {
-    if (a) {
-      a->getDataBuffer()->allocatePrimary();
-      if (synchronizeWritables) a->syncToHost();
-      // by ticking the write counter we inform that it was taken for the writing purpose by the host operation
-      // furethemore, we do it beforehand, as there could be the situation where device op is used inside
-      // if such case happens then the last usage will be done by the device operation
-      a->tickWriteHost();
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
-                                 const std::vector<NDArray*>& readList) {
-  // as noted above for some edge cases we decided to use counters and sync inside 
-  // preparePrimaryUse
-  // though registerPrimaryUse will be no op, it will be called to be on par with the cuda codes
-}
-
-
-#else
 
 void NDArray::synchronize(const char* msg)  {
   // no-op
@@ -316,7 +269,6 @@ void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
   // no-op
 }
 
-#endif
 
 void NDArray::prepareSpecialUse(const std::vector<NDArray*>& writeList,
                                 const std::vector<NDArray*>& readList, bool synchronizeWritables) {
@@ -486,14 +438,22 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
   const sd::LongType zLen = output.lengthOf();  // xLen <= zLen
   const sd::LongType repSize = repeats.size();
 
+  sd::LongType outputRank = output.rankOf();
+  sd::LongType* outputShape = shape::shapeOf(output.shapeInfo());
+  sd::LongType* outputStride = shape::stride(output.shapeInfo());
+
+  sd::LongType inputRank = input.rankOf();
+  sd::LongType* inputShape = shape::shapeOf(input.shapeInfo());
+  sd::LongType* inputStride = shape::stride(input.shapeInfo());
+
   // loop through input array
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, output.rankOf(), shape::shapeOf(output.shapeInfo()), coords);
+      INDEX2COORDS(i, outputRank, outputShape, coords);
       sd::LongType zOffset;
-      COORDS2INDEX(output.rankOf(), shape::stride(output.shapeInfo()), coords, zOffset);
+      COORDS2INDEX(outputRank, outputStride, coords, zOffset);
 
       temp = coords[axis];
 
@@ -509,7 +469,7 @@ static void repeat_(NDArray& input, NDArray& output, const std::vector<LongType>
         coords[axis] /= repeats[0];
 
       sd::LongType xOffset;
-      COORDS2INDEX(input.rankOf(), shape::stride(input.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(inputRank,inputStride, coords, xOffset);
 
       z[zOffset] = x[xOffset];
 

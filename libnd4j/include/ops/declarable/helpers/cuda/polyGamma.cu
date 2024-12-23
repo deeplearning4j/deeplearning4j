@@ -51,34 +51,28 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = gridDim.x * blockDim.x;
 
-  LongType nCoords[SD_MAX_RANK];
-  LongType xCoords[SD_MAX_RANK];
-  LongType zCoords[SD_MAX_RANK];
-  LongType nOffset;
-  LongType xOffset;
-  LongType zOffset;
+  for (LongType i = tid; i < len; i += totalThreads) {
+    LongType nOffset, xOffset, zOffset;
 
-  for (int i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(nShapeInfo), shape::shapeOf(nShapeInfo), nCoords);
-    COORDS2INDEX(shape::rank(nShapeInfo), shape::stride(nShapeInfo), nCoords, nOffset);
+    // Compute offsets for n
+    nOffset = i * (sameOffsetNX ? 0 : shape::stride(nShapeInfo)[0]);
 
+    // Compute offsets for x
     if (sameOffsetNX) {
       xOffset = nOffset;
     } else {
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+      xOffset = i * shape::stride(xShapeInfo)[0];
     }
 
+    // Compute offsets for z
     if (sameOffsetNZ) {
       zOffset = nOffset;
     } else {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      zOffset = i * shape::stride(zShapeInfo)[0];
     }
 
     const T order = n[nOffset];
-
-    int sign = (static_cast<int>(order) + 1) % 2 ? -1 : 1;
+    const int sign = ((static_cast<int>(order) + 1) % 2 == 0) ? 1 : -1;
 
     if (order != static_cast<int>(order)) {
       z[zOffset] = DataTypeUtils::nanOrZero<T>();
@@ -86,12 +80,14 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
       z[zOffset] = diGammaScalar<T>(x[xOffset]);
     } else {
       T factorial = 1;
-      for (int i = 2; i <= order; ++i) factorial *= i;
-
+      for (int j = 2; j <= order; ++j) {
+        factorial *= j;
+      }
       z[zOffset] = sign * factorial * zetaScalar<T>(order + 1, x[xOffset]);
     }
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>

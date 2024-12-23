@@ -40,16 +40,19 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
   const auto xShapeInfo = indices.shapeInfo();
   const auto zShapeInfo = output.shapeInfo();
 
-  const auto xRank = indices.rankOf();
+  // Cache shape information
+  const auto xRank = shape::rank(xShapeInfo);
+  const auto* xShape = shape::shapeOf(xShapeInfo);
+  const auto* xStride = shape::stride(xShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType xCoords[SD_MAX_RANK];
 
     for (auto i = start; i < stop; i++) {
-      INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), xCoords);
+      INDEX2COORDS(i, xRank, xShape, xCoords);
 
       sd::LongType xOffset;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
       const sd::LongType currentInd = x[xOffset];
 
@@ -63,6 +66,7 @@ sd::LongType checkIndices_(NDArray& indices, NDArray& output, const int axis) {
 
   return numOfBadIndx;
 }
+
 ///////////////////////////////////////////////////////////////////
 sd::LongType checkIndices(sd::LaunchContext* context, NDArray& indices, NDArray& output, const int axis) {
   BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), SD_INDEXING_TYPES);
@@ -153,16 +157,11 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
                                     lock ? 1 : sd::Environment::getInstance().maxThreads());
 
     delete dimsToExcludeInd;
-
   }
 }
 
 void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updates, NDArray& output,
                     const bool calcGrad) {
-  // shapes of indices and output must be the same
-  // shape of indices should be the same as updates shape with last dimension excluded
-  // for example if updates is {a,b,c} then indices should be {a,b}
-
   const sd::LongType indicesLen = indices.lengthOf();
   std::vector<sd::LongType> dim = {-1};
   std::vector<sd::LongType > *dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), dim.size(),dim.data());

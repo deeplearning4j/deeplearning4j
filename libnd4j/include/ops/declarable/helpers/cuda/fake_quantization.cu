@@ -84,9 +84,24 @@ template <typename T>
 static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* inputShape, T* min, T* max,
                                                 int lowIntBound, int upperIntBound, LongType channels, T* output,
                                                 const LongType* outputShape, LongType length) {
-  __shared__ int block;
+  __shared__ LongType inputRank, outputRank;
+  __shared__ const LongType* inputShapePtr;
+  __shared__ const LongType* inputStridePtr;
+  __shared__ const LongType* outputShapePtr;
+  __shared__ const LongType* outputStridePtr;
+  __shared__ LongType blockSize;
+
   if (threadIdx.x == 0) {
-    block = length / channels;  // to loop with last dimension as block
+    inputRank = shape::rank(inputShape);
+    outputRank = shape::rank(outputShape);
+
+    inputShapePtr = shape::shapeOf(inputShape);
+    inputStridePtr = shape::stride(inputShape);
+
+    outputShapePtr = shape::shapeOf(outputShape);
+    outputStridePtr = shape::stride(outputShape);
+
+    blockSize = length / channels;  // Calculate block size based on the last dimension
   }
   __syncthreads();
 
@@ -95,25 +110,38 @@ static SD_KERNEL void fakeQuantWithMinMaxKernel(const T* input, const LongType* 
   LongType inputOffset;
   LongType outputOffset;
 
+  // Loop over channels
   for (auto i = blockIdx.x; i < (int)channels; i += gridDim.x) {
     T scale, nudgedMin, nudgedMax;
+
+    // Nudge values for quantization
     nudge(min[i], max[i], lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
-    // loop over blocks to quantization between nudged min and max
-    for (auto b = threadIdx.x; b < block; b += blockDim.x) {
-      INDEX2COORDS(b * channels + i, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
+
+    // Loop over blocks for quantization
+    for (auto b = threadIdx.x; b < blockSize; b += blockDim.x) {
+      // Compute input coordinates and offset
+      INDEX2COORDS(b * channels + i, inputRank, inputShapePtr, inputCoords);
+      COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
+
       T val = input[inputOffset];
+
+      // Clamp value within nudged min and max
       if (val < nudgedMin) {
         val = nudgedMin;
       } else if (val > nudgedMax) {
         val = nudgedMax;
       }
-      INDEX2COORDS(b * channels + i, shape::rank(outputShape), shape::shapeOf(ouputShape), outputCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-      output[outputOffset] = (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
+
+      // Compute output coordinates and offset
+      INDEX2COORDS(b * channels + i, outputRank, outputShapePtr, outputCoords);
+      COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
+
+      // Quantize and assign the value to output
+      output[outputOffset] = math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin;
     }
   }
 }
+
 
 template <typename T>
 void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits,

@@ -49,6 +49,10 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
   __shared__ LongType rank, channelPosition, posOfNonUnityDim;
   __shared__ LongType len, *sharedMem;
   __shared__ bool xzSameOffsets, xzAreSame;
+  __shared__ const LongType *xShape;
+  __shared__ const LongType *xStride;
+  __shared__ const LongType *zStride;
+  __shared__ const LongType *yStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -60,6 +64,12 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
     channelPosition = isNCHW ? 1 : rank - 1;  // second or last
     xzAreSame = x == z;
 
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+
     shape::isCommonVector(yShapeInfo, posOfNonUnityDim);
   }
   __syncthreads();
@@ -67,13 +77,13 @@ SD_KERNEL static void addBiasCuda(const void* vx, const LongType* xShapeInfo, co
   auto coords = sharedMem + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += blockDim.x * gridDim.x) {
-    INDEX2COORDS(i, rank, shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, rank, xShape, coords);
 
     LongType xOffsets;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffsets);
+    COORDS2INDEX(rank, xStride, coords, xOffsets);
     LongType zOffsets;
-    COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffsets);
-    LongType yOffsets = coords[channelPosition] * shape::stride(yShapeInfo)[posOfNonUnityDim];
+    COORDS2INDEX(rank, zStride, coords, zOffsets);
+    LongType yOffsets = coords[channelPosition] * yStride[posOfNonUnityDim];
 
     if (xzAreSame)
       z[zOffsets] += y[yOffsets];

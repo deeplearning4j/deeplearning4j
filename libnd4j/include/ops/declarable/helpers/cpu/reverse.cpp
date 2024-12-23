@@ -34,6 +34,7 @@ inline void swap(T* arr, sd::LongType from, sd::LongType to) {
   arr[from] = arr[to];
   arr[to] = tmp;
 }
+
 /////////////////////////////////////////////////////////////////////////////////////
 // this legacy op is written by raver119@gmail.com
 
@@ -42,6 +43,14 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
                          void* voutArr, sd::LongType const* outShapeBuffer, int numOfElemsToReverse = 0) {
   auto inArr = reinterpret_cast<T const*>(vinArr);
   auto outArr = reinterpret_cast<T*>(voutArr);
+
+  // Cache shape information
+  const auto inRank = shape::rank(inShapeBuffer);
+  const auto outRank = shape::rank(outShapeBuffer);
+  const auto* inShape = shape::shapeOf(inShapeBuffer);
+  const auto* outShape = shape::shapeOf(outShapeBuffer);
+  const auto* inStride = shape::stride(inShapeBuffer);
+  const auto* outStride = shape::stride(outShapeBuffer);
 
   sd::LongType inLength = shape::length(inShapeBuffer);
   sd::LongType outLength = shape::length(outShapeBuffer);
@@ -57,10 +66,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
   if (inArr == outArr) {
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
-        INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
-        INDEX2COORDS(sLength - e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), outCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), outCoords, outOffset);
+        INDEX2COORDS(e, inRank, inShape, inCoords);
+        COORDS2INDEX(inRank, inStride, inCoords, inOffset);
+        INDEX2COORDS(sLength - e, inRank, inShape, outCoords);
+        COORDS2INDEX(inRank, inStride, outCoords, outOffset);
         swap(const_cast<T*>(inArr), inOffset, outOffset);
       }
     };
@@ -69,10 +78,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     // single step phase here
     auto func = PRAGMA_THREADS_FOR {
       for (sd::LongType e = start; e < stop; e++) {
-        INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
-        COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
-        INDEX2COORDS(sLength - e, shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords);
-        COORDS2INDEX(shape::rank(outShapeBuffer), shape::stride(outShapeBuffer), outCoords, outOffset);
+        INDEX2COORDS(e, inRank, inShape, inCoords);
+        COORDS2INDEX(inRank, inStride, inCoords, inOffset);
+        INDEX2COORDS(sLength - e, outRank, outShape, outCoords);
+        COORDS2INDEX(outRank, outStride, outCoords, outOffset);
         outArr[outOffset] = inArr[inOffset];
       }
     };
@@ -81,10 +90,10 @@ static void reverseArray(sd::LaunchContext* context, void const* vinArr, sd::Lon
     if (inLength != numOfElemsToReverse) {
       auto f2 = PRAGMA_THREADS_FOR {
         for (sd::LongType e = start; e < stop; e++) {
-          INDEX2COORDS(e, shape::rank(inShapeBuffer), shape::shapeOf(inShapeBuffer), inCoords);
-          COORDS2INDEX(shape::rank(inShapeBuffer), shape::stride(inShapeBuffer), inCoords, inOffset);
-          INDEX2COORDS(e, shape::rank(outShapeBuffer), shape::shapeOf(outShapeBuffer), outCoords);
-          COORDS2INDEX(shape::rank(outShapeBuffer), shape::stride(outShapeBuffer), outCoords, outOffset);
+          INDEX2COORDS(e, inRank, inShape, inCoords);
+          COORDS2INDEX(inRank, inStride, inCoords, inOffset);
+          INDEX2COORDS(e, outRank, outShape, outCoords);
+          COORDS2INDEX(outRank, outStride, outCoords, outOffset);
           outArr[outOffset] = inArr[inOffset];
         }
       };
@@ -113,6 +122,7 @@ static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray
     auto inSubArrsSet = input->allTensorsAlongDimension(*dimensions);
     auto outSubArrsSet = output->allTensorsAlongDimension(*dimensions);
     delete dimensions;
+    
     for (int i = 0; i < inSubArrsSet.size(); ++i) {
       sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 

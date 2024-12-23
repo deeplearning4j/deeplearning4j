@@ -343,6 +343,14 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   int _threads = math::sd_max<int>(1, elementsPerThread);
   _threads = math::sd_min<int>(_threads, Environment::getInstance().maxThreads());
 
+  sd::LongType tadRank = shape::rank(tadShapeInfo);
+  sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
+  sd::LongType *tadStride = shape::stride(tadShapeInfo);
+
+  sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(zTadShapeInfo);
+  sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto idx = start; idx < stop; idx++) {
       auto xTadOffsetForBlock = tadOffsets[reinterpret_cast<sd::LongType *>(indexes->buffer())[idx]];
@@ -356,10 +364,10 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
       sd::LongType xOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(idx, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(idx, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(idx, tadRank, tadShape, xCoords);
+      COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
+      INDEX2COORDS(idx, zTadRank,zTadShape, zCoords);
+      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
 
       for (LongType i = 0; i < tadLength; i++) {
         hZ[zOffset + i] = hX[xOffset + i];
@@ -403,6 +411,15 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
   const auto tadLength = shape::length(tadShapeInfo);
   auto numTads = shape::length(hXShapeInfo) / tadLength;
 
+  sd::LongType tadRank = shape::rank(tadShapeInfo);
+  sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
+  sd::LongType *tadStride = shape::stride(tadShapeInfo);
+
+  sd::LongType zTadRank = shape::rank(hZShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(hZShapeInfo);
+  sd::LongType *zTadStride = shape::stride(hZShapeInfo);
+
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       auto hZ = reinterpret_cast<T *>(targets[i]);
@@ -414,10 +431,10 @@ void tearGeneric(void *vx, LongType const *hXShapeInfo, Pointer *targets, LongTy
         sd::LongType xOffset;
         sd::LongType zOffset;
 
-        INDEX2COORDS(j, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), xCoords, xOffset);
-        INDEX2COORDS(j, shape::rank(hZShapeInfo), shape::shapeOf(hZShapeInfo), zCoords);
-        COORDS2INDEX(shape::rank(hZShapeInfo), shape::stride(hZShapeInfo), zCoords, zOffset);
+        INDEX2COORDS(j, tadRank, tadShape, xCoords);
+        COORDS2INDEX(tadRank, zTadStride, xCoords, xOffset);
+        INDEX2COORDS(j, zTadRank, zTadStride, zCoords);
+        COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
 
         hZ[zOffset] = s[xOffset];
       }
@@ -503,6 +520,13 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffl
       const auto tadLength = shape::length(tadOnlyShapeInfoX);
       auto numTads = shape::length(xShapeInfo) / tadLength;
 
+      sd::LongType xRank = shape::rank(xShapeInfo);
+      sd::LongType zRank = shape::rank(zShapeInfo);
+      sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+      sd::LongType *xStride = shape::stride(xShapeInfo);
+      sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+      sd::LongType *zStride = shape::stride(zShapeInfo);
+
       if (shape::rank(xShapeInfo) == 1) {
         auto xLength = shape::length(xShapeInfo);
         for (LongType r = 0; r < xLength; r++) {
@@ -514,14 +538,23 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffl
           sd::LongType xOffset;
           sd::LongType zOffset;
 
-          INDEX2COORDS(r, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-          INDEX2COORDS(swapIdx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+          INDEX2COORDS(r, xRank, xShape, xCoords);
+          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+          INDEX2COORDS(swapIdx,zRank, zShape, zCoords);
+          COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
           math::sd_swap<T>(hX2[xOffset], hZ2[zOffset]);
         }
       } else {
+
+
+        sd::LongType tadShapeInfoRank = shape::rank(tadOnlyShapeInfoX);
+        sd::LongType *tadShapeInfoShape = shape::shapeOf(tadOnlyShapeInfoX);
+        sd::LongType *tadShapeInfoStride = shape::stride(tadOnlyShapeInfoX);
+
+        sd::LongType zTadShapeInfoRank = shape::rank(tadOnlyShapeInfoZ);
+        sd::LongType *zTadShapeInfoShape = shape::shapeOf(tadOnlyShapeInfoZ);
+        sd::LongType *zTadShapeInfoStride = shape::stride(tadOnlyShapeInfoZ);
         for (LongType r = 0; r < numTads; r++) {
           if (shuffleMap[r] < 0) continue;
 
@@ -537,10 +570,10 @@ void shuffleGeneric(OpaqueNDArrayArr hX, OpaqueNDArrayArr hZ, int N, int *shuffl
             sd::LongType xOffset;
             sd::LongType zOffset;
 
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoX), shape::shapeOf(tadOnlyShapeInfoX), xCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfoX), shape::stride(tadOnlyShapeInfoX), xCoords, xOffset);
-            INDEX2COORDS(i, shape::rank(tadOnlyShapeInfoZ), shape::shapeOf(tadOnlyShapeInfoZ), zCoords);
-            COORDS2INDEX(shape::rank(tadOnlyShapeInfoZ), shape::stride(tadOnlyShapeInfoZ), zCoords, zOffset);
+            INDEX2COORDS(i, tadShapeInfoRank, tadShapeInfoShape, xCoords);
+            COORDS2INDEX(tadShapeInfoRank,tadShapeInfoStride, xCoords, xOffset);
+            INDEX2COORDS(i, zTadShapeInfoRank,zTadShapeInfoShape, zCoords);
+            COORDS2INDEX(zTadShapeInfoRank, zTadShapeInfoStride, zCoords, zOffset);
 
             math::sd_swap<T>(rX[xOffset], rZ[zOffset]);
           }

@@ -949,8 +949,11 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
   }
 
 
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
 
   const LongType* xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
+  const LongType* zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
   const LongType len = shape::length(xShapeInfo);
@@ -965,13 +968,13 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
         auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
         for (auto i = span.startX(); i < span.stopX(); i++) {
-          INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-          INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+          INDEX2COORDS(i, xRank, xShape, xCoords);
+          INDEX2COORDS(i,zRank, zShape, zCoords);
 
           sd::LongType xOffset;
           sd::LongType zOffset;
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+          COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xShapeInfo);
@@ -1001,13 +1004,13 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
         auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
         for (auto i = span.startX(); i < span.stopX(); i++) {
-          INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-          INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+          INDEX2COORDS(i, xRank, xShape, xCoords);
+          INDEX2COORDS(i, zRank, zShape, zCoords);
 
           LongType xOffset;
           LongType zOffset;
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+          COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
 #if defined(PRINT_INDICES)
           shape::printShapeInfo(xShapeInfo);
@@ -1085,6 +1088,9 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
   LongType castYTadShapeInfo[SD_MAX_RANK];
   const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
 
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
   Z extraParams[3];
   for (auto i = start; i < stop; i++) {
     extraParams[0] = param0;
@@ -1097,18 +1103,24 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
 
     // Calculate z coordinates for this iteration
     LongType zCoords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    INDEX2COORDS(i,zRank, zShape, zCoords);
     LongType zOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
+    sd::LongType xTadRank = shape::rank(xTadShapeInfo);
+    sd::LongType yTadRank = shape::rank(yTadShapeInfo);
+    sd::LongType *xTadShape = shape::shapeOf(xTadShapeInfo);
+    sd::LongType *yTadShape = shape::shapeOf(yTadShapeInfo);
+    sd::LongType *xTadStride = shape::stride(xTadShapeInfo);
+    sd::LongType *yTadStride = shape::stride(yTadShapeInfo);
     for (LongType j = 0; j < tadLen; ++j) {
       LongType coords[SD_MAX_RANK];
       LongType  yCoords[SD_MAX_RANK];
-      INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-      INDEX2COORDS(j, shape::rank(yTadShapeInfo), shape::shapeOf(yTadShapeInfo), yCoords);
+      INDEX2COORDS(j, xTadRank, xTadShape, coords);
+      INDEX2COORDS(j, yTadRank,yTadShape, yCoords);
       LongType xTadOffset, yTadOffset;
-      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-      COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), yCoords, yTadOffset);
+      COORDS2INDEX(xTadRank, xTadStride, coords, xTadOffset);
+      COORDS2INDEX(yTadRank,yTadStride, yCoords, yTadOffset);
 
 #if defined(PRINT_INDICES)
       shape::printShapeInfo(xTadShapeInfo);
@@ -1157,6 +1169,14 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
   const bool canCastYTad = DataTypeUtils::castShapeInfo<LongType>(yTadShapeInfo, castYTadShapeInfo);
 
   Z extraParams[3];
+  sd::LongType *xTadShape = shape::shapeOf(xTadShapeInfo);
+  sd::LongType *yTadShape = shape::shapeOf(yTadShapeInfo);
+  sd::LongType xTadRank = shape::rank(xTadShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
+  sd::LongType yTadRank = shape::rank(yTadShapeInfo);
+
   for (LongType ix = 0; ix < numXTads; ix++) {
     for (LongType iy = 0; iy < numYTads; iy++) {
       extraParams[0] = param0;
@@ -1169,10 +1189,10 @@ void Reduction3Loops<X, Z>::loopReduce3All(const X* x, const LongType* xShapeInf
 
       for (LongType j = 0; j < tadLen; ++j) {
         LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
+        INDEX2COORDS(j, xTadRank, xTadShape, coords);
         LongType xTadOffset, yTadOffset;
-        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), coords, xTadOffset);
-        COORDS2INDEX(shape::rank(yTadShapeInfo), shape::stride(yTadShapeInfo), coords, yTadOffset);
+        COORDS2INDEX(xTadRank, xTadStride, coords, xTadOffset);
+        COORDS2INDEX(yTadRank, yTadStride, coords, yTadOffset);
 #if defined(PRINT_INDICES)
         shape::printShapeInfo(xTadShapeInfo);
         shape::printShapeInfo(yTadShapeInfo);

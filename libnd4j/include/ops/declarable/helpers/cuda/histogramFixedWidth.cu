@@ -37,8 +37,14 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
   const auto x = reinterpret_cast<const X*>(vx);
   auto z = reinterpret_cast<Z*>(vz);
 
+  // Shared memory caching
   __shared__ LongType xLen, zLen, totalThreads, nbins;
   __shared__ X binWidth, secondEdge, lastButOneEdge;
+  __shared__ LongType xRank, zRank;
+  __shared__ const LongType* xShapePtr;
+  __shared__ const LongType* xStridePtr;
+  __shared__ const LongType* zShapePtr;
+  __shared__ const LongType* zStridePtr;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
@@ -48,6 +54,15 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
     binWidth = (rightEdge - leftEdge) / nbins;
     secondEdge = leftEdge + binWidth;
     lastButOneEdge = rightEdge - binWidth;
+
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    xShapePtr = shape::shapeOf(xShapeInfo);
+    xStridePtr = shape::stride(xShapeInfo);
+
+    zShapePtr = shape::shapeOf(zShapeInfo);
+    zStridePtr = shape::stride(zShapeInfo);
   }
 
   __syncthreads();
@@ -57,13 +72,15 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
   for (LongType i = tid; i < xLen; i += totalThreads) {
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+
+    // Use cached rank and shape to compute coordinates and offset for x
+    INDEX2COORDS(i, xRank, xShapePtr, xCoords);
+    COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
     const X value = x[xOffset];
 
+    // Determine the histogram bin index
     LongType zIndex;
-
     if (value < secondEdge)
       zIndex = 0;
     else if (value >= lastButOneEdge)
@@ -73,12 +90,16 @@ SD_KERNEL static void histogramFixedWidthCuda(const void* vx, const LongType* xS
 
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
-    INDEX2COORDS(zIndex, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
 
+    // Use cached rank and shape to compute coordinates and offset for z
+    INDEX2COORDS(zIndex, zRank, zShapePtr, zCoords);
+    COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
+
+    // Atomic addition to the histogram bin
     math::atomics::sd_atomicAdd<Z>(&z[zOffset], 1);
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>

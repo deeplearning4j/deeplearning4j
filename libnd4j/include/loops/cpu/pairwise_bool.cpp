@@ -32,36 +32,36 @@ namespace pairwise_transforms {
 
 template <typename X, typename Y>
 void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, sd::LongType xEws, const void *y,
-                                      sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
-                                      sd::LongType start, sd::LongType stop) {
- DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_BOOL_OPS);
+                                       sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
+                                       sd::LongType start, sd::LongType stop) {
+  DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_BOOL_OPS);
 };
 
 template <typename X, typename Z>
 template <typename OpType>
 void PairWiseBoolTransform<X, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
-                                      sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
-                                      sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto y = reinterpret_cast<const X *>(vy);
- auto z = reinterpret_cast<Z *>(vz);
- auto extraParams = reinterpret_cast<X *>(vextraParams);
+                                       sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
+                                       sd::LongType stop) {
+  auto x = reinterpret_cast<const X *>(vx);
+  auto y = reinterpret_cast<const X *>(vy);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
- if (xEws == 1 && yEws == 1 && zEws == 1) {
-   PRAGMA_OMP_SIMD
-   for (sd::LongType i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
- } else {
-   PRAGMA_OMP_SIMD
-   for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
- }
+  if (xEws == 1 && yEws == 1 && zEws == 1) {
+    PRAGMA_OMP_SIMD
+    for (sd::LongType i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
+  } else {
+    PRAGMA_OMP_SIMD
+    for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
+  }
 }
 
 template <typename X, typename Y>
 void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
-                                      const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                                      void *extraParams, sd::LongType start, sd::LongType stop) {
- DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, start, stop),
-                      PAIRWISE_BOOL_OPS);
+                                       const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
+                                       void *extraParams, sd::LongType start, sd::LongType stop) {
+  DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, start, stop),
+                       PAIRWISE_BOOL_OPS);
 };
 
 template <typename X, typename Z>
@@ -74,6 +74,17 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
+  // Cache shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType yRank = shape::rank(yShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
+
   sd::LongType n = shape::length(xShapeInfo);
 
   if (shape::isScalar(yShapeInfo)) {
@@ -81,19 +92,19 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(zShapeInfo), coords);
+        INDEX2COORDS(i, xRank, zShape, coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+        COORDS2INDEX(xRank, xStride, coords, offset);
         z[offset] = OpType::op(x[offset], y[0], extraParams);
       };
     } else {
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType xOffset, zOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(xRank, xStride, coords, xOffset);
+        COORDS2INDEX(zRank, zStride, coords, zOffset);
         z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
       };
     }
@@ -103,6 +114,7 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
   const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
   const bool isSameLength = shape::length(xShapeInfo) == shape::length(yShapeInfo);
+
   if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
     exec<OpType>(x, 1, y, 1, z, 1, extraParams, n, start, stop);
   } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
@@ -114,50 +126,50 @@ void PairWiseBoolTransform<X, Z>::exec(const void *vx, const sd::LongType *xShap
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType offset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+        COORDS2INDEX(xRank, xStride, coords, offset);
         z[offset] = OpType::op(x[offset], y[offset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType offset, zOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(xRank, xStride, coords, offset);
+        COORDS2INDEX(zRank, zStride, coords, zOffset);
         z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+        INDEX2COORDS(i, xRank, xShape, coords);
         sd::LongType offset, yOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(xRank, xStride, coords, offset);
+        COORDS2INDEX(yRank, yStride, coords, yOffset);
         z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
       };
     } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), coords);
+        INDEX2COORDS(i, yRank, yShape, coords);
         sd::LongType xOffset, offset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, offset);
+        COORDS2INDEX(xRank, xStride, coords, xOffset);
+        COORDS2INDEX(yRank, yStride, coords, offset);
         z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
       };
     } else {
       PRAGMA_OMP_SIMD
       for (sd::LongType i = start; i < stop; i++) {
         sd::LongType coords[SD_MAX_RANK];
-        INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+        INDEX2COORDS(i, zRank, zShape, coords);
         sd::LongType xOffset, yOffset, zOffset;
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-        COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), coords, yOffset);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(xRank, xStride, coords, xOffset);
+        COORDS2INDEX(yRank, yStride, coords, yOffset);
+        COORDS2INDEX(zRank, zStride, coords, zOffset);
         z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       };
     }

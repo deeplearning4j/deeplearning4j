@@ -38,42 +38,53 @@ void matrixSetDiag_(NDArray& input, NDArray& diagonal, NDArray& output, const bo
   const T* y = diagonal.bufferAsT<T>();
   T* z = output.bufferAsT<T>();
 
+  // Cache all shape information upfront
   const sd::LongType* xShapeInfo = input.shapeInfo();
   const sd::LongType* yShapeInfo = diagonal.shapeInfo();
   const sd::LongType* zShapeInfo = output.shapeInfo();
 
-  const bool areSameOffsets =
-      shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);  // shapes are definitely the same, but strides might not
-
+  // Cache shape-related values
   const int xRank = input.rankOf();
   const auto xLen = input.lengthOf();
 
+  // Cache shape and stride pointers
+  const sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+  const sd::LongType* xStride = shape::stride(xShapeInfo);
+  const sd::LongType* yStride = shape::stride(yShapeInfo);
+  const sd::LongType* zStride = shape::stride(zShapeInfo);
+
+  // Check if input and output have same offsets
+  const bool areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+
   auto func = PRAGMA_THREADS_FOR {
+    // Pre-allocate coords array outside the loop
     sd::LongType coords[SD_MAX_RANK];
 
     for (sd::LongType i = 0; i < xLen; ++i) {
-      INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
+      // Use cached shape data for coordinate transforms
+      INDEX2COORDS(i, xRank, xShape, coords);
 
       sd::LongType xOffset;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
 
       sd::LongType zOffset;
       if (areSameOffsets) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(xRank, shape::stride(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(xRank, zStride, coords, zOffset);
       }
 
-      // condition to be on diagonal of innermost matrix
+      // Check diagonal condition using cached rank
       if (coords[xRank - 2] == coords[xRank - 1]) {
         sd::LongType yOffset;
-        COORDS2INDEX(xRank - 1, shape::stride(yShapeInfo), coords, yOffset);
+        COORDS2INDEX(xRank - 1, yStride, coords, yOffset);
         z[zOffset] = y[yOffset];
       } else {
         z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
       }
     }
   };
+
   samediff::Threads::parallel_for(func, 0, xLen);
 }
 //////////////////////////////////////////////////////////////////////////

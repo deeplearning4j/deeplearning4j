@@ -18,11 +18,21 @@ SD_KERNEL static void assignKernel(const void* vx, const LongType* xShapeInfo, v
 
   __shared__ LongType len, totalThreads;
   __shared__ int rank;
+  __shared__ const LongType *xShape;
+  __shared__ const LongType *zShape;
+  __shared__ const LongType *xStride;
+  __shared__ const LongType *zStride;
 
   if (threadIdx.x == 0) {
     len = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
     rank = shape::rank(zShapeInfo);
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -31,17 +41,16 @@ SD_KERNEL static void assignKernel(const void* vx, const LongType* xShapeInfo, v
   LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
 
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), zCoords);
-    INDEX2COORDS(i, rank, shape::shapeOf(xShapeInfo), xCoords);
+    INDEX2COORDS(i, rank, zShape, zCoords);
+    INDEX2COORDS(i, rank, xShape, xCoords);
 
     LongType xIndex, zIndex;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), xCoords, xIndex);
-    COORDS2INDEX(rank, shape::stride(zShapeInfo), zCoords, zIndex);
+    COORDS2INDEX(rank, xStride, xCoords, xIndex);
+    COORDS2INDEX(rank, zStride, zCoords, zIndex);
 
     z[zIndex] = static_cast<Z>(x[xIndex]);
   }
 }
-
 template <typename X, typename Z>
 SD_HOST static void assignCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                        const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,

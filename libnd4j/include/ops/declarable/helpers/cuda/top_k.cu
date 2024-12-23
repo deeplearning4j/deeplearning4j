@@ -33,62 +33,137 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_KERNEL static void inTopKCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
-                                 const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
-                                 const LongType* xTadShapeInfo, const LongType* xTadOffsets,
-                                 const LongType k) {
+__global__ static void inTopKCuda(const void* vx, const LongType* xShapeInfo, const void* vy,
+                                  const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo,
+                                  const LongType* xTadShapeInfo, const LongType* xTadOffsets,
+                                  const LongType k) {
   const auto y = reinterpret_cast<const Y*>(vy);
   auto z = reinterpret_cast<bool*>(vz);
 
-  __shared__ LongType sharedMem[SD_CUDA_BLOCK_SIZE];
-  __shared__ X elemToCompare;
-  __shared__ const X* xTad;
-  __shared__ LongType idx, xTadLen;
+  // Shared memory for caching shape information
+  __shared__ LongType shared_xRank;
+  __shared__ const LongType* shared_xShape;
+  __shared__ const LongType* shared_xStride;
 
+  __shared__ LongType shared_yRank;
+  __shared__ const LongType* shared_yShape;
+  __shared__ const LongType* shared_yStride;
+
+  __shared__ LongType shared_zRank;
+  __shared__ const LongType* shared_zShape;
+  __shared__ const LongType* shared_zStride;
+
+  __shared__ LongType shared_xTadRank;
+  __shared__ const LongType* shared_xTadShape;
+  __shared__ const LongType* shared_xTadStride;
+
+  __shared__ X elemToCompare;
+  __shared__ LongType xTadLen;
+  __shared__ LongType idx;
+
+  // Initialize shared memory
   if (threadIdx.x == 0) {
+    // Cache ranks
+    shared_xRank = shape::rank(xShapeInfo);
+    shared_yRank = shape::rank(yShapeInfo);
+    shared_zRank = shape::rank(zShapeInfo);
+    shared_xTadRank = shape::rank(xTadShapeInfo);
+
+    // Cache shapes
+    shared_xShape = shape::shapeOf(xShapeInfo);
+    shared_yShape = shape::shapeOf(yShapeInfo);
+    shared_zShape = shape::shapeOf(zShapeInfo);
+    shared_xTadShape = shape::shapeOf(xTadShapeInfo);
+
+    // Cache strides
+    shared_xStride = shape::stride(xShapeInfo);
+    shared_yStride = shape::stride(yShapeInfo);
+    shared_zStride = shape::stride(zShapeInfo);
+    shared_xTadStride = shape::stride(xTadShapeInfo);
+
+    // Cache xTad length
     xTadLen = shape::length(xTadShapeInfo);
 
-    xTad = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x];
+    // Initialize xTad pointer
+    // Assuming xTadOffsets is used to compute the starting point for each block
+    // Adjusted to point to the correct location in the xTad
+    // If xTadOffsets[blockIdx.x] is already in terms of elements, this is correct
+    // Otherwise, multiply by the size of X if xTadOffsets are byte offsets
+    // Here, we assume they are element offsets
+    // If not, use: xTad = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x] / sizeof(X);
+    // Adjust accordingly based on how xTadOffsets are defined
+    const X* xTadPtr = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x];
+
+    // Compute y coordinates from blockIdx.x
     LongType yCoords[SD_MAX_RANK];
     LongType yOffset;
-    INDEX2COORDS(blockIdx.x, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-    COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+    INDEX2COORDS(blockIdx.x, shared_yRank, shared_yShape, yCoords);
+    COORDS2INDEX(shared_yRank, shared_yStride, yCoords, yOffset);
+
+    // Retrieve the index from y at the computed offset
     idx = y[yOffset];
+
+    // Compute coordinates and offset for xTad using idx
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(idx, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
-    elemToCompare = xTad[xOffset];
+    INDEX2COORDS(idx, shared_xTadRank, shared_xTadShape, xCoords);
+    COORDS2INDEX(shared_xTadRank, shared_xTadStride, xCoords, xOffset);
+
+    // Store the element to compare
+    elemToCompare = xTadPtr[xOffset];
   }
 
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
+  // Initialize shared memory for reduction
+  extern __shared__ LongType sharedMem[];
   sharedMem[threadIdx.x] = 0;
+  __syncthreads();
+
+  // Pointer to xTad data
+  const X* xTad = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x];
+
+  // Iterate over xTad elements using cached shape info
   for (LongType i = threadIdx.x; i < xTadLen; i += blockDim.x) {
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(i, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
-    if (elemToCompare < xTad[xOffset]) ++sharedMem[threadIdx.x];
+
+    // Use cached rank, shape, and stride
+    INDEX2COORDS(i, shared_xTadRank, shared_xTadShape, xCoords);
+    COORDS2INDEX(shared_xTadRank, shared_xTadStride, xCoords, xOffset);
+
+    // Compare and update shared memory
+    if (elemToCompare < xTad[xOffset]) {
+      sharedMem[threadIdx.x]++;
+    }
   }
 
+  // Ensure all threads have completed the counting
   __syncthreads();
 
-  // aggregate sum
+  // Perform parallel reduction to sum counts
   for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
-    if (threadIdx.x < activeThreads) sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
+    if (threadIdx.x < activeThreads) {
+      sharedMem[threadIdx.x] += sharedMem[threadIdx.x + activeThreads];
+    }
     __syncthreads();
   }
 
+  // Write the result to z using cached shape info
   if (threadIdx.x == 0) {
     LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
-    INDEX2COORDS(blockIdx.x, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
-    z[zOffset] = *sharedMem < k;
+
+    // Compute z coordinates from blockIdx.x
+    INDEX2COORDS(blockIdx.x, shared_zRank, shared_zShape, zCoords);
+    COORDS2INDEX(shared_zRank, shared_zStride, zCoords, zOffset);
+
+    // Compare the aggregated count with k and store the result
+    z[zOffset] = (sharedMem[0] < k);
   }
 }
-///////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void inTopKCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
                                const cudaStream_t* stream, const void* vx, const LongType* xShapeInfo,
@@ -131,6 +206,29 @@ static SD_KERNEL void topValuesMover(void const* vx, LongType const* xTadShapeIn
                                      void const* vi, LongType const* iTadShapeInfo, LongType const* iTadOffsets,
                                      void* vz, LongType const* zTadShapeInfo, LongType const* zTadOffsets,
                                      LongType tadLength, int numTads, int k) {
+  // Cache shape information in shared memory
+  __shared__ int xRank, iRank, zRank;
+  __shared__ LongType *xShape, *iShape, *zShape;
+  __shared__ LongType *xStride, *iStride, *zStride;
+
+  if (threadIdx.x == 0) {
+    // Cache ranks
+    xRank = shape::rank(xTadShapeInfo);
+    iRank = shape::rank(iTadShapeInfo);
+    zRank = shape::rank(zTadShapeInfo);
+
+    // Cache shapes
+    xShape = shape::shapeOf(xTadShapeInfo);
+    iShape = shape::shapeOf(iTadShapeInfo);
+    zShape = shape::shapeOf(zTadShapeInfo);
+
+    // Cache strides
+    xStride = shape::stride(xTadShapeInfo);
+    iStride = shape::stride(iTadShapeInfo);
+    zStride = shape::stride(zTadShapeInfo);
+  }
+  __syncthreads();
+
   for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
     auto x = reinterpret_cast<X const*>(vx) + xTadOffsets[t];
     auto i = reinterpret_cast<Y const*>(vi) + iTadOffsets[t];
@@ -144,15 +242,15 @@ static SD_KERNEL void topValuesMover(void const* vx, LongType const* xTadShapeIn
     LongType xOffset;
 
     for (int e = threadIdx.x; e < k; e += blockDim.x) {
-      INDEX2COORDS(e, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), iCoords);
-      COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), iCoords, iOffset);
+      INDEX2COORDS(e, iRank, iShape, iCoords);
+      COORDS2INDEX(iRank, iStride, iCoords, iOffset);
       auto idx = i[iOffset];
 
-      INDEX2COORDS(e, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-      INDEX2COORDS(idx, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
+      INDEX2COORDS(idx, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
       z[zOffset] = x[xOffset];
     }
@@ -170,8 +268,30 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
   Y* tempIndices =
       reinterpret_cast<Y*>(reinterpret_cast<X*>(_shmem) + blockDim.x * scanWidth) + threadIdx.x * scanWidth;
 
+  // Cache shape information in shared memory
+  __shared__ int xRank, iRank, zRank;
+  __shared__ LongType *xShape, *iShape, *zShape;
+  __shared__ LongType *xStride, *iStride, *zStride;
   __shared__ X localMaximum;
-  if (threadIdx.x == 0) localMaximum = -DataTypeUtils::max<X>();
+
+  if (threadIdx.x == 0) {
+    localMaximum = -DataTypeUtils::max<X>();
+
+    // Cache ranks
+    xRank = shape::rank(xTadShapeInfo);
+    iRank = shape::rank(iTadShapeInfo);
+    zRank = shape::rank(zTadShapeInfo);
+
+    // Cache shapes
+    xShape = shape::shapeOf(xTadShapeInfo);
+    iShape = shape::shapeOf(iTadShapeInfo);
+    zShape = shape::shapeOf(zTadShapeInfo);
+
+    // Cache strides
+    xStride = shape::stride(xTadShapeInfo);
+    iStride = shape::stride(iTadShapeInfo);
+    zStride = shape::stride(zTadShapeInfo);
+  }
   __syncthreads();
 
   for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
@@ -191,8 +311,8 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
       for (int e = threadIdx.x; e < tadLength; e++) {
         LongType xCoords[SD_MAX_RANK];
         LongType xOffset;
-        INDEX2COORDS(e, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xOffset);
+        INDEX2COORDS(e, xRank, xShape, xCoords);
+        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
         auto value = x[xOffset];
 
         // we'll compare this value to current stored ones
@@ -205,8 +325,7 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
       }
       __syncthreads();
 
-      // at this point we have local part ready for merge and define global maximum for this iteration, and local
-      // maximum for next iteration
+      // at this point we have local part ready for merge and define global maximum for this iteration
       for (LongType activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
         if (threadIdx.x < activeThreads) {
           if (tempValues[0] < tempValues[0 + activeThreads * scanWidth]) {
@@ -223,13 +342,13 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
         localMaximum = tempValues[scanWidth - 1];
         LongType zCoords[SD_MAX_RANK];
         LongType zOffset;
-        INDEX2COORDS(p, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
+        INDEX2COORDS(p, zRank, zShape, zCoords);
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
         z[zOffset] = tempValues[scanWidth - 1];
         LongType iCoords[SD_MAX_RANK];
         LongType iOffset;
-        INDEX2COORDS(p, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), iCoords);
-        COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), iCoords, iOffset);
+        INDEX2COORDS(p, iRank, iShape, iCoords);
+        COORDS2INDEX(iRank, iStride, iCoords, iOffset);
         i[iOffset] = tempIndices[scanWidth - 1];
       }
       __syncthreads();
@@ -243,14 +362,13 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
           for (int tid = threadIdx.x; tid < k; tid += blockDim.x) {
             auto top = 2 * tid + 1;
             if (top < k) {
-              LongType t0Coords[SD_MAX_RANK];
-              LongType t0Offset;
-              INDEX2COORDS(top - 1, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), t0Coords);
-              COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), t0Coords, t0Offset);
-              LongType t1Coords[SD_MAX_RANK];
-              LongType t1Offset;
-              INDEX2COORDS(top, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), t1Coords);
-              COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), t1Coords, t1Offset);
+              LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
+              LongType t0Offset, t1Offset;
+
+              INDEX2COORDS(top - 1, iRank, iShape, t0Coords);
+              COORDS2INDEX(iRank, iStride, t0Coords, t0Offset);
+              INDEX2COORDS(top, iRank, iShape, t1Coords);
+              COORDS2INDEX(iRank, iStride, t1Coords, t1Offset);
 
               if (i[t0Offset] > i[t1Offset]) {
                 // swap indices first
@@ -259,14 +377,13 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
                 i[t1Offset] = di0;
 
                 // swap values next
-                LongType zT0Coords[SD_MAX_RANK];
-                LongType zT0Offset;
-                INDEX2COORDS(top - 1, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zT0Coords);
-                COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zT0Coords, zT0Offset);
-                LongType zT1Coords[SD_MAX_RANK];
-                LongType zT1Offset;
-                INDEX2COORDS(top, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zT1Coords);
-                COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zT1Coords, zT1Offset);
+                LongType zT0Coords[SD_MAX_RANK], zT1Coords[SD_MAX_RANK];
+                LongType zT0Offset, zT1Offset;
+
+                INDEX2COORDS(top - 1, zRank, zShape, zT0Coords);
+                COORDS2INDEX(zRank, zStride, zT0Coords, zT0Offset);
+                INDEX2COORDS(top, zRank, zShape, zT1Coords);
+                COORDS2INDEX(zRank, zStride, zT1Coords, zT1Offset);
 
                 X dz0 = z[zT0Offset];
                 z[zT0Offset] = z[zT1Offset];
@@ -278,14 +395,13 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
           for (int tid = threadIdx.x; tid < k; tid += blockDim.x) {
             auto top = 2 * tid + 2;
             if (top < k) {
-              LongType t0Coords[SD_MAX_RANK];
-              LongType t0Offset;
-              INDEX2COORDS(top - 1, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), t0Coords);
-              COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), t0Coords, t0Offset);
-              LongType t1Coords[SD_MAX_RANK];
-              LongType t1Offset;
-              INDEX2COORDS(top, shape::rank(iTadShapeInfo), shape::shapeOf(iTadShapeInfo), t1Coords);
-              COORDS2INDEX(shape::rank(iTadShapeInfo), shape::stride(iTadShapeInfo), t1Coords, t1Offset);
+              LongType t0Coords[SD_MAX_RANK], t1Coords[SD_MAX_RANK];
+              LongType t0Offset, t1Offset;
+
+              INDEX2COORDS(top - 1, iRank, iShape, t0Coords);
+              COORDS2INDEX(iRank, iStride, t0Coords, t0Offset);
+              INDEX2COORDS(top, iRank, iShape, t1Coords);
+              COORDS2INDEX(iRank, iStride, t1Coords, t1Offset);
 
               if (i[t0Offset] > i[t1Offset]) {
                 // swap indices first
@@ -294,14 +410,13 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
                 i[t1Offset] = di0;
 
                 // swap values next
-                LongType zT0Coords[SD_MAX_RANK];
-                LongType zT0Offset;
-                INDEX2COORDS(top - 1, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zT0Coords);
-                COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zT0Coords, zT0Offset);
-                LongType zT1Coords[SD_MAX_RANK];
-                LongType zT1Offset;
-                INDEX2COORDS(top, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zT1Coords);
-                COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zT1Coords, zT1Offset);
+                LongType zT0Coords[SD_MAX_RANK], zT1Coords[SD_MAX_RANK];
+                LongType zT0Offset, zT1Offset;
+
+                INDEX2COORDS(top - 1, zRank, zShape, zT0Coords);
+                COORDS2INDEX(zRank, zStride, zT0Coords, zT0Offset);
+                INDEX2COORDS(top, zRank, zShape, zT1Coords);
+                COORDS2INDEX(zRank, zStride, zT1Coords, zT1Offset);
 
                 X dz0 = z[zT0Offset];
                 z[zT0Offset] = z[zT1Offset];
@@ -315,7 +430,6 @@ static SD_KERNEL void indicesAlongDimension(void const* vx, LongType const* xTad
     }
   }
 }
-
 template <typename X, typename Y>
 static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* values, NDArray* indices,
                            const LongType k, bool needSort) {

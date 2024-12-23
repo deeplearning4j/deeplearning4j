@@ -29,35 +29,94 @@ namespace ops {
 namespace helpers {
 
 template <typename I, typename B>
-static SD_KERNEL void sequenceMaskKernel(const void* inputBuf, const LongType* inputShape, void* outputBuf,
-                                         const LongType* outputShape, int maxIndex) {
-  __shared__ const I* input;
-  __shared__ B* output;
-  __shared__ LongType inputLen, outputLen;
+__global__ static void sequenceMaskKernel(const void* inputBuf, const LongType* inputShape, void* pVz,
+                                          const LongType* zTadShapeInfo, const LongType axis, int maxIndex) {
+  // Reinterpret input and output buffers
+  const I* input = reinterpret_cast<const I*>(inputBuf);
+  B* output = reinterpret_cast<B*>(pVz);
+
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  // Pointers within shared memory
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_inputLen;
+  __shared__ LongType shared_outputLen;
+  __shared__ int shared_inputRank;
+  __shared__ int shared_zTadRank;
+  __shared__ LongType shared_zDim;
+  __shared__ LongType shared_totalThreads;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_inputShape;
+  __shared__ const LongType* shared_inputStride;
+  __shared__ const LongType* shared_zTadShape;
+  __shared__ const LongType* shared_zTadStride;
+
   if (threadIdx.x == 0) {
-    input = reinterpret_cast<const I*>(inputBuf);
-    output = reinterpret_cast<B*>(outputBuf);
-    inputLen = shape::length(inputShape);
-    outputLen = shape::length(outputShape);
+    // Cache input tensor shape and stride
+    shared_inputRank = shape::rank(inputShape);
+    shared_inputShape = shape::shapeOf(inputShape);
+    shared_inputStride = shape::stride(inputShape);
+
+    // Cache zTad tensor shape and stride
+    shared_zTadRank = shape::rank(zTadShapeInfo);
+    shared_zTadShape = shape::shapeOf(zTadShapeInfo);
+    shared_zTadStride = shape::stride(zTadShapeInfo);
+    shared_zDim = shared_zTadShape[axis]; // Assuming zDim is constant across splits
+
+    // Cache lengths
+    shared_inputLen = shape::length(inputShape);
+    shared_outputLen = shape::length(zTadShapeInfo); // Assuming output tensors have the same shape
+
+    // Calculate total threads across all blocks
+    shared_totalThreads = gridDim.x * blockDim.x;
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  LongType inputCoords[SD_MAX_RANK];
-  LongType outputCoords[SD_MAX_RANK];
-  LongType inputOffset;
-  LongType outputOffset;
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
-    for (auto k = threadIdx.x; k < inputLen; k += blockDim.x) {
-      INDEX2COORDS(k, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
-      if (i < input[inputOffset]) {
-        INDEX2COORDS(k * maxIndex + i, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-        COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-        output[outputOffset] = B(true);
+  // Allocate space in shared memory for coordinates
+  LongType* coords = sharedMem + threadIdx.x * shared_inputRank;
+
+  // Loop over each index along the axis to apply the mask
+  for (LongType i = tid; i < maxIndex; i += shared_totalThreads) {
+    // Inner loop over all elements in the input tensor
+    for (LongType k = threadIdx.x; k < shared_inputLen; k += blockDim.x) {
+      // Convert linear index 'k' to multi-dimensional coordinates
+      INDEX2COORDS(k, shared_inputRank, shared_inputShape, coords);
+
+      LongType inputOffset;
+      // Convert coordinates to linear index for input tensor
+      COORDS2INDEX(shared_inputRank, shared_inputStride, coords, inputOffset);
+
+      // Determine the split index along the specified axis
+      LongType splitIndex = coords[axis] / shared_zDim;
+
+      // Retrieve the pointer to the target output tensor based on splitIndex
+      B* z = reinterpret_cast<B*>(reinterpret_cast<void**>(pVz)[splitIndex]);
+
+      // Update the coordinate along the split axis
+      coords[axis] %= shared_zDim;
+
+      LongType zOffset;
+      // Convert updated coordinates to linear index for z tensor
+      COORDS2INDEX(shared_zTadRank, shared_zTadStride, coords, zOffset);
+
+      // Apply the mask condition
+      if (i < static_cast<LongType>(input[inputOffset])) {
+        z[zOffset] = static_cast<B>(true);
+      } else {
+        z[zOffset] = static_cast<B>(false); // Optionally handle the false case
       }
     }
+  }
 }
+
 template <typename I, typename B>
 static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
   dim3 launchDims = getSequenceMaskLaunchDims(maxIndex,*input);

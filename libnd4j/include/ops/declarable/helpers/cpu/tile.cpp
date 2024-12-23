@@ -44,11 +44,17 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   LongType gradOOffset;
   LongType gradIOffset;
 
+  sd::LongType gradORank = gradO.rankOf();
+  sd::LongType *gradOShape = shape::shapeOf(gradO.shapeInfo());
+  sd::LongType *gradOStride = shape::stride(gradO.shapeInfo());
+  sd::LongType gradIRank = gradI.rankOf();
+  sd::LongType *gradIShape = shape::shapeOf(gradI.shapeInfo());
+  sd::LongType *gradIStride = shape::stride(gradI.shapeInfo());
   for (sd::LongType i = 0; i < gradOLen; ++i) {
-    INDEX2COORDS(i, shape::rank(gradO.shapeInfo()), shape::shapeOf(gradO.shapeInfo()), gradOCoords);
-    COORDS2INDEX(shape::rank(gradO.shapeInfo()), shape::stride(gradO.shapeInfo()), gradOCoords, gradOOffset);
-    INDEX2COORDS(i, shape::rank(gradI.shapeInfo()), shape::shapeOf(gradI.shapeInfo()), gradICoords);
-    COORDS2INDEX(shape::rank(gradI.shapeInfo()), shape::stride(gradI.shapeInfo()), gradICoords, gradIOffset);
+    INDEX2COORDS(i,gradORank, gradOShape, gradOCoords);
+    COORDS2INDEX(gradORank, gradOStride, gradOCoords, gradOOffset);
+    INDEX2COORDS(i, gradIRank, gradIShape, gradICoords);
+    COORDS2INDEX(gradIRank, gradIStride, gradICoords, gradIOffset);
     gradI.p(gradIOffset, gradI.e<T>(gradIOffset) + gradOBuff[gradOOffset]);
   }
 }

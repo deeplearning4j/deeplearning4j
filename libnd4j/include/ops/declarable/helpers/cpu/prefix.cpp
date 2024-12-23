@@ -42,12 +42,20 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
   LongType xOffset;
   LongType zOffset;
 
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
+
+
   if (reverse) {
     for (sd::LongType e = length - 1; e >= 0; --e) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(e, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
       sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
                               : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
@@ -59,10 +67,10 @@ static void prefix_(scalar::Ops op, const void* vx, sd::LongType const* xShapeIn
     }
   } else {
     for (sd::LongType e = 0; e < length; e++) {
-      INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(e, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(e, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(e, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
       sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset])
                               : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
@@ -105,11 +113,11 @@ void prefix(sd::LaunchContext* context, scalar::Ops op, NDArray* x, NDArray* z, 
 
 BUILD_SINGLE_TEMPLATE(template void prefix_,
                       (scalar::Ops op, const void* vx, sd::LongType const* xShapeInfo, void* vz,
-                       sd::LongType const* zShapeInfo, bool exclusive, bool reverse),
+                          sd::LongType const* zShapeInfo, bool exclusive, bool reverse),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
                       (scalar::Ops op, NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims, bool exclusive,
-                       bool reverse),
+                          bool reverse),
                       SD_COMMON_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
                       (scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse), SD_COMMON_TYPES);

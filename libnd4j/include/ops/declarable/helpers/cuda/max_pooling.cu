@@ -30,19 +30,34 @@ namespace ops {
 namespace helpers {
 
 template <typename Z>
-static SD_KERNEL void indicesFiller(void* vz, LongType const* zShapeInfo, LongType part, LongType bSize) {
+static SD_KERNEL void indicesFiller(void* vz, const LongType* zShapeInfo, LongType part, LongType bSize) {
   auto z = reinterpret_cast<Z*>(vz);
+
+  __shared__ int rank;
+  __shared__ const LongType *shape, *stride;
+
+  if (threadIdx.x == 0) {
+    rank = shape::rank(zShapeInfo);
+    shape = shape::shapeOf(zShapeInfo);
+    stride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
 
   for (LongType b = blockIdx.x; b < bSize; b += gridDim.x) {
     for (LongType e = threadIdx.x; e < part; e += blockDim.x) {
       LongType zCoords[SD_MAX_RANK];
       LongType zOffset;
-      INDEX2COORDS(e + b * part, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+
+      // Compute coordinates and offset
+      INDEX2COORDS(e + b * part, rank, shape, zCoords);
+      COORDS2INDEX(rank, stride, zCoords, zOffset);
+
+      // Assign the index value
       z[zOffset] = static_cast<Z>(e);
     }
   }
 }
+
 template <typename T, typename Y>
 static void maxPoolingFunctor_(graph::Context& block, NDArray* input, NDArray* values,
                                std::vector<LongType> const& params, NDArray* indices) {

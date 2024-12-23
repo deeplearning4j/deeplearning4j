@@ -39,10 +39,20 @@ SD_KERNEL static void diGammaCuda(const void *vx, const LongType *xShapeInfo, vo
 
   __shared__ LongType len;
   __shared__ bool sameOffset;
+  __shared__ LongType xRank, zRank;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
 
   if (threadIdx.x == 0) {
     len = shape::length(xShapeInfo);
     sameOffset = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -51,19 +61,21 @@ SD_KERNEL static void diGammaCuda(const void *vx, const LongType *xShapeInfo, vo
   LongType xOffset;
   LongType zOffset;
 
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+  for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < len; i += gridDim.x * blockDim.x) {
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+
     if (sameOffset) {
       zOffset = xOffset;
     } else {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     }
 
     z[zOffset] = diGammaScalar<T>(x[xOffset]);
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>

@@ -208,6 +208,18 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
   const int rank = input.rankOf();
   const sd::LongType outLen = output.lengthOf();
 
+  // Cache shape information
+  const sd::LongType* inShapeInfo = input.shapeInfo();
+  const sd::LongType* outShapeInfo = output.shapeInfo();
+  const sd::LongType* inShape = shape::shapeOf(inShapeInfo);
+  const sd::LongType* outShape = shape::shapeOf(outShapeInfo);
+  const sd::LongType* inStride = shape::stride(inShapeInfo);
+  const sd::LongType* outStride = shape::stride(outShapeInfo);
+
+  // Cache buffers
+  T* outBuf = reinterpret_cast<T*>(output.buffer());
+  const T* inBuf = reinterpret_cast<T const*>(input.buffer());
+
   if (input.isScalar() || input.isVector()) {
     const sd::LongType inLen = input.isScalar() ? 1 : input.lengthOf();
     const auto leftSide = paddings.e<sd::LongType>(0);
@@ -217,40 +229,46 @@ static void mirrorPad_(NDArray& input, NDArray& paddings, NDArray& output, const
     for (int i = 0; i < outLen; ++i) {
       if (i < leftSide)  // left side
         output.p(i, input.e<T>(leftSideCorrected - i));
-
       else if (i >= leftSide && i < leftSide + inLen)  // middle
         output.p(i, input.e<T>(i - leftSide));
-
       else  // right side
         output.p(i, input.e<T>(len - i));
     }
   } else {
+    // Cache input sizes
+    std::vector<sd::LongType> inSizes(rank);
+    std::vector<sd::LongType> leftSides(rank);
+    std::vector<sd::LongType> leftSidesCorrected(rank);
+    std::vector<sd::LongType> lens(rank);
+
+    // Pre-calculate size-related values for each dimension
+    for (int j = 0; j < rank; ++j) {
+      inSizes[j] = input.sizeAt(j);
+      leftSides[j] = paddings.e<T>(j, 0);
+      leftSidesCorrected[j] = leftSides[j] - reflBorder;
+      lens[j] = 2 * (inSizes[j] - 1) + leftSides[j] + reflBorder;
+    }
+
     auto func = PRAGMA_THREADS_FOR {
+      // Pre-allocate coordinate arrays
       sd::LongType inIdx[SD_MAX_RANK], outIdx[SD_MAX_RANK];
 
       for (sd::LongType i = start; i < stop; i++) {
-        INDEX2COORDS(i, rank, shape::shapeOf(output.shapeInfo()), outIdx);
+        INDEX2COORDS(i, rank, outShape, outIdx);
 
         for (int j = 0; j < rank; ++j) {
-          const sd::LongType inLen = input.sizeAt(j);
-          const auto leftSide = paddings.e<T>(j, 0);
-          const auto leftSideCorrected = leftSide - reflBorder;
-          const sd::LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
-
-          if (outIdx[j] < leftSide)  // left side
-            inIdx[j] = leftSideCorrected - outIdx[j];
-
-          else if (outIdx[j] >= leftSide && outIdx[j] < leftSide + inLen)  // middle
-            inIdx[j] = outIdx[j] - leftSide;
-
+          if (outIdx[j] < leftSides[j])  // left side
+            inIdx[j] = leftSidesCorrected[j] - outIdx[j];
+          else if (outIdx[j] >= leftSides[j] && outIdx[j] < leftSides[j] + inSizes[j])  // middle
+            inIdx[j] = outIdx[j] - leftSides[j];
           else  // right side
-            inIdx[j] = len - outIdx[j];
+            inIdx[j] = lens[j] - outIdx[j];
         }
 
         sd::LongType outOffset, inOffset;
-        COORDS2INDEX(rank, shape::stride(output.shapeInfo()), outIdx, outOffset);
-        COORDS2INDEX(rank, shape::stride(input.shapeInfo()), inIdx, inOffset);
-        reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T const*>(input.buffer())[inOffset];
+        COORDS2INDEX(rank, outStride, outIdx, outOffset);
+        COORDS2INDEX(rank, inStride, inIdx, inOffset);
+        outBuf[outOffset] = inBuf[inOffset];
       }
     };
 

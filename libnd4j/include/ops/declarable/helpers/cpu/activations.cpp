@@ -40,27 +40,34 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
 
   T max = -DataTypeUtils::max<T>();
   T sum = 0.;
-  sd::LongType length = shape::length(inShapeInfo);
+  const sd::LongType length = shape::length(inShapeInfo);
+
+  const sd::LongType rank = shape::rank(inShapeInfo);
+  const sd::LongType* shape = shape::shapeOf(inShapeInfo);
+  const sd::LongType* stride = shape::stride(inShapeInfo);
 
   LongType coords[SD_MAX_RANK];
   LongType offset;
 
+  // Find the maximum value in the vector
   for (sd::LongType i = 0; i < length; i++) {
-    INDEX2COORDS(i, shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords);
-    COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, offset);
+    INDEX2COORDS(i, rank, shape, coords);
+    COORDS2INDEX(rank, stride, coords, offset);
     max = sd::math::sd_max<T>(max, inBuff[offset]);
   }
 
+  // Calculate exponentials and sum
   for (sd::LongType i = 0; i < length; i++) {
-    INDEX2COORDS(i, shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords);
-    COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, offset);
+    INDEX2COORDS(i, rank, shape, coords);
+    COORDS2INDEX(rank, stride, coords, offset);
     outBuff[offset] = sd::math::sd_exp<T, T>(inBuff[offset] - max);
     sum += outBuff[offset];
   }
 
+  // Compute softmax derivatives
   for (sd::LongType i = 0; i < length; i++) {
-    INDEX2COORDS(i, shape::rank(inShapeInfo), shape::shapeOf(inShapeInfo), coords);
-    COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, offset);
+    INDEX2COORDS(i, rank, shape, coords);
+    COORDS2INDEX(rank, stride, coords, offset);
     outBuff[offset] /= sum;
     outBuff[offset] *= (1.f - outBuff[offset]);  // derivative
   }

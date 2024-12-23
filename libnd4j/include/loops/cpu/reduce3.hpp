@@ -50,9 +50,16 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     const auto startingVal = OpType::startingValue(x);
 
     for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
-
     return;
   }
+
+  // Cache shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType yRank = shape::rank(yShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
 
   Z extraParamsVals[3] = {(Z)0.0f, (Z)0.0f, (Z)0.0f};
   Z startingVal = OpType::startingValue(x);
@@ -66,7 +73,6 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
   memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
   if (extraParams != nullptr) {
     PRAGMA_OMP_SIMD
-    // mostly for future reference
     for (int e = 0; e < maxThreads; e++) {
       extraParamsLocal[3 * e] = extraParams[0];
       extraParamsLocal[3 * e + 1] = extraParams[1];
@@ -74,34 +80,17 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     }
   }
 
-
   auto func = PRAGMA_THREADS_FOR {
     for (auto i2 = start; i2 < stop; i2++) {
       sd::LongType coords[SD_MAX_RANK];
       sd::LongType yCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(i2, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-      INDEX2COORDS(i2, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
+      INDEX2COORDS(i2, xRank, xShape, coords);
+      INDEX2COORDS(i2, yRank, yShape, yCoords);
       sd::LongType xOffset = 0, yOffset = 0;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
-#if defined(PRINT_INDICES)
-      printf("reduce 3 scalar x shape info:\n");
-      shape::printShapeInfo(xShapeInfo);
-      printf("reduce 3 y shape info:\n");
-      shape::printShapeInfo(yShapeInfo);
-      printf("reduce 3 scalar Index is %lld x offset is %lld y offset is %lld loop kind: default Reduce3<X, Z>::execScalar\n", i2,xOffset, yOffset);
-      printf("x coords: ");
-      for (int e = 0; e < shape::rank(xShapeInfo); e++) {
-        printf("%lld, ", coords[e]);
-      }
-      printf("\n");
-      printf("y coords: ");
-      for (int e = 0; e < shape::rank(yShapeInfo); e++) {
-        printf("%lld, ", yCoords[e]);
-      }
-      fflush(stdout);
-#endif
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+
       intermediate[thread_id] = OpType::update(intermediate[thread_id],
                                                OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
                                                extraParamsLocal + 3 * thread_id);
@@ -144,16 +133,20 @@ void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *v
     execScalar<OpType>(vx, xShapeInfo, vextraParams, vy, yShapeInfo, vz, zShapeInfo);
     return;
   }
+
 #ifdef SD_LOOPS_INLINED
   sd::Reduction3Loops<X, Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension,
                                                           dimensionLength, extraParams, start, stop);
 #else
   sd::Reduction3Loops<X, Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension,
-                                                              dimensionLength, extraParams, start, stop);
+                                                               dimensionLength, extraParams, start, stop);
 #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
+// Rest of the functions remain the same as they primarily dispatch to other functions
+// or use the Reduction3Loops class which handles its own shape caching internally
+
 template <typename X, typename Z>
 template <typename OpType>
 void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, const void *vy,
@@ -170,7 +163,7 @@ void Reduce3<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *v
                                                           dimensionLength, extraParams, start, stop);
 #else
   sd::Reduction3Loops<X, Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension,
-                                                              dimensionLength, extraParams, start, stop);
+                                                               dimensionLength, extraParams, start, stop);
 #endif
 }
 
@@ -194,8 +187,8 @@ void Reduce3<X, Z>::execAll(const void *vx, const sd::LongType *xShapeInfo, void
                                                              stop);
 #else
   sd::Reduction3Loops<X, Z>::template innerloopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo,
-                                                                 xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets,
-                                                                 extraParams, start, stop);
+                                                                  xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets,
+                                                                  extraParams, start, stop);
 #endif
 }
 

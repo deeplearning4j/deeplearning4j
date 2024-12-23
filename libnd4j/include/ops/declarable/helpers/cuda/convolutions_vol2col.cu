@@ -40,21 +40,25 @@ static SD_KERNEL void vol2colCuda(const void* volume, const LongType* volShapeIn
   const T* vol = reinterpret_cast<const T*>(volume);
   T* col = reinterpret_cast<T*>(columns);
 
-  __shared__ LongType colRank, volRank;
-  __shared__ LongType colLen, iD, iH, iW, *sharedMem;
+  __shared__ LongType colRank, volRank, colLen;
+  __shared__ LongType iD, iH, iW;
+  __shared__ const LongType *volShape, *volStride, *colShape, *colStride;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-
     volRank = 5;
     colRank = 8;
 
+    volShape = shape::shapeOf(volShapeInfo);
+    volStride = shape::stride(volShapeInfo);
+
+    colShape = shape::shapeOf(colShapeInfo);
+    colStride = shape::stride(colShapeInfo);
+
     colLen = shape::length(colShapeInfo);
 
-    iD = volShapeInfo[3];
-    iH = volShapeInfo[4];
-    iW = volShapeInfo[5];
+    iD = volShape[2];
+    iH = volShape[3];
+    iW = volShape[4];
   }
   __syncthreads();
 
@@ -62,24 +66,28 @@ static SD_KERNEL void vol2colCuda(const void* volume, const LongType* volShapeIn
 
   if (colInd >= colLen) return;
 
+  extern __shared__ LongType sharedMem[];
   auto coords = sharedMem + threadIdx.x * colRank;
 
-  INDEX2COORDS(colInd, colRank, shape::shapeOf(colShapeInfo), coords);
+  INDEX2COORDS(colInd, colRank, colShape, coords);
 
   LongType colOffset;
-  COORDS2INDEX(colRank, shape::stride(colShapeInfo), coords, colOffset);
+  COORDS2INDEX(colRank, colStride, coords, colOffset);
 
-  coords[2] = -pD + coords[2] * dD + coords[5] * sD;  // const auto volDep = (-pD + kDep * dD) + colD * sD;
-  coords[3] = -pH + coords[3] * dH + coords[6] * sH;  // const auto volRow = (-pH + kRow * dH) + colH * sH;
-  coords[4] = -pW + coords[4] * dW + coords[7] * sW;  // const auto volCol = (-pW + kCol * dW) + colW * sW;
+  // Compute volumetric indices
+  const auto volDep = -pD + coords[2] * dD + coords[5] * sD;
+  const auto volRow = -pH + coords[3] * dH + coords[6] * sH;
+  const auto volCol = -pW + coords[4] * dW + coords[7] * sW;
 
-  if (static_cast<unsigned>(coords[2]) >= static_cast<LongType>(iD) ||
-      static_cast<unsigned>(coords[3]) >= static_cast<LongType>(iH) ||
-      static_cast<unsigned>(coords[4]) >= static_cast<LongType>(iW))
+  if (volDep < 0 || volDep >= iD || volRow < 0 || volRow >= iH || volCol < 0 || volCol >= iW) {
     col[colOffset] = static_cast<T>(0.);
-  else {
+  } else {
+    coords[2] = volDep;
+    coords[3] = volRow;
+    coords[4] = volCol;
+
     LongType volOffset;
-    COORDS2INDEX(volRank, shape::stride(volShapeInfo), coords, volOffset);
+    COORDS2INDEX(volRank, volStride, coords, volOffset);
     col[colOffset] = vol[volOffset];
   }
 }

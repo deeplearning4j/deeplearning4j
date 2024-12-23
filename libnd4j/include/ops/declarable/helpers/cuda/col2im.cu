@@ -41,15 +41,27 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
 
   __shared__ LongType kH, kW, oH, oW;
   __shared__ LongType imLen;
+  __shared__ LongType imRank;
+  __shared__ LongType colRank;
+  __shared__ LongType* imShape;
+  __shared__ LongType* colShape;
+  __shared__ LongType* imStride;
+  __shared__ LongType* colStride;
 
   if (threadIdx.x == 0) {
     kH = dH * (colShapeInfo[3] - 1) + 1;
     kW = dW * (colShapeInfo[4] - 1) + 1;
-
     oH = colShapeInfo[5];
     oW = colShapeInfo[6];
-
     imLen = shape::length(imShapeInfo);
+
+    // Cache shape information
+    imRank = shape::rank(imShapeInfo);
+    colRank = shape::rank(colShapeInfo);
+    imShape = shape::shapeOf(imShapeInfo);
+    colShape = shape::shapeOf(colShapeInfo);
+    imStride = shape::stride(imShapeInfo);
+    colStride = shape::stride(colShapeInfo);
   }
   __syncthreads();
 
@@ -58,12 +70,12 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < imLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, shape::rank(imShapeInfo), shape::shapeOf(imShapeInfo), coords);
+    INDEX2COORDS(i, imRank, imShape, coords);
 
     LongType imOffset;
-    COORDS2INDEX(shape::rank(imShapeInfo), shape::stride(imShapeInfo), coords, imOffset);
+    COORDS2INDEX(imRank, imStride, coords, imOffset);
 
-    const auto bSiCoffset = coords[0] * colShapeInfo[7] + coords[1] * colShapeInfo[8];
+    const auto bSiCoffset = coords[0] * colShape[7] + coords[1] * colShape[8];
 
     const LongType imH = coords[2] + pH;
     const LongType imW = coords[3] + pW;
@@ -85,7 +97,7 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
         if (coords[3] % dW != 0) continue;
 
         LongType colOffset;
-        COORDS2INDEX(shape::rank(colShapeInfo), shape::stride(colShapeInfo), coords, colOffset);
+        COORDS2INDEX(colRank, colStride, coords, colOffset);
 
         val += col[bSiCoffset + colOffset];
       }
@@ -93,7 +105,6 @@ static SD_KERNEL void col2imCuda(const void* columns, const LongType* colShapeIn
     im[imOffset] = val;
   }
 }
-
 ////////////////////////////////////////////////////////////////////////
 
 

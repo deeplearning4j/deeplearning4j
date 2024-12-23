@@ -102,20 +102,25 @@ static void ismax_(NDArray* input, NDArray* output, const std::vector<LongType>&
         LongType zCoords[SD_MAX_RANK];
         LongType xOffset;
         LongType zOffset;
-
+        sd::LongType tadRank = shape::rank(tadShapeShapeInfo);
+        sd::LongType *tadShape = shape::shapeOf(tadShapeShapeInfo);
+        sd::LongType *tadStride = shape::stride(tadShapeShapeInfo);
         for (sd::LongType i = 0; i < tadLength; i++) {
-          INDEX2COORDS(i, shape::rank(tadShapeShapeInfo), shape::shapeOf(tadShapeShapeInfo), xCoords);
-          COORDS2INDEX(shape::rank(tadShapeShapeInfo), shape::stride(tadShapeShapeInfo), xCoords, xOffset);
+          INDEX2COORDS(i,tadRank,tadShape, xCoords);
+          COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
           if (rX[xOffset] > maxValue) {
             maxIdx = i;
             maxValue = rX[xOffset];
           }
         }
 
+        sd::LongType tadPackZRank = shape::rank(tadPackZ->primaryShapeInfo());
+        sd::LongType *tadPackZShape = shape::shapeOf(tadPackZ->primaryShapeInfo());
+        sd::LongType *tadPackZStride = shape::stride(tadPackZ->primaryShapeInfo());
         PRAGMA_OMP_SIMD
         for (sd::LongType i = 0; i < tadLength; i++) {
-          INDEX2COORDS(i, shape::rank(tadPackZ->primaryShapeInfo()), shape::shapeOf(tadPackZ->primaryShapeInfo()), zCoords);
-          COORDS2INDEX(shape::rank(tadPackZ->primaryShapeInfo()), shape::stride(tadPackZ->primaryShapeInfo()), zCoords, zOffset);
+          INDEX2COORDS(i, tadPackZRank, tadPackZShape, zCoords);
+          COORDS2INDEX(tadPackZRank, tadPackZStride, zCoords, zOffset);
           rZ[zOffset] = maxIdx == i ? (Z)1 : (Z)0;
         }
       }

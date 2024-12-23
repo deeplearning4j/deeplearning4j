@@ -8,9 +8,9 @@
  *  See the NOTICE file distributed with this work for additional
  *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations
  * under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -29,7 +29,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
-using namespace simdOps;
+    using namespace simdOps;
 
 namespace functions {
 namespace reduce {
@@ -59,7 +59,6 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
     const auto startingVal = OpType::startingValue(x);
 
     for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
-
     return;
   }
 
@@ -72,48 +71,55 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
   PRAGMA_OMP_SIMD
   for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
 
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+      INDEX2COORDS(i, xRank, xShape, coords);
       sd::LongType offset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
-      intermediate[thread_id] = OpType::update(
-          intermediate[thread_id],
-          OpType::op(x[offset], extraParams), extraParams);
+      COORDS2INDEX(xRank, xStride, coords, offset);
+      intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[offset], extraParams), extraParams);
     }
   };
 
   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
-  // merge results
   for (int e = 1; e < maxThreads; e++)
     intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
 
-  // write out results
   z[0] = OpType::postProcess(intermediate[0], length, extraParams);
-}template <typename X, typename Z>
+}
+
+template <typename X, typename Z>
 template <typename OpType>
 Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams) {
   auto x = reinterpret_cast<const X *>(vx);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-
   auto startingValue = OpType::startingValue(x);
+
   sd::LongType xShapeInfoCast[SD_MAX_RANK];
   bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, xRank, xShape, coords);
     sd::LongType offset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    COORDS2INDEX(xRank, xStride, coords, offset);
     startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
 
   return OpType::postProcess(startingValue, length, extraParams);
 }
+
 template <typename X, typename Y>
 Y ReduceFloatFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                         void *extraParams) {
@@ -159,14 +165,13 @@ Z SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, sd::LongType xEw
   };
 
   maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-  // merge results
-  for (int e = 1; e < maxThreads; e++) intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
 
-  // return result
+  for (int e = 1; e < maxThreads; e++)
+    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+
   return OpType::postProcess(intermediate[0], length, extraParams);
 }
 
-////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
@@ -184,8 +189,8 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
                                  ? sd::DataTypeUtils::nanOrZero<Z>()
                                  : static_cast<Z>(OpType::startingValue(x));
     const auto zLen = shape::length(zShapeInfo);
-    if( z != nullptr)
-    for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
+    if (z != nullptr)
+      for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
     return;
   }
 
@@ -195,8 +200,8 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank, xRank - zRank,
-                        nullptr, nullptr);
+    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank,
+                        xRank - zRank, nullptr, nullptr);
     return;
   }
 
@@ -208,13 +213,11 @@ void SD_HOST ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace *workspace, c
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void ReduceFloatFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                      const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                      const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_FLOAT_OPS);
 }
-
 }  // namespace reduce
 }  // namespace functions

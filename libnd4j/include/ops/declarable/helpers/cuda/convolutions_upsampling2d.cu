@@ -36,14 +36,15 @@ template <typename T>
 SD_KERNEL static void upsampling2dCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                        const LongType* zShapeInfo, const LongType factorH, const LongType factorW,
                                        const bool isNCHW) {
-  // x has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
-  // z has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
-
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ LongType rank, dimIH;
   __shared__ LongType zLen, *sharedMem;
+  __shared__ LongType* xShape;
+  __shared__ LongType* zShape;
+  __shared__ LongType* xStride;
+  __shared__ LongType* zStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -52,6 +53,12 @@ SD_KERNEL static void upsampling2dCuda(const void* vx, const LongType* xShapeInf
     dimIH = isNCHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
     rank = 4;
+
+    // Cache shape information
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -61,20 +68,19 @@ SD_KERNEL static void upsampling2dCuda(const void* vx, const LongType* xShapeInf
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
+  INDEX2COORDS(zInd, rank, zShape, coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, zStride, coords, zOffset);
 
   coords[dimIH] /= factorH;
   coords[dimIH + 1] /= factorW;
 
   LongType xOffset;
-  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, xStride, coords, xOffset);
 
   z[zOffset] = x[xOffset];
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling2dCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

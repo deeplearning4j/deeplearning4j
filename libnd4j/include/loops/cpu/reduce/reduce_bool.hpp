@@ -8,9 +8,9 @@
  *  See the NOTICE file distributed with this work for additional
  *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations
  * under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -28,7 +28,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
-using namespace simdOps;
+    using namespace simdOps;
 
 namespace functions {
 namespace reduce {
@@ -62,11 +62,15 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
   }
 
   auto startingValue = OpType::startingValue(x);
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, xRank, xShape, coords);
     sd::LongType offset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    COORDS2INDEX(xRank, xStride, coords, offset);
     startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
   z[0] = OpType::postProcess(startingValue, length, extraParams);
@@ -78,13 +82,17 @@ Z SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-
   auto startingValue = OpType::startingValue(x);
+
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, xRank, xShape, coords);
     sd::LongType offset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, offset);
+    COORDS2INDEX(xRank, xStride, coords, offset);
     startingValue = OpType::update(startingValue, OpType::op(x[offset], extraParams), extraParams);
   }
   return OpType::postProcess(startingValue, length, extraParams);
@@ -110,8 +118,6 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(const void *x, const sd::LongType *x
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
 }
 
-
-////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
@@ -152,13 +158,11 @@ void SD_HOST ReduceBoolFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void ReduceBoolFunction<X, Y>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                     const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                     const sd::LongType *zShapeInfo, const long long int *dims) {
   DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_BOOL_OPS);
 }
-
 }  // namespace reduce
 }  // namespace functions

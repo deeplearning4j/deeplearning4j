@@ -45,11 +45,24 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ LongType zLen, tadLen, totalThreads;
+  __shared__ int zRank, normRank;
+  __shared__ const LongType *zShape;
+  __shared__ const LongType *zStride;
+  __shared__ const LongType *normStride;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
     tadLen = zLen / shape::length(normShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    // Cache ranks
+    zRank = shape::rank(zShapeInfo);
+    normRank = shape::rank(normShapeInfo);
+
+    // Cache shapes and strides
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    normStride = shape::stride(normShapeInfo);
   }
 
   __syncthreads();
@@ -59,21 +72,20 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
     LongType normOffset, zOffset;
-    COORDS2INDEX(shape::rank(normShapeInfo), shape::stride(normShapeInfo), normCoords, normOffset);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(normRank, normStride, normCoords, normOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
     const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
 
     if (actualNorm > clipNorm) z[zOffset] *= clipNorm / actualNorm;
   }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void clipByNormCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,
@@ -157,6 +169,13 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
 
   __shared__ LongType zLen, tadLen, totalThreads;
   __shared__ bool sameOffsets;
+  __shared__ int zRank, yRank, normRank, sumRank, xRank;
+  __shared__ const LongType *zShape;
+  __shared__ const LongType *zStride;
+  __shared__ const LongType *yStride;
+  __shared__ const LongType *normStride;
+  __shared__ const LongType *sumStride;
+  __shared__ const LongType *xStride;
 
   if (threadIdx.x == 0) {
     zLen = shape::length(zShapeInfo);
@@ -164,6 +183,21 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
     totalThreads = gridDim.x * blockDim.x;
 
     sameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo, zShapeInfo);
+
+    // Cache ranks
+    zRank = shape::rank(zShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    normRank = shape::rank(normShapeInfo);
+    sumRank = shape::rank(sumShapeInfo);
+    xRank = shape::rank(xShapeInfo);
+
+    // Cache shapes and strides
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    normStride = shape::stride(normShapeInfo);
+    sumStride = shape::stride(sumShapeInfo);
+    xStride = shape::stride(xShapeInfo);
   }
 
   __syncthreads();
@@ -173,31 +207,31 @@ SD_KERNEL static void clipByNormBpCuda(const void* vClipNorm, const void* vx, co
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
 
     LongType zOffset, yOffset;
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     if(sameOffsets) {
       yOffset = zOffset;
     } else {
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
+      COORDS2INDEX(yRank, yStride, zCoords, yOffset);
     }
 
     // deduce norm coords
     for (int j = 0; j < dimsLen; ++j) normCoords[j] = zCoords[dimensions[j]];
 
     LongType normOffset;
-    COORDS2INDEX(shape::rank(normShapeInfo), shape::stride(normShapeInfo), normCoords, normOffset);
+    COORDS2INDEX(normRank, normStride, normCoords, normOffset);
 
     const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
 
     if (actualNorm > clipNorm) {
       LongType sumOffset, xOffset;
-      COORDS2INDEX(shape::rank(sumShapeInfo), shape::stride(sumShapeInfo), normCoords, sumOffset);
+      COORDS2INDEX(sumRank, sumStride, normCoords, sumOffset);
       if(sameOffsets) {
         xOffset = zOffset;
       } else {
-        COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
+        COORDS2INDEX(xRank, xStride, zCoords, xOffset);
       }
 
       const T sumVal = sum[sumOffset];
@@ -319,44 +353,48 @@ static void SD_KERNEL clipByValueKernel(void* input, const LongType* inputShape,
   __shared__ T* outputBuf;
   __shared__ T* inputBuf;
   __shared__ LongType length;
-  __shared__ bool linearBuffers;
+  __shared__ LongType inputRank;
+  __shared__ LongType outputRank;
+  __shared__ LongType* inputShapePtr;
+  __shared__ LongType* outputShapePtr;
+  __shared__ LongType* inputStridePtr;
+  __shared__ LongType* outputStridePtr;
+
   if (threadIdx.x == 0) {
     outputBuf = reinterpret_cast<T*>(output);
     inputBuf = reinterpret_cast<T*>(input);
     length = shape::length(inputShape);
-    linearBuffers = shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape) &&
-                    shape::elementWiseStride(inputShape) == 1;
+
+    // Cache shape information
+    inputRank = shape::rank(inputShape);
+    outputRank = shape::rank(outputShape);
+    inputShapePtr = shape::shapeOf(inputShape);
+    outputShapePtr = shape::shapeOf(outputShape);
+    inputStridePtr = shape::stride(inputShape);
+    outputStridePtr = shape::stride(outputShape);
   }
   __syncthreads();
+
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
   for (LongType e = tid; e < length; e += step) {
-    if (linearBuffers) {
-      if (inputBuf[e] > rightBound)
-        outputBuf[e] = (T)rightBound;
-      else if (inputBuf[e] < leftBound)
-        outputBuf[e] = (T)leftBound;
-      else
-        outputBuf[e] = inputBuf[e];
-    } else {
-      LongType inputCoords[SD_MAX_RANK];
-      LongType outputCoords[SD_MAX_RANK];
-      LongType inputOffset;
-      LongType outputOffset;
+    LongType inputCoords[SD_MAX_RANK];
+    LongType outputCoords[SD_MAX_RANK];
+    LongType inputOffset;
+    LongType outputOffset;
 
-      INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), inputCoords);
-      COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), inputCoords, inputOffset);
-      INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
+    INDEX2COORDS(e, inputRank, inputShapePtr, inputCoords);
+    COORDS2INDEX(inputRank, inputStridePtr, inputCoords, inputOffset);
+    INDEX2COORDS(e, outputRank, outputShapePtr, outputCoords);
+    COORDS2INDEX(outputRank, outputStridePtr, outputCoords, outputOffset);
 
-      if (inputBuf[inputOffset] > rightBound)
-        outputBuf[outputOffset] = (T)rightBound;
-      else if (inputBuf[inputOffset] < leftBound)
-        outputBuf[outputOffset] = (T)leftBound;
-      else
-        outputBuf[outputOffset] = inputBuf[inputOffset];
-    }
+    if (inputBuf[inputOffset] > rightBound)
+      outputBuf[outputOffset] = (T)rightBound;
+    else if (inputBuf[inputOffset] < leftBound)
+      outputBuf[outputOffset] = (T)leftBound;
+    else
+      outputBuf[outputOffset] = inputBuf[inputOffset];
   }
 }
 

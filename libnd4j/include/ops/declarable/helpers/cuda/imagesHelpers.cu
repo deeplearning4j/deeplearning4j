@@ -169,33 +169,42 @@ SD_KERNEL void rgbToGrsCuda(const void* vx, const LongType* xShapeInfo, void* vz
   auto z = reinterpret_cast<T*>(vz);
 
   __shared__ LongType zLen;
-  __shared__ LongType rank, *sharedMem;  // xRank == zRank
+  __shared__ LongType rank;
+  __shared__ const LongType* xShapePtr;
+  __shared__ const LongType* zShapePtr;
+  __shared__ const LongType* xStridePtr;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-
     zLen = shape::length(zShapeInfo);
     rank = shape::rank(zShapeInfo);
+    xShapePtr = shape::shapeOf(xShapeInfo);
+    zShapePtr = shape::shapeOf(zShapeInfo);
+    xStridePtr = shape::stride(xShapeInfo);
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * rank;
+  extern __shared__ unsigned char shmem[];
+  auto coords = reinterpret_cast<LongType*>(shmem) + threadIdx.x * rank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), coords);
+    // Compute coordinates for the current index
+    INDEX2COORDS(i, rank, zShapePtr, coords);
 
+    // Compute z offset
     LongType zOffset;
-    COORDS2INDEX(rank, shape::shapeOf(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(rank, zShapePtr, coords, zOffset);
 
+    // Compute x offsets for R, G, B channels
     LongType xOffset0;
-    COORDS2INDEX(rank, shape::shapeOf(xShapeInfo), coords, xOffset0);
-    const auto xOffset1 = xOffset0 + shape::stride(xShapeInfo)[dimC];
-    const auto xOffset2 = xOffset1 + shape::stride(xShapeInfo)[dimC];
+    COORDS2INDEX(rank, xShapePtr, coords, xOffset0);
+    const auto xOffset1 = xOffset0 + xStridePtr[dimC];
+    const auto xOffset2 = xOffset1 + xStridePtr[dimC];
 
+    // Convert RGB to grayscale
     z[zOffset] = 0.2989f * x[xOffset0] + 0.5870f * x[xOffset1] + 0.1140f * x[xOffset2];
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void rgbToGrsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

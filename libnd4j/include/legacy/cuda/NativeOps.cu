@@ -2084,7 +2084,7 @@ sd::Pointer initRandom(sd::Pointer *extraPointers, long seed, long bufferSize, s
 
   auto ptrDev = reinterpret_cast<unsigned long long *>(ptrToBuffer);
   auto buffer = new sd::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrHost),
-                                         reinterpret_cast<uint64_t *>(ptrDev));
+                                             reinterpret_cast<uint64_t *>(ptrDev));
   buffer->propagateToDevice(buffer, *stream);
 
   sd::DebugHelper::checkErrorCode(stream, "initRandom(...) failed A");
@@ -2927,6 +2927,23 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs
                                         const void *vindexes) {
   __shared__ T *x, *y;
   __shared__ sd::LongType arrLenX, arrLenY;
+  __shared__ sd::LongType xRank;
+  __shared__ sd::LongType yRank;
+  __shared__ sd::LongType *xShape;
+  __shared__ sd::LongType *yShape;
+  __shared__ sd::LongType *xStride;
+  __shared__ sd::LongType *yStride;
+  if (threadIdx.x == 0) {
+    xRank = shape::rank(xShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+  }
+
+  __syncthreads();
+
   auto indexes = reinterpret_cast<const I *>(vindexes);
 
   for (int e = 0; e < numOfSubArrs; e++) {
@@ -2951,10 +2968,10 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfSubArrs
       sd::LongType xOffset;
       sd::LongType yOffset;
 
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+      INDEX2COORDS(i, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(i, yRank, yShape, yCoords);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
       switch (opCode) {
         case 0:

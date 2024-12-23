@@ -36,25 +36,53 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
+__global__ static void stackScalarsCuda(void* pVx, void* vz, const LongType* zShapeInfo) {
   T* z = reinterpret_cast<T*>(vz);
 
-  __shared__ LongType zLen, totalThreads;
+  // Shared memory for caching shape information of z
+  __shared__ LongType shared_zRank;
+  __shared__ const LongType* shared_zShape;
+  __shared__ const LongType* shared_zStride;
 
+  __shared__ LongType zLen;
+  __shared__ LongType totalThreads;
+
+  // Initialize shared memory with shape information and other parameters
   if (threadIdx.x == 0) {
+    // Cache the rank of the output tensor
+    shared_zRank = shape::rank(zShapeInfo);
+
+    // Cache the shape and stride pointers of the output tensor
+    shared_zShape = shape::shapeOf(zShapeInfo);
+    shared_zStride = shape::stride(zShapeInfo);
+
+    // Cache the total length of the output tensor
     zLen = shape::length(zShapeInfo);
+
+    // Calculate the total number of threads across all blocks
     totalThreads = gridDim.x * blockDim.x;
   }
-  __syncthreads();
+  __syncthreads(); // Ensure all threads have access to the cached values
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  // Temporary variables for coordinates and offset
+  LongType zCoords[SD_MAX_RANK];
+  LongType zOffset;
+
+  // Iterate over the elements assigned to this thread
   for (LongType i = tid; i < zLen; i += totalThreads) {
+    // Retrieve the pointer to the input scalar
     const T* x = reinterpret_cast<const T*>(reinterpret_cast<void**>(pVx)[i]);
-    LongType zOffset;
-    LongType zCoords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+
+    // Convert the linear index 'i' to multi-dimensional coordinates using cached shape
+    INDEX2COORDS(i, shared_zRank, shared_zShape, zCoords);
+
+    // Convert the multi-dimensional coordinates back to a linear index using cached stride
+    COORDS2INDEX(shared_zRank, shared_zStride, zCoords, zOffset);
+
+    // Assign the scalar value to the output tensor at the computed offset
     z[zOffset] = *x;
   }
 }
@@ -121,29 +149,57 @@ BUILD_SINGLE_TEMPLATE(template void stack_,
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static SD_KERNEL void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
+__global__ static void unstackScalarsCuda(const void* vx, const LongType* xShapeInfo, void* pVz) {
   const T* x = reinterpret_cast<const T*>(vx);
 
-  __shared__ LongType xLen, totalThreads;
+  // Shared memory for caching shape information
+  __shared__ LongType shared_xRank;
+  __shared__ const LongType* shared_xShape;
+  __shared__ const LongType* shared_xStride;
 
+  __shared__ LongType xLen;
+  __shared__ LongType totalThreads;
+
+  // Initialize shared memory with shape information and other parameters
   if (threadIdx.x == 0) {
+    // Cache the rank of the input tensor
+    shared_xRank = shape::rank(xShapeInfo);
+
+    // Cache the shape and stride pointers
+    shared_xShape = shape::shapeOf(xShapeInfo);
+    shared_xStride = shape::stride(xShapeInfo);
+
+    // Cache the total length of the input tensor
     xLen = shape::length(xShapeInfo);
+
+    // Calculate the total number of threads across all blocks
     totalThreads = gridDim.x * blockDim.x;
   }
-  __syncthreads();
+  __syncthreads(); // Ensure all threads have access to the cached values
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  // Calculate the global thread ID
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  // Temporary variables for coordinates and offset
   LongType xCoords[SD_MAX_RANK];
   LongType xOffset;
 
+  // Iterate over the elements assigned to this thread
   for (LongType i = tid; i < xLen; i += totalThreads) {
+    // Retrieve the pointer to the output location
     T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[i]);
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+
+    // Convert the linear index to multi-dimensional coordinates using cached shape
+    INDEX2COORDS(i, shared_xRank, shared_xShape, xCoords);
+
+    // Convert the multi-dimensional coordinates back to a linear index using cached stride
+    COORDS2INDEX(shared_xRank, shared_xStride, xCoords, xOffset);
+
+    // Assign the value from the input tensor to the output location
     *z = x[xOffset];
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void unstackScalarsCudaLauncher(const int blocksPerGrid, const int threadsPerBlock,

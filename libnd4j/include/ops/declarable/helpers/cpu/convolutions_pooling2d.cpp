@@ -29,32 +29,40 @@ template <typename T>
 static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& output, const LongType kH, const LongType kW,
                        const LongType sH, const LongType sW, const LongType pH, const LongType pW, const LongType dH, const LongType dW,
                        const int poolingMode, const int extraParam0) {
-  // input is  [bS, iC, iH, iW]
-  // output is [bS, iC, oH, oW]
+  // Cache shape information
+  const auto inShapeInfo = input.shapeInfo();
+  const auto outShapeInfo = output.shapeInfo();
+  
+  // Cache input dimensions
+  const auto* inShape = shape::shapeOf(inShapeInfo);
+  const LongType bS = inShape[0];
+  const LongType iC = inShape[1];
+  const LongType iH = inShape[2];
+  const LongType iW = inShape[3];
+  
+  // Cache output dimensions
+  const auto* outShape = shape::shapeOf(outShapeInfo);
+  const LongType oH = outShape[2];
+  const LongType oW = outShape[3];
+  
+  // Cache strides
+  const auto* inStride = shape::stride(inShapeInfo);
+  const auto* outStride = shape::stride(outShapeInfo);
+  
+  const sd::LongType iStride0 = inStride[0];
+  const sd::LongType iStride1 = inStride[1];
+  const sd::LongType iStride2 = inStride[2];
+  const sd::LongType iStride3 = inStride[3];
+  const sd::LongType oStride0 = outStride[0];
+  const sd::LongType oStride1 = outStride[1];
+  const sd::LongType oStride2 = outStride[2];
+  const sd::LongType oStride3 = outStride[3];
+
   T* out = output.bufferAsT<T>();
   T* in = const_cast<NDArray&>(input).bufferAsT<T>();
 
   const int kHEff = kH + (kH - 1) * (dH - 1);
   const int kWEff = kW + (kW - 1) * (dW - 1);
-
-  const LongType bS = input.sizeAt(0);
-  const LongType iC = input.sizeAt(1);
-  const LongType iH = input.sizeAt(2);
-  const LongType iW = input.sizeAt(3);
-  const LongType oC = output.sizeAt(1);
-  const LongType oH = output.sizeAt(2);
-  const LongType oW = output.sizeAt(3);
-
-  // sd_debug("MKL-DNN is not used for pooling2d!\n", 0);
-
-  const sd::LongType iStride0 = input.stridesOf()[0];
-  const sd::LongType iStride1 = input.stridesOf()[1];
-  const sd::LongType iStride2 = input.stridesOf()[2];
-  const sd::LongType iStride3 = input.stridesOf()[3];
-  const sd::LongType oStride0 = output.stridesOf()[0];
-  const sd::LongType oStride1 = output.stridesOf()[1];
-  const sd::LongType oStride2 = output.stridesOf()[2];
-  const sd::LongType oStride3 = output.stridesOf()[3];
 
   const sd::LongType iStep2 = dH * iStride2;
   const sd::LongType iStep3 = dW * iStride3;
@@ -77,21 +85,13 @@ static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
               wend = wstart + kWEff;
 
               if (hstart < 0)
-                hstart +=
-                    dH * ((-hstart + dH - 1) /
-                          dH);
+                hstart += dH * ((-hstart + dH - 1) / dH);
               if (wstart < 0)
-                wstart +=
-                    dW * ((-wstart + dW - 1) /
-                          dW);
+                wstart += dW * ((-wstart + dW - 1) / dW);
               if (hend > iH)
-                hend -=
-                    dH * ((hend - iH + dH - 1) /
-                          dH);
+                hend -= dH * ((hend - iH + dH - 1) / dH);
               if (wend > iW)
-                wend -=
-                    dW * ((wend - iW + dW - 1) /
-                          dW);
+                wend -= dW * ((wend - iW + dW - 1) / dW);
 
               hstart *= iStride2;
               hend *= iStride2;
@@ -132,21 +132,13 @@ static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
               wend = wstart + kWEff;
 
               if (hstart < 0)
-                hstart +=
-                    dH * ((-hstart + dH - 1) /
-                          dH);
+                hstart += dH * ((-hstart + dH - 1) / dH);
               if (wstart < 0)
-                wstart +=
-                    dW * ((-wstart + dW - 1) /
-                          dW);
+                wstart += dW * ((-wstart + dW - 1) / dW);
               if (hend > iH)
-                hend -=
-                    dH * ((hend - iH + dH - 1) /
-                          dH);
+                hend -= dH * ((hend - iH + dH - 1) / dH);
               if (wend > iW)
-                wend -=
-                    dW * ((wend - iW + dW - 1) /
-                          dW);
+                wend -= dW * ((wend - iW + dW - 1) / dW);
 
               hstart *= iStride2;
               hend *= iStride2;
@@ -156,7 +148,8 @@ static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
               T sum = static_cast<T>(0.f);
 
               for (sd::LongType kh = hstart; kh < hend; kh += iStep2)
-                for (sd::LongType kw = wstart; kw < wend; kw += iStep3) sum += pIn[kh + kw];
+                for (sd::LongType kw = wstart; kw < wend; kw += iStep3) 
+                  sum += pIn[kh + kw];
 
               if (extraParam0 == 0) {  // Exclude padding
                 int a = (hend - hstart) / iStep2 + ((hend - hstart) % iStep2 == 0 ? 0 : 1);
@@ -192,21 +185,13 @@ static void pooling2d_(sd::graph::Context& block, NDArray& input, NDArray& outpu
               wend = wstart + kWEff;
 
               if (hstart < 0)
-                hstart +=
-                    dH * ((-hstart + dH - 1) /
-                          dH);
+                hstart += dH * ((-hstart + dH - 1) / dH);
               if (wstart < 0)
-                wstart +=
-                    dW * ((-wstart + dW - 1) /
-                          dW);
+                wstart += dW * ((-wstart + dW - 1) / dW);
               if (hend > iH)
-                hend -=
-                    dH * ((hend - iH + dH - 1) /
-                          dH);
+                hend -= dH * ((hend - iH + dH - 1) / dH);
               if (wend > iW)
-                wend -=
-                    dW * ((wend - iW + dW - 1) /
-                          dW);
+                wend -= dW * ((wend - iW + dW - 1) / dW);
 
               hstart *= iStride2;
               hend *= iStride2;

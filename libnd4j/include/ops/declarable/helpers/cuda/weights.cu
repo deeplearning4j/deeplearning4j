@@ -28,26 +28,30 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-template <typename T>
-static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
-                                           LongType const* weightsShape, void* outputBuffer, LongType inputLength,
-                                           LongType outputLength, int val) {
+Optimized Adjust Weights CUDA Device Function
+
+    template <typename T>
+    static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* inputShape,
+                                               const LongType inputRank, const LongType* inShape, const LongType* inStride,
+                                               void* weightsBuffer, LongType const* weightsShape,
+                                               const LongType weightsRank, const LongType* wShape, const LongType* wStride,
+                                               void* outputBuffer, LongType inputLength,
+                                               LongType outputLength, int val, LongType* coords) {
   if(inputBuffer == nullptr || outputBuffer == nullptr) return;
   auto tid = threadIdx.x;
-  LongType xCoords[SD_MAX_RANK];
-  LongType yCoords[SD_MAX_RANK];
-  LongType xOffset;
-  LongType yOffset;
+  LongType xOffset, yOffset;
 
   for (LongType e = tid; e < inputLength; e += blockDim.x) {
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
+    INDEX2COORDS(e, inputRank, inShape, coords);
+    COORDS2INDEX(inputRank, inStride, coords, xOffset);
+
     if (xOffset >= inputLength) return;
+
     LongType current = *(reinterpret_cast<LongType*>(inputBuffer) + xOffset);
     if (current == val) {
       if (weightsBuffer != nullptr) {
-        INDEX2COORDS(e, shape::rank(weightsShape), shape::shapeOf(weightsShape), yCoords);
-        COORDS2INDEX(shape::rank(weightsShape), shape::stride(weightsShape), yCoords, yOffset);
+        INDEX2COORDS(e, weightsRank, wShape, coords);
+        COORDS2INDEX(weightsRank, wStride, coords, yOffset);
         math::atomics::sd_atomicAdd(
             reinterpret_cast<T*>(outputBuffer),
             reinterpret_cast<T*>(weightsBuffer)[yOffset]);
@@ -57,28 +61,43 @@ static SD_DEVICE void adjustWeightsKernelD(void* inputBuffer, LongType const* in
       }
     }
   }
-}
-
 
 template <typename T>
 static SD_KERNEL void adjustWeightsKernel(void* inputBuffer, LongType const* inputShape, void* weightsBuffer,
-                                          LongType const* weightsShape, void* outputBuffer, LongType const* outputShape, int minLength, int maxLength) {
+                                          LongType const* weightsShape, void* outputBuffer, LongType const* outputShape,
+                                          int minLength, int maxLength) {
+  __shared__ LongType outputLength, outputRank;
+  __shared__ LongType *sharedMem;
+  __shared__ const LongType *outShape, *outStride;
+
+  if (threadIdx.x == 0) {
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<LongType*>(shmem);
+
+    outputLength = shape::length(outputShape);
+    outputRank = shape::rank(outputShape);
+    outShape = shape::shapeOf(outputShape);
+    outStride = shape::stride(outputShape);
+  }
+  __syncthreads();
+
   int threadCount = gridDim.x * blockDim.x;
   LongType inputLength = shape::length(inputShape);
-  LongType outputLength = shape::length(outputShape);
   LongType borderLen = 1;
 
+  // Get thread-local coordinate array from shared memory
+  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+
   for (LongType e = blockIdx.x; e < outputLength; e += threadCount) {
-    LongType zCoords[SD_MAX_RANK];
     LongType zOffset;
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(e, outputRank, outShape, coords);
+    COORDS2INDEX(outputRank, outStride, coords, zOffset);
+
     T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
-    adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ, inputLength,
-                            outputLength, (int)zOffset);
+    adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ,
+                            inputLength, outputLength, (int)zOffset);
   }
 }
-
 template <typename T>
 static void adjustWeights_(LaunchContext* context, NDArray* input, NDArray* weights, NDArray* output, int minLength,
                            int maxLength) {
