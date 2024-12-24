@@ -454,6 +454,7 @@ class LogNormalDistribution {
       // we need to get random values
       T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
       T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+      sd::LongType coords[SD_MAX_RANK];
       sd::LongType yCoords[SD_MAX_RANK];
       INDEX2COORDS(e, yRank, yShape, yCoords);
       sd::LongType yOffset;
@@ -461,7 +462,7 @@ class LogNormalDistribution {
       sd::LongType zOffset;
       INDEX2COORDS(e, zRank, zShape, coords);
       COORDS2INDEX(zRank, zStride, coords, zOffset);
-      T realMean = y == z ? mean : y[e * yEWS];
+      T realMean = y == z ? mean : y[yOffset];
       z[zOffset] =
           sd::math::sd_exp<T, T>((sd::math::sd_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::sd_log<T, T>(r0)) *
                                   sd::math::sd_cos<T, T>(two_pi * r1)) *

@@ -24,7 +24,7 @@
 
 #include "../pairwise_bool.h"
 
-    using namespace simdOps;
+using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
@@ -40,23 +40,23 @@ SD_KERNEL static void pairwiseSimpleShaped(
   auto x            = reinterpret_cast<const X*>(vx);
   auto y            = reinterpret_cast<const X*>(vy);
   auto z            = reinterpret_cast<Z*>(vz);
-  auto extraParams  = reinterpret_cast<const X*>(vextraParams);
+  auto extraParams  = reinterpret_cast<X*>(vextraParams);
 
   const int tid     = blockIdx.x * blockDim.x + threadIdx.x;
   __shared__ sd::LongType length;
 
   // Cache shape info
   __shared__ int xRank;
-  __shared__ const sd::LongType* xShapePtr;
-  __shared__ const sd::LongType* xStridePtr;
+  __shared__  sd::LongType* xShapePtr;
+  __shared__  sd::LongType* xStridePtr;
 
   __shared__ int yRank;
-  __shared__ const sd::LongType* yShapePtr;
-  __shared__ const sd::LongType* yStridePtr;
+  __shared__  sd::LongType* yShapePtr;
+  __shared__  sd::LongType* yStridePtr;
 
   __shared__ int zRank;
-  __shared__ const sd::LongType* zShapePtr;
-  __shared__ const sd::LongType* zStridePtr;
+  __shared__  sd::LongType* zShapePtr;
+  __shared__  sd::LongType* zStridePtr;
 
   if (threadIdx.x == 0) {
     length      = shape::length(xShapeInfo);

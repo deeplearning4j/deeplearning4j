@@ -240,6 +240,7 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(
 
   __shared__ X sPartials[SD_CUDA_BLOCK_SIZE];
   __shared__ sd::LongType length;
+  auto reductionBuffer = reinterpret_cast<X *>(vreductionBuffer);
 
   // Cache shape info
   __shared__ sd::LongType xRank;
@@ -284,7 +285,7 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(
     __shared__ bool amLast;
 
     if (threadIdx.x == 0) {
-      vreductionBuffer[blockIdx.x] = sPartials[0];
+      reductionBuffer[blockIdx.x] = sPartials[0];
     }
     __threadfence();
     __syncthreads();

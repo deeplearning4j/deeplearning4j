@@ -538,9 +538,9 @@ SD_DEVICE void BroadcastBool<X, Z>::transformCuda(
   const auto tid          = blockIdx.x * blockDim.x + threadIdx.x;
   const auto totalThreads = blockDim.x * gridDim.x;
 
-  for (sd::LongType i = tid; i < zLen; i += totalThreads) {
+  for (sd::LongType i2 = tid; i2 < zLen; i2 += totalThreads) {
     sd::LongType coords[SD_MAX_RANK];
-    COORDS2INDEX_1D_TO_ND(i, zRank, zShapePtr, coords);
+    INDEX2COORDS(i2, zRank, zShapePtr, coords);
 
     sd::LongType zOffset;
     COORDS2INDEX(zRank, zStridePtr, coords, zOffset);

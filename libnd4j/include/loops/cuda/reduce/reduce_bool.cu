@@ -233,6 +233,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(
   __shared__ sd::LongType xRank;
   __shared__ const sd::LongType* xShapePtr;
   __shared__ const sd::LongType* xStridePtr;
+  auto reductionBuffer = reinterpret_cast<Z *>(vreductionBuffer);
 
   int tid = blockDim.x * blockIdx.x + threadIdx.x;
   if (threadIdx.x == 0) {
@@ -272,7 +273,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(
     __shared__ bool amLast;
 
     if (threadIdx.x == 0) {
-      vreductionBuffer[blockIdx.x] = sPartials[0];
+      reductionBuffer[blockIdx.x] = sPartials[0];
     }
     __threadfence();
     __syncthreads();

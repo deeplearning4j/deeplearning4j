@@ -137,7 +137,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
     } else if (vx != vz) {  // when x and z are different arrays
       if (xRank != zRank) coords[0] = coords[1];
       LongType xOffset;
-      COORDS2INDEX(xRank, xStride coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
       z[zOffset] = x[xOffset];
     }
   }

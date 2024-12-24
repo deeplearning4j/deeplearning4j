@@ -41,7 +41,7 @@ SD_KERNEL static void pairwiseSimpleShaped(
   auto x           = reinterpret_cast<const X*>(vx);
   auto y           = reinterpret_cast<const X*>(vy);
   auto z           = reinterpret_cast<X*>(vz);
-  auto extraParams = reinterpret_cast<const X*>(vextraParams);
+  auto extraParams = reinterpret_cast<X*>(vextraParams);
 
   const int tid     = blockIdx.x * blockDim.x + threadIdx.x;
 

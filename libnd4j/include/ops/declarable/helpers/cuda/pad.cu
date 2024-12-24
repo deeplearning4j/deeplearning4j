@@ -211,15 +211,17 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
 }
 
 template <typename F, typename I>
-static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, void* vz, const LongType* zShape,
+static SD_KERNEL void mirrorPadKernel(void const* vx,  const LongType* xShape, void* vz,  const LongType* zShape,
                                       LongType outLen, void const* paddings, const LongType* paddingShape,
                                       int reflBorder) {
   __shared__ F const* x;
   __shared__ I const* pads;
   __shared__ F* z;
-  __shared__ LongType rank, zStride, xStride;
-  __shared__ const LongType* zShapeArr;
-  __shared__ const LongType* xShapeArr;
+  __shared__ LongType rank;
+  __shared__ sd::LongType *zStride;
+  __shared__ sd::LongType *xStride;
+  __shared__  LongType* zShapeArr;
+  __shared__  LongType* xShapeArr;
 
   if (threadIdx.x == 0) {
     rank = shape::rank(xShape);
