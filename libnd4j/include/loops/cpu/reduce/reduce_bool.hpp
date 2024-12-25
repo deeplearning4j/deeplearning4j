@@ -38,7 +38,7 @@ void SD_HOST ReduceBoolFunction<X, Z>::execScalar(const void *vx, const sd::Long
                                                   void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
   auto z = reinterpret_cast<X *>(vz);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
   const auto length = shape::length(xShapeInfo);
 

@@ -39,8 +39,8 @@ template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
                                                    void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
-  auto z = reinterpret_cast<X *>(vz);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
+  auto z = reinterpret_cast<Z *>(vz);
+  auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
   const auto length = shape::length(xShapeInfo);
 
