@@ -31,12 +31,6 @@
 #include <ops/ops.h>
 
 #include <vector>
-
-//#include <loops/reduce.h>
-//#include <loops/scalar.h>
-//#include <loops/indexreduce.h>
-//#include <loops/broadcasting.h>
-
 #include <loops/legacy_ops.h>
 
 namespace functions {
