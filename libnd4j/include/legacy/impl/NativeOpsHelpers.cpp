@@ -483,8 +483,6 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
     }
 
     auto shapeList = op->calculateOutputShape(&inShapes, *context);
-    printf("Ran calculateOutputShape for op %s \n", op->getOpName()->c_str());
-    fflush(stdout);
     return shapeList;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
