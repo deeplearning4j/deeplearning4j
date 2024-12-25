@@ -40,15 +40,35 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
                                   const LongType* stShapeInfo, const T lr, const T epsilon) {
   const auto x = reinterpret_cast<const T*>(vx);
   const auto init = reinterpret_cast<const T*>(vin);
-
   auto up = reinterpret_cast<T*>(vz);
   auto st = reinterpret_cast<T*>(vst);
 
   __shared__ bool bEWS, bOrdering, bXZsame, bXInSame, bXStSame;
   __shared__ LongType xLen;
+  __shared__ LongType xRank, zRank, inRank, stRank;
+  __shared__ LongType *xShape, *zShape, *inShape, *stShape;
+  __shared__ LongType *xStride, *zStride, *inStride, *stStride;
 
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    inRank = shape::rank(inShapeInfo);
+    stRank = shape::rank(stShapeInfo);
+
+    // Cache shapes
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    inShape = shape::shapeOf(inShapeInfo);
+    stShape = shape::shapeOf(stShapeInfo);
+
+    // Cache strides
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    inStride = shape::stride(inShapeInfo);
+    stStride = shape::stride(stShapeInfo);
 
     bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
            1 == shape::elementWiseStride(stShapeInfo) && 1 == shape::elementWiseStride(inShapeInfo);
@@ -68,24 +88,25 @@ SD_KERNEL void adaGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
     LongType xOffset, zOffset, initOffset, stOffset;
 
     if (!bEWS || !bOrdering) {
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+      INDEX2COORDS(i, xRank, xShape, coords);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+        COORDS2INDEX(zRank, zStride, coords, zOffset);
       }
 
       if (bXInSame) {
         initOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, initOffset);
+        COORDS2INDEX(inRank, inStride, coords, initOffset);
       }
 
       if (bXStSame) {
         stOffset = xOffset;
       } else {
-        COORDS2INDEX(shape::rank(stShapeInfo), shape::stride(stShapeInfo), coords, stOffset);
+        COORDS2INDEX(stRank, stStride, coords, stOffset);
       }
     } else {
       xOffset = zOffset = initOffset = stOffset = i;

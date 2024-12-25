@@ -39,29 +39,42 @@ static SD_DEVICE void assign_(void *vx, LongType *xShapeInfo, void *vz, LongType
   auto x = reinterpret_cast<T *>(vx);
   auto z = reinterpret_cast<T *>(vz);
 
-  auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  const auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+  const auto step = blockDim.x * gridDim.x;
 
-  __shared__ LongType length;
+  __shared__ LongType length, rankX, rankZ;
+  __shared__ const LongType *shapeX, *strideX, *shapeZ, *strideZ;
 
   if (threadIdx.x == 0) {
     length = shape::length(xShapeInfo);
+    rankX = shape::rank(xShapeInfo);
+    rankZ = shape::rank(zShapeInfo);
+    shapeX = shape::shapeOf(xShapeInfo);
+    strideX = shape::stride(xShapeInfo);
+    shapeZ = shape::shapeOf(zShapeInfo);
+    strideZ = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
   LongType xCoords[SD_MAX_RANK];
   LongType zCoords[SD_MAX_RANK];
-  LongType xOffset;
-  LongType zOffset;
 
-  for (int i = threadIdx.x; i < length; i += blockDim.x) {
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-    INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+  for (LongType i = tid; i < length; i += step) {
+    // Compute input coordinates and offset
+    INDEX2COORDS(i, rankX, shapeX, xCoords);
+    LongType xOffset;
+    COORDS2INDEX(rankX, strideX, xCoords, xOffset);
 
+    // Compute output coordinates and offset
+    INDEX2COORDS(i, rankZ, shapeZ, zCoords);
+    LongType zOffset;
+    COORDS2INDEX(rankZ, strideZ, zCoords, zOffset);
+
+    // Assign value from input to output
     z[zOffset] = x[xOffset];
   }
 }
+
 
 template <typename T>
 static SD_KERNEL void meshgridKernel(int rank, void **outBuffers, LongType **tadShapes, LongType **tadOffsets,

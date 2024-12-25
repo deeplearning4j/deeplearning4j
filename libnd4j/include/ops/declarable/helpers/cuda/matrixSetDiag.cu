@@ -38,53 +38,52 @@ SD_KERNEL static void matrixSetDiagCuda(const void* vx, const LongType* xShapeIn
   // x - input,    shape [A,B,C]
   // y - diagonal, shape [A,B]
   // z - output,   shape [A,B,C]
-  // input and output are the same array (x == z) when zeroPad = true
 
   const auto x = reinterpret_cast<const T*>(vx);
   const auto y = reinterpret_cast<const T*>(vy);
   auto z = reinterpret_cast<T*>(vz);
 
-  __shared__ LongType xRank, *sharedMem;  // xRank = zRank, xRank = yRank + 1
-  __shared__ LongType xLen;      // xLen = zLen
+  __shared__ int xRank;
+  __shared__ LongType xLen;
+  __shared__ const LongType *shapeX, *strideX, *strideY, *strideZ;
   __shared__ bool areSameOffsets;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType*>(shmem);
-
-    areSameOffsets = shape::haveSameShapeAndStrides(
-        xShapeInfo, zShapeInfo);  // shapes are definitely the same, but strides might not
-
     xRank = shape::rank(xShapeInfo);
     xLen = shape::length(xShapeInfo);
+    shapeX = shape::shapeOf(xShapeInfo);
+    strideX = shape::stride(xShapeInfo);
+    strideY = shape::stride(yShapeInfo);
+    strideZ = shape::stride(zShapeInfo);
+    areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
   }
-
   __syncthreads();
 
-  auto coords =
-      sharedMem +
-      threadIdx.x * xRank;  // we provide (xRank * sizeof(sd::LongType) * threadIdx.x) amount of shared memory per each thread
+  LongType coords[SD_MAX_RANK];
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto step = gridDim.x * blockDim.x;
 
-  for (LongType i = tid; i < xLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
-
+  for (LongType i = tid; i < xLen; i += step) {
+    // Compute coordinates and offsets
+    INDEX2COORDS(i, xRank, shapeX, coords);
     LongType xOffset, zOffset, yOffset;
-    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
-    if (areSameOffsets) {
-      zOffset = xOffset;
-    } else {
-      COORDS2INDEX(xRank, shape::stride(zShapeInfo), coords, zOffset);
+
+    COORDS2INDEX(xRank, strideX, coords, xOffset);
+    zOffset = areSameOffsets ? xOffset : 0;
+    if (!areSameOffsets) {
+      COORDS2INDEX(xRank, strideZ, coords, zOffset);
     }
-    // condition to be on diagonal of innermost matrix
+
+    // Check if on the diagonal
     if (coords[xRank - 2] == coords[xRank - 1]) {
-      COORDS2INDEX(xRank - 1, shape::stride(yShapeInfo), coords, yOffset);
+      COORDS2INDEX(xRank - 1, strideY, coords, yOffset);
       z[zOffset] = y[yOffset];
     } else {
       z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
     }
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

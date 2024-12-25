@@ -1128,57 +1128,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType sliceOffsetForTensor(sd::LongType r
 }
 
 
-//////////////////////////////////////////////////////////////////////
-SD_LIB_EXPORT SD_INLINE SD_HOST void getOffsetBroadcast(const sd::LongType &startInd, const sd::LongType ind, const sd::LongType *shapeInfo1,
-                                                        const sd::LongType *shapeInfo2, const sd::LongType *shapeInfo3,
-                                                        const bool sameOffsets12, const bool sameOffsets13, sd::LongType *coords,
-                                                        sd::LongType &offset1, sd::LongType &offset2, sd::LongType &offset3) {
-  const sd::LongType *shape1 = shapeOf(shapeInfo1);
-  const sd::LongType *strides1 = stride(shapeInfo1);
-  const sd::LongType *shape2 = shapeOf(shapeInfo2);
-  const sd::LongType *strides2 = stride(shapeInfo2);
-  const sd::LongType *shape3 = shapeOf(shapeInfo3);
-  const sd::LongType *strides3 = stride(shapeInfo3);
-
-  if (startInd == ind) {
-    if (rank(shapeInfo1) == 0) {
-      offset1 = offset2 = offset3 = 0;
-      return;
-    }
-
-    INDEX2COORDS(startInd, rank(shapeInfo1), shape::shapeOf(shape1), coords);
-    COORDS2INDEX(rank(shapeInfo1), strides1, coords, offset1);
-
-    if (sameOffsets12)
-      offset2 = offset1;
-    else
-      COORDS2INDEX(rank(shapeInfo2), strides2, coords, offset2);
-
-    if (sameOffsets13)
-      offset3 = offset1;
-    else
-      COORDS2INDEX(rank(shapeInfo3), strides3, coords, offset3);
-
-    return;
-  }
-
-  int axis = shapeInfo1[0] - 1;
-  while (coords[axis] == shape1[axis] - 1) {
-    if (!sameOffsets12 && shape2[axis] != 1) offset2 -= (shape2[axis] - 1) * strides2[axis];
-    if (!sameOffsets13 && shape3[axis] != 1) offset3 -= (shape3[axis] - 1) * strides3[axis];
-    if (shape1[axis] != 1) offset1 -= (shape1[axis] - 1) * strides1[axis];
-    coords[axis--] = 0;
-  }
-
-  ++coords[axis];
-  offset1 += strides1[axis];
-
-  if (!sameOffsets12 && shape2[axis] != 1) offset2 += strides2[axis];
-  if (!sameOffsets13 && shape3[axis] != 1) offset3 += strides3[axis];
-
-  if (sameOffsets12) offset2 = offset1;
-  if (sameOffsets13) offset3 = offset1;
-}
 
 /**
 * Returns a shape buffer
@@ -2002,7 +1951,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE size_t shapeInfoByteLength(const sd::Long
 * an information buffer
 */
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType rank(const sd::LongType *buffer) {
-  return static_cast<sd::LongType>(buffer[0]);
+  return buffer[0];
 }
 
 

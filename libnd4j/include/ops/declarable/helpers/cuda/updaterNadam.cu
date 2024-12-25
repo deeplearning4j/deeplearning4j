@@ -43,21 +43,45 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
   const auto grad = reinterpret_cast<const T*>(vx);
   const auto initV = reinterpret_cast<const T*>(vinv);
   const auto initM = reinterpret_cast<const T*>(vinm);
-
   auto up = reinterpret_cast<T*>(vz);
   auto stV = reinterpret_cast<T*>(vstV);
   auto stM = reinterpret_cast<T*>(vstM);
 
-  __shared__ LongType xLen;
+  __shared__ LongType xLen, xRank, zRank, invRank, inmRank, stvRank, stmRank;
   __shared__ T mbeta1T, mbeta1, mbeta2;
   __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
+  __shared__ LongType *sharedMem;
+  __shared__ const LongType *xShape, *zShape, *invShape, *inmShape, *stvShape, *stmShape;
+  __shared__ const LongType *xStride, *zStride, *invStride, *inmStride, *stvStride, *stmStride;
 
   if (threadIdx.x == 0) {
-    xLen = shape::length(xShapeInfo);
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<LongType*>(shmem);
 
+    xLen = shape::length(xShapeInfo);
     mbeta1T = 1.0 - math::sd_pow<T, T, T>(beta1, (iteration + 1));
     mbeta1 = (1 - beta1);
     mbeta2 = (1 - beta2);
+
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    invRank = shape::rank(invShapeInfo);
+    inmRank = shape::rank(inmShapeInfo);
+    stvRank = shape::rank(stvShapeInfo);
+    stmRank = shape::rank(stmShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    invShape = shape::shapeOf(invShapeInfo);
+    invStride = shape::stride(invShapeInfo);
+    inmShape = shape::shapeOf(inmShapeInfo);
+    inmStride = shape::stride(inmShapeInfo);
+    stvShape = shape::shapeOf(stvShapeInfo);
+    stvStride = shape::stride(stvShapeInfo);
+    stmShape = shape::shapeOf(stmShapeInfo);
+    stmStride = shape::stride(stmShapeInfo);
 
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
@@ -73,47 +97,47 @@ SD_KERNEL void nadamUpdaterCuda(const void* vx, const LongType* xShapeInfo, cons
   }
   __syncthreads();
 
-  LongType coords[SD_MAX_RANK];
+  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
     }
 
     if (bXInUSame) {
       initUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(invShapeInfo), shape::stride(invShapeInfo), coords, initUOffset);
+      COORDS2INDEX(invRank, invStride, coords, initUOffset);
     }
 
     if (bXStUSame) {
       stUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stvShapeInfo), shape::stride(stvShapeInfo), coords, stUOffset);
+      COORDS2INDEX(stvRank, stvStride, coords, stUOffset);
     }
 
     if (bXInMSame) {
       initMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inmShapeInfo), shape::stride(inmShapeInfo), coords, initMOffset);
+      COORDS2INDEX(inmRank, inmStride, coords, initMOffset);
     }
 
     if (bXStMSame) {
       stMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stmShapeInfo), shape::stride(stmShapeInfo), coords, stMOffset);
+      COORDS2INDEX(stmRank, stmStride, coords, stMOffset);
     }
-    auto oneMinusBeta1Grad = grad[xOffset] * mbeta1;
 
+    auto oneMinusBeta1Grad = grad[xOffset] * mbeta1;
     stM[stMOffset] = beta1 * initM[initMOffset] + oneMinusBeta1Grad;
     stV[stUOffset] = beta2 * initV[initUOffset] + grad[xOffset] * grad[xOffset] * mbeta2;
-
     up[zOffset] = (lr * ((stM[stMOffset] * beta1 + oneMinusBeta1Grad) / mbeta1T)) /
                   (math::sd_sqrt<T, T>(stV[stUOffset]) + epsilon);
   }

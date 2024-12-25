@@ -45,12 +45,19 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
 
   __shared__ LongType xzLen;
   __shared__ int xzRank, yRank;
+  __shared__ const LongType *xzShape;
+  __shared__ const LongType *xzStride;
+  __shared__ const LongType *yShape;
+  __shared__ const LongType *yStride;
 
   if (threadIdx.x == 0) {
     xzLen = shape::length(xShapeInfo);
-
     xzRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
+    xzShape = shape::shapeOf(xShapeInfo);
+    xzStride = shape::stride(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    yStride = shape::stride(yShapeInfo);
   }
   __syncthreads();
 
@@ -58,10 +65,10 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
-    INDEX2COORDS(i, xzRank,shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, xzRank, xzShape, coords);
 
     LongType xzOffset;
-    COORDS2INDEX(xzRank, shape::stride(xShapeInfo), coords, xzOffset);
+    COORDS2INDEX(xzRank, xzStride, coords, xzOffset);
     const auto xVal = x[xzOffset];
 
     if (xVal < 0) {
@@ -69,13 +76,13 @@ void SD_KERNEL preluCuda(const void *vx, const LongType *xShapeInfo, const void 
         if (yShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       LongType yOffset;
-      COORDS2INDEX(yRank, shape::shapeOf(yShapeInfo), coords + 1, yOffset);
+      COORDS2INDEX(yRank, yStride, coords + 1, yOffset);
       z[xzOffset] = xVal * y[yOffset];
-    } else
+    } else {
       z[xzOffset] = xVal;
+    }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -120,6 +127,12 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
 
   __shared__ LongType inLen, totalThreads;
   __shared__ int inRank, alphaRank;
+  __shared__ const LongType *inShape;
+  __shared__ const LongType *inStride;
+  __shared__ const LongType *dLdOStride;
+  __shared__ const LongType *dLdIStride;
+  __shared__ const LongType *alphaStride;
+  __shared__ const LongType *dLdAStride;
 
   if (threadIdx.x == 0) {
     inLen = shape::length(inShapeInfo);
@@ -127,6 +140,14 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
 
     inRank = shape::rank(inShapeInfo);
     alphaRank = shape::rank(alphaShapeInfo);
+
+    // Cache shapes and strides
+    inShape = shape::shapeOf(inShapeInfo);
+    inStride = shape::stride(inShapeInfo);
+    dLdOStride = shape::stride(dLdOShapeInfo);
+    dLdIStride = shape::stride(dLdIShapeInfo);
+    alphaStride = shape::stride(alphaShapeInfo);
+    dLdAStride = shape::stride(dLdAShapeInfo);
   }
   __syncthreads();
 
@@ -134,12 +155,12 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
   LongType coords[SD_MAX_RANK];
 
   for (int i = tid; i < inLen; i += totalThreads) {
-    INDEX2COORDS(i, inRank, shape::shapeOf(inShapeInfo), coords);
+    INDEX2COORDS(i, inRank, inShape, coords);
 
     LongType inOffset, dLdOOffset, dLdIOffset;
-    COORDS2INDEX(inRank, shape::stride(inShapeInfo), coords, inOffset);
-    COORDS2INDEX(inRank, shape::stride(dLdOShapeInfo), coords, dLdOOffset);
-    COORDS2INDEX(inRank, shape::stride(dLdIShapeInfo), coords, dLdIOffset);
+    COORDS2INDEX(inRank, inStride, coords, inOffset);
+    COORDS2INDEX(inRank, dLdOStride, coords, dLdOOffset);
+    COORDS2INDEX(inRank, dLdIStride, coords, dLdIOffset);
 
     const auto xVal = in[inOffset];
     const auto grO = dLdO[dLdOOffset];
@@ -149,14 +170,15 @@ void SD_KERNEL preluBPCuda(const void *vIn, const LongType *inShapeInfo, const v
         if (alphaShapeInfo[j + 1] == 1) coords[j + 1] = 0;
 
       LongType alphaOffset, dLdAOffset;
-      COORDS2INDEX(alphaRank, shape::stride(alphaShapeInfo), coords + 1, alphaOffset);
-      COORDS2INDEX(alphaRank, shape::stride(dLdAShapeInfo), coords + 1, dLdAOffset);
+      COORDS2INDEX(alphaRank, alphaStride, coords + 1, alphaOffset);
+      COORDS2INDEX(alphaRank, dLdAStride, coords + 1, dLdAOffset);
 
       dLdI[dLdIOffset] = grO * alpha[alphaOffset];
 
       math::atomics::sd_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
-    } else
+    } else {
       dLdI[dLdIOffset] = grO;
+    }
   }
 }
 
@@ -208,10 +230,27 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   __shared__ T shmemMax;
   __shared__ T shmemSum;
   __shared__ LongType tadLen;
+  __shared__ int xRank;
+  __shared__ int zRank;
+  __shared__ const LongType *xShape;
+  __shared__ const LongType *xStride;
+  __shared__ const LongType *zShape;
+  __shared__ const LongType *zStride;
+
   if (threadIdx.x == 0) {
     tadLen = shape::length(xShapeInfo);
     shmemMax = -DataTypeUtils::max<T>();
     shmemSum = 0.f;
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+
+    // Cache shapes and strides
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -221,31 +260,31 @@ SD_DEVICE void softMaxForVectorCuda(const void *vx, const LongType *xShapeInfo, 
   LongType xCoords[SD_MAX_RANK];
   LongType xOffset;
 
-  // Calculate max
+  // Calculate max using cached values
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
     max = math::sd_max<T>(max, inBuff[xOffset]);
   }
 
   LongType zCoords[SD_MAX_RANK];
   LongType zOffset;
 
-  // Calculate exp(x - max) and sum
+  // Calculate exp(x - max) and sum using cached values
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
+    INDEX2COORDS(j, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
     T temp = math::sd_exp<T, T>(inBuff[xOffset] - max);
-    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(j, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     outBuff[zOffset] = temp;
     sum += temp;
   }
 
-  // Final division step
+  // Final division step using cached values
   for (LongType j = 0; j < tadLen; ++j) {
-    INDEX2COORDS(j, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-    COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+    INDEX2COORDS(j, zRank, zShape, zCoords);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     outBuff[zOffset] /= sum;
   }
 }
@@ -378,29 +417,7 @@ void softmax(LaunchContext *context, NDArray&input, NDArray &output, const int d
       NDArray::registerSpecialUse({&output}, {&input});
     } else
       output = 1.;
-  } else if(shape::ews(input.shapeInfo()) == 1) {
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
-    dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
-    manager.synchronize();
-    NDArray::prepareSpecialUse({&output}, {&input});
-    //TODO: look in to why TAD shape info for cuda is 100 but it's 10 on cpu
-    auto tadLength = shape::length(packX->primaryShapeInfo());
-    BUILD_SINGLE_SELECTOR(input.dataType(), softMaxEws1CudaLauncher,
-                          (softmaxDims.x, softmaxDims.y,
-                              softmaxDims.z,
-                              context->getCudaStream(),
-                              input.specialBuffer(),
-                              packX->specialOffsets(),
-                              output.specialBuffer(),
-                              packZ->specialOffsets(),
-                              packX->numberOfTads(),
-                              tadLength),
-                          SD_FLOAT_TYPES);
-    NDArray::registerSpecialUse({&output}, {&input});
-  }
-
-  else {
+  } else {
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
     auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
@@ -437,11 +454,19 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
 
   __shared__ LongType len;
   __shared__ int numOfIters;
+  __shared__ int xzRank;
+  __shared__ const LongType *xzShape;
+  __shared__ const LongType *xzStride;
   __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
 
   if (threadIdx.x == 0) {
     len = shape::length(xzShapeInfo);
     numOfIters = (len + blockDim.x - 1) / blockDim.x;  // ceil (len / blockDim.x)
+
+    // Cache rank, shape and stride information
+    xzRank = shape::rank(xzShapeInfo);
+    xzShape = shape::shapeOf(xzShapeInfo);
+    xzStride = shape::stride(xzShapeInfo);
   }
   __syncthreads();
 
@@ -453,8 +478,8 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+      COORDS2INDEX(xzRank, xzStride, coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
@@ -474,14 +499,14 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
   temp = 0;
 
   // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
-  // // at the same time evaluate sum of exponents, sum will be stored in shmem[0]
+  // at the same time evaluate sum of exponents, sum will be stored in shmem[0]
   for (int i = 0; i < numOfIters; ++i) {
     const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+      COORDS2INDEX(xzRank, xzStride, coords, offset);
       z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else {
@@ -501,14 +526,15 @@ void SD_KERNEL logSoftMaxForVectorCuda(const void *vx, const LongType *xzShapeIn
   // ************ evaluate log(z[offset] / sum)  ************ //
   for (int i = 0; i < numOfIters; ++i) {
     const LongType elemIdx = i * blockDim.x + threadIdx.x;
-    LongType offset;
-    sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
-    z[offset] = math::sd_log<T, T>(z[offset] / shmem[0]);
+    if (elemIdx < len) {  // Added bounds check that was missing in original
+      LongType offset;
+      sd::LongType coords[SD_MAX_RANK];
+      INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+      COORDS2INDEX(xzRank, xzStride, coords, offset);
+      z[offset] = math::sd_log<T, T>(z[offset] / shmem[0]);
+    }
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx, const LongType *xzShapeInfo,
@@ -559,11 +585,19 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
 
   __shared__ LongType len;
   __shared__ int numOfIters;
+  __shared__ int xzRank;
+  __shared__ const LongType *xzShape;
+  __shared__ const LongType *xzStride;
   __shared__ T shmem[SD_CUDA_BLOCK_SIZE];
 
   if (threadIdx.x == 0) {
     len = shape::length(xzShapeInfo);
     numOfIters = (len + blockDim.x - 1) / blockDim.x;  // ceil (len / blockDim.x)
+
+    // Cache rank, shape and stride information
+    xzRank = shape::rank(xzShapeInfo);
+    xzShape = shape::shapeOf(xzShapeInfo);
+    xzStride = shape::stride(xzShapeInfo);
   }
   __syncthreads();
 
@@ -575,8 +609,8 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+      COORDS2INDEX(xzRank, xzStride, coords, offset);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : math::sd_max<T>(x[offset], temp);  // take into account max element evaluated on previous iteration and stored in temp
     } else {
       shmem[threadIdx.x] = -DataTypeUtils::max<T>();  // FIXME: what if T is unsigned ??
@@ -596,14 +630,14 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
   temp = 0;
 
   // ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************
-  // // at the same evaluate sum of exponents, sum will be stored in shmem[0]
+  // at the same evaluate sum of exponents, sum will be stored in shmem[0]
   for (int i = 0; i < numOfIters; ++i) {
     const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx < len) {
       LongType offset;
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-      COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
+      INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+      COORDS2INDEX(xzRank, xzStride, coords, offset);
       z[offset] = math::sd_exp<T, T>(x[offset] - max);
       shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp);  // take into account sum element evaluated on previous iteration and stored in temp
     } else {
@@ -624,10 +658,11 @@ void SD_KERNEL softMaxDerivForVectorCuda(const void *vx, const LongType *xzShape
   for (int i = 0; i < numOfIters; ++i) {
     const LongType elemIdx = i * blockDim.x + threadIdx.x;
     if (elemIdx >= len) continue;
+
     LongType offset;
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(elemIdx, shape::rank(xzShapeInfo), shape::shapeOf(xzShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xzShapeInfo), shape::stride(xzShapeInfo), coords, offset);
+    INDEX2COORDS(elemIdx, xzRank, xzShape, coords);
+    COORDS2INDEX(xzRank, xzStride, coords, offset);
     z[offset] /= shmem[0];
     z[offset] *= (1.f - z[offset]);  // derivative
   }

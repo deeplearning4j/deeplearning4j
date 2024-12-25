@@ -40,41 +40,78 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-SD_KERNEL static void splitCuda(const void* vx, const LongType* xShapeInfo, void* pVz,
-                                const LongType* zTadShapeInfo, const LongType axis) {
+__global__ static void splitCuda(const void* vx, const LongType* xShapeInfo, void* pVz,
+                                 const LongType* zTadShapeInfo, const LongType axis) {
   const T* x = reinterpret_cast<const T*>(vx);
 
-  __shared__ LongType xLen, totalThreads;
-  __shared__ int xRank, zDim;
+  // Shared memory for caching shape information and related variables
+  extern __shared__ unsigned char shmem[];
+  LongType* sharedMem = reinterpret_cast<LongType*>(shmem);
+
+  // Shared variables
+  __shared__ LongType shared_xLen;
+  __shared__ LongType shared_totalThreads;
+  __shared__ int shared_xRank;
+  __shared__ LongType shared_zDim;
+
+  // Cached shape and stride pointers
+  __shared__ const LongType* shared_xShape;
+  __shared__ const LongType* shared_xStride;
+  __shared__ const LongType* shared_zTadShape;
+  __shared__ const LongType* shared_zTadStride;
+  __shared__ int shared_zTadRank;
 
   if (threadIdx.x == 0) {
-    xLen = shape::length(xShapeInfo);
-    xRank = shape::rank(xShapeInfo);
-    zDim = shape::shapeOf(zTadShapeInfo)[axis];  // same for all input arrays
-    totalThreads = gridDim.x * blockDim.x;
+    // Cache shape and stride information for xShapeInfo
+    shared_xRank = shape::rank(xShapeInfo);
+    shared_xShape = shape::shapeOf(xShapeInfo);
+    shared_xStride = shape::stride(xShapeInfo);
+
+    // Cache shape and stride information for zTadShapeInfo
+    shared_zTadRank = shape::rank(zTadShapeInfo);
+    shared_zTadShape = shape::shapeOf(zTadShapeInfo);
+    shared_zTadStride = shape::stride(zTadShapeInfo);
+    shared_zDim = shared_zTadShape[axis];  // Assuming zDim is constant across splits
+
+    // Cache length and total threads
+    shared_xLen = shape::length(xShapeInfo);
+    shared_totalThreads = gridDim.x * blockDim.x;
   }
+
+  // Ensure all threads have access to the cached values
   __syncthreads();
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  const LongType tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  LongType coords[SD_MAX_RANK];
+  // Allocate space in shared memory for coordinates
+  LongType* coords = sharedMem + threadIdx.x * shared_xRank;
 
-  for (LongType i = tid; i < xLen; i += totalThreads) {
-    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), coords);
+  for (LongType i = tid; i < shared_xLen; i += shared_totalThreads) {
+    // Convert linear index to multi-dimensional coordinates
+    INDEX2COORDS(i, shared_xRank, shared_xShape, coords);
 
     LongType xOffset;
-    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+    // Convert coordinates to linear index for x
+    COORDS2INDEX(shared_xRank, shared_xStride, coords, xOffset);
 
-    auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[coords[axis] / zDim]);
+    // Determine the split index along the specified axis
+    LongType splitIndex = coords[axis] / shared_zDim;
 
-    coords[axis] %= zDim;
+    // Retrieve the pointer to the target output tensor
+    T* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[splitIndex]);
+
+    // Update the coordinate along the split axis
+    coords[axis] %= shared_zDim;
 
     LongType zOffset;
-    COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
+    // Convert updated coordinates to linear index for z
+    COORDS2INDEX(shared_zTadRank, shared_zTadStride, coords, zOffset);
 
+    // Perform the split operation
     z[zOffset] = x[xOffset];
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 SD_HOST static void splitCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,

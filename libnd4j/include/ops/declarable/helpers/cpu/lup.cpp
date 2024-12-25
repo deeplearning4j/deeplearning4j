@@ -286,36 +286,51 @@ static void doolitleLU(LaunchContext* context, NDArray* compound, sd::LongType r
 template <typename T, typename I>
 static void luNN_(LaunchContext* context, NDArray* compound, NDArray* permutation, sd::LongType rowNum) {
   if (permutation) {  // LUP algorithm
+    // Initialize permutation array
     permutation->linspace(0);
+
+    // Cache all buffers and shape data upfront
     auto permutationBuf = permutation->bufferAsT<I>();
     auto compoundBuf = compound->bufferAsT<T>();
     auto compoundShape = compound->shapeInfo();
     auto permutationShape = permutation->shapeInfo();
+
+    // Cache shape-related values outside the main loop
+    const int permRank = shape::rank(permutationShape);
+    const sd::LongType* permShape = shape::shapeOf(permutationShape);
+    const sd::LongType* permStride = shape::stride(permutationShape);
+
+    // Main LU decomposition loop
     for (sd::LongType i = 0; i < rowNum - 1; i++) {
       auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
       if (pivotIndex < 0) {
         THROW_EXCEPTION("helpers::luNN_: input matrix is singular.");
       }
+
+      // Use cached shape values for coordinate transforms
       sd::LongType firstIndexCoords[SD_MAX_RANK];
       sd::LongType secondIndexCoords[SD_MAX_RANK];
       sd::LongType firstIndex;
       sd::LongType secondIndex;
 
-      INDEX2COORDS(i, shape::rank(permutationShape), shape::shapeOf(permutationShape), firstIndexCoords);
-      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), firstIndexCoords, firstIndex);
-      INDEX2COORDS(pivotIndex, shape::rank(permutationShape), shape::shapeOf(permutationShape), secondIndexCoords);
-      COORDS2INDEX(shape::rank(permutationShape), shape::stride(permutationShape), secondIndexCoords, secondIndex);
+      // Transform coordinates using cached shape data
+      INDEX2COORDS(i, permRank, permShape, firstIndexCoords);
+      COORDS2INDEX(permRank, permStride, firstIndexCoords, firstIndex);
 
+      INDEX2COORDS(pivotIndex, permRank, permShape, secondIndexCoords);
+      COORDS2INDEX(permRank, permStride, secondIndexCoords, secondIndex);
+
+      // Perform the swaps
       math::sd_swap(permutationBuf[firstIndex], permutationBuf[secondIndex]);
       swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
+      // Process remaining columns
       processColumns(i, rowNum, compoundBuf, compoundShape);
     }
   } else {  // Doolitle algorithm with LU decomposition
     doolitleLU<T>(context, compound, rowNum);
   }
 }
-
 template <typename T, typename I>
 static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
   auto n = input->sizeAt(-1);

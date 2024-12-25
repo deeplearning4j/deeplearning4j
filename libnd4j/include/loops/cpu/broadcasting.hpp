@@ -49,7 +49,8 @@ void Broadcast<X, Y, Z>::execInverse(int opNum, const void *x, const sd::LongTyp
 template <typename X, typename Y, typename Z>
 void Broadcast<X, Y, Z>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                               const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo,
-                              sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
+                              sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo,
+                              const sd::LongType *xTadOffset,
                               const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset,
                               sd::LoopKind::Kind loopKind, sd::LongType start, sd::LongType stop) {
   DISPATCH_BY_OPNUM_TTT(exec,
@@ -76,16 +77,27 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
 
   if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-
     xTadShapeShapeInfo = tadPack->primaryShapeInfo();
     tadOffsets = tadPack->primaryOffsets();
   }
 
-  sd::LongType tadLength = shape::length(xTadShapeShapeInfo);
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = xTadShapeShapeInfo;
     zTadOffset = tadOffsets;
   }
+
+  // Cache all shape-related values
+  sd::LongType xTadRank = shape::rank(xTadShapeShapeInfo);
+  sd::LongType yRank = shape::rank(yShapeInfo);
+  sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+  sd::LongType *xTadShape = shape::shapeOf(xTadShapeShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(zTadShapeInfo);
+  sd::LongType *xTadStride = shape::stride(xTadShapeShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
+  sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
+
+  sd::LongType tadLength = shape::length(xTadShapeShapeInfo);
 
   // Case 5
   for (auto i = start; i < stop; i++) {
@@ -94,31 +106,30 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, co
     PRAGMA_OMP_SIMD
     for (sd::LongType f = 0; f < tadLength; f++) {
       sd::LongType coords[SD_MAX_RANK];
-      sd::LongType  yCoords[SD_MAX_RANK];
-      sd::LongType  zCoords[SD_MAX_RANK];
-      INDEX2COORDS(f, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), coords);
-      INDEX2COORDS(f, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-      INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
+      sd::LongType yCoords[SD_MAX_RANK];
+      sd::LongType zCoords[SD_MAX_RANK];
 
-      sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(xTadShapeShapeInfo), shape::stride(xTadShapeShapeInfo), coords, xOffset);
-      sd::LongType yOffset;
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
-      sd::LongType zOffset;
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(f, xTadRank, xTadShape, coords);
+      INDEX2COORDS(f, yRank, yShape, yCoords);
+      INDEX2COORDS(f, zTadRank, zTadShape, zCoords);
+
+      sd::LongType xOffset, yOffset, zOffset;
+      COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+      COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
+
       oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
     }
   }
-
 }
 
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void Broadcast<X, Y, Z>::execInverse(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                      const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
-                                     sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *yTadShapeInfo,
-                                     const sd::LongType *yTadOffset, const sd::LongType *zTadShapeInfo,
-                                     const sd::LongType *zTadOffset,
+                                     sd::LongType *dimension, sd::LongType dimensionLength,
+                                     const sd::LongType *yTadShapeInfo, const sd::LongType *yTadOffset,
+                                     const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset,
                                      sd::LongType start, sd::LongType stop) {
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
@@ -129,22 +140,26 @@ void Broadcast<X, Y, Z>::execInverse(const void *vx, const sd::LongType *xShapeI
 
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
     yTadShapeShapeInfo = tadPack->primaryShapeInfo();
     tadOffsets = tadPack->primaryOffsets();
   }
-
-  sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
-  sd::LongType tads = shape::length(yShapeInfo) / tadLength;
 
   if (zTadShapeInfo == nullptr) {
     zTadShapeInfo = yTadShapeShapeInfo;
     zTadOffset = tadOffsets;
   }
 
+  // Cache all shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType yTadRank = shape::rank(yTadShapeShapeInfo);
+  sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yTadStride = shape::stride(yTadShapeShapeInfo);
+  sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
+  sd::LongType *zTadShape = shape::shapeOf(zTadShapeInfo);
 
-  sd::LongType tadsPerThread = tads / TAD_THRESHOLD;
-  // Case 5
+  sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
+
   for (auto i = start; i < stop; i++) {
     auto oZ = z + zTadOffset[i];
     auto oY = y + tadOffsets[i];
@@ -152,56 +167,52 @@ void Broadcast<X, Y, Z>::execInverse(const void *vx, const sd::LongType *xShapeI
     PRAGMA_OMP_SIMD
     for (sd::LongType f = 0; f < tadLength; f++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(f, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), coords);
-      sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-      sd::LongType yOffset;
-      COORDS2INDEX(shape::rank(yTadShapeShapeInfo), shape::stride(yTadShapeShapeInfo), coords, yOffset);
-      sd::LongType zOffset;
-      COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), coords, zOffset);
+      INDEX2COORDS(f, zTadRank, zTadShape, coords);
 
-      // Add print statement
-      printf("Inverse Case 5: xOffset = %lld, yOffset = %lld, zOffset = %lld\n", xOffset, yOffset, zOffset);
-      fflush(stdout);
+      sd::LongType xOffset, yOffset, zOffset;
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(yTadRank, yTadStride, coords, yOffset);
+      COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
 
       oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
     }
-  };
-
+  }
 }
 
-//////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void Broadcast<X, Y, Z>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,
                               const sd::LongType *yShapeInfo, void *z, const sd::LongType *zShapeInfo) {
   DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo), BROADCAST_OPS);
 }
 
-
-
-//////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
 static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, const sd::LongType *yShapeInfo, Z *z,
                         const sd::LongType *zShapeInfo) {
+  // Cache shape-related values
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType yRank = shape::rank(yShapeInfo);
+  sd::LongType zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
+
   auto func = PRAGMA_THREADS_FOR {
-
-    sd::LongType xOffset, yOffset, zOffset;
-
     for (auto i = start; i < stop; ++i) {
       sd::LongType coords[SD_MAX_RANK];
       sd::LongType yCoords[SD_MAX_RANK];
       sd::LongType zCoords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
 
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i, yRank, yShape, yCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
 
-      // Add print statement
-      printf("Default Case: xOffset = %lld, yOffset = %lld, zOffset = %lld\n", xOffset, yOffset, zOffset);
-      fflush(stdout);
+      sd::LongType xOffset, yOffset, zOffset;
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
       z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
     }
@@ -210,7 +221,6 @@ static void execDefault(const X *x, const sd::LongType *xShapeInfo, const Y *y, 
   samediff::Threads::parallel_for(func, static_cast<sd::LongType>(0), shape::length(zShapeInfo));
 }
 
-//////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 template <typename OpType>
 void Broadcast<X, Y, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,

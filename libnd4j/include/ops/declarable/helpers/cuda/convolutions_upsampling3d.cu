@@ -36,15 +36,15 @@ template <typename T>
 SD_KERNEL static void upsampling3dCuda(const void* vx, const LongType* xShapeInfo, void* vz,
                                        const LongType* zShapeInfo, const int factorD, const int factorH,
                                        const int factorW, const bool isNCDHW) {
-  // x has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
-  // z has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC]
-  // (NDHWC)
-
   const T* x = reinterpret_cast<const T*>(vx);
   T* z = reinterpret_cast<T*>(vz);
 
   __shared__ int rank, dimID;
   __shared__ LongType zLen, *sharedMem;
+  __shared__ LongType* xShape;
+  __shared__ LongType* zShape;
+  __shared__ LongType* xStride;
+  __shared__ LongType* zStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -53,6 +53,12 @@ SD_KERNEL static void upsampling3dCuda(const void* vx, const LongType* xShapeInf
     dimID = isNCDHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
     rank = 5;
+
+    // Cache shape information
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -62,17 +68,17 @@ SD_KERNEL static void upsampling3dCuda(const void* vx, const LongType* xShapeInf
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
+  INDEX2COORDS(zInd, rank, zShape, coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, zStride, coords, zOffset);
 
   coords[dimID] /= factorD;
   coords[dimID + 1] /= factorH;
   coords[dimID + 2] /= factorW;
 
   LongType xOffset;
-  COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(rank, xStride, coords, xOffset);
 
   z[zOffset] = x[xOffset];
 }

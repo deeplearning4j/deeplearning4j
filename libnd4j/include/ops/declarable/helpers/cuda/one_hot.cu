@@ -49,36 +49,47 @@ SD_KERNEL static void onehotCuda(const void *vx, const LongType *xShapeInfo, voi
   auto z = reinterpret_cast<Z *>(vz);
 
   __shared__ int xRank, zRank;
-  __shared__ LongType zLen, totalThreads, *sharedMem;
+  __shared__ LongType zLen, totalThreads;
+  __shared__ const LongType *xShape, *xStride, *zShape, *zStride;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType *>(shmem);
     xRank = shape::rank(xShapeInfo);
     zRank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
-  auto coord = sharedMem + threadIdx.x * zRank;
-
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType coord[SD_MAX_RANK];
 
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), coord);
-    sd::LongType zOffset;
-    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coord, zOffset);
+    // Compute output coordinate and offset
+    INDEX2COORDS(i, zRank, zShape, coord);
+    LongType zOffset;
+    COORDS2INDEX(zRank, zStride, coord, zOffset);
+
+    // Extract depth coordinate and shift axis
     const auto depthCoord = coord[axis];
+    for (LongType j = axis; j < zRank - 1; ++j) {
+      coord[j] = coord[j + 1];
+    }
 
-    for (LongType j = axis; j < zRank - 1; ++j) coord[j] = coord[j + 1];
+    // Compute input offset
+    LongType xOffset;
+    COORDS2INDEX(xRank, xStride, coord, xOffset);
 
-    sd::LongType xOffset;
-    COORDS2INDEX(xRank, shape::stride(xShapeInfo), coord, xOffset);
-    const LongType idx = x[xOffset];
-    z[zOffset] = depthCoord == idx ? on : off;
+    // Check if the depth matches the index
+    const LongType idx = static_cast<LongType>(x[xOffset]);
+    z[zOffset] = (depthCoord == idx) ? on : off;
   }
 }
+
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>

@@ -28,6 +28,23 @@
 
 #include "execution/cuda/LaunchDims.h"
 
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 
 namespace sd {
 namespace ops {
@@ -41,71 +58,81 @@ static SD_KERNEL void reverseTadKernel(const void* vinput, const LongType* input
                                        uint64_t numOfElemsToReverse, uint64_t numTads) {
   auto input = reinterpret_cast<const T*>(vinput);
   auto output = reinterpret_cast<T*>(voutput);
+
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
-  // this means that we'll have additional cycle, to move middle element
-  auto div = numOfElemsToReverse / 2;
-  auto odd = numOfElemsToReverse % 2 != 0;
-  auto rlimit = odd ? limit / 2 + 1 : limit / 2;
+  __shared__ LongType tadRankInput, tadRankOutput;
+  __shared__ const LongType *tadShapeInput, *strideInput, *tadShapeOutput, *strideOutput;
 
-  // all threads operate in the same input/output space
+  if (threadIdx.x == 0) {
+    tadRankInput = shape::rank(inputTadShape);
+    tadShapeInput = shape::shapeOf(inputTadShape);
+    strideInput = shape::stride(inputTadShape);
+
+    tadRankOutput = shape::rank(outputTadShape);
+    tadShapeOutput = shape::shapeOf(outputTadShape);
+    strideOutput = shape::stride(outputTadShape);
+  }
+  __syncthreads();
+
+  const auto div = numOfElemsToReverse / 2;
+  const auto odd = numOfElemsToReverse % 2 != 0;
+  const auto rlimit = odd ? limit / 2 + 1 : limit / 2;
+
+  // Main loop for element swaps
   for (uint64_t e = tid; e < rlimit; e += step) {
-    // finding out the TAD we're going to process
-    auto tadId = e / div;
-
+    const auto tadId = e / div;
     if (tadId >= numTads) continue;
 
-    // now finding out element within tad
-    auto idx = e % div;
+    const auto idx = e % div;
 
-    auto tadInput = input + inputTadOffsets[tadId];
-    auto tadOutput = output + outputTadOffsets[tadId];
+    const auto tadInput = input + inputTadOffsets[tadId];
+    const auto tadOutput = output + outputTadOffsets[tadId];
 
-    LongType fCoords[SD_MAX_RANK];
-    LongType lCoords[SD_MAX_RANK];
-    LongType fOffset;
-    LongType lOffset;
+    LongType fCoords[SD_MAX_RANK], lCoords[SD_MAX_RANK];
+    LongType fOffset, lOffset;
 
-    INDEX2COORDS(idx, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), fCoords);
-    COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape), fCoords, fOffset);
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), lCoords);
-    COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape),lCoords, lOffset);
+    // Input coordinates and offsets
+    INDEX2COORDS(idx, tadRankInput, tadShapeInput, fCoords);
+    COORDS2INDEX(tadRankInput, strideInput, fCoords, fOffset);
 
-    // now we're storing input values
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, tadRankInput, tadShapeInput, lCoords);
+    COORDS2INDEX(tadRankInput, strideInput, lCoords, lOffset);
+
     auto v1 = tadInput[fOffset];
     auto v2 = tadInput[lOffset];
 
-    LongType zfCoords[SD_MAX_RANK];
-    LongType zlCoords[SD_MAX_RANK];
-    LongType zfOffset;
-    LongType zlOffset;
+    LongType zfCoords[SD_MAX_RANK], zlCoords[SD_MAX_RANK];
+    LongType zfOffset, zlOffset;
 
-    INDEX2COORDS(idx, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zfCoords);
-    COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zfCoords, zfOffset);
-    INDEX2COORDS(numOfElemsToReverse - idx - 1, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zlCoords);
-    COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zlCoords, zlOffset);
+    // Output coordinates and offsets
+    INDEX2COORDS(idx, tadRankOutput, tadShapeOutput, zfCoords);
+    COORDS2INDEX(tadRankOutput, strideOutput, zfCoords, zfOffset);
 
-    // and saving values to output arrays
+    INDEX2COORDS(numOfElemsToReverse - idx - 1, tadRankOutput, tadShapeOutput, zlCoords);
+    COORDS2INDEX(tadRankOutput, strideOutput, zlCoords, zlOffset);
+
+    // Store swapped values
     tadOutput[zfOffset] = v2;
     tadOutput[zlOffset] = v1;
   }
 
-  // moving odd element in blocks
+  // Handle odd middle element
   if (odd && threadIdx.x == 0) {
     for (uint64_t e = blockIdx.x; e < numTads; e += gridDim.x) {
-      auto tadInput = input + inputTadOffsets[e];
-      auto tadOutput = output + outputTadOffsets[e];
+      const auto tadInput = input + inputTadOffsets[e];
+      const auto tadOutput = output + outputTadOffsets[e];
 
-      LongType xCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
-      LongType xOffset;
-      LongType zOffset;
+      LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      LongType xOffset, zOffset;
 
-      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(inputTadShape), shape::shapeOf(inputTadShape), xCoords);
-      COORDS2INDEX(shape::rank(inputTadShape), shape::stride(inputTadShape), xCoords, xOffset);
-      INDEX2COORDS(numOfElemsToReverse / 2, shape::rank(outputTadShape), shape::shapeOf(outputTadShape), zCoords);
-      COORDS2INDEX(shape::rank(outputTadShape), shape::stride(outputTadShape), zCoords, zOffset);
+      // Coordinates and offsets for the middle element
+      INDEX2COORDS(numOfElemsToReverse / 2, tadRankInput, tadShapeInput, xCoords);
+      COORDS2INDEX(tadRankInput, strideInput, xCoords, xOffset);
+
+      INDEX2COORDS(numOfElemsToReverse / 2, tadRankOutput, tadShapeOutput, zCoords);
+      COORDS2INDEX(tadRankOutput, strideOutput, zCoords, zOffset);
 
       tadOutput[zOffset] = tadInput[xOffset];
     }
@@ -117,63 +144,73 @@ static SD_KERNEL void reverseArrayKernel(const void* input, const LongType* inpu
                                          const LongType* outputShape, LongType numOfElemsToReverse) {
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
+
   __shared__ const T* inputArr;
   __shared__ T* outputArr;
-  __shared__ char inputOrder, outputOrder;
+  __shared__ LongType rankInput, rankOutput;
+  __shared__ const LongType *inputShapeArr, *inputStride, *outputShapeArr, *outputStride;
 
   if (threadIdx.x == 0) {
-    char inputOrder = shape::order(inputShape);
-    char outputOrder = shape::order(outputShape);
     inputArr = reinterpret_cast<const T*>(input);
     outputArr = reinterpret_cast<T*>(output);
+
+    rankInput = shape::rank(inputShape);
+    rankOutput = shape::rank(outputShape);
+
+    inputShapeArr = shape::shapeOf(inputShape);
+    inputStride = shape::stride(inputShape);
+
+    outputShapeArr = shape::shapeOf(outputShape);
+    outputStride = shape::stride(outputShape);
   }
   __syncthreads();
 
-  auto odd = numOfElemsToReverse % 2 != 0;
-  auto limit = numOfElemsToReverse / 2;
+  const auto odd = numOfElemsToReverse % 2 != 0;
+  const auto limit = numOfElemsToReverse / 2;
 
-  for (uint64_t e = tid; e < limit; e += step) {
-    LongType fCoords[SD_MAX_RANK];
-    LongType lCoords[SD_MAX_RANK];
-    LongType fOffset;
-    LongType lOffset;
+  for (LongType e = tid; e < limit; e += step) {
+    LongType fCoords[SD_MAX_RANK], lCoords[SD_MAX_RANK];
+    LongType fOffset, lOffset;
 
-    INDEX2COORDS(e, shape::rank(inputShape), shape::shapeOf(inputShape), fCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), fCoords, fOffset);
-    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(inputShape), shape::shapeOf(inputShape), lCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), lCoords, lOffset);
+    // Input indices
+    INDEX2COORDS(e, rankInput, inputShapeArr, fCoords);
+    COORDS2INDEX(rankInput, inputStride, fCoords, fOffset);
+
+    INDEX2COORDS(numOfElemsToReverse - e - 1, rankInput, inputShapeArr, lCoords);
+    COORDS2INDEX(rankInput, inputStride, lCoords, lOffset);
 
     auto v1 = inputArr[fOffset];
     auto v2 = inputArr[lOffset];
 
-    LongType zfCoords[SD_MAX_RANK];
-    LongType zlCoords[SD_MAX_RANK];
-    LongType zfOffset;
-    LongType zlOffset;
+    LongType zfCoords[SD_MAX_RANK], zlCoords[SD_MAX_RANK];
+    LongType zfOffset, zlOffset;
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(shape::shapeOf(zShapeInfo)outputShape), zfCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zfCoords, zfOffset);
-    INDEX2COORDS(numOfElemsToReverse - e - 1, shape::rank(outputShape), shape::shapeOf(outputShape), zlCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zlCoords, zlOffset);
+    // Output indices
+    INDEX2COORDS(e, rankOutput, outputShapeArr, zfCoords);
+    COORDS2INDEX(rankOutput, outputStride, zfCoords, zfOffset);
+
+    INDEX2COORDS(numOfElemsToReverse - e - 1, rankOutput, outputShapeArr, zlCoords);
+    COORDS2INDEX(rankOutput, outputStride, zlCoords, zlOffset);
 
     outputArr[zfOffset] = v2;
     outputArr[zlOffset] = v1;
   }
 
+  // Handle the odd middle element if applicable
   if (odd && tid == 0) {
-    LongType xCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-    LongType xOffset;
-    LongType zOffset;
+    LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+    LongType xOffset, zOffset;
 
-    INDEX2COORDS(limit, shape::rank(inputShape), shape::shapeOf(inputShape), xCoords);
-    COORDS2INDEX(shape::rank(inputShape), shape::stride(inputShape), xCoords, xOffset);
-    INDEX2COORDS(limit, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zOffset);
+    INDEX2COORDS(limit, rankInput, inputShapeArr, xCoords);
+    COORDS2INDEX(rankInput, inputStride, xCoords, xOffset);
+
+    INDEX2COORDS(limit, rankOutput, outputShapeArr, zCoords);
+    COORDS2INDEX(rankOutput, outputStride, zCoords, zOffset);
 
     outputArr[zOffset] = inputArr[xOffset];
   }
 }
+
 template <typename T>
 static void reverseTad(LaunchContext* context, NDArray* input, NDArray* output,
                        const LongType* inputTadShape, const LongType* inputTadOffsets,

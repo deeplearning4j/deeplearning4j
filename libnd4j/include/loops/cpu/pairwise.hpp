@@ -100,6 +100,16 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);
   auto extraParams = reinterpret_cast<Z *>(vextraParams);
+  sd::LongType  xRank = shape::rank(xShapeInfo);
+  sd::LongType  yRank = shape::rank(yShapeInfo);
+  sd::LongType  zRank = shape::rank(zShapeInfo);
+  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType *yShape = shape::shapeOf(yShapeInfo);
+  sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+
+  sd::LongType *xStride = shape::stride(xShapeInfo);
+  sd::LongType *yStride = shape::stride(yShapeInfo);
+  sd::LongType *zStride = shape::stride(zShapeInfo);
   bool allSameOrder = shape::order(xShapeInfo) == shape::order(yShapeInfo) && shape::order(xShapeInfo) == shape::order(zShapeInfo);
   if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
       && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)
@@ -108,14 +118,13 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
       && allSameOrder) {
     sd::LongType zCoords[SD_MAX_RANK];
 
+
     PRAGMA_OMP_SIMD
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      INDEX2COORDS(i, zRank,zShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
-      z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+      z[zOffset] = OpType::op(x[zOffset], y[zOffset], extraParams);
     }
   } else if ((shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)
               || shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo))
@@ -123,11 +132,11 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
     sd::LongType zCoords[SD_MAX_RANK];
     PRAGMA_OMP_SIMD
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), zShapeInfo, zCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      COORDS2INDEX(xRank, xStride, zCoords, xOffset);
+      COORDS2INDEX(yRank, yStride, zCoords, yOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
     }
   } else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)
@@ -138,22 +147,22 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
 
     PRAGMA_OMP_SIMD
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      COORDS2INDEX(xRank, xStride, zCoords, xOffset);
+      COORDS2INDEX(yRank, yStride, zCoords, yOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
     }
   } else {
     sd::LongType zCoords[SD_MAX_RANK];
 
     for (sd::LongType i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
+      INDEX2COORDS(i, zRank,xShape, zCoords);
       sd::LongType xOffset, yOffset, zOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), zCoords, xOffset);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), zCoords, yOffset);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+      COORDS2INDEX(xRank, xStride, zCoords, xOffset);
+      COORDS2INDEX(yRank, yStride, zCoords, yOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
     }
   }

@@ -42,36 +42,58 @@ template <typename T>
 SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, void* vx, const LongType* xShapeInfo,
                                         const LongType* xOffsets, void* vy, const LongType* yShapeInfo,
                                         const LongType* yOffsets, const LongType* indexes) {
+  // Shared memory caching for shape and pointers
   __shared__ T *x, *y;
   __shared__ LongType arrLenX, arrLenY;
+  __shared__ LongType xRank, yRank;
+  __shared__ const LongType* xShape;
+  __shared__ const LongType* yShape;
+  __shared__ const LongType* xStride;
+  __shared__ const LongType* yStride;
 
+  // Initialize shared variables
+  if (threadIdx.x == 0) {
+    xRank = shape::rank(xShapeInfo);
+    yRank = shape::rank(yShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    arrLenX = shape::length(xShapeInfo);
+    arrLenY = shape::length(yShapeInfo);
+  }
+  __syncthreads();
+
+  // Iterate through the number of indices
   for (int e = 0; e < numOfInd; e++) {
     const auto xIndex = indexes[e];
     const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
 
     if (!isOwner) continue;
 
+    // Initialize x and y pointers
     if (threadIdx.x == 0) {
       x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
       y = reinterpret_cast<T*>(vy) + yOffsets[e];
-      arrLenX = shape::length(xShapeInfo);
-      arrLenY = shape::length(yShapeInfo);
     }
     __syncthreads();
 
+    // Validate array lengths
     if (arrLenX != arrLenY) return;
 
+    // Process the elements
     for (LongType i = threadIdx.x; i < arrLenX; i += blockDim.x) {
       LongType xCoords[SD_MAX_RANK];
       LongType yCoords[SD_MAX_RANK];
-      LongType xOffset;
-      LongType yOffset;
+      LongType xOffset, yOffset;
 
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-      INDEX2COORDS(i, shape::rank(yShapeInfo), shape::shapeOf(yShapeInfo), yCoords);
-      COORDS2INDEX(shape::rank(yShapeInfo), shape::stride(yShapeInfo), yCoords, yOffset);
+      // Compute coordinates and offsets for x and y
+      INDEX2COORDS(i, xRank, xShape, xCoords);
+      COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+      INDEX2COORDS(i, yRank, yShape, yCoords);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
+      // Perform the specified operation
       switch (opCode) {
         case 0:
           x[xOffset] += y[yOffset];
@@ -95,12 +117,13 @@ SD_KERNEL static void scatterUpdateCuda(const int opCode, const int numOfInd, vo
           x[xOffset] = y[yOffset];
           break;
         default:
-          continue;
+          break;
       }
     }
     __syncthreads();
   }
 }
+
 
 template <typename T>
 SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfInd,

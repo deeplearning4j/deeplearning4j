@@ -44,8 +44,9 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
                                        const LongType *zShapeInfo, const int axis) {
   const auto x = reinterpret_cast<const X *>(vx);
 
-  __shared__ LongType xRank, *coords, xLastDim;
-  __shared__ LongType xLen, numOfBadIndxPerBlock;
+  __shared__ LongType xRank, xLen, numOfBadIndxPerBlock;
+  __shared__ const LongType *xShape, *xStride, *zShape;
+  __shared__ LongType *coords;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -54,6 +55,10 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
     xRank = shape::rank(xShapeInfo);
     xLen = shape::length(xShapeInfo);
 
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+
     numOfBadIndxPerBlock = 0;
   }
   __syncthreads();
@@ -61,22 +66,25 @@ SD_KERNEL static void checkIndicesCuda(const void *vx, const LongType *xShapeInf
   auto xCoords = coords + threadIdx.x * xRank;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, xRank, shape::shapeOf(xShapeInfo), xCoords);
+    INDEX2COORDS(i, xRank, xShape, xCoords);
 
     LongType xOffset;
-    COORDS2INDEX(xRank, shape::stride(xShapeInfo), xCoords, xOffset);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
 
     const LongType currentInd = x[xOffset];
 
-    if (currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis)) {
-      printf("checkIndices cuda: out of range element %lld at index %lld \n", currentInd, i);
+    const LongType limit = shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank - 1] : axis);
+    if (currentInd >= limit) {
       sd::math::atomics::sd_atomicAdd<LongType>(&numOfBadIndxPerBlock, 1);
     }
   }
   __syncthreads();
 
-  if (threadIdx.x == 0 && numOfBadIndxPerBlock != 0) sd::math::atomics::sd_atomicAdd<LongType>(y, numOfBadIndxPerBlock);
+  if (threadIdx.x == 0 && numOfBadIndxPerBlock != 0) {
+    sd::math::atomics::sd_atomicAdd<LongType>(y, numOfBadIndxPerBlock);
+  }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename X>
 static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -122,20 +130,30 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const Lo
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
+  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
   __shared__ LongType xLen, zLen;
   __shared__ bool is1Dcase, xySameStride;
+  __shared__ LongType *coords;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     coords = reinterpret_cast<LongType *>(shmem);
 
-    xLen = shape::length(xShapeInfo);
-    zLen = shape::length(zShapeInfo);
-
     xRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
     zRank = shape::rank(zShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+
+    xLen = shape::length(xShapeInfo);
+    zLen = shape::length(zShapeInfo);
 
     xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
 
@@ -143,7 +161,7 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const Lo
                (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
                (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
 
-    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] == shape::stride(yShapeInfo)[yNonUnitDim];
+    if (is1Dcase) xySameStride = xStride[xNonUnitDim] == yStride[yNonUnitDim];
   }
   __syncthreads();
 
@@ -154,30 +172,30 @@ SD_KERNEL static void scatterLockCuda(const int opCode, const void *vx, const Lo
     if (!is1Dcase) {
       yCoords = coords + threadIdx.x * (yRank + zRank);
       zCoords = yCoords + yRank;
-      INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), zCoords);
+      INDEX2COORDS(i, zRank, zShape, zCoords);
     }
 
     for (LongType j = 0; j < xLen; ++j) {
       if (is1Dcase) {
-        yOffset = j * shape::stride(yShapeInfo)[yNonUnitDim];
+        yOffset = j * yStride[yNonUnitDim];
         zFirstCoord = x[xySameStride ? yOffset : j];
 
         if (i != zFirstCoord) continue;
 
-        zOffset = i * shape::stride(zShapeInfo)[zNonUnitDim];
+        zOffset = i * zStride[zNonUnitDim];
       } else {
-        INDEX2COORDS(j, xRank, shape::shapeOf(xShapeInfo), yCoords);
+        INDEX2COORDS(j, xRank, xShape, yCoords);
 
         LongType xOffset;
-        COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+        COORDS2INDEX(xRank, xStride, yCoords, xOffset);
         zFirstCoord = x[xOffset];
 
         if (zCoords[0] != zFirstCoord) continue;
 
         for (LongType k = 0; k < yRank - xRank; ++k) yCoords[xRank + k] = zCoords[k + 1];
 
-        COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
-        COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       }
 
       switch (opCode) {
@@ -223,19 +241,30 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
   const auto x = reinterpret_cast<const X *>(vx);
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
-  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim, *coords;
+
+  __shared__ LongType xRank, yRank, zRank, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
   __shared__ LongType yLen;
   __shared__ bool is1Dcase, xySameStride;
+  __shared__ LongType *coords;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     coords = reinterpret_cast<LongType *>(shmem);
 
-    yLen = shape::length(yShapeInfo);
-
     xRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
     zRank = shape::rank(zShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+
+    yLen = shape::length(yShapeInfo);
 
     xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
 
@@ -243,7 +272,7 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
                (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
                (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
 
-    if (is1Dcase) xySameStride = shape::stride(xShapeInfo)[xNonUnitDim] == shape::stride(yShapeInfo)[yNonUnitDim];
+    if (is1Dcase) xySameStride = xStride[xNonUnitDim] == yStride[yNonUnitDim];
   }
   __syncthreads();
 
@@ -257,20 +286,21 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
     if (is1Dcase) {
-      yOffset = i * shape::stride(yShapeInfo)[yNonUnitDim];
-      zOffset = x[xySameStride ? yOffset : i * shape::stride(xShapeInfo)[xNonUnitDim]] *
-                shape::stride(zShapeInfo)[zNonUnitDim];
+      yOffset = i * yStride[yNonUnitDim];
+      zOffset = x[xySameStride ? yOffset : i * xStride[xNonUnitDim]] * zStride[zNonUnitDim];
     } else {
-      INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
+      INDEX2COORDS(i, yRank, yShape, yCoords);
 
-      COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+      COORDS2INDEX(xRank, xStride, yCoords, xOffset);
 
       zCoords[0] = x[xOffset];
 
-      for (LongType j = 0; j < yRank - xRank; ++j) zCoords[j + 1] = yCoords[xRank + j];
+      for (LongType j = 0; j < yRank - xRank; ++j) {
+        zCoords[j + 1] = yCoords[xRank + j];
+      }
 
-      COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
+      COORDS2INDEX(zRank, zStride, zCoords, zOffset);
     }
 
     switch (opCode) {
@@ -306,6 +336,7 @@ SD_KERNEL static void scatterCuda(const int opCode, const void *vx, const LongTy
     }
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -350,9 +381,11 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   const auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Y *>(vz);
 
-  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, xNonUnitDim, yNonUnitDim, zNonUnitDim;
+  __shared__ const LongType *xShape, *yShape, *zShape, *xStride, *yStride, *zStride;
   __shared__ LongType zLen, len;
   __shared__ bool is1Dcase;
+  __shared__ LongType *coords;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -362,6 +395,14 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
     yRank = shape::rank(yShapeInfo);
     zRank = shape::rank(zShapeInfo);
     xLastDim = shape::sizeAt(xShapeInfo, -1);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = shape::stride(zShapeInfo);
 
     biggerXYRank = xRank > yRank ? xRank : yRank;
 
@@ -385,25 +426,25 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
   }
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
-    if (!is1Dcase) INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), zCoords);
+    if (!is1Dcase) INDEX2COORDS(i, zRank, zShape, zCoords);
 
     for (LongType j = 0; j < len; j++) {
       if (is1Dcase) {
-        if (x[j * shape::stride(xShapeInfo)[xNonUnitDim]] != i) continue;
+        if (x[j * xStride[xNonUnitDim]] != i) continue;
 
-        COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
-        COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       } else {
-        INDEX2COORDS(j, xRank - 1, shape::shapeOf(const_cast<LongType *>(xShapeInfo)), yCoords);
+        INDEX2COORDS(j, xRank - 1, xShape, yCoords);
 
         yCoords[xRank - 1] = 0;
-        COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+        COORDS2INDEX(xRank, xStride, yCoords, xOffset);
         if (zCoords[0] != x[xOffset]) continue;
 
         bool matched = true;
         for (LongType k = 1; k < xLastDim; k++) {
           yCoords[xRank - 1] = k;
-          COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, xOffset);
+          COORDS2INDEX(xRank, xStride, yCoords, xOffset);
           if (zCoords[k] != x[xOffset]) {
             matched = false;
             break;
@@ -414,8 +455,8 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 
         for (LongType k = xLastDim; k < zRank; ++k) yCoords[yRank - zRank + k] = zCoords[k];
 
-        COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
-        COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        COORDS2INDEX(zRank, zStride, zCoords, zOffset);
       }
 
       switch (opCode) {
@@ -456,58 +497,75 @@ SD_KERNEL static void scatterNDLockCuda(const int opCode, const void *vx, const 
 ///////////////////////////////////////////////////////////////////
 // x - indices, y - updates, z - output
 template <typename X, typename Y>
-SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const LongType *xShapeInfo, const void *vy,
-                                    const LongType *yShapeInfo, void *vz, const LongType *zShapeInfo) {
-  const auto x = reinterpret_cast<const X *>(vx);
-  const auto y = reinterpret_cast<const Y *>(vy);
-  auto z = reinterpret_cast<Y *>(vz);
+SD_KERNEL static void scatterNDCuda(const int opCode, const void* vx, const LongType* xShapeInfo, const void* vy,
+                                    const LongType* yShapeInfo, void* vz, const LongType* zShapeInfo) {
+  // Cast input and output pointers
+  const auto x = reinterpret_cast<const X*>(vx);
+  const auto y = reinterpret_cast<const Y*>(vy);
+  auto z = reinterpret_cast<Y*>(vz);
 
-  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, *coords, xNonUnitDim, yNonUnitDim, zNonUnitDim;
-  __shared__ LongType yLen;
+  // Shared memory for shape information and flags
+  __shared__ LongType xRank, yRank, zRank, biggerXYRank, xLastDim, xNonUnitDim, yNonUnitDim, zNonUnitDim, yLen;
   __shared__ bool is1Dcase;
 
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType *>(shmem);
+  // Shared memory for coordinates
+  __shared__ LongType* coords;
 
-    yLen = shape::length(yShapeInfo);
+  if (threadIdx.x == 0) {
+    // Dynamically allocated shared memory
+    extern __shared__ unsigned char shmem[];
+    coords = reinterpret_cast<LongType*>(shmem);
+
+    // Initialize shared values
     xRank = shape::rank(xShapeInfo);
     yRank = shape::rank(yShapeInfo);
     zRank = shape::rank(zShapeInfo);
     xLastDim = shape::sizeAt(xShapeInfo, -1);
+    yLen = shape::length(yShapeInfo);
 
-    biggerXYRank = xRank > yRank ? xRank : yRank;
+    biggerXYRank = max(xRank, yRank);
 
     xNonUnitDim = yNonUnitDim = zNonUnitDim = 0;
 
+    // Check if the operation involves 1D cases
     is1Dcase = (shape::isCommonVector(zShapeInfo, zNonUnitDim) || shape::isScalar(zShapeInfo)) &&
                (shape::isCommonVector(yShapeInfo, yNonUnitDim) || shape::isScalar(yShapeInfo)) &&
                (shape::isCommonVector(xShapeInfo, xNonUnitDim) || shape::isScalar(xShapeInfo));
   }
   __syncthreads();
 
-  LongType yOffset, zOffset;
-  LongType *yCoords, *zCoords;
+  // Dynamically allocated memory for local coordinates
+  LongType* yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
+  LongType* zCoords = yCoords + biggerXYRank;
 
-  yCoords = coords + threadIdx.x * (biggerXYRank + zRank);
-  zCoords = yCoords + biggerXYRank;
+  // Process each element in y
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < yLen; i += gridDim.x * blockDim.x) {
-    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
+    LongType yOffset, zOffset;
 
+    // Convert linear index to multi-dimensional coordinates for y
+    INDEX2COORDS(i, yRank, shape::shapeOf(yShapeInfo), yCoords);
     COORDS2INDEX(yRank, shape::stride(yShapeInfo), yCoords, yOffset);
 
-    if (yRank >= xRank)
-      zCoords[xLastDim] = yCoords[xRank - 1];  // saving y coordinate, since it might be changed in next instructions
+    // Save the last coordinate of y if needed
+    if (yRank >= xRank) {
+      zCoords[xLastDim] = yCoords[xRank - 1];
+    }
 
-    for (LongType j = 0; j < xLastDim; ++j) {  // first xRank-1 coordinates in yCoords are the same for y and x
+    // Map y coordinates to x and z coordinates
+    for (LongType j = 0; j < xLastDim; ++j) {
       yCoords[xRank - 1] = j;
       COORDS2INDEX(xRank, shape::stride(xShapeInfo), yCoords, zCoords[j]);
     }
 
-    for (LongType j = xLastDim + 1; j < zRank; ++j) zCoords[j] = yCoords[yRank - zRank + j];
+    // Adjust remaining coordinates for z
+    for (LongType j = xLastDim + 1; j < zRank; ++j) {
+      zCoords[j] = yCoords[yRank - zRank + j];
+    }
 
+    // Compute linear index for z
     COORDS2INDEX(zRank, shape::stride(zShapeInfo), zCoords, zOffset);
 
+    // Perform the operation based on opCode
     switch (opCode) {
       case pairwise::Add:
         z[zOffset] += y[yOffset];
@@ -531,13 +589,13 @@ SD_KERNEL static void scatterNDCuda(const int opCode, const void *vx, const Long
         z[zOffset] = y[yOffset];
         break;
       case pairwise::MaxPairwise:
-        if (z[zOffset] < y[yOffset]) z[zOffset] = y[yOffset];
+        z[zOffset] = max(z[zOffset], y[yOffset]);
         break;
       case pairwise::MinPairwise:
-        if (z[zOffset] > y[yOffset]) z[zOffset] = y[yOffset];
+        z[zOffset] = min(z[zOffset], y[yOffset]);
         break;
       default:
-        continue;
+        break;
     }
   }
 }
@@ -584,48 +642,69 @@ void scatterND(LaunchContext *context, pairwise::Ops op, NDArray&indices, NDArra
 
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-SD_KERNEL void scatterForLossCuda(const void *vx, const LongType *xShapeInfo, void *vy, const LongType *yShapeInfo,
-                                  void *vz, const LongType *zShapeInfo) {
-  const auto x = reinterpret_cast<const X *>(vx);
-  auto y = reinterpret_cast<Z *>(vy);
-  auto z = reinterpret_cast<Z *>(vz);
+SD_KERNEL void scatterForLossCuda(const void* vx, const LongType* xShapeInfo, void* vy, const LongType* yShapeInfo,
+                                  void* vz, const LongType* zShapeInfo) {
+  // Cast input and output pointers
+  const auto x = reinterpret_cast<const X*>(vx);
+  auto y = reinterpret_cast<Z*>(vy);
+  auto z = reinterpret_cast<Z*>(vz);
 
+  // Shared memory for shape information and coordinates
   __shared__ LongType xLen;
-  __shared__ LongType xRank, *sharedMem;  // xRank = zRank, yRank = xRank + 1
+  __shared__ LongType xRank;
+  __shared__ const LongType* xShape;
+  __shared__ const LongType* xStride;
+  __shared__ const LongType* yStride;
+  __shared__ const LongType* zStride;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    sharedMem = reinterpret_cast<LongType *>(shmem);
-
+    // Initialize shared memory variables
     xLen = shape::length(xShapeInfo);
     xRank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = zShapeInfo ? shape::stride(zShapeInfo) : nullptr;
   }
   __syncthreads();
 
+  // Calculate global thread index
   const LongType xInd = threadIdx.x + blockIdx.x * blockDim.x;
 
+  // Return if the thread index exceeds the length of x
   if (xInd >= xLen) return;
 
-  LongType *coords = sharedMem + threadIdx.x * (xRank + 1);
+  // Dynamically allocated shared memory for coordinates
+  extern __shared__ unsigned char shmem[];
+  auto coords = reinterpret_cast<LongType*>(shmem) + threadIdx.x * (xRank + 1);
 
-  INDEX2COORDS(xInd, xRank, shape::shapeOf(xShapeInfo), coords);
+  // Convert linear index to coordinates for x
+  INDEX2COORDS(xInd, xRank, xShape, coords);
 
-  // y last coordinate
+  // Calculate offset for x
   LongType xOffset;
-  COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+  COORDS2INDEX(xRank, xStride, coords, xOffset);
+
+  // Update the last coordinate with the value from x
   coords[xRank] = x[xOffset];
 
+  // Calculate offset for y
   LongType yOffset;
-  COORDS2INDEX(xRank + 1, shape::stride(yShapeInfo), coords, yOffset);
+  COORDS2INDEX(xRank + 1, yStride, coords, yOffset);
 
-  if (z == nullptr) {  // gradient calculation
+  if (z == nullptr) {
+    // Gradient calculation
     y[yOffset] -= 1.f;
   } else {
+    // Calculate offset for z
     LongType zOffset;
-    COORDS2INDEX(xRank + 1, shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(xRank + 1, zStride, coords, zOffset);
+
+    // Update z with the value from y
     z[zOffset] = y[yOffset];
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 static void scatterForLossCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,

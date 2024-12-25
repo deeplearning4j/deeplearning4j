@@ -36,6 +36,22 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
                                                    const LongType *iShapeInfo, void **vz, LongType **zShapeInfos, const LongType numOutputs) {
   auto x = reinterpret_cast<const X *>(vx);
   auto i = reinterpret_cast<const Y *>(vi);
+
+  __shared__ LongType xRank, iRank;
+  __shared__ const LongType *xShape, *xStride;
+  __shared__ const LongType *iShape, *iStride;
+
+  // Shared variables for CUDA kernel
+  if (threadIdx.x == 0) {
+    xRank = shape::rank(xShapeInfo);
+    iRank = shape::rank(iShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    iShape = shape::shapeOf(iShapeInfo);
+    iStride = shape::stride(iShapeInfo);
+  }
+  __syncthreads();
+
   auto xLength = shape::length(xShapeInfo);
   auto iLength = shape::length(iShapeInfo);
 
@@ -49,30 +65,36 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
   }
   __syncthreads();
 
-  // we run things in blocks, 1 partition per block of threads
+  // Process partitions
   for (LongType o = blockIdx.x; o < numOutputs; o += gridDim.x) {
     auto z = reinterpret_cast<X *>(vz[o]);
-
     auto zShapeInfo = zShapeInfos[o];
-    auto zLength = shape::length(zShapeInfo);
 
-    // iLimit should be multiple of blockDim.x
-    auto iLimit = iLength <= blockDim.x ? blockDim.x : (iLength + (blockDim.x - (iLength % blockDim.x)));
+    __shared__ LongType zLength, zRank;
+    __shared__ const LongType *zShape, *zStride;
+
+    if (threadIdx.x == 0) {
+      zLength = shape::length(zShapeInfo);
+      zRank = shape::rank(zShapeInfo);
+      zShape = shape::shapeOf(zShapeInfo);
+      zStride = shape::stride(zShapeInfo);
+    }
+    __syncthreads();
+
+    // Ensure iLimit is a multiple of blockDim.x
+    auto iLimit = (iLength <= blockDim.x) ? blockDim.x : (iLength + (blockDim.x - (iLength % blockDim.x)));
     int cnt = 0;
 
     for (LongType e = threadIdx.x; e < iLimit; e += blockDim.x) {
-      // load set of indices into shared memory
       if (e < iLength) {
-        LongType iOffset;
-        LongType iCoords[SD_MAX_RANK];
-        INDEX2COORDS(e, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
-        COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
+        LongType iOffset, iCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, iRank, iShape, iCoords);
+        COORDS2INDEX(iRank, iStride, iCoords, iOffset);
         rawIndices[threadIdx.x] = i[iOffset];
       }
       __syncthreads();
 
-      // now we need to find out where our actual updates will be mapped
-      // TODO: this can be improved obviously, by using prefix-sum like approach
+      // Map updates using prefix-like approach
       if (threadIdx.x == 0) {
         for (int f = 0; f < blockDim.x; f++) {
           if (rawIndices[f] == static_cast<Y>(o))
@@ -83,15 +105,12 @@ static SD_KERNEL void dynamicPartitionScalarKernel(const void *vx, const LongTyp
       }
       __syncthreads();
 
-      // doing actual update
-      if (e < iLength) {
-        if (trueIndices[threadIdx.x] >= 0) {
-          LongType xOffset;
-          LongType xCoords[SD_MAX_RANK];
-          INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-          COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
-          z[trueIndices[threadIdx.x]] = x[xOffset];
-        }
+      // Perform actual update
+      if (e < iLength && trueIndices[threadIdx.x] >= 0) {
+        LongType xOffset, xCoords[SD_MAX_RANK];
+        INDEX2COORDS(e, xRank, xShape, xCoords);
+        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+        z[trueIndices[threadIdx.x]] = x[xOffset];
       }
       __syncthreads();
     }
@@ -139,6 +158,7 @@ static SD_KERNEL void dynamicPartitionTadKernel(const void *vx, const LongType *
     }
   }
 }
+
 
 template <typename X, typename Y>
 static void _dynamicPartitionFunctor(LaunchContext *context, NDArray *input, NDArray *indices,
@@ -223,8 +243,19 @@ template <typename X, typename Y>
 static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfos, void **vindices,
                                                 LongType **iShapeInfos, int inputSize, void *vz,
                                                 const LongType *zShapeInfo, LongType zLength) {
+  __shared__ LongType zRank;
+  __shared__ const LongType *zShapePtr, *zStridePtr;
+
+  if (threadIdx.x == 0) {
+    zRank = shape::rank(zShapeInfo);
+    zShapePtr = shape::shapeOf(zShapeInfo);
+    zStridePtr = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
+
   auto z = reinterpret_cast<X *>(vz);
 
+  // Process each input array
   for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
     auto x = reinterpret_cast<X *>(vx[e]);
     auto indices = reinterpret_cast<Y *>(vindices[e]);
@@ -234,85 +265,98 @@ static SD_KERNEL void dynamicStitchScalarKernel(void **vx, LongType **xShapeInfo
 
     auto iLength = shape::length(iShapeInfo);
 
+    // Loop over indices in parallel
     for (int i = threadIdx.x; i < iLength; i += blockDim.x) {
-      LongType iCoords[SD_MAX_RANK];
-      LongType xCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
-      LongType iOffset;
-      LongType xOffset;
-      LongType zOffset;
+      LongType iCoords[SD_MAX_RANK], xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      LongType iOffset, xOffset, zOffset;
 
+      // Compute index for indices array
       INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
       COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
 
       auto idx = indices[iOffset];
       if (idx >= 0 && idx < zLength) {
-        INDEX2COORDS(idx, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-        COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
+        // Compute z offset
+        INDEX2COORDS(idx, zRank, zShapePtr, zCoords);
+        COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
 
+        // Compute x offset
         INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
         COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset);
 
+        // Assign value to z
         z[zOffset] = x[xOffset];
       }
     }
   }
 }
 
+
 template <typename X, typename Y>
 static SD_KERNEL void dynamicStitchTadKernel(void **vx, LongType **xTadShapeInfos, LongType **xTadOffsets,
                                              void **vindices, LongType **iShapeInfos, int inputSize, void *vz,
                                              const LongType *zTadShapeInfo, const LongType *zTadOffsets,
                                              LongType *numTadsPerInput, LongType numOutputsTad) {
-  //note: this implementation is less than ideal but several forms of parallelization do not seem to work.
-  //for now since this isn't a computationally intensive function this serial implementation that works correctly
-  //will stay.
-  auto bz = reinterpret_cast<X *>(vz);
-  int arrIndex = threadIdx.x;
-  //each input
-  for (int e = arrIndex; e < inputSize; e++) {
-    auto indices = reinterpret_cast<Y *>(vindices[e]);
+  __shared__ LongType zRank, zLength, zTadLength;
+  __shared__ const LongType *zShapePtr, *zStridePtr;
 
+  if (threadIdx.x == 0) {
+    zRank = shape::rank(zTadShapeInfo);
+    zLength = shape::length(zTadShapeInfo);
+    zTadLength = shape::length(zTadShapeInfo);
+    zShapePtr = shape::shapeOf(zTadShapeInfo);
+    zStridePtr = shape::stride(zTadShapeInfo);
+  }
+  __syncthreads();
+
+  auto bz = reinterpret_cast<X *>(vz);
+
+  // Process each input array
+  for (int e = threadIdx.x; e < inputSize; e += blockDim.x) {
+    auto indices = reinterpret_cast<Y *>(vindices[e]);
     auto iShapeInfo = iShapeInfos[e];
     auto numTads = numTadsPerInput[e];
+
     if (shape::isEmptyConst(iShapeInfo)) continue;
 
     auto iLength = shape::length(iShapeInfo);
-    auto zLength = shape::length(zTadShapeInfo);
-
     auto xTadShapeInfo = xTadShapeInfos[e];
     auto xTadLength = shape::length(xTadShapeInfo);
+    auto xShapePtr = shape::shapeOf(xTadShapeInfo);
+    auto xStridePtr = shape::stride(xTadShapeInfo);
 
-    // process each index setting values for this tad
+    // Process each index in the input
     for (int i = 0; i < iLength; i++) {
-      LongType iCoords[SD_MAX_RANK];
-      LongType iOffset;
+      LongType iCoords[SD_MAX_RANK], iOffset;
       INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), iCoords);
       COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), iCoords, iOffset);
 
       auto idx = indices[iOffset];
 
-      // the input at a given index starting at the offset for the current tad
+      // Input array offset for current TAD
       auto x = reinterpret_cast<X *>(vx[e]) + xTadOffsets[e][i];
       auto zTad = bz + zTadOffsets[idx];
-      for (int j = 0; j < xTadLength; j++) {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        LongType xIdx;
-        LongType zIdx;
 
-        INDEX2COORDS(j, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-        COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, xIdx);
-        INDEX2COORDS(j, shape::rank(zTadShapeInfo), shape::shapeOf(zTadShapeInfo), zCoords);
-        COORDS2INDEX(shape::rank(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoords, zIdx);
+      // Copy data from input to output
+      for (int j = threadIdx.x; j < xTadLength; j += blockDim.x) {
+        LongType xCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+        LongType xIdx, zIdx;
 
-        if (xIdx < xTadLength && xIdx >= 0 && zIdx < zLength && zIdx >= 0) zTad[zIdx] = x[xIdx];
+        INDEX2COORDS(j, shape::rank(xTadShapeInfo), xShapePtr, xCoords);
+        COORDS2INDEX(shape::rank(xTadShapeInfo), xStridePtr, xCoords, xIdx);
+
+        INDEX2COORDS(j, zRank, zShapePtr, zCoords);
+        COORDS2INDEX(zRank, zStridePtr, zCoords, zIdx);
+
+        if (xIdx < xTadLength && zIdx < zLength) {
+          zTad[zIdx] = x[xIdx];
+        }
       }
     }
   }
-
   __syncthreads();
 }
+
 
 
 template <typename X, typename Y>

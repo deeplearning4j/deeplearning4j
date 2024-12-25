@@ -50,86 +50,75 @@ SD_KERNEL static void padCuda(const int mode, const void* vx, const LongType* xS
   auto z = reinterpret_cast<X*>(vz);
 
   __shared__ int rank, rankMinusOne;
-  __shared__ LongType zLen, totalThreads, *coords, *xShape, *zShape,*xStride,*zstride, shift1, shift2, yStride0;
+  __shared__ LongType zLen, totalThreads;
+  __shared__ const LongType *xShape, *zShape, *xStride, *zStride;
+  __shared__ LongType yStride0, shift1, shift2;
 
   if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    coords = reinterpret_cast<LongType*>(shmem);
-    zLen = shape::length(zShapeInfo);
-    xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
-    zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
-    xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
-    zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
-    yStride0 = shape::stride(const_cast<LongType*>(yShapeInfo))[0];
     rank = shape::rank(xShapeInfo);
-    zLen = shape::length(zShapeInfo);
     rankMinusOne = rank - 1;
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    yStride0 = shape::stride(yShapeInfo)[0];
+    zLen = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
-    shift1 = mode == 1 ? 0 : 1;  // REFLECT : SYMMETRIC
-    shift2 = mode == 1 ? 2 : 1;  // REFLECT : SYMMETRIC
+    shift1 = (mode == 1) ? 0 : 1;  // REFLECT : SYMMETRIC
+    shift2 = (mode == 1) ? 2 : 1;  // REFLECT : SYMMETRIC
   }
-
   __syncthreads();
 
-  auto xzCoord = coords + threadIdx.x * rank;  // we use xzCoord storage both for x and z arrays
+  auto start = blockIdx.x * blockDim.x + threadIdx.x;
+  auto step = totalThreads;
 
-  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  LongType xzCoord[SD_MAX_RANK];
 
-  if (mode == 0) {  // CONSTANT case
+  for (LongType i = start; i < zLen; i += step) {
+    // Compute output coordinate and offset
+    INDEX2COORDS(i, rank, zShape, xzCoord);
+    LongType zOffset;
+    COORDS2INDEX(rank, zStride, xzCoord, zOffset);
 
-    for (LongType i = tid; i < zLen; i += totalThreads) {
-      INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), xzCoord);
-      LongType zOffset;
-      COORDS2INDEX(rank, zStride, xzCoord, zOffset);
+    bool within = true;
 
-      bool within = true;
-      for (int j = rankMinusOne; j >= 0; --j) {
-        if (xShape[j] == zShape[j]) continue;
-        LongType leftOffset;
-        LongType leftCoords[] = {yStride0 * j};
-        COORDS2INDEX(1, shape::stride(yShapeInfo), leftCoords, leftOffset);
-        const auto left = y[leftOffset];
-        if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
-          within = false;
-          break;
-        } else {
+    for (int j = rankMinusOne; j >= 0; --j) {
+      if (xShape[j] == zShape[j]) continue;
+
+      LongType leftOffset;
+      LongType leftCoords[] = {yStride0 * j};
+      COORDS2INDEX(1, shape::stride(yShapeInfo), leftCoords, leftOffset);
+      const auto left = y[leftOffset];
+
+      if (xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {
+        within = false;
+
+        if (mode != 0) {  // REFLECT or SYMMETRIC
           xzCoord[j] = xzCoord[j] - left;
-        }
-      }
 
-      if (within) {
-        LongType xOffset;
-        COORDS2INDEX(rank, xStride, xzCoord, xOffset);
-        z[zOffset] = x[xOffset];
+          if (xzCoord[j] < 0) {  // Left boundary
+            xzCoord[j] = -xzCoord[j] - shift1;
+          } else if (xzCoord[j] >= xShape[j]) {  // Right boundary
+            xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2;
+          }
+        }
+
+        break;
       } else {
-        z[zOffset] = padVal;
+        xzCoord[j] -= left;
       }
     }
-  } else {  // REFLECT and SYMMETRIC cases
 
-    for (LongType i = tid; i < zLen; i += totalThreads) {
-      INDEX2COORDS(i, rank, shape::shapeOf(zShapeInfo), xzCoord);
-      LongType zOffset;
-      COORDS2INDEX(rank, zStride, xzCoord, zOffset);
-
-      for (int j = rankMinusOne; j >= 0; --j) {
-        if (xShape[j] == zShape[j]) continue;
-        LongType leftOffset;
-        LongType leftCoords[] = {yStride0 * j};
-        COORDS2INDEX(1, shape::stride(yShapeInfo), leftCoords, leftOffset);
-        xzCoord[j] = xzCoord[j] - y[leftOffset];  // are ready to fill middle (within input dimension range)
-        if (xzCoord[j] < 0)
-          xzCoord[j] = -xzCoord[j] - shift1;  // means fill from left
-        else if (xzCoord[j] >= xShape[j])
-          xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2;  // means fill from right
-      }
-
+    if (within || mode != 0) {
       LongType xOffset;
       COORDS2INDEX(rank, xStride, xzCoord, xOffset);
-      z[zOffset] = x[xOffset];
+      z[zOffset] = within ? x[xOffset] : x[xOffset];  // Handles REFLECT or SYMMETRIC
+    } else {
+      z[zOffset] = padVal;  // CONSTANT padding
     }
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -172,93 +161,124 @@ static SD_KERNEL void mirrorPadLinearKernel(void const* vx, const LongType* xSha
                                             LongType zLen) {
   __shared__ T const* x;
   __shared__ T* z;
+  __shared__ LongType rankX, rankZ;
+  __shared__ const LongType* shapeX;
+  __shared__ const LongType* strideX;
+  __shared__ const LongType* shapeZ;
+  __shared__ const LongType* strideZ;
+
   if (threadIdx.x == 0) {
     x = reinterpret_cast<T const*>(vx);
     z = reinterpret_cast<T*>(vz);
+
+    rankX = shape::rank(xShape);
+    rankZ = shape::rank(zShape);
+    shapeX = shape::shapeOf(xShape);
+    strideX = shape::stride(xShape);
+    shapeZ = shape::shapeOf(zShape);
+    strideZ = shape::stride(zShape);
   }
   __syncthreads();
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
 
-  LongType xCoords[SD_MAX_RANK];
+  const auto start = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto step = blockDim.x * gridDim.x;
+
   LongType zCoords[SD_MAX_RANK];
-  LongType xOffset;
-  LongType zOffset;
+  LongType xOffset, zOffset;
 
-  for (int i = start; i < zLen; i += step) {
-    INDEX2COORDS(i, shape::rank(zShape), shape::shapeOf(zShape), zCoords);
-    COORDS2INDEX(shape::rank(zShape), shape::stride(zShape), zCoords, zOffset);
-    INDEX2COORDS(len - i, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-    COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+  for (LongType i = start; i < zLen; i += step) {
+    // Compute coordinates and offset for the output
+    INDEX2COORDS(i, rankZ, shapeZ, zCoords);
+    COORDS2INDEX(rankZ, strideZ, zCoords, zOffset);
 
-    if (i < leftSide) {  // left side
-      INDEX2COORDS(leftSideCorrected - i, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
-    } else if (i >= leftSide && i < leftSide + xLen) {  // middle
-      INDEX2COORDS(i - leftSide, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+    // Adjust input offset based on the mirror padding logic
+    if (i < leftSide) {  // Left side
+      const LongType mirrorIndex = leftSideCorrected - i;
+      COORDS2INDEX(rankX, strideX, &mirrorIndex, xOffset);
+    } else if (i < leftSide + xLen) {  // Middle section
+      const LongType middleIndex = i - leftSide;
+      COORDS2INDEX(rankX, strideX, &middleIndex, xOffset);
+    } else {  // Right side
+      const LongType mirrorIndex = len - i;
+      COORDS2INDEX(rankX, strideX, &mirrorIndex, xOffset);
     }
 
-    if (zOffset >= 0 && xOffset >= 0 && zOffset < zLen && xOffset < xLen)
+    // Assign value from input to output
+    if (zOffset < zLen && xOffset < xLen) {
       z[zOffset] = x[xOffset];
+    }
   }
 }
+
 template <typename F, typename I>
-static SD_KERNEL void mirrorPadKernel(void const* vx, const LongType* xShape, void* vz, const LongType* zShape,
+static SD_KERNEL void mirrorPadKernel(void const* vx,  const LongType* xShape, void* vz,  const LongType* zShape,
                                       LongType outLen, void const* paddings, const LongType* paddingShape,
                                       int reflBorder) {
   __shared__ F const* x;
   __shared__ I const* pads;
   __shared__ F* z;
-  __shared__ LongType zRank, rank;
-  __shared__ LongType* xIdx;
-  if (threadIdx.x == 0) {
-    extern __shared__ unsigned char shmem[];
-    xIdx = reinterpret_cast<LongType*>(shmem);
-    rank = shape::rank(xShape);
+  __shared__ LongType rank;
+  __shared__ sd::LongType *zStride;
+  __shared__ sd::LongType *xStride;
+  __shared__  LongType* zShapeArr;
+  __shared__  LongType* xShapeArr;
 
-    x = reinterpret_cast<F const*>(vx);  //
+  if (threadIdx.x == 0) {
+    rank = shape::rank(xShape);
+    zShapeArr = shape::shapeOf(zShape);
+    zStride = shape::stride(zShape);
+    xShapeArr = shape::shapeOf(xShape);
+    xStride = shape::stride(xShape);
+
+    x = reinterpret_cast<F const*>(vx);
     pads = reinterpret_cast<I const*>(paddings);
     z = reinterpret_cast<F*>(vz);
   }
   __syncthreads();
-  auto start = threadIdx.x + blockIdx.x * blockDim.x;
-  auto step = blockDim.x * gridDim.x;
 
+  const auto start = threadIdx.x + blockIdx.x * blockDim.x;
+  const auto step = blockDim.x * gridDim.x;
+
+  LongType xzCoord[SD_MAX_RANK];
   LongType coords[2];
 
   for (LongType i = start; i < outLen; i += step) {
-    auto xzCoord = xIdx + threadIdx.x * rank;
-    INDEX2COORDS(i, rank, shape::shapeOf(zShape), xzCoord);
+    // Calculate output coordinate and offset
+    INDEX2COORDS(i, rank, zShapeArr, xzCoord);
     LongType outOffset;
-    COORDS2INDEX(rank, shape::stride(zShape), xzCoord, outOffset);
-    for (LongType j = 0; j < rank; j++) {
-      const LongType inLen = shape::sizeAt(xShape, j);
+    COORDS2INDEX(rank, zStride, xzCoord, outOffset);
+
+    // Adjust input coordinates based on mirror padding
+    for (LongType j = 0; j < rank; ++j) {
+      const auto inLen = shape::sizeAt(xShape, j);
+
       coords[0] = j;
       coords[1] = 0;
+
       LongType padOffset;
-      COORDS2INDEX(2, shape::stride(paddingShape), coords, padOffset);  // padding already has rank 2
+      COORDS2INDEX(2, shape::stride(paddingShape), coords, padOffset);
       const auto leftSide = pads[padOffset];
       const auto leftSideCorrected = leftSide - reflBorder;
-      const LongType len = 2 * (inLen - 1) + leftSide + reflBorder;
+      const auto len = 2 * (inLen - 1) + leftSide + reflBorder;
 
-      if (xzCoord[j] < leftSide)  // left side
+      if (xzCoord[j] < leftSide) {  // Left side
         xzCoord[j] = leftSideCorrected - xzCoord[j];
-
-      else if (xzCoord[j] >= leftSide && xzCoord[j] < leftSide + inLen)  // middle
+      } else if (xzCoord[j] < leftSide + inLen) {  // Middle
         xzCoord[j] = xzCoord[j] - leftSide;
-
-      else if (len > xzCoord[j])  // right side
+      } else if (xzCoord[j] < len) {  // Right side
         xzCoord[j] = len - xzCoord[j];
-      else
+      } else {  // Beyond the mirrored region
         xzCoord[j] = xzCoord[j] - len;
+      }
     }
 
+    // Calculate input offset and assign value
     LongType inOffset;
-    COORDS2INDEX(rank, shape::stride(xShape), xzCoord, inOffset);
+    COORDS2INDEX(rank, xStride, xzCoord, inOffset);
     z[outOffset] = x[inOffset];
   }
 }
+
 
 template <typename F, typename I>
 static void mirrorPad_(LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,

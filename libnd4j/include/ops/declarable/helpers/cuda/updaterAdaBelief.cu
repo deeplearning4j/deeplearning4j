@@ -55,6 +55,11 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   __shared__ T epsilonT;
   __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
 
+  // Cache shape information in shared memory
+  __shared__ LongType xRank, zRank, invRank, stvRank, inmRank, stmRank;
+  __shared__ LongType *xShape, *zShape, *invShape, *stvShape, *inmShape, *stmShape;
+  __shared__ LongType *xStride, *zStride, *invStride, *stvStride, *inmStride, *stmStride;
+
   if (threadIdx.x == 0) {
     xLen = shape::length(xShapeInfo);
 
@@ -63,6 +68,30 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
 
     epsilonT = lr * math::sd_sqrt<T, T>(1. - beta2T) / (1.0 - beta1T);
     if (math::sd_isnan(epsilonT) || 0 == epsilonT || math::sd_isinf(epsilonT)) epsilonT = epsilon;
+
+    // Cache ranks
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    invRank = shape::rank(invShapeInfo);
+    stvRank = shape::rank(stvShapeInfo);
+    inmRank = shape::rank(inmShapeInfo);
+    stmRank = shape::rank(stmShapeInfo);
+
+    // Cache shapes
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    invShape = shape::shapeOf(invShapeInfo);
+    stvShape = shape::shapeOf(stvShapeInfo);
+    inmShape = shape::shapeOf(inmShapeInfo);
+    stmShape = shape::shapeOf(stmShapeInfo);
+
+    // Cache strides
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    invStride = shape::stride(invShapeInfo);
+    stvStride = shape::stride(stvShapeInfo);
+    inmStride = shape::stride(inmShapeInfo);
+    stmStride = shape::stride(stmShapeInfo);
 
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
@@ -83,36 +112,37 @@ SD_KERNEL void adaBeliefUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo),shape::shapeOf(xShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
     }
 
     if (bXInUSame) {
       initUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(invShapeInfo), shape::stride(invShapeInfo), coords, initUOffset);
+      COORDS2INDEX(invRank, invStride, coords, initUOffset);
     }
 
     if (bXStUSame) {
       stUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stvShapeInfo), shape::stride(stvShapeInfo), coords, stUOffset);
+      COORDS2INDEX(stvRank, stvStride, coords, stUOffset);
     }
 
     if (bXInMSame) {
       initMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inmShapeInfo), shape::stride(inmShapeInfo), coords, initMOffset);
+      COORDS2INDEX(inmRank, inmStride, coords, initMOffset);
     }
 
     if (bXStMSame) {
       stMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stmShapeInfo), shape::stride(stmShapeInfo), coords, stMOffset);
+      COORDS2INDEX(stmRank, stmStride, coords, stMOffset);
     }
 
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);

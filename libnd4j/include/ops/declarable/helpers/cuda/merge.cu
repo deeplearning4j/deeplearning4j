@@ -46,35 +46,62 @@ static SD_KERNEL void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  __shared__ int rankOutput;
+  __shared__ const LongType *shapeOutput, *strideOutput;
+
+  if (threadIdx.x == 0) {
+    rankOutput = shape::rank(outputShape);
+    shapeOutput = shape::shapeOf(outputShape);
+    strideOutput = shape::stride(outputShape);
+  }
+  __syncthreads();
+
+  LongType outputCoords[SD_MAX_RANK];
+
   for (LongType e = tid; e < length; e += step) {
     T mVal = -DataTypeUtils::max<T>();
     Z mIdx(0);
 
-    for (int i = 0; i < numArrays; i++) {
-      auto x = reinterpret_cast<T*>(inArrs[i]);
-      auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
+    // Iterate through all input arrays to find the maximum value and its index
+    for (int i = 0; i < numArrays; ++i) {
+      auto x = reinterpret_cast<const T*>(inArrs[i]);
+      auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
+
+      __shared__ int rankInput;
+      __shared__ const LongType *shapeInput, *strideInput;
+
+      if (threadIdx.x == 0) {
+        rankInput = shape::rank(xShape);
+        shapeInput = shape::shapeOf(xShape);
+        strideInput = shape::stride(xShape);
+      }
+      __syncthreads();
+
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+      // Compute input coordinates and offset
+      INDEX2COORDS(e, rankInput, shapeInput, xCoords);
+      COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
-      auto val = x[xOffset];
+      // Update maximum value and index
+      const auto val = x[xOffset];
       if (mVal < val) {
         mIdx = static_cast<Z>(i);
         mVal = val;
       }
     }
 
-    LongType outputCoords[SD_MAX_RANK];
+    // Compute output coordinates and offset
     LongType outputOffset;
+    INDEX2COORDS(e, rankOutput, shapeOutput, outputCoords);
+    COORDS2INDEX(rankOutput, strideOutput, outputCoords, outputOffset);
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-
+    // Store the index of the maximum value in the output
     output[outputOffset] = mIdx;
   }
 }
+
 
 template <typename T, typename Z>
 static void mergeMaxIndex_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -119,33 +146,60 @@ static SD_KERNEL void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  __shared__ int rankOutput;
+  __shared__ const LongType *shapeOutput, *strideOutput;
+
+  if (threadIdx.x == 0) {
+    rankOutput = shape::rank(outputShape);
+    shapeOutput = shape::shapeOf(outputShape);
+    strideOutput = shape::stride(outputShape);
+  }
+  __syncthreads();
+
+  LongType outputCoords[SD_MAX_RANK];
+
   for (LongType e = tid; e < length; e += step) {
     T mVal = -DataTypeUtils::max<T>();
 
-    for (int i = 0; i < numArrays; i++) {
+    // Iterate through all input arrays to find the maximum value
+    for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<const T*>(inArrs[i]);
       auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
+
+      __shared__ int rankInput;
+      __shared__ const LongType *shapeInput, *strideInput;
+
+      if (threadIdx.x == 0) {
+        rankInput = shape::rank(xShape);
+        shapeInput = shape::shapeOf(xShape);
+        strideInput = shape::stride(xShape);
+      }
+      __syncthreads();
+
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+      // Compute input coordinates and offset
+      INDEX2COORDS(e, rankInput, shapeInput, xCoords);
+      COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
-      auto val = x[xOffset];
+      // Update maximum value
+      const auto val = x[xOffset];
       if (mVal < val) {
         mVal = val;
       }
     }
 
-    LongType outputCoords[SD_MAX_RANK];
+    // Compute output coordinates and offset
     LongType outputOffset;
+    INDEX2COORDS(e, rankOutput, shapeOutput, outputCoords);
+    COORDS2INDEX(rankOutput, strideOutput, outputCoords, outputOffset);
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-
+    // Store the maximum value in the output
     output[outputOffset] = mVal;
   }
 }
+
 template <typename T>
 static void mergeMax_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrsSize = static_cast<int>(inArrs.size());
@@ -184,55 +238,64 @@ template <typename T>
 static SD_KERNEL void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, const void* vgradient,
                                              const LongType* gradientShape, const int numArrays, void** outArrs,
                                              void** outShapes, LongType length, bool bSameOrderAndEws1) {
-  auto grad = reinterpret_cast<const T*>(vgradient);
+  const auto grad = reinterpret_cast<const T*>(vgradient);
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
+
+  __shared__ int gradRank;
+  __shared__ const LongType *gradShape, *gradStride;
+
+  if (threadIdx.x == 0) {
+    gradRank = shape::rank(gradientShape);
+    gradShape = shape::shapeOf(gradientShape);
+    gradStride = shape::stride(gradientShape);
+  }
+  __syncthreads();
 
   LongType coords[SD_MAX_RANK];
 
   for (LongType e = tid; e < length; e += step) {
     T mVal = -DataTypeUtils::max<T>();
     int nMaxIndex = 0;
-    LongType xOffset, zOffset, gradOffset;
+    LongType gradOffset = bSameOrderAndEws1 ? e : 0;
 
+    // Compute gradient offset if not same order and EWS=1
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
-    } else {
-      gradOffset = e;
+      INDEX2COORDS(e, gradRank, gradShape, coords);
+      COORDS2INDEX(gradRank, gradStride, coords, gradOffset);
     }
 
-    for (int i = 0; i < numArrays; i++) {
+    // Find the maximum value and its index across all input arrays
+    for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
+      LongType xOffset = bSameOrderAndEws1 ? e : 0;
 
       if (!bSameOrderAndEws1) {
-        auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
+        auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
         COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), coords, xOffset);
-      } else {
-        xOffset = e;
       }
 
-      auto val = x[xOffset];
+      const auto val = x[xOffset];
       if (mVal < val) {
         mVal = val;
         nMaxIndex = i;
       }
     }
 
-    // outputs have to be pre-nullify
-    if (!bSameOrderAndEws1) {
-      auto outShape = reinterpret_cast<LongType*>(outShapes[nMaxIndex]);
-      COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
-    } else {
-      zOffset = e;
-    }
-
+    // Assign gradient to the corresponding output array at the max index
     auto output = reinterpret_cast<T*>(outArrs[nMaxIndex]);
+    LongType zOffset = bSameOrderAndEws1 ? e : 0;
+
+    if (!bSameOrderAndEws1) {
+      auto outShape = reinterpret_cast<const LongType*>(outShapes[nMaxIndex]);
+      COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
+    }
 
     output[zOffset] = grad[gradOffset];
   }
 }
+
 
 template <typename T>
 static void mergeMaxBp_(LaunchContext* context, const std::vector<NDArray*>& inArrs,
@@ -296,30 +359,56 @@ static SD_KERNEL void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
-  for (LongType e = tid; e < length; e += step) {
-    T sum(0.0f);
+  __shared__ int rankOutput;
+  __shared__ const LongType *shapeOutput, *strideOutput;
 
-    for (int i = 0; i < numArrays; i++) {
+  if (threadIdx.x == 0) {
+    rankOutput = shape::rank(outputShape);
+    shapeOutput = shape::shapeOf(outputShape);
+    strideOutput = shape::stride(outputShape);
+  }
+  __syncthreads();
+
+  LongType outputCoords[SD_MAX_RANK];
+
+  for (LongType e = tid; e < length; e += step) {
+    T sum = static_cast<T>(0.0);
+
+    // Sum values from all input arrays
+    for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
-      auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
+      auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
+
+      __shared__ int rankInput;
+      __shared__ const LongType *shapeInput, *strideInput;
+
+      if (threadIdx.x == 0) {
+        rankInput = shape::rank(xShape);
+        shapeInput = shape::shapeOf(xShape);
+        strideInput = shape::stride(xShape);
+      }
+      __syncthreads();
+
       LongType xCoords[SD_MAX_RANK];
       LongType xOffset;
 
-      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+      // Compute input coordinates and offset
+      INDEX2COORDS(e, rankInput, shapeInput, xCoords);
+      COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
       sum += x[xOffset];
     }
 
-    LongType outputCoords[SD_MAX_RANK];
+    // Compute output coordinates and offset
     LongType outputOffset;
+    INDEX2COORDS(e, rankOutput, shapeOutput, outputCoords);
+    COORDS2INDEX(rankOutput, strideOutput, outputCoords, outputOffset);
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-
-    output[outputOffset] = sum / numArrays;
+    // Store the averaged value in the output
+    output[outputOffset] = sum / static_cast<T>(numArrays);
   }
 }
+
 template <typename T>
 static void mergeAvg_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   std::vector<const void*> inBuffers(inArrs.size()), inShapes(inArrs.size());
@@ -357,37 +446,48 @@ template <typename T>
 static SD_KERNEL void mergeAvgBpCudaLauncher(const void* vgradient, const LongType* gradientShape, void** outArrs,
                                              void** outShapes, const int numArrays, LongType length,
                                              bool bSameOrderAndEws1) {
-  auto grad = reinterpret_cast<const T*>(vgradient);
+  const auto grad = reinterpret_cast<const T*>(vgradient);
 
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  __shared__ int gradRank;
+  __shared__ const LongType *gradShape, *gradStride;
+
+  if (threadIdx.x == 0) {
+    gradRank = shape::rank(gradientShape);
+    gradShape = shape::shapeOf(gradientShape);
+    gradStride = shape::stride(gradientShape);
+  }
+  __syncthreads();
+
   LongType coords[SD_MAX_RANK];
 
   for (LongType e = tid; e < length; e += step) {
-    LongType gradOffset;
+    LongType gradOffset = bSameOrderAndEws1 ? e : 0;
+
+    // Compute gradient offset if not using the same order and EWS=1
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
-    } else {
-      gradOffset = e;
+      INDEX2COORDS(e, gradRank, gradShape, coords);
+      COORDS2INDEX(gradRank, gradStride, coords, gradOffset);
     }
 
-    for (int i = 0; i < numArrays; i++) {
-      LongType zOffset;
+    // Iterate through each output array and compute the average gradient
+    for (int i = 0; i < numArrays; ++i) {
+      auto output = reinterpret_cast<T*>(outArrs[i]);
+      LongType zOffset = bSameOrderAndEws1 ? e : 0;
+
       if (!bSameOrderAndEws1) {
-        auto outShape = reinterpret_cast<LongType*>(outShapes[i]);
+        auto outShape = reinterpret_cast<const LongType*>(outShapes[i]);
         COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
-      } else {
-        zOffset = e;
       }
 
-      auto output = reinterpret_cast<T*>(outArrs[i]);
-
-      output[zOffset] = grad[gradOffset] / numArrays;
+      // Assign averaged gradient value to output
+      output[zOffset] = grad[gradOffset] / static_cast<T>(numArrays);
     }
   }
 }
+
 
 template <typename T>
 static void mergeAvgBp_(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs,
@@ -447,30 +547,56 @@ static SD_KERNEL void mergeAddCudaLauncher(void** inArrs, void** inShapes, const
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
 
+  __shared__ int rankOutput;
+  __shared__ const LongType *shapeOutput, *strideOutput;
+
+  if (threadIdx.x == 0) {
+    rankOutput = shape::rank(outputShape);
+    shapeOutput = shape::shapeOf(outputShape);
+    strideOutput = shape::stride(outputShape);
+  }
+  __syncthreads();
+
+  LongType outputCoords[SD_MAX_RANK];
+
   for (LongType e = tid; e < length; e += step) {
     T sum(0.0f);
 
-    for (int i = 0; i < numArrays; i++) {
+    // Compute the sum across all input arrays
+    for (int i = 0; i < numArrays; ++i) {
       auto x = reinterpret_cast<T*>(inArrs[i]);
-      auto xShape = reinterpret_cast<LongType*>(inShapes[i]);
-      LongType xOffset;
-      sd::LongType xCoords[SD_MAX_RANK];
+      auto xShape = reinterpret_cast<const LongType*>(inShapes[i]);
 
-      INDEX2COORDS(e, shape::rank(xShape), shape::shapeOf(xShape), xCoords);
-      COORDS2INDEX(shape::rank(xShape), shape::stride(xShape), xCoords, xOffset);
+      __shared__ int rankInput;
+      __shared__ const LongType *shapeInput, *strideInput;
+
+      if (threadIdx.x == 0) {
+        rankInput = shape::rank(xShape);
+        shapeInput = shape::shapeOf(xShape);
+        strideInput = shape::stride(xShape);
+      }
+      __syncthreads();
+
+      LongType xCoords[SD_MAX_RANK];
+      LongType xOffset;
+
+      // Compute input coordinates and offset
+      INDEX2COORDS(e, rankInput, shapeInput, xCoords);
+      COORDS2INDEX(rankInput, strideInput, xCoords, xOffset);
 
       sum += x[xOffset];
     }
 
+    // Compute output coordinates and offset
     LongType outputOffset;
-    sd::LongType outputCoords[SD_MAX_RANK];
+    INDEX2COORDS(e, rankOutput, shapeOutput, outputCoords);
+    COORDS2INDEX(rankOutput, strideOutput, outputCoords, outputOffset);
 
-    INDEX2COORDS(e, shape::rank(outputShape), shape::shapeOf(outputShape), outputCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), outputCoords, outputOffset);
-
+    // Store the computed sum in the output
     output[outputOffset] = sum;
   }
 }
+
 template <typename T>
 static void mergeAdd_(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output) {
   int nArrSize = static_cast<int>(inArrs.size());
@@ -513,37 +639,47 @@ template <typename T>
 static SD_KERNEL void mergeAddBpCudaLauncher(const void* vgradient, const LongType* gradientShape, void** outArrs,
                                              void** outShapes, const int numArrays, LongType length,
                                              bool bSameOrderAndEws1) {
-  auto grad = reinterpret_cast<const T*>(vgradient);
-
+  const auto grad = reinterpret_cast<const T*>(vgradient);
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
   const auto step = gridDim.x * blockDim.x;
+
+  __shared__ int gradRank;
+  __shared__ const LongType *gradShape, *gradStride;
+
+  if (threadIdx.x == 0) {
+    gradRank = shape::rank(gradientShape);
+    gradShape = shape::shapeOf(gradientShape);
+    gradStride = shape::stride(gradientShape);
+  }
+  __syncthreads();
 
   LongType coords[SD_MAX_RANK];
 
   for (LongType e = tid; e < length; e += step) {
-    LongType gradOffset;
+    LongType gradOffset = bSameOrderAndEws1 ? e : 0;
+
+    // Compute gradient offset if not using same order and EWS=1
     if (!bSameOrderAndEws1) {
-      INDEX2COORDS(e, shape::rank(gradientShape), shape::shapeOf(gradientShape), coords);
-      COORDS2INDEX(shape::rank(gradientShape), shape::stride(gradientShape), coords, gradOffset);
-    } else {
-      gradOffset = e;
+      INDEX2COORDS(e, gradRank, gradShape, coords);
+      COORDS2INDEX(gradRank, gradStride, coords, gradOffset);
     }
 
-    for (int i = 0; i < numArrays; i++) {
-      LongType zOffset;
+    for (int i = 0; i < numArrays; ++i) {
+      auto output = reinterpret_cast<T*>(outArrs[i]);
+      LongType zOffset = bSameOrderAndEws1 ? e : 0;
+
+      // Compute output offset if not using same order and EWS=1
       if (!bSameOrderAndEws1) {
-        auto outShape = reinterpret_cast<LongType*>(outShapes[i]);
+        auto outShape = reinterpret_cast<const LongType*>(outShapes[i]);
         COORDS2INDEX(shape::rank(outShape), shape::stride(outShape), coords, zOffset);
-      } else {
-        zOffset = e;
       }
 
-      auto output = reinterpret_cast<T*>(outArrs[i]);
-
+      // Assign gradient value to output
       output[zOffset] = grad[gradOffset];
     }
   }
 }
+
 
 template <typename T>
 static void mergeAddBp_(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs,

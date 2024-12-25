@@ -93,53 +93,41 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
   const auto gradient = inArrs[numArgs]->bufferAsT<T>();
   auto length = inArrs[numArgs]->lengthOf();
 
-  bool bSameOrderAndEws1 = (1 == inArrs[numArgs]->ews());
+  bool bSameOrderAndEws1 = false;
 
-  if (bSameOrderAndEws1) {
-    auto gradOrdering = inArrs[numArgs]->ordering();
-
-    for (int i = 0; i < numArgs; ++i) {
-      bSameOrderAndEws1 &= (gradOrdering == inArrs[i]->ordering());
-      bSameOrderAndEws1 &= (1 == inArrs[i]->ews());
-      bSameOrderAndEws1 &= (gradOrdering == outArrs[i]->ordering());
-      bSameOrderAndEws1 &= (1 == outArrs[i]->ews());
-    }
-  }
-
-  if (bSameOrderAndEws1) {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto e = start; e < stop; e++) {
-        T max = -DataTypeUtils::max<T>();
-        sd::LongType nMaxIndex = 0;
-        for (sd::LongType i = 0; i < numArgs; i++) {
-          const T* v = inArrs[i]->bufferAsT<T>();
-          if (v[e] > max) {
-            max = v[e];
-            nMaxIndex = i;
-          }
-        }
-        T* z = outArrs[nMaxIndex]->bufferAsT<T>();
-        z[e] = gradient[e];
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, length);
-    return;
-  }
 
   auto gradShape = inArrs[numArgs]->shapeInfo();
   std::vector<bool> vbSameShaepeAndStrides(numArgs);
+  std::vector<sd::LongType*> vShapePtrs(numArgs);
+  std::vector<sd::LongType*> vStridePtrs(numArgs);
+  std::vector<sd::LongType> vRanks(numArgs);
   for (int i = 0; i < numArgs; ++i) {
     vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->shapeInfo());
+    vShapePtrs[i] = shape::shapeOf(inArrs[i]->shapeInfo());
+    vStridePtrs[i] = shape::stride(inArrs[i]->shapeInfo());
+    vRanks[i] = shape::rank(inArrs[i]->shapeInfo());
   }
 
+
+  std::vector<sd::LongType *> outShapePtrs(numArgs);
+  std::vector<sd::LongType *> outStridePtrs(numArgs);
+  std::vector<sd::LongType> outRanks(numArgs);
+  for (int i = 0; i < numArgs; ++i) {
+    outShapePtrs[i] = shape::shapeOf(outArrs[i]->shapeInfo());
+    outStridePtrs[i] = shape::stride(outArrs[i]->shapeInfo());
+    outRanks[i] = shape::rank(outArrs[i]->shapeInfo());
+  }
+
+  sd::LongType gradRank = shape::rank(gradShape);
+  sd::LongType *gradShapeOf = shape::shapeOf(gradShape);
+  sd::LongType *gradStride = shape::stride(gradShape);
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (auto e = start; e < stop; e++) {
-      INDEX2COORDS(e, shape::rank(gradShape), shape::shapeOf(gradShape), coords);
+      INDEX2COORDS(e, gradRank, gradShapeOf, coords);
 
       sd::LongType gradOffset;
-      COORDS2INDEX(shape::rank(gradShape), shape::stride(gradShape), coords, gradOffset);
+      COORDS2INDEX(gradRank,gradStride, coords, gradOffset);
 
       T max = -DataTypeUtils::max<T>();
       sd::LongType nMaxIndex = 0;
@@ -149,7 +137,7 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
         if (vbSameShaepeAndStrides[i]) {
           xOffset = gradOffset;
         } else {
-          COORDS2INDEX(shape::rank(inArrs[i]->shapeInfo()), shape::stride(inArrs[i]->shapeInfo()), coords, xOffset);
+          COORDS2INDEX(vRanks[i],vStridePtrs[i], coords, xOffset);
         }
         const T* v = inArrs[i]->bufferAsT<T>();
         if (v[xOffset] > max) {
@@ -162,7 +150,7 @@ static void mergeMaxBp_(const std::vector<NDArray*>& inArrs, std::vector<NDArray
       if (vbSameShaepeAndStrides[nMaxIndex]) {
         zOffset = gradOffset;
       } else {
-        COORDS2INDEX(shape::rank(outArrs[nMaxIndex]->shapeInfo()), shape::stride(outArrs[nMaxIndex]->shapeInfo()), coords, zOffset);
+        COORDS2INDEX(outRanks[nMaxIndex],outStridePtrs[nMaxIndex], coords, zOffset);
       }
 
       T* z = outArrs[nMaxIndex]->bufferAsT<T>();

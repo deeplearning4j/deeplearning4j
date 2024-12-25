@@ -43,21 +43,46 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, con
   const auto grad = reinterpret_cast<const T*>(vx);
   const auto initU = reinterpret_cast<const T*>(vinv);
   const auto initM = reinterpret_cast<const T*>(vinm);
-
   auto up = reinterpret_cast<T*>(vz);
   auto stU = reinterpret_cast<T*>(vstV);
   auto stM = reinterpret_cast<T*>(vstM);
 
-  __shared__ LongType xLen;
+  __shared__ LongType xLen, xRank, zRank, invRank, inmRank, stvRank, stmRank;
   __shared__ T beta1T, epsilonT;
   __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
+  __shared__ LongType *sharedMem;
+  __shared__ const LongType *xShape, *zShape, *invShape, *inmShape, *stvShape, *stmShape;
+  __shared__ const LongType *xStride, *zStride, *invStride, *inmStride, *stvStride, *stmStride;
 
   if (threadIdx.x == 0) {
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<LongType*>(shmem);
+
     xLen = shape::length(xShapeInfo);
     beta1T = math::sd_pow<T, T, T>(beta1, (iteration + 1));
 
     epsilonT = lr / (1.0 - beta1T);
     if (math::sd_isnan(epsilonT) || 0 == epsilonT || math::sd_isinf(epsilonT)) epsilonT = epsilon;
+
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    invRank = shape::rank(invShapeInfo);
+    inmRank = shape::rank(inmShapeInfo);
+    stvRank = shape::rank(stvShapeInfo);
+    stmRank = shape::rank(stmShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    invShape = shape::shapeOf(invShapeInfo);
+    invStride = shape::stride(invShapeInfo);
+    inmShape = shape::shapeOf(inmShapeInfo);
+    inmStride = shape::stride(inmShapeInfo);
+    stvShape = shape::shapeOf(stvShapeInfo);
+    stvStride = shape::stride(stvShapeInfo);
+    stmShape = shape::shapeOf(stmShapeInfo);
+    stmStride = shape::stride(stmShapeInfo);
 
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(xShapeInfo) == shape::order(stmShapeInfo) &&
@@ -73,42 +98,44 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, con
   }
   __syncthreads();
 
-  LongType coords[SD_MAX_RANK];
+  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
     }
 
     if (bXInUSame) {
       initUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(invShapeInfo), shape::stride(invShapeInfo), coords, initUOffset);
+      COORDS2INDEX(invRank, invStride, coords, initUOffset);
     }
 
     if (bXStUSame) {
       stUOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stvShapeInfo), shape::stride(stvShapeInfo), coords, stUOffset);
+      COORDS2INDEX(stvRank, stvStride, coords, stUOffset);
     }
 
     if (bXInMSame) {
       initMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inmShapeInfo), shape::stride(inmShapeInfo), coords, initMOffset);
+      COORDS2INDEX(inmRank, inmStride, coords, initMOffset);
     }
 
     if (bXStMSame) {
       stMOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stmShapeInfo), shape::stride(stmShapeInfo), coords, stMOffset);
+      COORDS2INDEX(stmRank, stmStride, coords, stMOffset);
     }
+
     // m = B_1 * m + (1-B_1)*grad
     stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
     // u = max(B_2 * u, |grad|)
@@ -117,7 +144,6 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, con
     up[zOffset] = (stM[stMOffset] * epsilonT) / stU[stUOffset];
   }
 }
-
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMemory,

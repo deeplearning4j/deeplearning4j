@@ -35,6 +35,23 @@ template <typename T>
 static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& initStateMsdx,
                              NDArray& update, NDArray& stateMsg, NDArray& stateMsdx, const double dRho,
                              const double dEpsilon) {
+  // Cache shape information
+  const auto gradientShapeInfo = gradient.shapeInfo();
+  const auto updateShapeInfo = update.shapeInfo();
+  const auto initStateMsgShapeInfo = initStateMsg.shapeInfo();
+  const auto stateMsgShapeInfo = stateMsg.shapeInfo();
+  const auto initStateMsdxShapeInfo = initStateMsdx.shapeInfo();
+  const auto stateMsdxShapeInfo = stateMsdx.shapeInfo();
+  
+  const auto gradRank = shape::rank(gradientShapeInfo);
+  const auto* gradShape = shape::shapeOf(gradientShapeInfo);
+  const auto* gradStride = shape::stride(gradientShapeInfo);
+  const auto* updateStride = shape::stride(updateShapeInfo);
+  const auto* initStateMsgStride = shape::stride(initStateMsgShapeInfo);
+  const auto* stateMsgStride = shape::stride(stateMsgShapeInfo);
+  const auto* initStateMsdxStride = shape::stride(initStateMsdxShapeInfo);
+  const auto* stateMsdxStride = shape::stride(stateMsdxShapeInfo);
+
   const T* grad = gradient.bufferAsT<T>();
   const T* initMsg = initStateMsg.bufferAsT<T>();
   const T* initMsdx = initStateMsdx.bufferAsT<T>();
@@ -74,53 +91,53 @@ static void adaDeltaUpdater_(NDArray& gradient, NDArray& initStateMsg, NDArray& 
     return;
   }
 
-  bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
-  bool bXInMsgSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateMsg.shapeInfo());
-  bool bXStMsgSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateMsg.shapeInfo());
-  bool bXInMsdxSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateMsdx.shapeInfo());
-  bool bXStMsdxSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateMsdx.shapeInfo());
+  bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
+  bool bXInMsgSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateMsgShapeInfo);
+  bool bXStMsgSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateMsgShapeInfo);
+  bool bXInMsdxSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateMsdxShapeInfo);
+  bool bXStMsdxSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateMsdxShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
-    for (sd::LongType i = start; i < gradient.lengthOf(); i++) {
-      INDEX2COORDS(i, gradient.rankOf(), shape::shapeOf(gradient.shapeInfo()), coords);
+    for (sd::LongType i = start; i < stop; i++) {
+      INDEX2COORDS(i, gradRank, gradShape, coords);
 
       sd::LongType xOffset;
-      COORDS2INDEX(gradient.rankOf(), shape::stride(gradient.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(gradRank, gradStride, coords, xOffset);
 
       sd::LongType zOffset;
       if (bXZsame) {
         zOffset = xOffset;
       } else {
-        COORDS2INDEX(update.rankOf(), shape::stride(update.shapeInfo()), coords, zOffset);
+        COORDS2INDEX(gradRank, updateStride, coords, zOffset);
       }
 
       sd::LongType initMsgOffset;
       if (bXInMsgSame) {
         initMsgOffset = xOffset;
       } else {
-        COORDS2INDEX(initStateMsg.rankOf(), shape::stride(initStateMsg.shapeInfo()), coords, initMsgOffset);
+        COORDS2INDEX(gradRank, initStateMsgStride, coords, initMsgOffset);
       }
 
       sd::LongType stMsgOffset;
       if (bXStMsgSame) {
         stMsgOffset = xOffset;
       } else {
-        COORDS2INDEX(stateMsg.rankOf(), shape::stride(stateMsg.shapeInfo()), coords, stMsgOffset);
+        COORDS2INDEX(gradRank, stateMsgStride, coords, stMsgOffset);
       }
 
       sd::LongType initMsdxOffset;
       if (bXInMsdxSame) {
         initMsdxOffset = xOffset;
       } else {
-        COORDS2INDEX(initStateMsdx.rankOf(), shape::stride(initStateMsdx.shapeInfo()), coords, initMsdxOffset);
+        COORDS2INDEX(gradRank, initStateMsdxStride, coords, initMsdxOffset);
       }
 
       sd::LongType stMsdxOffset;
       if (bXStMsdxSame) {
         stMsdxOffset = xOffset;
       } else {
-        COORDS2INDEX(stateMsdx.rankOf(), shape::stride(stateMsdx.shapeInfo()), coords, stMsdxOffset);
+        COORDS2INDEX(gradRank, stateMsdxStride, coords, stMsdxOffset);
       }
 
       stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;

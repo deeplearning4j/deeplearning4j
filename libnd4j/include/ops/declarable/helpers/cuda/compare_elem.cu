@@ -23,7 +23,6 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-
 template <typename T>
 static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType length, const bool isStrict,
                                  void *reductionBuffer, bool *z) {
@@ -33,6 +32,18 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
   extern __shared__ uint32_t shared[];
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
 
+  // Cache shape information in shared memory
+  __shared__ LongType xRank;
+  __shared__ LongType *xShape;
+  __shared__ LongType *xStride;
+
+  if (threadIdx.x == 0) {
+    xRank = shape::rank(xShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+  }
+  __syncthreads();
+
   shared[threadIdx.x] = 0;
 
   LongType xCoords[SD_MAX_RANK];
@@ -41,10 +52,10 @@ static SD_KERNEL void comparator(void *vx, const LongType *xShapeInfo, LongType 
 
   // each thread will compare 2 elements: E and E+1
   for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
-    INDEX2COORDS(e, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset0);
-    INDEX2COORDS(e + 1, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), xCoords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), xCoords, xOffset1);
+    INDEX2COORDS(e, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset0);
+    INDEX2COORDS(e + 1, xRank, xShape, xCoords);
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset1);
 
     auto val0 = x[xOffset0];
     auto val1 = x[xOffset1];

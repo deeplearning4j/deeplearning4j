@@ -227,6 +227,12 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
       const bool canCastTad = sd::DataTypeUtils::castShapeInfo<sd::LongType>(tadShapeInfo, castTadShapeInfo);
       const bool canCastZ = sd::DataTypeUtils::castShapeInfo<sd::LongType>(zShapeInfo, castZShapeInfo);
 
+      sd::LongType tadRank = shape::rank(tadShapeInfo);
+      sd::LongType *tadShape = shape::shapeOf(tadShapeInfo);
+      sd::LongType *tadStride = shape::stride(tadShapeInfo);
+      sd::LongType zRank = shape::rank(zShapeInfo);
+      sd::LongType *zShape = shape::shapeOf(zShapeInfo);
+      sd::LongType *zStride = shape::stride(zShapeInfo);
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
           auto tad = const_cast<X*>(x) + tadOffsets[i];
@@ -234,17 +240,17 @@ SD_LIB_HIDDEN void sd::IndexReductionLoops<X, Z>::loopIndexReduce(const X* x, co
 
           for (sd::LongType j = 0; j < tadLen; j++) {
             LongType coords[SD_MAX_RANK];
-            INDEX2COORDS(j, shape::rank(tadShapeInfo), shape::shapeOf(tadShapeInfo), coords);
+            INDEX2COORDS(j, tadRank, tadShape, coords);
             LongType tadOffset;
-            COORDS2INDEX(shape::rank(tadShapeInfo), shape::stride(tadShapeInfo), coords, tadOffset);
+            COORDS2INDEX(tadRank, tadStride, coords, tadOffset);
             functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
             indexValue = OpType::update(indexValue, comp, extraParams);
           }
 
           LongType coords[SD_MAX_RANK];
-          INDEX2COORDS(i, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), coords);
+          INDEX2COORDS(i, zRank, zShape, coords);
           LongType zOffset;
-          COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+          COORDS2INDEX(zRank, zStride, coords, zOffset);
           z[zOffset] = (Z)indexValue.index;
         }
       };

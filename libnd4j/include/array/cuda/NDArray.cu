@@ -98,7 +98,10 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
 
   __shared__ LongType zRank, xRank, areSameOffsets, *sharedMem;  // xRank == zRank always, except when xRank = 1, in this case zRank = 2
   __shared__ LongType zLen, totalThreads;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
-
+  __shared__ LongType *zShape;
+  __shared__ LongType *zStride;
+  __shared__ LongType *xShape;
+  __shared__ LongType *xStride;
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     sharedMem = reinterpret_cast<LongType*>(shmem);
@@ -107,6 +110,10 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
     zRank = shape::rank(zShapeInfo);
     zLen = shape::length(zShapeInfo);
     totalThreads = gridDim.x * blockDim.x;
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
   }
   __syncthreads();
 
@@ -116,10 +123,10 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
   bool dirU = direction == 'u';
   bool dirL = direction == 'l';
   for (LongType i = tid; i < zLen; i += totalThreads) {
-    INDEX2COORDS(i, zRank, shape::shapeOf(zShapeInfo), coords);
+    INDEX2COORDS(i, zRank, zShape, coords);
 
     LongType zOffset;
-    COORDS2INDEX(zRank, shape::stride(zShapeInfo), coords, zOffset);
+    COORDS2INDEX(zRank, zStride, coords, zOffset);
 
     auto row = coords[zRank - 2];
     auto col = coords[zRank - 1];
@@ -130,7 +137,7 @@ SD_KERNEL static void fillAsTriangularCuda(const void* vx, const LongType* xShap
     } else if (vx != vz) {  // when x and z are different arrays
       if (xRank != zRank) coords[0] = coords[1];
       LongType xOffset;
-      COORDS2INDEX(xRank, shape::stride(xShapeInfo), coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
       z[zOffset] = x[xOffset];
     }
   }
@@ -162,42 +169,66 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   manager.synchronize();
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
-                      (const float val, int lower, int upper, NDArray& target, const char direction,
-                          const bool includeEdges),
-                      SD_COMMON_TYPES);
+(const float val, int lower, int upper, NDArray& target, const char direction,
+const bool includeEdges),
+SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 SD_KERNEL static void identityMatrixCuda(void* vx, const LongType* xShapeInfo, const T val) {
   auto x = reinterpret_cast<T*>(vx);
 
-  __shared__ LongType rank, *sharedMem;
-  __shared__ LongType len, totalThreads;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+  // Shared memory variables
+  __shared__ LongType rank;
+  __shared__ LongType len;
+  __shared__ LongType totalThreads;
+  __shared__ const LongType* shapePtr;
+  __shared__ const LongType* stridePtr;
+  __shared__ LongType* sharedMem;
 
+  // Initialize shared variables in thread 0
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     sharedMem = reinterpret_cast<LongType*>(shmem);
+
+    // Cache rank and length
     rank = shape::rank(xShapeInfo);
     len = shape::length(xShapeInfo);
+
+    // Cache pointers to shape and stride arrays
+    shapePtr = shape::shapeOf(xShapeInfo);
+    stridePtr = shape::stride(xShapeInfo);
+
+    // Calculate total number of threads
     totalThreads = gridDim.x * blockDim.x;
   }
   __syncthreads();
 
+  // Each thread has its own coordinates array in shared memory
   auto coords = sharedMem + threadIdx.x * rank;
 
+  // Calculate global thread ID
   const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
+  // Iterate over assigned elements
   for (LongType i = tid; i < len; i += totalThreads) {
-    INDEX2COORDS(i, rank, shape::shapeOf(xShapeInfo), coords);
-    LongType offset;
-    COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, offset);
+    // Convert linear index to multi-dimensional coordinates using cached shape
+    INDEX2COORDS(i, rank, shapePtr, coords);
 
-    if (coords[rank - 2] == coords[rank - 1])  // row == col -> on diagonal
+    // Compute linear offset from coordinates using cached stride
+    LongType offset;
+    COORDS2INDEX(rank, stridePtr, coords, offset);
+
+    // Check if the current position is on the diagonal (row == col)
+    if (coords[rank - 2] == coords[rank - 1]) {  // Assuming 0-based indexing
       x[offset] = val;
-    else
+    }
+    else {
       x[offset] = static_cast<T>(0);
+    }
   }
 }
+
 ///////////////////////////////////////////////////////////////////
 template <typename T>
 static void identityMatrixCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
@@ -208,9 +239,9 @@ static void identityMatrixCudaLauncher(const int blocksPerGrid, const int thread
 
 }
 BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                          const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
-                      SD_COMMON_TYPES);
+(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
+SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
@@ -224,7 +255,7 @@ void NDArray::setIdentity() {
   syncToDevice();
   BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher,
                         (launchDims.y, launchDims.x,launchDims.z, getContext()->getCudaStream(), platformBuffer(),
-                         specialShapeInfo(), 1.f),
+                            specialShapeInfo(), 1.f),
                         SD_COMMON_TYPES);
   tickWriteDevice();
 
@@ -348,7 +379,7 @@ NDArray NDArray::tile(const std::vector<LongType>& reps)  {
   auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
   DataBuffer *  newBuff = new DataBuffer(shape::length(newShapeInfo) * sizeOfT(),
-                                                                     dataType(), getContext()->getWorkspace(), true);
+                                         dataType(), getContext()->getWorkspace(), true);
   // assign new shape and new buffer to resulting array
   NDArray result(newBuff,newShapeInfo , getContext());
   // fill newBuff, loop through all elements of newBuff
@@ -477,10 +508,10 @@ static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 
 }
 BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
-                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-                          const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-                          const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
-                      SD_COMMON_TYPES, SD_COMMON_TYPES);
+(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
+const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
+SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats

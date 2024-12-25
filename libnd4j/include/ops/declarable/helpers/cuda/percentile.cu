@@ -38,67 +38,56 @@ static SD_KERNEL void percentileKernel(void* vx, const LongType* xTadShapeInfo, 
                                        const LongType numTads, const LongType tadLength, void* vz,
                                        const LongType* zShapeInfo, const LongType zLength,
                                        const LongType position) {
-  for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
-    auto x = reinterpret_cast<X*>(vx) + xTadOffsets[t];
-    auto z = reinterpret_cast<X*>(vz);
+  const auto x = reinterpret_cast<X*>(vx);
+  auto z = reinterpret_cast<X*>(vz);
 
-    LongType xCoords[SD_MAX_RANK];
-    LongType zCoords[SD_MAX_RANK];
-    LongType t0, t1, zOffset, positionOffset;
+  __shared__ LongType xRank, zRank;
+  __shared__ const LongType* xShape;
+  __shared__ const LongType* xStride;
+  __shared__ const LongType* zShape;
+  __shared__ const LongType* zStride;
 
-    // sort tad
-    if (tadLength > 1) {
-      for (int m = 0; m < tadLength; m++) {
-        if (m % 2 == 0) {
-          for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
-            auto top = 2 * tid + 1;
-            if (top < tadLength) {
-              INDEX2COORDS(top - 1, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, t0);
-              INDEX2COORDS(top, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, t1);
+  if (threadIdx.x == 0) {
+    xRank = shape::rank(xTadShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    xShape = shape::shapeOf(xTadShapeInfo);
+    xStride = shape::stride(xTadShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+  }
+  __syncthreads();
 
-              if (x[t0] > x[t1]) {
-                // swap values
-                X dz0 = x[t0];
-                x[t0] = x[t1];
-                x[t1] = dz0;
-              }
-            }
-          }
-        } else {
-          for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
-            auto top = 2 * tid + 2;
-            if (top < tadLength) {
-              INDEX2COORDS(top - 1, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, t0);
-              INDEX2COORDS(top, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-              COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, t1);
+  for (LongType t = blockIdx.x; t < numTads; t += gridDim.x) {
+    auto tad = x + xTadOffsets[t];
 
-              if (x[t0] > x[t1]) {
-                // swap values
-                X dz0 = x[t0];
-                x[t0] = x[t1];
-                x[t1] = dz0;
-              }
-            }
+    // Sort TAD using odd-even transposition sort
+    for (LongType m = 0; m < tadLength; ++m) {
+      for (LongType tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
+        const auto top = (m % 2 == 0) ? 2 * tid + 1 : 2 * tid + 2;
+        if (top < tadLength) {
+          if (tad[top - 1] > tad[top]) {
+            // Swap values
+            X temp = tad[top - 1];
+            tad[top - 1] = tad[top];
+            tad[top] = temp;
           }
         }
-        __syncthreads();
       }
+      __syncthreads();
     }
 
-    // saving final value
+    // Save the final value to the output
     if (threadIdx.x == 0) {
-      INDEX2COORDS(t, shape::rank(zShapeInfo), shape::shapeOf(zShapeInfo), zCoords);
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), zCoords, zOffset);
-      INDEX2COORDS(position, shape::rank(xTadShapeInfo), shape::shapeOf(xTadShapeInfo), xCoords);
-      COORDS2INDEX(shape::rank(xTadShapeInfo), shape::stride(xTadShapeInfo), xCoords, positionOffset);
-      z[zOffset] = x[positionOffset];
+      const auto value = tad[position];
+      LongType zOffset;
+
+      COORDS2INDEX(zRank, zStride, &t, zOffset);
+      z[zOffset] = value;
     }
     __syncthreads();
   }
 }
+
 
 template <typename T>
 static void _percentile(LaunchContext* context, NDArray& input, NDArray& output, std::vector<LongType>& axis,

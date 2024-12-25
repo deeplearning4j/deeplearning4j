@@ -47,13 +47,17 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
   LongType ss = 0L;
   LongType ic = 0L;
   int len = input->isScalar() ? 1 : input->lengthOf();
+
+  sd::LongType inputRank = input->rankOf();
+  sd::LongType *inputShape = shape::shapeOf(input->shapeInfo());
+
   // loop through each string within tensor
   for (LongType e = 0L; e < len; e++) {
     // now we should map substring to indices
     auto s = input->e<std::string>(e);
 
     // getting base index
-    INDEX2COORDS(e, input->rankOf(), shape::shapeOf(input->shapeInfo()), icoords.data());
+    INDEX2COORDS(e, inputRank, inputShape, icoords.data());
 
     // getting number of substrings
     auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length());

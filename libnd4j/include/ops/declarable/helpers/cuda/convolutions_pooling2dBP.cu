@@ -39,10 +39,6 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
                                       const LongType kH, const LongType kW, const LongType sH, const LongType sW, const LongType pH,
                                       const LongType pW, const LongType dH, const LongType dW, const int poolingMode,
                                       const int extraParam0) {
-  // x: input [bS, iC, iH, iW]
-  // y: gradO [bS, iC, oH, oW]
-  // z: gradI [bS, iC, iH, iW] -> gradI is output in this function
-
   const T* x = reinterpret_cast<const T*>(vx);
   const T* y = reinterpret_cast<const T*>(vy);
   T* z = reinterpret_cast<T*>(vz);
@@ -50,6 +46,12 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
   LongType coord2, coord3;
   __shared__ LongType rank, kHeff, kWeff, iH, iW, kProd;
   __shared__ LongType xLen, yLen, *sharedMem;
+  __shared__ LongType* xShape;
+  __shared__ LongType* yShape;
+  __shared__ LongType* zShape;
+  __shared__ LongType* xStride;
+  __shared__ LongType* yStride;
+  __shared__ LongType* zStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
@@ -66,6 +68,14 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
     iW = xShapeInfo[4];
 
     kProd = kH * kW;
+
+    // Cache shape information
+    xShape = shape::shapeOf(xShapeInfo);
+    yShape = shape::shapeOf(yShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    yStride = shape::stride(yShapeInfo);
+    zStride = shape::stride(zShapeInfo);
   }
   __syncthreads();
 
@@ -75,10 +85,10 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(yInd, rank, shape::shapeOf(yShapeInfo), coords);
+  INDEX2COORDS(yInd, rank, yShape, coords);
 
   LongType yOffset;
-  COORDS2INDEX(rank, shape::stride(yShapeInfo), coords, yOffset);
+  COORDS2INDEX(rank, yStride, coords, yOffset);
 
   LongType hstart = coords[2] * sH - pH;
   LongType wstart = coords[3] * sW - pW;
@@ -100,7 +110,7 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
           LongType offset;
-          COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, offset);
+          COORDS2INDEX(rank, xStride, coords, offset);
           T val = x[offset];
           if (val > max) {
             max = val;
@@ -112,30 +122,29 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
       coords[2] = coord2;
       coords[3] = coord3;
       LongType zOffset;
-      COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(rank, zStride, coords, zOffset);
       math::atomics::sd_atomicAdd<T>(&z[zOffset], y[yOffset]);
     } break;
 
-      /*** avg ***/
+    /*** avg ***/
     case 1: {
       T val = y[yOffset];
 
       if (extraParam0 == 0)  // Exclude padding
         val /= math::sd_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) *
-               math::sd_ceil<double, T>(static_cast<double>(wend - wstart) /
-                                        static_cast<double>(dW));  // Accounts for dilation
-      else if (extraParam0 == 1)                                       // Include padding
+               math::sd_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));
+      else if (extraParam0 == 1)  // Include padding
         val /= kProd;
 
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
           LongType zOffset;
-          COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+          COORDS2INDEX(rank, zStride, coords, zOffset);
           math::atomics::sd_atomicAdd<T>(&z[zOffset], val);
         }
     } break;
 
-      /*** pnorm ***/
+    /*** pnorm ***/
     case 2: {
       T sum = static_cast<T>(0.);
       T val = y[yOffset];
@@ -143,7 +152,7 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
           LongType xOffset;
-          COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+          COORDS2INDEX(rank, xStride, coords, xOffset);
           sum += math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[xOffset]), extraParam0);
         }
 
@@ -152,15 +161,14 @@ SD_KERNEL static void pooling2dBPCuda(const void* vx, const LongType* xShapeInfo
       for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
         for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
           LongType xOffset, zOffset;
-          COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
-          COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+          COORDS2INDEX(rank, xStride, coords, xOffset);
+          COORDS2INDEX(rank, zStride, coords, zOffset);
           math::atomics::sd_atomicAdd<T>(
               &z[zOffset], val * math::sd_pow<T, T, T>(math::sd_abs<T,T>(x[xOffset]), extraParam0 - 1.f) *
                                math::sd_sgn<T, T>(x[xOffset]));
         }
       }
-    }
-    break;
+    } break;
   }
 }
 //////////////////////////////////////////////////////////////////////////

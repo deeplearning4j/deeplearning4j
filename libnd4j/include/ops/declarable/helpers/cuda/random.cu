@@ -133,39 +133,57 @@ template <typename T>
 static SD_KERNEL void fillGammaKernel(T const* uList, LongType uLength, T const* alpha,
                                       const LongType* alphaShape, T const* beta, const LongType* betaShape,
                                       T* output, const LongType* outputShape) {
-  // fill up
   __shared__ LongType aLength;
   __shared__ LongType outLength;
+  __shared__ LongType rankAlpha, rankBeta, rankOutput;
+  __shared__ const LongType *alphaShapeArr, *alphaStride, *betaShapeArr, *betaStride, *outputShapeArr, *outputStride;
+
   if (threadIdx.x == 0) {
     aLength = shape::length(alphaShape);
     outLength = shape::length(outputShape) / aLength;
+
+    rankAlpha = shape::rank(alphaShape);
+    alphaShapeArr = shape::shapeOf(alphaShape);
+    alphaStride = shape::stride(alphaShape);
+
+    rankBeta = betaShape ? shape::rank(betaShape) : 0;
+    betaShapeArr = betaShape ? shape::shapeOf(betaShape) : nullptr;
+    betaStride = betaShape ? shape::stride(betaShape) : nullptr;
+
+    rankOutput = shape::rank(outputShape);
+    outputShapeArr = shape::shapeOf(outputShape);
+    outputStride = shape::stride(outputShape);
   }
   __syncthreads();
 
-  for (auto k = blockIdx.x; k < (int)outLength; k += gridDim.x) {
-    auto pos = k * aLength;
-    for (auto e = threadIdx.x; e < (int)aLength; e += blockDim.x) {
-      LongType aCoords[SD_MAX_RANK];
-      LongType bCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
-      LongType aIndex;
-      LongType bIndex;
-      LongType zIndex;
+  for (LongType k = blockIdx.x; k < outLength; k += gridDim.x) {
+    const auto pos = k * aLength;
 
-      INDEX2COORDS(e, shape::rank(alphaShape), shape::shapeOf(alpha), aCoords);
-      COORDS2INDEX(shape::rank(alphaShape), shape::stride(alphaShape), aCoords, aIndex);
+    for (LongType e = threadIdx.x; e < aLength; e += blockDim.x) {
+      LongType aCoords[SD_MAX_RANK], bCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      LongType aIndex, bIndex = -1LL, zIndex;
+
+      // Alpha coordinates and index
+      INDEX2COORDS(e, rankAlpha, alphaShapeArr, aCoords);
+      COORDS2INDEX(rankAlpha, alphaStride, aCoords, aIndex);
+
+      // Beta coordinates and index (if beta is provided)
       if (betaShape) {
-        INDEX2COORDS(e, shape::rank(betaShape), shape::shapeOf(beta), bCoords);
-        COORDS2INDEX(shape::rank(betaShape), shape::stride(betaShape), bCoords, bIndex);
-      } else {
-        bIndex = -1LL;
+        INDEX2COORDS(e, rankBeta, betaShapeArr, bCoords);
+        COORDS2INDEX(rankBeta, betaStride, bCoords, bIndex);
       }
-      INDEX2COORDS(e + pos, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
 
-      auto betaV = T(beta != nullptr ? beta[bIndex] : T(1.f));
-      output[zIndex] = alpha[aIndex] > T(1.f) ? gammaGreat(uList, pos, uLength, alpha[aIndex], betaV)
-                                              : gammaLess(uList, pos, uLength, alpha[aIndex], betaV);
+      // Output coordinates and index
+      INDEX2COORDS(e + pos, rankOutput, outputShapeArr, zCoords);
+      COORDS2INDEX(rankOutput, outputStride, zCoords, zIndex);
+
+      // Get beta value or default to 1
+      const auto betaV = beta ? beta[bIndex] : T(1.f);
+
+      // Fill the output with the computed gamma value
+      output[zIndex] = alpha[aIndex] > T(1.f)
+                           ? gammaGreat(uList, pos, uLength, alpha[aIndex], betaV)
+                           : gammaLess(uList, pos, uLength, alpha[aIndex], betaV);
     }
   }
 }
@@ -242,40 +260,59 @@ while u > s do:
 return x.
  * */
 template <typename T>
-static SD_KERNEL void fillPoissonKernel(T* uList, LongType uLength, T* lambda, const LongType* lambdaShape, T* output, const LongType* outputShape) {
-  __shared__ LongType step;
+static SD_KERNEL void fillPoissonKernel(T* uList, LongType uLength, T* lambda, const LongType* lambdaShape,
+                                        T* output, const LongType* outputShape) {
+  __shared__ LongType lambdaLen;
+  __shared__ LongType rankLambda, rankOutput;
+  __shared__ const LongType *lambdaShapeArr, *lambdaStride, *outputShapeArr, *outputStride;
 
   if (threadIdx.x == 0) {
-    step = shape::length(lambdaShape);
+    lambdaLen = shape::length(lambdaShape);
+
+    rankLambda = shape::rank(lambdaShape);
+    rankOutput = shape::rank(outputShape);
+
+    lambdaShapeArr = shape::shapeOf(lambdaShape);
+    lambdaStride = shape::stride(lambdaShape);
+
+    outputShapeArr = shape::shapeOf(outputShape);
+    outputStride = shape::stride(outputShape);
   }
   __syncthreads();
 
-  for (auto k = blockIdx.x; k < uLength; k += gridDim.x) {
-    auto pos = k * step;
-    auto u = uList[k];
-    for (auto e = threadIdx.x; e < step; e += blockDim.x) {
+  for (LongType k = blockIdx.x; k < uLength; k += gridDim.x) {
+    const auto pos = k * lambdaLen;
+    const auto u = uList[k];
+
+    for (LongType e = threadIdx.x; e < lambdaLen; e += blockDim.x) {
       auto p = math::sd_exp<T, T>(-lambda[e]);
       auto s = p;
-      auto x = T(0.f);
-      LongType lCoords[SD_MAX_RANK];
-      LongType zCoords[SD_MAX_RANK];
-      LongType lIndex;
-      LongType zIndex;
+      auto x = T(0.);
 
-      INDEX2COORDS(e, shape::rank(lambdaShape), shape::shapeOf(lambdaShape), lCoords);
-      COORDS2INDEX(shape::rank(lambdaShape), shape::stride(lambdaShape), lCoords, lIndex);
-      INDEX2COORDS(e + pos, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-      COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
+      LongType lCoords[SD_MAX_RANK], zCoords[SD_MAX_RANK];
+      LongType lIndex, zIndex;
 
+      // Compute coordinates and indices for lambda
+      INDEX2COORDS(e, rankLambda, lambdaShapeArr, lCoords);
+      COORDS2INDEX(rankLambda, lambdaStride, lCoords, lIndex);
+
+      // Compute coordinates and indices for output
+      INDEX2COORDS(e + pos, rankOutput, outputShapeArr, zCoords);
+      COORDS2INDEX(rankOutput, outputStride, zCoords, zIndex);
+
+      // Compute Poisson distributed value
       while (u > s) {
         x += T(1.);
         p *= lambda[lIndex] / x;
         s += p;
       }
+
+      // Assign computed value to output
       output[zIndex] = x;
     }
   }
 }
+
 
 template <typename T>
 static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
@@ -317,26 +354,35 @@ BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_,
 template <typename T>
 static SD_KERNEL void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output,
                                         const LongType* outputShape) {
-  auto start = blockIdx.x * blockDim.x + threadIdx.x;
-  auto step = blockDim.x * gridDim.x;
+  const auto start = blockIdx.x * blockDim.x + threadIdx.x;
+  const auto step = blockDim.x * gridDim.x;
 
   __shared__ LongType outputLen;
+  __shared__ LongType rank;
+  __shared__ const LongType *shape, *stride;
 
-  if (0 == threadIdx.x) {
+  if (threadIdx.x == 0) {
     outputLen = shape::length(outputShape);
+    rank = shape::rank(outputShape);
+    shape = shape::shapeOf(outputShape);
+    stride = shape::stride(outputShape);
   }
   __syncthreads();
 
-  for (auto i = start; i < outputLen; i += step) {
-    LongType zCoords[SD_MAX_RANK];
+  LongType zCoords[SD_MAX_RANK];
+
+  for (LongType i = start; i < outputLen; i += step) {
     LongType zIndex;
 
-    INDEX2COORDS(i, shape::rank(outputShape), shape::shapeOf(outputShape), zCoords);
-    COORDS2INDEX(shape::rank(outputShape), shape::stride(outputShape), zCoords, zIndex);
+    // Calculate output index
+    INDEX2COORDS(i, rank, shape, zCoords);
+    COORDS2INDEX(rank, stride, zCoords, zIndex);
 
+    // Fill output with a random value in the range [from, to]
     output[zIndex] = devRng->relativeT<T>(i, from, to);
   }
 }
+
 template <typename T>
 static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max,
                                NDArray* output) {

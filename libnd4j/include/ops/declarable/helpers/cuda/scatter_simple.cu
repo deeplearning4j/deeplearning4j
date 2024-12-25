@@ -42,31 +42,67 @@ static SD_KERNEL void scatterSimpleKernel(void* vx, const LongType* xTadShape, c
                                           LongType xLength, LongType numTads, const void* vi,
                                           const LongType* iShapeInfo, LongType iLength, const void* vu,
                                           const LongType* uShapeInfo, LongType uLength) {
-  auto u = reinterpret_cast<const X*>(vu);
-  auto indices = reinterpret_cast<const Y*>(vi);
+  // Shared memory caching for shape and stride information
+  __shared__ LongType iRank, xTadRank, uRank;
+  __shared__ const LongType* iShape;
+  __shared__ const LongType* xTadShapePtr;
+  __shared__ const LongType* uShape;
+  __shared__ const LongType* iStride;
+  __shared__ const LongType* xTadStride;
+  __shared__ const LongType* uStride;
 
+  // Initialize shared memory
+  if (threadIdx.x == 0) {
+    iRank = shape::rank(iShapeInfo);
+    xTadRank = shape::rank(xTadShape);
+    uRank = shape::rank(uShapeInfo);
+
+    iShape = shape::shapeOf(iShapeInfo);
+    xTadShapePtr = shape::shapeOf(xTadShape);
+    uShape = shape::shapeOf(uShapeInfo);
+
+    iStride = shape::stride(iShapeInfo);
+    xTadStride = shape::stride(xTadShape);
+    uStride = shape::stride(uShapeInfo);
+  }
+  __syncthreads();
+
+  // Cast input pointers
+  const X* u = reinterpret_cast<const X*>(vu);
+  const Y* indices = reinterpret_cast<const Y*>(vi);
+
+  // Calculate thread ID
   auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+  // Iterate over the indices
   for (int i = tid; i < iLength; i += blockDim.x * gridDim.x) {
+    // Offset for `x`
     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
+
+    // Compute coordinates and offsets for index tensor
     LongType idxCoords[SD_MAX_RANK];
     LongType idxOffset;
-    INDEX2COORDS(i, shape::rank(iShapeInfo), shape::shapeOf(iShapeInfo), idxCoords);
-    COORDS2INDEX(shape::rank(iShapeInfo), shape::stride(iShapeInfo), idxCoords, idxOffset);
+    INDEX2COORDS(i, iRank, iShape, idxCoords);
+    COORDS2INDEX(iRank, iStride, idxCoords, idxOffset);
     auto idx = indices[idxOffset];
 
+    // Compute coordinates and offsets for x
     LongType xCoords[SD_MAX_RANK];
     LongType xOffset;
-    INDEX2COORDS(idx, shape::rank(xTadShape), shape::shapeOf(xTadShape), xCoords);
-    COORDS2INDEX(shape::rank(xTadShape), shape::stride(xTadShape), xCoords, xOffset);
+    INDEX2COORDS(idx, xTadRank, xTadShapePtr, xCoords);
+    COORDS2INDEX(xTadRank, xTadStride, xCoords, xOffset);
 
+    // Compute coordinates and offsets for u
     LongType uCoords[SD_MAX_RANK];
     LongType uOffset;
-    INDEX2COORDS(i, shape::rank(uShapeInfo), shape::shapeOf(uShapeInfo), uCoords);
-    COORDS2INDEX(shape::rank(uShapeInfo), shape::stride(uShapeInfo), uCoords, uOffset);
+    INDEX2COORDS(i, uRank, uShape, uCoords);
+    COORDS2INDEX(uRank, uStride, uCoords, uOffset);
 
+    // Perform the scatter update
     x[xOffset] = u[uOffset];
   }
 }
+
 
 template <typename X, typename Y>
 void scatterSimple_(LaunchContext* context, const int opId, NDArray& input, NDArray& updates,

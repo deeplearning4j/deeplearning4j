@@ -37,6 +37,23 @@ template <typename T>
 static void adaBeliefUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& initStateM,
                               NDArray& update, NDArray& stateU, NDArray& stateM, const double dLr, const double dBeta1,
                               const double dBeta2, const double dEpsilon, const int nIteration) {
+  // Cache shape information
+  const auto gradientShapeInfo = gradient.shapeInfo();
+  const auto updateShapeInfo = update.shapeInfo();
+  const auto initStateUShapeInfo = initStateU.shapeInfo();
+  const auto stateUShapeInfo = stateU.shapeInfo();
+  const auto initStateMShapeInfo = initStateM.shapeInfo();
+  const auto stateMShapeInfo = stateM.shapeInfo();
+  
+  const auto gradRank = shape::rank(gradientShapeInfo);
+  const auto* gradShape = shape::shapeOf(gradientShapeInfo);
+  const auto* gradStride = shape::stride(gradientShapeInfo);
+  const auto* updateStride = shape::stride(updateShapeInfo);
+  const auto* initStateUStride = shape::stride(initStateUShapeInfo);
+  const auto* stateUStride = shape::stride(stateUShapeInfo);
+  const auto* initStateMStride = shape::stride(initStateMShapeInfo);
+  const auto* stateMStride = shape::stride(stateMShapeInfo);
+
   const T* grad = gradient.bufferAsT<T>();
   const T* initU = initStateU.bufferAsT<T>();
   const T* initM = initStateM.bufferAsT<T>();
@@ -81,23 +98,24 @@ static void adaBeliefUpdater_(NDArray& gradient, NDArray& initStateU, NDArray& i
     return;
   }
 
-  bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
-  bool bXInVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateU.shapeInfo());
-  bool bXStVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateU.shapeInfo());
-  bool bXInMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateM.shapeInfo());
-  bool bXStMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateM.shapeInfo());
+  bool bXZsame = shape::haveSameShapeAndStrides(gradientShapeInfo, updateShapeInfo);
+  bool bXInVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateUShapeInfo);
+  bool bXStVSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateUShapeInfo);
+  bool bXInMSame = shape::haveSameShapeAndStrides(gradientShapeInfo, initStateMShapeInfo);
+  bool bXStMSame = shape::haveSameShapeAndStrides(gradientShapeInfo, stateMShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK];
     for (sd::LongType  i = start; i < stop; i++) {
-      INDEX2COORDS(i, shape::rank(gradient.shapeInfo()), shape::shapeOf(gradient.shapeInfo()), coords);
+      INDEX2COORDS(i, gradRank, gradShape, coords);
       sd::LongType xOffset, zOffset, initUOffset, stUOffset, initMOffset, stMOffset;
-      COORDS2INDEX(shape::rank(gradient.shapeInfo()), shape::stride(gradient.shapeInfo()), coords, xOffset);
-      COORDS2INDEX(shape::rank(update.shapeInfo()), shape::stride(update.shapeInfo()), coords, zOffset);
-      COORDS2INDEX(shape::rank(initStateU.shapeInfo()), shape::stride(initStateU.shapeInfo()), coords, initUOffset);
-      COORDS2INDEX(shape::rank(stateU.shapeInfo()), shape::stride(stateU.shapeInfo()), coords, stUOffset);
-      COORDS2INDEX(shape::rank(initStateM.shapeInfo()), shape::stride(initStateM.shapeInfo()), coords, initMOffset);
-      COORDS2INDEX(shape::rank(stateM.shapeInfo()), shape::stride(stateM.shapeInfo()), coords, stMOffset);
+      COORDS2INDEX(gradRank, gradStride, coords, xOffset);
+      COORDS2INDEX(gradRank, updateStride, coords, zOffset);
+      COORDS2INDEX(gradRank, initStateUStride, coords, initUOffset);
+      COORDS2INDEX(gradRank, stateUStride, coords, stUOffset);
+      COORDS2INDEX(gradRank, initStateMStride, coords, initMOffset);
+      COORDS2INDEX(gradRank, stateMStride, coords, stMOffset);
+      
       stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);
       stU[stUOffset] = beta2 * initU[initUOffset] +
                        (grad[xOffset] - stM[stMOffset]) * (grad[xOffset] - stM[stMOffset]) * (1 - beta2) + epsilon;

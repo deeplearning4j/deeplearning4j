@@ -87,7 +87,6 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
   if (copyCase1) {
     // copyCase1:
-    // in this case:
     // When NdArrays follow the same order and unit elementwise stride and
     // the concantneation axis is 0th or has only 1 before it {1, 1, ..., axis} for "c"
     // or axis is (rank-1)th or has only 1 after it {axis, 1, 1, ..., 1} for "f"
@@ -162,15 +161,31 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
     return;
   }
 
+  // Cache shape and stride information for output
+  const sd::LongType zRank = shape::rank(output.shapeInfo());
+  const sd::LongType* zShape = shape::shapeOf(output.shapeInfo());
+  const sd::LongType* zStride = shape::stride(output.shapeInfo());
+
+  // Pre-cache input arrays' shape information
+  std::vector<const sd::LongType*> inShapes(numOfInArrs);
+  std::vector<const sd::LongType*> inStrides(numOfInArrs);
+  std::vector<sd::LongType> inRanks(numOfInArrs);
+
+  for (sd::LongType i = 0; i < numOfInArrs; i++) {
+    inRanks[i] = shape::rank(inArrs[i]->shapeInfo());
+    inShapes[i] = shape::shapeOf(inArrs[i]->shapeInfo());
+    inStrides[i] = shape::stride(inArrs[i]->shapeInfo());
+  }
+
   // general case
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i += increment) {
-      INDEX2COORDS(i, shape::rank(output.shapeInfo()), shape::shapeOf(output.shapeInfo()), coords);
+      INDEX2COORDS(i, zRank, zShape, coords);
 
       sd::LongType zOffset;
-      COORDS2INDEX(shape::rank(output.shapeInfo()), shape::stride(output.shapeInfo()), coords, zOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
 
       sd::LongType inArrIdx = 0;
       sd::LongType xDim = inArrs[inArrIdx]->sizeAt(axis);
@@ -183,8 +198,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
       const T *x = inArrs[inArrIdx]->bufferAsT<T>();
       sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(inArrs[inArrIdx]->shapeInfo()), shape::stride(inArrs[inArrIdx]->shapeInfo()), coords,
-                   xOffset);
+      COORDS2INDEX(inRanks[inArrIdx], inStrides[inArrIdx], coords, xOffset);
 
       zBuff[zOffset] = x[xOffset];
 
@@ -224,7 +238,6 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
 
   bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f'));
 
-
   if (luckCase1) {
     T* x = const_cast<T*>(xBuff);
     for (sd::LongType i = 0; i < numSplits; ++i) {
@@ -235,16 +248,31 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
     return;
   }
 
+  // Cache shape and stride information
+  const sd::LongType xRank = shape::rank(input.shapeInfo());
+  const sd::LongType* xShape = shape::shapeOf(input.shapeInfo());
+  const sd::LongType* xStride = shape::stride(input.shapeInfo());
+
+  // Pre-cache output array ranks, shapes, and strides
+  std::vector<const sd::LongType*> outShapes(numSplits);
+  std::vector<const sd::LongType*> outStrides(numSplits);
+  std::vector<sd::LongType> outRanks(numSplits);
+
+  for (int i = 0; i < numSplits; i++) {
+    outRanks[i] = shape::rank(outArrs[i]->shapeInfo());
+    outShapes[i] = shape::shapeOf(outArrs[i]->shapeInfo());
+    outStrides[i] = shape::stride(outArrs[i]->shapeInfo());
+  }
+
   sd::LongType zDim = outArrs[0]->sizeAt(axis);
-  // general case
 
   auto func = PRAGMA_THREADS_FOR {
     sd::LongType coords[SD_MAX_RANK], temp;
 
     for (sd::LongType i = start; i < stop; i += increment) {
-      INDEX2COORDS(i, shape::rank(input.shapeInfo()), shape::shapeOf(input.shapeInfo()), coords);
+      INDEX2COORDS(i, xRank, xShape, coords);
       sd::LongType xOffset;
-      COORDS2INDEX(shape::rank(input.shapeInfo()), shape::stride(input.shapeInfo()), coords, xOffset);
+      COORDS2INDEX(xRank, xStride, coords, xOffset);
 
       sd::LongType outArrIdx = 0;
       temp = coords[axis];
@@ -256,7 +284,7 @@ void SpecialMethods<T>::splitCpuGeneric(NDArray& input, const std::vector<NDArra
 
       T* z = outArrs[outArrIdx]->bufferAsT<T>();
       sd::LongType zOffset;
-      COORDS2INDEX(shape::rank(outArrs[outArrIdx]->shapeInfo()), shape::stride(outArrs[outArrIdx]->shapeInfo()), coords, zOffset);
+      COORDS2INDEX(outRanks[outArrIdx], outStrides[outArrIdx], coords, zOffset);
       z[zOffset] = xBuff[xOffset];
 
       coords[axis] = temp;

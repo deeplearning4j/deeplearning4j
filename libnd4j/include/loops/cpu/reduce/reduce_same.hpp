@@ -8,9 +8,9 @@
  *  See the NOTICE file distributed with this work for additional
  *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See
+ * the License for the specific language governing permissions and limitations
  * under the License.
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -43,8 +43,6 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const auto length = shape::length(xShapeInfo);
-  const auto xEws = shape::elementWiseStride(xShapeInfo);
-  const int rank = shape::rank(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
     z[0] = OpType::startingValue(x);
@@ -55,38 +53,55 @@ void SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongTyp
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
     const auto startingVal = OpType::startingValue(x);
 
-    for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
+    for (sd::LongType i = 0; i < length; i++) {
+      z[i] = startingVal;
+    }
     return;
   }
 
   auto startingValue = OpType::startingValue(x);
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
   X intermediate[64];
 
   PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  for (auto e = 0; e < maxThreads; e++) {
+    intermediate[e] = startingValue;
+  }
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-      sd::LongType indexOffset;
-      COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, indexOffset);
-      intermediate[thread_id] = OpType::update(
-          intermediate[thread_id],
-          OpType::op(x[indexOffset], extraParams), extraParams);
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType* xStride = shape::stride(xShapeInfo);
+  if(shape::isViewConst(xShapeInfo)) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, xRank, xShape, coords);
+        sd::LongType indexOffset;
+        COORDS2INDEX(xRank, xStride, coords, indexOffset);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[indexOffset], extraParams), extraParams);
+      }
+    };
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    PRAGMA_OMP_SIMD
+    for (int e = 1; e < maxThreads; e++) {
+      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
     }
-  };
-  maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
-  // merge results
-  for (int e = 1; e < maxThreads; e++)
-    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+      }
+    };
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    PRAGMA_OMP_SIMD
+    for (int e = 1; e < maxThreads; e++) {
+      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+    }
 
-  // write out results
-  z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+  }
 
 }
 
@@ -98,17 +113,22 @@ X SD_HOST ReduceSameFunction<X>::execScalar(const void *vx, const sd::LongType *
 
   const sd::LongType length = shape::length(xShapeInfo);
 
+  if (shape::isEmptyConst(xShapeInfo)) {
+    return OpType::startingValue(x);
+  }
+
   auto startingValue = OpType::startingValue(x);
+  sd::LongType xRank = shape::rank(xShapeInfo);
+  sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType* xStride = shape::stride(xShapeInfo);
 
   for (sd::LongType i = 0; i < length; i++) {
     sd::LongType coords[SD_MAX_RANK];
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
+    INDEX2COORDS(i, xRank, xShape, coords);
     sd::LongType indexOffset;
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, indexOffset);
-    startingValue = OpType::update(
-        startingValue, OpType::op(x[indexOffset], extraParams), extraParams);
+    COORDS2INDEX(xRank, xStride, coords, indexOffset);
+    startingValue = OpType::update(startingValue, OpType::op(x[indexOffset], extraParams), extraParams);
   }
-
   return OpType::postProcess(startingValue, length, extraParams);
 }
 
@@ -131,7 +151,6 @@ void SD_HOST ReduceSameFunction<X>::exec(const void *x, const sd::LongType *xSha
   z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
 }
 
-////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
 void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const void *vx,
@@ -147,8 +166,11 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
   if (sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
     const auto startingVal = OpType::startingValue(x);
     const auto zLen = shape::length(zShapeInfo);
-    if( z != nullptr)
-      for (sd::LongType i = 0; i < zLen; i++) z[i] = startingVal;
+    if (z != nullptr) {
+      for (sd::LongType i = 0; i < zLen; i++) {
+        z[i] = startingVal;
+      }
+    }
     return;
   }
 
@@ -158,26 +180,23 @@ void SD_HOST ReduceSameFunction<X>::exec(sd::memory::Workspace *workspace, const
   }
 
   if (OpType::requiresSpecialAccumulation) {
-    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank, xRank - zRank,
-                        nullptr, nullptr);
+    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<sd::LongType *>(dims) + zRank,
+                        xRank - zRank, nullptr, nullptr);
     return;
   }
 
 #ifdef SD_LOOPS_INLINED
   sd::ReductionLoops<X, X, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #else
-  sd::ReductionSameLoops<X>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
-                                                              extraParams);
+  sd::ReductionSameLoops<X>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
 }
 
-////////////////////////////////////////////////////////////////////////
 template <typename X>
 void ReduceSameFunction<X>::exec(int opNum, sd::memory::Workspace *workspace, const void *vx,
                                  const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                                  const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   DISPATCH_BY_OPNUM_T(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_SAME_OPS);
 }
-
 }  // namespace reduce
 }  // namespace functions

@@ -43,13 +43,33 @@ SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   auto up = reinterpret_cast<T*>(vz);
   auto st = reinterpret_cast<T*>(vst);
 
-  __shared__ LongType xLen;
+  __shared__ LongType xLen, xRank, zRank, inRank, stRank;
   __shared__ T momentumT;
   __shared__ bool bOrdering, bXZsame, bXInSame, bXStSame;
+  __shared__ LongType *sharedMem;
+  __shared__ const LongType *xShape, *zShape, *inShape, *stShape;
+  __shared__ const LongType *xStride, *zStride, *inStride, *stStride;
 
   if (threadIdx.x == 0) {
+    extern __shared__ unsigned char shmem[];
+    sharedMem = reinterpret_cast<LongType*>(shmem);
+
     xLen = shape::length(xShapeInfo);
     momentumT = (-momentum - 1);
+
+    xRank = shape::rank(xShapeInfo);
+    zRank = shape::rank(zShapeInfo);
+    inRank = shape::rank(inShapeInfo);
+    stRank = shape::rank(stShapeInfo);
+
+    xShape = shape::shapeOf(xShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+    inShape = shape::shapeOf(inShapeInfo);
+    inStride = shape::stride(inShapeInfo);
+    stShape = shape::shapeOf(stShapeInfo);
+    stStride = shape::stride(stShapeInfo);
 
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(xShapeInfo) == shape::order(inShapeInfo) &&
@@ -61,30 +81,32 @@ SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   }
   __syncthreads();
 
-  LongType coords[SD_MAX_RANK];
+  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initOffset, stOffset;
 
-    INDEX2COORDS(i, shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), coords);
-    COORDS2INDEX(shape::rank(xShapeInfo), shape::stride(xShapeInfo), coords, xOffset);
+    INDEX2COORDS(i, xRank, xShape, coords);
+    COORDS2INDEX(xRank, xStride, coords, xOffset);
+
     if (bXZsame) {
       zOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(zShapeInfo), shape::stride(zShapeInfo), coords, zOffset);
+      COORDS2INDEX(zRank, zStride, coords, zOffset);
     }
 
     if (bXInSame) {
       initOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(inShapeInfo), shape::stride(inShapeInfo), coords, initOffset);
+      COORDS2INDEX(inRank, inStride, coords, initOffset);
     }
 
     if (bXStSame) {
       stOffset = xOffset;
     } else {
-      COORDS2INDEX(shape::rank(stShapeInfo), shape::stride(stShapeInfo), coords, stOffset);
+      COORDS2INDEX(stRank, stStride, coords, stOffset);
     }
+
     T prevState = momentum * init[initOffset];
     st[stOffset] = prevState - lr * grad[xOffset];
     up[zOffset] = prevState + momentumT * st[stOffset];

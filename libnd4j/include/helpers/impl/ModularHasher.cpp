@@ -1,20 +1,3 @@
-/* ******************************************************************************
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * See the NOTICE file distributed with this work for additional
- * information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
 #include <helpers/ModularHasher.h>
 #include <cstring>
 
@@ -25,131 +8,102 @@ namespace detail {
 const uint64_t GOLDEN_RATIO = 0x9e3779b97f4a7c15ULL;
 const uint64_t INITIAL_HASH = 14695981039346656037ULL;
 
-// Base template implementation
-template<typename T>
-uint64_t SIMDHasher<T>::hash_chunk(const T* data, size_t size, uint64_t initial_hash) {
-    uint64_t hash = initial_hash;
-    for (size_t i = 0; i < size; i++) {
-        hash ^= static_cast<uint64_t>(data[i]);
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    }
-    return hash;
-}
-
-// SIMD specialization for uint64_t
-template<>
-uint64_t SIMDHasher<uint64_t>::hash_chunk(const uint64_t* data, size_t size, uint64_t initial_hash) {
-    uint64_t hash = initial_hash;
+// Specialization for uint64_t
+template<> uint64_t SIMDHasher<uint64_t>::hash_chunk(const uint64_t* data, size_t size, uint64_t initial_hash) {
+  uint64_t hash = initial_hash;
 
 #if defined(__ARM_NEON)
-    uint64x2_t hash_vec = vdupq_n_u64(initial_hash);
-    const uint64x2_t golden = vdupq_n_u64(GOLDEN_RATIO);
-    
-    for (size_t i = 0; i < size - 1; i += 2) {
-        uint64x2_t val = vld1q_u64(data + i);
-        hash_vec = veorq_u64(hash_vec, val);
-        hash_vec = vmulq_u64(hash_vec, golden);
-    }
-    
-    uint64_t tmp[2];
-    vst1q_u64(tmp, hash_vec);
-    hash = tmp[0] ^ tmp[1];
-    
+  uint64x2_t hash_vec = vdupq_n_u64(initial_hash);
+  const uint64x2_t golden = vdupq_n_u64(GOLDEN_RATIO);
+
+  for (size_t i = 0; i < size - 1; i += 2) {
+    uint64x2_t val = vld1q_u64(data + i);
+    hash_vec = veorq_u64(hash_vec, val);
+    hash_vec = vmulq_u64(hash_vec, golden);
+  }
+
+  uint64_t tmp[2];
+  vst1q_u64(tmp, hash_vec);
+  hash = tmp[0] ^ tmp[1];
+
 #elif defined(__AVX2__)
-    __m256i hash_vec = _mm256_set1_epi64x(initial_hash);
-    const __m256i golden_vec = _mm256_set1_epi64x(GOLDEN_RATIO);
-    
-    for (size_t i = 0; i < size - 3; i += 4) {
-        __m256i val = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
-        hash_vec = _mm256_xor_si256(hash_vec, val);
-        hash_vec = _mm256_mul_epi32(hash_vec, golden_vec);
-    }
-    
-    uint64_t tmp[4];
-    _mm256_storeu_si256(reinterpret_cast<__m256i*>(tmp), hash_vec);
-    hash = tmp[0] ^ tmp[1] ^ tmp[2] ^ tmp[3];
-    
+  __m256i hash_vec = _mm256_set1_epi64x(initial_hash);
+  const __m256i golden_vec = _mm256_set1_epi64x(GOLDEN_RATIO);
+
+  for (size_t i = 0; i < size - 3; i += 4) {
+    __m256i val = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data + i));
+    hash_vec = _mm256_xor_si256(hash_vec, val);
+    hash_vec = _mm256_mul_epi32(hash_vec, golden_vec);
+  }
+
+  uint64_t tmp[4];
+  _mm256_storeu_si256(reinterpret_cast<__m256i*>(tmp), hash_vec);
+  hash = tmp[0] ^ tmp[1] ^ tmp[2] ^ tmp[3];
+
 #elif defined(__SSE4_2__)
-    __m128i hash_vec = _mm_set1_epi64x(initial_hash);
-    const __m128i golden_vec = _mm_set1_epi64x(GOLDEN_RATIO);
-    
-    for (size_t i = 0; i < size - 1; i += 2) {
-        __m128i val = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
-        hash_vec = _mm_xor_si128(hash_vec, val);
-        hash_vec = _mm_mul_epi32(hash_vec, golden_vec);
-    }
-    
-    uint64_t tmp[2];
-    _mm_storeu_si128(reinterpret_cast<__m128i*>(tmp), hash_vec);
-    hash = tmp[0] ^ tmp[1];
-    
+  __m128i hash_vec = _mm_set1_epi64x(initial_hash);
+  const __m128i golden_vec = _mm_set1_epi64x(GOLDEN_RATIO);
+
+  for (size_t i = 0; i < size - 1; i += 2) {
+    __m128i val = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + i));
+    hash_vec = _mm_xor_si128(hash_vec, val);
+    hash_vec = _mm_mul_epi32(hash_vec, golden_vec);
+  }
+
+  uint64_t tmp[2];
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(tmp), hash_vec);
+  hash = tmp[0] ^ tmp[1];
+
 #else
-    // Scalar fallback with unrolling
-    for (size_t i = 0; i < size - 3; i += 4) {
-        hash ^= data[i];
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-        hash ^= data[i+1];
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-        hash ^= data[i+2];
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-        hash ^= data[i+3];
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    }
+  // Scalar fallback with unrolling
+  for (size_t i = 0; i < size - 3; i += 4) {
+    hash ^= data[i];
+    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+    hash ^= data[i+1];
+    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+    hash ^= data[i+2];
+    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+    hash ^= data[i+3];
+    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  }
 #endif
 
-    // Handle remaining elements
-    size_t remainder = size % 4;
-    size_t start = size - remainder;
-    for (size_t i = start; i < size; i++) {
-        hash ^= data[i];
-        hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    }
+  // Handle remaining elements
+  size_t remainder = size % 4;
+  size_t start = size - remainder;
+  for (size_t i = start; i < size; i++) {
+    hash ^= data[i];
+    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  }
 
-    return hash;
+  return hash;
 }
 
-// DataChunkHasher implementation
-template<typename T>
-uint64_t DataChunkHasher<T>::hash_data(const T* data, size_t size, uint64_t initial_hash) {
-    return SIMDHasher<uint64_t>::hash_chunk(
-        reinterpret_cast<const uint64_t*>(data),
-        (size * sizeof(T) + 7) / 8,
-        initial_hash
-    );
-}
-
-// Specialization for double implementation
-template<>
+// Specialization for double
 uint64_t DataChunkHasher<double>::hash_data(const double* data, size_t size, uint64_t initial_hash) {
-    return SIMDHasher<uint64_t>::hash_chunk(
-        reinterpret_cast<const uint64_t*>(data),
-        size,
-        initial_hash
-    );
-}
-
-// ModularHasher implementation
-template<typename T>
-uint64_t ModularHasher::hash_vector(const std::vector<T>& vec, uint64_t initial_hash) {
-    return DataChunkHasher<T>::hash_data(vec.data(), vec.size(), initial_hash);
+  return SIMDHasher<uint64_t>::hash_chunk(
+      reinterpret_cast<const uint64_t*>(data),
+      size,
+      initial_hash
+  );
 }
 
 uint64_t ModularHasher::combine_hashes(std::initializer_list<uint64_t> hashes) {
-    uint64_t result = INITIAL_HASH;
-    for (uint64_t h : hashes) {
-        result ^= h;
-        result = (result * GOLDEN_RATIO) ^ (result >> 32);
-    }
-    return result;
+  uint64_t result = INITIAL_HASH;
+  for (uint64_t h : hashes) {
+    result ^= h;
+    result = (result * GOLDEN_RATIO) ^ (result >> 32);
+  }
+  return result;
 }
 
 uint64_t ModularHasher::hash_scalar(uint64_t value, uint64_t initial_hash) {
-    uint64_t hash = initial_hash;
-    hash ^= value;
-    return (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  uint64_t hash = initial_hash;
+  hash ^= value;
+  return (hash * GOLDEN_RATIO) ^ (hash >> 32);
 }
 
-// Explicit template instantiations for commonly used types
+// Explicit template instantiations
 template uint64_t ModularHasher::hash_vector<uint64_t>(const std::vector<uint64_t>&, uint64_t);
 template uint64_t ModularHasher::hash_vector<double>(const std::vector<double>&, uint64_t);
 template uint64_t ModularHasher::hash_vector<int64_t>(const std::vector<int64_t>&, uint64_t);

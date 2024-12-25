@@ -70,7 +70,7 @@ class SD_LIB_EXPORT DirectShapeTrie {
 private:
     static const size_t NUM_STRIPES = 32;
     std::array<std::unique_ptr<ShapeTrieNode>, NUM_STRIPES> _roots;
-    mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes;  // Marked mutable for const member functions
+    mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes = {};  // Marked mutable for const member functions
 
     struct ThreadCache {
         static const size_t CACHE_SIZE = 1024;

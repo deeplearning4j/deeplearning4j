@@ -44,19 +44,28 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
 
   __shared__ int rank, dimID;
   __shared__ LongType factorD, factorH, factorW;
-  __shared__ LongType zLen, *sharedMem;
+  __shared__ LongType zLen;
+  __shared__ LongType *sharedMem;
+  __shared__ LongType *xShape, *zShape;
+  __shared__ LongType *xStride, *zStride;
 
   if (threadIdx.x == 0) {
     extern __shared__ unsigned char shmem[];
     sharedMem = reinterpret_cast<LongType*>(shmem);
 
+    // Cache shape and stride pointers
+    xShape = shape::shapeOf(xShapeInfo);
+    zShape = shape::shapeOf(zShapeInfo);
+    xStride = shape::stride(xShapeInfo);
+    zStride = shape::stride(zShapeInfo);
+
     dimID = isNCDHW ? 2 : 1;
     zLen = shape::length(zShapeInfo);
     rank = 5;
 
-    factorD = xShapeInfo[dimID + 1] / zShapeInfo[dimID + 1];
-    factorH = xShapeInfo[dimID + 2] / zShapeInfo[dimID + 2];
-    factorW = xShapeInfo[dimID + 3] / zShapeInfo[dimID + 3];
+    factorD = xShape[dimID + 1] / zShape[dimID + 1];
+    factorH = xShape[dimID + 2] / zShape[dimID + 2];
+    factorW = xShape[dimID + 3] / zShape[dimID + 3];
   }
   __syncthreads();
 
@@ -66,10 +75,10 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
 
   auto coords = sharedMem + threadIdx.x * rank;
 
-  INDEX2COORDS(zInd, rank, shape::shapeOf(zShapeInfo), coords);
+  INDEX2COORDS(zInd, rank, zShape, coords);
 
   LongType zOffset;
-  COORDS2INDEX(rank, shape::stride(zShapeInfo), coords, zOffset);
+  COORDS2INDEX(rank, zStride, coords, zOffset);
 
   z[zOffset] = 0;
 
@@ -81,11 +90,10 @@ SD_KERNEL static void upsampling3dBPCuda(const void* vx, const LongType* xShapeI
     for (coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
       for (coords[dimID + 2] = zCoord4; coords[dimID + 2] < zCoord4 + factorW; ++coords[dimID + 2]) {
         LongType xOffset;
-        COORDS2INDEX(rank, shape::stride(xShapeInfo), coords, xOffset);
+        COORDS2INDEX(rank, xStride, coords, xOffset);
         z[zOffset] += x[xOffset];
       }
 }
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void upsampling3dBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
