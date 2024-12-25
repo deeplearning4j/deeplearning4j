@@ -714,9 +714,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         INDArray z = getZ(op, oc);
         long st = profilingConfigurableHookIn(op,oc);
         op.validateDataTypes(experimentalMode.get());
-
-        val dimension = op.dimensions().toLongVector();
-
         val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
