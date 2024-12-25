@@ -41,7 +41,6 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
   const sd::LongType length = shape::length(xShapeInfo);
-  auto xEws = shape::elementWiseStride(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
     z[0] = OpType::startingValue(x);
@@ -68,6 +67,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
   sd::LongType xRank = shape::rank(xShapeInfo);
   sd::LongType* xShape = shape::shapeOf(xShapeInfo);
   sd::LongType* xStride = shape::stride(xShapeInfo);
+
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto i = start; i < stop; i++) {

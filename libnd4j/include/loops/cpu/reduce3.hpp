@@ -80,24 +80,40 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
     }
   }
 
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i2 = start; i2 < stop; i2++) {
-      sd::LongType coords[SD_MAX_RANK];
-      sd::LongType yCoords[SD_MAX_RANK];
+  if(shape::isViewConst(xShapeInfo) && shape::isViewConst(yShapeInfo)
+      && shape::haveSameShapeAndStrides(xShapeInfo,yShapeInfo)) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        sd::LongType xCoords[SD_MAX_RANK];
+        sd::LongType yCoords[SD_MAX_RANK];
 
-      INDEX2COORDS(i2, xRank, xShape, coords);
-      INDEX2COORDS(i2, yRank, yShape, yCoords);
-      sd::LongType xOffset = 0, yOffset = 0;
-      COORDS2INDEX(xRank, xStride, coords, xOffset);
-      COORDS2INDEX(yRank, yStride, yCoords, yOffset);
+        INDEX2COORDS(i, xRank, xShape, coords);
+        INDEX2COORDS(i, xRank, xShape, xCoords);
+        INDEX2COORDS(i, yRank, yShape, yCoords);
+        sd::LongType xOffset = 0, yOffset = 0;
+        COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+        COORDS2INDEX(yRank, yStride, yCoords, yOffset);
 
-      intermediate[thread_id] = OpType::update(intermediate[thread_id],
-                                               OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
-                                               extraParamsLocal + 3 * thread_id);
-    }
-  };
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
+    };
 
-  maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] = OpType::update(intermediate[thread_id],
+                                                 OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id),
+                                                 extraParamsLocal + 3 * thread_id);
+      }
+    };
+
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+  }
+
 
   // merge step
   for (int e = 0; e < maxThreads; e++) OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);

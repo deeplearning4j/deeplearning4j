@@ -39,18 +39,13 @@ template <typename OpType>
 void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams,
                                                    void *vz, const sd::LongType *zShapeInfo) {
   auto x = reinterpret_cast<const X *>(vx);
-  auto z = reinterpret_cast<Z *>(vz);
-  auto extraParams = reinterpret_cast<Z *>(vextraParams);
-  using Y = typename OpType::InterType;
+  auto z = reinterpret_cast<X *>(vz);
+  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-  const sd::LongType length = shape::length(xShapeInfo);
+  const auto length = shape::length(xShapeInfo);
 
   if (shape::isEmptyConst(xShapeInfo)) {
-    if (std::is_same<OpType, simdOps::Mean<X, Z>>::value) {
-      z[0] = sd::DataTypeUtils::nanOrZero<Z>();
-    } else {
-      z[0] = OpType::startingValue(x);
-    }
+    z[0] = OpType::startingValue(x);
     return;
   }
 
@@ -58,39 +53,55 @@ void SD_HOST ReduceFloatFunction<X, Z>::execScalar(const void *vx, const sd::Lon
     if (sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY) return;
     const auto startingVal = OpType::startingValue(x);
 
-    for (sd::LongType i = 0; i < length; i++) z[i] = startingVal;
+    for (sd::LongType i = 0; i < length; i++) {
+      z[i] = startingVal;
+    }
     return;
   }
 
   auto startingValue = OpType::startingValue(x);
-  sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
-  Y intermediate[64];
+  X intermediate[64];
 
   PRAGMA_OMP_SIMD
-  for (auto e = 0; e < maxThreads; e++) intermediate[e] = OpType::startingValue(x);
+  for (auto e = 0; e < maxThreads; e++) {
+    intermediate[e] = startingValue;
+  }
 
   sd::LongType xRank = shape::rank(xShapeInfo);
-  sd::LongType *xShape = shape::shapeOf(xShapeInfo);
-  sd::LongType *xStride = shape::stride(xShapeInfo);
-
-  auto func = PRAGMA_THREADS_FOR {
-    for (auto i = start; i < stop; i++) {
-      sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, xRank, xShape, coords);
-      sd::LongType offset;
-      COORDS2INDEX(xRank, xStride, coords, offset);
-      intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[offset], extraParams), extraParams);
+  sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+  sd::LongType* xStride = shape::stride(xShapeInfo);
+  if(shape::isViewConst(xShapeInfo)) {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        sd::LongType coords[SD_MAX_RANK];
+        INDEX2COORDS(i, xRank, xShape, coords);
+        sd::LongType indexOffset;
+        COORDS2INDEX(xRank, xStride, coords, indexOffset);
+        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[indexOffset], extraParams), extraParams);
+      }
+    };
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    PRAGMA_OMP_SIMD
+    for (int e = 1; e < maxThreads; e++) {
+      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
     }
-  };
 
-  maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+  } else {
+    auto func = PRAGMA_THREADS_FOR {
+      for (auto i = start; i < stop; i++) {
+        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+      }
+    };
+    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+    PRAGMA_OMP_SIMD
+    for (int e = 1; e < maxThreads; e++) {
+      intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+    }
 
-  for (int e = 1; e < maxThreads; e++)
-    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
-
-  z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+    z[0] = OpType::postProcess(intermediate[0], length, extraParams);
+  }
 }
 
 template <typename X, typename Z>
