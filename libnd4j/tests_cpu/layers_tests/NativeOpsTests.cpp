@@ -22,7 +22,7 @@
 #include <array/NDArray.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <loops/reduce3.h>
 #include <loops/type_conversions.h>
 #include <ops/declarable/CustomOperations.h>

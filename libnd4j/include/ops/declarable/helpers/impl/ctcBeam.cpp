@@ -477,7 +477,6 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
           for (int k = 0; k < last_beam_size; k++) {
             auto current = last_beams[k].entry.sequence;
             if (current->prefix == parent_seq) {
-              child_class_sorter_help[children_count].first = current->value;
               child_class_sorter_help[children_count].second = k;
               ++children_count;
             }

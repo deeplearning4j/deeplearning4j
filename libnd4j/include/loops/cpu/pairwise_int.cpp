@@ -117,12 +117,6 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
   const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
   const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
-  if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
-    exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
-  } else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) &&
-             !sameShapesXY) {  // not same shape
-    exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
-  } else {
     if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) &&
         shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
       PRAGMA_OMP_SIMD
@@ -175,7 +169,7 @@ void PairWiseIntTransform<X>::exec(const void *vx, const sd::LongType *xShapeInf
         z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
       }
     }
-  }
+
 }
 
 BUILD_SINGLE_TEMPLATE(template class PairWiseIntTransform, , SD_INTEGER_TYPES);

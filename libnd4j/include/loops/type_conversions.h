@@ -26,16 +26,7 @@
 #ifndef LIBND4J_TYPE_CONVERSIONS_H
 #define LIBND4J_TYPE_CONVERSIONS_H
 
-#define ND4J_FLOAT8 0
-#define ND4J_INT8 1
-#define ND4J_UINT8 2
-#define ND4J_FLOAT16 3
-#define ND4J_INT16 4
-#define ND4J_UINT16 5
-#define ND4J_FLOAT32 6
-#define ND4J_DOUBLE 7
-#define ND4J_THRESHOLD 8
-#define ND4J_FLOAT24 119  // not supported after all. might want to add support later.
+
 #include <math/templatemath.h>
 #include <ops/ops.h>
 #include <system/Environment.h>
@@ -46,7 +37,6 @@
 #include <types/uint16.h>
 #include <types/uint8.h>
 
-#define NUM_BANKS 32
 #define LOG_NUM_BANKS 4
 
 namespace sd {

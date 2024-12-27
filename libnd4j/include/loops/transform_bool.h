@@ -28,14 +28,11 @@
 #define TRANSFORM_BOOL_H_
 #include <math/templatemath.h>
 #include <ops/ops.h>
-#include <system/pairwise_util.h>
+
 
 #include <vector>
 
-//#include <loops/reduce.h>
-//#include <loops/scalar.h>
-//#include <loops/indexreduce.h>
-//#include <loops/broadcasting.h>
+
 
 #include <loops/legacy_ops.h>
 

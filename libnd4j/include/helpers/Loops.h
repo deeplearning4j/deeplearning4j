@@ -91,15 +91,14 @@ class SD_LIB_HIDDEN ReductionSameLoops : public ReductionLoops<X, X, X> {
 
 template <typename X, typename Z>
 class SD_LIB_HIDDEN IndexReductionLoops {
- private:
  public:
   static void wrapIndexReduce(int opNum, const void* x, const LongType* xShapeInfo, void* z,
                               const LongType* zShapeInfo, const LongType* tadShapeInfo,
                               const LongType* tadOffsets, void* extraParams);
 
   template <typename OpType>
-  static void loopIndexReduce(const X* x, const LongType* xShapeInfo, Z* z, const LongType* zShapeInfo,
-                              const LongType* tadShapeInfo, const LongType* tadOffsets, X* extraParams);
+  static void loopIndexReduce(X* x, const LongType* xShapeInfo, Z* z, const LongType* zShapeInfo,
+                              const LongType* tadShapeInfo, const LongType* tadOffsets, void* extraParams);
 };
 
 template <typename X, typename Z, typename E>

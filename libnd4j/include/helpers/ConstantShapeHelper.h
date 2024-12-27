@@ -1,6 +1,5 @@
 /* ******************************************************************************
  *
- *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -28,24 +27,18 @@
 #include <memory/Workspace.h>
 #include <system/op_boilerplate.h>
 #include "DirectShapeTrie.h"
-#include <map>
 #include <mutex>
-#include <vector>
 
 namespace sd {
 
 class SD_LIB_EXPORT ConstantShapeHelper {
  private:
   std::mutex _mutex;
-  std::vector<SD_MAP_IMPL<ShapeDescriptor , ConstantShapeBuffer *>> _cache;
   DirectShapeTrie _shapeTrie;
 
   ConstantShapeHelper();
 
  public:
-
-
-
   static ConstantShapeHelper& getInstance();
 
   ~ConstantShapeHelper();
@@ -69,44 +62,17 @@ class SD_LIB_EXPORT ConstantShapeHelper {
   const LongType* vectorShapeInfo(LongType length, DataType dataType);
   const LongType* createShapeInfo(ShapeDescriptor *descriptor);
   const LongType* createShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
-  const LongType* createShapeInfo(const DataType dataType, const char order, const int rank,
-                                      const LongType* shape, LongType extraProperties);
+  const LongType* createShapeInfo(DataType dataType, const char order, const int rank, const LongType* shape, LongType extraProperties);
   const LongType* createShapeInfo(DataType dataType, const LongType* shapeInfo);
   const LongType* createFromExisting(const LongType* shapeInfo, sd::memory::Workspace* workspace);
   const LongType* createFromExisting(const LongType* shapeInfo, bool destroyOriginal = true);
-
-  const LongType* createFromExisting( sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
-  const LongType* createFromExisting( sd::LongType* shapeInfo, bool destroyOriginal = true);
+  const LongType* createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
+  const LongType* createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal = true);
 
   bool checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor);
 
-  /**
-   * This method returns number of cached TAD shapes/offsets on specific device
-   * @return
-   */
-  SD_INLINE int cachedEntriesForDevice(int deviceId) {
-    if (deviceId > _cache.size()) THROW_EXCEPTION("deviceId > number of actual devices");
-
-    return _cache[deviceId].size();
-  }
-
-  /**
-   * This method returns total number of cached TAD shapes/offsets on all devices
-   * @return
-   */
-  SD_INLINE int totalCachedEntries() {
-    int total = 0;
-
-    for (int e = 0; e < _cache.size(); e++) total += _cache[e].size();
-
-    return total;
-  }
-
   ConstantShapeBuffer* storeAndWrapBuffer(const LongType* shapeInfo);
   const LongType* castToDataType(const LongType* shapeInfo, const DataType newType);
-
-  ConstantShapeBuffer* storeAndWrapBuffer(ShapeDescriptor* descriptor);
-  ShapeDescriptor* findBufferForShapeInfo(ShapeDescriptor *descriptor);
   const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
   ConstantShapeBuffer* createConstBuffFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
 };

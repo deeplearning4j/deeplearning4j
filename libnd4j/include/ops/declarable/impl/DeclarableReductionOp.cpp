@@ -22,7 +22,7 @@
 #include <array/DataTypeUtils.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
 

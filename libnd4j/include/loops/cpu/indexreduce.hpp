@@ -97,7 +97,7 @@ template <typename OpType>
 void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
                             const sd::LongType *zShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
                             const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
- auto x = reinterpret_cast<const X *>(vx);
+ auto x = reinterpret_cast<X *>(const_cast<void *>(vx));
  auto z = reinterpret_cast<Z *>(vz);
  auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -131,7 +131,7 @@ void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, voi
 
  // Let IndexReductionLoops handle the shape caching internally since it's a separate component
  sd::IndexReductionLoops<X, Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadOnlyShapeInfo,
-                                                                 tadOffsets, extraParams);
+                                                                 tadOffsets, vextraParams);
 }
 
 }  // namespace indexreduce

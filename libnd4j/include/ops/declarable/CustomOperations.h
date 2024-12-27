@@ -28,7 +28,6 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/OpTracker.h>
 #include <helpers/ShapeBuilders.h>
-#include <helpers/TAD.h>
 #include <helpers/shape.h>
 #include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/headers/activations.h>

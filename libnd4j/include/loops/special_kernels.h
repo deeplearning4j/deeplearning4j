@@ -28,7 +28,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <helpers/DebugHelper.h>
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 
 namespace sd {

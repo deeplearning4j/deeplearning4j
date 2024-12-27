@@ -21,7 +21,7 @@
 //
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 #include <loops/summarystatsreduce.h>
 #include <system/op_boilerplate.h>

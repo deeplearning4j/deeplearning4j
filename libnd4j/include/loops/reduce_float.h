@@ -20,7 +20,6 @@
 #ifndef REDUCE_FLOAT_H
 #define REDUCE_FLOAT_H
 
-//#include <string>
 #include <helpers/shape.h>
 #include <loops/legacy_ops.h>
 #include <math/templatemath.h>
@@ -28,7 +27,7 @@
 #include <ops/ops.h>
 #include <stdio.h>
 #include <system/op_boilerplate.h>
-#include <system/pairwise_util.h>
+
 
 // an op for the kernel
 namespace functions {

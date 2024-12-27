@@ -23,7 +23,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 #include <loops/summarystatsreduce.h>
 #include <ops/specials_cuda.h>

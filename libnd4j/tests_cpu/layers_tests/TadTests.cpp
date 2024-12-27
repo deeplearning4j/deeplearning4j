@@ -24,7 +24,7 @@
 #define LIBND4J_TADTESTS_H
 #include <array/NDArray.h>
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/TAD.h>
+
 
 #include <array>
 

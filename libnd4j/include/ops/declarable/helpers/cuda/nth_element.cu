@@ -22,7 +22,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <legacy/NativeOps.h>
 #include <ops/declarable/helpers/nth_element.h>
 
