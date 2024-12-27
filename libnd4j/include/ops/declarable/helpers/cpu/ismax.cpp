@@ -23,7 +23,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/ismax.h>
 #if NOT_EXCLUDED(OP_ismax)
 namespace sd {

@@ -227,9 +227,8 @@ template void TypeCast::convertToQuantized<double>(Pointer *extras, void *dx, Lo
 template void TypeCast::convertToQuantized<float>(Pointer *extras, void *dx, LongType N, void *dz);
 template void TypeCast::convertToQuantized<float16>(Pointer *extras, void *dx, LongType N, void *dz);
 
-#ifndef __CLION_IDE__
 BUILD_DOUBLE_TEMPLATE(template void TypeCast::convertGeneric,
                       (sd::Pointer * extras, void *dx, sd::LongType N, void *dz), SD_COMMON_TYPES_ALL,
                       SD_COMMON_TYPES_ALL)
-#endif
+
 }  // namespace sd

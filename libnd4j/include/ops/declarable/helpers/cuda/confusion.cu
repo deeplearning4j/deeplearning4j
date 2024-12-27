@@ -22,7 +22,7 @@
 #include <exceptions/cuda_exception.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/confusion.h>
 
 #include "execution/cuda/LaunchDims.h"

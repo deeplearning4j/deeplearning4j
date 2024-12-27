@@ -39,7 +39,6 @@
 #include <ops/declarable/helpers/transforms.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <system/pairwise_util.h>
 #include <types/float8.h>
 #include <types/types.h>
 #ifndef _WIN32
@@ -61,13 +60,188 @@ bool experimentalSupport = false;
 #include <graph/ResultWrapper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/specials.h>
 #include <system/Environment.h>
 #ifdef CPU_FEATURES
 #include <cpuinfo_x86.h>
 #endif
+#include <array/DataType.h>
+#include <array/DataTypeUtils.h>
+
+
+
+
+/*
+ * TypeDef:
+ *     void convertTypes(Pointer *extras, DataType srcType, Pointer hX, long N, DataType dstType, Pointer hZ);
+ */
+void convertTypes(sd::Pointer *extras, int srcTypeInt, sd::Pointer hX, sd::LongType N,int destType, sd::Pointer hZ) {
+  sd::DataType srcType = sd::DataTypeUtils::fromInt(srcTypeInt);
+  sd::DataType dstType = sd::DataTypeUtils::fromInt(destType);
+  auto hx = reinterpret_cast<void *>(hX);
+  auto hz = reinterpret_cast<void *>(hZ);
+
+  if (srcType == sd::DataType::FLOAT8) {
+    if (dstType == sd::DataType::FLOAT8) {
+      // convertGeneric<double, float8>(hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      // sd::TypeCast::convertGeneric<float8, int8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      // sd::TypeCast::convertGeneric<float8, uint8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      // sd::TypeCast::convertGeneric<float8, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      // sd::TypeCast::convertGeneric<float8, int16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      // sd::TypeCast::convertGeneric<float8, uint16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      // sd::TypeCast::convertGeneric<float8, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      // sd::TypeCast::convertGeneric<float8, double>(nullptr, hx, N, hz);
+    } else {
+      sd_debug("Unsupported types conversion: [%s] -> [%s]\n",
+               sd::DataTypeUtils::asString(srcType).c_str(),
+               sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::INT8) {
+    if (dstType == sd::DataType::FLOAT8) {
+      // sd::TypeCast::convertGeneric<int8, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      // convertGeneric<int8, int8>(hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<int8_t, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<int8_t, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      sd::TypeCast::convertGeneric<int8_t, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      // sd::TypeCast::convertGeneric<int8_t, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      sd::TypeCast::convertGeneric<int8_t, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      sd::TypeCast::convertGeneric<int8_t, double>(nullptr, hx, N, hz);
+    } else {
+      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+                sd::DataTypeUtils::asString(srcType).c_str(),
+                sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::UINT8) {
+    if (dstType == sd::DataType::FLOAT8) {
+      //    sd::TypeCast::convertGeneric<uint8_t, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      sd::TypeCast::convertGeneric<uint8_t, int8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<uint8_t, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<uint8_t, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      sd::TypeCast::convertGeneric<uint8_t, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      //       sd::TypeCast::convertGeneric<uint8_t, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      sd::TypeCast::convertGeneric<uint8_t, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      sd::TypeCast::convertGeneric<uint8_t, double>(nullptr, hx, N, hz);
+    } else {
+      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+                sd::DataTypeUtils::asString(srcType).c_str(),
+                sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::HALF) {
+    if (dstType == sd::DataType::FLOAT8) {
+      //    sd::TypeCast::convertGeneric<float16, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      sd::TypeCast::convertGeneric<float16, int8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<float16, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<float16, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      sd::TypeCast::convertGeneric<float16, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      //            sd::TypeCast::convertGeneric<float16, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      sd::TypeCast::convertGeneric<float16, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      sd::TypeCast::convertGeneric<float16, double>(nullptr, hx, N, hz);
+    } else {
+      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+                sd::DataTypeUtils::asString(srcType).c_str(),
+                sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::INT16) {
+    if (dstType == sd::DataType::FLOAT8) {
+      //   sd::TypeCast::convertGeneric<int16_t, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      sd::TypeCast::convertGeneric<int16_t, int8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<int16_t, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<int16_t, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      // sd::TypeCast::convertGeneric<int16_t, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      //            sd::TypeCast::convertGeneric<int16_t, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      sd::TypeCast::convertGeneric<int16_t, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      sd::TypeCast::convertGeneric<int16_t, double>(nullptr, hx, N, hz);
+    } else {
+      printf("Unsupported types conversion: [%s] -> [%s]\n",
+             sd::DataTypeUtils::asString(srcType).c_str(),
+             sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::FLOAT32) {
+    if (dstType == sd::DataType::FLOAT8) {
+      //    sd::TypeCast::convertGeneric<float, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      sd::TypeCast::convertGeneric<float, int8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<float, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<float, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      sd::TypeCast::convertGeneric<float, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      //            sd::TypeCast::convertGeneric<float, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      sd::TypeCast::convertGeneric<float, double>(nullptr, hx, N, hz);
+    } else {
+      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+                sd::DataTypeUtils::asString(srcType).c_str(),
+                sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else if (srcType == sd::DataType::DOUBLE) {
+    if (dstType == sd::DataType::FLOAT8) {
+      //    sd::TypeCast::convertGeneric<double, float8>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT8) {
+      sd::TypeCast::convertGeneric<double, int8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT8) {
+      sd::TypeCast::convertGeneric<double, uint8_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::HALF) {
+      sd::TypeCast::convertGeneric<double, float16>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::INT16) {
+      sd::TypeCast::convertGeneric<double, int16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::UINT16) {
+      //            sd::TypeCast::convertGeneric<double, uint16_t>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::FLOAT32) {
+      sd::TypeCast::convertGeneric<double, float>(nullptr, hx, N, hz);
+    } else if (dstType == sd::DataType::DOUBLE) {
+      // No conversion needed
+    } else {
+      sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+                sd::DataTypeUtils::asString(srcType).c_str(),
+                sd::DataTypeUtils::asString(dstType).c_str());
+    }
+  } else {
+    sd_printf("Unsupported types conversion: [%s] -> [%s]\n",
+              sd::DataTypeUtils::asString(srcType).c_str(),
+              sd::DataTypeUtils::asString(dstType).c_str());
+  }
+}
+
 static long lengthInBytes(OpaqueDataBuffer *buffer) {
   return buffer->dataBuffer()->getLenInBytes();
 }

@@ -22,7 +22,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/axis.h>
 #include <execution/Threads.h>
 

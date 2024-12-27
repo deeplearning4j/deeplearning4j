@@ -24,7 +24,7 @@
 #if NOT_EXCLUDED(OP_tear)
 
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace sd {

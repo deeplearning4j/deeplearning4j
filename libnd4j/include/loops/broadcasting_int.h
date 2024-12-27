@@ -29,12 +29,11 @@
 #include <math/templatemath.h>
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
-#include <system/pairwise_util.h>
 
 #ifdef __JNI__
 #include <jni.h>
 #endif
-#include <helpers/TAD.h>
+
 #include <loops/legacy_ops.h>
 
 namespace functions {

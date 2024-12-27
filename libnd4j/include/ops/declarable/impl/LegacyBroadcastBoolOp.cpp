@@ -21,7 +21,7 @@
 //
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/LegacyBroadcastBoolOp.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <legacy/NativeOpExecutioner.h>

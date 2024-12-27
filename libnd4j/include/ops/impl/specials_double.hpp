@@ -23,7 +23,7 @@
 
 #include <array/NDArray.h>
 #include <helpers/Loops.h>
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/specials.h>

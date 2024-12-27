@@ -23,7 +23,7 @@
 #ifndef LIBND4J__LEGACY_TRANSFORM_OP__H
 #define LIBND4J__LEGACY_TRANSFORM_OP__H
 
-//#include <ops/declarable/LegacyOp.h>
+
 #ifdef ONLY_SAME_TRANSFORM
 namespace sd {
 namespace ops {

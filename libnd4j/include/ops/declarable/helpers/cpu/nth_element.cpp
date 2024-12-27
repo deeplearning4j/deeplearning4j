@@ -22,7 +22,7 @@
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/nth_element.h>
 
 #include "ops/specials.h"

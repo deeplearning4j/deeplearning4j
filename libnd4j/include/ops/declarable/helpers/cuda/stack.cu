@@ -24,7 +24,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/stack.h>
 
 #include "execution/cuda/LaunchDims.h"

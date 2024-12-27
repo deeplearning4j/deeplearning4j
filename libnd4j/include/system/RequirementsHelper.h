@@ -28,8 +28,6 @@
 #include <iostream>
 #include <type_traits>
 
-// internal usage only
-//#define ENABLE_LOG_TO_TEST 1
 namespace sd {
 
 

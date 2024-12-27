@@ -19,7 +19,7 @@
 //
 //  @author raver119@gmail.com
 //
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 #include <ops/declarable/helpers/prefix.h>
 #include <ops/ops.h>

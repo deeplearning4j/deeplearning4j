@@ -28,7 +28,6 @@
 #define TRANSFORM_FLOAT_H_
 #include <math/templatemath.h>
 #include <ops/ops.h>
-#include <system/pairwise_util.h>
 
 #include <vector>
 

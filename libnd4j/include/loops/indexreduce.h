@@ -26,12 +26,11 @@
 #define INDEXREDUCE_H_
 #include <helpers/DebugHelper.h>
 #include <helpers/OmpLaunchHelper.h>
-#include <helpers/TAD.h>
+
 #include <helpers/shape.h>
 #include <loops/legacy_ops.h>
 #include <ops/ops.h>
 #include <system/op_boilerplate.h>
-#include <system/pairwise_util.h>
 
 namespace functions {
 namespace indexreduce {

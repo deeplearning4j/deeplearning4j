@@ -23,7 +23,7 @@
 
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
-#include <helpers/TAD.h>
+
 #if NOT_EXCLUDED(OP_onehot)
 namespace sd {
 namespace ops {

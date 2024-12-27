@@ -19,14 +19,13 @@
 #ifndef REDUCE_SAME_H
 #define REDUCE_SAME_H
 
-//#include <string>
 #include <helpers/shape.h>
 #include <math/templatemath.h>
 #include <memory/Workspace.h>
 #include <ops/ops.h>
 #include <stdio.h>
 #include <system/op_boilerplate.h>
-#include <system/pairwise_util.h>
+
 
 #pragma once
 

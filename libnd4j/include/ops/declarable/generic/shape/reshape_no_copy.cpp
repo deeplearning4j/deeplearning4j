@@ -97,7 +97,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     if (!reshapeNoAllocSuccess || shape::order(inShape) != order) {
       //we need new strides if we can't handle the copy
       shape::updateStrides(newShapeInfo, order, true);
-      shape::setElementWiseStride(newShapeInfo, 0);
       ArrayOptions::resetFlags(newShapeInfo);
       ArrayOptions::setDataType(newShapeInfo, dtype);
       //ensure we trigger a proper data copy
@@ -105,7 +104,6 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     } else {
       //we set strides in the reshape alloc success already
       newShapeInfo[0] = newShape.size();
-      shape::setElementWiseStride(newShapeInfo, 0);
       shape::setShape(newShapeInfo, newShape.data());
       ArrayOptions::resetFlags(newShapeInfo);
       // we need this in order to preserve the offset of the original buffer when creating the output array

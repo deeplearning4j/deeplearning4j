@@ -262,8 +262,10 @@ set(GEN_COMPILATION_TEMPLATES
         "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
         # Add other template files as needed
 )
-
-
+# After (modified to add our template):
+set(INSTANTIATION_TEMPLATES_2
+        "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
+)
 
 # Example Usage of genPartitionCombination
 # Define combinations for ITERATE_COMBINATIONS_3

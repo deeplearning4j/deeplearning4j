@@ -1,6 +1,5 @@
 /* ******************************************************************************
  *
- *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -16,10 +15,6 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author raver119@gmail.com
-//
-
 #ifndef DEV_TESTS_CONSTANTTADHELPER_H
 #define DEV_TESTS_CONSTANTTADHELPER_H
 
@@ -28,16 +23,18 @@
 #include <array/ShapeDescriptor.h>
 #include <array/TadDescriptor.h>
 #include <array/TadPack.h>
+#include <helpers/DirectTadTrie.h>
 #include <system/op_boilerplate.h>
 
 #include <map>
 #include <mutex>
 #include <vector>
+
 namespace sd {
 class SD_LIB_EXPORT ConstantTadHelper {
  private:
   std::mutex _mutex;
-  std::vector<SD_MAP_IMPL<TadDescriptor *, TadPack *>> _cache;
+  DirectTadTrie _trie;  // Single trie for device 0
 
   ConstantTadHelper();
 
@@ -68,9 +65,10 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @return
    */
   SD_INLINE int cachedEntriesForDevice(int deviceId) {
-    if (deviceId > _cache.size()) THROW_EXCEPTION("deviceId > number of actual devices");
-
-    return _cache[deviceId].size();
+    std::lock_guard<std::mutex> lock(_mutex);
+    if (deviceId > 0) THROW_EXCEPTION("deviceId > number of actual devices");
+    
+    return _trie.totalCachedEntries();
   }
 
   /**
@@ -78,11 +76,8 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @return
    */
   SD_INLINE int totalCachedEntries() {
-    int total = 0;
-
-    for (int e = 0; e < _cache.size(); e++) total += _cache[e].size();
-
-    return total;
+    std::lock_guard<std::mutex> lock(_mutex);
+    return _trie.totalCachedEntries();
   }
 };
 }  // namespace sd

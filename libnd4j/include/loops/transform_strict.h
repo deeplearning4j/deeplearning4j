@@ -28,7 +28,7 @@
 #define TRANSFORM_STRICT_H_
 #include <math/templatemath.h>
 #include <ops/ops.h>
-#include <system/pairwise_util.h>
+
 
 #include <vector>
 

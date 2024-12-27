@@ -25,7 +25,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
 #include <helpers/PointersManager.h>
-#include <helpers/TAD.h>
+
 #include <loops/special_kernels.h>
 #include <ops/declarable/helpers/ismax.h>
 

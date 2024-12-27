@@ -25,7 +25,7 @@
 #include <execution/cuda/LaunchDims.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/TAD.h>
+
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
 #include "helpers/DebugHelper.h"

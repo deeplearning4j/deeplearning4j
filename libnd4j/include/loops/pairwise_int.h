@@ -33,7 +33,6 @@
 #include <ops/ops.h>
 #include <stdio.h>
 #include <system/op_boilerplate.h>
-#include <system/pairwise_util.h>
 
 using namespace simdOps;
 

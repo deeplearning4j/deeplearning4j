@@ -21,7 +21,6 @@
 //
 #ifndef __LIST_DIFF_HELPERS__
 #define __LIST_DIFF_HELPERS__
-//#include <op_boilerplate.h>
 #include <array/NDArray.h>
 
 namespace sd {
