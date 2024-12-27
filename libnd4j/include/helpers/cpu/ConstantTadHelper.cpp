@@ -26,12 +26,6 @@
 
 namespace sd {
 
-/* Old implementation (commented out)
-ConstantTadHelper::ConstantTadHelper() {
-  SD_MAP_IMPL<TadDescriptor *, TadPack *> pack;
-  _cache.emplace_back(pack);
-}
-*/
 
 // New trie-based implementation
 ConstantTadHelper::ConstantTadHelper() {} // Default constructor is fine now
@@ -55,19 +49,7 @@ TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, 
                                            const bool keepUnitiesInShape) {
   std::vector<LongType> dims(dimensions, dimensions + dimLength);
   std::lock_guard<std::mutex> lock(_mutex);
-  
-  /* Old implementation (commented out)
-  TadDescriptor *tadDescriptor = new TadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
-  if(tadDescriptor == nullptr)
-    THROW_EXCEPTION("ConstantTadHelper::tadForDimensions: descriptor is nullptr!");
-  
-  if (_cache[deviceId].count(tadDescriptor) == 0) {
-    // if there's no TadPack matching this descriptor - create one
-    const auto shapeInfo = descriptor->originalShape().toShapeInfo();
-    // ... rest of the old implementation
-  }
-  return _cache[deviceId][tadDescriptor];
-  */
+
 
   // New trie-based implementation
   TadPack* existingPack = _trie.getOrCreate(dims);

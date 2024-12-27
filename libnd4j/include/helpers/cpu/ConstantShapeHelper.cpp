@@ -47,7 +47,6 @@ const sd::LongType * ConstantShapeHelper::emptyShapeInfoWithShape(const sd::Data
 
 
 
-// Part 2: Buffer Creation Methods
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(sd::DataType dataType, char order,
                                                             const std::vector<sd::LongType>& shape) {
