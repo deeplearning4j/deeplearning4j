@@ -71,126 +71,166 @@ void BroadcastInt<X>::exec(const void *vx, const sd::LongType *xShapeInfo, const
                            sd::LongType dimensionLength, const sd::LongType *xTadShapeInfo, const sd::LongType *xTadOffset,
                            const sd::LongType *zTadShapeInfo, const sd::LongType *zTadOffset, sd::LongType start,
                            sd::LongType stop) {
- auto x = reinterpret_cast<const X *>(vx);
- auto y = reinterpret_cast<const X *>(vy);
- auto z = reinterpret_cast<X *>(vz);
+ auto x = reinterpret_cast<const X*>(vx);
+ auto y = reinterpret_cast<const X*>(vy);
+ auto z = reinterpret_cast<X*>(vz);
+ sd::LoopKind::Kind loopKind= sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeInfo, yShapeInfo, zTadShapeInfo);
 
- auto xTadShapeShapeInfo = xTadShapeInfo;
- auto tadOffsets = xTadOffset;
+ if (loopKind == sd::LoopKind::BROADCAST_SCALAR_X) {
+   sd::LongType tadLength = shape::length(xTadShapeInfo);
+   for (auto i = start; i < stop; i++) {
+     auto oY = y + (i * tadLength);
+     auto oZ = z + (i * tadLength);
+     const auto oX = x[i];
 
- if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
-   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-   xTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack->primaryShapeInfo());
-   tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
+     PRAGMA_OMP_SIMD
+     for (sd::LongType f = 0; f < tadLength; f++)
+       oZ[f] = OpType::op(oX, oY[f]);
+   }
  }
+ else if (loopKind == sd::LoopKind::BROADCAST_SCALAR_Y) {
+   sd::LongType tadLength = shape::length(xTadShapeInfo);
+   for (auto i = start; i < stop; i++) {
+     auto oX = x + (i * tadLength);
+     auto oZ = z + (i * tadLength);
+     const auto oY = y[i];
 
- if (zTadShapeInfo == nullptr) {
-   zTadShapeInfo = xTadShapeShapeInfo;
-   zTadOffset = tadOffsets;
+     PRAGMA_OMP_SIMD
+     for (sd::LongType f = 0; f < tadLength; f++)
+       oZ[f] = OpType::op(oX[f], oY);
+   }
  }
+ else if (loopKind == sd::LoopKind::BROADCAST_2D) {
+   const sd::LongType nSize1 = shape::sizeAt(zShapeInfo, 1);
+   const sd::LongType* xStrides = shape::stride(xTadShapeInfo);
+   const sd::LongType* yStrides = shape::stride(yShapeInfo);
+   const sd::LongType* zStrides = shape::stride(zTadShapeInfo);
 
- // Cache shape-related values
- sd::LongType tadLength = shape::length(xTadShapeShapeInfo);
- sd::LongType tads = shape::length(xShapeInfo) / tadLength;
-
- sd::LongType xTadRank = shape::rank(xTadShapeShapeInfo);
- sd::LongType yRank = shape::rank(yShapeInfo);
- sd::LongType zTadRank = shape::rank(zTadShapeInfo);
-
- auto xTadShape = shape::shapeOf(xTadShapeShapeInfo);
- auto yShape = shape::shapeOf(yShapeInfo);
- auto zTadShape = shape::shapeOf(zTadShapeInfo);
-
- auto xTadStride = shape::stride(xTadShapeShapeInfo);
- auto yStride = shape::stride(yShapeInfo);
- auto zTadStride = shape::stride(zTadShapeInfo);
-
- auto lenZ = shape::length(zTadShapeInfo);
- auto lenY = shape::length(yShapeInfo);
-
- int tadsPerThread = tads / TAD_THRESHOLD;
- int threads = sd::math::sd_max<int>(1, tadsPerThread);
- threads = sd::math::sd_min<int>(threads, sd::Environment::getInstance().maxThreads());
-
- const sd::LoopKind::Kind kindOfLoop =
-     sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
-
- if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) &&
-     shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
-   for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oX = x + tadOffsets[i];
+   for (auto i0 = start; i0 < stop; i0++) {
+     auto baseX = x + xTadOffset[i0];
+     auto baseZ = z + zTadOffset[i0];
 
      PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, xTadRank, xTadShape, coords);
-       sd::LongType offset;
-       COORDS2INDEX(xTadRank, xTadStride, coords, offset);
-       oZ[offset] = OpType::op(oX[offset], y[offset]);
+     for (sd::LongType i1 = 0; i1 < nSize1; i1++) {
+       auto rX = baseX + xStrides[1] * i1;
+       auto rY = y + yStrides[1] * i1;
+       auto rZ = baseZ + zStrides[1] * i1;
+
+       *rZ = OpType::op(*rX, *rY);
      }
-   };
- } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
+   }
+ }
+ else if (loopKind == sd::LoopKind::BROADCAST_3D) {
+   const sd::LongType nSize1 = shape::sizeAt(zShapeInfo, 1);
+   const sd::LongType nSize2 = shape::sizeAt(zShapeInfo, 2);
+
+   const sd::LongType* xStrides = shape::stride(xShapeInfo);
+   const sd::LongType* yStrides = shape::stride(yShapeInfo);
+   const sd::LongType* zStrides = shape::stride(zShapeInfo);
+
+   for (auto i0 = start; i0 < stop; i0++) {
+     PRAGMA_OMP_SIMD
+     for (sd::LongType i1 = 0; i1 < nSize1; i1++) {
+       for (sd::LongType i2 = 0; i2 < nSize2; i2++) {
+         auto rX = x + (xStrides[0] * i0 + xStrides[1] * i1 + xStrides[2] * i2);
+         auto rY = y + (yStrides[0] * i0 + yStrides[1] * i1 + yStrides[2] * i2);
+         auto rZ = z + (zStrides[0] * i0 + zStrides[1] * i1 + zStrides[2] * i2);
+
+         *rZ = OpType::op(*rX, *rY);
+       }
+     }
+   }
+ }
+ else if (loopKind == sd::LoopKind::BROADCAST_4D) {
+   const sd::LongType nSize1 = shape::sizeAt(zShapeInfo, 1);
+   const sd::LongType nSize2 = shape::sizeAt(zShapeInfo, 2);
+   const sd::LongType nSize3 = shape::sizeAt(zShapeInfo, 3);
+
+   const sd::LongType* xStrides = shape::stride(xShapeInfo);
+   const sd::LongType* yStrides = shape::stride(yShapeInfo);
+   const sd::LongType* zStrides = shape::stride(zShapeInfo);
+
    for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oX = x + tadOffsets[i];
+     uint64_t i0 = i / nSize1;
+     uint64_t i1 = i % nSize1;
 
      PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, xTadRank, xTadShape, coords);
-       sd::LongType offset, zOffset;
-       COORDS2INDEX(xTadRank, xTadStride, coords, offset);
-       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-       oZ[zOffset] = OpType::op(oX[offset], y[offset]);
+     for (sd::LongType i2 = 0; i2 < nSize2; i2++) {
+       for (sd::LongType i3 = 0; i3 < nSize3; i3++) {
+         auto rX = x + (xStrides[0] * i0 + xStrides[1] * i1 +
+                        xStrides[2] * i2 + xStrides[3] * i3);
+         auto rY = y + (yStrides[0] * i0 + yStrides[1] * i1 +
+                        yStrides[2] * i2 + yStrides[3] * i3);
+         auto rZ = z + (zStrides[0] * i0 + zStrides[1] * i1 +
+                        zStrides[2] * i2 + zStrides[3] * i3);
+
+         *rZ = OpType::op(*rX, *rY);
+       }
      }
-   };
- } else if (shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
+   }
+ }
+ else if (loopKind == sd::LoopKind::BROADCAST_5D) {
+   const sd::LongType nSize1 = shape::sizeAt(zShapeInfo, 1);
+   const sd::LongType nSize2 = shape::sizeAt(zShapeInfo, 2);
+   const sd::LongType nSize3 = shape::sizeAt(zShapeInfo, 3);
+   const sd::LongType nSize4 = shape::sizeAt(zShapeInfo, 4);
+
+   const sd::LongType* xStrides = shape::stride(xShapeInfo);
+   const sd::LongType* yStrides = shape::stride(yShapeInfo);
+   const sd::LongType* zStrides = shape::stride(zShapeInfo);
+
    for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oX = x + tadOffsets[i];
+     uint32_t i0 = i / nSize1;
+     uint32_t i1 = i % nSize1;
 
      PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, xTadRank, xTadShape, coords);
-       sd::LongType offset, yOffset;
-       COORDS2INDEX(xTadRank, xTadStride, coords, offset);
-       COORDS2INDEX(yRank, yStride, coords, yOffset);
-       oZ[offset] = OpType::op(oX[offset], y[yOffset]);
-     }
-   };
- } else if (shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
-   for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oX = x + tadOffsets[i];
+     for (sd::LongType i2 = 0; i2 < nSize2; i2++) {
+       for (sd::LongType i3 = 0; i3 < nSize3; i3++) {
+         for (sd::LongType i4 = 0; i4 < nSize4; i4++) {
+           auto rX = x + (xStrides[0] * i0 + xStrides[1] * i1 +
+                          xStrides[2] * i2 + xStrides[3] * i3 + xStrides[4] * i4);
+           auto rY = y + (yStrides[0] * i0 + yStrides[1] * i1 +
+                          yStrides[2] * i2 + yStrides[3] * i3 + yStrides[4] * i4);
+           auto rZ = z + (zStrides[0] * i0 + zStrides[1] * i1 +
+                          zStrides[2] * i2 + zStrides[3] * i3 + zStrides[4] * i4);
 
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, yRank, yShape, coords);
-       sd::LongType xOffset, offset;
-       COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-       COORDS2INDEX(yRank, yStride, coords, offset);
-       oZ[offset] = OpType::op(oX[xOffset], y[offset]);
+           *rZ = OpType::op(*rX, *rY);
+         }
+       }
      }
-   };
- } else {
-   for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oX = x + tadOffsets[i];
+   }
+ }
+ else {
+   // Default case for other ranks
+   const int xRank = shape::rank(xShapeInfo);
+   const int yRank = shape::rank(yShapeInfo);
+   const int zRank = shape::rank(zShapeInfo);
 
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, zTadRank, zTadShape, coords);
-       sd::LongType xOffset, yOffset, zOffset;
-       COORDS2INDEX(xTadRank, xTadStride, coords, xOffset);
-       COORDS2INDEX(yRank, yStride, coords, yOffset);
-       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-       oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
-     }
-   };
+   const sd::LongType* xShape = shape::shapeOf(xShapeInfo);
+   const sd::LongType* yShape = shape::shapeOf(yShapeInfo);
+   const sd::LongType* zShape = shape::shapeOf(zShapeInfo);
+   const sd::LongType* xStrides = shape::stride(xShapeInfo);
+   const sd::LongType* yStrides = shape::stride(yShapeInfo);
+   const sd::LongType* zStrides = shape::stride(zShapeInfo);
+
+   sd::LongType xCoords[SD_MAX_RANK];
+   sd::LongType yCoords[SD_MAX_RANK];
+   sd::LongType zCoords[SD_MAX_RANK];
+
+   for (auto i = start; i < stop; i++) {
+     // Calculate independent coordinates for each array
+     INDEX2COORDS(i, xRank, xShape, xCoords);
+     INDEX2COORDS(i, yRank, yShape, yCoords);
+     INDEX2COORDS(i, zRank, zShape, zCoords);
+
+     // Calculate offsets based on each array's coordinates and strides
+     sd::LongType xOffset, yOffset, zOffset;
+     COORDS2INDEX(xRank, xStrides, xCoords, xOffset);
+     COORDS2INDEX(yRank, yStrides, yCoords, yOffset);
+     COORDS2INDEX(zRank, zStrides, zCoords, zOffset);
+
+     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+   }
  }
 }
 
@@ -205,13 +245,14 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
  auto y = reinterpret_cast<const X *>(vy);
  auto z = reinterpret_cast<X *>(vz);
 
+ // Handle TAD setup
  auto yTadShapeShapeInfo = yTadShapeInfo;
  auto tadOffsets = yTadOffset;
 
  if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
-   yTadShapeShapeInfo = const_cast<sd::LongType *>(tadPack->primaryShapeInfo());
-   tadOffsets = const_cast<sd::LongType *>(tadPack->primaryOffsets());
+   yTadShapeShapeInfo = tadPack->primaryShapeInfo();
+   tadOffsets = tadPack->primaryOffsets();
  }
 
  if (zTadShapeInfo == nullptr) {
@@ -219,77 +260,68 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
    zTadOffset = tadOffsets;
  }
 
- // Cache shape-related values
- sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
- sd::LongType tads = shape::length(yShapeInfo) / tadLength;
+ // Get shape information
+ const auto xRank = shape::rank(xShapeInfo);
+ const auto yTadRank = shape::rank(yTadShapeShapeInfo);
+ const auto zTadRank = shape::rank(zTadShapeInfo);
 
- sd::LongType yTadRank = shape::rank(yTadShapeShapeInfo);
- sd::LongType xRank = shape::rank(xShapeInfo);
- sd::LongType zTadRank = shape::rank(zTadShapeInfo);
+ const auto xStrides = shape::stride(xShapeInfo);
+ const auto yTadStrides = shape::stride(yTadShapeShapeInfo);
+ const auto zTadStrides = shape::stride(zTadShapeInfo);
 
- auto yTadShape = shape::shapeOf(yTadShapeShapeInfo);
- auto xShape = shape::shapeOf(xShapeInfo);
- auto zTadShape = shape::shapeOf(zTadShapeInfo);
+ const auto xShape = shape::shapeOf(xShapeInfo);
+ const auto yTadShape = shape::shapeOf(yTadShapeShapeInfo);
+ const auto zTadShape = shape::shapeOf(zTadShapeInfo);
 
- auto yTadStride = shape::stride(yTadShapeShapeInfo);
- auto xStride = shape::stride(xShapeInfo);
- auto zTadStride = shape::stride(zTadShapeInfo);
+ const sd::LongType tadLength = shape::length(yTadShapeShapeInfo);
 
- auto lenZ = shape::length(zTadShapeInfo);
- auto lenX = shape::length(xShapeInfo);
-
- int tadsPerThread = tads / TAD_THRESHOLD;
- int threads = sd::math::sd_max<int>(1, tadsPerThread);
- threads = sd::math::sd_min<int>(threads, sd::Environment::getInstance().maxThreads());
-
- const sd::LoopKind::Kind kindOfLoop =
-     sd::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
-
- if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) &&
-     shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-   for (auto i = start; i < stop; i++) {
-     auto oY = y + tadOffsets[i];
-     auto oZ = z + zTadOffset[i];
-
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, yTadRank, yTadShape, coords);
-       sd::LongType offset;
-       COORDS2INDEX(yTadRank, yTadStride, coords, offset);
-       oZ[offset] = OpType::op(x[offset], oY[offset]);
-     }
-   };
- } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
+ if (yTadRank <= 3) {
+   // Optimized path for lower ranks
    for (auto i = start; i < stop; i++) {
      auto oZ = z + zTadOffset[i];
      auto oY = y + tadOffsets[i];
 
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, yTadRank, yTadShape, coords);
-       sd::LongType offset, zOffset;
-       COORDS2INDEX(yTadRank, yTadStride, coords, offset);
-       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
-       oZ[zOffset] = OpType::op(x[offset], oY[offset]);
+     if (yTadRank == 1) {
+       PRAGMA_OMP_SIMD
+       for (sd::LongType j = 0; j < tadLength; j++) {
+         oZ[j * zTadStrides[0]] = OpType::op(x[j * xStrides[0]], oY[j * yTadStrides[0]]);
+       }
      }
-   };
- } else if (shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-   for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oY = y + tadOffsets[i];
+     else if (yTadRank == 2) {
+       const sd::LongType dim0 = yTadShape[0];
+       const sd::LongType dim1 = yTadShape[1];
 
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, yTadRank, yTadShape, coords);
-       sd::LongType offset, xOffset;
-       COORDS2INDEX(yTadRank, yTadStride, coords, offset);
-       COORDS2INDEX(xRank, xStride, coords, xOffset);
-       oZ[offset] = OpType::op(x[xOffset], oY[offset]);
+       for (sd::LongType j0 = 0; j0 < dim0; j0++) {
+         PRAGMA_OMP_SIMD
+         for (sd::LongType j1 = 0; j1 < dim1; j1++) {
+           const auto xOffset = j0 * xStrides[0] + j1 * xStrides[1];
+           const auto yOffset = j0 * yTadStrides[0] + j1 * yTadStrides[1];
+           const auto zOffset = j0 * zTadStrides[0] + j1 * zTadStrides[1];
+           oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
+         }
+       }
      }
-   };
- } else if (shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
+     else { // rank 3
+       const sd::LongType dim0 = yTadShape[0];
+       const sd::LongType dim1 = yTadShape[1];
+       const sd::LongType dim2 = yTadShape[2];
+
+       for (sd::LongType j0 = 0; j0 < dim0; j0++) {
+         for (sd::LongType j1 = 0; j1 < dim1; j1++) {
+           PRAGMA_OMP_SIMD
+           for (sd::LongType j2 = 0; j2 < dim2; j2++) {
+             const auto xOffset = j0 * xStrides[0] + j1 * xStrides[1] + j2 * xStrides[2];
+             const auto yOffset = j0 * yTadStrides[0] + j1 * yTadStrides[1] + j2 * yTadStrides[2];
+             const auto zOffset = j0 * zTadStrides[0] + j1 * zTadStrides[1] + j2 * zTadStrides[2];
+             oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
+           }
+         }
+       }
+     }
+   }
+ }
+ else {
+   // Use macros for higher ranks
    for (auto i = start; i < stop; i++) {
      auto oZ = z + zTadOffset[i];
      auto oY = y + tadOffsets[i];
@@ -297,29 +329,16 @@ void BroadcastInt<X>::execInverse(const void *vx, const sd::LongType *xShapeInfo
      PRAGMA_OMP_SIMD
      for (sd::LongType f = 0; f < tadLength; f++) {
        sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, xRank, xShape, coords);
-       sd::LongType yOffset, offset;
-       COORDS2INDEX(yTadRank, yTadStride, coords, yOffset);
-       COORDS2INDEX(xRank, xStride, coords, offset);
-       oZ[offset] = OpType::op(x[offset], oY[yOffset]);
-     }
-   };
- } else {
-   for (auto i = start; i < stop; i++) {
-     auto oZ = z + zTadOffset[i];
-     auto oY = y + tadOffsets[i];
+       INDEX2COORDS(f, yTadRank, yTadShape, coords);
 
-     PRAGMA_OMP_SIMD
-     for (sd::LongType f = 0; f < tadLength; f++) {
-       sd::LongType coords[SD_MAX_RANK];
-       INDEX2COORDS(f, zTadRank, zTadShape, coords);
        sd::LongType xOffset, yOffset, zOffset;
-       COORDS2INDEX(xRank, xStride, coords, xOffset);
-       COORDS2INDEX(yTadRank, yTadStride, coords, yOffset);
-       COORDS2INDEX(zTadRank, zTadStride, coords, zOffset);
+       COORDS2INDEX(xRank, xStrides, coords, xOffset);
+       COORDS2INDEX(yTadRank, yTadStrides, coords, yOffset);
+       COORDS2INDEX(zTadRank, zTadStrides, coords, zOffset);
+
        oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
      }
-   };
+   }
  }
 }
 ////////////////////////////////////////////////////////////////////////
