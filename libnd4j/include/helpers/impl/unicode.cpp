@@ -358,8 +358,7 @@ void* utf32to16Ptr(const void* start, const void* end, void* res) {
   // result have to be  pre-allocate
   for (auto it = static_cast<const uint32_t*>(start); it != end; it++) {
     uint32_t cpHigh = castToU32(*it);
-    // todo check do we need this as we have pre-validation, if yes find out how to check u16
-    if (cpHigh < 0 || cpHigh > 0x10FFFF || (cpHigh >= 0xD800 && cpHigh <= 0xDFFF)) {
+    if (cpHigh > 0x10FFFF || (cpHigh >= 0xD800 && cpHigh <= 0xDFFF)) {
       // Invalid code point.  Replace with sentinel, per Unicode standard:
       *result++ = u'\uFFFD';
     } else if (cpHigh < 0x10000UL) {  // In the BMP.

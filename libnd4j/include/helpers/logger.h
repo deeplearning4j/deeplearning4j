@@ -86,7 +86,7 @@ SD_INLINE void _printHostBuffer(void* bufferVoid, sd::DataType dataType, sd::Lon
   }
 
   // Determine the limit based on the provided length and offset
-  sd::LongType limit = (length == -1 || length > length) ? length : length;
+  sd::LongType limit = (length == -1) ? length : length;
 
   printf("[");
 

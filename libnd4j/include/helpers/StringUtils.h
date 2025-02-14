@@ -48,17 +48,7 @@ class SD_LIB_EXPORT StringUtils {
 
   }
 
-  static NDArray* createDataBufferFromVector(const std::vector<LongType>& vec, DataType dataType);
-
   static void broadcastStringAssign(NDArray* x, NDArray* z);
-
-  static std::vector<LongType>* determineOffsetsAndLengths(NDArray& array, DataType dtype);
-
-  static void convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<LongType>& offsets, DataType inType, DataType outType);
-
-  static DataBuffer *  createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context);
-
-  static NDArray createStringNDArray(NDArray& array, const std::vector<LongType>& offsets, DataType dtype);
 
   template <typename T>
   static void convertStringsForDifferentDataType(NDArray* sourceArray, NDArray* targetArray);
@@ -66,14 +56,7 @@ class SD_LIB_EXPORT StringUtils {
   template <typename T>
   static std::vector<LongType> calculateOffsetsForTargetDataType(NDArray* sourceArray);
 
-  std::vector<LongType> determineOffsets(const std::string& input, const std::vector<LongType>& lengths);
-
-  std::vector<LongType> determineLengths(const std::string& input);
-
   static void setValueForDifferentDataType(NDArray* arr, LongType idx, NDArray* input, DataType zType);
-
-  static void assignStringData(NDArray& dest, NDArray& src, const std::vector<LongType>& offsets, DataType dtype);
-
 
   /**
    * These methods convert integer values to string with 0s and 1s

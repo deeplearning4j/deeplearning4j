@@ -40,7 +40,7 @@
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu</module.name>
-        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <javacpp.compiler.options>-std=c++17 -Wl,--no-undefined</javacpp.compiler.options>
 
     </properties>
 
@@ -368,7 +368,9 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>${javacpp.compiler.options}</compilerOption>
+                                <compilerOption>-std=c++17</compilerOption>
+                                <compilerOption>-Wl,--no-undefined</compilerOption>
+
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -532,8 +534,7 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>${javacpp.compiler.options}</compilerOption>
-                                <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
+                                <compilerOption>${javacpp.compiler.options}</compilerOption>                                <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
                                 <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
                                 <compilerOption>-rdynamic</compilerOption>
                                 <!-- Need these 2 libraries including bin utils for handling address decoding-->

@@ -33,7 +33,7 @@ class SD_LIB_EXPORT ShapeUtils {
   // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for
   // transposition of two input arrays
   static std::vector<LongType> evalShapeForTensorDot(
-      const LongType* aShapeInfo, const LongType* bShapeInfo,
+       LongType* aShapeInfo,  LongType* bShapeInfo,
                                                      std::vector<LongType> axesA, std::vector<LongType> axesB, std::vector<LongType>& permutAt, std::vector<LongType>& permutBt,
       std::vector<LongType>& shapeAt, std::vector<LongType>& shapeBt);
   static std::vector<LongType> evalShapeForTensorDot(
@@ -42,18 +42,16 @@ class SD_LIB_EXPORT ShapeUtils {
       std::vector<LongType>& shapeAt, std::vector<LongType>& shapeBt);
 
   // evaluate resulting shape after reduce operation
-  static const LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, NDArray& arr,
+  static LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, NDArray& arr,
                                              const DataType dataType, const bool keepDims = false,
                                              const bool supportOldShapes = false, memory::Workspace* workspace = nullptr);
-  static const LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                 const LongType* shapeInfo, DataType dataType,
+  static LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo,
+                                       const DataType dataType,
                                                  const bool keepDims = false, const bool supportOldShapes = false,
                                                  memory::Workspace* workspace = nullptr);
-  static const LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, NDArray& arr,
+  static LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, NDArray& arr,
                                              const bool keepDims = false, const bool supportOldShapes = false, memory::Workspace* workspace = nullptr);
-  static const LongType* evalReduceShapeInfo(char order, std::vector<LongType>* dimsToExclude,
-                                                 const LongType* shapeInfo, const bool keepDims = false,
-                                                 bool supportOldShapes = false, memory::Workspace* workspace = nullptr);
+  static LongType* evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, memory::Workspace* workspace = nullptr);
 
   // for example
   // if rank = 3 and dimsToExclude = {0,2} then output = {1,0,2},   if rank = 3 and dimsToExclude = {2} then output =
@@ -66,8 +64,7 @@ class SD_LIB_EXPORT ShapeUtils {
    * evaluate output shape for reduce operation when input shape is empty
    * behavior is analogous to tf
    */
-  static const LongType* evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude,
-                                                      const LongType* shapeInfo, const DataType dataType,
+  static LongType* evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo, const DataType dataType,
                                                       const bool keepDims, memory::Workspace* workspace);
 
   // evaluate shape for array which is result of repeat operation applied to arr
@@ -81,7 +78,7 @@ class SD_LIB_EXPORT ShapeUtils {
 
   // evaluate shapeInfo of transposed array
   // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-  static const LongType* evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
+  static LongType* evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
                                                  const bool setContigStrides = false);
 
   static bool copyVectorPart(std::vector<LongType>& target, std::vector<LongType>& source, LongType rank,
@@ -96,25 +93,8 @@ class SD_LIB_EXPORT ShapeUtils {
   static bool areShapesBroadcastable(const LongType* shapeX, const LongType* shapeY);
   static bool areShapesBroadcastable(const std::vector<LongType>& shape1, const std::vector<LongType>& shape2);
 
-  // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
-  // if evalMinMax == false then array with larger rank has to be passed as first argument
-  static bool evalBroadcastShapeInfo(NDArray& max, NDArray& min, const bool evalMinMax,
-                                     const LongType*& resultShapeInfo, memory::Workspace* workspace);
-  static bool evalBroadcastShapeInfo(const LongType* max, const LongType* min, const bool evalMinMax,
-                                     const LongType*& resultShapeInfo, memory::Workspace* workspace);
-
-  // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
-  // if simple broadcast is not possible then empty vector is returned
-  // PLEASE NOTE: condition (rank_max >= rank_min) should be satisfied !
-  static std::vector<LongType> tadAxesForSimpleBroadcast(NDArray max, NDArray min);
-
-  // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
-  static bool evalCommonBroadcastShapeInfo(const std::vector<NDArray*>& arrays, LongType*& resultShapeInfo,
-                                           memory::Workspace* workspace = nullptr);
-
-  // return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger
-  // rank for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
-  static std::vector<LongType> getDimsWithSameShape(NDArray& arr1, NDArray& arr2);
+  static bool evalBroadcastShapeInfo( LongType* max,  LongType* min, const bool evalMinMax,
+                                      LongType*& resultShapeInfo, memory::Workspace* workspace);
 
   // evaluate shapeInfo for resulting array of tile operation
   static const LongType* evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
@@ -127,30 +107,21 @@ class SD_LIB_EXPORT ShapeUtils {
   static std::string shapeAsString(const std::vector<LongType>& shape);
   static std::string shapeAsString(const LongType* shapeInfo);
   static std::string shapeAsString(const LongType rank, const LongType* shapeInfo);
-  static std::string strideAsString(NDArray* array);
 
   static std::string shapeInfoAsString(const LongType* shapeInfo);
 
   static std::vector<LongType> shapeAsVector(const LongType* shapeInfo);
 
   // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-  static const LongType* evalDiagShapeInfo(const LongType* shapeInfo, memory::Workspace* workspace);
+  static LongType* evalDiagShapeInfo(LongType* shapeInfoConst, memory::Workspace* workspace);
 
   static std::vector<LongType> evalBroadcastBackwardAxis(const LongType* operand, const LongType* result);
 
   // utility to calculate matrix product shape with give source shapes and additional params
   // returns ShapeList pointer with result shape
-  static const LongType* matrixProductShape(const LongType* theFirstShape, const LongType* theSecondShape,
+  static LongType* matrixProductShape(LongType* theFirstShape, LongType* theSecondShape,
                                                 bool shouldTranspondFirst, bool shouldTranspondSecond, DataType dtype,
                                             memory::Workspace* workspace);
-
-  /**
-   *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo
-   *  if shapeFrom is identical to shapeTo (permutation is unnecessary) then empty vector is returned
-   *  in case of permutation is impossible an exception is thrown
-   */
-  static std::vector<LongType> evalPermuteFromTo(const std::vector<LongType>& shapeFrom,
-                                           const std::vector<LongType>& shapeTo);
 
   /**
    *  This method composes shape (shape only, not whole shapeInfo!) using dimensions values and corresponding indexes,
@@ -174,16 +145,8 @@ class SD_LIB_EXPORT ShapeUtils {
   static LongType getNumOfSubArrs(const LongType* shapeInfo, const std::vector<LongType>& dimsToExclude);
 
   /**
-   *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
-   *   if unities are not present in given shapeInfo then exactly identical shape will be returned, for example [2,3] ->
-   * [2,3] edge case: if given shape is [1,1,1,...,1] (all dims are unities) then output will be empty and means scalar
-   */
-  static std::vector<LongType> evalDimsWithoutUnities(const LongType* shapeInfo);
-
-  /**
    *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
    */
-  SD_INLINE static bool isPermuteNecessary(const std::vector<int>& permute);
 
   /**
    *  calculates strides using "dest" shape and given "order", also copies data type from "source" to "dest"
@@ -205,35 +168,12 @@ class SD_LIB_EXPORT ShapeUtils {
     return (numStrings + 1) * sizeof(LongType);
   }
 
-  /**
-   * This method selects strides based on dimentions required for broadcasting
-   * @param const pointer to input (Y) shape info for strides selection
-   * @param rank of input (X) to broadcasting
-   * @param dimentions size
-   * @param const pointer to dimentions for broadcasting
-   * @param pointer to output strides have to be pre allocated by 0
-   * @return
-   */
-  static void copyCertainStridesFromShapeInfo(const LongType* inShapeInfo, LongType nRank, LongType dimsSize,
-                                              const LongType* dims, LongType* outStrides);
-
-
-
   /*
    *   comparing of shapes, not strides
    */
   static bool areShapesEqual(const LongType* shapeInfo, const std::vector<LongType>& shapeOnly);
 };
 
-//////////////////////////////////////////////////////////////////////////
-///// IMLEMENTATION OF INLINE METHODS /////
-//////////////////////////////////////////////////////////////////////////
-SD_INLINE bool ShapeUtils::isPermuteNecessary(const std::vector<int>& permut) {
-  for (int i = 0; i < permut.size(); ++i)
-    if (permut[i] != i) return true;
-
-  return false;
-}
 
 }  // namespace sd
 

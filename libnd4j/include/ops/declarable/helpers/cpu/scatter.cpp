@@ -170,7 +170,8 @@ void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updat
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
         auto subArr = updates(i, *dimsToExclude);
-        output.p(i, subArr.e(indices.e<sd::LongType>(i)));
+        auto curr = indices.e<sd::LongType>(i);
+        output.p(i, curr);
       }
     };
 
@@ -182,7 +183,8 @@ void scatterForLoss(sd::LaunchContext* context, NDArray& indices, NDArray& updat
       for (auto i = start; i < stop; i++) {
         auto subArr = updates(i, *dimsToExclude);
         auto ind = indices.e<sd::LongType>(i);
-        subArr.p(ind, subArr.e(ind) - 1.);
+        auto curr = subArr.e<sd::LongType>(ind) - 1.;
+        subArr.p(ind,curr);
       }
     };
 

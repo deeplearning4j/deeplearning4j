@@ -1407,7 +1407,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public void setOrder(char order) {
-        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), order, this.dataType(), isEmpty());
+        LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape(), stride(), -1, order, this.dataType(), isEmpty());
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(descriptor));
     }
 
@@ -2843,7 +2843,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             applyScalarOp(columnVector, operation);
         } else {
             // special optimization case, broadcast turns into ScalarOp Along Dimension
-            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'c' && columnVector.elementWiseStride() == 1) {
+            if (rank() == 2  && ordering() == 'c' && columnVector.stride(1) == 1) {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, columnVector, this, 0.0);
@@ -3007,7 +3007,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             applyScalarOp(rowVector, operation);
         } else {
             // special optimization case, broadcast turns into ScalarOp Along Dimension
-            if (rank() == 2 && elementWiseStride() == 1 && ordering() == 'f' && rowVector.elementWiseStride() == 1) {
+            if (rank() == 2  && ordering() == 'f' && rowVector.stride(0) == 1) {
                 switch (operation) {
                     case 'a': {
                         ScalarAdd op = new ScalarAdd(this, rowVector, this, 0.0);
@@ -3381,7 +3381,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1) {
+        if(isView()) {
             return dup().data().asInt();
         }
         return data().asInt();
@@ -3394,7 +3394,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-        if(isView() || elementWiseStride() != 1) {
+        if(isView()) {
             return dup().data().asLong();
         }
 

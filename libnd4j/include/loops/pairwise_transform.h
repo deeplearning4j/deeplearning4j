@@ -48,6 +48,7 @@ namespace pairwise_transforms {
 template <typename X, typename Y, typename Z>
 class PairWiseTransform {
  public:
+
 #ifdef __CUDABLAS__
 
   template <typename OpType>

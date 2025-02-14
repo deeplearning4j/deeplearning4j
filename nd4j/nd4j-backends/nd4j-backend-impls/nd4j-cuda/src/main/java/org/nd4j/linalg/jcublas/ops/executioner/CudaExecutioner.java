@@ -1383,8 +1383,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraArgs != null)
             extraArgs.address();
 
-        if (ret != null)
-            ret.elementWiseStride();
 
         profilingConfigurableHookOut(op, oc, st);
 

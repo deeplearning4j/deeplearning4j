@@ -37,6 +37,8 @@ quarter SD_INLINE SD_HOST_DEVICE cpu_float2quarter_rn(float f);
 float SD_INLINE SD_HOST_DEVICE cpu_quarter2float(quarter b);
 
 struct float8 {
+  constexpr float8(const float8&) = default;
+
   quarter data;
 
   SD_INLINE SD_HOST_DEVICE float8();

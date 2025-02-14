@@ -579,15 +579,15 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
 
   } else if (Wp) {
     std::vector<sd::LongType> shape = {nOut};
-    NDArray temp(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
+    NDArray temp2(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
     std::vector<sd::LongType> dims = {0};
 
-    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({0, nOut}) += temp;
-    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({nOut, 2 * nOut}) += temp;
-    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, temp, &dims);  // [bS, nOut] -> reduce -> [nOut]
-    (*dLdWp)({2 * nOut, 3 * nOut}) += temp;
+    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (*dLdWp)({0, nOut}) += temp2;
+    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (*dLdWp)({nOut, 2 * nOut}) += temp2;
+    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (*dLdWp)({2 * nOut, 3 * nOut}) += temp2;
 
   }
 

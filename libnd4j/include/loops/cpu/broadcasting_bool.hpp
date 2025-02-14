@@ -255,7 +255,8 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
   auto tadOffsets = yTadOffset;
 
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
+                                                                         dimensionLength,true);
     yTadShapeShapeInfo = tadPack->primaryShapeInfo();
     tadOffsets = tadPack->primaryOffsets();
   }
@@ -376,6 +377,7 @@ static void execRank1(const X *x, const sd::LongType *xShapeInfo, const X *y, co
 template <typename X, typename Z, typename OpType>
 static void execRank2(const X *x, const sd::LongType *xShapeInfo, const X *y, const sd::LongType *yShapeInfo, Z *z,
                       const sd::LongType *zShapeInfo, X *extraParams) {
+
   // Cache shape-related values
   sd::LongType zAxis0 = shape::sizeAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(1));
   sd::LongType xStrd0 = shape::strideAt(xShapeInfo, shape::order(zShapeInfo) == 'c' ? static_cast<sd::LongType>(0) : static_cast<sd::LongType>(1));
@@ -612,6 +614,10 @@ template <typename OpType>
 void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
                                void *vextraParams) {
+
+
+  printf("BroadcastBool<X, Z>::exec\n");
+  fflush(stdout);
   const X *x = reinterpret_cast<const X *>(vx);
   const X *y = reinterpret_cast<const X *>(vy);
   Z *z = reinterpret_cast<Z *>(vz);

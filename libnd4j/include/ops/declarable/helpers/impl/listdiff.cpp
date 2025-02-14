@@ -79,17 +79,17 @@ static sd::Status listDiffFunctor_(NDArray* values, NDArray* keep, NDArray* outp
     auto z0 = output1;
     auto z1 = output2;
 
-    if (z0->lengthOf() != saved.size()) {
+    if (static_cast<size_t>(z0->lengthOf()) != saved.size()) {
       sd_printf("ListDiff: output/actual size mismatch", "");
       THROW_EXCEPTION("Op validation failed");
     }
 
-    if (z1->lengthOf() != saved.size()) {
+    if (static_cast<size_t>(z1->lengthOf()) != saved.size()) {
       sd_printf("ListDiff: output/actual indices size mismatch", "");
       THROW_EXCEPTION("Op validation failed");
     }
     memcpy(z0->buffer(), saved.data(), saved.size() * sizeof(T));
-    for (sd::LongType e = 0; e < indices.size(); e++) {
+    for (size_t e = 0; e < indices.size(); e++) {
       z1->p(e, indices[e]);
     }
 

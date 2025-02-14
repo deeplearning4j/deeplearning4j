@@ -59,26 +59,16 @@ DECLARE_TYPES(choose) {
 }
 
 DECLARE_SHAPE_FN(choose) {
-  LongType const* shape;
-  int rank;
   int mode = INT_ARG(0);
   auto numResults = NDArrayFactory::create<LongType>(0L);
   if (block.width() > 1) {
     auto first = INPUT_VARIABLE(0);
     auto second = INPUT_VARIABLE(1);
-    if (first->lengthOf() > second->lengthOf()) {
-      shape = first->shapeInfo();
-      rank = first->rankOf();
-    } else {
-      shape = second->shapeInfo();
-      rank = second->rankOf();
-    }
+
 
     helpers::chooseFunctorArray(block.launchContext(), first, second, mode, nullptr, &numResults);
   } else {
     auto first = INPUT_VARIABLE(0);
-    shape = first->shapeInfo();
-    rank = first->rankOf();
     double scalar = T_ARG(0);
 
     helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, &numResults);

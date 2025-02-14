@@ -41,6 +41,7 @@ public class CpuEnvironment implements Environment {
         this.e = environment;
     }
 
+
     @Override
     public boolean isEnableBlas() {
         return e.isEnableBlas();

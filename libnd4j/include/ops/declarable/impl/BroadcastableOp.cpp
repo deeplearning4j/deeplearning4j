@@ -57,7 +57,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
       return shapeList;
     }
 
-    const sd::LongType *newshape = nullptr;
+    sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
   } else if (shape::isScalar(x) && shape::isScalar(y)) {
@@ -73,7 +73,7 @@ ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::grap
   } else if (!shape::isScalar(x) && shape::isScalar(y)) {
     shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(x)->primary());
   } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
-    const sd::LongType *newshape = nullptr;
+    sd::LongType *newshape = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
     shapeList->push_back(ConstantShapeHelper::getInstance().bufferForShapeInfo(newshape)->primary());
   } else {

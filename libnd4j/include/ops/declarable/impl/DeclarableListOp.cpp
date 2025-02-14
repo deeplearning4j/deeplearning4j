@@ -119,9 +119,9 @@ ResultSet DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& in
   Context block(1, &varSpace, false);
   block.fillInputs(in);
 
-  for (int e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
+  for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
-  for (int e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
   Status result = this->validateAndExecute(block);
   ResultSet res;

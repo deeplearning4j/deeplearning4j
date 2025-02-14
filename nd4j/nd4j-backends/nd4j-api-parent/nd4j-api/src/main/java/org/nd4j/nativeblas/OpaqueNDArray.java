@@ -63,6 +63,15 @@ public class OpaqueNDArray extends Pointer {
             OpaqueDataBuffer buffer,
             OpaqueDataBuffer specialBuffer,
             long offset) {
+        if(shapeInfo != null) {
+            shapeInfo.retainReference();
+        }
+        if (buffer != null) {
+            buffer.retainReference();
+        }
+        if (specialBuffer != null) {
+            specialBuffer.retainReference();
+        }
         return Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset);
     }
 

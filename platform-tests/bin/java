@@ -68,7 +68,7 @@ EOF
 
     # Check if "--suppressions" already exists in TEST_RUNNER_PREFIX
     if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
-        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --vgdb=yes --vgdb-error=0  --tool=memcheck  --fair-sched=yes --error-exitcode=5 --max-stackframe=16777216 --alignment=32  --merge-recursive-frames=10       --child-silent-after-fork=yes  --smc-check=all --trace-children=yes   --show-reachable=yes --keep-stacktraces=alloc-and-free --log-file=valgrind_log.txt --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no --leak-check=full --show-reachable=yes --track-fds=yes --num-callers=40 --max-stackframe=4000000 --main-stacksize=4000000 --trace-children=yes --smc-check=all"
     fi
 
     JAVA_CALL="${JAVA_CALL} -Djava.compiler=NONE"

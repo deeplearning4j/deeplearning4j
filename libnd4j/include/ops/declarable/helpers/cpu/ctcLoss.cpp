@@ -208,9 +208,6 @@ void backwardAndGrad(Type forwardLogLoss, Type *alphaPtr, Type *bettaPtr, int in
     logP -= incP;
   }
 
-  auto logBP0 = bettaPrevPtr[0];
-  auto logBP1 = bettaPrevPtr[1];
-  auto blogLoss = -log_sum_exp(logBP0, logBP1);
 
 #if !defined(CALCULATE_ALL_IN_ONE_FRAME_LOOP)
   // alpha*betta

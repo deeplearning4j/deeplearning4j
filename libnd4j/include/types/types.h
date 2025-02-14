@@ -1325,4 +1325,36 @@
 // Callback macro
 #define CALLBACK_INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS) \
     INSTANTIATE_NORM(a1, b1, FUNC_NAME, ARGS)
+#ifndef  SD_COPY
+#define SD_COPY
+namespace sd {
+namespace  ops {
+template <typename U, typename V>
+static  void safe_copy(U* dest, const V* src, size_t count) {
+  if constexpr (std::is_same<U, V>::value && std::is_trivially_copyable<U>::value) {
+    memcpy(dest, src, count * sizeof(U));
+  } else {
+    std::copy(src, src + count, dest);
+  }
+}
 
+#define INSTANTIATE_COPY(a1,b1,FUNC_NAME,ARGS) template void safe_copy<GET_SECOND(a1), GET_SECOND(b1)>( GET_SECOND(a1)* dest, const GET_SECOND(b1) * src, size_t count);
+ITERATE_COMBINATIONS((SD_NUMERIC_TYPES), (SD_NUMERIC_TYPES), INSTANTIATE_COPY,safe_copy,;);
+
+template <typename T>
+static  void safe_zero(T* dest, size_t count) {
+  if constexpr (std::is_trivially_copyable<T>::value) {
+    // For trivially copyable types, we can use memset.
+    memset(dest, 0, count * sizeof(T));
+  } else {
+    // Otherwise, default-construct each element.
+    std::fill_n(dest, count, T());
+  }
+}
+
+#define INSTANTIATE_ZERO(a1) template void safe_zero<GET_SECOND(a1)>( GET_SECOND(a1)* dest, size_t count);
+ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_ZERO)
+}
+
+}
+#endif

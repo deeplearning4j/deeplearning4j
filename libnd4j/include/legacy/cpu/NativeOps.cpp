@@ -33,8 +33,8 @@
 #include <loops/type_conversions.h>
 #include <math/templatemath.h>
 #include <ops/declarable/helpers/transforms.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 
 #include <types/float8.h>
 #include <types/types.h>
@@ -77,12 +77,14 @@ using namespace sd;
 void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
                        NDArray *z,void *extraParams, NDArray *dimension) {
   try {
+
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
+
 
     auto hTADShapeInfo = tadPackX->primaryShapeInfo();
     auto hTADOffsets = tadPackX->primaryOffsets();
@@ -352,9 +354,9 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto idx = start; idx < stop; idx++) {
-      auto xTadOffsetForBlock = tadOffsets[reinterpret_cast<sd::LongType *>(indexes->buffer())[idx]];
-      auto zTadOffsetForBlock = zTadOffsets[idx];
+    for (auto idx2 = start; idx2 < stop; idx2++) {
+      auto xTadOffsetForBlock = tadOffsets[reinterpret_cast<sd::LongType *>(indexes->buffer())[idx2]];
+      auto zTadOffsetForBlock = zTadOffsets[idx2];
 
       auto rX = hX + xTadOffsetForBlock;
       auto rZ = hZ + zTadOffsetForBlock;
@@ -459,31 +461,7 @@ void tear(Pointer *extraPointers, OpaqueDataBuffer *dbX, LongType const *hXShape
   }
 }
 
-void average(Pointer *extras,
-             OpaqueNDArrayArr x,
-             OpaqueNDArray z,int n, LongType length, bool propagate) {
-  try {
-    auto xType = x[0]->dataType();
 
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::averageGeneric(x, z, n, length, propagate),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, LongType length) {
-  try {
-    auto xType = x[0]->dataType();
-
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::accumulateGeneric(x, z, n, length),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 void enableP2P(bool enable) {
   // no-op
@@ -753,32 +731,6 @@ void sortTad(Pointer *extraPointers, OpaqueNDArray  x,
   }
 }
 
-void sortCooIndices(Pointer *extraPointers, LongType *indices, void *x, LongType length,
-                    const LongType *xShapeInfo) {
-  try {
-    NativeOpExecutioner::execSortCooIndices(indices, x, length, xShapeInfo);
-
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-
-
-void ravelMultiIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
-                     LongType *shapeInfo, int mode) {
-  NativeOpExecutioner::execRavelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
-}
-
-void unravelIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
-                  LongType *shapeInfo) {
-  NativeOpExecutioner::execUnravelIndex(indices, flatIndices, length, shapeInfo);
-}
-
-
-
-
 
 
 Status execCustomOp2(Pointer *extraPointers, LongType hash, OpaqueContext *context) {
@@ -810,7 +762,7 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
   for(LongType i = 1; i < rank * 2 + 1; i++) {
     if(i <= rank) {
       shape.push_back(inputShapeData[i]);
-    } else if(shape.size() == rank) {
+    } else if(static_cast<sd::LongType>(shape.size()) == rank) {
       strides.push_back(inputShapeData[i]);
     }
   }
@@ -836,8 +788,6 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
 
   if(rank == 0) {
-    //detect when the shape buffer values are unset.
-    auto len = shape::shapeInfoLength(rank);
     //min number of values in a shape info buffer
     bool allZero = true;
     for(int i = 0; i < len; i++) {
@@ -858,11 +808,11 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
 template <typename I>
 static void _scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs, void *hX,
-                           const LongType *hXShapeInfo, const LongType *hXOffsets, void *dX,
-                           const LongType *dXShapeInfo, const LongType *dXOffsets, void *hY,
-                           const LongType *hYShapeInfo, const LongType *hYOffsets, void *dY,
-                           const LongType *dYShapeInfo, const LongType *dYOffsets, void *vIindexes,
-                           const LongType *hIndicesShapeInfo, void *dIindexes,
+                            LongType *hXShapeInfo, const LongType *hXOffsets, void *dX,
+                            LongType *dXShapeInfo, const LongType *dXOffsets, void *hY,
+                            LongType *hYShapeInfo, const LongType *hYOffsets, void *dY,
+                            LongType *dYShapeInfo, const LongType *dYOffsets, void *vIindexes,
+                           LongType *hIndicesShapeInfo, void *dIindexes,
                            const LongType *dIndicesShapeInfo) {
   auto hIindexes = reinterpret_cast<I *>(vIindexes);
   auto func = PRAGMA_THREADS_DO {
@@ -1577,20 +1527,6 @@ void execPairwiseTransformBool(Pointer *extraPointers, int opNum, NDArray *x, ND
 
 
 
-
-
-void sortCooIndices(Pointer *extraPointers, NDArray *indices, NDArray *values) {
-  try {
-    NativeOpExecutioner::execSortCooIndices(indices->bufferAsT<LongType>(), values->buffer(),
-                                            values->lengthOf(), values->shapeInfo());
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-
-
 void execRandom2(Pointer *extraPointers, int opNum, Pointer state,
                  NDArray *x, NDArray *z, void *extraArguments) {
   try {
@@ -1607,31 +1543,7 @@ void execRandom2(Pointer *extraPointers, int opNum, Pointer state,
 
 
 
-void ravelMultiIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices,
-                     NDArray *shapeInfo, int mode) {
-  try {
-    NativeOpExecutioner::execRavelMultiIndex(indices->bufferAsT<LongType>(),
-                                             flatIndices->bufferAsT<LongType>(),
-                                             flatIndices->lengthOf(),
-                                             shapeInfo->bufferAsT<LongType>(), mode);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
-void unravelIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices,
-                  NDArray *shapeInfo) {
-  try {
-    NativeOpExecutioner::execUnravelIndex(indices->bufferAsT<LongType>(),
-                                          flatIndices->bufferAsT<LongType>(),
-                                          flatIndices->lengthOf(),
-                                          shapeInfo->bufferAsT<LongType>());
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 
 int binaryLevel() {

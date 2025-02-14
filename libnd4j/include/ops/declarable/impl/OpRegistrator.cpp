@@ -52,6 +52,9 @@ __registratorSynonym<OpName>::__registratorSynonym(const char* name, const char*
 
 OpRegistrator& OpRegistrator::getInstance() {
   static OpRegistrator instance;
+#if defined(SD_GCC_FUNCTRACE)
+  backward::SignalHandling sh;
+#endif
   return instance;
 }
 
@@ -84,11 +87,23 @@ std::string OpRegistrator::local_to_string(int value) {
   return os.str();
 }
 
-void OpRegistrator::sigIntHandler(int sig) {}
+void OpRegistrator::sigIntHandler(int sig) {
+#if defined(SD_GCC_FUNCTRACE)
+  backward::SignalHandling sh;
+  exit(sig);
+#endif
+}
 
-void OpRegistrator::exitHandler() {}
+void OpRegistrator::exitHandler() {
+  exit(0);
+}
 
-void OpRegistrator::sigSegVHandler(int sig) {}
+void OpRegistrator::sigSegVHandler(int sig) {
+#if defined(SD_GCC_FUNCTRACE)
+  backward::SignalHandling sh;
+  exit(sig);
+#endif
+}
 
 OpRegistrator::~OpRegistrator() {
 #ifndef _RELEASE
@@ -96,7 +111,6 @@ OpRegistrator::~OpRegistrator() {
 
   for (auto x : _uniqueD) delete x;
 
-  for (auto x : _uniqueH) delete x;
 
   _uniqueD.clear();
 

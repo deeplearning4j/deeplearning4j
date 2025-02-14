@@ -56,7 +56,7 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
   PointersManager manager(block.launchContext(), "LegacyReduceFloatOp");
 
   if (block.width() == 1) {
-    if (axis.size() == x->rankOf()) allAxes = true;
+    if (axis.size() == static_cast<size_t>(x->rankOf())) allAxes = true;
 
     if (block.getAxis()->empty() || allAxes) {
       // scalar
@@ -67,7 +67,7 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
       // TAD
       std::vector<LongType> dims(*block.getAxis());
 
-      for (int e = 0; e < dims.size(); e++)
+      for (size_t e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
 
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
@@ -150,14 +150,12 @@ Status LegacyReduceFloatOp::validateAndExecute(Context& block) {
 ShapeList* LegacyReduceFloatOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
   auto inShape = inputShape->at(0);
 
-  bool allAxes = false;
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
   auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getAxis();
 
-  if (axis.size() == shape::rank(inShape)) allAxes = true;
 
   // in this case we're building proper shape for reduction
   auto newShape =

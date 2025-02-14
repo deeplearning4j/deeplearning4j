@@ -42,6 +42,8 @@ public class CudaEnvironment implements Environment {
         this.e = environment;
     }
 
+
+
     @Override
     public boolean isCheckOutputChange() {
         return e.isCheckOutputChange();
