@@ -61,19 +61,13 @@ class PairWiseBoolTransform {
                    const sd::LongType *yShapeBuffer, void *result, const sd::LongType *resultShapeBuffer,
                    void *extraParams, sd::LongType start,sd::LongType stop);
 
-  static void exec(int opNum, const void *dx, sd::LongType xStride, const void *y, sd::LongType yStride, void *result,
-                   sd::LongType resultStride, void *extraParams, sd::LongType n,sd::LongType start,
-                   sd::LongType stop);
+
 
   template <typename OpType>
   static void exec(const void *vx, const sd::LongType *xShapeBuffer, const void *vy, const sd::LongType *yShapeBuffer,
                    void *vresult, const sd::LongType *resultShapeBuffer, void *vextraParams, sd::LongType start,
                    sd::LongType stop);
 
-  template <typename OpType>
-  static void exec(const void *vx, sd::LongType xStride, const void *vy, sd::LongType yStride, void *vresult,
-                   sd::LongType resultStride, void *vextraParams, sd::LongType n, sd::LongType start,
-                   sd::LongType stop);
 #endif
 };
 }  // namespace pairwise_transforms
