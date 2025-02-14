@@ -51,7 +51,7 @@ static void copy_core_rank(const T* x, T* coreZ, const sd::LongType* xShapes, co
       offset = sd::inc_coords<constRank - 1>(cst, offset);
     }
   } else {
-    for (auto k = 0; k < loop_count; k++) {
+    for (size_t k = 0; k < loop_count; k++) {
       auto xPtr = &(x[offset.first]);
       auto zPtr = &(coreZ[offset.second]);
       for (int i = 0; i < inputLastSize; i++) {
