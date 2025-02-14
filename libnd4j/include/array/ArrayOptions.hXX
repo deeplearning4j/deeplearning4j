@@ -288,7 +288,7 @@ SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], si
   if (numFlagsSet > 1) {
     std::ostringstream errorMsg;
     errorMsg << "Multiple data types are set for the given property: ";
-    for (int i = 0; i < numFlags; i++) {
+    for (size_t i = 0; i < numFlags; i++) {
       if(flagIndices[i] == 1) {
         errorMsg << "Flag index " << i << " (flag value: " << flags[i] << "), ";
       }
@@ -316,6 +316,14 @@ SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
 SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("ArrayOptions::dataType(..) shapeInfo can not be null!");
+/*#if defined(SD_GCC_FUNCTRACE)
+  Printer p;
+  StackTrace st;
+  st.load_here();
+  FILE *fp = fopen("stacktrace-.txt", "a+");
+  p.print(st,fp);
+  fclose(fp);
+#endif*/
   auto extra = ArrayOptions::extra(shapeInfo);
   return ArrayOptions::dataTypeValue(extra);
 }

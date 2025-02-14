@@ -491,7 +491,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public LongShapeDescriptor shapeDescriptor() {
-        return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
+        return LongShapeDescriptor.fromShape(shape(), stride(), -1, ordering(), dataType(), isEmpty());
     }
 
     @Override

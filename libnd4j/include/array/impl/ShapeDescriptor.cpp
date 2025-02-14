@@ -78,7 +78,7 @@ LongType ShapeDescriptor::offset() {
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const LongType *shape, const LongType rank)
-    : _dataType(type), _order(order), _rank(rank) {
+    : _rank(rank), _order(order), _dataType(type) {
   int rank2 = rank < 1 ? 1 : rank;
   _shape_strides = new LongType[2 * rank2];
   this->ownsShapeStrides = true;
@@ -102,7 +102,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
   fillStrides();
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 
 
@@ -149,7 +149,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
   }
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -157,7 +157,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Lo
 
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape)
-    : _dataType(type), _order(order) {
+    : _order(order), _dataType(type) {
   if(!DataTypeUtils::validDataType(_dataType)) {
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
@@ -190,7 +190,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -204,12 +204,12 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const st
     THROW_EXCEPTION("Shape descriptor created with invalid data type");
   }
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
 ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
-    : _dataType(type),  _order('c'), _rank(1), _extraProperties(0) {
+    : _rank(1),  _order('c'), _dataType(type), _extraProperties(0) {
   _shape_strides = new LongType [2];
   _shape_strides[0] = length;
   _shape_strides[1] = 1;  //{shape, stride}
@@ -218,7 +218,7 @@ ShapeDescriptor::ShapeDescriptor(const DataType type, const LongType length)
   }
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -363,7 +363,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, bool validateDataTyp
   }
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 
 }
@@ -387,7 +387,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const DataType dtype
   }
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -398,7 +398,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
   }
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -412,7 +412,7 @@ ShapeDescriptor::ShapeDescriptor(const LongType *shapeInfo, const LongType *dtyp
 
 
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
@@ -441,7 +441,7 @@ void ShapeDescriptor::print() const {
     printf("%lld", _shape_strides[i]);
     if (i < 2 * _rank - 1) printf(", ");
   }
-  printf("], %c, %lld, %s, %lld\n", _order, DataTypeUtils::asString(_dataType).c_str(), _extraProperties);
+  printf("], %c, %s, %lld\n", _order, DataTypeUtils::asString(_dataType).c_str(), _extraProperties);
 }
 
 LongType ShapeDescriptor::allocLength() const {
@@ -549,7 +549,7 @@ DataType ShapeDescriptor::dataType() const {
 }
 
 bool ShapeDescriptor::isEmpty() const { return (_extraProperties & ARRAY_EMPTY) == ARRAY_EMPTY; }
-bool ShapeDescriptor::isScalar() const { return !isEmpty() && rank() == 0 || rank() == 1 && arrLength() == 1; }
+bool ShapeDescriptor::isScalar() const { return (!isEmpty() && rank() == 0) || (rank() == 1 && arrLength() == 1); }
 
 sd::LongType * ShapeDescriptor::shape_strides() { return _shape_strides; }
 
@@ -568,21 +568,21 @@ ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
   this->ownsShapeStrides = false;
   _paddedAllocSize = other._paddedAllocSize;
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
 ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<LongType> &shape,
                                  const std::vector<LongType> &strides)
-    : _dataType(type), _order(order) {
+    : _order(order), _dataType(type) {
   _rank = shape.size();
   int rank2 = _rank < 1 ? 1 : _rank;
 
   _shape_strides = new LongType [2 * rank2];
   this->ownsShapeStrides = true;
 #if defined(SD_GCC_FUNCTRACE)
-  this-st.load_here();
+  this->st.load_here();
 #endif
   auto _shape = _shape_strides;
   auto _strides = _shape_strides + rank2;
@@ -677,11 +677,11 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
   descriptor->_shape_strides = new LongType [2 * rank2];
   auto _shape = descriptor->_shape_strides;
   auto _strides = descriptor->_shape_strides + rank2;
-  for (int i = 0; i < shape.size(); i++) {
+  for (size_t i = 0; i < shape.size(); i++) {
     _shape[i] = shape[i];
   }
   // calculate strides with paddings
-  int min_rank = descriptor->_rank > paddings.size() ? paddings.size() : rank2;
+  int min_rank = static_cast<size_t>(descriptor->_rank) > paddings.size() ? paddings.size() : rank2;
   bool is_continous = true;
   if (order == 'c') {
     _strides[rank2 - 1] = 1L;
@@ -705,7 +705,7 @@ ShapeDescriptor  * ShapeDescriptor::paddedBufferDescriptor(const DataType type, 
       if (pad != 0) is_continous = false;
     }
     if (!is_continous && descriptor->_rank > 0) {
-      LongType size_pad = paddings.size() >= descriptor->_rank ? paddings[descriptor->_rank - 1] : 0;
+      LongType size_pad = paddings.size() >= static_cast<size_t>(descriptor->_rank) ? paddings[descriptor->_rank - 1] : 0;
       // alloc size should be supplied manually as we dont have place to store it
       descriptor->_paddedAllocSize = _strides[descriptor->_rank - 1] * (_shape[descriptor->_rank - 1] + size_pad);
     }

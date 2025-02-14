@@ -37,7 +37,6 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
     output->assign(one);
     return sd::Status::OK;
   }
-  bool keepDims = false;       // block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
   bool biasCorrected = false;  // block.getTArguments()->size() > 1 ? (bool)T_ARG(1) : false;
 
   auto dimensions = *block.getIArguments();
@@ -47,15 +46,13 @@ CUSTOM_OP_IMPL(reduce_stdev, -1, 1, false, 0, 0) {
   }
 
   if (block.getBArguments()->size()) {
-    keepDims = B_ARG(0);
     if (block.getBArguments()->size() > 1) biasCorrected = B_ARG(1);
   } else if (block.getTArguments()->size()) {
-    keepDims = (bool)T_ARG(0);
     if (block.getTArguments()->size() > 1) biasCorrected = (bool)T_ARG(1);
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_STDEV OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -88,7 +85,7 @@ DECLARE_SHAPE_FN(reduce_stdev) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= rank, 0,
+      dimensions.size() <= static_cast<size_t>(rank), 0,
       "REDUCE_STDEV OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -133,7 +130,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_STDEV_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -185,7 +182,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= rank, 0,
+      dimensions.size() <= static_cast<size_t>(rank), 0,
       "REDUCE_STDEV_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 

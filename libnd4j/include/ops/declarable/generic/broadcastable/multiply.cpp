@@ -36,7 +36,7 @@ BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
 
   BROADCAST_CHECK_EMPTY(x, y, z);
 
-  const LongType* zShapeInfo = nullptr;
+   LongType* zShapeInfo = nullptr;
   const bool areShapesBroadcastable =
       ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, zShapeInfo, block.getWorkspace());
   REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !",
@@ -72,7 +72,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
   auto dLdx = OUTPUT_VARIABLE(0);
   auto dLdy = OUTPUT_VARIABLE(1);
 
-  const LongType* dLdzShapeInfo = nullptr;
+   LongType* dLdzShapeInfo = nullptr;
   const bool areShapesBroadcastable =
       ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
   REQUIRE_TRUE(areShapesBroadcastable, 0,

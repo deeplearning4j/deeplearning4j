@@ -28,6 +28,8 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const LongType axis) {
@@ -57,7 +59,7 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
     T* x = const_cast<T*>(xBuff);
     for (sd::LongType i = 0; i < numSplits; ++i) {
       const auto memAmountToCopy = outArrs[i]->lengthOf();
-      memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
+      ops::safe_copy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy);
       x += memAmountToCopy;
     }
     return;
@@ -87,8 +89,8 @@ static void split_(NDArray& input, const std::vector<NDArray*>& outArrs, const L
       for (sd::LongType j = 0; j < numSplits; ++j) {
         const auto zDim = outArrs[j]->sizeAt(axis);
         T* z = outArrs[j]->bufferAsT<T>() + zDim * i;
-        memcpy(z, x, zDim * sizeofT);
-        z += zDim;
+        ops::safe_copy(z, x, static_cast<size_t>(zDim));
+
         x += zDim;
       }
     }

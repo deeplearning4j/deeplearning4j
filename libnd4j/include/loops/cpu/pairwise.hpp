@@ -96,6 +96,7 @@ SD_INLINE void PairWiseTransform<X, Y, Z>::exec(const void *vx,
                                                 sd::LongType start,
                                                 sd::LongType stop) {
 
+
   auto x = reinterpret_cast<const X *>(vx);
   auto y = reinterpret_cast<const Y *>(vy);
   auto z = reinterpret_cast<Z *>(vz);

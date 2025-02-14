@@ -44,19 +44,19 @@ public @Data class GemvParameters {
 
 
         if (a.ordering() == 'f' && a.isMatrix()) {
-            this.m = (int) a.rows();
-            this.n = (int) a.columns();
-            this.lda = (int) a.rows();
+            this.m = a.rows();
+            this.n = a.columns();
+            this.lda = a.rows();
         } else if (a.ordering() == 'c' && a.isMatrix()) {
-            this.m = (int) a.columns();
-            this.n = (int) a.rows();
-            this.lda = (int) a.columns();
+            this.m = a.columns();
+            this.n = a.rows();
+            this.lda = a.columns();
             aOrdering = 'T';
         }
 
         else {
-            this.m = (int) a.rows();
-            this.n = (int) a.columns();
+            this.m = a.rows();
+            this.n = a.columns();
             this.lda = (int) a.size(0);
         }
 
@@ -69,7 +69,7 @@ public @Data class GemvParameters {
             incx = x.stride(1);
         }
 
-        this.incy = y.elementWiseStride();
+        this.incy = y.stride(1);
 
     }
 
@@ -82,7 +82,7 @@ public @Data class GemvParameters {
             return arr.dup();
         else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0)))
             return arr.dup();
-        else if (arr.elementWiseStride() < 1)
+        else if (arr.isView())
             return arr.dup();
         return arr;
     }

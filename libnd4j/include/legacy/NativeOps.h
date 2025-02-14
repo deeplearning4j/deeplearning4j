@@ -88,16 +88,8 @@ SD_LIB_EXPORT void shuffle(sd::Pointer *extras,
                            OpaqueNDArray dimension,
                            OpaqueNDArray shuffleMap);
 
-SD_LIB_EXPORT void average(sd::Pointer *extras,
-                           OpaqueNDArrayArr x,
-                           OpaqueNDArray z,int n,
-                           sd::LongType length, bool propagate);
 
-SD_LIB_EXPORT void accumulate(sd::Pointer *extras,
-                              OpaqueNDArrayArr x,
-                              OpaqueNDArray z,
-                              int n,
-                              sd::LongType length);
+
 
 
 SD_LIB_EXPORT void pullRows(sd::Pointer *extraPointers,
@@ -255,8 +247,6 @@ SD_LIB_EXPORT int getDeviceMinor(int device) ;
 SD_LIB_EXPORT int getShapeInfoLength(OpaqueTadPack *pack) ;
 SD_LIB_EXPORT int memcpyConstantAsync(sd::LongType dst, sd::Pointer src, sd::LongType size, int flags, sd::Pointer reserved) ;
 SD_LIB_EXPORT sd::Pointer getConstantSpace() ;
-SD_LIB_EXPORT void average(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z,int n, sd::LongType length, bool propagate) ;
-SD_LIB_EXPORT void accumulate(sd::Pointer *extras, OpaqueNDArray *x, OpaqueNDArray z, int n, sd::LongType length) ;
 SD_LIB_EXPORT bool isExperimentalEnabled() ;
 SD_LIB_EXPORT void setOmpMinThreads(int threads) ;
 SD_LIB_EXPORT int getDevice() ;
@@ -305,7 +295,6 @@ SD_LIB_EXPORT void sortTadByValue(sd::Pointer *extraPointers,
                                   OpaqueNDArray y,
                                   OpaqueNDArray dimension,
                                   bool descending);
-SD_LIB_EXPORT void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray values);
 SD_LIB_EXPORT void munmapFile(sd::Pointer *extraPointers, sd::LongType *ptrMap, sd::LongType length) ;
 SD_LIB_EXPORT sd::LongType* mmapFile(sd::Pointer* extraPointers, const char* fileName, sd::LongType length);
 

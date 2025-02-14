@@ -124,7 +124,7 @@ struct IndexValue {
   T value;
   sd::LongType index;
   SD_HOST_DEVICE IndexValue() = default;
-  SD_HOST_DEVICE IndexValue(const T val, const sd::LongType ind) : index(ind), value(val) {}
+  SD_HOST_DEVICE IndexValue(const T val, const sd::LongType ind) : value(val), index(ind) {}
 };
 }  // namespace indexreduce
 

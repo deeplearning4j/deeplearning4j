@@ -48,7 +48,7 @@ DECLARE_SHAPE_FN(eye) {
   if (block.width() == 0) {
     params = *block.getIArguments();
   } else {
-    for (int i = 0; i < block.width(); i++) {
+    for (size_t i = 0; i < block.width(); i++) {
       auto input = INPUT_VARIABLE(i);
       REQUIRE_TRUE(input->rankOf() == 1, 0, "Inputs to eye should be 1D");
 

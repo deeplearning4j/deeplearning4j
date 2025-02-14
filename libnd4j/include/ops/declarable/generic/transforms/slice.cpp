@@ -45,16 +45,16 @@ CUSTOM_OP_IMPL(slice, 1, 1, false, 0, -2) {
     begin = b->template asVectorT<LongType>();
     sz = e->template asVectorT<LongType>();
   } else {
-    REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
+    REQUIRE_TRUE(block.numI() >= static_cast<size_t>(x_rank * 2), 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
 
     ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
     ShapeUtils::copyVectorPart(sz, *(block.getIArguments()), x_rank, x_rank);
   }
 
-  REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank,
+  REQUIRE_TRUE(begin.size() == static_cast<size_t>(x_rank), 0, "begin array should have length of [%i] but got [%i] instead", x_rank,
                begin.size());
-  REQUIRE_TRUE(sz.size() == x_rank, 0, "size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
+  REQUIRE_TRUE(sz.size() == static_cast<size_t>(x_rank), 0, "size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
 
   std::vector<LongType> indices(2 * x_rank);
   auto empty = false;
@@ -134,16 +134,16 @@ DECLARE_SHAPE_FN(slice) {
     begin = b->template asVectorT<LongType>();
     sz = e->template asVectorT<LongType>();
   } else {
-    REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
+    REQUIRE_TRUE(block.numI() >= static_cast<size_t>(x_rank) * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
 
     ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
     ShapeUtils::copyVectorPart(sz, *(block.getIArguments()), x_rank, x_rank);
   }
 
-  REQUIRE_TRUE(begin.size() == x_rank, 0, "Begin array should have length of [%i] but got [%i] instead", x_rank,
+  REQUIRE_TRUE(begin.size() == static_cast<size_t>(x_rank), 0, "Begin array should have length of [%i] but got [%i] instead", x_rank,
                begin.size());
-  REQUIRE_TRUE(sz.size() == x_rank, 0, "Size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
+  REQUIRE_TRUE(sz.size() == static_cast<size_t>(x_rank), 0, "Size array should have length of [%i] but got [%i] instead", x_rank, sz.size());
 
   std::vector<LongType> shape;
   auto empty = false;
@@ -209,16 +209,16 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
     begin = b->template asVectorT<LongType>();
     end = e->template asVectorT<LongType>();
   } else {
-    REQUIRE_TRUE(block.numI() >= x_rank * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
+    REQUIRE_TRUE(block.numI() >= static_cast<size_t>(x_rank) * 2, 0, "Number of IArgs should be equal to [%i] but got [%i] instead",
                  x_rank * 2, block.numI());
 
     ShapeUtils::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
     ShapeUtils::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
   }
 
-  REQUIRE_TRUE(begin.size() == x_rank, 0, "begin array should have length of [%i] but got [%i] instead", x_rank,
+  REQUIRE_TRUE(begin.size() == static_cast<size_t>(x_rank), 0, "begin array should have length of [%i] but got [%i] instead", x_rank,
                begin.size());
-  REQUIRE_TRUE(end.size() == x_rank, 0, "end array should have length of [%i] but got [%i] instead", x_rank,
+  REQUIRE_TRUE(end.size() == static_cast<size_t>(x_rank), 0, "end array should have length of [%i] but got [%i] instead", x_rank,
                end.size());
 
   std::vector<LongType> indices(2 * x_rank);

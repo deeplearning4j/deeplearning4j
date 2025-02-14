@@ -49,36 +49,6 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create(ShapeDescriptor *shapeDescriptor, L
   return result;
 }
 
-SD_LIB_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& shape, DataType dataType, const std::vector<LongType>& paddings,
-                                             const std::vector<LongType>& paddingOffsets, LaunchContext* context) {
-  int rank = shape.size();
-  if (rank > SD_MAX_RANK) THROW_EXCEPTION("NDArrayFactory::create: rank of NDArray can't exceed 32");
-
-  if (paddings.size() != rank) {
-    THROW_EXCEPTION("NDArrayFactory::create: paddings size should match rank ");
-  }
-
-  auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
-
-  LongType allocSize = shapeDescriptor->allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor->dataType());
-  DataBuffer *  buffer =
-      new DataBuffer(allocSize, shapeDescriptor->dataType(), context->getWorkspace());
-
-  // lets check offsets
-  int check_size = paddingOffsets.size() < rank ? paddingOffsets.size() : rank;
-
-  for (int i = 0; i < check_size; i++) {
-    if (paddingOffsets[i] > paddings[i]) {
-      THROW_EXCEPTION("NDArrayFactory::create: paddingOffsets numbers should not exceed corresponding paddings");
-    }
-  }
-
-  LongType offset = offset_from_coords(shapeDescriptor->stridesPtr(), paddingOffsets.data(), check_size);
-
-  NDArray result(buffer, shapeDescriptor, context, offset);
-  result.nullify();
-  return result;
-}
 
 ////////////////////////////////////////////////////////////////////////
 template <>
@@ -89,7 +59,7 @@ SD_LIB_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::
 
   ShapeDescriptor *descriptor = new ShapeDescriptor(BOOL, order, shape);
 
-  if (descriptor->arrLength() != data.size()) {
+  if (static_cast<size_t>(descriptor->arrLength()) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
@@ -114,7 +84,7 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   ShapeDescriptor *descriptor = new ShapeDescriptor(DataTypeUtils::fromT<T>(), order, shape);
 
   //scalars can be created with zero length
-  if (descriptor->arrLength() != 0 && data.size() != 1 && descriptor->arrLength() != data.size()) {
+  if (descriptor->arrLength() != 0 && data.size() != 1 && static_cast<size_t>(descriptor->arrLength()) != data.size()) {
     sd_printf("NDArrayFactory::create: data size [%i] doesn't match shape length [%lld]\n", data.size(),
               descriptor->arrLength());
     THROW_EXCEPTION("NDArrayFactory::create: data size doesn't match shape");
@@ -161,7 +131,7 @@ void NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<T>& vector) {
 template <>
 void SD_LIB_EXPORT NDArrayFactory::memcpyFromVector(void* ptr, const std::vector<bool>& vector) {
   auto p = reinterpret_cast<bool*>(ptr);
-  for (LongType e = 0; e < vector.size(); e++) p[e] = vector[e];
+  for (size_t e = 0; e < vector.size(); e++) p[e] = vector[e];
 }
 
 
@@ -217,9 +187,13 @@ NDArray* NDArrayFactory::create_(const T scalar, LaunchContext* context) {
 
 #define TMPL_INSTANTIATE_CREATE_C(TYPE) \
 template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
-ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_C)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_C)
 
 #undef TMPL_INSTANTIATE_CREATE_C
+
+NDArray NDArrayFactory::create(DataType dtype, LaunchContext *context) {
+  return create(dtype,0, context);
+}
 
 template <typename T>
 NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* context) {
@@ -235,7 +209,7 @@ NDArray NDArrayFactory::create(DataType type, const T scalar, LaunchContext* con
 #define TMPL_INSTANTIATE_CREATE_D(TYPE) \
 template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(DataType type, const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
 
-ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_D)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_D)
 
 #undef TMPL_INSTANTIATE_CREATE_D
 
@@ -257,7 +231,7 @@ NDArray NDArrayFactory::create(const T scalar, LaunchContext* context) {
 #define TMPL_INSTANTIATE_CREATE_E(TYPE) \
 template SD_LIB_EXPORT NDArray NDArrayFactory::create<GET_SECOND(TYPE)>(const GET_SECOND(TYPE) scalar, sd::LaunchContext* context);
 
-ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_E)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_E)
 #undef TMPL_INSTANTIATE_CREATE_E
 
 ////////////////////////////////////////////////////////////////////////
@@ -270,7 +244,7 @@ NDArray* NDArrayFactory::create_(const char order, const std::vector<LongType>& 
 #define TMPL_INSTANTIATE_CREATE_F(TYPE) \
 template SD_LIB_EXPORT NDArray* NDArrayFactory::create_<GET_SECOND(TYPE)>(const char order, const std::vector<sd::LongType>& shape, \
                                                         const std::vector<GET_SECOND(TYPE)>& data, sd::LaunchContext* context);
-ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_CREATE_F)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_CREATE_F)
 
 
 #undef TMPL_INSTANTIATE_CREATE_F
@@ -305,7 +279,7 @@ template SD_LIB_EXPORT NDArray* \
 NDArrayFactory::valueOf<GET_SECOND(TYPE)>(std::vector<sd::LongType>& shape,  GET_SECOND(TYPE) value, \
                                                         const char order, sd::LaunchContext* context);
 
-ITERATE_LIST((SD_NUMERIC_TYPES), TMPL_INSTANTIATE_VALUEOF)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VALUEOF)
 
 
 #undef TMPL_INSTANTIATE_VALUEOF
@@ -353,7 +327,7 @@ NDArray* NDArrayFactory::vector(LongType length,  T value, LaunchContext* contex
 #define TMPL_INSTANTIATE_VECTOR(TYPE) \
 template SD_LIB_EXPORT NDArray* NDArrayFactory::vector<GET_SECOND(TYPE)>(sd::LongType length, const GET_SECOND(TYPE) startingValue, \
                                                        sd::LaunchContext* context);
-ITERATE_LIST((SD_COMMON_TYPES), TMPL_INSTANTIATE_VECTOR)
+ITERATE_LIST((SD_COMMON_TYPES_ALL), TMPL_INSTANTIATE_VECTOR)
 
 
 
@@ -385,20 +359,19 @@ NDArray NDArrayFactory::create(const char order, const std::vector<LongType>& sh
   return result;
 }
 
-////////////////////////////////////////////////////////////////////////
-NDArray NDArrayFactory::create(DataType dtype, LaunchContext* context) {
-  DataBuffer *  buffer =
-      new DataBuffer(DataTypeUtils::sizeOfElement(dtype), dtype, context->getWorkspace(), true);
-  auto desc = ShapeDescriptor::scalarDescriptor(dtype);
-  NDArray res(buffer, desc, context);
-  res.nullify();
-
-  return res;
-}
-
 NDArray* NDArrayFactory::create_(DataType dtype, LaunchContext* context) {
   auto result = new NDArray();
   *result = create(dtype, context);
+  return result;
+}
+
+template <typename T>
+static NDArray create(DataType type, const std::vector<LongType>& shape, LaunchContext* context) {
+  auto buffer = new DataBuffer(DataTypeUtils::sizeOfElement(type) * shape::prodLong(shape.data(),shape.size()), type, context->getWorkspace());
+  auto desc = ShapeBuilders::createShapeInfo(type,'c',shape);
+  auto cachedDesc = ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
+  NDArray result(buffer, cachedDesc->primary(), context);
+  delete[] desc;
   return result;
 }
 

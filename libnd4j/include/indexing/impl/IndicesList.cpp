@@ -28,7 +28,6 @@ IndicesList::IndicesList(std::initializer_list<NDIndex*> list) {
 }
 
 IndicesList::~IndicesList() {
-  for (auto v : _indices) delete v;
 }
 
 int IndicesList::size() { return (int)_indices.size(); }

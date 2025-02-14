@@ -69,16 +69,6 @@ class SD_LIB_EXPORT OpRegistrator {
   static OpRegistrator* _INSTANCE;
   OpRegistrator() {
     sd_debug("OpRegistrator started\n", "");
-
-#ifndef _RELEASE
-    std::signal(SIGSEGV, &OpRegistrator::sigSegVHandler);
-    std::signal(SIGINT, &OpRegistrator::sigIntHandler);
-    std::signal(SIGABRT, &OpRegistrator::sigIntHandler);
-    std::signal(SIGFPE, &OpRegistrator::sigIntHandler);
-    std::signal(SIGILL, &OpRegistrator::sigIntHandler);
-    std::signal(SIGTERM, &OpRegistrator::sigIntHandler);
-    atexit(&OpRegistrator::exitHandler);
-#endif
   };
 
   SD_MAP_IMPL<LongType, std::string> _msvc;

@@ -44,7 +44,7 @@ NDArray* PlatformHelper::getZ(graph::Context& ctx, int inputId) {
   NDArray* z = nullptr;
 
   if (ctx.isFastPath()) {
-    if (ctx.fastpath_out().size() <= inputId) {
+    if (ctx.fastpath_out().size() <= static_cast<size_t>(inputId)) {
       if (ctx.isInplace()) {
         z = ctx.fastpath_in()[inputId];
       } else

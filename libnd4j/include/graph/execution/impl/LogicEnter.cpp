@@ -32,7 +32,7 @@ Status LogicEnter::processNode(Graph *graph, Node *node) {
   auto __flowPath = __variableSpace->flowPath();
 
   // basically, first non-null variable is our target
-  for (int e = 0; e < node->input()->size(); e++) {
+  for (size_t e = 0; e < node->input()->size(); e++) {
     auto inputAddr = node->input()->at(e);
 
     if (__variableSpace->hasVariable(inputAddr)) {

@@ -49,16 +49,11 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
                "CUSTOM_OP fused_batch_norm: the rank of input x array must be equal to 4, but got %i instead !",
                x->rankOf());
 
-  int bS = x->sizeAt(0);  // batch size
-  int iH, iW, iD;         // input height, input width, input depth(number of channels)
+  int  iD;         // input height, input width, input depth(number of channels)
   if (dataFormat) {
     iD = x->sizeAt(1);
-    iH = x->sizeAt(2);
-    iW = x->sizeAt(3);
   } else {
     iD = x->sizeAt(3);
-    iH = x->sizeAt(1);
-    iW = x->sizeAt(2);
   }
 
   auto xCast = x->cast(sd::DataType::FLOAT32);

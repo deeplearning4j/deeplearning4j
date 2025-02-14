@@ -851,6 +851,14 @@ sd::Status resizeImagesFunctor(sd::LaunchContext* context, NDArray * image, int 
       return resizeBicubicFunctor(context, image, width, height, alignCorners, false, output);
     case kResizeArea:
       return resizeAreaFunctor(context, image, width, height, alignCorners, output);
+    case kResizeGaussian:
+      break;
+    case kResizeLanczos3:
+      break;
+    case kResizeLanczos5:
+      break;
+    case kResizeMitchellcubic:
+      break;
   }
   sd_printf("helper::resizeImagesFunctor: Wrong resize method %i\n", (int)method);
   return Logger::logStatusMsg(Status::BAD_INPUT, "helper::resizeImagesFunctor: Wrong resize method");

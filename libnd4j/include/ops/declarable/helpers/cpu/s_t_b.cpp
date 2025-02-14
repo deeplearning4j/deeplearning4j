@@ -375,7 +375,7 @@ void spaceToBatchND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
     temp[2 * i - 1] = numOfSpatialDims + i;
     temp[2 * i] = i - 1;
   }
-  for (i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i) temp[i] = i;
+  for (i = 2 * numOfSpatialDims + 1; i < static_cast<int>(temp.size()); ++i) temp[i] = i;
 
   outputRearranged0.permutei(temp, false, false);
 

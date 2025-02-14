@@ -100,8 +100,7 @@ Status LogicWhile::processNode(Graph* graph, Node* node) {
       break;
     else {
       auto scopeBody = graph->scopeById(scopeBodyIndex);
-      int lastNode = 0;
-      int e = 0;
+      size_t e = 0;
       sd_debug("While [%i] got [%i] ops in body scope [%i]\n", node->id(), scopeBody->nodes()->size(), scopeBodyIndex);
       for (; e < scopeBody->nodes()->size() - 1; e++) {
         Node* v = scopeBody->nodes()->at(e);
@@ -116,7 +115,6 @@ Status LogicWhile::processNode(Graph* graph, Node* node) {
           if (status != Status::OK) return status;
         }
 
-        lastNode = v->id();
       }
 
       // now execute return statement

@@ -157,7 +157,7 @@ public @Data class GemmParams {
             return arr.dup();
         else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0)))
             return arr.dup();
-        else if (arr.elementWiseStride() < 0)
+        else if (arr.isView())
             return arr.dup();
         return arr;
     }

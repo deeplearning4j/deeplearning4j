@@ -88,7 +88,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
   if (Environment::getInstance().isDebugAndVerbose()) {
     // sd_debug("Input variables: %i\n", node->input()->size());
     printf("       Inputs: {");
-    for (int e = 0; e < node->input()->size(); e++) {
+    for (size_t e = 0; e < node->input()->size(); e++) {
       printf("[%i:%i]", node->input()->at(e).first, node->input()->at(e).second);
 
       if (e < node->input()->size() - 1) printf(", ");
@@ -113,7 +113,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
     // enforcing IMPLICIT mode. or not... should we try to be smarter then user?
     // embedded->getExecutorConfiguration()->_outputMode = OutputMode_IMPLICIT;
 
-    if (node->input()->size() != embedded->numberOfPlaceholders()) {
+    if (node->input()->size() != static_cast<size_t>(embedded->numberOfPlaceholders())) {
       sd_debug("Placeholders amount mismatch: %i expected, and %i available\n", node->input()->size(),
                embedded->numberOfPlaceholders());
       return Status::BAD_INPUT;
@@ -227,7 +227,6 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
   // disabled as well
 
   std::deque<LongType> frames;
-  bool inFrame = false;
   bool leftFrame = false;
 
   auto nodeTime = GraphProfile::currentTime();
@@ -286,7 +285,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 
         } else {
           // let's check for input nodes, if they are disabled or contain divergents
-          for (int e = 0; e < node->input()->size(); e++) {
+          for (size_t e = 0; e < node->input()->size(); e++) {
             auto inputId = node->input()->at(e);
 
             // not a node. skipping checks
@@ -335,7 +334,6 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
         if (frames.size() == 0 || (frames.size() > 0 && frames.back() != frame_id)) {
           flowPath->registerFrame(frame_id);
           frames.emplace_back(frame_id);
-          inFrame = true;
         }
 
         auto status = LogicExecutor::processNode(graph, node);
@@ -346,7 +344,6 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
          * NextIteration is special case: after successful execution of this op - we're changing execution position
          */
         // VALIDATED
-        auto inputId = node->input()->at(0);
 
         auto status = LogicExecutor::processNode(graph, node);
         if (status != Status::OK) return status;
@@ -406,14 +403,14 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 
         if (status != Status::OK) return status;
       } else {
-        auto timeStart = std::chrono::system_clock::now();
+        auto timeStart2 = std::chrono::system_clock::now();
 
         // actual node execution happens right here
         Status status = executeFlatNode(graph, node, __variableSpace);
 
         auto timeEnd = std::chrono::system_clock::now();
 
-        auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+        auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart2).count();
 
         flowPath->setOuterTime(node->id(), outerTime);
 
@@ -622,7 +619,7 @@ flatbuffers::Offset<FlatResult> GraphExecutioner::execute(Graph *graph, flatbuff
 
   if (request != nullptr && request->variables() != nullptr) {
     auto vars = request->variables();
-    for (int e = 0; e < vars->size(); e++) {
+    for (size_t e = 0; e < vars->size(); e++) {
       auto fv = vars->Get(e);
       auto v = new Variable(fv);
       varSpace->replaceVariable(v);

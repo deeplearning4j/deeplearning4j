@@ -284,7 +284,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
 
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_softsign(T val) {
- Z result = val / ((T)1.0f + sd::math::sd_abs<T, T>(val));
+ Z result = val / ((T)1.0f + sd_abs<T, T>(val));
  SD_PRINT_MATH_FUNC("sd_softsign", val, result,Z);
  return result;
 }
@@ -449,9 +449,9 @@ SD_HOST_DEVICE SD_INLINE int sd_abs<int, int>(int value) {
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE sd::LongType sd_abs<sd::LongType, sd::LongType>(sd::LongType value) {
- sd::LongType result = llabs(value);
- SD_PRINT_MATH_FUNC("sd_abs<sd::LongType>", value, result,sd::LongType);
+SD_HOST_DEVICE SD_INLINE LongType sd_abs<LongType, LongType>(LongType value) {
+ LongType result = llabs(value);
+ SD_PRINT_MATH_FUNC("sd_abs<LongType>", value, result,LongType);
  return result;
 }
 
@@ -481,8 +481,8 @@ SD_HOST_DEVICE SD_INLINE uint32_t sd_abs<uint32_t>(uint32_t value) {
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE sd::UnsignedLong sd_abs<sd::UnsignedLong>(sd::UnsignedLong value) {
- SD_PRINT_MATH_FUNC("sd_abs<sd::UnsignedLong>", value, value,sd::UnsignedLong);
+SD_HOST_DEVICE SD_INLINE UnsignedLong sd_abs<UnsignedLong>(UnsignedLong value) {
+ SD_PRINT_MATH_FUNC("sd_abs<UnsignedLong>", value, value,UnsignedLong);
  return value;
 }
 
@@ -578,16 +578,16 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<bool>(bool value) {
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::LongType>(sd::LongType value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<LongType>(LongType value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::LongType>", value, result,sd::LongType);
+  SD_PRINT_MATH_FUNC("sd_isnan<LongType>", value, result,LongType);
   return result;
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isnan<UnsignedLong>(UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isnan<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isnan<UnsignedLong>", value, result,UnsignedLong);
   return result;
 }
 
@@ -677,16 +677,16 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<bool>(bool value) {
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::LongType>(sd::LongType value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<LongType>(LongType value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::LongType>", value, result,sd::LongType);
+  SD_PRINT_MATH_FUNC("sd_isinf<LongType>", value, result,LongType);
   return result;
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value) {
+SD_HOST_DEVICE SD_INLINE bool sd_isinf<UnsignedLong>(UnsignedLong value) {
   bool result = false;
-  SD_PRINT_MATH_FUNC("sd_isinf<sd::UnsignedLong>", value, result,sd::UnsignedLong);
+  SD_PRINT_MATH_FUNC("sd_isinf<UnsignedLong>", value, result,UnsignedLong);
   return result;
 }
 
@@ -726,9 +726,9 @@ SD_HOST_DEVICE SD_INLINE int sd_copysign<int>(int val1, int val2) {
 }
 
 template <>
-SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val1, sd::LongType val2) {
-  sd::LongType result = (val2 < 0) ? -(sd_abs<sd::LongType,sd::LongType>(val1)) : sd_abs<sd::LongType,sd::LongType>(val1);
-  SD_PRINT_MATH_FUNC2("sd_copysign<sd::LongType>", val1, val2, result,sd::LongType);
+SD_HOST_DEVICE SD_INLINE LongType sd_copysign<LongType>(LongType val1, LongType val2) {
+  LongType result = (val2 < 0) ? -(sd_abs<LongType,LongType>(val1)) : sd_abs<LongType,LongType>(val1);
+  SD_PRINT_MATH_FUNC2("sd_copysign<LongType>", val1, val2, result,LongType);
   return result;
 }
 
@@ -935,7 +935,7 @@ SD_HOST_DEVICE SD_INLINE X neg_tanh(X val) {
   X t = static_cast<X>(2.0f);
   X e = static_cast<X>(M_E);
 
-  auto p = sd::math::sd_pow<X, X, X>(e, val * t);
+  auto p = math::sd_pow<X, X, X>(e, val * t);
   X result = (p - o) / (p + o);
   SD_PRINT_MATH_FUNC("neg_tanh", val, result,X);
   return result;
@@ -947,7 +947,7 @@ SD_HOST_DEVICE SD_INLINE X pos_tanh(X val) {
   X t = static_cast<X>(-2.0f);
   X e = static_cast<X>(M_E);
 
-  auto p = sd::math::sd_pow<X, X, X>(e, val * t);
+  auto p = math::sd_pow<X, X, X>(e, val * t);
   X result = (o - p) / (o + p);
   SD_PRINT_MATH_FUNC("pos_tanh", val, result,X);
   return result;
@@ -956,7 +956,7 @@ SD_HOST_DEVICE SD_INLINE X pos_tanh(X val) {
 SD_HOST_DEVICE SD_INLINE float neu_tanh(float val, float sign) {
   float e(M_E);
   float av = sign * val;
-  auto p = sd::math::sd_pow<float, float, float>(e, -av * 2.f);
+  auto p = math::sd_pow<float, float, float>(e, -av * 2.f);
   float result = (1 - p) / (1 + p);
   SD_PRINT_MATH_FUNC2("neu_tanh", val, sign, result,float);
   return result;
@@ -1065,7 +1065,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_gamma(X a) {
     if (a > 171.624) {
       result = Z(DOUBLE_MAX_VALUE);
     } else {
-      result = sd::math::sd_exp<Z, Z>(sd::math::sd_lgamma<X, Z>(a));
+      result = math::sd_exp<Z, Z>(math::sd_lgamma<X, Z>(a));
     }
   }
   SD_PRINT_MATH_FUNC("sd_gamma", a, result,Z);
@@ -1350,14 +1350,14 @@ inline SD_DEVICE int16_t sd_atomicCAS<int16_t>(int16_t* address, int16_t compare
 }
 
 template <>
-inline SD_DEVICE sd::LongType sd_atomicCAS<sd::LongType>(sd::LongType* address, sd::LongType compare, sd::LongType val) {
+inline SD_DEVICE LongType sd_atomicCAS<LongType>(LongType* address, LongType compare, LongType val) {
   unsigned long long int* address_as_ull = reinterpret_cast<unsigned long long int*>(address);
   unsigned long long int compare_as_ull = static_cast<unsigned long long int>(compare);
   unsigned long long int val_as_ull = static_cast<unsigned long long int>(val);
 
   unsigned long long int old_as_ull = atomicCAS(address_as_ull, compare_as_ull, val_as_ull);
 
-  return static_cast<sd::LongType>(old_as_ull);
+  return static_cast<LongType>(old_as_ull);
 }
 
 
@@ -1514,7 +1514,7 @@ inline SD_DEVICE uint64_t sd_atomicMin<uint64_t>(uint64_t* address, uint64_t val
 #endif
 }
 template <>
-inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, sd::LongType val) {
+inline SD_DEVICE LongType sd_atomicMin<LongType>(LongType* address, LongType val) {
 #if __CUDA_ARCH__ >= 350
   return atomicMin((unsigned long long*)address, (unsigned long long)val);
 #else
@@ -1522,7 +1522,7 @@ inline SD_DEVICE sd::LongType sd_atomicMin<sd::LongType>(sd::LongType* address, 
   unsigned long long int old = (unsigned long long)val, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, math::sd_min(val, (sd::LongType)assumed));
+    old = atomicCAS(address_as_ull, assumed, math::sd_min(val, (LongType)assumed));
   } while (assumed != old);
   return old;
 #endif
@@ -1776,11 +1776,11 @@ SD_INLINE SD_DEVICE float16 sd_atomicMax<float16>(float16* address, float16 val)
     assumed = old;
     if (reinterpret_cast<uintptr_t>(address) & 2) {
       old_val = float16(static_cast<unsigned short>(old >> 16));
-      max_val = sd::math::sd_max<float16>(old_val, val);
+      max_val = math::sd_max<float16>(old_val, val);
       fresh = (old & 0xFFFF) | (reinterpret_cast<unsigned short&>(max_val) << 16);
     } else {
       old_val = float16(static_cast<unsigned short>(old & 0xFFFF));
-      max_val = sd::math::sd_max<float16>(old_val, val);
+      max_val = math::sd_max<float16>(old_val, val);
       fresh = (old & 0xFFFF0000) | reinterpret_cast<unsigned short&>(max_val);
     }
     old = atomicCAS(address_as_uint, assumed, fresh);
@@ -1801,11 +1801,11 @@ SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 
     assumed = old;
     if (reinterpret_cast<uintptr_t>(address) & 2) {
       old_val = bfloat16(static_cast<unsigned short>(old >> 16));
-      max_val = sd::math::sd_max<bfloat16>(old_val, val);
+      max_val = math::sd_max<bfloat16>(old_val, val);
       fresh = (old & 0xFFFF) | (reinterpret_cast<unsigned short&>(max_val) << 16);
     } else {
       old_val = bfloat16(static_cast<unsigned short>(old & 0xFFFF));
-      max_val = sd::math::sd_max<bfloat16>(old_val, val);
+      max_val = math::sd_max<bfloat16>(old_val, val);
       fresh = (old & 0xFFFF0000) | reinterpret_cast<unsigned short&>(max_val);
     }
     old = atomicCAS(address_as_uint, assumed, fresh);
@@ -1815,13 +1815,13 @@ SD_INLINE SD_DEVICE bfloat16 sd_atomicMax<bfloat16>(bfloat16* address, bfloat16 
                                                     : bfloat16(static_cast<unsigned short>(old & 0xFFFF));
 }
 template <>
-inline SD_DEVICE sd::LongType sd_atomicMax<sd::LongType>(sd::LongType* address, sd::LongType val) {
+inline SD_DEVICE LongType sd_atomicMax<LongType>(LongType* address, LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
 
   unsigned long long int old = *address_as_ull, assumed;
   do {
     assumed = old;
-    old = atomicCAS(address_as_ull, assumed, (unsigned long long) sd::math::sd_max<LongType>(val, (sd::LongType)assumed));
+    old = atomicCAS(address_as_ull, assumed, (unsigned long long) math::sd_max<LongType>(val, (LongType)assumed));
   } while (assumed != old);
   return old;
 }
@@ -1838,7 +1838,7 @@ inline SD_DEVICE double sd_atomicAdd<double>(double* address, double val) {
 }
 
 template <>
-inline SD_DEVICE sd::LongType sd_atomicAdd<sd::LongType>(sd::LongType* address, sd::LongType val) {
+inline SD_DEVICE LongType sd_atomicAdd<LongType>(LongType* address, LongType val) {
   unsigned long long int* address_as_ull = (unsigned long long int*)address;
 
   unsigned long long int old = *address_as_ull, assumed;
@@ -2323,14 +2323,14 @@ inline SD_DEVICE uint64_t sd_atomicMul<uint64_t>(uint64_t* address, uint64_t val
 
 #if !defined(_WIN32) && !defined(_WIN64)
 template <>
-inline SD_DEVICE sd::LongType sd_atomicMul<sd::LongType>(sd::LongType* address, sd::LongType val) {
+inline SD_DEVICE LongType sd_atomicMul<LongType>(LongType* address, LongType val) {
   unsigned long long int* res_address = (unsigned long long*)address;
   unsigned long long int old = *res_address, assumed;
   do {
     assumed = old;
     old = atomicCAS(res_address, assumed, val * assumed);
   } while (assumed != old);
-  return (sd::LongType)old;
+  return (LongType)old;
 }
 #endif
 

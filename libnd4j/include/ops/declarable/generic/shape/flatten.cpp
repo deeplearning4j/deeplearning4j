@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(flatten, -1, 1, false, 0, 1) {
   auto xType = INPUT_VARIABLE(0)->dataType();
   REQUIRE_TRUE(xType == zType, 0, "Flatten: output array must have same data type as input arrays");
   std::vector<NDArray*> arrays(block.width());
-  for (int e = 0; e < block.width(); e++) {
+  for (size_t e = 0; e < block.width(); e++) {
     auto input = INPUT_VARIABLE(e);
 
     REQUIRE_TRUE(xType == input->dataType(), 0, "Flatten: all input arrays must have the same data type");
@@ -56,7 +56,7 @@ DECLARE_TYPES(flatten) {
 DECLARE_SHAPE_FN(flatten) {
   LongType length = 0;
   DataType dtype = ArrayOptions::dataType(inputShape->at(0));
-  for (int e = 0; e < block.width(); e++) {
+  for (size_t e = 0; e < block.width(); e++) {
     length += shape::length(inputShape->at(e));
     REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(e)), 0,
                  "Flatten: all input arrays must have the same datatype");

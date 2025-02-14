@@ -227,7 +227,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   const bool keepUnitiesInShape = inRank == mean->rankOf();
 
   // inverse batch size 1/N
-  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), const_cast<sd::LongType * const>(axes.data()), axes.size()) / input->lengthOf();
+  const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), (axes.data()), axes.size()) / input->lengthOf();
 
   // input - mean
   NDArray xMinusMean(input);  // empty array with same shape as input
@@ -294,8 +294,8 @@ DECLARE_TYPES(batchnorm_bp) {
 //////////////////////////////////////////////////////////////////////////
 
 DECLARE_SHAPE_FN(batchnorm_bp) {
-  sd::LongType const* inShapeInfo = inputShape->at(0);
-  sd::LongType const* meanShapeInfo = inputShape->at(1);
+  sd::LongType * inShapeInfo = inputShape->at(0);
+  sd::LongType * meanShapeInfo = inputShape->at(1);
 
   const bool applyScale = (bool)INT_ARG(0);
   const bool applyOffset = (bool)INT_ARG(1);

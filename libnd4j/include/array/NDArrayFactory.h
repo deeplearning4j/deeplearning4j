@@ -67,9 +67,8 @@ class SD_LIB_EXPORT NDArrayFactory {
 
   static NDArray create(ShapeDescriptor *shapeDescriptor, LaunchContext *context = LaunchContext ::defaultContext());
 
-  static NDArray create(const char order, const std::vector<LongType> &shape, DataType dataType,
-                        const std::vector<LongType> &paddings, const std::vector<LongType> &paddingOffsets,
-                        LaunchContext *context = LaunchContext ::defaultContext());
+  static NDArray create(DataType dtype, LaunchContext *context = LaunchContext ::defaultContext());
+
 
   template <typename T>
   static NDArray *create_(const T value, LaunchContext *context = LaunchContext ::defaultContext());
@@ -77,7 +76,6 @@ class SD_LIB_EXPORT NDArrayFactory {
 
   template <typename T>
   static NDArray create(const T value, LaunchContext *context = LaunchContext ::defaultContext());
-  static NDArray create(DataType dtype, LaunchContext *context = LaunchContext ::defaultContext());
   template <typename T>
   static NDArray create(DataType type, const T scalar, LaunchContext *context = LaunchContext ::defaultContext());
 
@@ -214,9 +212,6 @@ class SD_LIB_EXPORT NDArrayFactory {
                           DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
   static NDArray *string_(std::vector<LongType> &shape, const std::vector<std::u32string> &string,
                           DataType dataType = UTF32, LaunchContext *context = LaunchContext::defaultContext());
-
-  static ResultSet createSetOfArrs(const LongType numOfArrs, const void *buffer, const LongType *shapeInfo,
-                                   const LongType *offsets, LaunchContext *context = LaunchContext ::defaultContext());
 
 #endif
 };

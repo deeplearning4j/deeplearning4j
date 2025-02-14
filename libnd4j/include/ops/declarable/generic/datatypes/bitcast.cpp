@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(bitcast, 1, 1, false, 0, 1) {
   auto outputSize = DataTypeUtils::sizeOf(newType);
   auto lastSize = outputSize / inputSize;
   if (inputSize < outputSize) {
-    REQUIRE_TRUE(input->sizeAt(-1) == lastSize, 0,
+    REQUIRE_TRUE(static_cast<size_t>(input->sizeAt(-1)) == lastSize, 0,
                  "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize, outputSize, lastSize,
                  input->sizeAt(-1));
   }
@@ -84,12 +84,13 @@ DECLARE_SHAPE_FN(bitcast) {
     auto outputShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(newType, shape::order(inShape), shapeOf)->primary();
     return SHAPELIST(outputShape);
   }
-  REQUIRE_TRUE(shape::sizeAt(inShape, static_cast<sd::LongType>(-1)) == outputSize / inputSize, 0,
+  REQUIRE_TRUE(shape::sizeAt(inShape, static_cast<size_t>(static_cast<sd::LongType>(-1))) ==
+                   static_cast<sd::LongType>(outputSize / inputSize), 0,
                "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize, outputSize,
                outputSize / inputSize, shape::sizeAt(inShape, static_cast<sd::LongType>(-1)));
   std::vector<sd::LongType> shapeOf(inputRank - 1);
 
-  for (auto i = 0; i < shapeOf.size(); ++i) {
+  for (size_t i = 0; i < shapeOf.size(); ++i) {
     shapeOf[i] = inShape[i + 1];
   }
 

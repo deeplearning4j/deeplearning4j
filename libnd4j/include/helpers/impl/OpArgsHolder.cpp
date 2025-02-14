@@ -89,7 +89,7 @@ OpArgsHolder& OpArgsHolder::operator=(const OpArgsHolder& other) {
 OpArgsHolder& OpArgsHolder::operator=(OpArgsHolder&& other) noexcept {
   if (this == &other) return *this;
 
-  for (int i = 0; i < _isArrAlloc.size(); ++i)  // delete arrays if necessary
+  for (size_t i = 0; i < _isArrAlloc.size(); ++i)  // delete arrays if necessary
     if (_isArrAlloc[i]) delete _inArrs[i];
 
   _inArrs = std::move(other._inArrs);
@@ -134,7 +134,7 @@ OpArgsHolder OpArgsHolder::createArgsHolderForBP(const std::vector<NDArray*>& in
 ////////////////////////////////////////////////////////////////////////
 // default destructor
 OpArgsHolder::~OpArgsHolder() noexcept {
-  for (int i = 0; i < _isArrAlloc.size(); ++i)
+  for (size_t i = 0; i < _isArrAlloc.size(); ++i)
     if (_isArrAlloc[i]) delete _inArrs[i];
 }
 

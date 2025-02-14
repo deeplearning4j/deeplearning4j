@@ -62,11 +62,9 @@ CUSTOM_OP_IMPL(resize_images, 1, 1, false, 0, 0) {
       //                    width = I_ARG(1);
     }
   }
-  bool preserveAspectRatio = false;  // - default value
   bool alignCorners = false;
   if (block.numB()) {
     alignCorners = B_ARG(0);
-    if (block.numB() > 1) preserveAspectRatio = B_ARG(1);
   }
   REQUIRE_TRUE(
       method >= helpers::ImageResizeMethods::kResizeFirst && method <= helpers::ImageResizeMethods::kResizeOldLast, 0,

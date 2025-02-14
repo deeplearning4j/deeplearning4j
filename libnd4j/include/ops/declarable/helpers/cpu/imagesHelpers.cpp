@@ -101,8 +101,8 @@ SD_INLINE static void tripleTransformer(NDArray* input, NDArray* output, const i
 
     samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
   } else {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC,true);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC,true);
 
     const sd::LongType numOfTads = packX->numberOfTads();
     const sd::LongType xDimCstride = input->stridesOf()[dimC];
@@ -162,8 +162,8 @@ SD_INLINE static void hsvRgb(NDArray* input, NDArray* output, const int dimC) {
 
     samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
   } else {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC,true);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC,true);
 
     const sd::LongType numOfTads = packX->numberOfTads();
     const sd::LongType xDimCstride = input->stridesOf()[dimC];
@@ -199,8 +199,8 @@ SD_INLINE static void rgbHsv(NDArray* input, NDArray* output, const int dimC) {
 
     samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
   } else {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC,true);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC,true);
 
     const sd::LongType numOfTads = packX->numberOfTads();
     const sd::LongType xDimCstride = input->stridesOf()[dimC];
@@ -238,8 +238,8 @@ SD_INLINE static void rgbYuv_(NDArray& input, NDArray& output, const int dimC) {
     return;
   }
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC,true);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC,true);
 
   const sd::LongType numOfTads = packX->numberOfTads();
   const sd::LongType xDimCstride = input.stridesOf()[dimC];
@@ -277,8 +277,8 @@ SD_INLINE static void yuvRgb_(NDArray& input, NDArray& output, const int dimC) {
     return;
   }
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC);
-  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC,true);
+  auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC,true);
 
   const sd::LongType numOfTads = packX->numberOfTads();
   const sd::LongType xDimCstride = input.stridesOf()[dimC];

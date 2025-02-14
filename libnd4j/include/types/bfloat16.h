@@ -51,6 +51,8 @@ struct isNumericType {
 struct bfloat16 {
 
  public:
+  constexpr bfloat16(const bfloat16&) = default;
+
   int16_t _data;
 
   SD_INLINE SD_HOST_DEVICE bfloat16() { _data = 0; }

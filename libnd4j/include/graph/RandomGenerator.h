@@ -86,7 +86,6 @@ class SD_LIB_EXPORT RandomGenerator : public CudaManagedRandomGenerator {
 
 class SD_LIB_EXPORT RandomGenerator {
  private:
-  void *placeHolder;
   u64 _rootState;
   u64 _nodeState;
 
@@ -167,13 +166,13 @@ SD_INLINE SD_HOST_DEVICE uint32_t RandomGenerator::relativeT<uint32_t>(LongType 
 
 template <>
 SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeT<int>(LongType index) {
-  auto r = relativeT<uint32_t>(index);
+  auto r = static_cast<int>(relativeT<uint32_t>(index));
   return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
 }
 
 template <>
 SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeT<LongType>(LongType index) {
-  auto r = relativeT<uint64_t>(index);
+  auto r = static_cast<sd::LongType >(relativeT<uint64_t>(index));
   return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
 }
 
@@ -201,12 +200,12 @@ SD_INLINE SD_HOST_DEVICE T RandomGenerator::relativeT(LongType index) {
 }
 
 SD_INLINE SD_HOST_DEVICE int RandomGenerator::relativeInt(LongType index) {
-  auto r = relativeT<uint32_t>(index);
+  auto r = static_cast<int>(relativeT<uint32_t>(index));
   return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
 }
 
 SD_INLINE SD_HOST_DEVICE LongType RandomGenerator::relativeLong(LongType index) {
-  auto r = relativeT<uint64_t>(index);
+  auto r = static_cast<LongType>(relativeT<uint64_t>(index));
   return r <= DataTypeUtils::max<LongType>() ? r : r % DataTypeUtils::max<LongType>();
 }
 

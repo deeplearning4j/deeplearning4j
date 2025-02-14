@@ -351,9 +351,9 @@ ResultSet LegacyRandomOp::execute(RandomGenerator& rng, std::vector<NDArray*>& i
   block.fillInputs(in);
   block.markInplace(isInplace);
 
-  for (int e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
+  for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
-  for (int e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
   Status status = this->execute(&block);
   arrayList.setStatus(status);

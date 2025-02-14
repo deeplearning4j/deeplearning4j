@@ -30,31 +30,6 @@ using namespace simdOps;
 namespace functions {
 namespace pairwise_transforms {
 
-template <typename X, typename Y>
-void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, sd::LongType xEws, const void *y,
-                                       sd::LongType yEws, void *z, sd::LongType zEws, void *extraParams, sd::LongType n,
-                                       sd::LongType start, sd::LongType stop) {
-  DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_BOOL_OPS);
-};
-
-template <typename X, typename Z>
-template <typename OpType>
-void PairWiseBoolTransform<X, Z>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
-                                       sd::LongType zEws, void *vextraParams, sd::LongType n, sd::LongType start,
-                                       sd::LongType stop) {
-  auto x = reinterpret_cast<const X *>(vx);
-  auto y = reinterpret_cast<const X *>(vy);
-  auto z = reinterpret_cast<Z *>(vz);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-  if (xEws == 1 && yEws == 1 && zEws == 1) {
-    PRAGMA_OMP_SIMD
-    for (sd::LongType i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
-  } else {
-    PRAGMA_OMP_SIMD
-    for (sd::LongType i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
-  }
-}
 
 template <typename X, typename Y>
 void PairWiseBoolTransform<X, Y>::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,

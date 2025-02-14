@@ -56,7 +56,10 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
     } else {
       if (input->rankOf() == 1 && output->rankOf() == 1) {
         auto func = PRAGMA_THREADS_FOR {
-          for (auto i = start; i < stop; i++) output->p(i, input->e(indices->e<sd::LongType>(i)));
+          for (auto i = start; i < stop; i++) {
+            auto curr = indices->e<sd::LongType>(i);
+            output->p(i, curr);
+          }
         };
 
         samediff::Threads::parallel_for(func, 0, output->lengthOf());
@@ -71,9 +74,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
 
         const sd::LongType numOfSubArrs = indices->lengthOf();
 
-        auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn);
+        auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn,true);
         delete dimsIn;
-        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut);
+        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut,true);
         auto inTadShapeInfo = inTadPack->primaryShapeInfo();
         auto outTadShapeInfo = outTadPack->primaryShapeInfo();
 
@@ -117,8 +120,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       std::vector<sd::LongType> axesVec = {axis};
       std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
 
-      auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
-      auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
+      auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims,true);
+      auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims,true);
       delete dims;
 
       auto inTadShapeInfo = inTadPack->primaryShapeInfo();

@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     }
 
     ResultSet outputView = output->allTensorsAlongDimension(dims);
-    REQUIRE_TRUE(block.width() > output->sizeAt(0), 0,
+    REQUIRE_TRUE(static_cast<sd::LongType >(block.width()) > output->sizeAt(0), 0,
                  "embedding_lookup: input list should be greater then %i, but %i given.", output->sizeAt(0),
                  block.width());
     for (sd::LongType e = 0; e < indices->lengthOf(); ++e) {

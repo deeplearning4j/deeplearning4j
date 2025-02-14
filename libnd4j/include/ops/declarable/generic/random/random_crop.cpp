@@ -58,7 +58,7 @@ DECLARE_SHAPE_FN(random_crop) {
   auto typeShape = inputShape->at(0);
   std::vector<LongType> shape(in->lengthOf());
 
-  for (int e = 0; e < shape.size(); e++) shape[e] = (*in).e<LongType>(e);
+  for (size_t e = 0; e < shape.size(); e++) shape[e] = (*in).e<LongType>(e);
 
   auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(typeShape), 'c', shape);
   return SHAPELIST(newShape);

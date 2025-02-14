@@ -41,32 +41,32 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes,
 
 }
 
-const LongType* TadPack::primaryShapeInfo() const {
+LongType* TadPack::primaryShapeInfo() {
   if(_tadShape.primary() == nullptr)
     THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");
   return _tadShape.primary();
 }
 
-const LongType* TadPack::primaryOffsets() const {
+LongType* TadPack::primaryOffsets() {
   return _tadOffsets.primary();
 }
 
-const LongType* TadPack::specialShapeInfo() const { return _tadShape.special(); }
+LongType* TadPack::specialShapeInfo() { return _tadShape.special(); }
 
-const LongType* TadPack::specialOffsets() const { return _tadOffsets.special(); }
+LongType* TadPack::specialOffsets() { return _tadOffsets.special(); }
 
 LongType TadPack::numberOfTads() const { return _numTads; }
 
-const LongType* TadPack::platformShapeInfo() const {
+LongType* TadPack::platformShapeInfo() {
   return Environment::getInstance().isCPU() ? primaryShapeInfo() : specialShapeInfo();
 }
 
-const LongType* TadPack::platformOffsets() const {
+LongType* TadPack::platformOffsets() {
   return Environment::getInstance().isCPU() ? primaryOffsets() : specialOffsets();
 }
 
 
-void TadPack::print(const char* msg) const {
+void TadPack::print(const char* msg) {
   printf("---------------------------\n");
   printf("%s: ", msg);
   printf("Offsets:\n");
@@ -93,5 +93,5 @@ void TadPack::print(const char* msg) const {
   printf("---------------------------\n");
 }
 
-LongType TadPack::shapeInfoLength() const { return shape::shapeInfoLength(primaryShapeInfo()); }
+LongType TadPack::shapeInfoLength() { return shape::shapeInfoLength(primaryShapeInfo()); }
 }  // namespace sd

@@ -132,7 +132,7 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), result.elementWiseStride(), result.ordering(), result.dataType(), result.isEmpty()));
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), -1, result.ordering(), result.dataType(), result.isEmpty()));
             }
 
             allocator.getAllocationPoint(result).setCurrentContext(context);

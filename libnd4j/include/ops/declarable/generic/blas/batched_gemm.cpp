@@ -139,7 +139,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
     }
   }
 
-  REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0,
+  REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == static_cast<size_t>(batchSize), 0,
                "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
   helpers::bgemm(vA,
@@ -175,7 +175,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
   auto firstInput = inputShape->at(2);
   auto secondInput =   inputShape->at(batchSize + 2);
   auto firstType = ArrayOptions::dataType(inputShape->at(0));
-  for (int e = 1; e < block.width(); e++) {
+  for (size_t e = 1; e < block.width(); e++) {
     REQUIRE_TRUE(firstType == ArrayOptions::dataType(inputShape->at(1)), 0,
                  "BatchedGemm: all inputs must have same data type");
   }

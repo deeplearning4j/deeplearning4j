@@ -195,7 +195,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         val shape = array.shape();
         val stride = array.stride();
-        val elementWiseStride = array.elementWiseStride();
+        val elementWiseStride = -1;
         val ordering = array.ordering();
         val length = array.length();
         val dtype = array.dataType();

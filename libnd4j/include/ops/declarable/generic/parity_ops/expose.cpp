@@ -25,7 +25,7 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
-  for (int e = 0; e < block.width(); e++) {
+  for (size_t e = 0; e < block.width(); e++) {
     //omit for eager computation, normally array size should be equal to block size
     if(block.getVariableSpace() == nullptr || block.getVariableSpace()->getVariables().size() != block.width()) {
       auto in = INPUT_VARIABLE(e);
@@ -60,8 +60,7 @@ DECLARE_TYPES(expose) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMod
 DECLARE_SHAPE_FN(expose) {
   auto shapeList = SHAPELIST();
 
-  for (int e = 0; e < block.width(); e++) {
-    auto p = block.input(e);
+  for (size_t e = 0; e < block.width(); e++) {
     auto var = block.getVariable(e);
     if (var->variableType() == NDARRAY) {
       auto inShape = inputShape->at(e);

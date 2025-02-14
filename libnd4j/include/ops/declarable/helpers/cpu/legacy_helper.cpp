@@ -189,7 +189,6 @@ void tanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
 template <typename T>
 static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
-    T th = sd::math::sd_tanh<T, T>(x);
     return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
   };
 

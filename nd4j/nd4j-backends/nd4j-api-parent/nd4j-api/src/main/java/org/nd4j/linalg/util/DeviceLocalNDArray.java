@@ -97,7 +97,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
         if (array == null)
             return;
 
-        Preconditions.checkArgument(!array.isView() || array.elementWiseStride() != 1, "View can't be used in DeviceLocalNDArray");
+        Preconditions.checkArgument(!array.isView(), "View can't be used in DeviceLocalNDArray");
 
         Nd4j.getExecutioner().commit();
 
@@ -139,7 +139,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
      * @param array
      */
     public synchronized void update(@NonNull INDArray array) {
-        Preconditions.checkArgument(!array.isView() || array.elementWiseStride() != 1, "View can't be used in DeviceLocalNDArray");
+        Preconditions.checkArgument(!array.isView() , "View can't be used in DeviceLocalNDArray");
 
         val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         val device = Nd4j.getAffinityManager().getDeviceForCurrentThread();

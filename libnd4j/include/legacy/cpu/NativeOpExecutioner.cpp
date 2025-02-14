@@ -230,6 +230,8 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext *lc, const int opN
                                             const sd::LongType *dYShapeInfo, void *hZ, const sd::LongType *hZShapeInfo,
                                             void *dZ, const sd::LongType *dZShapeInfo, void *extraParams) {
 
+ printf("------------->  NativeOpExecutioner execBroadcastBool \n");
+ fflush(stdout);
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -371,7 +373,6 @@ bool isViewOf(const void* ptr1, size_t size1, const void* ptr2, size_t size2) {
 
 
 
-
 /**
  *
  * @param opNum
@@ -398,21 +399,28 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
                                                 void *dZ,
                                                 const sd::LongType *dZShapeInfo,
                                                 void *extraParams) {
+
+
+  PRINT_TYPE_LIST(SD_NUMERIC_TYPES);
+  PRINT_TYPE_LIST(SD_COMMON_TYPES);
+
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+/*
   auto func = PRAGMA_THREADS_FOR {
     BUILD_TRIPLE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
   };
+
 
 
   auto zLen = shape::length(hZShapeInfo);
   samediff::Threads::parallel_for(
       func, 0, zLen, 1,
       sd::math::sd_max<int>(1, sd::math::sd_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
-
+*/
 
 
 
@@ -667,11 +675,11 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
   sd::TadPack *tadPack;
 
   if (xLen == yLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hXShapeInfo), dimension, dimensionLength);
   } else if (yLen > xLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hYShapeInfo), dimension, dimensionLength);
   } else {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hXShapeInfo), dimension, dimensionLength);
   }
 
   auto func = PRAGMA_THREADS_FOR {
@@ -696,8 +704,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
-
+  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hXShapeInfo), dimension, dimensionLength);
   // TODO: make it 2d
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(
@@ -728,13 +735,12 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
   sd::TadPack *tadPack;
 
   if (xLen == yLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hXShapeInfo), dimension, dimensionLength);
   } else if (yLen > xLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hYShapeInfo), dimension, dimensionLength);
   } else {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(hXShapeInfo), dimension, dimensionLength);
   }
-
   auto func = PRAGMA_THREADS_FOR {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3,
                           ::exec(opNum, hX, hXShapeInfo, extraParamsVals, hY, hYShapeInfo, hZ, hZShapeInfo, dimension,
@@ -1082,34 +1088,22 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
 
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  if(sd::DataTypeUtils::isS(xType)) {
-    auto func = PRAGMA_THREADS_DO {
-      BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
-                            SD_STRING_TYPES, SD_STRING_TYPES);
-    };
+  auto func = PRAGMA_THREADS_DO {
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
+                          ::exec(opNum,
+                                 hX,
+                                 hXShapeInfo,
+                                 hZ, hZShapeInfo,
+                                 extraParams,
+                                 thread_id,
+                                 numThreads),
+                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+  };
 
-    samediff::Threads::parallel_do(
-        func, sd::math::sd_max<int>(1, sd::math::sd_min<int>(shape::length(hZShapeInfo) / 1024,
-                                                             sd::Environment::getInstance().maxMasterThreads())));
-  } else {
-    auto func = PRAGMA_THREADS_DO {
-      BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum,
-                                   hX,
-                                   hXShapeInfo,
-                                   hZ, hZShapeInfo,
-                                   extraParams,
-                                   thread_id,
-                                   numThreads),
-                            SD_COMMON_TYPES, SD_COMMON_TYPES);
-    };
-
-    samediff::Threads::parallel_do(
-        func, sd::math::sd_max<sd::LongType,sd::LongType,sd::LongType>(1,
+  samediff::Threads::parallel_do(
+      func, sd::math::sd_max<sd::LongType,sd::LongType,sd::LongType>(1,
                                                                        sd::math::sd_min<sd::LongType,sd::LongType,sd::LongType>(shape::length(hZShapeInfo) / 1024,
-                                                                                                                                sd::Environment::getInstance().maxMasterThreads())));
-  }
+                                                                                                                                  sd::Environment::getInstance().maxMasterThreads())));
 
 
 }
@@ -1123,7 +1117,7 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext *lc, int opNum, co
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-
+  PRINT_TYPE_LIST(SD_COMMON_TYPES_ALL);
   auto func = PRAGMA_THREADS_DO {
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
                           ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),

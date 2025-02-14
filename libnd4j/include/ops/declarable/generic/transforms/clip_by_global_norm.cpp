@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
 DECLARE_SHAPE_FN(clip_by_global_norm) {
   auto shapeList = SHAPELIST();
 
-  for (int e = 0; e < block.width(); e++) {
+  for (size_t e = 0; e < block.width(); e++) {
     auto in = inputShape->at(e);
 
     sd::LongType* newShape;

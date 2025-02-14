@@ -32,7 +32,7 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and dimensions permutations for
 // transposition of two input arrays
-std::vector<LongType> ShapeUtils::evalShapeForTensorDot(const LongType* aShapeInfo, const LongType* bShapeInfo,
+std::vector<LongType> ShapeUtils::evalShapeForTensorDot( LongType* aShapeInfo,  LongType* bShapeInfo,
                                                         const std::vector<LongType> axesA,
                                                         const std::vector<LongType> axesB,
                                                         std::vector<LongType>& permutAt,
@@ -117,7 +117,7 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(const LongType* aShapeIn
 
   std::vector<LongType> oldShapeA;
   oldShapeA.resize(list_A.size());
-  for (LongType i = 0; i < oldShapeA.size(); ++i) oldShapeA[i] = aShapeInfo[list_A[i] + 1];
+  for (size_t i = 0; i < oldShapeA.size(); ++i) oldShapeA[i] = aShapeInfo[list_A[i] + 1];
 
   LongType n3 = 1;
   for (LongType i = 0; i < axeBsize; i++) n3 *= bShapeInfo[axesB[i] + 1];
@@ -125,7 +125,7 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(const LongType* aShapeIn
 
   std::vector<LongType> oldShapeB;
   oldShapeB.resize(list_B.size());
-  for (LongType i = 0; i < oldShapeB.size(); i++) oldShapeB[i] = bShapeInfo[list_B[i] + 1];
+  for (size_t i = 0; i < oldShapeB.size(); i++) oldShapeB[i] = bShapeInfo[list_B[i] + 1];
 
   std::vector<LongType> aPlusB(oldShapeA);
   aPlusB.insert(aPlusB.end(), oldShapeB.begin(), oldShapeB.end());
@@ -145,8 +145,8 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(NDArray* a, NDArray* b,
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate output shape for reduce operation when input shape is empty
-const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude,
-                                                     const LongType* shapeInfo, const DataType dataType,
+LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude,
+                                               LongType* shapeInfo, const DataType dataType,
                                                      const bool keepDims, memory::Workspace* workspace) {
   if (dimsToExclude->size() == 0) {  // return copy of input shape
     LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
@@ -157,7 +157,7 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
   const LongType rank = shape::rank(shapeInfo);
   LongType* outShapeInfo = nullptr;
 
-  if (dimsToExclude->size() == rank) {  // return scalar or shape filled with unities
+  if (static_cast<sd::LongType>(dimsToExclude->size()) == rank) {  // return scalar or shape filled with unities
 
     if (!keepDims)
       outShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
@@ -173,7 +173,7 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
       for (const auto dim : *dimsToExclude) outShape[dim] = 1;
     } else {
       for (LongType i = 0, j = 0; i < rank; ++i) {
-        if (j < dimsToExclude->size() && i == dimsToExclude->at(j))
+        if (j < static_cast<sd::LongType>(dimsToExclude->size()) && i == dimsToExclude->at(j))
           ++j;
         else
           outShape.emplace_back(shapeInfo[i + 1]);
@@ -188,21 +188,20 @@ const LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vect
   return ret;
 }
 
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
+LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
                                                 NDArray& arr, const bool keepDims, const bool supportOldShapes,
                                                 memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
 }
 
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const LongType* shapeInfo, const bool keepDims,
+LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo, const bool keepDims,
                                                 const bool supportOldShapes, memory::Workspace* workspace) {
   return evalReduceShapeInfo(order, dimsToExclude, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims,
                              supportOldShapes, workspace);
 }
 
 //////////////////////////////////////////////////////////////////////////
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order,
+LongType* ShapeUtils::evalReduceShapeInfo(const char order,
                                                 std::vector<LongType>* dimsToExclude,
                                                 NDArray& arr,
                                                 const DataType dataType, const bool keepDims,
@@ -212,9 +211,8 @@ const LongType* ShapeUtils::evalReduceShapeInfo(const char order,
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
-const LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                const LongType* shapeInfo,
-                                                const DataType dataType,
+LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo,
+                                          const DataType dataType,
                                                 const bool keepDims,
                                                 const bool supportOldShapes,
                                                 memory::Workspace* workspace) {
@@ -321,7 +319,7 @@ std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vect
                                                   NDArray& arr) {
   if (axis < 0) axis += arr.rankOf();
 
-  if (repeats.size() != 1 && repeats.size() != arr.sizeAt(axis))
+  if (repeats.size() != 1 && static_cast<LongType>(repeats.size()) != arr.sizeAt(axis))
     THROW_EXCEPTION(
         "ShapeUtils::evalRepeatShape: size of repeats vector must be 1 or equal to dimension at given axis !");
 
@@ -369,7 +367,7 @@ LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDA
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-const LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
+LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
                                                    const bool setContigStrides) {
   LongType rank = arr.rankOf();
 
@@ -388,7 +386,7 @@ const LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspa
 //////////////////////////////////////////////////////////////////////////
 bool ShapeUtils::copyVectorPart(std::vector<LongType>& target, std::vector<LongType>& source, LongType rank,
                                 LongType offset) {
-  if (source.size() < offset + rank) return false;
+  if (static_cast<sd::LongType>(source.size()) < offset + rank) return false;
 
   for (LongType e = offset; e < offset + rank; e++) target.push_back(source[e]);
 
@@ -454,13 +452,10 @@ bool ShapeUtils::areShapesBroadcastable(const std::vector<LongType>& shape1, con
 //////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
 // if evalMinMax == false the array with larger rank has to be passed as first argument
-bool ShapeUtils::evalBroadcastShapeInfo(NDArray& max, NDArray& min, const bool evalMinMax,
-                                        const LongType*& resultShapeInfo, memory::Workspace* workspace) {
-  return evalBroadcastShapeInfo(max.shapeInfo(), min.shapeInfo(), evalMinMax, resultShapeInfo, workspace);
-}
 
-bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min, const bool evalMinMax,
-                                        const LongType*& resultShapeInfo, memory::Workspace* workspace) {
+
+bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bool evalMinMax,
+                                         LongType*& resultShapeInfo, memory::Workspace* workspace) {
   if (shape::shapeEquals(max, min)) {
     const int len = shape::shapeInfoLength(shape::rank(max));
     resultShapeInfo = new LongType[len];
@@ -520,68 +515,8 @@ bool ShapeUtils::evalBroadcastShapeInfo(const LongType* max, const LongType* min
     memset(shape::stride(tmpShapeInfo), 0, shape::rank(tmpShapeInfo) * sizeof(LongType));
   }
 
-  ShapeDescriptor* descriptor = new ShapeDescriptor(tmpShapeInfo, false);
-  resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor)->primary());
+  resultShapeInfo = (ConstantShapeHelper::getInstance().bufferForShapeInfo(tmpShapeInfo)->primary());
   return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
-bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<NDArray*>& arrays, LongType*& resultShapeInfo,
-                                              memory::Workspace* workspace) {
-  if (resultShapeInfo != nullptr)
-    THROW_EXCEPTION(
-        "ShapeUtils::evalCommonBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !");
-
-  LongType size = arrays.size();
-  LongType maxRank = arrays[size - 1]->rankOf();
-
-  for (LongType i = 0; i < size - 1; ++i) {
-    if (arrays[i]->rankOf() > maxRank) maxRank = arrays[i]->rankOf();
-    for (LongType j = i + 1; j < size; ++j)
-      if (!areShapesBroadcastable(*arrays[i], *arrays[j])) return false;
-  }
-
-  LongType* tmpShapeInfo = nullptr;
-  ALLOCATE(tmpShapeInfo, workspace, shape::shapeInfoLength(maxRank), sd::LongType);
-  memset(tmpShapeInfo, 0, shape::shapeInfoByteLength(maxRank));
-  tmpShapeInfo[0] = maxRank;
-
-  for (const auto& item : arrays) {
-    for (LongType i = -1; i >= -item->rankOf(); --i)
-      if (tmpShapeInfo[i + 1 + maxRank] < item->sizeAt(i)) tmpShapeInfo[i + 1 + maxRank] = item->sizeAt(i);
-  }
-
-  shape::updateStrides(tmpShapeInfo, arrays[0]->ordering(), false);
-  ArrayOptions::setDataType(tmpShapeInfo, arrays[0]->dataType());
-
-  auto bufferForShape = ConstantShapeHelper::getInstance().bufferForShapeInfo(tmpShapeInfo);
-  resultShapeInfo = const_cast<LongType*>(bufferForShape->primary());
-  return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger
-// rank for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
-std::vector<LongType> ShapeUtils::getDimsWithSameShape(NDArray& arr1, NDArray& arr2) {
-  NDArray *min, *max;
-
-  if (arr1.rankOf() >= arr2.rankOf()) {
-    max = &arr1;
-    min = &arr2;
-  } else {
-    max = &arr2;
-    min = &arr1;
-  }
-
-  const LongType rankDiff = max->rankOf() - min->rankOf();
-
-  std::vector<LongType> dims;
-
-  for (LongType i = 0; i < min->rankOf(); ++i)
-    if (min->sizeAt(i) == max->sizeAt(rankDiff + i)) dims.emplace_back(rankDiff + i);
-
-  return dims;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -648,27 +583,11 @@ std::string ShapeUtils::shapeAsString(NDArray* array) {
   return result;
 }
 
-std::string ShapeUtils::strideAsString(NDArray* array) {
-  std::string result;
-
-  auto shapeBuffer = array->shapeInfo();  // sd::LongType*
-  LongType rank = (LongType)*shapeBuffer;
-  result.append("[");
-  for (LongType e = 0; e < rank; e++) {
-    if (e > 0) result.append(",");
-    LongType stride = *(shapeBuffer + rank + 1 + e);
-    result += flatbuffers::NumToString(stride);
-  }
-  result.append("]");
-
-  return result;
-}
-
 std::string ShapeUtils::shapeAsString(const std::vector<LongType>& shape) {
   std::string result;
 
   result.append("[");
-  for (LongType e = 0; e < shape.size(); e++) {
+  for (size_t e = 0; e < shape.size(); e++) {
     result += flatbuffers::NumToString(shape.at(e));
     if (e < shape.size() - 1) result.append(", ");
   }
@@ -743,7 +662,7 @@ std::vector<LongType> ShapeUtils::shapeAsVector(const LongType* shapeInfo) {
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-const LongType* ShapeUtils::evalDiagShapeInfo(const LongType* shapeInfoConst, memory::Workspace* workspace) {
+LongType* ShapeUtils::evalDiagShapeInfo(LongType* shapeInfoConst, memory::Workspace* workspace) {
   auto shapeInfo = const_cast<LongType*>(shapeInfoConst);
 
   const auto rank = shape::rank(shapeInfo);
@@ -781,7 +700,7 @@ std::vector<LongType> ShapeUtils::evalBroadcastBackwardAxis(const LongType* oper
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-const LongType* ShapeUtils::matrixProductShape(const LongType* theFirstShape, const LongType* theSecondShape,
+LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theSecondShape,
                                                bool shouldTranspondFirst, bool shouldTranspondSecond, DataType dtype,
                                                memory::Workspace* workspace) {
   auto inA = theFirstShape;
@@ -855,37 +774,6 @@ const LongType* ShapeUtils::matrixProductShape(const LongType* theFirstShape, co
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::evalPermuteFromTo(const std::vector<LongType>& shapeFrom,
-                                                    const std::vector<LongType>& shapeTo) {
-  auto rank = shapeFrom.size();
-  if (rank != shapeTo.size())
-    THROW_EXCEPTION(
-        "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
-
-  if (std::equal(begin(shapeFrom), end(shapeFrom),
-                 begin(shapeTo)))  // if shapes are identical (permutation is unnecessary) then return empty vector
-    return std::vector<LongType>();
-
-  std::vector<LongType> permutation(rank, -2);  // vector to be returned
-  std::vector<LongType> shapeTo2(shapeTo);      // make copy of const vector since we will change the content of shapeTo
-
-  for (LongType i = 0; i < rank; ++i)
-    for (LongType j = 0; j < rank; ++j)
-      if (shapeFrom[i] == shapeTo2[j]) {
-        permutation[j] = i;
-        shapeTo2[j] = -2;  // mark coincidence as -2 in order to not account index of shapeTo twice
-        break;
-      }
-
-  if (std::find(begin(permutation), end(permutation), -2) !=
-      end(permutation))  // if -2 is still present in vector then permutation is impossible
-    THROW_EXCEPTION(
-        "ShapeUtils::evalPermutFromTo static method: the input shapes are not suitable for mutual permutation !");
-
-  return permutation;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 std::vector<LongType> ShapeUtils::composeShapeUsingDimsAndIdx(const std::vector<LongType>& dimsAndIdx) {
   auto size = dimsAndIdx.size();
   if (size % 2 != 0)
@@ -896,9 +784,9 @@ std::vector<LongType> ShapeUtils::composeShapeUsingDimsAndIdx(const std::vector<
   std::vector<LongType> shape(size);
   LongType index;
 
-  for (LongType i = 0; i < size; ++i) {
+  for (LongType i = 0; i < static_cast<LongType>(size); ++i) {
     index = dimsAndIdx[i + size];
-    if (index > size - 1)
+    if (index > static_cast<LongType>(size - 1))
       THROW_EXCEPTION("ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !");
     shape[index] = dimsAndIdx[i];
   }
@@ -990,22 +878,13 @@ std::vector<LongType> ShapeUtils::evalShapeForMatmul(const LongType* xShapeInfo,
 LongType ShapeUtils::getNumOfSubArrs(const LongType* shapeInfo, const std::vector<LongType>& dimsToExclude) {
   LongType numOfSubArrs = 1;
 
-  if (dimsToExclude.size() == shape::rank(shapeInfo) ||
+  if (static_cast<sd::LongType>(dimsToExclude.size()) == shape::rank(shapeInfo) ||
       dimsToExclude.size() == 0)  // means there is only one sub-array and it coincides with whole array
     return numOfSubArrs;
 
   for (const auto& dim : dimsToExclude) numOfSubArrs *= shapeInfo[dim + 1];
 
   return numOfSubArrs;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::evalDimsWithoutUnities(const LongType* shapeInfo) {
-  std::vector<LongType> result;
-  for (LongType i = 1; i <= shapeInfo[0]; ++i)
-    if (shapeInfo[i] != 1) result.push_back(shapeInfo[i]);
-
-  return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1021,57 +900,9 @@ void ShapeUtils::updateStridesAndType(LongType* dest, const DataType dtype, cons
   ArrayOptions::setDataType(dest, dtype);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-std::vector<LongType> ShapeUtils::tadAxesForSimpleBroadcast(NDArray max, NDArray min) {
-  const LongType maxRank = max.rankOf();
-  const LongType minRank = min.rankOf();
-  const LongType diff = maxRank - minRank;
-
-  LongType numOfMinTads(1), numOfMaxTads(1);
-  std::vector<LongType> maxTadDims;
-
-  for (LongType i = 0; i < minRank; ++i) {
-    if (min.sizeAt(i) == max.sizeAt(diff + i))
-      maxTadDims.push_back(diff + i);
-    else {
-      numOfMinTads *= min.sizeAt(i);
-      numOfMaxTads *= max.sizeAt(i);
-    }
-  }
-
-  if (min.lengthOf() > max.lengthOf()) {  // in this case tad is max array
-    for (LongType i = 0; i < diff; ++i) numOfMaxTads *= max.sizeAt(i);
-
-    return numOfMaxTads == 1 ? maxTadDims : std::vector<LongType>();
-  }
-
-  return numOfMinTads == 1 ? maxTadDims : std::vector<LongType>();
-}
-
-void ShapeUtils::copyCertainStridesFromShapeInfo(const LongType* inShapeInfo, const LongType nRank,
-                                                 const LongType dimsSize, const LongType* dims, LongType* outStrides) {
-  LongType yRank = shape::rank(inShapeInfo);
-  auto yOrigStride = shape::stride(inShapeInfo);
-
-  if (yRank == nRank) {
-    for (LongType i = 0; i < yRank; ++i) {
-      // x[2,3,4] * y[2,1,4] = z[2,3,4]
-      outStrides[i] = (1 == shape::sizeAt(inShapeInfo, i)) ? 0 : yOrigStride[i];
-    }
-  } else {
-    auto dimEx = evalDimsToExclude(nRank, dimsSize, dims);
-
-    for (LongType i = 0, it = 0; i < nRank; ++i) {
-      auto nCount = std::count(dimEx->cbegin(), dimEx->cend(), i);
-      outStrides[i] = (0 == nCount) ? yOrigStride[it++] : 0;
-      if (it == yRank) break;
-    }
-  }
-}
-
 bool ShapeUtils::areShapesEqual(const LongType* shapeInfo, const std::vector<LongType>& shapeOnly) {
   LongType  rank = shape::rank(shapeInfo);
-  if (rank != shapeOnly.size()) {
+  if (rank != static_cast<sd::LongType>(shapeOnly.size())) {
     return false;
   }
 
@@ -1095,7 +926,7 @@ std::vector<LongType>* ShapeUtils::evalDimsForReduceOp(const LongType rank,
   for (LongType j = 0; j < dimsExcludeLen; j++) {
     LongType currElement = dimsToExclude->at(j);
     bool contains = false;
-    for (int i = 0; i < output->size(); i++) {
+    for (size_t i = 0; i < output->size(); i++) {
       if (output->at(i) == currElement) {
         contains = true;
         break;

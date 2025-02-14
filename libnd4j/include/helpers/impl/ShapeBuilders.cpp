@@ -194,7 +194,7 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
   bool isEmpty = false;
   //shape size 1 but 0 can be scalar
   if(shapeOnly.size() > 1)
-    for(int i = 0; i < shapeOnly.size(); i++) {
+    for(size_t i = 0; i < shapeOnly.size(); i++) {
       if(shapeOnly[i] == 0) {
         isEmpty = true;
         break;

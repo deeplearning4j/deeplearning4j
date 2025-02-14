@@ -56,25 +56,14 @@ class SD_LIB_EXPORT SpecialMethods {
   static void concatCpuGeneric(LongType dimension, int numArrays, NDArray **inArrs,
                                NDArray *result);
   static void splitCpuGeneric(NDArray&input, const std::vector<NDArray *> &outArrs, const LongType axis);
-  static void accumulateGeneric(NDArray **x, NDArray *z, int n, const sd::LongType length);
-  static void averageGeneric(NDArray **x, NDArray *z, int n, const sd::LongType length, bool propagate);
 
-  static sd::LongType getPosition(NDArray *input, sd::LongType index);
   static void quickSort_parallel_internal(NDArray *x, int left, int right, int cutoff,
                                           bool descending);
   static void quickSort_parallel(NDArray *x, int numThreads,
                                  bool descending);
 
-  static int nextPowerOf2(int number);
-  static int lastPowerOf2(int number);
-
   static void sortGeneric(NDArray *input, bool descending);
   static void sortTadGeneric(NDArray *input, sd::LongType  *dimension, int dimensionLength,bool descending);
-
-  static void decodeBitmapGeneric(NDArray *dx, NDArray *z,sd::LongType N);
-  static sd::LongType encodeBitmapGeneric(NDArray *x, sd::LongType N,
-                                          LongType *dz,
-                                          float threshold);
 };
 
 template <typename X, typename Y>

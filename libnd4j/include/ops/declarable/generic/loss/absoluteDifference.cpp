@@ -143,7 +143,7 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
 
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-  LongType const* outShapeInfo = nullptr;
+  LongType * outShapeInfo = nullptr;
 
   if (INT_ARG(0) != 0) {  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);

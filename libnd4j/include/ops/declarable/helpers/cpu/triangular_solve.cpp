@@ -168,6 +168,8 @@ sd::Status triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput
                                   bool adjoint, NDArray* output) {
   BUILD_SINGLE_SELECTOR(leftInput->dataType(), return triangularSolveFunctor_,
                         (context, leftInput, rightInput, lower, adjoint, output), SD_FLOAT_NATIVE);
+
+
 }
 
 void adjointMatrix(sd::LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {

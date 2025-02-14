@@ -17,9 +17,9 @@
  ******************************************************************************/
 #include <build_info.h>
 #include <config.h>
-
+#include <system/type_boilerplate.h>
 #include <string>
-
+#include "array/DataTypeUtils.h"
 #include "helpers/logger.h"
 
 #if defined(SD_GCC_FUNCTRACE)
@@ -106,6 +106,13 @@ const char *buildInfo() {
   //risk of build information not being printed during debug settings
   if(isFuncTrace())
     sd_printf("%s", ret2->c_str());
+  printf("Numeric types: ");
+  PRINT_TYPE_LIST(SD_NUMERIC_TYPES);
+  printf("Common types: ");
+  PRINT_TYPE_LIST(SD_COMMON_TYPES);
+  PRINT_TYPE_LIST(SD_STRING_TYPES);
+  fflush(stdout);
+
   return ret2->c_str();
 }
 

@@ -103,24 +103,24 @@ static void prefix_(scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool
 };
 
 void prefix(sd::LaunchContext* context, scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse) {
-  BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, exclusive, reverse), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, exclusive, reverse), SD_NUMERIC_TYPES);
 }
 
 void prefix(sd::LaunchContext* context, scalar::Ops op, NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims,
             bool exclusive, bool reverse) {
-  BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), SD_NUMERIC_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void prefix_,
                       (scalar::Ops op, const void* vx, sd::LongType const* xShapeInfo, void* vz,
                           sd::LongType const* zShapeInfo, bool exclusive, bool reverse),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
                       (scalar::Ops op, NDArray* x, NDArray* z, const std::vector<sd::LongType>& dims, bool exclusive,
                           bool reverse),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void prefix_,
-                      (scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse), SD_COMMON_TYPES);
+                      (scalar::Ops op, NDArray* x, NDArray* z, bool exclusive, bool reverse), SD_NUMERIC_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

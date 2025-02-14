@@ -239,7 +239,7 @@ class SD_LIB_EXPORT Context : public ContextPrototype {
   }
 
   void setIntermediateResult(int idx, NDArray* array) {
-    if(intermediateResults().size() < idx) {
+    if(static_cast<int>(intermediateResults().size()) < idx) {
         intermediateResults().resize(idx + 1);
     }
 

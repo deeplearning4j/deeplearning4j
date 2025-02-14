@@ -367,7 +367,6 @@ class TruncatedNormalDistribution {
     sd::LongType  *xShape = shape::shapeOf(xShapeBuffer);
     sd::LongType xRank = shape::rank(xShapeBuffer);
     sd::LongType *xStride = shape::stride(xShapeBuffer);
-    const T epsilon = static_cast<T>(1e-5);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto e = start; e < stop; e++) {

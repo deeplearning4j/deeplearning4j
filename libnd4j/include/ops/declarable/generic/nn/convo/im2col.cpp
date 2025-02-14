@@ -121,9 +121,6 @@ CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
   LongType pW = INT_ARG(5);
   LongType dY = INT_ARG(6);  // Dilation, height/y dimension
   LongType dX = INT_ARG(7);  // Dilation, width/x dimension
-  int paddingMode = INT_ARG(8);
-  double zeroPadVal = 0.0;
-  if (block.getTArguments()->size() > 0) zeroPadVal = T_ARG(0);
 
   // Assuming NCHW format here
   int imgH = input->sizeAt(2);

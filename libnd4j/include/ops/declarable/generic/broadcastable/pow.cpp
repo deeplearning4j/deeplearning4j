@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   auto dLdx = OUTPUT_VARIABLE(0);
   auto dLdy = OUTPUT_VARIABLE(1);
 
-  const LongType* dLdzShapeInfo = nullptr;
+   LongType* dLdzShapeInfo = nullptr;
   const bool areShapesBroadcastable =
       ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
   REQUIRE_TRUE(areShapesBroadcastable, 0,

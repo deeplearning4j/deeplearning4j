@@ -139,7 +139,7 @@ static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
 
     ResultSet listOfTensors = outputList[0]->allTensorsAlongDimension(sourceDims);
 
-    for (sd::LongType i = 0; i < inputGradientList.size(); i++) {
+    for (size_t i = 0; i < inputGradientList.size(); i++) {
       outputs[i].first = inputGradientList[i];
       if (outputs[i].first->rankOf() < 1) continue;  // skip empty gradient outs
       std::vector<sd::LongType > outDims(outputs[i].first->rankOf() - 1);
@@ -151,7 +151,7 @@ static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
       outputs[i].second = 0;
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indices->e<sd::LongType>(e) == i) listOfTensors.at(e)->assign(*listOutForCurrent.at(outputs[i].second++));
+        if (indices->e<sd::LongType>(e) == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(*listOutForCurrent.at(outputs[i].second++));
     }
   } else {  // one-dimensional case
     auto output = outputList[0];

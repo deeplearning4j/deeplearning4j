@@ -168,7 +168,7 @@ static sd::LongType nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArra
   T similarity, originalScore;
   Candidate nextCandidate;
 
-  while (selected.size() < outputSize && !candidatePriorityQueue.empty()) {
+  while (selected.size() < static_cast<size_t>(outputSize) && !candidatePriorityQueue.empty()) {
     nextCandidate = candidatePriorityQueue.top();
     originalScore = nextCandidate._score;
     candidatePriorityQueue.pop();

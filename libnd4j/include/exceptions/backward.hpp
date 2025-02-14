@@ -4304,11 +4304,14 @@ private:
   sig_handler(int signo, siginfo_t *info, void *_ctx) {
     handleSignal(signo, info, _ctx);
 
+if(info != nullptr) {
     // try to forward the signal.
     raise(info->si_signo);
 
+    }
+
     // terminate the process immediately.
-    puts("watf? exit");
+    puts("EXIT FAILURE");
     _exit(EXIT_FAILURE);
   }
 };

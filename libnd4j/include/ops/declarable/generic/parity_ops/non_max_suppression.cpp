@@ -82,8 +82,7 @@ CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(non_max_suppression) {
   auto in = inputShape->at(0);
-  int outRank = shape::rank(in);
-  const LongType *outputShape = nullptr;
+  LongType *outputShape = nullptr;
 
   int maxOutputSize;
   if (block.width() > 2)

@@ -1562,36 +1562,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, sd::
   }
 }
 
-void average(sd::Pointer *extras,
-             OpaqueNDArrayArr x,
-             OpaqueNDArray z,int n, sd::LongType length, bool propagate) {
-  try {
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    int mode = getDeviceId(extras[3]);
 
-    if (sd::Environment::getInstance().isDebugAndVerbose()) printf("averageFloat called\n");
-
-    auto xType = x[0]->dataType();
-
-    // launching on gpu
-    if (mode == 0) {
-      dim3 launchDims = getLaunchDims("average");
-      std::vector<void*> xBuffers(n);
-      for (int i = 0; i < n; ++i) {
-        xBuffers[i] = x[i]->specialBuffer();
-      }
-
-      BUILD_SINGLE_SELECTOR(xType, sd::averagingKernelGeneric, (launchDims, stream, xBuffers.data(), z->specialBuffer(), n, length, propagate), SD_COMMON_TYPES);
-      sd::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
-    } else {
-      // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::averageGeneric(x, z, n, length, propagate), SD_COMMON_TYPES);
-    }
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 void accumulate(sd::Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, sd::LongType length) {
   try {
@@ -1617,7 +1588,7 @@ void accumulate(sd::Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n
       sd::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
     } else {
       // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(x, z, n, length), SD_COMMON_TYPES);
+      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(x, z, n, length), SD_NUMERIC_TYPES);
     }
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

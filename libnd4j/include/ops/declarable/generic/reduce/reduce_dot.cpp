@@ -63,7 +63,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
       keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(
-        dimensions.size() <= x->rankOf(), 0,
+        dimensions.size() <= static_cast<size_t>(x->rankOf()), 0,
         "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
         dimensions.size());
 
@@ -93,7 +93,6 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(reduce_dot_bp) {
   if (shape::length(inputShape->at(2)) > 1) {
-    bool keepDims = false;
     auto dimensions = *block.getIArguments();
 
     if (block.width() > 3) {
@@ -101,13 +100,9 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
       helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
 
-    if (block.getBArguments()->size())
-      keepDims = B_ARG(0);
-    else if (block.getTArguments()->size())
-      keepDims = (bool)T_ARG(0);
 
     REQUIRE_TRUE(
-        dimensions.size() <= inputShape->at(0)[0], 0,
+        dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
         "REDUCE_DOT_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
         dimensions.size());
 

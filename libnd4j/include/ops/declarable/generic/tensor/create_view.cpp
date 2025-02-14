@@ -31,8 +31,6 @@ namespace ops {
 
 CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto inputBase = INPUT_VARIABLE(0);
-  auto numInterval = 0;
-  auto numAll = 0;
   auto numNewAxis = 0;
   auto numPoint = 0;
   auto indicesPerIndex = std::vector<std::vector<LongType>>();
@@ -46,7 +44,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto inIdx = 0;
   std::vector<std::vector<LongType>> indexVectors;
   //note we iterate from i + 1 for each input so we only go to block input size - 1
-  for (LongType i = 0; i < block.width() - 1; i++) {
+  for (size_t i = 0; i < block.width() - 1; i++) {
     //first element is the input we are creating the view from
     auto inputIndex = INPUT_VARIABLE(i + 1);
     auto indexVector = inputIndex->asVectorT<LongType>();
@@ -57,11 +55,9 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
       numPoint++;
       inclusive.push_back(1);
     } else if(indexType == INTERVAL_TYPE) {
-      numInterval++;
       //the end indicates inclusive or not
       inclusive.push_back(indexVector[indexVector.size() - 1]);
     } else if(indexType == ALL_TYPE) {
-      numAll++;
       inclusive.push_back(1);
     } else if(indexType == NEW_AXIS) {
       numNewAxis++;
@@ -78,15 +74,14 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
   auto numIndices = block.width() - 1;
 
   // Padding remaining dimensions with all() index if too few indices provided
-  if (numIndices - numNewAxis < inputBase->rankOf()) {
+  if (numIndices - numNewAxis < static_cast<size_t>(inputBase->rankOf())) {
     for (int e = numIndices; e < inputBase->rankOf() + numNewAxis; e++) {
-      numAll++;
       indexTypes.push_back(ALL_TYPE);
       indexVectors.push_back(NDIndexUtils::createAll().asVectorT<LongType>());
     }
   }
 
-  for (LongType i = 0; i < indexVectors.size(); i++) {
+  for (size_t i = 0; i < indexVectors.size(); i++) {
     auto indexVector = indexVectors[i];
     auto indexType = indexVector[0];
     auto currDimension = i;
@@ -100,7 +95,7 @@ CUSTOM_OP_IMPL(create_view, -2, -1, true, 0, -2) {
 
     //accumulate the target indices
     //prevent out of bounds
-    for (LongType j = 0; j < indexVector.size() - indexOffset; j++) {
+    for (size_t j = 0; j < indexVector.size() - indexOffset; j++) {
       indexIndices.push_back(indexVector[j + indexOffset]);
     }
 

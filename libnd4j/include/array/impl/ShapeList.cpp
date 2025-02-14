@@ -25,7 +25,7 @@
 namespace sd {
 
 
-ShapeList::ShapeList(const LongType* shape) {
+ShapeList::ShapeList(LongType* shape) {
   if (shape != nullptr) push_back(shape);
 }
 
@@ -33,16 +33,16 @@ ShapeList::~ShapeList() {
   if (_autoremovable) destroy();
 }
 
-ShapeList::ShapeList(const std::vector<const LongType*>& shapes, bool isWorkspace)
+ShapeList::ShapeList(const std::vector< LongType*>& shapes, bool isWorkspace)
 
   {
-  for (int i = 0; i < shapes.size(); i++) {
+  for (size_t i = 0; i < shapes.size(); i++) {
     push_back(shapes[i]);
   }
   _workspace = isWorkspace;
 }
 
-ShapeList::ShapeList(const std::vector<const LongType*>& shapes) {
+ShapeList::ShapeList(const std::vector< LongType*>& shapes) {
   _shapes = shapes;
 }
 
@@ -61,7 +61,7 @@ int ShapeList::size() const {
   return (int)_shapes.size();
 }
 
-const LongType* ShapeList::at(int idx) {
+ LongType* ShapeList::at(int idx) {
 
   if (size() <= idx || idx < 0) {
     std::string errorMessage;
@@ -73,7 +73,7 @@ const LongType* ShapeList::at(int idx) {
   return _shapes[idx];
 }
 
-void ShapeList::push_back(const LongType* shape) {
+void ShapeList::push_back( LongType* shape) {
   _shapes.push_back(shape);
 }
 

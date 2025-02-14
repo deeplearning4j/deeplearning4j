@@ -28,7 +28,7 @@
 namespace sd {
 namespace ops {
 CUSTOM_OP_IMPL(shapes_of, -1, -1, false, 0, 0) {
-  for (int e = 0; e < block.width(); e++) {
+  for (size_t e = 0; e < block.width(); e++) {
     auto x = INPUT_VARIABLE(e);
     auto z = OUTPUT_VARIABLE(e);
 

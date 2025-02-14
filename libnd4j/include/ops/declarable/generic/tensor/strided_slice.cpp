@@ -30,7 +30,7 @@
 namespace sd {
 namespace ops {
 
-constexpr int kShrinkAxis = -1, kNewAxis = -2;
+constexpr size_t kShrinkAxis = -1, kNewAxis = -2;
 
 struct StridedSliceSparseSpec {
   int dims;
@@ -57,11 +57,11 @@ struct StridedSliceDenseSpec {
 
  public:
   bool buildDenseSpec(StridedSliceSparseSpec& sparse_spec) {
-    if (this->begin.size() < dims) this->begin.resize(dims);
+    if (this->begin.size() < static_cast<size_t>(dims)) this->begin.resize(dims);
 
-    if (this->end.size() < dims) this->end.resize(dims);
+    if (this->end.size() < static_cast<size_t>(dims)) this->end.resize(dims);
 
-    if (this->strides.size() < dims) this->strides.resize(dims);
+    if (this->strides.size() < static_cast<size_t>(dims)) this->strides.resize(dims);
     this->begin_mask = 0;
     this->end_mask = 0;
     this->shrink_axis_mask = 0;
@@ -87,7 +87,7 @@ struct StridedSliceDenseSpec {
         } else if ((1 << e) & sparse_spec.new_axis_mask) {
           this->final_shape_gather_indices.emplace_back(kNewAxis);
         } else {
-          if (full_index == this->begin.size()) {
+          if (static_cast<size_t>(full_index) == this->begin.size()) {
             return false;
           }
 
@@ -153,13 +153,24 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     sparse_spec.dims++;  // this effects loop iteration below
   }
 
-  StridedSliceDenseSpec dense_spec = {(int)input_shape.size(), 0, 0, false, false, begin, end, strides};
+  StridedSliceDenseSpec dense_spec = {
+      (int)input_shape.size(),  // dims
+      0,                        // begin_mask
+      0,                        // end_mask
+      false,                    // begin_valid
+      false,                    // end_valid
+      begin,                    // begin (reference)
+      end,                      // end (reference)
+      strides,                  // strides (reference)
+      {},                       // final_shape_gather_indices (empty vector)
+      0                         // shrink_axis_mask
+  };
   if (!dense_spec.buildDenseSpec(sparse_spec)) return false;
 
 
   for (int e = 0; e < (int)input_shape.size(); e++) {
-    int begin_idx = begin[e];
-    int end_idx = end[e];
+    sd::LongType begin_idx = begin[e];
+    sd::LongType end_idx = end[e];
     int stride_idx = strides[e];
     int size_idx = input_shape[e];
 
@@ -176,7 +187,7 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
     const std::array<int, 2> masks = {{dense_spec.begin_mask & (1 << e), dense_spec.end_mask & (1 << e)}};
     const std::array<int, 2> valid_range = {{stride_idx > 0 ? 0 : -1, stride_idx > 0 ? size_idx : size_idx - 1}};
 
-    auto canonical = [stride_idx, e, size_idx, masks, valid_range](int x, int c) {
+    auto canonical = [stride_idx, size_idx, masks, valid_range](int x, int c) {
       if (masks[c]) {
         return stride_idx > 0 ? valid_range[c] : valid_range[(c + 1) & 1];
       } else {
@@ -258,15 +269,11 @@ bool _preprocess_strided_slice(std::vector<LongType>* indicesList, std::vector<L
 
   std::vector<int> * postshape = new std::vector<int>();
   final_shape->clear();
-  for (auto gather_index : dense_spec.final_shape_gather_indices) {
-    if (gather_index >= 0) {
-      if (preshape.size() > gather_index)
-        final_shape->emplace_back(preshape.at(gather_index));
-      else
-        final_shape->emplace_back(1);
-    } else if (gather_index == kNewAxis) {
+  for (size_t gather_index : dense_spec.final_shape_gather_indices) {
+    if (preshape.size() > gather_index)
+      final_shape->emplace_back(preshape.at(gather_index));
+    else
       final_shape->emplace_back(1);
-    }
   }
 
 
@@ -303,7 +310,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     delta = dim_values % 3;
     elements = dim_values / 3;
 
-    for (int e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
+    for (size_t e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
 
     REQUIRE_TRUE(delta == 0, 0,
                  "StridedSlice: Number of Integer arguments should be equal to input rank x 3 = %i, but got %i instead",
@@ -356,7 +363,7 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
   std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
   std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
   if (shrink_axis_mask == 0)
-    for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
+    for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
       if (moveAxes[dim]) continue;
 
       if (b < begin->size() && !ignoreBegin[b] && !addAxes[dim]) {
@@ -445,7 +452,7 @@ DECLARE_SHAPE_FN(strided_slice) {
   if (block.width() > 1) {
     begin = INPUT_VARIABLE(1)->template asVectorT<LongType>();
     end = INPUT_VARIABLE(2)->template asVectorT<LongType>();
-    for(int  e = 0; e < end.size(); e++) {
+    for(size_t  e = 0; e < end.size(); e++) {
       if(end[e] < 0) {
         end[e] += inShape[e];
       }
@@ -453,10 +460,9 @@ DECLARE_SHAPE_FN(strided_slice) {
 
     strides = INPUT_VARIABLE(3)->template asVectorT<LongType>();
   } else if (dim_values > 0) {
-    int delta2 = dim_values / x_rank;
 
     std::vector<LongType> *args = new std::vector<LongType>();
-    for (int e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
+    for (size_t e = 5; e < block.getIArguments()->size(); e++) args->emplace_back(INT_ARG(e));
 
     // FIXME: probably template required here
     ShapeUtils::copyVectorPart(begin, *args, elements, 0);
@@ -513,7 +519,6 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   std::vector<LongType> end;
   std::vector<LongType> strides;
 
-  bool isLive = false;
 
   std::vector<LongType> args;
 
@@ -523,7 +528,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     delta = dim_values % 3;
     elements = dim_values / 3;
 
-    for (int e = 5; e < block.getIArguments()->size(); e++) args.emplace_back(INT_ARG(e));
+    for (size_t e = 5; e < block.getIArguments()->size(); e++) args.emplace_back(INT_ARG(e));
 
     REQUIRE_TRUE(
         delta == 0, 0,
@@ -535,7 +540,6 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
 
   } else if (block.width() >= 3) {
-    isLive = true;
 
     auto v_begin = INPUT_VARIABLE(2);
     auto v_end = INPUT_VARIABLE(3);
@@ -581,7 +585,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   std::vector<LongType> addAxes = BitwiseUtils::valueBits(new_axis_mask);
   std::vector<LongType> moveAxes = BitwiseUtils::valueBits(shrink_axis_mask);
 
-  for (int dim = 0, b = 0, e = 0; dim < x->rankOf(); ++dim) {
+  for (size_t dim = 0, b = 0, e = 0; dim < static_cast<size_t>(x->rankOf()); ++dim) {
     if (moveAxes[dim]) continue;
 
     if (b < begin.size() && !ignoreBegin[b] && !addAxes[dim]) {
@@ -620,7 +624,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   //
   // the first case: only for scalar gradient step
   if (epsNext->lengthOf() == 1 &&
-      (indices.size() == 3 && (indices[1] - indices[0]) == 1 || (indices[2] - indices[0] == 1))) {
+      ((indices.size() == 3 && (indices[1] - indices[0]) == 1) || (indices[2] - indices[0] == 1))) {
     output->p(indices[0], *epsNext);
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);

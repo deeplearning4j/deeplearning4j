@@ -110,7 +110,7 @@ SD_HOST_DEVICE bool isEmpty(sd::LongType *shapeInfo);
 SD_LIB_EXPORT SD_HOST_DEVICE bool shapeEquals(int shape1Rank, const sd::LongType *shape1, int shape2Rank,
                                               const sd::LongType *shape2);
 
-SD_LIB_EXPORT SD_HOST_DEVICE const sd::LongType *detachShape(const sd::LongType *originalShape);
+SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *detachShape(sd::LongType *originalShape);
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *copyShape(sd::LongType const *originalShape);
 
@@ -203,7 +203,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE void updateStrides(const sd::LongType rank, const s
 
 
 
-SD_LIB_EXPORT SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer);
 
 
 SD_LIB_EXPORT SD_HOST_DEVICE void doPermuteShapeInfo(sd::LongType *shapeBuffer, const sd::LongType *rearrange,
@@ -250,13 +249,13 @@ SD_LIB_EXPORT SD_HOST_DEVICE int isVector(sd::LongType const *shape, int rank);
 
 
 
-SD_LIB_EXPORT SD_HOST_DEVICE int isVector(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE int isVector(sd::LongType *shapeInfo);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isLikeVector(sd::LongType const *shapeInfo, int &posOfNonUnityDim);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, sd::LongType &posOfNonUnityDim);
 
-SD_LIB_EXPORT SD_HOST_DEVICE bool isRowVector(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_HOST_DEVICE bool isRowVector(sd::LongType *shapeInfo);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isColumnVector(sd::LongType const *shapeInfo);
 
@@ -303,7 +302,11 @@ SD_LIB_EXPORT SD_HOST_DEVICE T *copyOf(sd::LongType length, T const *toCopy, T *
 */
 
 template <typename T>
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void copyTo(sd::LongType length, T  *from, T *to);
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void copyTo(sd::LongType length, T  *from, T *to) {
+  for (sd::LongType i = 0; i < length; i++) {
+    to[i] = from[i];
+  }
+}
 
 
 /**
@@ -667,9 +670,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, 
             (coords)[0] = idx / (shape)[1];                               \
         }                                                                  \
         else {                                                            \
-            for (sd::LongType i = (rank) - 1; i > 0; --i) {              \
-                (coords)[i] = idx % (shape)[i];                           \
-                idx /= (shape)[i];                                        \
+            for (sd::LongType i10 = (rank) - 1; i10 > 0; --i10) {   /* avoid variable name clashes with normal i */           \
+                (coords)[i10] = idx % (shape)[i10];                           \
+                idx /= (shape)[i10];                                        \
             }                                                             \
             (coords)[0] = idx;                                            \
         }                                                                 \
@@ -728,8 +731,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, 
         }                                                                 \
         else {                                                           \
             (index_var) = 0;                                             \
-            for (sd::LongType i = 0; i < (rank); ++i) {                  \
-                (index_var) += (coords)[i] * (strides)[i];               \
+            for (sd::LongType i10 = 0; i10 < (rank); ++i10) {                  \
+                (index_var) += (coords)[i10] * (strides)[i10];               \
             }                                                            \
         }                                                                \
     } while (0)
@@ -755,7 +758,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType subArrayIndex(sd::LongType m
 }
 
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF(const sd::LongType *shapeBuffer) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool strideDescendingCAscendingF( sd::LongType *shapeBuffer) {
   sd::LongType rank = shape::rank(shapeBuffer);
   sd::LongType *strides = shape::stride(const_cast<sd::LongType *>(shapeBuffer));
   char order = shape::order(shapeBuffer);
@@ -1212,19 +1215,19 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void printShapeInfo(const sd::LongType *shapeInf
 
   sd::LongType rank = shape::rank(shapeInfo);
   if (rank == 0) {
-    printf("Rank %d\n", rank);
+    printf("Rank %lld\n", rank);
     printf("Buffer is:");
     for (int i = 0; i < shapeInfoLength(rank); i++) {
       printf(" %lld ", shapeInfo[i]);
     }
 
     auto flags = sd::ArrayOptions::enumerateSetFlags(shapeInfo);
-    printf(flags);
+    printf("%s", flags);
     printf("\n");
     return;
   }
   sd::LongType *shape = shapeOf(shapeInfo);
-  printf("Rank %d\n", rank);
+  printf("Rank %lld\n", rank);
   printf("Shape:\n");
   for (int i = 0; i < rank; i++) {
     printf(" %lld ", (sd::LongType)shape[i]);
@@ -1248,7 +1251,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void printShapeInfo(const sd::LongType *shapeInf
   }
 
   auto flags = sd::ArrayOptions::enumerateSetFlags(shapeInfo);
-  printf(flags);
+  printf("%s", flags);
   printf("\n");
 }
 
@@ -1664,7 +1667,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isCommonVector(const sd::LongType *s
 
 
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType const *detachShape(sd::LongType const *originalShape) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *detachShape(sd::LongType *originalShape) {
   sd::LongType *newShape = new sd::LongType[shapeInfoLength(originalShape)];
   memcpy(newShape, originalShape, shapeInfoByteLength(originalShape));
 
@@ -1672,17 +1675,17 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType const *detachShape(sd::LongT
 }
 
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int isVector(const sd::LongType *shapeInfo) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int isVector(sd::LongType *shapeInfo) {
   return isVector(shapeOf(const_cast<sd::LongType *>(shapeInfo)), rank(shapeInfo));
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isRowVector(const sd::LongType *shapeInfo) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isRowVector(sd::LongType *shapeInfo) {
   bool isVector = shape::isVector(shapeInfo) == 1;
   bool shapeFirstOne = shapeOf(const_cast<sd::LongType *>(shapeInfo))[0] == 1;
   return isVector && shapeFirstOne;
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isColumnVector(const sd::LongType *shapeInfo) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isColumnVector( sd::LongType *shapeInfo) {
   bool isVector = shape::isVector(shapeInfo) == 1;
   bool shapeFirstOne = shapeOf(shapeInfo)[0] == 1;
   return isVector && !shapeFirstOne;

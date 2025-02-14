@@ -150,6 +150,8 @@ sd::Status topKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* valu
                        const sd::LongType k, bool needSort) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indices, k, needSort),
                         SD_NUMERIC_TYPES);
+
+
 }
 
 sd::Status inTopKFunctor(sd::LaunchContext* context, NDArray* input, NDArray* target, NDArray* result,

@@ -41,9 +41,8 @@ CUSTOM_OP_IMPL(unique, 1, 2, false, 0, 0) {
 DECLARE_SHAPE_FN(unique) {
   auto in = inputShape->at(0);
   auto source = INPUT_VARIABLE(0);
-  //            auto shapeList = SHAPELIST();
-  const LongType* valuesShape;
-  const LongType* indicesShape;
+   LongType* valuesShape;
+   LongType* indicesShape;
 
   int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 
@@ -56,7 +55,6 @@ DECLARE_SHAPE_FN(unique) {
   // second output is always LONG
   indicesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::length(in), INT64);
 
-  // COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 
   return SHAPELIST(valuesShape, indicesShape);
 }

@@ -33,31 +33,6 @@
 
 namespace sd {
 
-
-std::vector<LongType> StringUtils::determineOffsets(const std::string& input, const std::vector<LongType>& lengths) {
-  std::vector<LongType> offsets(lengths.size());
-  LongType offset = 0;
-  for(size_t i = 0; i < lengths.size(); i++) {
-    offsets[i] = offset;
-    offset += lengths[i];
-  }
-  return offsets;
-}
-
-std::vector<LongType> StringUtils::determineLengths(const std::string& input) {
-  std::vector<LongType> lengths;
-  size_t pos = 0;
-  size_t next = 0;
-  while((next = input.find('\0', pos)) != std::string::npos) {
-    lengths.push_back(next - pos);
-    pos = next + 1;
-  }
-  if(pos < input.size()) {
-    lengths.push_back(input.size() - pos);
-  }
-  return lengths;
-}
-
 void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArray* input, DataType zType) {
   switch(zType) {
     case UTF8: {
@@ -72,7 +47,7 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
           arr->p<std::string>(idx, std::string(input->e<std::u32string>(idx).begin(), input->e<std::u32string>(idx).end()));
           break;
         default:
-          throw std::runtime_error("Unsupported DataType for source string.");
+         THROW_EXCEPTION("Unsupported DataType for source string.");
       }
       break;
     }
@@ -88,7 +63,7 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
           arr->p<std::u16string>(idx, std::u16string(input->e<std::u32string>(idx).begin(), input->e<std::u32string>(idx).end()));
           break;
         default:
-          throw std::runtime_error("Unsupported DataType for source string.");
+          THROW_EXCEPTION("Unsupported DataType for source string.");
       }
       break;
     }
@@ -104,22 +79,13 @@ void StringUtils::setValueForDifferentDataType(NDArray* arr, LongType idx, NDArr
           arr->p<std::u32string>(idx, input->e<std::u32string>(idx));
           break;
         default:
-          throw std::runtime_error("Unsupported DataType for source string.");
+          THROW_EXCEPTION("Unsupported DataType for source string.");
       }
       break;
     }
     default:
-      throw std::runtime_error("Unsupported DataType for destination string.");
+      THROW_EXCEPTION("Unsupported DataType for destination string.");
   }
-}
-
-NDArray* StringUtils::createDataBufferFromVector(const std::vector<LongType>& vec, DataType dataType) {
- std::vector<LongType> shape = {static_cast<LongType>(vec.size())};
-  NDArray* buffer = new NDArray('c', shape, dataType);
-  for(size_t i = 0; i < vec.size(); i++) {
-    buffer->p(i, vec[i]);
-  }
-  return buffer;
 }
 
 void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
@@ -153,95 +119,6 @@ void StringUtils::broadcastStringAssign(NDArray* x, NDArray* z) {
     }
   }
 }
-
-std::vector<LongType>* StringUtils::determineOffsetsAndLengths(NDArray& array, DataType dtype) {
-  LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(array.lengthOf());
-  const auto nInputoffsets = array.bufferAsT<LongType>();
-  std::vector<LongType> offsets(array.lengthOf() + 1);
-
-  LongType start = 0, stop = 0, dataLength = 0;
-  int numStrings = array.isScalar() ? 1 : array.lengthOf();
-  auto data = array.bufferAsT<int8_t>() + offsetsLength;
-
-  for (LongType e = 0; e < numStrings; e++) {
-    offsets[e] = dataLength;
-    start = nInputoffsets[e];
-    stop = nInputoffsets[e + 1];
-    if (array.dataType() == UTF8) {
-      dataLength += (dtype == UTF16) ? unicode::offsetUtf8StringInUtf16(data + start, stop)
-                                               : unicode::offsetUtf8StringInUtf32(data + start, stop);
-    } else if (array.dataType() == UTF16) {
-      dataLength += (dtype == UTF32)
-                        ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)))
-                        : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
-    } else if(array.dataType() == UTF32) {
-      dataLength += (dtype == UTF16)
-                        ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
-                        : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
-    }
-  }
-  offsets[numStrings] = dataLength;
-
-  return new std::vector<LongType>(offsets);
-}
-
-void StringUtils::convertDataForDifferentDataType(int8_t* outData, const int8_t* inData, const std::vector<LongType>& offsets, DataType inType, DataType outType) {
-  int numStrings = offsets.size() - 1;
-  auto func = PRAGMA_THREADS_FOR {
-    for (int e = start; e < stop; e++) {
-      auto cdata = outData + offsets[e];
-      auto end = offsets[e + 1];
-      auto idata = inData + offsets[e];
-      if (outType == UTF16) {
-        if (inType == UTF8) {
-          unicode::utf8to16(idata, cdata, end);
-        } else if(inType == UTF32) {
-          unicode::utf32to16(idata, cdata, (end / sizeof(char32_t)));
-        }
-      } else if (outType == UTF32) {
-        if (inType == UTF8) {
-          unicode::utf8to32(idata, cdata, end);
-        } else if(inType == UTF16) {
-          unicode::utf16to32(idata, cdata, (end / sizeof(char16_t)));
-        }
-      } else {
-        if (inType == UTF16) {
-          unicode::utf16to8(idata, cdata, (end / sizeof(char16_t)));
-        } else if(inType == UTF32) {
-          unicode::utf32to8(idata, cdata, (end / sizeof(char32_t)));
-        }
-      }
-    }
-  };
-  samediff::Threads::parallel_for(func, 0, numStrings, 1);
-}
-
-DataBuffer * StringUtils::createBufferForStringData(const std::vector<LongType>& offsets, DataType dtype, const LaunchContext* context) {
-  LongType offsetsLength = ShapeUtils::stringBufferHeaderRequirements(offsets.size() - 1);
-  return new DataBuffer(offsetsLength + offsets.back(), dtype, context->getWorkspace(), true);
-}
-
-NDArray StringUtils::createStringNDArray(NDArray& array, const std::vector<LongType>& offsets, DataType dtype) {
-  DataBuffer *pBuffer = createBufferForStringData(offsets, dtype, array.getContext());
-  std::vector<LongType> shape = offsets.size() == 2 ? std::vector<LongType>({1}) : array.getShapeAsVector();
-  auto desc = new ShapeDescriptor(dtype, array.ordering(), shape);
-  NDArray res(pBuffer, desc, array.getContext());
-  res.setAttached(array.getContext()->getWorkspace() != nullptr);
-  return res;
-}
-
-void StringUtils::assignStringData(NDArray& dest, NDArray& src, const std::vector<LongType>& offsets, DataType dtype) {
-  dest.preparePrimaryUse({&dest}, {&src});
-  memcpy(dest.bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(LongType));
-
-  auto outData = dest.bufferAsT<int8_t>() + ShapeUtils::stringBufferHeaderRequirements(offsets.size() - 1);
-  const auto inData = src.bufferAsT<int8_t>() + ShapeUtils::stringBufferHeaderRequirements(offsets.size() - 1);
-
-  convertDataForDifferentDataType(outData, inData, offsets, src.dataType(), dtype);
-
-  dest.registerPrimaryUse({&dest}, {&src});
-}
-
 
 template <typename T>
 void StringUtils::convertStringsForDifferentDataType(NDArray* sourceArray, NDArray* targetArray) {
@@ -285,6 +162,9 @@ void StringUtils::convertStringsForDifferentDataType(NDArray* sourceArray, NDArr
   }
 }
 
+#define DEFINE_CONVERT(T) template void StringUtils::convertStringsForDifferentDataType<GET_SECOND(T)>(NDArray* sourceArray, NDArray* targetArray);
+ITERATE_LIST((SD_STRING_TYPES),DEFINE_CONVERT)
+
 
 template <typename T>
 std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType(NDArray* sourceArray) {
@@ -326,6 +206,8 @@ std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType(NDArray* so
 
   return offsets;
 }
+#define DEFINE_OFFSET(T) template std::vector<LongType> StringUtils::calculateOffsetsForTargetDataType<GET_SECOND(T)>(NDArray* sourceArray);
+ITERATE_LIST((SD_STRING_TYPES),DEFINE_OFFSET)
 
 static SD_INLINE bool match(const LongType* haystack, const LongType* needle, LongType length) {
   for (int e = 0; e < length; e++)

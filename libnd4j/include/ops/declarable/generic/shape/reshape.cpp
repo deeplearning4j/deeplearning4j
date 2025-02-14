@@ -138,7 +138,7 @@ DECLARE_SHAPE_FN(reshape) {
   int pos = -1;
   bool newShapeEmpty = false;
 
-  for (int i = 0; i < reshapeArgs.size(); i++) {
+  for (size_t i = 0; i < reshapeArgs.size(); i++) {
     const int dim = reshapeArgs[i];
     if (dim == -1) {
       REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
@@ -165,7 +165,7 @@ DECLARE_SHAPE_FN(reshape) {
   }
 
   if(newShapeEmpty) {
-    for(int i = 0; i < reshapeArgs.size(); i++) {
+    for(size_t i = 0; i < reshapeArgs.size(); i++) {
       if(reshapeArgs[i] < 0)
         reshapeArgs[i] = 1;
     }

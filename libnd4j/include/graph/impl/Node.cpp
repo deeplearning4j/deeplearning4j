@@ -96,7 +96,7 @@ ContextPrototype* sd::graph::Node::getContextPrototype() {
     _protoContext = new ContextPrototype(
         this->getCustomOp() != nullptr ? this->getCustomOp()->getOpDescriptor() : nullptr, this->id());
   if (_protoContext->inputs()->empty()) {
-    for (int e = 0; e < this->input()->size(); e++) {
+    for (size_t e = 0; e < this->input()->size(); e++) {
       _protoContext->inputs()->emplace_back(this->input()->at(e));
     }
   }
@@ -467,7 +467,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
         auto block = new ContextPrototype(nullptr, this->id(), false);
 
-        for (int e = 0; e < this->input()->size(); e++) {
+        for (size_t e = 0; e < this->input()->size(); e++) {
           block->inputs()->emplace_back(this->input()->at(e));
         }
 
@@ -512,7 +512,7 @@ sd::graph::Node::Node(const sd::graph::FlatNode* node) {
 
       auto block = new ContextPrototype(nullptr, this->id());
 
-      for (int e = 0; e < this->input()->size(); e++) {
+      for (size_t e = 0; e < this->input()->size(); e++) {
         block->inputs()->emplace_back(this->input()->at(e));
       }
 
@@ -558,7 +558,6 @@ sd::graph::Node::~Node() {
 
   if (_dim != nullptr) delete[] _dim;
 
-  if (_protoContext != nullptr) delete _protoContext;
 
   if (_isDeductable && _customOp != nullptr) {
     Node::deleteOpByType(_opType, _customOp);

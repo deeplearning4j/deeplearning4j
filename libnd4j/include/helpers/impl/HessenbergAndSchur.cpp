@@ -103,7 +103,6 @@ template <typename T>
 void Schur<T>::evalData(NDArray& matrix) {
   const T scale = matrix.reduceNumber(reduce::AMax).template t<T>(0);
 
-  const T almostZero = DataTypeUtils::min_positive<T>();
 
   if (scale < DataTypeUtils::min_positive<T>()) {
     t = matrix.ulike();

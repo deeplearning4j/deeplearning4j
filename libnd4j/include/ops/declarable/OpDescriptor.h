@@ -68,19 +68,19 @@ class SD_LIB_EXPORT OpExecTrace {
     this->outputShapeBuffers = outputShapeBuffers;
     this->opName = opName;
     this->opType = opType;
-    for(int i = 0; i < tArgs->size(); i++) {
+    for(size_t i = 0; i < tArgs->size(); i++) {
       this->tArgs.push_back(tArgs->at(i));
     }
 
-    for(int i = 0; i < bArgs->size(); i++) {
+    for(size_t i = 0; i < bArgs->size(); i++) {
       this->bArgs.push_back(bArgs->at(i));
     }
 
-    for(int i = 0; i < iArgs->size(); i++) {
+    for(size_t i = 0; i < iArgs->size(); i++) {
       this->iArgs.push_back(iArgs->at(i));
     }
 
-    for(int i = 0; i < sArgs->size(); i++) {
+    for(size_t i = 0; i < sArgs->size(); i++) {
       this->sArguments.push_back(sArgs->at(i));
     }
 
@@ -92,27 +92,27 @@ class SD_LIB_EXPORT OpExecTrace {
   ~OpExecTrace() = default;
 
   std::vector<const LongType*>* getInputShapeBuffers() const { return inputShapeBuffers; }
-  void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffers) {
-    OpExecTrace::inputShapeBuffers = inputShapeBuffers;
+  void setInputShapeBuffers(std::vector<const LongType*>* inputShapeBuffersIn) {
+    OpExecTrace::inputShapeBuffers = inputShapeBuffersIn;
   }
   std::vector<const LongType*>* getOutputShapeBuffers() const { return outputShapeBuffers; }
-  void setOutputShapeBuffers(std::vector<const LongType*>* outputShapeBuffers) {
-    OpExecTrace::outputShapeBuffers = outputShapeBuffers;
+  void setOutputShapeBuffers(std::vector<const LongType*>* outputShapeBuffersIn) {
+    OpExecTrace::outputShapeBuffers = outputShapeBuffersIn;
   }
   const std::string* getOpName() const { return opName; }
-  void setOpName(const std::string* opName) { OpExecTrace::opName = opName; }
+  void setOpName(const std::string* opNameIn) { OpExecTrace::opName = opNameIn; }
   const std::vector<LongType>& getIArgs() const { return iArgs; }
-  void setIArgs(const std::vector<LongType>& iArgs) { OpExecTrace::iArgs = iArgs; }
+  void setIArgs(const std::vector<LongType>& iArgsIn) { OpExecTrace::iArgs = iArgsIn; }
   const std::vector<double>& getTArgs() const { return tArgs; }
-  void setTArgs(const std::vector<double>& tArgs) { OpExecTrace::tArgs = tArgs; }
+  void setTArgs(const std::vector<double>& tArgsIn) { OpExecTrace::tArgs = tArgsIn; }
   const std::vector<DataType>& getDArgs() const { return dArgs; }
-  void setDArgs(const std::vector<DataType>& dArgs) { OpExecTrace::dArgs = dArgs; }
+  void setDArgs(const std::vector<DataType>& dArgsIn) { OpExecTrace::dArgs = dArgsIn; }
   const std::vector<bool>& getBArgs() const { return bArgs; }
-  void setBArgs(const std::vector<bool>& bArgs) { OpExecTrace::bArgs = bArgs; }
+  void setBArgs(const std::vector<bool>& bArgsIn) { OpExecTrace::bArgs = bArgsIn; }
   const std::vector<std::string>& getSArguments() const { return sArguments; }
-  void setSArguments(const std::vector<std::string>& sArguments) { OpExecTrace::sArguments = sArguments; }
+  void setSArguments(const std::vector<std::string>& sArgumentsIn) { OpExecTrace::sArguments = sArgumentsIn; }
   int getOpType() const { return opType; }
-  void setOpType(int opType) { OpExecTrace::opType = opType; }
+  void setOpType(int opTypeIn) { OpExecTrace::opType = opTypeIn; }
 };
 
 /**

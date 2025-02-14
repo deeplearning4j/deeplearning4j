@@ -31,7 +31,7 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
   auto size = node->input()->size();
 
   // propagating inputs (optional)
-  for (int e = 0; e < size - 3; e++) {
+  for (size_t e = 0; e < size - 3; e++) {
     std::pair<int, int> pair(node->id(), e);
     if (!__variableSpace->hasVariable(pair)) {
       __variableSpace->putVariable(pair, new Variable(nullptr, nullptr, node->id(), e));
@@ -78,13 +78,13 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
     }
 
     // last node is either return or just last op
-    auto *node = scopeFalse->nodes()->at(nodes - 1);
-    if (node->opType() == OpType_LOGIC && node->opNum() == 40) {
+    auto *node2 = scopeFalse->nodes()->at(nodes - 1);
+    if (node2->opType() == OpType_LOGIC && node2->opNum() == 40) {
       isReturn = true;
-      LogicReturn::processNode(graph, node);
+      LogicReturn::processNode(graph, node2);
     } else {
-      GraphExecutioner::executeFlatNode(graph, node, __variableSpace);
-      lastNode = node->id();
+      GraphExecutioner::executeFlatNode(graph, node2, __variableSpace);
+      lastNode = node2->id();
     }
   } else {
     auto scopeTrue = graph->scopeById(scopeTrueIndex);
@@ -97,12 +97,12 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
     }
 
     // last node is either return or just last op
-    auto node = scopeTrue->nodes()->at(nodes - 1);
-    if (node->opType() == OpType_LOGIC && node->opNum() == 40) {
+    auto node2 = scopeTrue->nodes()->at(nodes - 1);
+    if (node2->opType() == OpType_LOGIC && node2->opNum() == 40) {
       isReturn = true;
-      LogicReturn::processNode(graph, node);
+      LogicReturn::processNode(graph, node2);
     } else {
-      GraphExecutioner::executeFlatNode(graph, node, __variableSpace);
+      GraphExecutioner::executeFlatNode(graph, node2, __variableSpace);
       lastNode = node->id();
     }
   }

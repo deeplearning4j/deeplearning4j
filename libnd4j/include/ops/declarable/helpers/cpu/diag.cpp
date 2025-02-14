@@ -50,7 +50,8 @@ void diagPartFunctor(sd::LaunchContext* context, NDArray * input, NDArray* outpu
   const int inLen = input->lengthOf();
   int i(0), j(0);
   while (j < outLen) {
-    output->p(j, input->e(i));
+    auto currE = input->e(i);
+    output->p(j, currE);
     i += outLen + 1;
     ++j;
   }

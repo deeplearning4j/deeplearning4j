@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(transpose) {
 
   bool isPermuteNecessary = false;
 
-  if(permutationVector.size() == rank)
+  if(permutationVector.size() == static_cast<size_t>(rank))
     for (LongType i = 0; i < rank; ++i) {
       if (permutationVector[i] != i) {
         isPermuteNecessary = true;

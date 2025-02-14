@@ -74,8 +74,8 @@ CONFIGURABLE_OP_IMPL(skipgram_inference, 6, 6, true, -2, -2) {
   auto target = I_ARG(currIdx++);
   auto ngStarter = I_ARG(currIdx++);
   auto randomValue = I_ARG(currIdx++);
-  auto numWorkers = block.numI() > numMin ? INT_ARG(currIdx++) : omp_get_max_threads();
-  auto nsRounds = block.numI() > numMin + 1 ? INT_ARG(currIdx++) : 0;
+  auto numWorkers = block.numI() > static_cast<size_t>(numMin) ? INT_ARG(currIdx++) : omp_get_max_threads();
+  auto nsRounds = block.numI() > static_cast<size_t>(numMin + 1) ? INT_ARG(currIdx++) : 0;
 
   auto alpha = T_ARG(0);
 

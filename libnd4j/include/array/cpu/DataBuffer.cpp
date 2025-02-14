@@ -28,7 +28,7 @@
 
 namespace sd {
 void DataBuffer::expand(const uint64_t size) {
-  if (size > _lenInBytes) {
+  if (static_cast<LongType>(size) > _lenInBytes) {
     // allocate new buffer
     int8_t* newBuffer = nullptr;
     ALLOCATE(newBuffer, _workspace, size, int8_t);
@@ -70,7 +70,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other,
     sizeToCopyinBytes = otherBytes < thisBytes ? otherBytes : thisBytes;
   }
   if (sizeToCopyinBytes == 0) return;
-  if(sizeToCopyinBytes > other._lenInBytes - offsetOther) {
+  if(static_cast<LongType>(sizeToCopyinBytes) > other._lenInBytes - offsetOther) {
     std::string errorMessage;
     errorMessage = "DataBuffer::copyBufferFrom: size to copy is larger than source buffer ";
     errorMessage += std::to_string(sizeToCopyinBytes);
@@ -197,7 +197,7 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
 
 
   sd::LongType limit = len;
-  if (limit == -1 || limit >= buffer->getNumElements()) {
+  if (limit == -1 || limit >= static_cast<LongType>(buffer->getNumElements())) {
     limit = buffer->getNumElements();
   }
 
@@ -214,7 +214,8 @@ void _printHostBuffer(DataBuffer* buffer, long offset) {
     for (sd::LongType e = baseOffset; e < limit; e++) {
       if (e > offset) printf(", ");
       if (dataType == sd::DataType::DOUBLE) {
-        printf("%.15f", buff[e]);
+        double val = static_cast<double>(buff[e]);
+        printf("%.15f",val);
       } else {
         printf("%.15f", static_cast<float>(buff[e]));
       }
