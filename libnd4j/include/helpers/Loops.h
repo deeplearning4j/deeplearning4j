@@ -805,7 +805,6 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4);
 #endif
                 s = OpType::update(s, OpType::op(x3[i4], extraParams), extraParams);
               }
@@ -814,7 +813,6 @@ SD_LIB_HIDDEN void reduceExec54(const X* x, const LongType* xShapeInfo, Z* z, co
 #if defined(PRINT_INDICES)
                 shape::printShapeInfo(xShapeInfo);
                 shape::printShapeInfo(zShapeInfo);
-                printf("Index i0,i1,i2,i3,i4 is %lld,%lld,%lld,%lld,%lld offset %lld reduceExec54\n", i0,i1,i2,i3,i4,i4 * xStrd4);
 #endif
                 s = OpType::update(s, OpType::op(x3[i4 * xStrd4], extraParams), extraParams);
               }
@@ -975,20 +973,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
           COORDS2INDEX(xRank, xStride, xCoords, xOffset);
           COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-#if defined(PRINT_INDICES)
-          shape::printShapeInfo(xShapeInfo);
-          shape::printShapeInfo(zShapeInfo);
-          printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i, xOffset, zOffset);
-          for (int e = 0; e < shape::rank(xShapeInfo); e++) {
-            printf("xCoords[%i]: %lld\n", e, xCoords[e]);
-          }
-
-          for (int e = 0; e < shape::rank(zShapeInfo); e++) {
-            printf("zCoords[%i]: %lld\n", e, xCoords[e]);
-          }
-
-          fflush(stdout);
-#endif
 
           auto opResult = OpType::op(x[xOffset], extraParams);
           z[zOffset] = static_cast<Z>(opResult);
@@ -1011,20 +995,6 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
           COORDS2INDEX(xRank, xStride, xCoords, xOffset);
           COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-#if defined(PRINT_INDICES)
-          shape::printShapeInfo(xShapeInfo);
-          shape::printShapeInfo(zShapeInfo);
-          printf("Index is %lld x offset is %lld z offset is %lld loop kind: default TransformLoops<X, Z, E>::loopTransform\n", i, xOffset, zOffset);
-          for (int e = 0; e < shape::rank(xShapeInfo); e++) {
-            printf("xCoords[%i]: %lld\n", e, xCoords[e]);
-          }
-
-          for (int e = 0; e < shape::rank(zShapeInfo); e++) {
-            printf("zCoords[%i]: %lld\n", e, zCoords[e]);
-          }
-
-          fflush(stdout);
-#endif
 
           auto opResult = OpType::op(x[xOffset], extraParams);
           z[zOffset] = static_cast<Z>(opResult);
@@ -1055,19 +1025,19 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
   std::vector<LongType> zeroOffsets;
 
   if (xLen == yLen) {
-    tadPackX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
-    tadPackY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
+    tadPackX = ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dims, dimsLen);
+    tadPackY = ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dims, dimsLen);
     xTadShapeInfo = tadPackX->primaryShapeInfo();
     yTadShapeInfo = tadPackY->primaryShapeInfo();
     xTadOffsets = tadPackX->primaryOffsets();
     yTadOffsets = tadPackY->primaryOffsets();
   } else if (yLen > xLen) {
-    tadPackY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
+    tadPackY = ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dims, dimsLen);
     xTadShapeInfo = xShapeInfo;
     yTadShapeInfo = tadPackY->primaryShapeInfo();
     yTadOffsets = tadPackY->primaryOffsets();
   } else {
-    tadPackX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
+    tadPackX = ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dims, dimsLen);
     yTadShapeInfo = yShapeInfo;
     xTadShapeInfo = tadPackX->primaryShapeInfo();
     xTadOffsets = tadPackX->primaryOffsets();
@@ -1110,8 +1080,7 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
     sd::LongType yTadRank = shape::rank(yTadShapeInfo);
     sd::LongType *xTadShape = shape::shapeOf(xTadShapeInfo);
     sd::LongType *yTadShape = shape::shapeOf(yTadShapeInfo);
-    sd::LongType *xTadStride = shape::stride(xTadShapeInfo);
-    sd::LongType *yTadStride = shape::stride(yTadShapeInfo);
+
     for (LongType j = 0; j < tadLen; ++j) {
       LongType coords[SD_MAX_RANK];
       LongType  yCoords[SD_MAX_RANK];
@@ -1124,7 +1093,6 @@ void Reduction3Loops<X, Z>::loopReduce3(const X* x, const LongType* xShapeInfo, 
 #if defined(PRINT_INDICES)
       shape::printShapeInfo(xTadShapeInfo);
       shape::printShapeInfo(yTadShapeInfo);
-      printf("Index is %lld offset is %lld loop kind: default Reduction3Loops<X, Z>::loopReduce3\n", i,j);
 #endif
       s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
     }
