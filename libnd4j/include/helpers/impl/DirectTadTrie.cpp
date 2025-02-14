@@ -16,8 +16,12 @@
  ******************************************************************************/
 
 #include "../DirectTadTrie.h"
-#include <algorithm>
+
 #include <array/TadPack.h>
+
+#include <algorithm>
+
+#include "array/TadCalculator.h"
 
 namespace sd {
 
@@ -25,40 +29,48 @@ thread_local DirectTadTrie::ThreadCache DirectTadTrie::_threadCache;
 
 
 
-TadPack* TadTrieNode::pack() const {
-    return _tadPack.load(std::memory_order_acquire);
-}
 
 void TadTrieNode::setPack(TadPack* pack) {
-    if (pack != nullptr && _tadPack.load(std::memory_order_relaxed) == nullptr) {
-        incrementCachedEntries();
-    } else if (pack == nullptr && _tadPack.load(std::memory_order_relaxed) != nullptr) {
-        decrementCachedEntries();
-    }
-    _tadPack.store(pack, std::memory_order_release);
-}
-
-size_t DirectTadTrie::computeHash(const std::vector<LongType>& dimensions) const {
-    size_t hash = 0;
-    for (auto dim : dimensions) {
-        hash = hash * 31 + static_cast<size_t>(dim);
-    }
-    return hash;
-}
-
-size_t DirectTadTrie::getStripeIndex(const std::vector<LongType>& dimensions) const {
-    return computeHash(dimensions) % NUM_STRIPES;
+    TadPack* old = _tadPack;
+    _tadPack = pack;
+    if (old) delete old;
 }
 
 bool DirectTadTrie::dimensionsEqual(const std::vector<LongType>& a, const std::vector<LongType>& b) const {
     return a == b;  // Vectors should already be sorted
 }
 
-void DirectTadTrie::updateThreadCache(const std::vector<LongType>& dimensions, TadPack* pack) {
-    if (_threadCache.entries.size() >= ThreadCache::CACHE_SIZE) {
-        _threadCache.entries.clear();
+
+bool DirectTadTrie::exists(const std::vector<LongType>& dimensions) const {
+    const size_t stripeIdx = computeStripeIndex(dimensions);
+    TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+
+    const TadTrieNode* current = _roots[stripeIdx].get();
+
+    // First level: dimension length
+    for (const auto& child : current->children()) {
+      if (child->value() == static_cast<LongType>(dimensions.size()) && !child->isDimension()) {
+        current = child.get();
+        goto found_length;
+      }
     }
-    _threadCache.entries.emplace_back(dimensions, pack);
+    return false;
+
+found_length:
+    // Second level: dimensions
+    for (size_t i = 0; i < dimensions.size(); i++) {
+      bool found = false;
+      for (const auto& child : current->children()) {
+        if (child->value() == dimensions[i] && child->isDimension()) {
+          current = child.get();
+          found = true;
+          break;
+        }
+      }
+      if (!found) return false;
+    }
+
+    return current->pack() != nullptr;  // Changed from atomic load
 }
 
 std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>& dimensions) const {
@@ -69,64 +81,74 @@ std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>&
 
 TadPack* DirectTadTrie::search(const std::vector<LongType>& dimensions, size_t stripeIdx) const {
     std::shared_lock<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
-    
+
     const TadTrieNode* current = _roots[stripeIdx].get();
-    
+
     // First level: dimension length
     current = findChild(current, dimensions.size(), 0, false);
     if (!current) return nullptr;
-    
+
     // Second level: dimensions
     for (size_t i = 0; i < dimensions.size(); i++) {
         current = findChild(current, dimensions[i], i + 1, true);
         if (!current) return nullptr;
     }
-    
-    return current->pack();
+
+    return current->pack();  // Changed from atomic lo
 }
 
-TadPack* DirectTadTrie::insert(const std::vector<LongType>& dimensions, size_t stripeIdx) {
-    std::unique_lock<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
-    
-    // Double-check after acquiring exclusive lock
-    if (TadPack* existing = search(dimensions, stripeIdx)) {
-        return existing;
-    }
-    
-    TadTrieNode* current = _roots[stripeIdx].get();
-    
+
+TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* originalShape) {
+    TadTrieNode* current = _roots[computeStripeIndex(dimensions)].get();
+
     // First level: dimension length
-    current = current->findOrCreateChild(dimensions.size(), 0, false);
-    
+    current = current->findOrCreateChild(dimensions.size(), 0, false);  // level 0 for length node
+    if (!current) return nullptr;
+
     // Second level: dimensions
     for (size_t i = 0; i < dimensions.size(); i++) {
-        current = current->findOrCreateChild(dimensions[i], i + 1, true);
+        current = current->findOrCreateChild(dimensions[i], i + 1, true);  // level i+1 for dimension nodes
+        if (!current) return nullptr;
     }
-    
-    incrementStripeCount(stripeIdx);
+
+    // Create TAD pack if needed
+    if (!current->pack()) {
+        try {
+          TadCalculator calculator(originalShape);
+          calculator.createTadPack(dimensions);
+
+          TadPack* newPack = new TadPack(
+              calculator.tadShape(),
+              calculator.tadOffsets(),
+              calculator.numberOfTads(),
+              dimensions.data(),
+              dimensions.size());
+
+          current->setPack(newPack);
+
+        } catch (const std::exception& e) {
+          std::string msg = "TAD creation failed: ";
+          msg += e.what();
+          THROW_EXCEPTION(msg.c_str());
+        }
+    }
+
     return current->pack();
 }
 
-const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType value, 
-                                          int level, bool isDimension) const {
+
+const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType value, int level, bool isDimension) const {
     if (!node) return nullptr;
-    
+
     for (const auto& child : node->children()) {
-        if (child->value() == value && child->isDimension() == isDimension) {
-            return child.get();
+        if (child->value() == value &&
+            child->level() == level &&
+            child->isDimension() == isDimension) {
+          return child.get();
         }
     }
     
     return nullptr;
-}
-
-int DirectTadTrie::countEntriesInSubtree(const TadTrieNode* node) const {
-    if (!node) return 0;
-    int count = node->getCachedEntries();
-    for (const auto& child : node->children()) {
-        count += countEntriesInSubtree(child.get());
-    }
-    return count;
 }
 
 }  // namespace sd
