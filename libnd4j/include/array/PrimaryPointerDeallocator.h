@@ -31,7 +31,7 @@ namespace sd {
 class SD_LIB_EXPORT PrimaryPointerDeallocator : public PointerDeallocator {
  public:
   PrimaryPointerDeallocator() = default;
-  ~PrimaryPointerDeallocator() = default;
+  virtual ~PrimaryPointerDeallocator() = default;
 
   void release(void *ptr) override;
 };
