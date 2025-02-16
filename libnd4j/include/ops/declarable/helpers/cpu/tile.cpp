@@ -28,6 +28,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<sd::LongType> reps) {
@@ -37,7 +38,7 @@ static void tileBP_(NDArray& gradO /*input*/, NDArray& gradI /*output*/, const s
   const sd::LongType gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
 
   // initial zeroing of gradI content
-  memset(gradIBuff, 0, gradILen * sizeof(T));
+  sd::ops::safe_zero(gradIBuff, static_cast<size_t>(gradILen));
 
   LongType gradOCoords[SD_MAX_RANK];
   LongType gradICoords[SD_MAX_RANK];

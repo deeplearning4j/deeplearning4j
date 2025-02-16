@@ -237,7 +237,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
   const bool typeDouble = hasGemm && ABC && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemm && ABC && aType == DataType::FLOAT32;
 
-  if (!typeFloat && !typeDouble || !Environment::getInstance().isEnableBlas()) {
+  if ((!typeFloat && !typeDouble) || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (A, B, C, 0, 1, 0, 1, 0, 1, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     std::vector<NDArray*> toDelete;
@@ -353,7 +353,7 @@ NDArray* MmulHelper::mmulMxV( NDArray* A, NDArray* X, sd::NDArray* Y, const doub
   const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
   const bool typeFloat = hasGemv && AXY && aType == DataType::FLOAT32;
 
-  if (!typeDouble && !typeFloat || !Environment::getInstance().isEnableBlas()) {
+  if ((!typeDouble && !typeFloat) || !Environment::getInstance().isEnableBlas()) {
     BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemv, (A, X, Y, incx, incy, 0, alpha, beta), SD_NUMERIC_TYPES);
   } else {
     NDArray* pA(const_cast<NDArray*>(A));
