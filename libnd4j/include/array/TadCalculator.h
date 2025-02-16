@@ -16,7 +16,7 @@
 ******************************************************************************/
 
 //
-// @author Adam Gibson
+// @author raver119@gmail.com
 //
 
 #ifndef DEV_TESTS_TADCALCULATOR_H
