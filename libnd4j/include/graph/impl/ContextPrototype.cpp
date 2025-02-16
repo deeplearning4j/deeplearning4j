@@ -45,7 +45,7 @@ void ContextPrototype::setOpNum(int opNum) { this->_opNum = opNum; }
 std::vector<std::pair<int, int>>* ContextPrototype::inputs() { return &_inputs; }
 
 void ContextPrototype::fillInputs(std::vector<int>& inputs) {
-  for (int e = 0; e < inputs.size(); e++) {
+  for (size_t e = 0; e < inputs.size(); e++) {
     auto v = inputs.at(e);
     pickInput(v);
   }

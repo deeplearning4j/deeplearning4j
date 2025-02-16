@@ -67,11 +67,11 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
 #endif
 
   if (!_fpArgs.empty()) {
-    for (int e = offset; e < _fpArgs.size(); e++) {
+    for (size_t e = offset; e < _fpArgs.size(); e++) {
       target[e] = static_cast<T>(_fpArgs[e]);
     }
   } else if (_intArgs.empty()) {
-    for (int e = offset; e < _intArgs.size(); e++) {
+    for (size_t e = offset; e < _intArgs.size(); e++) {
       target[e] = static_cast<T>(_intArgs[e]);
     }
   }

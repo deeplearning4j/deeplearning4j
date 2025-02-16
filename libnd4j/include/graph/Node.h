@@ -198,7 +198,7 @@ class SD_LIB_EXPORT Node {
   Node *asT();
 
   SD_INLINE void pullValues(Node *other) {
-     if (this->_protoContext != nullptr) delete _protoContext;
+     //if (this->_protoContext != nullptr) delete _protoContext;
 
     this->_dataType = other->dataType();
     this->_protoContext = other->protoContext()->clone();
