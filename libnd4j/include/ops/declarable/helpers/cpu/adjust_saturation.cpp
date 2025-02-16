@@ -57,8 +57,8 @@ static void adjustSaturation_(NDArray *input, NDArray *factorScalarArr, NDArray 
 
     samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
   } else {
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC,true);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC,true);
 
     const sd::LongType numOfTads = packX->numberOfTads();
     const sd::LongType xDimCstride = input->stridesOf()[dimC];
