@@ -719,11 +719,69 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val zb = OpaqueNDArray.fromINDArray(z);
         OpaqueNDArray dimArray = OpaqueNDArray.fromINDArray(op.dimensions());
         switch (op.getOpType()) {
+            case SCALAR:
+                break;
+            case SCALAR_BOOL:
+                break;
+            case TRANSFORM_SAME:
+                break;
+            case TRANSFORM_FLOAT:
+                break;
+            case TRANSFORM_ANY:
+                break;
+            case TRANSFORM_BOOL:
+                break;
+            case TRANSFORM_STRICT:
+                break;
+            case PAIRWISE:
+                break;
+            case PAIRWISE_BOOL:
+                break;
+            case SPECIAL:
+                break;
             case BROADCAST:
                 Nd4j.getNativeOps().execBroadcast(extraz.get(),op.opNum(),xb, yb, zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
                 break;
             case BROADCAST_BOOL:
                 Nd4j.getNativeOps().execBroadcastBool(extraz.get(),op.opNum(),xb, yb,zb,getPointerForExtraArgs(op,x.dataType()),dimArray);
+                break;
+            case REDUCE_LONG:
+                break;
+            case REDUCE_SAME:
+                break;
+            case REDUCE_FLOAT:
+                break;
+            case REDUCE_BOOL:
+                break;
+            case INDEXREDUCE:
+                break;
+            case VARIANCE:
+                break;
+            case REDUCE3:
+                break;
+            case GRID:
+                break;
+            case META:
+                break;
+            case CUSTOM:
+                break;
+            case GRADIENT:
+                break;
+            case CONDITIONAL:
+                break;
+            case LOOP:
+                break;
+            case LOOP_COND:
+                break;
+            case RETURN:
+                break;
+            case RANDOM:
+                break;
+            case SUMMARYSTATS:
+                break;
+            case LOGIC:
+                break;
+            case UDF:
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");

@@ -204,6 +204,8 @@ private:
  };
 
 public:
+ constexpr float16(const float16&) = default;
+
  ihalf data;
  SD_INLINE SD_HOST_DEVICE float16() { *data.getXP() = 0; }
 
