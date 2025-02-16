@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -84,7 +84,7 @@ DECLARE_SHAPE_FN(reduce_max) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -116,7 +116,7 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -132,7 +132,8 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
 
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMax);
-    gradI->p(indOfMaxElem.t<sd::LongType>(0), gradO->e(0));
+    NDArray right2 = gradO->e(0);
+    gradI->p(indOfMaxElem.t<sd::LongType>(0),right2);
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
   auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
@@ -154,7 +155,7 @@ DECLARE_SHAPE_FN(reduce_max_bp) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 

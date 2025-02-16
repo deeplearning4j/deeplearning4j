@@ -38,13 +38,13 @@ OP_IMPL(mergeavg, -1, 1, false) {
   }
 
   int nonEmpty = 0;
-  for (int i = 0; i < block.width(); i++)
+  for (size_t i = 0; i < block.width(); i++)
     if (!INPUT_VARIABLE(i)->isEmpty()) nonEmpty++;
 
   std::vector<NDArray*> inArrs(nonEmpty);
   int numNonEmptyAdded = 0;
   if(nonEmpty > 0)
-  for (int i = 0; i < block.width(); ++i) if(!INPUT_VARIABLE(i)->isEmpty())inArrs[numNonEmptyAdded++] = INPUT_VARIABLE(i);
+  for (size_t i = 0; i < block.width(); ++i) if(!INPUT_VARIABLE(i)->isEmpty())inArrs[numNonEmptyAdded++] = INPUT_VARIABLE(i);
 
   helpers::mergeAvg(block.launchContext(), inArrs, *output);
 
@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(mergeavg_bp, 2, 1, false, 0, 0) {
 
   const auto gradient = INPUT_VARIABLE(inSize);
 
-  for (int i = 0; i < inSize; ++i) {
+  for (size_t i = 0; i < inSize; ++i) {
     outArrs[i] = OUTPUT_VARIABLE(i);
   }
   helpers::mergeAvgBp(block.launchContext(), *gradient, outArrs);

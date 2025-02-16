@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
     dimensions = *block.getIArguments();
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -80,7 +80,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
     dimensions = *block.getIArguments();
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -112,7 +112,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_NORM_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -130,7 +130,8 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
     auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
     const sd::LongType ind = indOfAbsMaxElem.t<sd::LongType>(0);
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
-    gradI->p(ind, sign * gradO->e(0));
+    auto put = sign * gradO->e(0);
+    gradI->p(ind, put);
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);
@@ -153,7 +154,7 @@ DECLARE_SHAPE_FN(reduce_norm_max_bp) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_NORM_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
