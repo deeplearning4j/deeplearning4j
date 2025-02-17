@@ -1,11 +1,10 @@
 /* ******************************************************************************
  *
+ * Copyright (c) 2024 Konduit K.K.
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -15,102 +14,59 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-#include "../ConstantTadHelper.h"
-
-#include <array/ConstantOffsetsBuffer.h>
-#include <array/PrimaryPointerDeallocator.h>
+#include <array/TadDescriptor.h>
+#include <array/TadPack.h>
+#include <helpers/ConstantTadHelper.h>
 #include <helpers/ShapeUtils.h>
-
-
-#ifndef __CUDABLAS__
 
 namespace sd {
 
-
-// New trie-based implementation
-ConstantTadHelper::ConstantTadHelper() {} // Default constructor is fine now
-
-ConstantTadHelper &ConstantTadHelper::getInstance() {
+ConstantTadHelper& ConstantTadHelper::getInstance() {
   static ConstantTadHelper instance;
   return instance;
 }
 
-TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType dimension,
-                                           const bool keepUnitiesInShape) {
+TadPack* ConstantTadHelper::tadForDimensions( LongType* originalShape, LongType dimension,
+                                             bool keepUnitiesInShape) {
   return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
 }
 
-TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, const std::vector<LongType> *dimensions,
-                                           const bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, const_cast<sd::LongType *>(dimensions->data()), dimensions->size(), keepUnitiesInShape);
+TadPack* ConstantTadHelper::tadForDimensions( LongType* originalShape,
+                                              std::vector<LongType>* dimensions,
+                                             bool keepUnitiesInShape) {
+  return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()),
+                          dimensions->size(), keepUnitiesInShape);
 }
 
-TadPack *ConstantTadHelper::tadForDimensions(const sd::LongType *originalShape, LongType *dimensions, LongType dimLength,
-                                           const bool keepUnitiesInShape) {
-  std::vector<LongType> dims(dimensions, dimensions + dimLength);
-  std::lock_guard<std::mutex> lock(_mutex);
+TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
+  return tadForDimensions(descriptor->originalShape().toShapeInfo(),
+                          descriptor->axis().data(),
+                          descriptor->axis().size(),
+                          descriptor->areUnitiesinShape());
+}
 
+TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape,
+                                             LongType* dimensions,
+                                             LongType dimLength,
+                                             bool keepUnitiesInShape) {
+  try {
+    if (!originalShape) THROW_EXCEPTION("Original shape is null");
+    if (!dimensions) THROW_EXCEPTION("Dimensions array is null");
+    if (dimLength <= 0) THROW_EXCEPTION("Invalid dimension length");
 
-  // New trie-based implementation
-  TadPack* existingPack = _trie.getOrCreate(dims);
-  if (existingPack != nullptr) {
-    return existingPack;
+    int rank = shape::rank(originalShape);
+    if (rank <= 0) THROW_EXCEPTION("Invalid shape rank");
+
+    std::vector<LongType> dims(dimensions, dimensions + dimLength);
+
+    // Single attempt pattern - no double locking
+    return _trie.getOrCreate(dims, originalShape);
+
+  } catch (const std::exception& e) {
+    std::string errorMessage = "TAD creation failed: ";
+    errorMessage += e.what();
+    THROW_EXCEPTION(errorMessage.c_str());
   }
-  
-  // If no existing pack, create a new one
-  const sd::LongType rank = shape::rank(originalShape);
-  const std::vector<sd::LongType> *dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimLength, dimensions);
-
-  const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(originalShape, *dimsToExclude);
-  const sd::LongType subArrRank = (rank == dimsToExclude->size() || keepUnitiesInShape) ? rank : rank - dimsToExclude->size();
-
-  auto sPtr = std::make_shared<PointerWrapper>(
-      new sd::LongType[shape::shapeInfoLength(subArrRank)],
-      std::make_shared<PrimaryPointerDeallocator>());
-
-  std::shared_ptr<PointerWrapper> oPtr;
-  if (numOfSubArrs > 0)
-    oPtr = std::make_shared<PointerWrapper>(new sd::LongType[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
-  else {
-    oPtr = std::make_shared<PointerWrapper>(new sd::LongType[1], std::make_shared<PrimaryPointerDeallocator>());
-    oPtr->pointerAsT<sd::LongType>()[0] = 0;
-  }
-
-  if (numOfSubArrs > 0) {
-    shape::calcSubArrsShapeInfoAndOffsets(originalShape, numOfSubArrs, dimsToExclude->size(), dimsToExclude->data(),
-                                        sPtr->pointerAsT<sd::LongType>(), oPtr->pointerAsT<sd::LongType>(),
-                                        keepUnitiesInShape);
-  } else {
-    sd::LongType *shapeInfoCopy = new sd::LongType[shape::shapeInfoLength(rank)];
-    memcpy(shapeInfoCopy, originalShape, shape::shapeInfoByteLength(rank));
-    sd::LongType *sPtrInfo = sPtr->pointerAsT<sd::LongType>();
-    shape::copyTo(shape::shapeInfoLength(rank), shapeInfoCopy, sPtrInfo);
-    delete[] shapeInfoCopy;
-  }
-
-  const ConstantShapeBuffer shapeBuffer(sPtr);
-  const ConstantOffsetsBuffer offsetsBuffer(oPtr);
-  TadPack *t = new TadPack(shapeBuffer, offsetsBuffer, numOfSubArrs, dimensions, dimLength);
-
-  // Store in trie
-  auto* node = _trie.getOrCreateNode(dims);
-  node->_tadPack.store(t, std::memory_order_release);
-  _trie.incrementStripeCount(_trie.computeStripeIndex(dims));
-  return t;
 }
 
-TadPack *ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
-                                           const bool keepUnitiesInShape) {
-  return tadForDimensions(descriptor.toShapeInfo(), dimensions.data(), dimensions.size(), keepUnitiesInShape);
-}
-
-TadPack *ConstantTadHelper::tadForDimensions(TadDescriptor *descriptor) {
-  return tadForDimensions(descriptor->originalShape().toShapeInfo(), 
-                         descriptor->axis().data(), 
-                         descriptor->axis().size(),
-                         descriptor->areUnitiesinShape());
-}
-
-}  // namespace sd
-
-#endif
+} // namespace sd
