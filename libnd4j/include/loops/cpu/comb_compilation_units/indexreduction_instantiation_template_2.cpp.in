@@ -19,35 +19,17 @@
  */
 
 //
-// @author raver119@gmail.com
+// Created by agibsonccc on 12/26/24.
 //
 
-#ifndef SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
-#define SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+#include <helpers/cpu/loops/IndexReductionLoops.hpp>
+#include <system/type_boilerplate.h>
+// Note: Instantiations are generated to prevent compiler memory issues
 
-#include <array/PointerWrapper.h>
-#include <system/common.h>
-
-#include <memory>
-
-namespace sd {
-
-class SD_LIB_EXPORT ConstantOffsetsBuffer {
- private:
-  std::shared_ptr<PointerWrapper> _primaryOffsets;
-  std::shared_ptr<PointerWrapper> _specialOffsets;
-
- public:
-  ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary);
-  ConstantOffsetsBuffer(const std::shared_ptr<PointerWrapper> &primary, const std::shared_ptr<PointerWrapper> &special);
-  ConstantOffsetsBuffer() = default;
-  ~ConstantOffsetsBuffer() = default;
-
-  LongType *primary();
-  LongType *special();
-  LongType *platform();
-};
-
-}  // namespace sd
-
-#endif  // SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+ITERATE_COMBINATIONS(
+    SD_NUMERIC_TYPES_PART_@COMB1@,
+    SD_NUMERIC_TYPES_PART_@COMB2@,
+    template class sd::IndexReductionLoops,
+    IndexReductionLoops,
+    ;
+)

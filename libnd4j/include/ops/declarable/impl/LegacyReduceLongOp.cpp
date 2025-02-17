@@ -56,7 +56,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
   PointersManager manager(block.launchContext(), "LegacyReduceLongOp");
 
   if (block.width() == 1) {
-    if (axis.size() == x->rankOf()) allAxes = true;
+    if (axis.size() == static_cast<size_t>(x->rankOf())) allAxes = true;
 
     if ((axis.empty()) || (axis.size() == 1 && axis[0] == DataTypeUtils::max<int>()) || allAxes) {
       // scalar
@@ -67,7 +67,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
       // TAD
       std::vector<LongType> dims(axis);
 
-      for (int e = 0; e < dims.size(); e++)
+      for (size_t e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
 
       if (dims.size() > 1) std::sort(dims.begin(), dims.end());
@@ -77,7 +77,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
       const LongType* zShapeInfoH = z->shapeInfo();
       const LongType* zShapeInfoD = z->specialShapeInfo();
 
-      if (x->rankOf() - dims.size() != z->rankOf()) {
+      if (x->rankOf() - dims.size() != static_cast<size_t>(z->rankOf())) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
@@ -118,7 +118,7 @@ Status LegacyReduceLongOp::validateAndExecute(Context& block) {
       const LongType* zShapeInfoH = z->shapeInfo();
       const LongType* zShapeInfoD = z->specialShapeInfo();
 
-      if (x->rankOf() - dims.size() != z->rankOf()) {
+      if (x->rankOf() - dims.size() != static_cast<size_t>(z->rankOf())) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
@@ -152,14 +152,12 @@ ShapeList* LegacyReduceLongOp::calculateOutputShape(ShapeList* inputShape, Conte
 
   LongType* newShape;
 
-  bool allAxes = false;
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
   auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getAxis();
 
-  if (axis.size() == shape::rank(inShape)) allAxes = true;
 
   // in this case we're building proper shape for reduction
   return SHAPELIST(ShapeUtils::evalReduceShapeInfo(shape::order(inShape), &axis, inShape, DataType::INT64, keepDims,

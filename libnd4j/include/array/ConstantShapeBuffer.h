@@ -51,10 +51,11 @@ class SD_LIB_EXPORT ConstantShapeBuffer {
   backward::StackTrace st;
 #endif
 #endif
-  const LongType *primary() const;
-  const LongType *special() const;
-  const LongType *platform() const;
+  LongType *primary() ;
+  LongType *special() ;
+  LongType *platform() ;
 };
+
 
 }  // namespace sd
 
