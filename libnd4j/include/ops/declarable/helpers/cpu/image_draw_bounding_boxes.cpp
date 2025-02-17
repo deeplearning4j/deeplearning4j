@@ -55,7 +55,7 @@ static ColorTable_t DefaultColorTable(int depth) {
   colorTable.emplace_back(std::vector<float>({1, 0, 1, 1}));      // 9: fuchsia
 
   if (depth == 1) {
-    for (sd::LongType i = 0; i < colorTable.size(); i++) {
+    for (size_t i = 0; i < colorTable.size(); i++) {
       colorTable[i][0] = 1;
     }
   }

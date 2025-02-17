@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 
   // input validation
   // check whether shapes of all input array are the same
-  for (LongType i = 0; i < block.width() - 1; ++i)
+  for (size_t i = 0; i < block.width() - 1; ++i)
   REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i + 1))->shapeInfo()), 0,
                "STACK op: the shapes of all input arrays must be the same !");
 
@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
       input->shapeOf(), dim);
 
   std::vector<NDArray*> inArrs(block.width());
-  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+  for (size_t i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
 
   //empty arrays are a no op
   if(block.width() >= 1 && !inArrs[0]->isEmpty())

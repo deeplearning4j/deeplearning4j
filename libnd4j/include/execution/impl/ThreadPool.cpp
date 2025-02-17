@@ -104,7 +104,7 @@ ThreadPool::ThreadPool() {
 
 ThreadPool::~ThreadPool() {
   // TODO: implement this one properly
-  for (int e = 0; e < _queues.size(); e++) {
+  for (size_t e = 0; e < _queues.size(); e++) {
     // stop each and every thread
 
     // release queue and thread
@@ -149,7 +149,7 @@ Ticket *ThreadPool::tryAcquire(int numThreads) {
       t->acquiredThreads(numThreads);
 
       // filling ticket with executable interfaces
-      for (int e = 0, i = 0; e < _queues.size() && i < numThreads; e++) {
+      for (size_t e = 0, i = 0; e < _queues.size() && i < static_cast<size_t>(numThreads); e++) {
         if (_interfaces[e]->available()) {
           t->attach(i++, _interfaces[e]);
           _interfaces[e]->markUnavailable();

@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
                  "PARALLEL_STACK op: the shapes of all input arrays must be the same !");
 
   std::vector<NDArray*> inArrs(block.width());
-  for (int i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
+  for (size_t i = 0; i < block.width(); ++i) inArrs[i] = INPUT_VARIABLE(i);
 
   const int dim = 0;
   helpers::stack(block.launchContext(), inArrs, *output, dim);

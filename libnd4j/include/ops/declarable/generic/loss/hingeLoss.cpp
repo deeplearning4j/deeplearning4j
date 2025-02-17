@@ -146,7 +146,7 @@ DECLARE_SHAPE_FN(hinge_loss) {
       ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
-  LongType const *outShapeInfo = nullptr;
+  LongType  *outShapeInfo = nullptr;
 
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);

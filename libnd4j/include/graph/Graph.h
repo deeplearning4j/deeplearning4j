@@ -66,9 +66,6 @@ class SD_LIB_EXPORT Graph {
   SD_MAP_IMPL<int, Scope *> _mappedScopes;
   std::vector<Scope *> _scopes;
 
-  ////////////////////////////////////////
-  Status validateNode(Node *node);
-
   void expandOnion(int newLayer);
 
   void injectNode(Node *node);
@@ -146,12 +143,6 @@ class SD_LIB_EXPORT Graph {
   ExecutorConfiguration *getExecutorConfiguration();
 
   /**
-   * This method adds specified node (by ID) to de
-   * @param id
-   */
-  void addOutput(int id);
-
-  /**
    * This method returns all nodes at once (order is NOT guaranteed)
    * @return
    */
@@ -161,11 +152,6 @@ class SD_LIB_EXPORT Graph {
    * This method prints out Graph op-by-op, and respective inputs
    */
   void printOut();
-
-  /**
-   * This method collect all ops from the graph into ops vector
-   */
-  std::vector<ops::OpDescriptor> getOperations();
 
   /**
    * This method returns OpScope ptr specified with id
@@ -223,43 +209,10 @@ class SD_LIB_EXPORT Graph {
 
   SD_INLINE std::vector<int> *nodes() { return _nodes; }
 
-  SD_INLINE std::vector<int> *autos() { return &_autos; }
 
   SD_INLINE std::vector<int> *output() { return &_output; }
 
-  SD_INLINE SD_MAP_IMPL<int, Scope *> *scopes() { return &_mappedScopes; }
 
-  SD_INLINE bool built() { return _built.load(); }
-
-  SD_INLINE void pullState(Graph *other) {
-    for (int e = 0; e < other->nodes()->size(); e++) this->_nodes->emplace_back(other->nodes()->at(e));
-
-    for (int e = 0; e < other->output()->size(); e++) this->_output.emplace_back(other->output()->at(e));
-
-    for (int e = 0; e < other->autos()->size(); e++) this->_autos.emplace_back(other->autos()->at(e));
-
-    for (auto &v : *other->scopes()) {
-      auto scp = v.second->clone();
-      this->_mappedScopes[v.first] = scp;
-      this->_scopes.emplace_back(scp);
-    }
-
-    for (auto &v : *other->getOnion()) {
-      auto vec = this->_onion->count(v.first) > 0 ? this->_onion->at(v.first) : new std::vector<Node *>();
-
-      auto ovec = (*other->getOnion())[v.first];
-      for (auto x : *(ovec)) {
-        auto n = x->clone();
-        vec->emplace_back(n);
-        _handles.emplace_back(n);
-        (*this->_mapped)[n->id()] = n;
-      }
-
-      if (this->_onion->count(v.first) < 1) (*this->_onion)[v.first] = vec;
-    }
-
-    this->_built.store(other->built());
-  }
 };
 }  // namespace graph
 }  // namespace sd

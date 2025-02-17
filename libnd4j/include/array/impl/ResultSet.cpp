@@ -28,7 +28,7 @@ ResultSet::ResultSet() {
 }
 
 ResultSet::ResultSet(const graph::FlatResult* result) {
-  for (int e = 0; e < result->variables()->size(); e++) {
+  for (size_t e = 0; e < result->variables()->size(); e++) {
     auto var = result->variables()->Get(e);
 
     NDArray* array;
@@ -37,7 +37,7 @@ ResultSet::ResultSet(const graph::FlatResult* result) {
       array = graph::FlatUtils::fromFlatArray(var->ndarray());
     } else if (var->shape() != nullptr) {
       std::vector<LongType> shapeInfo;
-      for (int i = 0; i < var->shape()->size(); i++) {
+      for (size_t i = 0; i < var->shape()->size(); i++) {
         shapeInfo.emplace_back(var->shape()->Get(i));
       }
 
@@ -121,7 +121,7 @@ void ResultSet::delContent() {
 ResultSet::~ResultSet() { delContent(); }
 
 void ResultSet::printIndexedBuffers() {
-  for (int e = 0; e < _content.size(); e++) {
+  for (size_t e = 0; e < _content.size(); e++) {
     auto array = _content.at(e);
     auto strVal = "Array e: " + std::to_string(e) + " is: ";
     array->printIndexedBuffer(strVal.c_str());
