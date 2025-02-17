@@ -418,7 +418,7 @@ sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
       shapeBuffer = sd::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
     }
     return (sd::Pointer)(sd::ConstantShapeHelper::getInstance().createFromExisting(
-        shapeBuffer, true));  // TO DO: this can lead to unpleasant crash sometimes
+        shapeBuffer));  // TO DO: this can lead to unpleasant crash sometimes
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -1688,7 +1688,8 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
       }
     }
 
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
+        reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

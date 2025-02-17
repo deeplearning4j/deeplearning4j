@@ -26,29 +26,20 @@ ConstantTadHelper& ConstantTadHelper::getInstance() {
   return instance;
 }
 
-TadPack* ConstantTadHelper::tadForDimensions( LongType* originalShape, LongType dimension,
-                                             bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
+TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType dimension) {
+  return tadForDimensions(originalShape, &dimension, 1);
 }
 
-TadPack* ConstantTadHelper::tadForDimensions( LongType* originalShape,
-                                              std::vector<LongType>* dimensions,
-                                             bool keepUnitiesInShape) {
-  return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()),
-                          dimensions->size(), keepUnitiesInShape);
+TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
+  return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()), dimensions->size());
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
-  return tadForDimensions(descriptor->originalShape().toShapeInfo(),
-                          descriptor->axis().data(),
-                          descriptor->axis().size(),
-                          descriptor->areUnitiesinShape());
+  return tadForDimensions(descriptor->originalShape().toShapeInfo(), descriptor->axis().data(),
+                          descriptor->axis().size());
 }
 
-TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape,
-                                             LongType* dimensions,
-                                             LongType dimLength,
-                                             bool keepUnitiesInShape) {
+TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
   try {
     if (!originalShape) THROW_EXCEPTION("Original shape is null");
     if (!dimensions) THROW_EXCEPTION("Dimensions array is null");

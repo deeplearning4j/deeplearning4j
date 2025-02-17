@@ -38,7 +38,7 @@
 #include <types/uint8.h>
 
 #define LOG_NUM_BANKS 4
-
+#define NUM_BANKS 256
 namespace sd {
 
 typedef union {

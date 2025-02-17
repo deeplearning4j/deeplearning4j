@@ -323,14 +323,14 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
-    const sd::LongType* dXShapeInfo,
-    const sd::LongType* hXShapeInfo,
+    sd::LongType* dXShapeInfo,
+    sd::LongType* hXShapeInfo,
     void* extraParams,
     void* vreductionBuffer,
     void* z,
-    const sd::LongType* dZShapeInfo,
-    const sd::LongType* hZShapeInfo,
-    const sd::LongType* dims) {
+    sd::LongType* dZShapeInfo,
+    sd::LongType* hZShapeInfo,
+    sd::LongType* dims) {
 
   if (shape::isEmptyConst(hXShapeInfo)) {
     if (shape::isEmptyConst(hZShapeInfo)) return;
@@ -470,14 +470,14 @@ SD_HOST void ReduceBoolFunction<X, Y>::execReduceXD(
     cudaStream_t* stream,
     const int opNum,
     const void* x,
-    const sd::LongType* dXShapeInfo,
-    const sd::LongType* hXShapeInfo,
+    sd::LongType* dXShapeInfo,
+    sd::LongType* hXShapeInfo,
     void* extraParams,
     void* vreductionBuffer,
     void* z,
-    const sd::LongType* dZShapeInfo,
-    const sd::LongType* hZShapeInfo,
-    const sd::LongType* dims) {
+    sd::LongType* dZShapeInfo,
+    sd::LongType* hZShapeInfo,
+    sd::LongType* dims) {
 
   if (shape::length(hZShapeInfo) == 1) {
     execReduceScalar(

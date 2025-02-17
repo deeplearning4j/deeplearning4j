@@ -103,7 +103,7 @@ DECLARE_SHAPE_FN(svd) {
     return result;
   }
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(sShapeInfo, block.workspace()));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(sShapeInfo));
 }
 
 }  // namespace ops

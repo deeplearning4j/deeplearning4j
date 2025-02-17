@@ -36,7 +36,7 @@ void argMax(NDArray& input, NDArray& output, const std::vector<LongType>& dimens
                                                input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                output.specialBuffer(), output.specialShapeInfo());
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), (LongType*)&dimensions,dimensions.size());
 
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax, input.buffer(),
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
@@ -56,7 +56,7 @@ void argMin(NDArray& input, NDArray& output, const std::vector<LongType>& dimens
                                                input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                output.specialBuffer(), output.specialShapeInfo());
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), (LongType)&dimensions);
 
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin, input.buffer(),
                                          input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr,
@@ -76,7 +76,7 @@ void argAbsMax(NDArray& input, NDArray& output, const std::vector<LongType>& dim
                                                input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                output.specialBuffer(), output.specialShapeInfo());
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), (LongType)&dimensions);
 
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax,
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),
@@ -96,7 +96,7 @@ void argAbsMin(NDArray& input, NDArray& output, const std::vector<LongType>& dim
                                                input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                output.specialBuffer(), output.specialShapeInfo());
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), (LongType)&dimensions);
 
     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin,
                                          input.buffer(), input.shapeInfo(), input.specialBuffer(),

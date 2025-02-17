@@ -221,7 +221,7 @@ NDArray::NDArray(NDArray &other) {
   if(!shape::isViewConst(other.shapeInfo())) {
     auto copyInfo = ShapeBuilders::copyShapeInfo(other.shapeInfo(), true, getContext() == nullptr ? nullptr : getContext()->getWorkspace());
     auto copiedInfo = ShapeBuilders::setAsView(copyInfo);
-    auto shapeInfo = ConstantShapeHelper::getInstance().createConstBuffFromExisting(copiedInfo,nullptr);
+    auto shapeInfo = ConstantShapeHelper::getInstance().createConstBuffFromExisting(copiedInfo);
     if(shapeInfo == nullptr) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - shapeInfo is nullptr");
     }
@@ -2517,7 +2517,7 @@ NDArray * NDArray::newShapeNoCopy(const std::vector<sd::LongType> &newShape, con
   delete olddims;
   delete oldstrides;
 
-  auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo,true);
+  auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
   auto ret =  new NDArray(this->getDataBuffer(), retShapeInfo, getContext(), this->offset());
   return ret;
 }
@@ -2798,7 +2798,7 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
-    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted);
     DataBuffer *db = new DataBuffer(shape::length(buff) *
                                     DataTypeUtils::sizeOf(ArrayOptions::dataType(buff)),
                                     ArrayOptions::dataType(buff), getContext()->getWorkspace());
@@ -2816,7 +2816,7 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
-    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted);
 
     NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
     NDArray &ret2 =  *ret;
@@ -6096,7 +6096,7 @@ NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
   shape::calcSubArrShapeInfoAndOffset(idx.data(), shapeInfo(), subArrShapeInfo, offset, keepUnitiesInShape, isStrided,
                                       numOfUntiesInSubArrShape);
 
-  auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
+  auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo);
   NDArray *result = new NDArray(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + this->offset());
   ShapeDescriptor descriptor(newShapeInfo, false);
   descriptor.validate();
@@ -6213,7 +6213,7 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
   _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
   _shapeInfo = _shapeInfoBuffer->primary();
 #ifdef __CUDABLAS__
-  _shapeInfoD = shapeBuffer->special();
+  _shapeInfoD = _shapeInfoBuffer->special();
 #endif
 
   if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)

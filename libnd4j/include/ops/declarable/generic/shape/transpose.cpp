@@ -81,7 +81,7 @@ DECLARE_SHAPE_FN(transpose) {
 
   if (permutationVector.size() == 0) {
     auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
-    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp,true);
+    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp);
     return SHAPELIST(ret);
   }
 

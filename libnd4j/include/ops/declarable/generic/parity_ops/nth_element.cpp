@@ -62,7 +62,6 @@ DECLARE_SHAPE_FN(nth_element) {
   } else if (outRank == 1) {
     outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, static_cast<LongType>(0)), ArrayOptions::dataType(in));
   } else {
-    // outputShape = shape::createScalarShapeInfo();
     outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));
   }
   return SHAPELIST(outShape);

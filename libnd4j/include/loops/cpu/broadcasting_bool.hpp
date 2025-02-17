@@ -256,7 +256,7 @@ void BroadcastBool<X, Z>::execInverse(const void *vx, const sd::LongType *xShape
 
   if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
     auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(yShapeInfo), dimension,
-                                                                         dimensionLength,true);
+                                                                         dimensionLength);
     yTadShapeShapeInfo = tadPack->primaryShapeInfo();
     tadOffsets = tadPack->primaryOffsets();
   }

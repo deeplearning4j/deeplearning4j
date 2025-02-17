@@ -192,9 +192,9 @@ template <typename T>
 static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta,
                              NDArray* output) {
   // To fill up output need to broadcast alpha and beta to the same shape and in
-  const LongType* broadcasted = nullptr;
+   LongType* broadcasted = nullptr;
   if (beta != nullptr)
-    ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcasted, context->getWorkspace());
+    ShapeUtils::evalBroadcastShapeInfo(alpha->shapeInfo(), beta->shapeInfo(), true, broadcasted, context->getWorkspace());
   else
     broadcasted = alpha->shapeInfo();
   auto step = shape::length(broadcasted);

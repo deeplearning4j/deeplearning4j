@@ -2724,7 +2724,7 @@ void throwException(const char* exceptionMessage);
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, static_cast<sd::LongType>(LENGTH));
 #define RELEASE(VARIABLE, WORKSPACE) internal_release_host(WORKSPACE, VARIABLE);
 
-#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE, block.workspace())
+#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE)
 
 #define STORE_RESULT(A) this->storeResult(block, 0, A)
 #define OVERWRITE_RESULT(A) this->overwriteResult(block, 0, A)

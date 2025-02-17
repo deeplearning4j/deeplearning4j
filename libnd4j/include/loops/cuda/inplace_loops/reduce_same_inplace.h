@@ -23,12 +23,15 @@
 #ifndef DEV_TESTS_REDUCE_SAME_LOOPS_H
 #define DEV_TESTS_REDUCE_SAME_LOOPS_H
 
+#include <cuda_runtime.h>
 #include <helpers/shape.h>
-#include <ops.h>
+#include <ops/ops.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
-    using namespace simdOps;
+#include <execution/LaunchContext.h>
+#include "execution/cuda/LaunchDims.h"
+using namespace simdOps;
 
 namespace functions {
 namespace reduce {

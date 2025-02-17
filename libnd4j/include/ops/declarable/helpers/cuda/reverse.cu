@@ -297,8 +297,8 @@ void reverseSequence(LaunchContext* context, NDArray* input, NDArray* seqLengths
 
 //////////////////////////////////////////////////////////////////////////
 void reverse(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>* intArgs) {
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), intArgs);
-  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), intArgs);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), reinterpret_cast<LongType*>(*intArgs->data()),static_cast<sd::LongType>(intArgs->size()));
+  auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), reinterpret_cast<LongType*>(*intArgs->data()),static_cast<sd::LongType>(intArgs->size()));
 
   NDArray::prepareSpecialUse({output}, {input});
 
