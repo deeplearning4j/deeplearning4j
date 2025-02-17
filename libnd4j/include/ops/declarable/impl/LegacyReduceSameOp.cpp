@@ -56,7 +56,7 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
   PointersManager manager(block.launchContext(), "LegacyReduceSameOp");
 
   if (block.width() == 1) {
-    if (axis.size() == x->rankOf()) allAxes = true;
+    if (axis.size() == static_cast<size_t>(x->rankOf())) allAxes = true;
 
     if (axis.empty() || allAxes) {
       // scalar
@@ -67,7 +67,7 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
       // TAD
       std::vector<LongType> dims(axis);
 
-      for (int e = 0; e < dims.size(); e++)
+      for (size_t e = 0; e < dims.size(); e++)
         if (dims[e] < 0) dims[e] += x->rankOf();
 
       REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
@@ -75,7 +75,7 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
       const LongType* zShapeInfoH = z->shapeInfo();
       const LongType* zShapeInfoD = z->specialShapeInfo();
 
-      if (x->rankOf() - dims.size() != z->rankOf()) {
+      if (x->rankOf() - dims.size() != static_cast<size_t>(z->rankOf())) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
@@ -114,7 +114,7 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
       const LongType* zShapeInfoH = z->shapeInfo();
       const LongType* zShapeInfoD = z->specialShapeInfo();
 
-      if (x->rankOf() - dims.size() != z->rankOf()) {
+      if (x->rankOf() - dims.size() != static_cast<size_t>(z->rankOf())) {
         auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(
             z->shapeInfo(), &dims, z->getContext()->getWorkspace());
         zShapeInfoH = reinterpret_cast<LongType const*>(zPack->primary());
@@ -134,11 +134,11 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
   manager.synchronize();
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType*> *inputShapeBuffers = new std::vector<const LongType*>();
-    for(int i = 0; i < block.width(); i++) {
+    for(size_t i = 0; i < block.width(); i++) {
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const LongType*> *outputShapeBuffers = new std::vector<const LongType*>();
-    for(int i = 0; i < block.outputWidth(); i++) {
+    for(size_t i = 0; i < block.outputWidth(); i++) {
       outputShapeBuffers->push_back(getZ(block,i)->shapeInfo());
     }
 
@@ -155,14 +155,12 @@ Status LegacyReduceSameOp::validateAndExecute(Context& block) {
 ShapeList* LegacyReduceSameOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
   auto inShape = inputShape->at(0);
 
-  bool allAxes = false;
 
   auto keepDims = block.numB() > 0 ? B_ARG(0) : false;
   auto newFormat = block.numB() > 1 ? B_ARG(1) : true;
 
   auto axis = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getAxis();
 
-  if (axis.size() == shape::rank(inShape)) allAxes = true;
 
   // in this case we're building proper shape for reduction
   auto newShape =

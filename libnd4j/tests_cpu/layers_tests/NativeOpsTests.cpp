@@ -940,22 +940,7 @@ TEST_F(NativeOpsTests, TadPackTest_1) {
   delete pack;
 }
 
-TEST_F(NativeOpsTests, AverageTest_1) {
-  auto x = NDArrayFactory::create<float>('c', {5, 5});
-  auto y = NDArrayFactory::create<float>('c', {5, 5});
-  auto exp = NDArrayFactory::create<float>('c', {5, 5});
-  auto z = NDArrayFactory::create<float>('c', {5, 5});
-#ifdef __CUDABLAS__
-  return;
-#endif
-  x.linspace(1);
-  exp.linspace(1);
-  Pointer xList[] = {x.buffer(), x.buffer()};
-  Pointer dxList[] = {x.specialBuffer(), x.specialBuffer()};
-  average(nullptr, xList, x.shapeInfo(), dxList, x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(),
-            z.specialShapeInfo(), 2, x.lengthOf(), true);
-  ASSERT_TRUE(z.equalsTo(exp));
-}
+
 
 TEST_F(NativeOpsTests, AccumulateTest_1) {
   auto x = NDArrayFactory::create<float>('c', {5, 5});

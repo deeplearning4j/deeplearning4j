@@ -454,17 +454,8 @@ class SD_LIB_EXPORT NativeOpExecutioner {
                          const sd::LongType *dZShapeBuffer, void *extraArguments);
 
    static void execSort(sd::NDArray *x, bool descending);
-   static void execSortCooIndices(sd::LongType *indices, void *x, sd::LongType length,
-                                        const sd::LongType *xShapeInfo);
 
-   static void execRavelMultiIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                                         sd::LongType *shapeInfo, int mode);
-
-   static void execUnravelIndex(sd::LongType *indices, sd::LongType *flatIndices, sd::LongType length,
-                                      sd::LongType *shapeInfo);
-   static sd::LongType encodeBitmap(sd::NDArray *x, sd::LongType N, long long int *dz,
-                                          float threshold);
-   static void execSort(sd::NDArray *x, sd::LongType *dimension,  sd::LongType dimensionLength,
+  static void execSort(sd::NDArray *x, sd::LongType *dimension,  sd::LongType dimensionLength,
                         bool descending) ;
 
 
