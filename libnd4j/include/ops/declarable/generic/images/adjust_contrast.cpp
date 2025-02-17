@@ -53,7 +53,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
 
   // fill up axes vector first
   std::vector<LongType> axes(input->rankOf() - 1);
-  for (auto i = 0; i < axes.size(); ++i) axes[i] = i;
+  for (size_t i = 0; i < axes.size(); ++i) axes[i] = i;
   // mean as reduction for last dimension set
   auto mean = input->reduceAlongDimension(reduce::Mean, &axes);
   auto part1 = (*input - mean);

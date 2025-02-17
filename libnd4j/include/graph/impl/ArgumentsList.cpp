@@ -27,7 +27,7 @@ ArgumentsList::ArgumentsList(std::initializer_list<Pair> arguments) { _arguments
 
 ArgumentsList::ArgumentsList(std::initializer_list<int> arguments) {
   std::vector<int> args(arguments);
-  for (int e = 0; e < args.size(); e++) {
+  for (size_t e = 0; e < args.size(); e++) {
     Pair pair(args[e]);
     _arguments.emplace_back(pair);
   }

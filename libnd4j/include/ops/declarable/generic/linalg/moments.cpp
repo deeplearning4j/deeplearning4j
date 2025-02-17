@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
   } else {
     std::vector<LongType>& dims = axis;
     std::vector<LongType> axes;
-    for (int i = 0; i < dims.size(); i++) {
+    for (size_t i = 0; i < dims.size(); i++) {
       axes.push_back(dims[i]);
     }
 

@@ -46,9 +46,7 @@ LongType Graph::estimateRequiredMemory() {
   LongType lastStep = 0L;
 
   std::vector<LongType const *> shapes;
-  SD_MAP_IMPL<std::pair<int, int>, LongType const *> shapesMap;
-
-  int cntFD = 0;
+  SD_MAP_IMPL<std::pair<int, int>, LongType  *> shapesMap;
 
   // we loop in similar way to execution
   for (int l = 0; l < (int)_onion->size(); l++) {
@@ -69,10 +67,9 @@ LongType Graph::estimateRequiredMemory() {
         sd_debug("Trying estimation [%i] on [%s]\n", node->id(), node->getCustomOp()->getOpName()->c_str());
 
         auto op = node->getCustomOp();
-        auto in = node->input()->at(0);
 
         auto block = node->getContextPrototype();
-        std::vector<LongType const *> inputShapes;
+        std::vector<LongType *> inputShapes;
         int *oldShape;
         for (auto v : *node->input()) {
           sd_debug("     inputs for estimation are: %i:%i\n", v.first, v.second);
@@ -92,7 +89,7 @@ LongType Graph::estimateRequiredMemory() {
         for (int jj = 0; jj < outSha->size(); jj++) {
           auto newShape = outSha->at(jj);
           std::pair<int, int> pairAddr(node->id(), cnt++);
-          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType  *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -115,7 +112,7 @@ LongType Graph::estimateRequiredMemory() {
           memcpy(newShape, x->getNDArray()->shapeInfo(), shape::shapeInfoByteLength(x->getNDArray()->shapeInfo()));
 
           std::pair<int, int> pairAddr(node->id(), 0);
-          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType  *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -129,7 +126,7 @@ LongType Graph::estimateRequiredMemory() {
           memcpy(newShape, prevShape, shape::shapeInfoByteLength(prevShape));
 
           std::pair<int, int> pairAddr(node->id(), 0);
-          std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
+          std::pair<std::pair<int, int>, LongType  *> pairShape(pairAddr, newShape);
 
           shapesMap.insert(pairShape);
 
@@ -139,7 +136,7 @@ LongType Graph::estimateRequiredMemory() {
         }
 
       } else if (node->getOpClass() == OpClass_REDUCTION) {
-        LongType const *newShape = nullptr;
+        LongType  *newShape = nullptr;
 
         // if that's scalar output - we don't care about previous node
         if (node->getDimensions()->size() == 0 ||
@@ -158,7 +155,7 @@ LongType Graph::estimateRequiredMemory() {
             oldShape = shapesMap.at(in);
           }
 
-          auto numTads = shape::tadLength(oldShape, const_cast<LongType *const>(node->getDimensions()->data()),
+          auto numTads = shape::tadLength(oldShape,node->getDimensions()->data(),
                                           node->getDimensions()->size());
           LongType shape[2] = {1, (int)numTads};
           newShape =
@@ -166,7 +163,7 @@ LongType Graph::estimateRequiredMemory() {
         }
 
         std::pair<int, int> pairAddr(node->id(), 0);
-        std::pair<std::pair<int, int>, LongType const *> pairShape(pairAddr, newShape);
+        std::pair<std::pair<int, int>, LongType  *> pairShape(pairAddr, newShape);
 
         shapesMap.insert(pairShape);
 
@@ -177,7 +174,6 @@ LongType Graph::estimateRequiredMemory() {
         // can't be in non-special op
       }
 
-      cntFD++;
     }
   }
 
@@ -186,12 +182,6 @@ LongType Graph::estimateRequiredMemory() {
 
 void Graph::pushToOutputOnce(int id) {
   if (std::find(_output.begin(), _output.end(), id) == _output.end()) _output.emplace_back(id);
-}
-
-void Graph::addOutput(int id) {
-  if (_configuration->_outputMode == OutputMode_EXPLICIT ||
-      _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT)
-    pushToOutputOnce(id);
 }
 
 ExecutorConfiguration *Graph::getExecutorConfiguration() { return _configuration; }
@@ -204,9 +194,9 @@ std::vector<Variable *> *Graph::fetchOutputs() {
     auto nodeId = _output.at(e);
     sd_debug("Output node: %i\n", nodeId);
 
-    for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
-      if (_variableSpace->hasVariable(nodeId, e)) {
-        res->push_back(_variableSpace->getVariable(nodeId, e));
+    for (int e1 = 0; e1 < DataTypeUtils::max<int>(); e1++) {
+      if (_variableSpace->hasVariable(nodeId, e1)) {
+        res->push_back(_variableSpace->getVariable(nodeId, e1));
       } else {
         if (e == 0) {
           throw unresolved_output_exception::build("Can't find output variable", nodeId, e);
@@ -331,7 +321,7 @@ void Graph::addNode(Node *node) {
       }
     } else {
       // we need to check, if we should propagate output of this variable somewhere
-      for (int e = 0; e < node->output()->size(); e++) {
+      for (size_t e = 0; e < node->output()->size(); e++) {
         auto out = node->output()->at(e);
         if (out.first < 0) {
           sd_debug("Node [%i] will be propagating its output to Variable [%i]\n", node->id(), out.first);
@@ -410,7 +400,7 @@ void Graph::addNode(Node *node) {
     // in some cases we're able to put stuff immediately
     if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
       bool automapAllowed = true;
-      for (int e = 0; e < node->input()->size(); e++) {
+      for (size_t e = 0; e < node->input()->size(); e++) {
         auto cInput = node->input()->at(e);
         int cFirst = cInput.first;
         if (_mapped->count(cFirst) == 0) {
@@ -501,7 +491,7 @@ Status Graph::buildGraph() {
               block = node->getContextPrototype();
 
             if (!block->hasVariablesFilled()) {
-              for (int e = 0; e < node->input()->size(); e++) {
+              for (size_t e = 0; e < node->input()->size(); e++) {
                 auto p = node->input()->at(e);
 
                 block->pickInput(p);
@@ -725,7 +715,7 @@ void Graph::prepareOutputs() {
       }
 
       // updating outputs now
-      for (int e = 0; e < node->input()->size(); e++) {
+      for (size_t e = 0; e < node->input()->size(); e++) {
         auto inP = node->input()->at(e);
 
         // input can be variable, or node. we only care about nodes
@@ -969,7 +959,7 @@ void Graph::printOutNode(Node *node) {
 
   sd_printf("Inputs: [", "");
   // auto block = node->getBlock();
-  for (int e = 0; e < node->input()->size(); e++) {
+  for (size_t e = 0; e < node->input()->size(); e++) {
     auto in = node->input()->at(e);
     printf("{%i:%i}", in.first, in.second);
     if (e < node->input()->size() - 1) sd_printf(", ", "");
@@ -980,8 +970,8 @@ void Graph::printOutNode(Node *node) {
     if (ctx->getIArguments()->size() > 0) {
       printf("]; iArgs: [");
 
-      for (int e = 0; e < ctx->getIArguments()->size(); e++) {
-        printf("%i", ctx->getIArguments()->at(e));
+      for (size_t e = 0; e < ctx->getIArguments()->size(); e++) {
+        printf("%lli", ctx->getIArguments()->at(e));
         if (e < ctx->getIArguments()->size() - 1) sd_printf(", ", "");
       }
     }
@@ -1022,7 +1012,7 @@ void Graph::printOut() {
   if (_onion->size() > 0) sd_printf("\nPrinting out Graph...\n", "");
 
   int opCnt = 0;
-  for (int l = 0; l < _onion->size(); l++) {
+  for (size_t l = 0; l < _onion->size(); l++) {
     int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
 
     for (int n = 0; n < layerSize; n++) {
@@ -1037,106 +1027,17 @@ void Graph::printOut() {
 
   if (_scopes.size() > 0) sd_printf("\nPrinting out Scopes...\n", "");
 
-  for (int s = 0; s < _scopes.size(); s++) {
+  for (size_t s = 0; s < _scopes.size(); s++) {
     Scope *scope = _scopes.at(s);
     sd_printf("OpScope %i:<%s>:\n", scope->id(), scope->name()->c_str());
 
-    for (int n = 0; n < scope->nodes()->size(); n++) {
+    for (size_t n = 0; n < scope->nodes()->size(); n++) {
       Node *node = scope->nodes()->at(n);
       printOutNode(node);
     }
   }
 
   fflush(stdout);
-}
-
-Status Graph::validateNode(Node *node) {
-  // TODO: to be implemented
-  return Status::OK;
-}
-
-std::vector<ops::OpDescriptor> Graph::getOperations() {
-  buildGraph();
-  std::vector<ops::OpDescriptor> res;
-
-  int opCnt = 0;
-  for (int l = 0; l < _onion->size(); l++) {
-    int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
-
-    for (int n = 0; n < layerSize; n++) {
-      Node *node = _onion->at(l)->at(n);
-      if (node->name() == nullptr) continue;
-      ops::OpDescriptor *pOpDescriptor = nullptr;
-      std::string opNameStr;  // node->name();
-      int numInputs = 0;
-      int numOutputs = 0;
-
-      switch (node->opType()) {
-        case OpType_CUSTOM: {
-          pOpDescriptor = node->getCustomOp()->getOpDescriptor();
-        } break;
-        case OpType_LOGIC: {
-          opNameStr = std::string(EnumUtils::_LogicOpToString(node->opNum()));
-        } break;
-        default: {
-          opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType())) + "{" +
-                      ops::OpRegistrator::getInstance().local_to_string<int>((int)node->opNum()) + "}";
-        }
-      }
-
-      if (node->input()) numInputs = node->input()->size();
-
-      if (node->output()) numOutputs = node->output()->size();
-      bool inplace = node->isInplace();
-
-      // OpDescriptor opDescriptor(numInputs, numOutputs, opNameStr, inplace);
-
-      // we're skipping Scopes here
-      if (node->opType() == OpType_LOGIC && node->opNum() == logic::Scope) continue;
-      if (pOpDescriptor)
-        res.emplace_back(*pOpDescriptor);
-      else
-        res.emplace_back(ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
-    }
-  }
-
-  for (int s = 0; s < _scopes.size(); s++) {
-    Scope *scope = _scopes.at(s);
-
-    for (int n = 0; n < scope->nodes()->size(); n++) {
-      Node *node = scope->nodes()->at(n);
-      if (node->name() == nullptr) continue;
-      std::string opNameStr;  // node->name();
-      ops::OpDescriptor *pOpDescriptor = nullptr;
-      int numInputs = 0;
-      int numOutputs = 0;
-
-      switch (node->opType()) {
-        case OpType_CUSTOM: {
-          pOpDescriptor = node->getCustomOp()->getOpDescriptor();
-        } break;
-        case OpType_LOGIC: {
-          opNameStr = std::string(EnumUtils::_LogicOpToString(node->opNum()));
-        } break;
-        default: {
-          opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType())) + "{" +
-                      ops::OpRegistrator::getInstance().local_to_string<int>((int)node->opNum()) + "}";
-        }
-      }
-
-      if (node->input()) numInputs = node->input()->size();
-
-      if (node->output()) numOutputs = node->output()->size();
-      bool inplace = node->isInplace();
-
-      if (pOpDescriptor != nullptr)
-        res.emplace_back(*pOpDescriptor);
-      else
-        res.emplace_back(ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
-    }
-  }
-
-  return res;
 }
 
 Scope *Graph::scopeById(int id) {
@@ -1164,7 +1065,7 @@ Graph *Graph::cloneWithProxy() {
   clone->replaceState(new VariableProxy(this->_variableSpace), this->_configuration->clone());
 
   // transfer nodes
-  for (int e = 0; e < _nodes->size(); e++) clone->_nodes->emplace_back(_nodes->at(e));
+  for (size_t e = 0; e < _nodes->size(); e++) clone->_nodes->emplace_back(_nodes->at(e));
 
   // transfer outputs
   for (auto v : _output) clone->_output.emplace_back(v);
@@ -1209,7 +1110,7 @@ Graph *Graph::clone() {
   clone->replaceState(this->_variableSpace->clone(), this->_configuration->clone());
 
   // transfer nodes
-  for (int e = 0; e < _nodes->size(); e++) clone->_nodes->emplace_back(_nodes->at(e));
+  for (size_t e = 0; e < _nodes->size(); e++) clone->_nodes->emplace_back(_nodes->at(e));
 
   // transfer outputs
   for (auto v : _output) clone->_output.emplace_back(v);

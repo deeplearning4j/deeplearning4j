@@ -30,7 +30,7 @@
 namespace sd {
 namespace ops {
 OP_IMPL(toggle_bits, -1, -1, true) {
-  for (int i = 0; i < block.width(); i++) {
+  for (size_t i = 0; i < block.width(); i++) {
     auto x = INPUT_VARIABLE(i);
     auto z = OUTPUT_VARIABLE(i);
 

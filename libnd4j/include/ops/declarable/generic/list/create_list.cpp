@@ -46,21 +46,10 @@ LIST_OP_IMPL(create_list, -2, 2, 0, -2) {
 
 
 
-
-
-  auto clearOnRead = true;
-  if(block.numB() > 0) {
-    clearOnRead = B_ARG(0);
-  }
-
   auto list = new NDArrayList(height, expandable);
   // we receive input array for graph integrity purposes only
-  auto input = INPUT_VARIABLE(0);
   //mainly a marker for now, representing the fixed shape the elements can be
-  if(block.width() > 1) {
-    auto setShape = INPUT_VARIABLE(1);
 
-  }
   setupResultList(list, block);
   auto scalar = NDArrayFactory::create_(list->counter());
   block.pushNDArrayToVariableSpace(block.getNodeId(), 1, scalar);
