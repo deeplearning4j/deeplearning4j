@@ -52,10 +52,8 @@ namespace sd {
 
 
 #ifndef __JAVACPP_HACK__
-static void printFormatted(std::ostream& os, NDArray & arr, LongType depth, LongType limit);
 //used in google test for printing
 SD_LIB_EXPORT std::ostream& operator<<(std::ostream &os,  NDArray& arr);
-void PrintTo(NDArray &arr, std::ostream *os);
 #endif
 template <typename T, typename = typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value>::type>
 SD_LIB_EXPORT NDArray operator+(NDArray &arr,  T scalar);
@@ -113,11 +111,24 @@ SD_LIB_EXPORT NDArray operator/(T1 &&arr1, T2 &&arr2);
 SD_LIB_EXPORT NDArray mmul(NDArray &, NDArray &);
 
 
-
+template <typename T, typename Y>
+using EnableIfNumeric = typename std::enable_if<
+    DataTypeUtils::scalarTypesForNDarray<T>::value &&
+    DataTypeUtils::scalarTypesForNDarray<Y>::value
+>::type;
+template <typename T, typename Y>
+using EnableIfString = typename std::enable_if<
+    std::is_same<T, std::string>::value ||
+    std::is_same<T, std::u16string>::value ||
+    std::is_same<T, std::u32string>::value
+>::type;
 
 class SD_LIB_EXPORT NDArray {
  private:
   NDArray(const NDArray &other);
+
+
+
   /**
    * This method applies given value to the buffer, wrt templates
    * @tparam T
@@ -126,14 +137,20 @@ class SD_LIB_EXPORT NDArray {
    * @param indices
    * @param value
    */
-  template <typename T, typename Y>
+  template <typename T, typename Y,
+      typename = EnableIfNumeric<T,Y>>
   void templatedSet(void *buffer,  LongType *indices,  void *value);
 
-  template <typename T, typename Y>
+  template <typename T, typename Y,
+      typename = EnableIfNumeric<T,Y>>
   void templatedSet(void *buffer,  LongType xOffset,  void *value);
 
-  template <typename T>
-  void templatedSet(void *buffer,  LongType xOfsset, DataType dtype,  void *value);
+  template <typename T, typename Y, typename = EnableIfNumeric<T,Y>>
+  void templatedSet(void *buffer, LongType offset, DataType dtype, void *value);
+
+
+  template <typename T, typename Y, typename = EnableIfString<T,Y>>
+  void templatedSetString(void *buffer, LongType offset, void *value);
 
   template <typename T>
   void templatedAssign(void *xBuffer,  LongType xOffset,  void *yBuffer,
@@ -145,11 +162,6 @@ class SD_LIB_EXPORT NDArray {
 
   template <typename T, typename R>
   SD_INLINE R templatedGet(void  *buffer, const LongType index);
-
-  template <typename T>
-  void *templatedPointerShift(const LongType offset);
-
-  SD_INLINE void copyBufferStatus(NDArray &other);
 
  protected:
 
@@ -167,8 +179,8 @@ class SD_LIB_EXPORT NDArray {
 
   ConstantShapeBuffer *_shapeInfoBuffer = nullptr;
 
-  const LongType *_shapeInfo = nullptr;
-  const LongType *_shapeInfoD = nullptr;
+  LongType *_shapeInfo = nullptr;
+  LongType *_shapeInfoD = nullptr;
 
   /**
    *  pointer on device launch context (with all data needed there).
@@ -209,7 +221,7 @@ class SD_LIB_EXPORT NDArray {
   NDArray(DataBuffer *  buffer,  ShapeDescriptor *descriptor,
           LaunchContext *context = LaunchContext::defaultContext(), const LongType offset = 0);
 
-  NDArray(DataBuffer *  buffer, const sd::LongType *shapeInfo,
+  NDArray(DataBuffer *  buffer,  sd::LongType *shapeInfo,
           sd::LaunchContext *context = LaunchContext::defaultContext(), const sd::LongType offset = 0);
 
   NDArray(DataBuffer *  buffer, char order, std::vector<LongType> &shape,
@@ -275,14 +287,14 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  do not allocate memory, memory for array is passed from outside
    */
-  NDArray(void *buffer, const sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
+  NDArray(void *buffer, sd::LongType *shapeInfo, sd::LaunchContext *context, const bool isBuffAlloc,
           sd::LongType offset);
 
   /**
    *  do not allocate memory, memory for array is passed from outside
    *  we suppose the content of both (device and host) buffers is identical
    */
-  NDArray(void *buffer, void *bufferD, const sd::LongType *shapeInfo, sd::LaunchContext *context,
+  NDArray(void *buffer, void *bufferD, sd::LongType *shapeInfo, sd::LaunchContext *context,
           const bool isBuffAlloc, const bool isBuffDAlloc, sd::LongType offset);
 
   /**
@@ -304,15 +316,15 @@ class SD_LIB_EXPORT NDArray {
    *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros,
    * if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
    */
-  NDArray(const LongType *shapeInfo, bool copyStrides = false, LaunchContext *context = LaunchContext::defaultContext(), bool nullify = true);
+  NDArray( LongType *shapeInfo, bool copyStrides = false, LaunchContext *context = LaunchContext::defaultContext(), bool nullify = true);
 
   /**
    *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be
    * zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently set
    * dtype as array type
    */
-  NDArray(const LongType *shapeInfo, DataType dtype, bool copyStrides = false,
-          LaunchContext *context = LaunchContext::defaultContext(), bool nullify = true);
+  NDArray(LongType *shapeInfo, const sd::DataType dtype, const bool copyStrides = false,
+          sd::LaunchContext *context = LaunchContext::defaultContext(), const bool nullify = true);
 
   /**
    *  this constructor creates new array using shape information contained in vector argument
@@ -432,7 +444,10 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  assignment operator, assigns the same scalar to all array elements
    */
-  template <typename T>
+  template <typename T, typename = typename std::enable_if<
+      DataTypeUtils::scalarTypesForNDarray<T>::value &&
+      !std::is_same<typename std::remove_reference<typename std::remove_cv<T>::type>::type, NDArray>::value
+  >::type>
   NDArray &operator=(const T scalar);
 
   /**
@@ -469,13 +484,6 @@ class SD_LIB_EXPORT NDArray {
    *  repeats - vector containing numbers of repetition for elements at given axis
    */
   void repeat(const int axis, const std::vector<LongType> &repeats, NDArray &target);
-
-  /**
-   *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-   */
-  NDArray subarray(IndicesList &indices);
-  NDArray subarray(const std::initializer_list<NDIndex *> &idx);
-  NDArray subarray(const Intervals &idx);
 
   /**
    *  cast array elements to given dtype
@@ -538,7 +546,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *   returns _shapeInfo
    */
-  SD_INLINE const LongType *shapeInfo();
+  SD_INLINE LongType *shapeInfo();
 
 
   /**
@@ -557,7 +565,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
    */
-  SD_INLINE  const LongType *specialShapeInfo();
+  SD_INLINE LongType *specialShapeInfo();
 
 
   /**
@@ -793,8 +801,6 @@ class SD_LIB_EXPORT NDArray {
 
   bool isBroadcastableTo(NDArray &other);
 
-  NDArray broadcastTo(const std::vector<LongType> & targetShape);
-
   /**
    *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
    *  tad - array to broadcast
@@ -1018,13 +1024,6 @@ class SD_LIB_EXPORT NDArray {
   void addRowVector(NDArray &row, NDArray &target);
 
   /**
-   *  subtract given row vector from all rows of this array, store result in target
-   *  row - row vector to subtract
-   *  target - where to store result
-   */
-  void subRowVector(NDArray &row, NDArray &target);
-
-  /**
    *  multiply all rows of this array on given row vector, store result in target
    *  row - row vector to multiply on
    *  target - where to store result
@@ -1144,6 +1143,7 @@ class SD_LIB_EXPORT NDArray {
    *  check whether array is unitary matrix
    */
   bool isUnitary();
+#ifndef __JAVACPP_HACK__
 
 
   std::ostream& operator<<(std::ostream &os);
@@ -1184,22 +1184,33 @@ class SD_LIB_EXPORT NDArray {
   void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, LongType *&subArrShapeInfo,
                                 LongType *&subArrOffsets, bool keepUnitiesInShape = false);
 
+
   /**
    *  addition unary operator array += other
    *  other - input array to add
    */
-  void operator+=(NDArray &other);
 
+  void operator+=(NDArray &other);
+  void operator+=(NDArray &&other);
   /**
    *  subtraction unary operator array -= other
    *  other - input array to add
    */
-  void operator-=(NDArray &other);
 
-  template <typename T>
+  void operator-=(NDArray &other);
+  void operator-=(NDArray &&other);
+
+
+  template <typename T, typename = typename std::enable_if<
+      DataTypeUtils::scalarTypesForNDarray<T>::value &&
+      !std::is_same<typename std::remove_reference<typename std::remove_cv<T>::type>::type, NDArray>::value
+  >::type>
   void operator+=(const T other);
 
-  template <typename T>
+  template <typename T, typename = typename std::enable_if<
+      DataTypeUtils::scalarTypesForNDarray<T>::value &&
+      !std::is_same<typename std::remove_reference<typename std::remove_cv<T>::type>::type, NDArray>::value
+  >::type>
   void operator-=(const T other);
 
   /**
@@ -1213,12 +1224,16 @@ class SD_LIB_EXPORT NDArray {
    *  other - input array to multiply on
    */
   void operator*=(NDArray &other);
+  void operator*=(NDArray &&other);
 
   /**
    *  multiplication unary operator array *= scalar
    *  scalar - input scalar to multiply on
    */
-  template <typename T>
+  template <typename T, typename = typename std::enable_if<
+      DataTypeUtils::scalarTypesForNDarray<T>::value &&
+      !std::is_same<typename std::remove_reference<typename std::remove_cv<T>::type>::type, NDArray>::value
+  >::type>
   void operator*=(const T scalar);
 
   /**
@@ -1226,14 +1241,17 @@ class SD_LIB_EXPORT NDArray {
    *  other - input array to divide on
    */
   void operator/=(NDArray &other);
-
+  void operator/=(NDArray &&other);
   /**
    *  division unary operator: array /= scalar
    *  scalar - input scalar to divide on
    */
-  template <typename T>
+  template <typename T, typename = typename std::enable_if<
+      DataTypeUtils::scalarTypesForNDarray<T>::value &&
+      !std::is_same<typename std::remove_reference<typename std::remove_cv<T>::type>::type, NDArray>::value
+  >::type>
   void operator/=(const T scalar);
-
+#endif
   /**
    *  friend function which implements mathematical multiplication of two arrays
    *  left - input array
@@ -1327,7 +1345,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  set _shapeInfo
    */
-  void setShapeInfo(const LongType *shapeInfo);
+  void setShapeInfo(LongType *shapeInfo);
   void setShapeInfo(ShapeDescriptor *descriptor);
   void setShapeInfo(const ConstantShapeBuffer *shapeBuffer);
 
@@ -1483,13 +1501,7 @@ class SD_LIB_EXPORT NDArray {
    */
   NDArray e(const LongType i);
 
-  /**
-   *  assigns given scalar to array element by given index, regards array buffer as linear
-   *  i - element index in array
-   *  value - scalar value to assign
-   */
-  template <typename T>
-  void p(const LongType i, const T value);
+
 
   void p(const LongType i, NDArray &value);
 
@@ -1516,8 +1528,8 @@ class SD_LIB_EXPORT NDArray {
   void p(const LongType i, const LongType j, const LongType k, const LongType l, const T value);
   void p(const LongType i, const LongType j, const LongType k, const LongType l, NDArray &value);
 
-  template <typename T>
-  void pIdx(const LongType *indices, const T value);
+  template<typename T> typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value, void>::type p(const sd::LongType i, const T value);
+  template<typename T> typename std::enable_if<DataTypeUtils::stringTypesForNDarray<T>::value, void>::type p(const sd::LongType i, const T value);
 
   /**
    *  returns true if array is 2D
@@ -1991,10 +2003,11 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 void *NDArray::buffer() {
   BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES);
+
 }
 
 //////////////////////////////////////////////////////////////////////////
-const LongType *NDArray::shapeInfo()  { return _shapeInfo; }
+LongType *NDArray::shapeInfo()  { return _shapeInfo; }
 
 
 
@@ -2011,7 +2024,7 @@ DataBuffer NDArray::shapeInfoDataBuffer()   {
 
 
 ////////////////////////////////////////////////////////////////////////
-const LongType *NDArray::specialShapeInfo()  {
+LongType *NDArray::specialShapeInfo()  {
   if (_shapeInfoD == nullptr) return _shapeInfo;
   // FIXME: this should be fixed once CUDA backend added
   return _shapeInfoD;

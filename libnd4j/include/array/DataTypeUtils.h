@@ -108,6 +108,14 @@ class SD_LIB_EXPORT DataTypeUtils {
   };
 
   template <typename T>
+  struct stringTypesForNDarray {
+    static bool const value =
+        std::is_same<std::string, T>::value ||
+        std::is_same<std::u16string, T>::value ||
+        std::is_same<std::u32string, T>::value;
+  };
+
+  template <typename T>
   struct scalarTypesForExecution {
     static bool const value = std::is_same<double, T>::value || std::is_same<float, T>::value ||
                               std::is_same<LongType, T>::value || std::is_same<int, T>::value ||
