@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2019 Konduit K.K.
  *
-/* ******************************************************************************
+* ******************************************************************************
  *
  *
  * This program and the accompanying materials are made available under the
@@ -103,7 +103,7 @@ SD_INLINE SD_HOST_DEVICE size_t offset_from_coords(const LongType* strides, cons
                                                    const LongType& rank) {
   size_t offset = 0;
   size_t rank_4 = rank & -4;
-  for (int i = 0; i < rank_4; i += 4) {
+  for (size_t i = 0; i < rank_4; i += 4) {
     offset = offset + coords[i] * strides[i] + coords[i + 1] * strides[i + 1] + coords[i + 2] * strides[i + 2] +
              coords[i + 3] * strides[i + 3];
   }
@@ -117,7 +117,7 @@ SD_INLINE SD_HOST_DEVICE zip_size_t offset_from_coords(const LongType* x_strides
                                                        const LongType* coords, const LongType& rank) {
   zip_size_t offset = {0, 0};
   size_t rank_4 = rank & -4;
-  for (int i = 0; i < rank_4; i += 4) {
+  for (size_t i = 0; i < rank_4; i += 4) {
     offset.first = offset.first + coords[i] * x_strides[i] + coords[i + 1] * x_strides[i + 1] +
                    coords[i + 2] * x_strides[i + 2] + coords[i + 3] * x_strides[i + 3];
     offset.second = offset.second + coords[i] * z_strides[i] + coords[i + 1] * z_strides[i + 1] +
@@ -331,7 +331,7 @@ template <>
 SD_INLINE SD_HOST_DEVICE size_t inc_coords<false>(const LongType* bases, const LongType* strides, LongType* coords, size_t last_offset, const size_t rank,
                                                   const size_t skip) {
   LongType val;
-  for (int i = skip; i < rank; i++) {
+  for (size_t i = skip; i < rank; i++) {
     val = coords[i] + 1;
     if (likely(val < bases[i])) {
       coords[i] = val;
@@ -371,7 +371,7 @@ SD_INLINE SD_HOST_DEVICE zip_size_t inc_coords<false>(const LongType* bases, con
                                                       const LongType* z_strides, LongType* coords,
                                                       zip_size_t last_offset, const size_t rank, const size_t skip) {
   LongType val = 0;
-  for (int i = skip; i < rank; i++) {
+  for (size_t i = skip; i < rank; i++) {
     val = coords[i] + 1;
     if (likely(val < bases[i])) {
       coords[i] = val;
@@ -424,7 +424,7 @@ SD_INLINE SD_HOST_DEVICE triple_size_t inc_coords<false>(const LongType* bases, 
                                                          LongType* coords, triple_size_t last_offset,
                                                          const size_t rank, const size_t skip) {
   LongType val = 0;
-  for (int i = skip; i < rank; i++) {
+  for (size_t i = skip; i < rank; i++) {
     val = coords[i] + 1;
     if (likely(val < bases[i])) {
       coords[i] = val;
@@ -448,7 +448,7 @@ SD_INLINE SD_HOST_DEVICE triple_size_t offset_from_coords(const LongType* x_stri
                                                           const LongType& rank) {
   triple_size_t offset = {0, 0, 0};
   size_t rank_4 = rank & -4;
-  for (int i = 0; i < rank_4; i += 4) {
+  for (size_t i = 0; i < rank_4; i += 4) {
     offset.first = offset.first + coords[i] * x_strides[i] + coords[i + 1] * x_strides[i + 1] +
                    coords[i + 2] * x_strides[i + 2] + coords[i + 3] * x_strides[i + 3];
     offset.second = offset.second + coords[i] * y_strides[i] + coords[i + 1] * y_strides[i + 1] +
@@ -544,7 +544,7 @@ SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<LongType
     first_end = 0;
     first_begin = 0;
     // treat it as the whole
-    for (int i = 0; i < rank; i++) {
+    for (size_t i = 0; i < rank; i++) {
       new_bases[i] = bases[i];
       new_strides[i] = strides[i];
     }
@@ -553,15 +553,14 @@ SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<LongType
     second_begin = 0;
 
   } else {
-    for (int index : dimensions) {
-      if (index < 0) index = rank + index;
-      if (index >= 0 && index < rank) {
+    for (size_t index : dimensions) {
+      if (index < rank) {
         indices[index] = true;
       }
     }
 
     // move output ones and
-    for (int i = 0; i < rank; i++) {
+    for (size_t i = 0; i < rank; i++) {
       if (!indices[i]) {
         new_bases[ind] = bases[i];
         new_strides[ind] = strides[i];
@@ -609,7 +608,7 @@ SD_INLINE SD_HOST_DEVICE void rePartition(char order, const std::vector<LongType
     }
 
     // move process indices
-    for (int i = 0; i < rank; i++) {
+    for (size_t i = 0; i < rank; i++) {
       if (indices[i]) {
         new_bases[ind] = bases[i];
         new_strides[ind] = strides[i];

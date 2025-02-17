@@ -69,13 +69,11 @@ class SD_LIB_EXPORT RandomBuffer : public CudaManaged {
 class SD_LIB_EXPORT RandomBuffer {
 #endif
  private:
-  void *devHolder;
   sd::LongType size;
   uint64_t *buffer;
   uint64_t *devBuffer;
   sd::LongType offset;
   sd::LongType seed;
-  sd::LongType position;
   sd::LongType generation;
   sd::LongType currentPosition;
   sd::LongType amplifier;
@@ -149,9 +147,9 @@ class SD_LIB_EXPORT RandomBuffer {
 
   SD_INLINE SD_HOST_DEVICE sd::LongType getSeed() { return this->seed; }
 
-  void SD_HOST_DEVICE setSeed(sd::LongType seed) {
-    this->seed = seed;
-    this->amplifier = seed;
+  void SD_HOST_DEVICE setSeed(sd::LongType seedIn) {
+    this->seed = seedIn;
+    this->amplifier = seedIn;
     this->generation = 1;
   }
 
@@ -159,12 +157,12 @@ class SD_LIB_EXPORT RandomBuffer {
 
   SD_INLINE SD_HOST_DEVICE sd::LongType getOffset() { return this->currentPosition; }
 
-  void SD_HOST_DEVICE setOffset(sd::LongType offset) { this->currentPosition = offset; }
+  void SD_HOST_DEVICE setOffset(sd::LongType offsetIn) { this->currentPosition = offsetIn; }
 
-  void SD_HOST_DEVICE reSeed(sd::LongType amplifier) { this->amplifier = amplifier; }
+  void SD_HOST_DEVICE reSeed(sd::LongType amplifierIn) { this->amplifier = amplifierIn; }
 
-  SD_INLINE SD_DEVICE uint64_t getElement(sd::LongType position) {
-    sd::LongType actualPosition = this->getOffset() + position;
+  SD_INLINE SD_DEVICE uint64_t getElement(sd::LongType positionIn) {
+    sd::LongType actualPosition = this->getOffset() + positionIn;
     sd::LongType tempGen = generation;
     if (actualPosition >= this->size) {
       tempGen += actualPosition / this->size;
@@ -214,8 +212,8 @@ class SD_LIB_EXPORT RandomBuffer {
       return (x * y) + 11;
   }
 
-  uint64_t SD_HOST_DEVICE seedConv(sd::LongType seed) {
-    uint64_t x = static_cast<uint64_t>(seed);
+  uint64_t SD_HOST_DEVICE seedConv(sd::LongType seedIn) {
+    uint64_t x = static_cast<uint64_t>(seedIn);
     uint64_t z = (x += UINT64_C(0x9E3779B97F4A7C15));
     z = (z ^ (z >> 30)) * UINT64_C(0xBF58476D1CE4E5B9);
     z = (z ^ (z >> 27)) * UINT64_C(0x94D049BB133111EB);
@@ -308,7 +306,7 @@ class SD_LIB_EXPORT RandomBuffer {
    */
   int SD_DEVICE nextInt() {
     auto u = nextUInt64();
-    return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
+    return static_cast<int>(u) <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
                                               : static_cast<int>(u % sd::DataTypeUtils::max<int>());
   };
 
@@ -384,7 +382,7 @@ class SD_LIB_EXPORT RandomBuffer {
    */
   inline int SD_DEVICE relativeInt(sd::LongType index) {
     auto u = relativeUInt64(index);
-    return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
+    return static_cast<int>(u) <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u)
                                               : static_cast<int>(u % sd::DataTypeUtils::max<int>());
   }
 
