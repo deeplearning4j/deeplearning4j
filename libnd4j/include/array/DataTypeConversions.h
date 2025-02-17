@@ -37,8 +37,7 @@ template <typename T>
 class SD_LIB_EXPORT DataTypeConversions {
  private:
 
-  // Here is your rewritten rconv function.
-  // (Assumes that T and LongType are defined in the enclosing scope.)
+
   template <typename T2>
   static SD_INLINE void rconv(bool isBe, bool canKeep, T *buffer, LongType length, void *src) {
     if (std::is_same<T, T2>::value && canKeep) {
