@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(reduce_min) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_MIN OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -108,7 +108,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -124,7 +124,8 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
 
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMin);
-    gradI->p(indOfMaxElem.e<sd::LongType>(0), gradO->e(0));
+    auto right = gradO->e(0);
+    gradI->p(indOfMaxElem.e<sd::LongType>(0),right);
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());
@@ -146,7 +147,7 @@ DECLARE_SHAPE_FN(reduce_min_bp) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_MIN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 

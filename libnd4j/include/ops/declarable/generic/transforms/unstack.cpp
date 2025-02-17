@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
 
 
   std::vector<NDArray*> outArrs(input->sizeAt(dim));
-  for (LongType i = 0; i < outArrs.size(); ++i) outArrs[i] = OUTPUT_VARIABLE(i);
+  for (size_t i = 0; i < outArrs.size(); ++i) outArrs[i] = OUTPUT_VARIABLE(i);
 
   helpers::unstack(block.launchContext(), *input, outArrs, dim);
 

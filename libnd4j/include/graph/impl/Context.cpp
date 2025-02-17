@@ -177,7 +177,7 @@ void Context::setOuterTime(LongType time) { this->_executionTime.first = time; }
 void Context::setInnerTime(LongType time) { this->_executionTime.second = time; }
 
 Variable *Context::getVariable(int idx) {
-  if (idx >= this->_inputs.size()) {
+  if (static_cast<size_t>(idx) >= this->_inputs.size()) {
     std::string errorMessage;
     errorMessage += "Node ";
     errorMessage += std::to_string(this->_nodeId);
@@ -208,8 +208,8 @@ Variable *Context::getVariable(int idx) {
       NDArray &raveled = array->reshape(array->ordering(), shapeLen);
       sd_printf("Values: [ ",0);
       for (LongType i = 0; i < maxLen; i++) {
-        auto v = raveled.e<float>(i);
-        sd_printf("%f, ", v);
+        auto v2 = raveled.e<float>(i);
+        sd_printf("%f, ", v2);
       }
       sd_printf("]\n",0);
 
@@ -343,7 +343,7 @@ NDArray *Context::getNDArray(int idx) { return array(idx); }
 
 NDArray *Context::outputArray(int idx) {
   // we check for fastpath first
-  if (!_fastpath_out.empty() && _fastpath_out.size() > idx) {
+  if (!_fastpath_out.empty() && _fastpath_out.size() > static_cast<size_t>(idx)) {
     return _fastpath_out[idx];
   }
 
@@ -359,7 +359,7 @@ NDArray *Context::outputArray(int idx) {
 
 NDArray *Context::array(int idx) {
   // we check for fastpath first
-  if (!_fastpath_in.empty() && _fastpath_in.size() > idx) {
+  if (!_fastpath_in.empty() && _fastpath_in.size() > static_cast<size_t>(idx)) {
     return _fastpath_in[idx];
   }
   // if no luck for fastpath - return whatever is available
@@ -414,7 +414,7 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
     THROW_EXCEPTION(errorMessage.c_str());
   }
 
-  if (_fastpath_in.size() < index + 1) _fastpath_in.resize(index + 1);
+  if (_fastpath_in.size() < static_cast<size_t>(index + 1)) _fastpath_in.resize(index + 1);
 
   _fastpath_in[index] = array;
   if (removable) _handles.emplace_back(array);
@@ -424,7 +424,7 @@ void Context::setInputArray(int index, NDArray *array, bool removable) {
 
 
 void Context::setOutputArray(int index, NDArray *array, bool removable) {
-  if (_fastpath_out.size() < index + 1) _fastpath_out.resize(index + 1);
+  if (_fastpath_out.size() < static_cast<size_t>(index + 1)) _fastpath_out.resize(index + 1);
   if(array->dataType() != ArrayOptions::dataType(array->shapeInfo())) {
     std::string errorMessage;
     errorMessage += std::string("Array at index ");

@@ -108,7 +108,7 @@ DECLARE_SHAPE_FN(Where) {
     for (LongType i = 0; i < condition->lengthOf(); i++)
       if (condition->e<bool>(i)) numOfTrue++;
 
-    LongType const* theNewShape;
+    LongType * theNewShape;
     if (numOfTrue > 0) {
       LongType* newShape;
       ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), sd::LongType);

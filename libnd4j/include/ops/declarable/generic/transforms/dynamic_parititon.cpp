@@ -107,7 +107,7 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
   REQUIRE_TRUE(res.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
   ops::dynamic_stitch stitchOp;
   std::vector<NDArray *> partitions(numPartition * 2);
-  for (size_t i = 0; i < res.size(); i++) {
+  for (int i = 0; i < res.size(); i++) {
     partitions[i] = res.at(i);
     partitions[i + numPartition] = gradOutList[i];
   }

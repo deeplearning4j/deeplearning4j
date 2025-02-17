@@ -157,7 +157,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
   DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
 
   // evaluate output shapeInfo
-  LongType const* outShapeInfo = nullptr;
+  LongType * outShapeInfo = nullptr;
   if (INT_ARG(0) != 0)  // in this case output is scalar
     outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
   else {  // in this case output has the same shape as labels reduced  by dim axis

@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(nth_element) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in) - 1;
-  LongType const* outShape = nullptr;
+  LongType* outShape = nullptr;
   if (outRank > 1) {
     LongType* outputShape = nullptr;
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
