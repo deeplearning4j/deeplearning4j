@@ -428,6 +428,7 @@ void SpecialMethods<T>::sortTadGeneric(NDArray *input, sd::LongType *dimension, 
   auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
       const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), false);
 
+
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {
       NDArray *dx = pack->extractTadView(input, r);

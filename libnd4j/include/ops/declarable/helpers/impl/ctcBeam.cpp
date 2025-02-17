@@ -391,7 +391,7 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
       auto start_index = last_beams[j].index_as_parent;
       auto end_index = last_beams[j].index_as_parent + last_beams[j].children_count;
 
-      for (int c = 0; c < len_c; c++) {
+      for (int c = 0; c < static_cast<int>(len_c); c++) {
         if (c == blank_index) continue;
 
         const auto prob = element<HasElementStride>(log_p, c, element_stride);  // log_p[c];
@@ -530,7 +530,7 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
       result_prob[j] = top.prob.total;
       result_seq_length[j] = seq_size;
       // copy sequence
-      for (auto s = 0; s < seq_size; s++) {
+      for (size_t s = 0; s < seq_size; s++) {
         result_sequence[s] = result_vector[s];
       }
 
