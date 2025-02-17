@@ -54,8 +54,8 @@ CUSTOM_OP_IMPL(qr, 1, 2, false, 0, 0) {
 DECLARE_SHAPE_FN(qr) {
   auto inShape = inputShape->at(0);
 
-  LongType const* shapeQ;
-  LongType const* shapeR;
+  LongType * shapeQ;
+  LongType * shapeR;
   int targetRank = shape::rank(inShape);  // last two dimensions will be reduced to scalar
 
   auto fullMatricies = false;

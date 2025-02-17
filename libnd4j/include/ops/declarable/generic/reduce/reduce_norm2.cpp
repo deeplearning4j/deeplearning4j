@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(reduce_norm2, -1, 1, false, 0, 0) {
     dimensions = *block.getIArguments();
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_NORM2 OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -77,7 +77,7 @@ DECLARE_SHAPE_FN(reduce_norm2) {
     dimensions = *block.getIArguments();
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_NORM2 OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -120,7 +120,7 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, -1, 1, false, 0, 0) {
     keepDims = (bool)T_ARG(0);
 
   REQUIRE_TRUE(
-      dimensions.size() <= input->rankOf(), 0,
+      dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_NORM2_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 
@@ -155,7 +155,7 @@ DECLARE_SHAPE_FN(reduce_norm2_bp) {
   }
 
   REQUIRE_TRUE(
-      dimensions.size() <= inputShape->at(0)[0], 0,
+      dimensions.size() <= static_cast<size_t>(inputShape->at(0)[0]), 0,
       "REDUCE_NORM2_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
       dimensions.size());
 

@@ -71,6 +71,46 @@ CONFIGURABLE_OP_IMPL(clipbyvalue, -2, 1, true, -2, 0) {
         helpers::clipByValue(block.launchContext(), *input, leftValueBFloat16, rightValueBFloat16, *output);
         break;
       }
+      case INHERIT:
+        break;
+      case BOOL:
+        break;
+      case FLOAT8:
+        break;
+      case HALF2:
+        break;
+      case INT8:
+        break;
+      case INT16:
+        break;
+      case INT32:
+        break;
+      case INT64:
+        break;
+      case UINT8:
+        break;
+      case UINT16:
+        break;
+      case UINT32:
+        break;
+      case UINT64:
+        break;
+      case QINT8:
+        break;
+      case QINT16:
+        break;
+      case UTF8:
+        break;
+      case UTF16:
+        break;
+      case UTF32:
+        break;
+      case ANY:
+        break;
+      case AUTO:
+        break;
+      case UNKNOWN:
+        break;
     }
   }
 
