@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(matrix_diag_part) {
-  LongType const* outShapeInfo = nullptr;
+  LongType * outShapeInfo = nullptr;
   auto in = inputShape->at(0);
   LongType inRank = shape::rank(in);
 

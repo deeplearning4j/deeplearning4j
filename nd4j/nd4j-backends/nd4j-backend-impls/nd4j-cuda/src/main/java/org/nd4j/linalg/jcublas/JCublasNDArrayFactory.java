@@ -38,7 +38,6 @@ import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -47,7 +46,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.*;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -464,179 +462,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         return ret;
     }
 
-    public INDArray accumulate(INDArray target, INDArray... arrays) {
-        if (arrays == null || arrays.length == 0)
-            throw new RuntimeException("Input arrays are missing");
-
-        if (arrays.length == 1)
-            return target.assign(arrays[0]);
-
-        Nd4j.getExecutioner().push();
-
-        long len = target.length();
-
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = allocator.getFlowController().prepareAction(target, arrays);
-
-        PointerPointer extras = new PointerPointer(null, // not used
-                context.getOldStream(), allocator.getDeviceIdPointer(), new CudaPointer(0));
-
-        // Convert INDArray to OpaqueNDArray
-        OpaqueNDArray[] opaqueArrays = new OpaqueNDArray[arrays.length];
-        for (int i = 0; i < arrays.length; i++) {
-            if (arrays[i].elementWiseStride() != 1)
-                throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
-
-            if (arrays[i].length() != len)
-                throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
-
-            opaqueArrays[i] = OpaqueNDArray.fromINDArray(arrays[i]);
-        }
-        OpaqueNDArray targetOpaque = OpaqueNDArray.fromINDArray(target);
-
-        OpaqueNDArrayArr xArr = new OpaqueNDArrayArr(opaqueArrays);
-
-        nativeOps.accumulate(extras, xArr, targetOpaque, arrays.length, len);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        allocator.getFlowController().registerAction(context, target, arrays);
-
-        return target;
-    }
-
-    @Override
-    public INDArray average(INDArray target, INDArray[] arrays) {
-        if (arrays == null || arrays.length == 0)
-            throw new RuntimeException("Input arrays are missing");
-
-        if (arrays.length == 1) {
-            // Edge case - average 1 array - no op
-            if (target == null) {
-                return null;
-            }
-            return target.assign(arrays[0]);
-        }
-
-        // Convert INDArray to OpaqueNDArray
-        OpaqueNDArray[] opaqueArrays = new OpaqueNDArray[arrays.length];
-        for (int i = 0; i < arrays.length; i++) {
-            opaqueArrays[i] = OpaqueNDArray.fromINDArray(arrays[i]);
-        }
-
-        OpaqueNDArrayArr xs = new OpaqueNDArrayArr(opaqueArrays);
-
-        OpaqueNDArray targetOpaque = target != null ? OpaqueNDArray.fromINDArray(target) : null;
-
-        // We do averaging on GPU only if ALL devices have p2p links
-        if (nativeOps.isP2PAvailable() && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed()) {
-            Nd4j.getExecutioner().push();
-
-            long len = target != null ? target.length() : arrays[0].length();
-
-            AtomicAllocator allocator = AtomicAllocator.getInstance();
-            CudaContext context = allocator.getFlowController().prepareAction(target, arrays);
-
-            PointerPointer extras = new PointerPointer(null, // not used
-                    context.getOldStream(), allocator.getDeviceIdPointer(), new CudaPointer(0));
-
-            nativeOps.average(extras,
-                    xs,
-                    targetOpaque,
-                    arrays.length,
-                    len, true);
-
-            if (nativeOps.lastErrorCode() != 0)
-                throw new RuntimeException(nativeOps.lastErrorMessage());
-
-            allocator.getFlowController().registerAction(context, target, arrays);
-
-            return target;
-        } else {
-            // Otherwise we do averaging on CPU side
-            long len = target == null ? arrays[0].length() : target.length();
-
-            val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
-
-            val dataPointers = new PointerPointer(arrays.length);
-            val extras = new PointerPointer(null, // not used
-                    context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer(), new CudaPointer(1));
-
-            for (int i = 0; i < arrays.length; i++) {
-                Nd4j.getCompressor().autoDecompress(arrays[i]);
-
-                if (arrays[i].elementWiseStride() != 1)
-                    throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
-
-                if (arrays[i].length() != len)
-                    throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
-
-                ((BaseCudaDataBuffer) arrays[i].data()).lazyAllocateHostPointer();
-
-                dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
-            }
-
-            if (target != null)
-                ((BaseCudaDataBuffer) target.data()).lazyAllocateHostPointer();
-
-            nativeOps.average(extras,
-                    xs,
-                    targetOpaque,
-                    arrays.length,
-                    len, true);
-
-            if (nativeOps.lastErrorCode() != 0)
-                throw new RuntimeException(nativeOps.lastErrorMessage());
-
-            if (target != null)
-                AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
-
-            // TODO: make propagation optional maybe?
-            if (true) {
-                for (int i = 0; i < arrays.length; i++) {
-                    AtomicAllocator.getInstance().getAllocationPoint(arrays[i]).tickHostWrite();
-                }
-            }
-
-            return target;
-        }
-    }
-
-    @Override
-    public INDArray average(Collection<INDArray> arrays) {
-        return average(arrays.toArray(new INDArray[0]));
-    }
-
-
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param arrays
-     * @return
-     */
-    @Override
-    public INDArray average(INDArray[] arrays) {
-        if (arrays == null || arrays.length == 0)
-            throw new RuntimeException("Input arrays are missing");
-
-        // we assume all arrays have equal length,
-        INDArray ret = Nd4j.createUninitialized(arrays[0].dataType(), arrays[0].shape(), arrays[0].ordering());
-
-        return average(ret, arrays);
-    }
-
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param target
-     * @param arrays
-     * @return
-     */
-    @Override
-    public INDArray average(INDArray target, Collection<INDArray> arrays) {
-        return average(target, arrays.toArray(new INDArray[0]));
-    }
 
     /**
      * In place shuffle of an ndarray

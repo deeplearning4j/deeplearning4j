@@ -66,7 +66,6 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     // 3. due l2Regularizer = 0, skip regularization ( indeed A' = A2 - l2Regularizer * I)
     auto regularizer = leftOutput.ulike();
     fillRegularizer<T>(regularizer, l2Regularizer);
-  https:  // mangapark.net/
     //            regularizer *= l2Regularizer;
     leftOutput += regularizer;
     // 4. Cholesky decomposition -- output matrix is square and lower triangular

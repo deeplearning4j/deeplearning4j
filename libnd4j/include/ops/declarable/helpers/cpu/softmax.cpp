@@ -170,7 +170,8 @@ static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output
     else
       output = 1.;
   } else if (input.isSameShapeStrict(output)) {
-    TadPack *tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimension);
+    TadPack *tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(),
+                                                                             dimension,true);
     auto tadShapeInfo = tadPack->primaryShapeInfo();
     auto tadOffsets = tadPack->primaryOffsets();
     const sd::LongType numOfSubArrs = tadPack->numberOfTads();

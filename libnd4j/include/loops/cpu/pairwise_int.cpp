@@ -30,31 +30,7 @@ using namespace simdOps;
 namespace functions {
 namespace pairwise_transforms {
 
-template <typename X>
-void PairWiseIntTransform<X>::exec(const int opNum, const void *x, sd::LongType xEws, const void *y, sd::LongType yEws,
-                                   void *z, sd::LongType zEws, void *extraParams, sd::LongType n, const uint64_t start,
-                                   const uint64_t stop) {
-  DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop), PAIRWISE_INT_OPS);
-};
 
-template <typename X>
-template <typename OpType>
-void PairWiseIntTransform<X>::exec(const void *vx, sd::LongType xEws, const void *vy, sd::LongType yEws, void *vz,
-                                   sd::LongType zEws, void *vextraParams, const sd::LongType n, const uint64_t start,
-                                   const uint64_t stop) {
-  auto x = reinterpret_cast<const X *>(vx);
-  auto y = reinterpret_cast<const X *>(vy);
-  auto z = reinterpret_cast<X *>(vz);
-  auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-  if (xEws == 1 && yEws == 1 && zEws == 1) {
-    PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) z[i] = OpType::op(x[i], y[i], extraParams);
-  } else {
-    PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) z[i * zEws] = OpType::op(x[i * xEws], y[i * yEws], extraParams);
-  }
-}
 
 template <typename X>
 void PairWiseIntTransform<X>::exec(const int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,

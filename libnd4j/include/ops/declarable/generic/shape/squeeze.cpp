@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   std::vector<LongType> axis;
 
   if (block.numI() > 0)
-    for (int e = 0; e < block.numI(); e++) {
+    for (size_t e = 0; e < block.numI(); e++) {
       int _a = INT_ARG(e);
       if (_a < 0) _a += input->rankOf();
 
@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(squeeze) {
   std::vector<LongType> axis;
 
   if (block.numI() > 0)
-    for (int e = 0; e < block.numI(); e++) {
+    for (size_t e = 0; e < block.numI(); e++) {
       int _a = INT_ARG(e);
       if (_a < 0) _a += rank;
 

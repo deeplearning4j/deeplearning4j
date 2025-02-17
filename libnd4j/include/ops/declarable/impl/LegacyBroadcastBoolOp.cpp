@@ -41,7 +41,7 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
 
   int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims,true);
 
   PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
   auto pTadShape = Environment::getInstance().isCPU()
@@ -65,7 +65,7 @@ Status LegacyBroadcastBoolOp::validateAndExecute(Context &block) {
     // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare
     // and pass separate TAD info
 
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims,true);
 
     auto zTadShape = Environment::getInstance().isCPU()
                      ? packZ->primaryShapeInfo()

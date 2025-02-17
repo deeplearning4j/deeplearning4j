@@ -106,7 +106,7 @@ void MemoryTracker::countIn(MemoryType type, Pointer ptr, LongType numBytes) {
 
     std::string stack("");
     messages = backtrace_symbols(array, size);
-    for (int i = 1; i < size && messages != NULL; ++i) {
+    for (size_t i = 1; i < size && messages != NULL; ++i) {
       stack += demangle(messages[i]) + "\n";
     }
 
