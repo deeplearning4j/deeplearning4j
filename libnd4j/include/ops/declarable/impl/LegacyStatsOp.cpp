@@ -56,12 +56,12 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
     // dimensions for TAD
     // we should skip first argument here, because it's addressing bias correction
     std::vector<LongType> dims(*block.getIArguments());
-    for (int e = 0; e < dims.size(); e++)
+    for (size_t e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims,true);
 
     auto pTadShape = Environment::getInstance().isCPU()
                          ? packX->primaryShapeInfo()
@@ -115,7 +115,7 @@ ShapeList *LegacyStatsOp::calculateOutputShape(ShapeList *inputShape, Context &b
     newShape[6] = 1;
     newShape[7] = 99;
   } else {
-    const sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), inShape, false, true);
+    sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), inShape, false, true);
     return SHAPELIST(xShape2);
   }
 

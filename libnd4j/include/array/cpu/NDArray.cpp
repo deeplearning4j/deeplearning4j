@@ -108,7 +108,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
       auto lCompare = includeEdges ? row <= (col - lower) : row < (col - lower);
       auto uCompare = includeEdges ? row >= (col - upper) : row > (col - upper);
 
-      if (direction == 'u' && lCompare || direction == 'l' && uCompare) {
+      if ((direction == 'u' && lCompare) || (direction == 'l' && uCompare)) {
         z[zOffset] = value;
       } else {
         z[zOffset] = x[xOffset];
@@ -157,7 +157,7 @@ void NDArray::setIdentity() {
 
   float v = 1.0f;
 
-  for (int i = 0; i < minDim; ++i) templatedSet<float>(buffer(), i * offset, this->dataType(), &v);
+  for (int i = 0; i < minDim; ++i) templatedSet<float,float>(buffer(), i * offset, this->dataType(), &v);
 }
 
 ////////////////////////////////////////////////////////////////////////
