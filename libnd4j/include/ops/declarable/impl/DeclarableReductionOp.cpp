@@ -41,7 +41,7 @@ ShapeList* DeclarableReductionOp::calculateOutputShape(ShapeList* inputShape, Co
     auto axis = INPUT_VARIABLE(1);
     for (int e = 0; e < axis->lengthOf(); e++) dims.push_back(axis->e<int>(e));
   } else if (block.getIArguments()->size())
-    for (int e = 0; e < block.getIArguments()->size(); e++) dims.push_back(INT_ARG(e));
+    for (size_t e = 0; e < block.getIArguments()->size(); e++) dims.push_back(INT_ARG(e));
   else if (block.getAxis()->size()) {
     dims = *block.getAxis();
   }

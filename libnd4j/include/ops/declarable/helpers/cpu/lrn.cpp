@@ -35,13 +35,15 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
 
   const int rank = input->rankOf();
 
-  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {rank - 1});
+  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
+                                                                             rank - 1,true);
   TadPack *outTadPack;
 
   if (shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo()))
     outTadPack = inTadPack;
   else
-    outTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {rank - 1});
+    outTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),
+                                                                       rank - 1,true);
 
   const sd::LongType numOfTads = inTadPack->numberOfTads();
   const sd::LongType tadLen = input->sizeAt(-1);
@@ -57,7 +59,6 @@ static sd::Status lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray
 
   const T tbias = static_cast<T>(bias);
   const T tbeta = static_cast<T>(beta);
-  const T talpha = static_cast<T>(alpha);
 
   if (inTadEws == 1 && outTadEws == 1) {
     auto func = PRAGMA_THREADS_FOR {
@@ -151,13 +152,15 @@ static void lrnBP_(NDArray& input, NDArray& gradO, NDArray& gradI, const int dep
                    const float alpha, const float beta) {
   const int rank = input.rankOf();
 
-  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {rank - 1});
+  TadPack *inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(),
+                                                                             rank - 1,true);
   TadPack *gradITadPack;
 
   if (shape::haveSameShapeAndStrides(input.shapeInfo(), gradI.shapeInfo()))
     gradITadPack = inTadPack;
   else
-    gradITadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(gradI.shapeInfo(), {rank - 1});
+    gradITadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(gradI.shapeInfo(),
+                                                                         rank - 1,true);
 
   const sd::LongType numOfTads = inTadPack->numberOfTads();
   const sd::LongType tadLen = input.sizeAt(-1);

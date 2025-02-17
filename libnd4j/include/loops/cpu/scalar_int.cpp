@@ -124,18 +124,18 @@ void ScalarIntTransform<X>::transform(const void *vx, const sd::LongType *xShape
 
   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) {
+    for (auto i3 = start; i3 < stop; i3++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i3, xRank, xShape, coords);
       sd::LongType offset;
       COORDS2INDEX(xRank, xStride, coords, offset);
       z[offset] = OpType::op(x[offset], scalar, extraParams);
     };
   } else {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) {
+    for (auto i2 = start; i2 < stop; i2++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i2, xRank, xShape, coords);
       sd::LongType xOffset, zOffset;
       COORDS2INDEX(xRank, xStride, coords, xOffset);
       COORDS2INDEX(zRank, zStride, coords, zOffset);
@@ -154,7 +154,7 @@ void ScalarIntTransform<X>::transform(const void *vx, sd::LongType xEws, void *v
   auto scalar = reinterpret_cast<const X *>(vscalar)[0];
   auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-  if (scalar < (sizeof(X) * 8)) {
+  if (scalar < static_cast<X>((sizeof(X) * 8))) {
     PRAGMA_OMP_SIMD
     for (auto i = start; i < stop; i++) {
       auto xi = i * xEws;

@@ -172,7 +172,8 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
 template <typename T>
 std::vector<char> &operator+=(std::vector<char> &lhs, const T rhs) {
   // write in little endian
-  for (char byte = 0; byte < sizeof(T); byte++) {
+  char size = sizeof(T);
+  for (char byte = 0; byte < size; byte++) {
     char val = *((char *)&rhs + byte);
     lhs.push_back(val);
   }
@@ -224,13 +225,6 @@ char *cnpy::loadFile(const char *path) {
     length = ftell(f);
     fseek(f, 0, SEEK_SET);
     buffer = (char *)malloc((length + 1) * sizeof(char));
-
-    // just getting rid of compiler warning
-    sd::LongType fps = 0;
-
-    if (buffer) {
-      fps += fread(buffer, sizeof(char), length, f);
-    }
 
     fclose(f);
   }
@@ -388,7 +382,7 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
       std::string firstError;
       firstError += std::string("Pointer doesn't look like a NumPy header. Missing expected characters in middle.");
       std::string header;
-      for(int i = 0; i < hdr.size(); i++) {
+      for(size_t i = 0; i < hdr.size(); i++) {
         header+= hdr[i];
       }
 
@@ -406,19 +400,14 @@ cnpy::NpyArray cnpy::loadNpyFromHeader(char *data) {
   parseNpyHeaderStr(std::string(data), wordSize, shape, ndims, fortranOrder);
   // the "real" data starts after the \n
   char currChar = data[0];
-  int count = 0;
   while (currChar != '\n') {
     data++;
     currChar = data[0];
-    count++;
   }
 
   // move pass the \n
   data++;
-  count++;
 
-  unsigned long long size = 1;  // long long so no overflow when multiplying by word_size
-  for (unsigned int i = 0; i < ndims; i++) size *= shape[i];
   char *cursor = data;
   NpyArray arr;
   arr.wordSize = wordSize;
@@ -615,7 +604,7 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
       assert(tmp_dims == ndims);
     }
 
-    for (int i = 1; i < ndims; i++) {
+    for (size_t i = 1; i < ndims; i++) {
       if (shape[i] != tmp_shape[i]) {
         std::cout << "libnpy error: npy_save attempting to append misshaped data to " << fname << "\n";
         assert(shape[i] == tmp_shape[i]);
@@ -637,7 +626,7 @@ void cnpy::npy_save(std::string fname, const void *data, const unsigned int *sha
   }
 
   unsigned long long nels = 1;
-  for (int i = 0; i < ndims; i++) nels *= shape[i];
+  for (unsigned int i = 0; i < ndims; i++) nels *= shape[i];
 
   fwrite(data, sizeof(T), nels, fp);
   fclose(fp);
@@ -663,7 +652,7 @@ std::vector<char> cnpy::createNpyHeader( const unsigned int *shape, const unsign
   dict += "', 'fortran_order': False, 'shape': (";
   if (ndims > 0) {
     dict += tostring(shape[0]);
-    for (int i = 1; i < ndims; i++) {
+    for (size_t i = 1; i < ndims; i++) {
       dict += ", ";
       dict += tostring(shape[i]);
     }

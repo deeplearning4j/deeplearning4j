@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
 
   for (sd::LongType i = 0; i < y->lengthOf(); ++i) yShapeInfo[i + 1] = y->e<sd::LongType>(i);
 
-  const sd::LongType* poinerOnOutShapeInfo = nullptr;
+   sd::LongType* poinerOnOutShapeInfo = nullptr;
 
   const bool isBroadcastPossible = ShapeUtils::evalBroadcastShapeInfo(
       xShapeInfo.data(), yShapeInfo.data(), true, poinerOnOutShapeInfo, block.launchContext()->getWorkspace());

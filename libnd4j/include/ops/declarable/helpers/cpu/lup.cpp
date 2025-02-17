@@ -365,7 +365,8 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
 
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix.p(row, input->e<T>(k));
-    output->p(e, lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr));
+    auto ret = lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+    output->p(e, ret);
   }
 
   return sd::Status::OK;
@@ -557,7 +558,6 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
     for (sd::LongType k = e * n2, l = 0; k < (e + 1) * n2; k++) {
       matrix->p(l++, input->e<T>(k));
     }
-    float zero = 0.f;
     // if (e) // from the second loop need to zero matrix
     lowerMatrix->assign(zero);
 
@@ -594,7 +594,7 @@ sd::Status logdetFunctor_(LaunchContext* context, NDArray* input, NDArray* outpu
   ResultSet matrices = tempOutput.allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
   for (sd::LongType e = 0; e < totalCount; e++) {
-    for (size_t i = 0; i < n; ++i)
+    for (sd::LongType i = 0; i < n; ++i)
       output->r<T>(e) += sd::math::sd_log<T, T>(sd::math::sd_pow<T, T, T>(matrices.at(e)->t<T>(i, i), T(2)));
   }
   return sd::Status::OK;

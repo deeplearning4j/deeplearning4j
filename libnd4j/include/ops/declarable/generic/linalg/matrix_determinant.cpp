@@ -43,7 +43,7 @@ CUSTOM_OP_IMPL(matrix_determinant, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(matrix_determinant) {
   auto inShape = inputShape->at(0);
 
-  LongType const* determinantShape;
+  LongType * determinantShape;
   int targetRank = shape::rank(inShape) - 2;  // last two dimensions will be reduced to scalar
 
   if (targetRank == 0) {  // scalar only
@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(log_matrix_determinant, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(log_matrix_determinant) {
   auto inShape = inputShape->at(0);
 
-  LongType const* determinantShape;
+  LongType * determinantShape;
   int targetRank = shape::rank(inShape) - 2;  // last two dimensions will be reduced to scalar
 
   if (targetRank == 0) {  // scalar only
@@ -133,7 +133,7 @@ CUSTOM_OP_IMPL(logdet, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(logdet) {
   auto inShape = inputShape->at(0);
 
-  LongType const* determinantShape;
+  LongType* determinantShape;
   int targetRank = shape::rank(inShape) - 2;  // last two dimensions will be reduced to scalar
 
   if (targetRank == 0) {  // scalar only

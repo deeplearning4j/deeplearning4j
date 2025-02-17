@@ -61,7 +61,7 @@ Status LegacyStatsOp::validateAndExecute(Context &block) {
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims,true);
 
     auto pTadShape = Environment::getInstance().isCPU()
                          ? packX->primaryShapeInfo()

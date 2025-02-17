@@ -54,14 +54,12 @@ CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
 
   auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*)nullptr;
   auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*)nullptr;
-  bool disposable = false;
 
-  if (min == nullptr && max == nullptr || block.numT() >= 2) {
+  if ((min == nullptr && max == nullptr) || block.numT() >= 2) {
     min = NDArrayFactory::create_(dtype, block.launchContext());
     max = NDArrayFactory::create_(dtype, block.launchContext());
     min->p(0, T_ARG(0));
     max->p(0, T_ARG(1));
-    disposable = true;
   }
 
   auto output = OUTPUT_VARIABLE(0);

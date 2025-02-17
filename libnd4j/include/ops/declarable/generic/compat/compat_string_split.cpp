@@ -44,7 +44,6 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
 
   // getting buffer lengths
   auto outputLength = StringUtils::byteLength(*input);
-  LongType ss = 0L;
   LongType ic = 0L;
   int len = input->isScalar() ? 1 : input->lengthOf();
 
@@ -71,7 +70,6 @@ CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
       indices->p(ic++, f);
     }
 
-    ss += cnt;
   }
 
   // process strings now

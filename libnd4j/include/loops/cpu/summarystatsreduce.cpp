@@ -119,8 +119,7 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
 
  if (dimensionLength < 1) return;
 
- auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-
+ auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension, dimensionLength);
  if (resultLength == 1 || dimensionLength == shape::rank(xShapeInfo) || tadPack->numberOfTads() == 1) {
    z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
    return;

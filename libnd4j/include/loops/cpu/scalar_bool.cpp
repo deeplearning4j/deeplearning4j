@@ -120,18 +120,18 @@ void ScalarBoolTransform<X, Z>::transform(const void *vx, const sd::LongType *xS
 
   if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) {
+    for (auto i2 = start; i2 < stop; i2++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i2, xRank, xShape, coords);
       sd::LongType offset;
       COORDS2INDEX(xRank, xStride, coords, offset);
       z[offset] = OpType::op(x[offset], scalar, extraParams);
     };
   } else {
     PRAGMA_OMP_SIMD
-    for (auto i = start; i < stop; i++) {
+    for (auto i2 = start; i2 < stop; i2++) {
       sd::LongType coords[SD_MAX_RANK];
-      INDEX2COORDS(i, xRank, xShape, coords);
+      INDEX2COORDS(i2, xRank, xShape, coords);
       sd::LongType xOffset, zOffset;
       COORDS2INDEX(xRank, xStride, coords, xOffset);
       COORDS2INDEX(zRank, zStride, coords, zOffset);

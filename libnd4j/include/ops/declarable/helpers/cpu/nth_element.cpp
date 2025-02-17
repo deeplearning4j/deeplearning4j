@@ -59,10 +59,10 @@ void nthElementFunctor_(NDArray* input, sd::LongType n, NDArray* output, bool re
 
 void nthElementFunctor(sd::LaunchContext* launchContext, NDArray* input, sd::LongType n, NDArray* output,
                        bool reverse) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_,
-                      (NDArray * input, sd::LongType n, NDArray* output, bool reverse), SD_COMMON_TYPES);
+                      (NDArray * input, sd::LongType n, NDArray* output, bool reverse), SD_NUMERIC_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

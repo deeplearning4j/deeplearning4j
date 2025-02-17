@@ -128,12 +128,16 @@ template <typename X, typename Y>
 Y ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                        void *extraParams) {
   RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_BOOL_OPS);
+
+
 }
 
 template <typename X, typename Y>
 void ReduceBoolFunction<X, Y>::execScalar(const int opNum, const void *x, const sd::LongType *xShapeInfo,
                                           void *extraParams, void *z, const sd::LongType *zShapeInfo) {
   DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_BOOL_OPS);
+
+
 }
 
 template <typename X, typename Z>

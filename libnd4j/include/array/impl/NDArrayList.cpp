@@ -89,16 +89,16 @@ sd::Status NDArrayList::write(int idx, NDArray* array) {
       for (int e = 0; e < array->rankOf(); e++) _shape.emplace_back(array->sizeAt(e));
     } else {
       // if shape is inferred (say, from split_list)
-      if (array->rankOf() == _shape.size()) {
+      if (static_cast<size_t>(array->rankOf()) == _shape.size()) {
         // skipping first dim
-        for (int e = 1; e < _shape.size(); e++) {
+        for (size_t e = 1; e < _shape.size(); e++) {
           if (_shape[e] != array->sizeAt(e))
             return Logger::logStatusMsg(Status::BAD_INPUT,
                                         "NDArrayList: all arrays must have same size along inner dimensions");
         }
-      } else if (array->rankOf() == _shape.size() - 1) {
+      } else if (static_cast<size_t>(array->rankOf()) == _shape.size() - 1) {
         // case like 2d _shape, and 1D rows
-        for (int e = 1; e < _shape.size(); e++)
+        for (size_t e = 1; e < _shape.size(); e++)
           if (_shape[e] != array->sizeAt(e - 1))
             return Logger::logStatusMsg(Status::BAD_INPUT,
                                         "NDArrayList: all arrays must have same size along inner dimensions");
@@ -111,16 +111,16 @@ sd::Status NDArrayList::write(int idx, NDArray* array) {
       return Logger::logStatusMsg(Status::BAD_INPUT, "NDArrayList: all arrays must have same data type");
 
     // if shape is inferred (say, from split_list)
-    if (array->rankOf() == _shape.size()) {
+    if (static_cast<size_t>(array->rankOf()) == _shape.size()) {
       // skipping first dim
-      for (int e = 1; e < _shape.size(); e++) {
+      for (size_t e = 1; e < _shape.size(); e++) {
         if (_shape[e] != array->sizeAt(e))
           return Logger::logStatusMsg(Status::BAD_INPUT,
                                       "NDArrayList: all arrays must have same size along inner dimensions");
       }
-    } else if (array->rankOf() == _shape.size() - 1) {
+    } else if (static_cast<size_t>(array->rankOf()) == _shape.size() - 1) {
       // case like 2d _shape, and 1D rows
-      for (int e = 1; e < _shape.size(); e++)
+      for (size_t e = 1; e < _shape.size(); e++)
         if (_shape[e] != array->sizeAt(e - 1))
           return Logger::logStatusMsg(Status::BAD_INPUT,
                                       "NDArrayList: all arrays must have same size along inner dimensions");
