@@ -91,7 +91,7 @@ Status LogicMerge::processNode(Graph *graph, Node *node) {
     }
   } else {
     // basically, first non-null variable is our target
-    for (int e = 0; e < node->input()->size(); e++) {
+    for (size_t e = 0; e < node->input()->size(); e++) {
       auto inputAddr = node->input()->at(e);
 
       if (__variableSpace->hasVariable(inputAddr)) {
@@ -101,15 +101,15 @@ Status LogicMerge::processNode(Graph *graph, Node *node) {
         Variable *lvar = nullptr;
         if (__variableSpace->hasVariable(node->id(), 0))
           lvar = __variableSpace->getVariable(node->id(), 0);
-        else
+        else {
           lvar = new Variable(nullptr, node->getName()->c_str(), node->id(), 0);
-
-          if (lvar->hasNDArray()) delete lvar->getNDArray();
+        }
+        if (lvar->hasNDArray()) delete lvar->getNDArray();
 
         auto array = var->getNDArray();
         lvar->setNDArray(array);
         lvar->markReadOnly(true);
-         lvar->markExternal(false);
+        lvar->markExternal(false);
 
         break;
       }
