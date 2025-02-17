@@ -49,7 +49,7 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasStride(INDArray arr) {
-        return arr.elementWiseStride();
+        return arr.stride(-1);
     }
 
     /**
