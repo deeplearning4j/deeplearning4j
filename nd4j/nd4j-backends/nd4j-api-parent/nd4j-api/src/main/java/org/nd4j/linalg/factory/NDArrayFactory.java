@@ -384,49 +384,6 @@ public interface NDArrayFactory {
      */
     void shuffle(List<INDArray> array, Random rnd, List<long[]> dimensions);
 
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param arrays
-     * @return
-     */
-    INDArray average(INDArray target, INDArray[] arrays);
-
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param arrays
-     * @return
-     */
-    INDArray average(INDArray[] arrays);
-
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param arrays
-     * @return
-     */
-    INDArray average(Collection<INDArray> arrays);
-
-
-    /**
-     * This method sums given arrays to target
-     *
-     * @param target
-     * @param arrays
-     * @return
-     */
-    INDArray accumulate(INDArray target, INDArray... arrays);
-
-
-    /**
-     * This method averages input arrays, and returns averaged array
-     *
-     * @param arrays
-     * @return
-     */
-    INDArray average(INDArray target, Collection<INDArray> arrays);
-
 
     /**
      * Create a random ndarray with the given shape using the given rng

@@ -113,8 +113,8 @@ void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArr
                       NDArray* output) {
   auto broadcasted = alpha->shapeInfo();
   if (beta != nullptr) {
-    const sd::LongType* broadcastedShape = nullptr;
-    ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcastedShape, context->getWorkspace());
+     sd::LongType* broadcastedShape = nullptr;
+    ShapeUtils::evalBroadcastShapeInfo(alpha->shapeInfo(), beta->shapeInfo(), true, broadcastedShape, context->getWorkspace());
     broadcasted = broadcastedShape;
   }
 

@@ -74,13 +74,13 @@ static typename std::enable_if<std::is_same<X, Y>::value, const X*>::type flatte
   // best results when buffer used much , may result bad perf if buffer is used once
   X* b_new = nullptr;
   if (yStrideC != 1) {
-    if (num > b_stack_size) {
+    if (static_cast<size_t>(num)  > b_stack_size) {
       b_heap.reset(new X[num]);
       b_new = b_heap.get();
     } else {
       b_new = b_stack;
     }
-    for (size_t i = 0; i < num; i++) {
+    for (size_t i = 0; i < static_cast<size_t>(num) ; i++) {
       b_new[i] = b_real[i * yStrideC];
     }
   } else {
@@ -98,18 +98,18 @@ static typename std::enable_if<!std::is_same<X, Y>::value, const X*>::type flatt
                                                                                           sd::LongType yStrideC) {
   // best results when buffer used much , may result bad perf if buffer is used once
   X* b_new = nullptr;
-  if (num > b_stack_size) {
+  if (static_cast<size_t>(num) > b_stack_size) {
     b_heap.reset(new X[num]);
     b_new = b_heap.get();
   } else {
     b_new = b_stack;
   }
   if (yStrideC != 1) {
-    for (size_t i = 0; i < num; i++) {
+    for (size_t i = 0; i < static_cast<size_t>(num) ; i++) {
       b_new[i] = static_cast<X>(b_real[i * yStrideC]);
     }
   } else {
-    for (size_t i = 0; i < num; i++) {
+    for (size_t i = 0; i < static_cast<size_t>(num) ; i++) {
       b_new[i] = static_cast<X>(b_real[i]);
     }
   }
@@ -163,7 +163,7 @@ static void channel_atTheEnd_generic_C(const sd::LongType* bases, const sd::Long
       for (size_t i = 0; i < loop_count; i++) {
         T* xx = &(x[offset.first]);
         T* zz = &(z[offset.second]);
-        for (size_t j = 0; j < inc; j++) zz[j * z_stride] = xx[j * x_stride] + b[j];
+        for (size_t j = 0; j < static_cast<size_t>(inc) ; j++) zz[j * z_stride] = xx[j * x_stride] + b[j];
         offset = sd::inc_coords<constRank - 1>(cst, offset);
       }
     }
@@ -294,10 +294,10 @@ static void channel_NC_continous_numHW_C(sd::LongType rank, const sd::LongType* 
 
 //
 template <typename T, typename T2, size_t constRank, size_t b_index, size_t skip>
-static void channel_generic_stride_skip_F(const sd::LongType*& x_strides, const sd::LongType*& bases, T* x, const T2* b,
-                                          T* z, const bool& inplace, const sd::LongType yStrideC,
-                                          const sd::LongType& start, const sd::LongType& stop,
-                                          const sd::LongType& inc) {
+static void channel_generic_stride_skip_F( sd::LongType*& x_strides,  sd::LongType*& bases, T* x, const T2* b,
+                                           T* z, const bool& inplace, const sd::LongType yStrideC,
+                                           const sd::LongType& start, const sd::LongType& stop,
+                                           const sd::LongType& inc) {
   // (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
   sd::LongType loop_count = (stop - start) / inc;
   sd::CoordsState<constRank - 1> cst;
@@ -319,10 +319,10 @@ static void channel_generic_stride_skip_F(const sd::LongType*& x_strides, const 
 
 ///
 template <typename T, typename T2, size_t constRank, size_t b_index>
-static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_strides, const sd::LongType* z_strides,
-                              const bool& inplaceOp, const bool same_stride, const bool same_order,
-                              const sd::LongType yStrideC, T* x, const T2* b, T* z, sd::LongType start,
-                              sd::LongType stop, sd::LongType inc) {
+static void channel_generic_F( sd::LongType* bases,  sd::LongType* x_strides,  sd::LongType* z_strides,
+                               const bool& inplaceOp, const bool same_stride, const bool same_order,
+                               sd::LongType yStrideC, T* x, const T2* b, T* z, sd::LongType start,
+                               sd::LongType stop, sd::LongType inc) {
   // just ensure that passed sameStride is correct,  because when bases are equal orders matters
   bool sameOrderStride = same_order && same_stride;
   if (sameOrderStride && x_strides[0] == 1) {
@@ -337,7 +337,7 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
     sd::LongType x_stride = ZIP_STRIDE1(cst, 0);
     sd::LongType z_stride = ZIP_STRIDE2(cst, 0);
     if (same_order && z_stride == 1 && x_stride == 1) {
-      for (size_t i = 0; i < loop_count; i++) {
+      for (size_t i = 0; i < static_cast<size_t>(loop_count) ; i++) {
         T yy = static_cast<T>(b[ZIP_COORDS(cst, b_index) * yStrideC]);
         _add_broadcast(&(x[offset.first]), yy, &(z[offset.second]), inc);
         offset = sd::inc_coords<constRank, 1, false>(cst, offset);
@@ -347,7 +347,7 @@ static void channel_generic_F(const sd::LongType* bases, const sd::LongType* x_s
         T* xx = &(x[offset.first]);
         T* zz = &(z[offset.second]);
         T yy = static_cast<T>(b[ZIP_COORDS(cst, b_index) * yStrideC]);
-        for (size_t j = 0; j < inc; j++) zz[j * z_stride] = xx[j * x_stride] + yy;
+        for (size_t j = 0; j < static_cast<size_t>(inc) ; j++) zz[j * z_stride] = xx[j * x_stride] + yy;
         offset = sd::inc_coords<constRank, 1, false>(cst, offset);
       }
     }
@@ -407,7 +407,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
     for (sd::LongType i = 0; i < rank; i++) {
       total_num *= bases[i];
     }
-    sd::LongType inc;
+    size_t inc;
     size_t rank_skip = 1;
     if (order == 'c') {
       size_t b_stack_size = BSIZE2;
@@ -423,11 +423,11 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
         // for small size where total_num is sufficient  we need to recreate vectorizable buffer
         sd::LongType old_inc = inc;
         // sizeof bias_extra is MIN_NN * MIN_NN
-        sd::LongType new_inc = inc < MIN_NN ? inc * MIN_NN : inc * MIN_NN / MIN_NN_K;
+        size_t new_inc = inc < MIN_NN ? inc * MIN_NN : inc * MIN_NN / MIN_NN_K;
         // if there is a room then lets multiply
         new_inc =
             (new_inc * MIN_NN_K <= total_num && new_inc < MIN_NN * MIN_NN / MIN_NN_K) ? MIN_NN_K * new_inc : new_inc;
-        for (sd::LongType i = 0; i < new_inc; i += inc) {
+        for (size_t i = 0; i < new_inc; i += inc) {
           // copy to our buffer
           X* cp = &(bias_extra[i]);
           for (size_t j = 0; j < inc; j++) {
@@ -460,8 +460,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
     }
 
     FUNC_1D func = [order, isContinuous, rank, x, b, bias_new, z, x_shapeInfo, z_shapeInfo, same_stride, same_order,
-                    yStrideC, rank_skip](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
-      const sd::LongType rank = x_shapeInfo[0];
+        yStrideC, rank_skip](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
       auto bases = &(x_shapeInfo[1]);
       auto x_strides = &(x_shapeInfo[rank + 1]);
       auto z_strides = &(z_shapeInfo[rank + 1]);
@@ -470,7 +469,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
         if (isContinuous) {
           channel_atTheEnd_continous_C(const_cast<X*>(x), bias_new, z, inplaceOp, start, stop, increment);
         }
-        // rank is in [2,5]
+          // rank is in [2,5]
         else if (rank == 4) {
           channel_atTheEnd_generic_C<X, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order,
                                            const_cast<X*>(x), bias_new, z, start, stop, increment);
@@ -489,7 +488,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
         // generic F case
         if (isContinuous) {
           if (rank == 4) {
-            if (rank_skip == rank - 2) {
+            if (rank_skip == static_cast<size_t>(rank) - 2) {
               channel_generic_stride_skip_F<X, Y, 4, 3, 2>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp,
                                                            yStrideC, start, stop, increment);
             } else {
@@ -497,7 +496,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
                                                            yStrideC, start, stop, increment);
             }
           } else if (rank == 5) {
-            if (rank_skip == rank - 2) {
+            if (static_cast<size_t>(rank_skip)  == static_cast<size_t>(rank)  - 2) {
               // skip==3
               channel_generic_stride_skip_F<X, Y, 5, 4, 3>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp,
                                                            yStrideC, start, stop, increment);
@@ -542,7 +541,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
       // sometimes last dimension is too big and multithreading could suffer using unfair partitioning
       // so we will do it only when inc is smaller our value or multithreading turned off
       sd::LongType req_numThreads = sd::Environment::getInstance().maxMasterThreads();
-      if (req_numThreads < 2 || numNC >= req_numThreads || inc <= 2 * 8196 || rank == 3) {
+      if (req_numThreads < 2 || numNC >= static_cast<size_t>(req_numThreads)  || inc <= 2 * 8196 || rank == 3) {
         inc = numHW;
       } else {
         // treat it as stride1c case
@@ -550,18 +549,17 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
       }
     }
     FUNC_1D func = [order, isContinuous, rank, x, b, z, x_shapeInfo, z_shapeInfo, same_stride, same_order, yStrideC](
-                       uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
-      const sd::LongType rank = x_shapeInfo[0];
-      const sd::LongType* bases = &(x_shapeInfo[1]);
-      const sd::LongType* x_strides = &(x_shapeInfo[rank + 1]);
-      const sd::LongType* z_strides = &(z_shapeInfo[rank + 1]);
+        uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
+      sd::LongType* bases = &(x_shapeInfo[1]);
+      sd::LongType* x_strides = &(x_shapeInfo[rank + 1]);
+      sd::LongType* z_strides = &(z_shapeInfo[rank + 1]);
       const bool inplaceOp = (x == z);
       if (order == 'c') {
         if (isContinuous) {
           channel_NC_continous_numHW_C<X, Y>(rank, bases, x_strides, const_cast<X*>(x), b, z, inplaceOp, yStrideC,
                                              start, stop, increment);
         }
-        // rank is in [3,5]
+          // rank is in [3,5]
         else if (rank == 4) {
           channel_NC_generic_C<X, Y, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC,
                                         const_cast<X*>(x), b, z, start, stop, increment);

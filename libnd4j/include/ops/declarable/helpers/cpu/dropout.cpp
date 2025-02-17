@@ -64,7 +64,7 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     std::vector<sd::LongType> dims(reduceShape->lengthOf());
 
     bool fit = true;
-    for (auto i = 0; i < dims.size(); i++) {
+    for (size_t i = 0; i < dims.size(); i++) {
       if (fit) {
         dims[i] = reduceShape->e<sd::LongType>(i);
         for (int e = 0; e < input->rankOf(); ++e)

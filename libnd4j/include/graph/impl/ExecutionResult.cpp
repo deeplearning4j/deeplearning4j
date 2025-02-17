@@ -27,7 +27,7 @@ namespace sd {
 namespace graph {
 ExecutionResult::ExecutionResult(const FlatResult* flatResult) {
   if (flatResult->variables() != nullptr) {
-    for (int e = 0; e < flatResult->variables()->size(); e++) {
+    for (size_t e = 0; e < flatResult->variables()->size(); e++) {
       auto fv = flatResult->variables()->Get(e);
       auto v = new Variable(fv);
       this->emplace_back(v);
@@ -58,7 +58,7 @@ void ExecutionResult::emplace_back(Variable* variable) {
 }
 
 Variable* ExecutionResult::at(int position) {
-  if (position >= _variables.size())
+  if (static_cast<size_t>(position) >= _variables.size())
     THROW_EXCEPTION("Position index is higher then number of variables stored");
 
   return _variables.at(position);

@@ -208,14 +208,13 @@ Variable::Variable(const FlatVariable *flatVariable) {
       if (flatVariable->ndarray() != nullptr) {
         auto ar = flatVariable->ndarray();
         _ndarray = FlatUtils::fromFlatArray(ar);
-        // _ndarray->triggerAllocationFlag(true);
 
         _variableType = NDARRAY;
       }
 
       if (flatVariable->shape() != nullptr) {
-        int shapeLen = flatVariable->shape()->Length();
-        for (int i = 0; i < flatVariable->shape()->size(); i++) _shape.emplace_back(flatVariable->shape()->Get(i));
+        int shapeLen = flatVariable->shape()->size();
+        for (size_t i = 0; i < flatVariable->shape()->size(); i++) _shape.emplace_back(flatVariable->shape()->Get(i));
 
         if (_ndarray == nullptr) _variableType = PLACEHOLDER;
       }
