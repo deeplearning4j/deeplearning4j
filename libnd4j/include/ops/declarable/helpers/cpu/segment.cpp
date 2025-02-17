@@ -274,23 +274,23 @@ static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
 
 
 void segmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMaxFunctor_, (input, indices, output), SD_NUMERIC_TYPES);
 }
 
 void segmentMinFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMinFunctor_, (input, indices, output), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMinFunctor_, (input, indices, output), SD_NUMERIC_TYPES);
 }
 
 void segmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMeanFunctor_, (input, indices, output), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), segmentMeanFunctor_, (input, indices, output), SD_NUMERIC_TYPES);
 }
 
 void segmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), segmentSumFunctor_, (input, indices, output), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), segmentSumFunctor_, (input, indices, output), SD_NUMERIC_TYPES);
 }
 
 void segmentProdFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
-  BUILD_SINGLE_SELECTOR(input->dataType(), segmentProdFunctor_, (input, indices, output), SD_COMMON_TYPES);
+  BUILD_SINGLE_SELECTOR(input->dataType(), segmentProdFunctor_, (input, indices, output), SD_NUMERIC_TYPES);
 }
 
 bool segmentIndicesValidate(sd::LaunchContext* context, NDArray* indices, NDArray& expected, NDArray& output) {
@@ -304,17 +304,17 @@ bool segmentIndicesValidate(sd::LaunchContext* context, NDArray* indices, NDArra
   return true;
 }
 
-// BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), SD_COMMON_TYPES);
+// BUILD_SINGLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void segmentProdFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void segmentSumFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void segmentMeanFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void segmentMinFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void segmentMaxFunctor_, (NDArray * input, NDArray* indices, NDArray* output),
-                      SD_COMMON_TYPES);
+                      SD_NUMERIC_TYPES);
 // -------------------------------------------------------------------------------------------------------------- //
 // Unsorted segment ops
 // -------------------------------------------------------------------------------------------------------------- //
@@ -358,14 +358,13 @@ static void unsortedSegmentMaxFunctor_(NDArray* input, NDArray* indices, sd::Lon
     auto listOfOutTensors = output->allTensorsAlongDimension(*restDims);
     delete restDims;
     T maxVal = DataTypeUtils::max<T>();
-    T negMaxVal = -maxVal;
     output->assign(maxVal);
 
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
       outputT->assign(*listOfTensors.at(fi->second.at(0)));
       for (sd::LongType idx = 0; idx < listOfTensors.size(); ++idx) {
-        if (idx >= fi->second.size() || fi->second.size() < 2 || fi->second.at(idx) >= listOfTensors.size()) {
+        if (static_cast<size_t>(idx) >= fi->second.size() || fi->second.size() < 2 || fi->second.at(idx) >= listOfTensors.size()) {
           continue;
         }
 
@@ -450,7 +449,7 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
 
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       double sumValue = input->e<double>(fi->second.at(0));
-      int loop_size = fi->second.size();
+      size_t loop_size = fi->second.size();
 
       // FIXME: parallelism here?
       for (size_t idx = 1; idx < loop_size; ++idx) {

@@ -94,7 +94,8 @@ void scatterSimple(sd::LaunchContext* context, const int opId, NDArray& input, N
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
           auto inSubArr = input(i, dimensions);
-          inSubArr.p(indices.t<sd::LongType>(i), updates.e(i));
+          auto curr = indices.e(i);
+          inSubArr.p(indices.t<sd::LongType>(i), curr);
         }
       };
 

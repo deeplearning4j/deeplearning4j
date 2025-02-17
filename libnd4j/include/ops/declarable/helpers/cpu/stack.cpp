@@ -47,7 +47,7 @@ static void stack_(const std::vector<NDArray*>& inArrs, NDArray& output, const i
     std::vector<sd::LongType> dimVec = {dim};
     auto vec = ShapeUtils::evalDimsToExclude(output.rankOf(),1,dimVec.data());
     auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        output.shapeInfo(), vec);
+        output.shapeInfo(), vec,true);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
     delete vec;
     auto func = PRAGMA_THREADS_FOR {
@@ -87,7 +87,7 @@ static void unstack_(NDArray& input, const std::vector<NDArray*>& outArrs, const
     std::vector<sd::LongType> dimVec = {dim};
     auto vec = ShapeUtils::evalDimsToExclude(input.rankOf(), 1,dimVec.data());
     auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(
-        input.shapeInfo(), vec);
+        input.shapeInfo(), vec,true);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
     delete vec;
     auto func = PRAGMA_THREADS_FOR {
