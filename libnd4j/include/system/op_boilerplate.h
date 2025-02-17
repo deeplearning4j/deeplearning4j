@@ -79,7 +79,26 @@
 #define ELEMENT_THRESHOLD sd::Environment::getInstance().elementwiseThreshold()
 #define TAD_THRESHOLD sd::Environment::getInstance().tadThreshold()
 
-#define SHAPELIST(...) new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
+// Helper to pick the correct macro based on the number of arguments.
+// This macro works by “peeling” off up to 10 parameters; if only one parameter is passed,
+// then _1 is that parameter and NAME ends up as SHAPELIST_1. For two or more parameters,
+// NAME ends up as SHAPELIST_N.
+#define GET_SHAPELIST_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, NAME, ...) NAME
+
+// This chooser macro always returns SHAPELIST_1 when only one argument is given,
+// and returns SHAPELIST_N when more than one argument is passed.
+#define SHAPELIST_CHOOSER(...) \
+    GET_SHAPELIST_MACRO(__VA_ARGS__, SHAPELIST_N, SHAPELIST_N, SHAPELIST_N, SHAPELIST_N, \
+                         SHAPELIST_N, SHAPELIST_N, SHAPELIST_N, SHAPELIST_N, SHAPELIST_N, SHAPELIST_1)
+
+// For one argument, call the constructor directly.
+#define SHAPELIST_1(a) new ShapeList(a)
+// For two or more arguments, wrap them in braces so that the constructor
+// accepting a vector is called.
+#define SHAPELIST_N(...) new ShapeList({__VA_ARGS__})
+
+// Finally, define SHAPELIST(...) to select the proper version:
+#define SHAPELIST(...) SHAPELIST_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
 #ifdef __CUDA_ARCH__
 #define PRINT_FIRST(...)                     \
@@ -2387,7 +2406,7 @@
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
-    for (int e = 0; e < opLimit; e++) {                                                                               \
+    for (size_t e = 0; e < opLimit; e++) {                                                                               \
       auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(                                             \
           ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), \
           shape::shapeOf(inputShape->at(e)),shape::extra(inputShape->at(e)));                                                                         \
@@ -2431,7 +2450,7 @@
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
-    for (int e = 0; e < opLimit; e++) {                                                                               \
+    for (size_t e = 0; e < opLimit; e++) {                                                                               \
       sd::LongType* newshape;                                                                                         \
       COPY_SHAPE(inputShape->at(0), newshape);                                                                        \
       shapeList->push_back(CONSTANT(newshape));                                                                       \
@@ -2459,7 +2478,7 @@
     auto shapeList = SHAPELIST();                                                                                     \
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
-    for (int e = 0; e < opLimit; e++) {                                                                               \
+    for (size_t e = 0; e < opLimit; e++) {                                                                               \
       int inputShapeIdx = block.width() < opLimit ? 0 : e;                                                            \
       auto shapeInfo = inputShape->at(inputShapeIdx);                                                                 \
       if(shape::isEmptyConst(shapeInfo)) {                                                                                 \
@@ -2474,7 +2493,7 @@
              }                                                                                                        \
                                                                                                                       \
             auto dtString = DataTypeUtils::asString(ArrayOptions::dataType(shapeInfo));                               \
-             printf("CONFIGURABLE_OP_IMPL: Creating empty data type: %s for index %d\n",dtString.c_str(),e);\
+             printf("CONFIGURABLE_OP_IMPL: Creating empty data type: %s for index %d\n",dtString.c_str(),static_cast<int>(e));\
                                                                                                           \
             auto newShape = ConstantShapeHelper::getInstance()                                                        \
                             .emptyShapeInfoWithShape(ArrayOptions::dataType(shapeInfo),shape2);               \
@@ -2642,13 +2661,18 @@
 
 #endif
 
+#include <type_traits>
+#include <cstring>
+#include <algorithm>
+
 template <typename TT, typename WW>
 SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
   if (workSpace == nullptr) {
 #if defined(SD_ALIGNED_ALLOC)
     var = static_cast<TT*>(
-        aligned_alloc(SD_DESIRED_ALIGNMENT, (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
+        aligned_alloc(SD_DESIRED_ALIGNMENT,
+                      (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
     var = new TT[len];
 #endif
@@ -2658,9 +2682,14 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   } else {
     var = reinterpret_cast<TT*>(workSpace->allocateBytes(len * sizeof(TT)));
   }
-  memset(var, 0, len * sizeof(TT));
+  if constexpr (std::is_trivially_copyable<TT>::value) {
+    memset(var, 0, len * sizeof(TT));
+  } else {
+    std::fill_n(var, len, TT());
+  }
   return var;
 }
+
 
 template <typename TT_PTR, typename WW>
 SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
@@ -2680,7 +2709,6 @@ SD_INLINE void internal_release_host(WW workspace, TT_PTR var) {
 #ifndef __JAVACPP_HACK__
 
 #if defined(SD_GCC_FUNCTRACE) && !defined(OP_BOILER_PLATE_THROW_EXCEPTIONS)
-#pragma once
 #define OP_BOILER_PLATE_THROW_EXCEPTIONS
 #include <exceptions/backward.hpp>
 using namespace backward;
@@ -2696,7 +2724,7 @@ void throwException(const char* exceptionMessage);
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT) VARIABLE = internal_alloc_host<TT>(WORKSPACE, static_cast<sd::LongType>(LENGTH));
 #define RELEASE(VARIABLE, WORKSPACE) internal_release_host(WORKSPACE, VARIABLE);
 
-#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE, block.workspace())
+#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE)
 
 #define STORE_RESULT(A) this->storeResult(block, 0, A)
 #define OVERWRITE_RESULT(A) this->overwriteResult(block, 0, A)

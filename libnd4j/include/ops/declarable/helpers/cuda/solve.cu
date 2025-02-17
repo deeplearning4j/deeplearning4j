@@ -118,7 +118,8 @@ template <typename T>
 static void adjointMatrix_(LaunchContext* context, NDArray * input, NDArray* output) {
   NDArray::prepareSpecialUse({output}, {input});
   const std::vector<LongType> dims1 = {-2, -1};
-  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), const_cast<LongType*>(dims1.data()), dims1.size());
+  auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(
+      output->shapeInfo(), const_cast<LongType*>(dims1.data()), dims1.size());
   auto stream = context->getCudaStream();
   auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
   auto rows = input->sizeAt(-2);

@@ -33,10 +33,9 @@
 namespace sd {
 class SD_LIB_EXPORT ConstantTadHelper {
  private:
-  std::mutex _mutex;
   DirectTadTrie _trie;  // Single trie for device 0
 
-  ConstantTadHelper();
+  ConstantTadHelper() = default;
 
  public:
   ~ConstantTadHelper() = default;
@@ -51,34 +50,14 @@ class SD_LIB_EXPORT ConstantTadHelper {
    * @param keepUnitiesInShape
    * @return
    */
-  TadPack *tadForDimensions(const LongType *originalShape, const std::vector<LongType> *dimensions,
-                           const bool keepUnitiesInShape = false);
-  TadPack *tadForDimensions(const LongType *originalShape, LongType *dimensions, LongType dimLength,
-                           const bool keepUnitiesInShape = false);
-  TadPack *tadForDimensions(const LongType *originalShape, LongType dimension, const bool keepUnitiesInShape = false);
+
+  TadPack *tadForDimensions(LongType *originalShape, LongType *dimensions, LongType dimLength);
   TadPack *tadForDimensions(ShapeDescriptor &descriptor, std::vector<LongType> &dimensions,
                            const bool keepUnitiesInShape = false);
   TadPack *tadForDimensions(TadDescriptor *descriptor);
 
-  /**
-   * This method returns number of cached TAD shapes/offsets on specific device
-   * @return
-   */
-  SD_INLINE int cachedEntriesForDevice(int deviceId) {
-    std::lock_guard<std::mutex> lock(_mutex);
-    if (deviceId > 0) THROW_EXCEPTION("deviceId > number of actual devices");
-    
-    return _trie.totalCachedEntries();
-  }
-
-  /**
-   * This method returns total number of cached TAD shapes/offsets on all devices
-   * @return
-   */
-  SD_INLINE int totalCachedEntries() {
-    std::lock_guard<std::mutex> lock(_mutex);
-    return _trie.totalCachedEntries();
-  }
+  TadPack *tadForDimensions(LongType *originalShape, LongType dimension);
+  TadPack *tadForDimensions(LongType *originalShape, std::vector<LongType> *dimensions);
 };
 }  // namespace sd
 

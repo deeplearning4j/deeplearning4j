@@ -51,7 +51,7 @@ DECLARE_TYPES(diag) { getOpDescriptor()->setAllowedInputTypes(ANY)->setSameMode(
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(diag) {
-  const LongType* inputShapeInfo = inputShape->at(0);
+  LongType* inputShapeInfo = inputShape->at(0);
 
   return SHAPELIST(ShapeUtils::evalDiagShapeInfo(inputShapeInfo, block.workspace()));
 }

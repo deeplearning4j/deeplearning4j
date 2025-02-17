@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(nth_element) {
   auto in = inputShape->at(0);
   int outRank = shape::rank(in) - 1;
-  LongType const* outShape = nullptr;
+  LongType* outShape = nullptr;
   if (outRank > 1) {
     LongType* outputShape = nullptr;
     ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), sd::LongType);
@@ -62,7 +62,6 @@ DECLARE_SHAPE_FN(nth_element) {
   } else if (outRank == 1) {
     outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, static_cast<LongType>(0)), ArrayOptions::dataType(in));
   } else {
-    // outputShape = shape::createScalarShapeInfo();
     outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));
   }
   return SHAPELIST(outShape);

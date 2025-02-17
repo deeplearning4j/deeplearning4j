@@ -51,7 +51,7 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
   } else {
     std::vector<LongType> dims(*block.getAxis());
-    for (int e = 0; e < dims.size(); e++)
+    for (size_t e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
     auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
@@ -121,7 +121,7 @@ ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, Context 
     zShape[6] = 1;
     zShape[7] = 99;
   } else {
-    const sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, false, true);
+    sd::LongType *xShape2 = ShapeUtils::evalReduceShapeInfo('c', block.getIArguments(), xShape, false, true);
     return SHAPELIST(xShape2);
   }
 

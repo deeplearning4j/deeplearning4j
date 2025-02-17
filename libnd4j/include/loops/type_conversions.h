@@ -38,7 +38,7 @@
 #include <types/uint8.h>
 
 #define LOG_NUM_BANKS 4
-
+#define NUM_BANKS 256
 namespace sd {
 
 typedef union {
@@ -103,15 +103,8 @@ template <typename T>
 SD_HOST void encoderKernelP3Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, int *offsets, LongType N,
                                     void *dz);
 
-template <typename T>
-SD_HOST void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, LongType N, void *dz);
 
-template <typename T>
-SD_HOST void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, LongType N, int *dz,
-                                     int *scalar, int *reductionBuffer, float threshold);
 
-template <typename T>
-SD_HOST void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, LongType N, void *vdz);
 
 SD_KERNEL void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex);
 

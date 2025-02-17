@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(diag_part) {
 
   ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo, block.workspace()));
+  return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo));
 }
 
 }  // namespace ops

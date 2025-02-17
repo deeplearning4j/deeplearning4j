@@ -179,34 +179,6 @@ sd::buffer::Buffer<sd::LongType> *createScalarBuffer(cudaStream_t stream) {
   return buff;
 }
 
-class ScalarShapeInformation {
- private:
-  sd::buffer::Buffer<sd::LongType> *scalarDimension;
-  sd::buffer::Buffer<sd::LongType> *scalarShapeInfo;
-
- public:
-  ScalarShapeInformation(cudaStream_t stream) {
-    auto scalarDimensionBuff = reinterpret_cast<sd::LongType *>(malloc(sizeof(sd::LongType)));
-
-    CHECK_ALLOC(scalarDimensionBuff, "Failed to allocate ShapeInfoBuffer", sizeof(sd::LongType));
-
-    scalarDimensionBuff[0] = SD_MAX_DIMENSION;
-    scalarDimension = sd::buffer::createBuffer(scalarDimensionBuff, 1, stream);
-    scalarShapeInfo = createScalarBuffer(stream);
-  }
-  ~ScalarShapeInformation() {
-    freeBuffer(&scalarShapeInfo);
-    freeBuffer(&scalarDimension);
-  }
-
-  sd::LongType *getShapeInfoHostPointer() { return scalarShapeInfo->data; }
-
-  sd::LongType *getShapeInfoGpuPointer() { return scalarShapeInfo->gData; }
-
-  sd::LongType *getDimensionHostPointer() { return scalarDimension->data; }
-
-  sd::LongType *getDimensionGpuPointer() { return scalarDimension->gData; }
-};
 
 template <typename T>
 SD_KERNEL  void _printBuffers(void* buffer, sd::LongType bufferLength) {
@@ -784,7 +756,8 @@ void execIndexReduce(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, voi
     auto dimensionData = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
-    auto tadPack =sd:: ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionData, dimensionLength);
+    auto tadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionData, dimensionLength);
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execIndexReduce(
@@ -1459,9 +1432,9 @@ void saveNpy(std::string fname, const OpaqueDataBuffer *data, const unsigned int
 /**
  * This method saves
  */
-OpaqueTadPack *tadOnlyShapeInfo(const sd::LongType *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
+OpaqueTadPack *tadOnlyShapeInfo(sd::LongType *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
   try {
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension,dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -1562,68 +1535,7 @@ void pullRows(sd::Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray z, sd::
   }
 }
 
-void average(sd::Pointer *extras,
-             OpaqueNDArrayArr x,
-             OpaqueNDArray z,int n, sd::LongType length, bool propagate) {
-  try {
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    int mode = getDeviceId(extras[3]);
 
-    if (sd::Environment::getInstance().isDebugAndVerbose()) printf("averageFloat called\n");
-
-    auto xType = x[0]->dataType();
-
-    // launching on gpu
-    if (mode == 0) {
-      dim3 launchDims = getLaunchDims("average");
-      std::vector<void*> xBuffers(n);
-      for (int i = 0; i < n; ++i) {
-        xBuffers[i] = x[i]->specialBuffer();
-      }
-
-      BUILD_SINGLE_SELECTOR(xType, sd::averagingKernelGeneric, (launchDims, stream, xBuffers.data(), z->specialBuffer(), n, length, propagate), SD_COMMON_TYPES);
-      sd::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
-    } else {
-      // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::averageGeneric(x, z, n, length, propagate), SD_COMMON_TYPES);
-    }
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-void accumulate(sd::Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, sd::LongType length) {
-  try {
-    auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    int mode = getDeviceId(extras[3]);
-
-    if (sd::Environment::getInstance().isDebugAndVerbose()) printf("accumulateFloat called\n");
-    auto xType = x[0]->dataType();
-
-
-    // launching on gpu
-    if (mode == 0) {
-      // Extract buffers from each NDArray in the array
-      std::vector<void*> xBuffers(n);
-      for (int i = 0; i < n; ++i) {
-        xBuffers[i] = x[i]->specialBuffer();
-      }
-
-      void* zBuffer = z->specialBuffer();
-
-      dim3 launchDims = getAccumDims(n);
-      BUILD_SINGLE_SELECTOR(xType, sd::accumulateKernelGeneric, (launchDims, stream, xBuffers.data(), zBuffer, n, length), SD_COMMON_TYPES);
-      sd::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
-    } else {
-      // launching on host memory
-      BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::accumulateGeneric(x, z, n, length), SD_COMMON_TYPES);
-    }
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 
 bool isExperimentalEnabled() { return sd::Environment::getInstance().isExperimentalBuild(); }
@@ -1731,7 +1643,8 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
     auto dimensionData = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     int dimensionLength = static_cast<int>(shape::length(dimension->shapeInfo()));
 
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionData, dimensionLength);
+    auto tadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionData, dimensionLength);
     auto tadShapeInfo = tadPack->primaryShapeInfo();
     auto tadOffsets = tadPack->primaryOffsets();
 
@@ -1963,11 +1876,13 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaqu
     auto dimensionPtr = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
+    auto xTadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
     auto xOffsets = xTadPack->primaryOffsets();
 
-    auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dimensionPtr, dimensionLength);
+    auto zTadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dimensionPtr, dimensionLength);
     auto zTadShapeInfo = zTadPack->primaryShapeInfo();
     auto zOffsets = zTadPack->primaryOffsets();
 
@@ -2259,11 +2174,13 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
     auto dimensionPtr = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
+    auto xTadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
     auto xTadShapeInfo = xTadPack->primaryShapeInfo();
     auto xOffsets = xTadPack->primaryOffsets();
 
-    auto yTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dimensionPtr, dimensionLength);
+    auto yTadPack =
+        sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dimensionPtr, dimensionLength);
     auto yTadShapeInfo = yTadPack->primaryShapeInfo();
     auto yOffsets = yTadPack->primaryOffsets();
 
@@ -2560,7 +2477,7 @@ void sortTadByKey(sd::Pointer *extraPointers,
     }
 
     // Extract shape information from NDArray* objects
-    const sd::LongType *xShapeInfo = x->shapeInfo();
+    sd::LongType *xShapeInfo = x->shapeInfo();
     const sd::LongType *dXShapeInfo = x->specialShapeInfo();
     const sd::LongType *yShapeInfo = y->shapeInfo();
     const sd::LongType *dyShapeInfo = y->specialShapeInfo();
@@ -2574,7 +2491,7 @@ void sortTadByKey(sd::Pointer *extraPointers,
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
     // Get the TAD pack for the given dimensions
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimensionPtr, dimensionLength);
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimensionPtr,dimensionLength);
 
     // Get the number of TADs
     auto numTads = tadPack->numberOfTads();
@@ -2616,7 +2533,7 @@ void sortTadByValue(sd::Pointer *extraPointers,
     }
 
     // Extract shape information from NDArray* objects
-    const sd::LongType *xShapeInfo = x->shapeInfo();
+    sd::LongType *xShapeInfo = x->shapeInfo();
     const sd::LongType *dXShapeInfo = x->specialShapeInfo();
     const sd::LongType *yShapeInfo = y->shapeInfo();
     const sd::LongType *dyShapeInfo = y->specialShapeInfo();
@@ -2630,7 +2547,7 @@ void sortTadByValue(sd::Pointer *extraPointers,
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
     // Get the TAD pack for the given dimensions
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimensionPtr, dimensionLength);
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimensionPtr,dimension->lengthOf());
 
     // Get the number of TADs
     auto numTads = tadPack->numberOfTads();
@@ -2669,14 +2586,14 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
     }
 
     // Extract shape information from NDArray* objects
-    const sd::LongType *xShapeInfo = x->shapeInfo();
-    const sd::LongType *dXShapeInfo = x->specialShapeInfo();
+     sd::LongType *xShapeInfo = x->shapeInfo();
+     sd::LongType *dXShapeInfo = x->specialShapeInfo();
 
     // Determine the data type of the array
     auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
     // Get the TAD pack for the given dimensions
-    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension,dimensionLength);
 
     // Get the number of TADs
     auto numTads = tadPack->numberOfTads();
@@ -2706,31 +2623,8 @@ void sortCooIndices(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDA
   THROW_EXCEPTION("sortCooIndices:: Not implemented yet");
 }
 
-void ravelMultiIndex(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray flatIndices,
-                     OpaqueNDArray shapeInfo, int mode) {
-  try {
-    NativeOpExecutioner::execRavelMultiIndex(indices->bufferAsT<sd::LongType>(),
-                                             flatIndices->bufferAsT<sd::LongType>(),
-                                             flatIndices->lengthOf(),
-                                             shapeInfo->bufferAsT<sd::LongType>(), mode);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
-void unravelIndex(sd::Pointer *extraPointers, OpaqueNDArray indices, OpaqueNDArray flatIndices,
-                  OpaqueNDArray shapeInfo) {
-  try {
-    NativeOpExecutioner::execUnravelIndex(indices->bufferAsT<sd::LongType>(),
-                                          flatIndices->bufferAsT<sd::LongType>(),
-                                          flatIndices->lengthOf(),
-                                          shapeInfo->bufferAsT<sd::LongType>());
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
+
 
 
 
@@ -2822,8 +2716,8 @@ template <typename T, typename I>
 SD_HOST static void scatterUpdateCudaLauncher(const cudaStream_t *stream,
                                               int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, sd::LongType *axis, sd::LongType axisLength) {
   // Calculate TADs for x and y
-  auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(),axis, axisLength);
-  auto tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(updates->shapeInfo(), axis,axisLength);
+  auto tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), axis, axisLength);
+  auto tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(updates->shapeInfo(), axis, axisLength);
 
   auto xTadOffsets = tadPackX->specialOffsets();
   auto yTadOffsets = tadPackY->specialOffsets();

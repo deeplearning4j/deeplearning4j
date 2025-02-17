@@ -81,14 +81,14 @@ DECLARE_SHAPE_FN(transpose) {
 
   if (permutationVector.size() == 0) {
     auto temp = ShapeUtils::evalTransposeShapeInfo(*x, nullptr, true);
-    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp,true);
+    auto ret = ConstantShapeHelper::getInstance().createFromExisting(temp);
     return SHAPELIST(ret);
   }
 
 
   bool isPermuteNecessary = false;
 
-  if(permutationVector.size() == rank)
+  if(permutationVector.size() == static_cast<size_t>(rank))
     for (LongType i = 0; i < rank; ++i) {
       if (permutationVector[i] != i) {
         isPermuteNecessary = true;

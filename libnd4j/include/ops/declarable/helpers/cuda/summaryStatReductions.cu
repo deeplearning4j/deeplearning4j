@@ -38,7 +38,7 @@ void variance(NDArray& input, NDArray& output, const std::vector<LongType>& dime
                                                 input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
                                                 output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), const_cast<sd::LongType *>(dimensions.data()),dimensions.size());
 
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsVariance, input.buffer(), input.shapeInfo(),
@@ -60,7 +60,7 @@ void standardDeviation(NDArray& input, NDArray& output, const std::vector<LongTy
         input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(),
         output.specialBuffer(), output.specialShapeInfo(), biasCorrected);
   } else {
-    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), &dimensions);
+    auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), const_cast<sd::LongType *>(dimensions.data()),dimensions.size());
 
     NativeOpExecutioner::execSummaryStats(
         LaunchContext::defaultContext(), variance::SummaryStatsStandardDeviation, input.buffer(), input.shapeInfo(),

@@ -261,7 +261,7 @@ static sd::Pointer _numpyHeaderForNd4j(sd::Pointer data, const sd::Pointer shape
   auto npHeader = cnpy::createNpyHeader<T>(npShape, rank, wordSize);
   char* ret = new char[npHeader.size() + 1];
   int count = 0;
-  for (int i = 0; i < npHeader.size(); i++) {
+  for (size_t i = 0; i < npHeader.size(); i++) {
     ret[count] = npHeader[i];
     count++;
   }
@@ -292,10 +292,6 @@ sd::Pointer loadNpyFromHeader(sd::Pointer data) {
 
   cnpy::NpyArray arr = cnpy::loadNpyFromHeader(header);
   cnpy::NpyArray* ret = new cnpy::NpyArray();
-  int totalLengthOfShape = 1;
-  for (int i = 0; i < arr.shape.size(); i++) {
-    totalLengthOfShape *= arr.shape[i];
-  }
 
   ret->data = arr.data;
   ret->wordSize = arr.wordSize;
@@ -422,7 +418,7 @@ sd::Pointer shapeBufferForNumpy(sd::Pointer npyArray) {
       shapeBuffer = sd::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
     }
     return (sd::Pointer)(sd::ConstantShapeHelper::getInstance().createFromExisting(
-        shapeBuffer, true));  // TO DO: this can lead to unpleasant crash sometimes
+        shapeBuffer));  // TO DO: this can lead to unpleasant crash sometimes
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -539,8 +535,8 @@ void setGraphContextOutputArraysArr(OpaqueContext* ptr, int numArrays,OpaqueNDAr
       errorMessage += " was null!";
       THROW_EXCEPTION(errorMessage.c_str());
     }
-    for (int i = 0; i < numArrays; i++) {
-      ptr->setOutputArray(i, *arr[i], false);
+    for (int j = 0; j < numArrays; j++) {
+      ptr->setOutputArray(j, *arr[j], false);
     }
   }
 }
@@ -625,12 +621,12 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
       THROW_EXCEPTION("Failed to open file for MMAP");
     }
 
-    void *ptr = mmap(nullptr, length, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0);
-    if (ptr == MAP_FAILED) {
+    void *ptr2 = mmap(nullptr, length, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0);
+    if (ptr2 == MAP_FAILED) {
       sd_printf("Errno: %i\n", errno);
       THROW_EXCEPTION("Failed to mmap file");
     }
-    hZ[0] = (sd::LongType)ptr;
+    hZ[0] = (sd::LongType)ptr2;
     hZ[1] = fd;
 
 #endif
@@ -666,7 +662,7 @@ OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType
     fflush(stdout);
     sd::ShapeList inShapes;
 
-    for (int e = 0; e < context->width(); e++) {
+    for (size_t e = 0; e < context->width(); e++) {
       if (context->array(e) == nullptr) {
         std::string errorMessage = "Input array at index " + std::to_string(e) + " was null!";
         THROW_EXCEPTION(errorMessage.c_str());
@@ -738,7 +734,7 @@ void purgeOpTrace() { sd::ops::OpRegistrator::getInstance().purgeOpExecs();
 
 void printOpTrace() {
   auto execTrace = *sd::ops::OpRegistrator::getInstance().execTrace();
-  for(int i = 0; i < execTrace.size(); i++) {
+  for(size_t i = 0; i < execTrace.size(); i++) {
     auto curr = execTrace[i];
     if(curr->opName != nullptr) {
       sd_printf("Op name: %s\n", curr->opName->c_str());
@@ -749,7 +745,7 @@ void printOpTrace() {
       continue;
     } else {
       auto currInputShapeBuffers = *(curr->inputShapeBuffers);
-      for(int j = 0; j < currInputShapeBuffers.size(); j++) {
+      for(size_t j = 0; j < currInputShapeBuffers.size(); j++) {
         auto buff = currInputShapeBuffers[j];
         shape::printShapeInfo(buff);
         sd_printf("\n",0);
@@ -761,7 +757,7 @@ void printOpTrace() {
       continue;
     } else {
       auto currOutputShapeBuffers = *(curr->outputShapeBuffers);
-      for(int j = 0; j < curr->outputShapeBuffers->size(); j++) {
+      for(size_t j = 0; j < curr->outputShapeBuffers->size(); j++) {
         shape::printShapeInfo(currOutputShapeBuffers[j]);
         sd_printf("\n",0);
       }
@@ -887,7 +883,7 @@ std::vector<double> * tArgs(void *execTrace) {
 std::vector<int> * dArgs(void *execTrace) {
   ExecTrace *trace = (ExecTrace *) execTrace;
   std::vector<int> *dArgs = new std::vector<int>();
-  for (int e = 0; e < trace->dArgs.size(); e++) {
+  for (size_t e = 0; e < trace->dArgs.size(); e++) {
     dArgs->push_back(trace->dArgs[e]);
   }
   return dArgs;
@@ -965,7 +961,8 @@ static VariablesSet *executeStoredGraphT(sd::Pointer *extraPointers, sd::LongTyp
   if (hZ == sd::Status::OK) {
     // pull back results, and provide them
     auto outputs = graph->fetchOutputs();
-    for (int e = 0; e < outputs->size(); e++) {
+    int size = static_cast<int>(outputs->size());
+    for (int e = 0; e < size; e++) {
       // we're only getting variable ID/Index from original grap. values will be taken from cloned workspace
       std::pair<int, int> varId(outputs->at(e)->id(), outputs->at(e)->index());
 
@@ -1121,22 +1118,7 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
     varSpace->dropVariable(0, e);
   }
 
-  // after some bla-bla-bla we should have Graph and Node for current op
   return sd::Status::OK;
-}
-
-sd::Status execCustomOpWithScope(sd::Pointer *extraPointers, sd::Pointer state, sd::LongType  opHash, sd::LongType  *scopes, int numScopes,
-                                 sd::Pointer *inputBuffers, sd::Pointer *inputShapes, int numInputs, sd::Pointer *outputBuffers,
-                                 sd::Pointer *outputShapes, int numOutputs) {
-  try {
-    return execCustomOpWithScope(extraPointers, reinterpret_cast<GraphState *>(state), opHash, scopes,
-                                 numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
-                                 numOutputs);
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return sd::Status::BAD_INPUT;
-  }
 }
 
 void deleteResultWrapper(sd::Pointer ptr) {
@@ -1706,7 +1688,8 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
       }
     }
 
-    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
+    auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
+        reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
