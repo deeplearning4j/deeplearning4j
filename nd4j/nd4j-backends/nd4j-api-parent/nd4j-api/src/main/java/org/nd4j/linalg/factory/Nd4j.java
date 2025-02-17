@@ -4797,39 +4797,6 @@ public class Nd4j {
         return vstack(arrays);
     }
 
-    /**
-     * This method averages input arrays, and returns averaged array.
-     * On top of that, averaged array is propagated to all input arrays
-     *
-     * @param arrays arrays to average
-     * @return averaged arrays
-     */
-    public static INDArray averageAndPropagate(INDArray[] arrays) {
-        return INSTANCE.average(arrays);
-    }
-
-
-    /**
-     * This method averages input arrays, and returns averaged array.
-     * On top of that, averaged array is propagated to all input arrays
-     *
-     * @param arrays arrays to average
-     * @return averaged arrays
-     */
-    public static INDArray averageAndPropagate(Collection<INDArray> arrays) {
-        return  INSTANCE.average(arrays);
-    }
-
-    /**
-     * This method averages input arrays, and returns averaged array.
-     * On top of that, averaged array is propagated to all input arrays
-     *
-     * @param arrays arrays to average
-     * @return averaged arrays
-     */
-    public static INDArray averageAndPropagate(INDArray target, Collection<INDArray> arrays) {
-        return INSTANCE.average(target, arrays);
-    }
 
     /**
      * Reshapes an ndarray to remove leading 1s
@@ -4844,43 +4811,6 @@ public class Nd4j {
             long[] shape = Shape.squeeze(toStrip.shape());
             return toStrip.reshape(shape);
         }
-    }
-
-    /**
-     * This method sums given arrays and stores them to a new array
-     *
-     * @param arrays array to accumulate
-     * @return accumulated array.
-     */
-    public static INDArray accumulate(@NonNull INDArray... arrays) {
-        if (arrays == null|| arrays.length == 0)
-            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
-
-        return accumulate(Nd4j.create(arrays[0].shape(), arrays[0].ordering()), arrays);
-    }
-
-    /**
-     * This method sums given arrays and stores them to a given target array
-     *
-     * @param target result array
-     * @param arrays arrays to sum
-     * @return result array
-     */
-    public static INDArray accumulate(INDArray target, Collection<INDArray> arrays) {
-        return accumulate(target, arrays.toArray(new INDArray[0]));
-    }
-
-    /**
-     * This method sums given arrays and stores them to a given target array
-     *
-     * @param target result array
-     * @param arrays arrays to sum
-     * @return result array
-     */
-    public static INDArray accumulate(INDArray target, INDArray[] arrays) {
-        if (arrays == null|| arrays.length == 0)
-            return target;
-        return factory().accumulate(target, arrays);
     }
 
     /**
