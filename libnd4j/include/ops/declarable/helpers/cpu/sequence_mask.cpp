@@ -29,9 +29,9 @@ namespace helpers {
 template <typename I, typename B>
 static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
   auto func = PRAGMA_THREADS_FOR_2D {
-    for (auto i = start_x; i < stop_x; i += inc_x)
+    for (sd::LongType i = start_x; i < stop_x; i += inc_x)
       for (auto k = start_y; k < stop_y; k += inc_y)
-        if (i < input->t<I>(k)) output->r<B>(k * maxIndex + i) = B(true);  //,  T(1.0f));
+        if (i < static_cast<sd::LongType>(input->t<I>(k))) output->r<B>(k * maxIndex + i) = B(true);  //,  T(1.0f));
   };
 
   samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
