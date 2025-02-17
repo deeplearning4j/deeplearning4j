@@ -1,20 +1,3 @@
-/* ******************************************************************************
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
 #include <helpers/DirectShapeTrie.h>
 #include <array/ConstantShapeBuffer.h>
 #include <array/PrimaryPointerDeallocator.h>
@@ -27,70 +10,18 @@ namespace sd {
 
 thread_local DirectShapeTrie::ThreadCache DirectShapeTrie::_threadCache;
 
-ShapeTrieNode::ShapeTrieNode(LongType value, int level, bool isShape)
-    : _buffer(nullptr), _value(value), _level(level), _isShape(isShape) {
-#if defined(SD_GCC_FUNCTRACE)
-  this->st.load_here();
-#endif
-}
-
-ShapeTrieNode::~ShapeTrieNode() {
-  auto* buf = _buffer.load(std::memory_order_acquire);
-  if (buf != nullptr) {
-    delete buf;
-  }
-}
-
-ShapeTrieNode* ShapeTrieNode::findOrCreateChild(LongType value, int level, bool isShape) {
-  for (auto& child : _children) {
-    if (child->_value == value && child->_level == level &&
-        child->_isShape == isShape) {
-      return child.get();
-    }
-  }
-
-  auto newNode = std::make_unique<ShapeTrieNode>(value, level, isShape);
-  ShapeTrieNode* nodePtr = newNode.get();
-  _children.push_back(std::move(newNode));
-  return nodePtr;
-}
-
-const std::vector<std::unique_ptr<ShapeTrieNode>>& ShapeTrieNode::children() const {
-  return _children;
-}
-
-ConstantShapeBuffer* ShapeTrieNode::buffer() const {
-  return _buffer.load(std::memory_order_acquire);
-}
-
 void ShapeTrieNode::setBuffer(ConstantShapeBuffer* buf) {
-  auto* oldBuf = _buffer.exchange(buf, std::memory_order_acq_rel);
-  if (oldBuf != nullptr) {
-    delete oldBuf;
-  }
+  ConstantShapeBuffer* old = _buffer;
+  _buffer = buf;
+  if (old) delete old;
 }
 
-LongType ShapeTrieNode::value() const { return _value; }
-int ShapeTrieNode::level() const { return _level; }
-bool ShapeTrieNode::isShape() const { return _isShape; }
-
-void ShapeTrieNode::collectStoreStackTrace() {
 #if defined(SD_GCC_FUNCTRACE)
+void ShapeTrieNode::collectStoreStackTrace() {
   this->storeStackTrace = backward::StackTrace();
   this->storeStackTrace.load_here(32);
+}
 #endif
-}
-
-DirectShapeTrie::ThreadCache::ThreadCache() : entries() {
-  entries.reserve(CACHE_SIZE);
-}
-
-DirectShapeTrie::DirectShapeTrie() {
-  for (size_t i = 0; i < NUM_STRIPES; i++) {
-    _roots[i] = std::make_unique<ShapeTrieNode>();
-  }
-
-}
 
 size_t DirectShapeTrie::computeHash(const LongType* shapeInfo) const {
   size_t hash = 14695981039346656037ULL;
@@ -131,24 +62,6 @@ bool DirectShapeTrie::shapeInfoEqual(const LongType* a, const LongType* b) const
   return std::memcmp(a, b, len * sizeof(LongType)) == 0;
 }
 
-void DirectShapeTrie::updateThreadCache(const LongType* shapeInfo, ConstantShapeBuffer* buffer) {
-  auto& cache = _threadCache.entries;
-  if (cache.size() >= ThreadCache::CACHE_SIZE) {
-    cache.erase(cache.begin());
-  }
-  cache.emplace_back(shapeInfo, buffer);
-}
-
-ConstantShapeBuffer* DirectShapeTrie::createBuffer(const LongType* shapeInfo) {
-  const int shapeInfoLength = shape::shapeInfoLength(shape::rank(shapeInfo));
-  LongType* shapeCopy = new LongType[shapeInfoLength];
-  std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-
-  auto hPtr = std::make_shared<PointerWrapper>(shapeCopy,
-                                               std::make_shared<PrimaryPointerDeallocator>());
-  return new ConstantShapeBuffer(hPtr);
-}
-
 void DirectShapeTrie::validateShapeInfo(const LongType* shapeInfo) const {
   if (shapeInfo == nullptr) {
     THROW_EXCEPTION("Shape info cannot be null");
@@ -187,10 +100,31 @@ void DirectShapeTrie::validateShapeInfo(const LongType* shapeInfo) const {
   }
 }
 
+ConstantShapeBuffer* DirectShapeTrie::createBuffer(const LongType* shapeInfo) {
+  const int shapeInfoLength = shape::shapeInfoLength(shape::rank(shapeInfo));
+  LongType* shapeCopy = new LongType[shapeInfoLength];
+  std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
+
+  auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(new PrimaryPointerDeallocator(), [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
+  auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
+  return new ConstantShapeBuffer(hPtr);
+}
+
+void DirectShapeTrie::updateThreadCache(const LongType* shapeInfo, ConstantShapeBuffer* buffer) {
+  auto& cache = _threadCache.entries;
+  if (cache.size() >= ThreadCache::CACHE_SIZE) {
+    cache.erase(cache.begin());
+  }
+  cache.emplace_back(shapeInfo, buffer);
+}
+
 const ShapeTrieNode* DirectShapeTrie::findChild(const ShapeTrieNode* node, LongType value,
                                                 int level, bool isShape) const {
+  if (!node) return nullptr;
+
   for (const auto& child : node->children()) {
-    if (child->value() == value && child->level() == level &&
+    if (child->value() == value &&
+        child->level() == level &&
         child->isShape() == isShape) {
       return child.get();
     }
@@ -199,9 +133,8 @@ const ShapeTrieNode* DirectShapeTrie::findChild(const ShapeTrieNode* node, LongT
 }
 
 ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t stripeIdx) const {
+  // No locks here - caller handles locking
   const ShapeTrieNode* current = _roots[stripeIdx].get();
-  if (!current) return nullptr;
-
   const int rank = shape::rank(shapeInfo);
 
   // Check rank
@@ -218,14 +151,14 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
 
   // Check shape values
   const LongType* shape = shape::shapeOf(shapeInfo);
-  for (int i = 0; i < rank && current; i++) {
+  for (int i = 0; i < rank; i++) {
     current = findChild(current, shape[i], 3 + i, true);
     if (!current) return nullptr;
   }
 
   // Check stride values
   const LongType* strides = shape::stride(shapeInfo);
-  for (int i = 0; i < rank && current; i++) {
+  for (int i = 0; i < rank; i++) {
     current = findChild(current, strides[i], 3 + rank + i, false);
     if (!current) return nullptr;
   }
@@ -233,87 +166,86 @@ ConstantShapeBuffer* DirectShapeTrie::search(const LongType* shapeInfo, size_t s
   return current ? current->buffer() : nullptr;
 }
 
+
+
 ConstantShapeBuffer* DirectShapeTrie::insert(const LongType* shapeInfo, size_t stripeIdx) {
   ShapeTrieNode* current = _roots[stripeIdx].get();
   const int rank = shape::rank(shapeInfo);
 
   // Insert rank
   current = current->findOrCreateChild(rank, 0, true);
+  if (!current) return nullptr;
 
   // Insert datatype
   current = current->findOrCreateChild(ArrayOptions::dataType(shapeInfo), 1, true);
+  if (!current) return nullptr;
 
   // Insert order
   current = current->findOrCreateChild(shape::order(shapeInfo), 2, true);
+  if (!current) return nullptr;
 
   // Insert shape values
   const LongType* shape = shape::shapeOf(shapeInfo);
   for (int i = 0; i < rank; i++) {
     current = current->findOrCreateChild(shape[i], 3 + i, true);
+    if (!current) return nullptr;
   }
 
   // Insert stride values
   const LongType* strides = shape::stride(shapeInfo);
   for (int i = 0; i < rank; i++) {
     current = current->findOrCreateChild(strides[i], 3 + rank + i, false);
+    if (!current) return nullptr;
   }
 
   if (!current->buffer()) {
-    auto buffer = createBuffer(shapeInfo);
-    current->setBuffer(buffer);
-    updateThreadCache(shapeInfo, buffer);
-#if defined(SD_GCC_FUNCTRACE)
-    current->collectStoreStackTrace();
-#endif
+    try {
+      const int shapeInfoLength = shape::shapeInfoLength(rank);
+      LongType* shapeCopy = new LongType[shapeInfoLength];
+      std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
+
+      auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(new PrimaryPointerDeallocator(),
+                                                                    [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
+      auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
+      auto buffer = new ConstantShapeBuffer(hPtr);
+
+      current->setBuffer(buffer);
+      return buffer;
+    } catch (const std::exception& e) {
+      std::string msg = "Shape buffer creation failed: ";
+      msg += e.what();
+      THROW_EXCEPTION(msg.c_str());
+    }
   }
 
   return current->buffer();
 }
 
-ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
-  validateShapeInfo(shapeInfo);
-
-  // Check thread-local cache first
-  for (const auto& entry : _threadCache.entries) {
-    if (shapeInfoEqual(entry.first, shapeInfo)) {
-      return entry.second;
-    }
-  }
-
-  size_t stripeIdx = getStripeIndex(shapeInfo);
-
-  // Try read-only search first
-  {
-    std::shared_lock<std::shared_mutex> readLock(_mutexes[stripeIdx]);
-    if (auto buffer = search(shapeInfo, stripeIdx)) {
-      updateThreadCache(shapeInfo, buffer);
-      return buffer;
-    }
-  }
-
-  // If not found, acquire write lock and try again
-  {
-    std::unique_lock<std::shared_mutex> writeLock(_mutexes[stripeIdx]);
-    if (auto buffer = search(shapeInfo, stripeIdx)) {  // Double-check
-      updateThreadCache(shapeInfo, buffer);
-      return buffer;
-    }
-    return insert(shapeInfo, stripeIdx);
-  }
-}
 
 bool DirectShapeTrie::exists(const LongType* shapeInfo) const {
   validateShapeInfo(shapeInfo);
-
-  for (const auto& entry : _threadCache.entries) {
-    if (shapeInfoEqual(entry.first, shapeInfo)) {
-      return true;
-    }
-  }
-
   size_t stripeIdx = getStripeIndex(shapeInfo);
-  std::shared_lock<std::shared_mutex> readLock(_mutexes[stripeIdx]);
+
+  std::unique_lock<SHAPE_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
   return search(shapeInfo, stripeIdx) != nullptr;
 }
 
-} // namespace sd
+
+
+ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
+  validateShapeInfo(shapeInfo);
+  size_t stripeIdx = getStripeIndex(shapeInfo);
+
+  // Single lock pattern, matching TAD trie
+  std::unique_lock<SHAPE_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+
+  // Check if it exists
+  if (auto buffer = search(shapeInfo, stripeIdx)) {
+    return buffer;
+  }
+
+  // If not found, create it
+  return insert(shapeInfo, stripeIdx);
+}
+
+}  // namespace sd
