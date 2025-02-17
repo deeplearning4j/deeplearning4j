@@ -32,6 +32,8 @@ using namespace simdOps;
 namespace functions {
 namespace reduce3 {
 
+
+
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
@@ -70,7 +72,7 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
   PRAGMA_OMP_SIMD
   for (int e = 0; e < maxThreads; e++) intermediate[e] = startingVal;
 
-  memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
+  sd::ops::safe_zero(extraParamsLocal, 3);
   if (extraParams != nullptr) {
     PRAGMA_OMP_SIMD
     for (int e = 0; e < maxThreads; e++) {
@@ -84,11 +86,9 @@ void Reduce3<X, Z>::execScalar(const void *vx, const sd::LongType *xShapeInfo, v
       && shape::haveSameShapeAndStrides(xShapeInfo,yShapeInfo)) {
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
-        sd::LongType coords[SD_MAX_RANK];
         sd::LongType xCoords[SD_MAX_RANK];
         sd::LongType yCoords[SD_MAX_RANK];
 
-        INDEX2COORDS(i, xRank, xShape, coords);
         INDEX2COORDS(i, xRank, xShape, xCoords);
         INDEX2COORDS(i, yRank, yShape, yCoords);
         sd::LongType xOffset = 0, yOffset = 0;
