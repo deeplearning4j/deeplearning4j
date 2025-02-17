@@ -136,7 +136,7 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
       }
       if (dims.size() > 1) std::sort(dims.begin(), dims.end());
 
-      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims, true);
 
       NativeOpExecutioner::execIndexReduce(
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -166,7 +166,7 @@ Status LegacyIndexReduceOp::validateAndExecute(Context &block) {
 
       REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis);
+      auto tadPack = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &axis,true);
 
       NativeOpExecutioner::execIndexReduce(
           block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),

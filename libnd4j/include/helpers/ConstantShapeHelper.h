@@ -43,38 +43,33 @@ class SD_LIB_EXPORT ConstantShapeHelper {
 
   ~ConstantShapeHelper();
   ConstantShapeBuffer* bufferForShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
-  ConstantShapeBuffer* bufferForShapeInfo(ShapeDescriptor *descriptor);
-  ConstantShapeBuffer* bufferForShapeInfo(const LongType* shapeInfo);
-  ConstantShapeBuffer* bufferForShapeInfo(DataType dataType, char order, int rank, const LongType* shape);
-  ConstantShapeBuffer* createShapeInfoWithUnitiesForBroadcast(const LongType* maxShapeInfo,
-                                                              const LongType* minShapeInfo,
-                                                              memory::Workspace* workspace = nullptr,
-                                                              const std::vector<LongType>& dimensions = {});
-  ConstantShapeBuffer* createShapeInfoWithNoUnitiesForReduce(const LongType* maxShapeInfo,
-                                                             const std::vector<LongType>* dimsWithUnities,
-                                                             memory::Workspace* workspace = nullptr);
-  ConstantShapeBuffer* createSubArrShapeInfo(const LongType* inShapeInfo, const LongType* dims,
-                                             const LongType dimsSize,
-                                             memory::Workspace* workspace = nullptr);
+  ConstantShapeBuffer* bufferForShapeInfo(LongType* shapeInfo);
+  ConstantShapeBuffer* bufferForShapeInfo(DataType dataType, char order, int rank,  LongType* shape);
+  ConstantShapeBuffer* createShapeInfoWithUnitiesForBroadcast( LongType* maxShapeInfo,
+                                                               LongType* minShapeInfo,
+                                                               memory::Workspace* workspace = nullptr,
+                                                               const std::vector<LongType>& dimensions = {});
+  ConstantShapeBuffer* createShapeInfoWithNoUnitiesForReduce( LongType* maxShapeInfo,
+                                                              const std::vector<LongType>* dimsWithUnities,
+                                                              memory::Workspace* workspace = nullptr);
 
-  const LongType* emptyShapeInfo(DataType dataType);
-  const LongType* scalarShapeInfo(DataType dataType);
-  const LongType* vectorShapeInfo(LongType length, DataType dataType);
-  const LongType* createShapeInfo(ShapeDescriptor *descriptor);
-  const LongType* createShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
-  const LongType* createShapeInfo(DataType dataType, const char order, const int rank, const LongType* shape, LongType extraProperties);
-  const LongType* createShapeInfo(DataType dataType, const LongType* shapeInfo);
-  const LongType* createFromExisting(const LongType* shapeInfo, sd::memory::Workspace* workspace);
-  const LongType* createFromExisting(const LongType* shapeInfo, bool destroyOriginal = true);
-  const LongType* createFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
-  const LongType* createFromExisting(sd::LongType* shapeInfo, bool destroyOriginal = true);
+  LongType* emptyShapeInfo(DataType dataType);
+  LongType * scalarShapeInfo(DataType dataType);
+  LongType* vectorShapeInfo(LongType length, DataType dataType);
+  LongType* createShapeInfo(ShapeDescriptor *descriptor);
+  LongType* createShapeInfo(DataType dataType, char order, const std::vector<LongType>& shape);
+  LongType* createShapeInfo(DataType dataType, const char order, const int rank,  LongType* shape, LongType extraProperties);
+  LongType* createShapeInfo(DataType dataType,  LongType* shapeInfo);
+  LongType* createFromExisting(LongType* shapeInfo, sd::memory::Workspace* workspace);
+  LongType* createFromExisting(LongType* shapeInfo, bool destroyOriginal = true);
+
 
   bool checkBufferExistenceForShapeInfo(ShapeDescriptor *descriptor);
 
-  ConstantShapeBuffer* storeAndWrapBuffer(const LongType* shapeInfo);
-  const LongType* castToDataType(const LongType* shapeInfo, const DataType newType);
-  const LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
-  ConstantShapeBuffer* createConstBuffFromExisting(const sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
+  ConstantShapeBuffer* storeAndWrapBuffer( LongType* shapeInfo);
+  LongType* castToDataType( LongType* shapeInfo,  DataType newType);
+  LongType* emptyShapeInfoWithShape(const DataType dataType, std::vector<LongType>& shape);
+  ConstantShapeBuffer* createConstBuffFromExisting( sd::LongType* shapeInfo, sd::memory::Workspace* workspace);
 };
 }  // namespace sd
 

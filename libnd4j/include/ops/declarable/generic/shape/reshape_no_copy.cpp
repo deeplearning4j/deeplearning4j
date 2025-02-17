@@ -39,7 +39,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     auto shapeArg = INPUT_VARIABLE(1);
     auto shapeBuffLong = shapeArg->getBufferAsVector<sd::LongType>();
     // last is the ordering
-    for (int i = 0; i < shapeBuffLong.size() - 1; i++) {
+    for (size_t i = 0; i < shapeBuffLong.size() - 1; i++) {
       newShape.push_back(shapeBuffLong[i]);
     }
 
@@ -57,7 +57,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   } else {
     std::vector<sd::LongType> *iArgs = block.getIArguments();
-    for (LongType i = 0; i < block.numI() - 1; i++) {
+    for (size_t i = 0; i < block.numI() - 1; i++) {
       newShape.push_back(iArgs->at(i));
     }
     order = iArgs->at(iArgs->size() - 1) == RESHAPE_NO_COPY_F_ORDER_MARKER ? 'f' : 'c';
@@ -70,7 +70,7 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
   shape::setOrder(newShapeInfo, order);
   auto newShapeView = shape::shapeOf(newShapeInfo);
 
-  for (int i = 0; i < newShape.size(); i++) {
+  for (size_t i = 0; i < newShape.size(); i++) {
     if (newShape[i] != newShapeView[i]) {
       std::string errorMessage;
       errorMessage += "Failed to set shape. ";
