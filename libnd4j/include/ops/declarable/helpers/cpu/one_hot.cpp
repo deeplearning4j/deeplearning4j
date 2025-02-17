@@ -34,8 +34,10 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
   auto output = reinterpret_cast<Z*>(voutput);
   auto indices = reinterpret_cast<I const*>(vindices);
 
+
   // Get TAD pack once
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, {axis});
+  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(zShapeInfo),
+                                                                       reinterpret_cast<LongType*>(&axis),1,true);
 
   // Cache TAD shape information
   const auto tadShapeInfo = tadPack->primaryShapeInfo();
@@ -64,13 +66,13 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
 
     for (auto e = start; e < stop; e++) {
       auto cO = output + tadOffsets[e];
-      auto idx = static_cast<sd::LongType>(indices[e]);
+      auto idx2 = static_cast<sd::LongType>(indices[e]);
 
-      if (idx < 0 || idx >= tLen) {
+      if (idx2 < 0 || idx2 >= tLen) {
         // Fill with zeros using cached shape data
         PRAGMA_OMP_SIMD
-        for (sd::LongType t = 0; t < tLen; t++) {
-          INDEX2COORDS(t, tadRank, tadShape, coords);
+        for (sd::LongType t2 = 0; t2 < tLen; t2++) {
+          INDEX2COORDS(t2, tadRank, tadShape, coords);
           LongType offset;
           COORDS2INDEX(tadRank, tadStride, coords, offset);
           cO[offset] = zero;
@@ -78,11 +80,11 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
       } else {
         // One-hot encode using cached shape data
         PRAGMA_OMP_SIMD
-        for (sd::LongType t = 0; t < tLen; t++) {
-          INDEX2COORDS(t, tadRank, tadShape, coords);
+        for (sd::LongType t2 = 0; t2 < tLen; t2++) {
+          INDEX2COORDS(t2, tadRank, tadShape, coords);
           LongType offset;
           COORDS2INDEX(tadRank, tadStride, coords, offset);
-          cO[offset] = idx == t ? one : zero;
+          cO[offset] = idx2 == t2 ? one : zero;
         }
       }
     }
