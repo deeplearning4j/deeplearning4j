@@ -110,7 +110,7 @@ struct IndexComparator
 std::vector<LongType> argsort(const std::vector<LongType>& array)
 {
   std::vector<LongType> indices(array.size());
-  for (LongType i = 0; i < array.size(); ++i) indices[i] = i;
+  for (size_t i = 0; i < array.size(); ++i) indices[i] = i;
 
   std::sort(indices.begin(), indices.end(), IndexComparator(array));
 
@@ -155,7 +155,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   for (LongType i = 0; i < Arank; ++i)
     axes_a_grad.push_back(i);
 
-  for (LongType i = 0; i < axes0Sum.size(); ++i)
+  for (size_t i = 0; i < axes0Sum.size(); ++i)
     axes_a_grad.erase(std::remove(axes_a_grad.begin(), axes_a_grad.end(), axes0Sum[i]), axes_a_grad.end());
 
 
@@ -165,7 +165,7 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   for (LongType i = 0; i < Brank; ++i)
     axes_b_grad.push_back(i);
 
-  for (LongType i = 0; i < axes1Sum.size(); ++i)
+  for (size_t i = 0; i < axes1Sum.size(); ++i)
     axes_b_grad.erase(std::remove(axes_b_grad.begin(), axes_b_grad.end(), axes1Sum[i]), axes_b_grad.end());
 
   //used for post result permute to reshape result to be expected output
@@ -185,12 +185,12 @@ CUSTOM_OP_IMPL(tensormmul_bp, 4, 2, false, 0, -1) {
   }
 
   std::vector<LongType> axes_b_gradA;
-  for (LongType i = 0; i < axes_b_grad.size(); i++) {
+  for (size_t i = 0; i < axes_b_grad.size(); i++) {
     axes_b_gradA.push_back(i);
   }
 
   std::vector<LongType> axes_a_gradB;
-  for (LongType i = 0; i < axes_a_grad.size(); i++) {
+  for (size_t i = 0; i < axes_a_grad.size(); i++) {
     axes_a_gradB.push_back(i);
   }
 
