@@ -92,8 +92,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
       error += std::string("CONCAT op: array at index: ");
       error += std::to_string(i);
       error += std::string(" ");
-      error += std::string(" did not have same rank. Expected rank: " + rank);
-      error += std::string(" but was: " + nonEmptyArrs[i]->rankOf());
+      error += std::string(&" did not have same rank. Expected rank: " [ rank]);
+      error += std::string(&" but was: " [ nonEmptyArrs[i]->rankOf()]);
       REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
     }
 
@@ -104,8 +104,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
           error += std::string("CONCAT op: array at index: ");
           error += std::to_string(i);
           error += std::string(" ");
-          error += std::string(" did not have same dimension. Expected dimension : " + nonEmptyArrs[0]->sizeAt(dim));
-          error += std::string(" but was: " + nonEmptyArrs[i]->sizeAt(dim));
+          error += std::string(&" did not have same dimension. Expected dimension : " [ nonEmptyArrs[0]->sizeAt(dim)]);
+          error += std::string(&" but was: " [ nonEmptyArrs[i]->sizeAt(dim)]);
           REQUIRE_TRUE(nonEmptyArrs[i]->rankOf() == rank, 0,error.c_str());
         }
       }
@@ -146,7 +146,6 @@ DECLARE_SHAPE_FN(concat) {
   // also if scalar is present -> use the shape of vector with length=1 instead
   ShapeList arrShapes;
   std::vector<LongType> shapesToDelete;
-  LongType index = 0;
   LongType numOfNonEmptyArrs = 0;
   const LongType rank = shape::rank(INPUT_VARIABLE(0)->shapeInfo());
   LongType newDim = 0;
@@ -190,7 +189,6 @@ DECLARE_SHAPE_FN(concat) {
 
       arrShapes.push_back(inputShape->at(i));
     }
-    index++;
   }
 
   if(numOfNonEmptyArrs < 1) {
@@ -247,7 +245,7 @@ DECLARE_SHAPE_FN(concat) {
 
     //note: always ensure that the constant shape helper is used, otherwise we could end up with
     //some modification of pre existing cache values.
-    auto result = ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo,true);
+    auto result = ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo);
     return SHAPELIST(result);
   }
 
@@ -275,11 +273,11 @@ CUSTOM_OP_IMPL(concat_bp, -1, -1, false, 0, 0) {
 
     int width = originalChunk->sizeAt(axis);
 
-    for (LongType e = 0; e < epsilonNext->rankOf(); e++) {
+    for (LongType e2 = 0; e2 < epsilonNext->rankOf(); e2++) {
       if (e == axis)
-        indices[2 * e + 1] = (indices[2 * e] = startPos) + width;
+        indices[2 * e2 + 1] = (indices[2 * e2] = startPos) + width;
       else
-        indices[2 * e + 1] = indices[2 * e] = 0;
+        indices[2 * e2 + 1] = indices[2 * e2] = 0;
     }
 
     auto subarray = (*epsilonNext)(indices, true);

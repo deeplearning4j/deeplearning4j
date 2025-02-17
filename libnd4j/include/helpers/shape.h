@@ -112,7 +112,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool shapeEquals(int shape1Rank, const sd::LongType
 
 SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *detachShape(sd::LongType *originalShape);
 
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *copyShape(sd::LongType const *originalShape);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool shapeEquals(const sd::LongType *shapeInfo1, const sd::LongType *shapeInfo2);
 
@@ -257,7 +256,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE bool isCommonVector(const sd::LongType *shapeInfo, 
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool isRowVector(sd::LongType *shapeInfo);
 
-SD_LIB_EXPORT SD_HOST_DEVICE bool isColumnVector(sd::LongType const *shapeInfo);
 
 /**
 * shape - input inShape is shape only, not shapeInfo
@@ -337,18 +335,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType rank(const sd::LongType *shapeInfo);
 
 
 /**
-* Converts a raw int buffer of the layout:
-* rank
-* shape
-* stride
-* offset
-* elementWiseStride
-*
-* where shape and stride are both straight int pointers
-*/
-SD_LIB_EXPORT SD_HOST_DEVICE ShapeInformation *infoFromBuffer(sd::LongType *buffer);
-
-/**
 * Returns the stride portion of an information
 * buffer
 */
@@ -424,24 +410,6 @@ template <typename T1, typename T2>
 SD_LIB_EXPORT SD_HOST_DEVICE void removeIndex(T1 const *data, T2 const *indexes, sd::LongType dataLength,
                                               sd::LongType indexesLength, T1 *out);
 
-/**
-* Return a copy of this array with the
-* given index omitted
-*
-* @param data  the data to copy
-* @param indexes the index of the item to remove
-* @param dataLength the length of the data array
-* @param indexesLength the length of the data array
-* @return the new array with the omitted
-*
-* item
-*/
-
-template <typename T1, typename T2>
-SD_LIB_EXPORT SD_HOST_DEVICE T1 *removeIndex(T1 const *data, T2 const *indexes, sd::LongType dataLength,
-                                             sd::LongType indexesLength);
-
-
 
 
 
@@ -499,42 +467,6 @@ SD_LIB_EXPORT SD_HOST_DEVICE T *concat(int const numArrays, int const numTotalEl
 
 
 
-SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::LongType* shapeInfo, sd::LongType* dimensions, sd::LongType dimensionLength) {
-  // Guard against null or empty dimensions
-  if (dimensions == nullptr || dimensionLength == 0)
-    throw std::invalid_argument("Invalid input: dimensions not specified (null or length 0)");
-
-  const sd::LongType rank = shape::rank(shapeInfo);
-
-  // Single tensor case
-  if (dimensionLength >= rank || (dimensionLength == 1 && dimensions[0] == SD_MAX_INT))
-    return 1;
-
-  // Handle negative dimensions
-  for(int i = 0; i < dimensionLength; i++) {
-    if(dimensions[i] < 0)
-      dimensions[i] += rank;
-  }
-
-  // Calculate product of shape along specified dimensions
-  sd::LongType tensorLen = 1;
-  for(int i = 0; i < dimensionLength; i++) {
-    tensorLen *= shape::sizeAt(shapeInfo, dimensions[i]);
-  }
-
-  // Handle empty tensor case
-  if(tensorLen == 0)
-    return 1;
-
-  // Calculate number of tensors
-  sd::LongType length = shape::length(shapeInfo);
-  sd::LongType numTensors = length / tensorLen;
-
-  if(numTensors >= SD_MAX_INT)
-    throw std::invalid_argument("Tensors along dimension cannot be >= Integer.MAX_VALUE");
-
-  return numTensors;
-}
 
 
 /**
@@ -1064,33 +996,7 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *calcStridesFortran(sd::Long
 
 
 
-/**
-* Get the length per slice of the
-* given shape and the dimension
-* @param rank the rank of the shape
-* @param shape the shape of to get
-* the length per slice for
-* @param dimension the dimension to
-* get the length per slice for
-* @param dimensionLength the length of the dimension array
-* @return the length per slice of the given shape
-* along the given dimension
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType lengthPerSlice(sd::LongType rank, sd::LongType const *shape, const sd::LongType *dimension,
-                                                            sd::LongType dimensionLength) {
-  if (isVector(shape, rank)) {
-    // return total length for row vectors
-    if (dimensionLength == 1 && shape[0] == 1) {
-      return prodLong(shape, rank);
-    }
-  } else if (rank == dimensionLength)
-    return prodLong(shape, rank);
-  sd::LongType absSelta = sd::math::sd_abs<sd::LongType,sd::LongType>(rank - dimensionLength);
-  auto ret2 = shape::removeIndex<sd::LongType>(shape, dimension, rank, dimensionLength);
-  auto ret = prodLong(ret2, absSelta);
-  delete[] ret2;
-  return ret;
-}
+
 
 
 
@@ -2273,67 +2179,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int tadOffset(sd::LongType *xInfo, int offset) {
 #endif
 
 
-/**
-* Returns the tensor along dimension
-* for the given block index
-* @param blockSize
-* @param blockIdx
-* @param i
-* @return
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadForBlockIndex(int blockSize, int blockIdx, int i) { return blockIdx + i * blockSize; }
-
-/**
-* Computes the number of tads per block
-*
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadsPerBlock(int blockSize, int tads) {
-  return sd::math::sd_ceil<double, int>(tads / (double)blockSize);
-}
-
-/**
-* Given an linear index, element wise stride
-* and the length of each tad
-* map a linear index to a tad
-* @param i the index to map
-* @param the element wise stride for the tads
-* @param numElementsPerTad the number of elements
-* per tad
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadIndex(int i, int elementWiseStride, int numElementsPerTad) {
-  return i / (numElementsPerTad * elementWiseStride);
-}
-
-/**
-* Map a tad to a
-* reduction index.
-* @param tadIndexForOriginal the original tad index for the
-* split up problem (eg: split is dimension 3 mapping to a 2,3 problem)
-* @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
-* @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced, int tadsForOriginal) {
-  if (tadIndexForOriginal == 0) return 0;
-  return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
-}
-
-/**
-* Tad index for linear
-* @param linearIndex
-* @param tadLength
-* @return
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadIndexForLinear(int linearIndex, int tadLength) { return linearIndex % tadLength; }
-
-/**
-* Computes the number of tads
-* per reduce index for the
-* reduction tad.
-*/
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal) {
-  return tadsForOriginal / tadsForReduce;
-}
-
 
 
 SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType *createScalarShapeInfo() {
@@ -2394,9 +2239,7 @@ SD_HOST SD_LIB_EXPORT SD_INLINE void sweepShapeInfoBuffer(sd::LongType *shapeInf
 }
 #endif
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isContiguous(const sd::LongType *shapeInfo) {
-  return (order(shapeInfo) == 'c') && (elementWiseStride(shapeInfo) > 0);
-}
+
 
 // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too
 // big number of dimensions) also it sorts input array of dimensions, this operation is also necessary for creating TAD
@@ -2438,63 +2281,12 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void shapeOldScalar(sd::DataType dataType
   sd::ArrayOptions::setDataType(buffer, dataType);
 }
 
-template <typename T1, typename T2>
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void convertT(T1 *from, T2 *to, sd::LongType length) {
-  for (sd::LongType e = 0; e < length; e++) to[e] = (T2)from[e];
-};
 
 
 
-template <typename T>
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void printArray(void *varr, int length, const char *message) {
-  auto arr = reinterpret_cast<T *>(varr);
-  if (message != nullptr)
-    printf("%s: [", message);
-  else
-    printf("Array: [");
 
-  for (int i = 0; i < length; i++) {
-    printf("%f", (float)arr[i]);
-    if (i + 1 < length) printf(", ");
-  }
-  printf("]\n");
 
-#ifndef __CUDACC__
-  fflush(stdout);
-#endif
-}
 
-template <typename T>
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void printTadContents(void *varr, sd::LongType *tadOffsets, int numTads,
-                                                             const sd::LongType *tadShapeInfo, const char *message) {
-  T *arr = reinterpret_cast<T *>(varr);
-
-  // Extracting TAD's length and element-wise stride from the shape info
-  const int tadLength = length(tadShapeInfo);
-  const int tadEws = elementWiseStride(tadShapeInfo);
-
-  for (int tadIdx = 0; tadIdx < numTads; tadIdx++) {
-    T *tadStart = arr + tadOffsets[tadIdx];
-
-    printf("%s TAD %d: [", message ? message : "Array", tadIdx);
-    for (int i = 0; i < tadLength; i++) {
-      printf("%f", (float)tadStart[i * tadEws]);
-      if (i + 1 < tadLength) printf(", ");
-    }
-    printf("]\n");
-  }
-
-#ifndef __CUDACC__
-  fflush(stdout);
-#endif
-}
-
-SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *permuteShapeBuffer(sd::LongType const *shapeBuffer, sd::LongType *rearrange) {
-  auto len = shapeInfoLength(rank(shapeBuffer));
-  sd::LongType *copy = copyOf(len, shapeBuffer);
-  doPermuteShapeInfo(copy, rearrange);
-  return copy;
-}
 
 /**
 *
@@ -2541,12 +2333,6 @@ SD_LIB_EXPORT SD_INLINE  SD_HOST void doPermuteSwap(sd::LongType length, sd::Lon
   delete[] temp;
 }
 
-
-SD_LIB_EXPORT SD_INLINE  SD_HOST void permuteShapeBufferInPlace(sd::LongType *shapeBuffer, sd::LongType *rearrange, sd::LongType *out) {
-  if (shapeBuffer != out) memcpy(out, shapeBuffer, sizeof(sd::LongType) * shapeInfoLength(shapeBuffer));
-
-  doPermuteShapeInfo(out, rearrange);
-}
 
 
 /**

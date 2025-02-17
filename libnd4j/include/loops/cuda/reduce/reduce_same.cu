@@ -29,7 +29,7 @@
 #include <system/op_boilerplate.h>
 #include <types/types.h>
 
-    using namespace simdOps;
+using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename OpType>
@@ -378,19 +378,21 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(
     const sd::LongType tadRank = shape::rank(hXShapeInfo) - zRank;
 
     auto outerPack = sd::ConstantShapeHelper::getInstance()
-                         .createSubArrShapeInfo(hXShapeInfo, dims, zRank);
+        .createSubArrShapeInfo(
+            const_cast<sd::LongType*>(hXShapeInfo), const_cast<sd::LongType*>(dims), zRank);
     auto innerPack = sd::ConstantShapeHelper::getInstance()
-                         .createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
+        .createSubArrShapeInfo(
+            const_cast<sd::LongType*>(hXShapeInfo), const_cast<sd::LongType*>(dims + zRank), tadRank);
 
     simpleReduce<X, OpType>
-        <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-            x,
-            outerPack->special(),
-            innerPack->special(),
-            extraParams,
-            vreductionBuffer,
-            z,
-            dZShapeInfo);
+    <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+        x,
+        outerPack->special(),
+        innerPack->special(),
+        extraParams,
+        vreductionBuffer,
+        z,
+        dZShapeInfo);
     sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateXD(...) failed");
   }
 }
@@ -427,16 +429,16 @@ SD_HOST void ReduceSameFunction<X>::intermediateScalar(
     }
   } else {
     simpleScalar<X, OpType>
-        <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-            x,
-            xShapeInfo,
-            extraParams,
-            z,
-            zShapeInfo,
-            dimension,
-            dimensionLength,
-            reductionBuffer,
-            tadOnlyShapeInfo);
+    <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+        x,
+        xShapeInfo,
+        extraParams,
+        z,
+        zShapeInfo,
+        dimension,
+        dimensionLength,
+        reductionBuffer,
+        tadOnlyShapeInfo);
   }
   sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateScalar(...) failed");
 }

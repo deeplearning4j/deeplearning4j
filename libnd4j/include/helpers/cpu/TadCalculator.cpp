@@ -14,7 +14,7 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     THROW_EXCEPTION("Original shape is null");
   }
 
-  auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(_originalShape,false);
+  auto shapeInfo = ConstantShapeHelper::getInstance().createFromExisting(_originalShape);
   const LongType rank = shape::rank(shapeInfo);
 
   // Calculate dimensions to exclude

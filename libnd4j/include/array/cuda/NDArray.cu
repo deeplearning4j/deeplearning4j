@@ -381,7 +381,7 @@ NDArray NDArray::tile(const std::vector<LongType>& reps)  {
   DataBuffer *  newBuff = new DataBuffer(shape::length(newShapeInfo) * sizeOfT(),
                                          dataType(), getContext()->getWorkspace(), true);
   // assign new shape and new buffer to resulting array
-  NDArray result(newBuff,newShapeInfo , getContext());
+  NDArray result(newBuff,const_cast<sd::LongType *>(newShapeInfo) , getContext());
   // fill newBuff, loop through all elements of newBuff
   // looping through buffer() goes automatically by means of getSubArrayIndex applying
   const auto resultLen = result.lengthOf();

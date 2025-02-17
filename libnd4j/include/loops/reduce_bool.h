@@ -68,10 +68,9 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
 
   template <typename OpType>
   static SD_HOST void intermediateXD(dim3 launchDims, cudaStream_t *stream, const void *vx,
-                                     const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
+                                     sd::LongType *dXShapeInfo, sd::LongType *hXShapeInfo,
                                      void *extraParams, void *vreductionBuffer, void *vz,
-                                     const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
-                                     const long long int *dims);
+                                     sd::LongType *dZShapeInfo, sd::LongType *hZShapeInfo, sd::LongType *dims);
 
   static SD_HOST void execReduceScalar(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
                                        const sd::LongType *xShapeInfo, const sd::LongType *hXShapeInfo,
@@ -81,9 +80,9 @@ class SD_LIB_HIDDEN ReduceBoolFunction {
                                        void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
   static SD_HOST void execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
-                                   const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo, void *extraParams,
-                                   void *vreductionBuffer, void *vz, const sd::LongType *dZShapeInfo,
-                                   const sd::LongType *hZShapeInfo, const sd::LongType *dims);
+                                   sd::LongType *dXShapeInfo, sd::LongType *hXShapeInfo, void *extraParams,
+                                   void *vreductionBuffer, void *vz, sd::LongType *dZShapeInfo,
+                                   sd::LongType *hZShapeInfo, sd::LongType *dims);
 #else
 
   /**

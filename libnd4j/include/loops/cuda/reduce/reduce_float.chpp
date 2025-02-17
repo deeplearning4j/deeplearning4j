@@ -376,8 +376,10 @@ SD_HOST void ReduceFloatFunction<X,Z>::intermediateXD(
     const int zRank   = shape::rank(hZShapeInfo);
     const int tadRank = shape::rank(hXShapeInfo) - zRank;
 
-    auto outerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims, zRank);
-    auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims + zRank, tadRank);
+    auto outerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(
+        const_cast<sd::LongType*>(hXShapeInfo), const_cast<sd::LongType*>(dims), zRank);
+    auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(
+        const_cast<sd::LongType*>(hXShapeInfo), const_cast<sd::LongType*>(dims + zRank), tadRank);
 
     simpleReduce<X, Z, OpType>
         <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(

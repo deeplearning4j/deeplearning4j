@@ -332,6 +332,7 @@
                             </linkPaths>
                             <compilerOptions>
                                 <compilerOption>${javacpp.compiler.options}</compilerOption>
+                                <compilerOption>-std=c++17</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>

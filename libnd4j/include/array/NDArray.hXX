@@ -221,7 +221,7 @@ NDArray::NDArray(NDArray &other) {
   if(!shape::isViewConst(other.shapeInfo())) {
     auto copyInfo = ShapeBuilders::copyShapeInfo(other.shapeInfo(), true, getContext() == nullptr ? nullptr : getContext()->getWorkspace());
     auto copiedInfo = ShapeBuilders::setAsView(copyInfo);
-    auto shapeInfo = ConstantShapeHelper::getInstance().createConstBuffFromExisting(copiedInfo,nullptr);
+    auto shapeInfo = ConstantShapeHelper::getInstance().createConstBuffFromExisting(copiedInfo);
     if(shapeInfo == nullptr) {
       THROW_EXCEPTION("NDArray::NDArray(NDArray &other) copy constructor - shapeInfo is nullptr");
     }
@@ -2517,7 +2517,7 @@ NDArray * NDArray::newShapeNoCopy(const std::vector<sd::LongType> &newShape, con
   delete olddims;
   delete oldstrides;
 
-  auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo,true);
+  auto retShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
   auto ret =  new NDArray(this->getDataBuffer(), retShapeInfo, getContext(), this->offset());
   return ret;
 }
@@ -2798,7 +2798,7 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
-    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted);
     DataBuffer *db = new DataBuffer(shape::length(buff) *
                                     DataTypeUtils::sizeOf(ArrayOptions::dataType(buff)),
                                     ArrayOptions::dataType(buff), getContext()->getWorkspace());
@@ -2816,7 +2816,7 @@ NDArray &NDArray::permute(LongType *dimensions, const int rank, const bool copyT
     if(ArrayOptions::dataType(shapeInfoPermuted) == sd::DataType::UNKNOWN) {
       THROW_EXCEPTION("NDArray::permute: unknown data type of new shape !");
     }
-    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted,false);
+    auto buff = ConstantShapeHelper::getInstance().createFromExisting(shapeInfoPermuted);
 
     NDArray *ret = new NDArray(getDataBuffer(), buff, getContext());
     NDArray &ret2 =  *ret;
@@ -4375,7 +4375,7 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
   else {
     std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), copy,true);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), copy);
     NativeOpExecutioner::execSummaryStats(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                           nullptr, target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                           target.specialShapeInfo(), pDims, dimensions->size(),
@@ -5113,7 +5113,7 @@ void NDArray::applyIndexReduce(sd::indexreduce::Ops op, NDArray &target, const s
     std::vector<sd::LongType> *copy = const_cast<std::vector<sd::LongType> *>(dimensions);
     shape::checkDimensions(rankOf(), copy);
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy,true);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
     NativeOpExecutioner::execIndexReduce(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                          params, target.buffer(), target.shapeInfo(), target.specialBuffer(),
                                          target.specialShapeInfo(), pDims, copy->size(), packX->platformShapeInfo(),
@@ -5195,8 +5195,8 @@ NDArray NDArray::applyReduce3(sd::reduce3::Ops op, NDArray &other, const std::ve
   } else {
     auto pDims = sd::Environment::getInstance().isCPU() ? copy->data() : nullptr;
 
-    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy,true);
-    auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy,true);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
+    auto packY = sd::ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy);
 
     if (!shape::equalsSoft(packX->primaryShapeInfo(), packY->primaryShapeInfo()) ||
         (packX->numberOfTads() != packY->numberOfTads() && packY->numberOfTads() != 1 && packY->numberOfTads() != 1))
@@ -5228,8 +5228,8 @@ NDArray NDArray::applyAllReduce3(sd::reduce3::Ops op, NDArray &other, const std:
   shape::checkDimensions(rankOf(), copy);
   shape::checkDimensions(other.rankOf(), copy);
 
-  auto packX = ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy,true);
-  auto packY = ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy,true);
+  auto packX = ConstantTadHelper::getInstance().tadForDimensions(shapeInfo(), copy);
+  auto packY = ConstantTadHelper::getInstance().tadForDimensions(other.shapeInfo(), copy);
 
   // check tads shapes
   if (!shape::equalsSoft(packX->primaryShapeInfo(), packY->primaryShapeInfo()))
@@ -5698,7 +5698,7 @@ void NDArray::addRowVector(NDArray &row, NDArray &target)  {
 
   int dimension = 1;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({&target}, {this, &row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
@@ -5728,7 +5728,7 @@ void NDArray::mulRowVector(NDArray &row, NDArray &target)  {
 
   int dimension = 1;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(),dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({&target}, {this, &row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
@@ -5757,7 +5757,7 @@ void NDArray::divRowVector(NDArray &row, NDArray &target)  {
 
   int dimension = 1;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({&target}, {this, &row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Divide, buffer(), shapeInfo(), specialBuffer(),
@@ -5782,7 +5782,7 @@ void NDArray::addiRowVector(NDArray &row) {
   }
   int dimension = 1;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {&row});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
@@ -5810,7 +5810,7 @@ void NDArray::addColumnVector(NDArray &column, NDArray &target)  {
 
   int dimension = 0;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({&target}, {this, &column});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
@@ -5836,7 +5836,7 @@ void NDArray::addiColumnVector(NDArray &column) {
 
   int dimension = 0;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {&column});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Add, buffer(), shapeInfo(), specialBuffer(),
@@ -5861,7 +5861,7 @@ void NDArray::muliColumnVector(NDArray &column) {
   }
   int dimension = 0;
 
-  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension,true);
+  auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(this->shapeInfo(), dimension);
 
   NDArray::prepareSpecialUse({this}, {&column});
   NativeOpExecutioner::execBroadcast(getContext(), sd::broadcast::Ops::Multiply, buffer(), shapeInfo(), specialBuffer(),
@@ -6096,7 +6096,7 @@ NDArray& NDArray::operator()(const std::vector<sd::LongType> &idx, const bool ke
   shape::calcSubArrShapeInfoAndOffset(idx.data(), shapeInfo(), subArrShapeInfo, offset, keepUnitiesInShape, isStrided,
                                       numOfUntiesInSubArrShape);
 
-  auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo, getContext()->getWorkspace());
+  auto newShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(subArrShapeInfo);
   NDArray *result = new NDArray(_buffer, const_cast<sd::LongType *>(newShapeInfo), getContext(), offset + this->offset());
   ShapeDescriptor descriptor(newShapeInfo, false);
   descriptor.validate();
@@ -6213,7 +6213,7 @@ void NDArray::setShapeInfo(const ConstantShapeBuffer *shapeBuffer) {
   _shapeInfoBuffer = const_cast<ConstantShapeBuffer *>(shapeBuffer);
   _shapeInfo = _shapeInfoBuffer->primary();
 #ifdef __CUDABLAS__
-  _shapeInfoD = shapeBuffer->special();
+  _shapeInfoD = _shapeInfoBuffer->special();
 #endif
 
   if (ArrayOptions::arrayType(_shapeInfo) == ArrayType::EMPTY)

@@ -14,7 +14,10 @@
 * SPDX-License-Identifier: Apache-2.0
 ******************************************************************************/
 
-#ifndef __CUDABLAS__
+#include "helpers/ConstantShapeHelper.h"
+
+#include "array/ConstantShapeBuffer.h"
+#include "system/common.h"
 #include <array/PrimaryPointerDeallocator.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ShapeBuilders.h>
@@ -35,7 +38,7 @@ ConstantShapeHelper& ConstantShapeHelper::getInstance() {
  return instance;
 }
 
-ConstantShapeBuffer* ConstantShapeHelper::createConstBuffFromExisting(sd::LongType* shapeInfo, sd::memory::Workspace* workspace) {
+ConstantShapeBuffer* ConstantShapeHelper::createConstBuffFromExisting(sd::LongType* shapeInfo) {
  auto result = bufferForShapeInfo(shapeInfo);
  return result;
 }
@@ -63,7 +66,7 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(DataType dataType, 
 LongType* ConstantShapeHelper::emptyShapeInfoWithShape(DataType dataType, std::vector<LongType>& shape) {
  auto descriptor = ShapeBuilders::createShapeInfo(dataType, 'c', shape, nullptr);
  ArrayOptions::setPropertyBit(descriptor, ARRAY_EMPTY);
- auto existing = createFromExisting(descriptor, false);
+ auto existing = createFromExisting(descriptor);
  return existing;
 }
 
@@ -114,7 +117,7 @@ LongType* ConstantShapeHelper::vectorShapeInfo(LongType length, DataType dataTyp
  return bufferForShapeInfo(descriptor)->primary();
 }
 
-LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, bool destroyOriginal) {
+LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo) {
  if (!shapeInfo) {
    THROW_EXCEPTION("Null shape info");
  }
@@ -122,10 +125,6 @@ LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, bool dest
  return buffer->primary();
 }
 
-LongType* ConstantShapeHelper::createFromExisting(LongType* shapeInfo, sd::memory::Workspace* workspace) {
- auto result = bufferForShapeInfo(shapeInfo);
- return result->primary();
-}
 
 LongType* ConstantShapeHelper::castToDataType(LongType* shapeInfo, DataType newType) {
  if (!shapeInfo) {
@@ -153,9 +152,6 @@ LongType* ConstantShapeHelper::castToDataType(LongType* shapeInfo, DataType newT
  return buffer->primary();
 }
 
-bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor* descriptor) {
- return _shapeTrie.exists(descriptor->toShapeInfo());
-}
 
 ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(sd::LongType* maxShapeInfo,
                                                                                 sd::LongType* minShapeInfo,
@@ -222,4 +218,4 @@ ConstantShapeBuffer* ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(
 
 } // namespace sd
 
-#endif
+

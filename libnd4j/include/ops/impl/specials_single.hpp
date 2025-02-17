@@ -425,8 +425,8 @@ void SpecialMethods<T>::sortTadGeneric(NDArray *input, sd::LongType *dimension, 
   int numTads = xLength / xTadLength;
 
   const std::vector<sd::LongType> dimVector(dimension, dimension + dimensionLength);
-  auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(input->shapeInfo()),
-                                                                    const_cast<sd::LongType *>(dimVector.data()),false);
+  auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
+      const_cast<sd::LongType *>(input->shapeInfo()), const_cast<sd::LongType *>(dimVector.data()), false);
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto r = start; r < stop; r++) {

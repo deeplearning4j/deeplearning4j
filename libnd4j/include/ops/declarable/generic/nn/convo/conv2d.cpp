@@ -192,7 +192,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
   delete[] second;
   delete[] permute;
-  auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo, block.workspace());
+  auto ret = ConstantShapeHelper::getInstance().createFromExisting(outputShapeInfo);
   return SHAPELIST(ret);
 }
 
@@ -338,7 +338,7 @@ DECLARE_SHAPE_FN(conv2d_bp) {
                                                   block.getWorkspace(),
                                                   false);
   shape::setStride(shapeDesc,strides);
-  auto gradIshapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeDesc, true);
+  auto gradIshapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeDesc);
   RELEASE(strides,block.getWorkspace());
   RELEASE(strideCalcShapeGradI,block.getWorkspace());
   RELEASE(permute,block.getWorkspace());
