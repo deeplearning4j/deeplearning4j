@@ -352,9 +352,9 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
   sd::LongType *zTadStride = shape::stride(zTadShapeInfo);
 
   auto func = PRAGMA_THREADS_FOR {
-    for (auto idx = start; idx < stop; idx++) {
-      auto xTadOffsetForBlock = tadOffsets[reinterpret_cast<sd::LongType *>(indexes->buffer())[idx]];
-      auto zTadOffsetForBlock = zTadOffsets[idx];
+    for (auto idx2 = start; idx2 < stop; idx2++) {
+      auto xTadOffsetForBlock = tadOffsets[reinterpret_cast<sd::LongType *>(indexes->buffer())[idx2]];
+      auto zTadOffsetForBlock = zTadOffsets[idx2];
 
       auto rX = hX + xTadOffsetForBlock;
       auto rZ = hZ + zTadOffsetForBlock;
@@ -364,9 +364,9 @@ void pullRowsGeneric(OpaqueNDArray vx, OpaqueNDArray vz, const int n, OpaqueNDAr
       sd::LongType xOffset;
       sd::LongType zOffset;
 
-      INDEX2COORDS(idx, tadRank, tadShape, xCoords);
+      INDEX2COORDS(idx2, tadRank, tadShape, xCoords);
       COORDS2INDEX(tadRank, tadStride, xCoords, xOffset);
-      INDEX2COORDS(idx, zTadRank,zTadShape, zCoords);
+      INDEX2COORDS(idx2, zTadRank,zTadShape, zCoords);
       COORDS2INDEX(zTadRank, zTadStride, zCoords, zOffset);
 
       for (LongType i = 0; i < tadLength; i++) {
@@ -753,32 +753,6 @@ void sortTad(Pointer *extraPointers, OpaqueNDArray  x,
   }
 }
 
-void sortCooIndices(Pointer *extraPointers, LongType *indices, void *x, LongType length,
-                    const LongType *xShapeInfo) {
-  try {
-    NativeOpExecutioner::execSortCooIndices(indices, x, length, xShapeInfo);
-
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-
-
-void ravelMultiIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
-                     LongType *shapeInfo, int mode) {
-  NativeOpExecutioner::execRavelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
-}
-
-void unravelIndex(Pointer *extraPointers, LongType *indices, LongType *flatIndices, LongType length,
-                  LongType *shapeInfo) {
-  NativeOpExecutioner::execUnravelIndex(indices, flatIndices, length, shapeInfo);
-}
-
-
-
-
 
 
 Status execCustomOp2(Pointer *extraPointers, LongType hash, OpaqueContext *context) {
@@ -810,7 +784,7 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
   for(LongType i = 1; i < rank * 2 + 1; i++) {
     if(i <= rank) {
       shape.push_back(inputShapeData[i]);
-    } else if(shape.size() == rank) {
+    } else if(shape.size() == static_cast<size_t>(rank)) {
       strides.push_back(inputShapeData[i]);
     }
   }
@@ -837,10 +811,10 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
   if(rank == 0) {
     //detect when the shape buffer values are unset.
-    auto len = shape::shapeInfoLength(rank);
+    auto len2 = shape::shapeInfoLength(rank);
     //min number of values in a shape info buffer
     bool allZero = true;
-    for(int i = 0; i < len; i++) {
+    for(int i = 0; i < len2; i++) {
       if(bufferToSet[i] != 0) {
         allZero = false;
         break;
@@ -855,88 +829,7 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 
 
 
-
-template <typename I>
-static void _scatterUpdate(Pointer *extraPointers, int opCode, int numOfSubArrs, void *hX,
-                           const LongType *hXShapeInfo, const LongType *hXOffsets, void *dX,
-                           const LongType *dXShapeInfo, const LongType *dXOffsets, void *hY,
-                           const LongType *hYShapeInfo, const LongType *hYOffsets, void *dY,
-                           const LongType *dYShapeInfo, const LongType *dYOffsets, void *vIindexes,
-                           const LongType *hIndicesShapeInfo, void *dIindexes,
-                           const LongType *dIndicesShapeInfo) {
-  auto hIindexes = reinterpret_cast<I *>(vIindexes);
-  auto func = PRAGMA_THREADS_DO {
-    for (int i = 0; i < numOfSubArrs; ++i) {
-      int threadIndex = thread_id;
-      const auto xIndex = hIindexes[i];
-      const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
-
-      if (!isOwner) continue;
-
-      NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                       hXShapeInfo, nullptr, 0, 0);
-      NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                        hYShapeInfo, nullptr, 0, 0);
-
-      if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
-        continue;
-      }
-
-      switch (opCode) {
-        case 0:
-          inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
-          break;
-        case 1:
-          inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
-          break;
-        case 2:
-          inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
-          break;
-        case 3:
-          inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
-          break;
-        case 4:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
-          break;
-        case 5:
-          inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
-          break;
-        case 6:
-          inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
-          break;
-        default:
-          continue;
-      }
-    }
-  };
-
-  samediff::Threads::parallel_do(func);
-}
-
 ////////////////////////////////////////////////////////////////////////
-void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis) {
-  auto iType = ArrayOptions::dataType(indices->shapeInfo());
-
-  try {
-    auto tadPackArray = ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), axis->bufferAsT<LongType>(), axis->lengthOf());
-    auto tadPackUpdates = ConstantTadHelper::getInstance().tadForDimensions(updates->shapeInfo(), axis->bufferAsT<LongType>(), axis->lengthOf());
-
-    auto hTADShapeInfoArray = tadPackArray->primaryShapeInfo();
-    auto hTADOffsetsArray = tadPackArray->primaryOffsets();
-    auto hTADShapeInfoUpdates = tadPackUpdates->primaryShapeInfo();
-    auto hTADOffsetsUpdates = tadPackUpdates->primaryOffsets();
-
-    BUILD_SINGLE_SELECTOR(
-        iType, _scatterUpdate,
-        (extraPointers, opCode, indices->lengthOf(), array->buffer(), array->shapeInfo(), hTADOffsetsArray, array->specialBuffer(), array->specialShapeInfo(), hTADOffsetsArray,
-            updates->buffer(), updates->shapeInfo(), hTADOffsetsUpdates, updates->specialBuffer(), updates->specialShapeInfo(), hTADOffsetsUpdates,
-            indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo()),
-        SD_INDEXING_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 
 void setGraphContextCudaContext(graph::Context *ptr, void *stream, void *reductionPointer,
@@ -1047,10 +940,10 @@ void execBroadcast(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
   try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
-                                                                      dimension->lengthOf(),true);
+                                                                      dimension->lengthOf());
     auto tadPackZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
-                                                                      dimension->lengthOf(),true);
+                                                                      dimension->lengthOf());
 
 #if defined(PRINT_INDICES)
     printf("broadcast exec tad full x\n");
@@ -1578,19 +1471,6 @@ void execPairwiseTransformBool(Pointer *extraPointers, int opNum, NDArray *x, ND
 
 
 
-
-void sortCooIndices(Pointer *extraPointers, NDArray *indices, NDArray *values) {
-  try {
-    NativeOpExecutioner::execSortCooIndices(indices->bufferAsT<LongType>(), values->buffer(),
-                                            values->lengthOf(), values->shapeInfo());
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-
-
 void execRandom2(Pointer *extraPointers, int opNum, Pointer state,
                  NDArray *x, NDArray *z, void *extraArguments) {
   try {
@@ -1604,34 +1484,6 @@ void execRandom2(Pointer *extraPointers, int opNum, Pointer state,
   }
 }
 
-
-
-
-void ravelMultiIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices,
-                     NDArray *shapeInfo, int mode) {
-  try {
-    NativeOpExecutioner::execRavelMultiIndex(indices->bufferAsT<LongType>(),
-                                             flatIndices->bufferAsT<LongType>(),
-                                             flatIndices->lengthOf(),
-                                             shapeInfo->bufferAsT<LongType>(), mode);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-void unravelIndex(Pointer *extraPointers, NDArray *indices, NDArray *flatIndices,
-                  NDArray *shapeInfo) {
-  try {
-    NativeOpExecutioner::execUnravelIndex(indices->bufferAsT<LongType>(),
-                                          flatIndices->bufferAsT<LongType>(),
-                                          flatIndices->lengthOf(),
-                                          shapeInfo->bufferAsT<LongType>());
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 
 int binaryLevel() {

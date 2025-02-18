@@ -37,7 +37,6 @@ import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
@@ -58,7 +57,6 @@ import org.nd4j.linalg.profiler.data.array.event.NDArrayEventType;
 import org.nd4j.linalg.profiler.data.array.event.NDArrayMetaData;
 import org.nd4j.linalg.profiler.data.array.eventlog.DefaultNd4jEventLog;
 import org.nd4j.linalg.profiler.data.array.eventlog.Nd4jEventLog;
-import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueVariable;
 import org.nd4j.nativeblas.OpaqueVariablesSet;
@@ -941,12 +939,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public ExecutionerType type() {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, INDArray array, INDArray indices, INDArray updates, long[] axis) {
         throw new UnsupportedOperationException();
     }
 

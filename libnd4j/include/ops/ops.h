@@ -1,4 +1,4 @@
-/* ******************************************************************************
+    /* ******************************************************************************
  *
  *
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@
 #include <math/templatemath.h>
 #include <vector>
 
-#define no_op_exec_special_any                                                                                     \
+#define no_op_exec_special_any                                                                           \
   static const bool requiresSpecial = false;                                                                       \
   static void execSpecial(const X *dx, const sd::LongType *xShapeBuffer, Z *result,                                \
                           const sd::LongType *resultShapeBuffer, X *extraParams, const sd::LongType *tadShapeInfo, \
@@ -124,7 +124,8 @@ struct IndexValue {
   T value;
   sd::LongType index;
   SD_HOST_DEVICE IndexValue() = default;
-  SD_HOST_DEVICE IndexValue(const T val, const sd::LongType ind) : index(ind), value(val) {}
+  // Change initialization order to match declaration order
+  SD_HOST_DEVICE IndexValue(const T val, const sd::LongType ind) : value(val), index(ind) {}
 };
 }  // namespace indexreduce
 

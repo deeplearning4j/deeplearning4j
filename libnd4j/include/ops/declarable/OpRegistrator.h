@@ -99,10 +99,6 @@ class SD_LIB_EXPORT OpRegistrator {
 
   static OpRegistrator& getInstance();
 
-  static void exitHandler();
-  static void sigIntHandler(int sig);
-  static void sigSegVHandler(int sig);
-
   void updateMSVC(LongType newHash, std::string& oldName);
 
   template <typename T>

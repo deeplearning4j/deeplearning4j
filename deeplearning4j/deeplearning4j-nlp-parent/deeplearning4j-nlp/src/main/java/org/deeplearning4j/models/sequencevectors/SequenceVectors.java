@@ -22,6 +22,7 @@ package org.deeplearning4j.models.sequencevectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.config.DL4JClassLoading;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.Getter;
@@ -223,11 +224,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             if (indexes.size() > 0) {
                 int[] intersectIndexes = Ints.toArray(indexes);
 
-                Nd4j.scatterUpdate(org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate.UpdateOp.ASSIGN,
-                        ((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
+                ScatterUpdate op = new ScatterUpdate(((InMemoryLookupTable<VocabWord>) lookupTable).getSyn0(),
                         Nd4j.createFromArray(intersectIndexes),
-                        ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0(),
-                        1);
+                        ((InMemoryLookupTable<VocabWord>) intersectModel.lookupTable()).getSyn0());
+                Nd4j.getExecutioner().exec(op);
+
             }
         }
     }

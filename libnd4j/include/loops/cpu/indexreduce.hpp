@@ -124,7 +124,7 @@ void IndexReduce<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, voi
    if (dimensionLength < 1) return;
 
    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType*>(xShapeInfo), dimension,
-                                                                        dimensionLength,true);
+                                                                        dimensionLength);
    tadOnlyShapeInfo = tadPack->primaryShapeInfo();
    tadOffsets = tadPack->primaryOffsets();
  }

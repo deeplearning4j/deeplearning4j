@@ -6753,14 +6753,4 @@ public class Nd4j {
     }
 
 
-    /**
-     * This method applies ScatterUpdate op
-     */
-    @Deprecated
-    public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long... axis) {
-        Preconditions.checkArgument(indices.dataType() == DataType.INT || indices.dataType() == DataType.LONG,
-                "Indices should have INT data type");
-        Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");
-        getExecutioner().scatterUpdate(op, array, indices, updates, axis);
-    }
 }

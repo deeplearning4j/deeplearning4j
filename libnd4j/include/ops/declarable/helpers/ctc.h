@@ -81,12 +81,12 @@ T log_sum_exp(T arg1, T arg2, T arg3) {
 template <bool HasElementStride, typename Type, typename IndexType>
 Type softmax_normalization_term(const Type *log_p, const uint64_t len_c, const uint64_t element_stride) {
   Type max_p;
-  for (auto c = 0; c < len_c; ++c) {
+  for (uint64_t c = 0; c < len_c; ++c) {
     max_p = std::max(max_p, element<HasElementStride>(log_p, c, element_stride));
   }
   // Get normalization term of softmax: log(sum(exp(logit[j]-max_p))).
   Type logsumexp = Type(0.0);
-  for (auto c = 0; c < len_c; ++c) {
+  for (uint64_t c = 0; c < len_c; ++c) {
     logsumexp += math::p_exp(element<HasElementStride>(log_p, c, element_stride) - max_p);
   }
   logsumexp = math::p_log(logsumexp);

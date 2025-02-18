@@ -67,7 +67,8 @@ DECLARE_SHAPE_FN(permute) {
   auto x = INPUT_VARIABLE(0);
 
   if (block.width() == 1 && block.getIArguments()->size() == 0) {
-    return SHAPELIST(ShapeUtils::evalTransposeShapeInfo(*x, block.workspace(), true));
+    auto ret = ShapeUtils::evalTransposeShapeInfo(*x, block.workspace(), true);
+    return SHAPELIST(ret);
   }
   std::vector<LongType> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<LongType>() : *block.getIArguments();
 

@@ -59,7 +59,7 @@ DECLARE_SHAPE_FN(tear) {
 
   if (dims.size() > 1) std::sort(dims.begin(), dims.end());
 
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, &dims,true);
+  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, &dims);
   auto numTads = tadPack->numberOfTads();
 
   auto result = SHAPELIST();

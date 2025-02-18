@@ -84,7 +84,7 @@ void MmulHelper::computeNewShapesAndAxes(
   std::vector<LongType> bs_shape = bs.getShapeAsVector();
 
   std::vector<LongType> notin_a;
-  for(LongType k = 0; k < as_shape.size(); ++k) {
+  for(size_t k = 0; k < as_shape.size(); ++k) {
     if(std::find(axes_a.begin(), axes_a.end(), k) == axes_a.end())
       notin_a.push_back(k);
   }
@@ -108,7 +108,7 @@ void MmulHelper::computeNewShapesAndAxes(
 
 
   std::vector<LongType> notin_b;
-  for(LongType k = 0; k < bs_shape.size(); ++k) {
+  for(size_t k = 0; k < bs_shape.size(); ++k) {
     if(std::find(axes_b.begin(), axes_b.end(), k) == axes_b.end())
       notin_b.push_back(k);
   }
@@ -271,13 +271,13 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
     bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0], false, false))
                                     : new NDArray(b->reshape(b->ordering(), modifB[0]));
   // rest steps for a array
-  for (int i = 1; i < whatToDoWithA.size(); ++i)
+  for (size_t i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
       aPR->permutei(modifA[i], false, false);
     else
       aPR->reshapei(modifA[i]);
   // rest steps for b array
-  for (int i = 1; i < whatToDoWithB.size(); ++i)
+  for (size_t i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
       bPR->permutei(modifB[i], false, false);
     else
@@ -287,7 +287,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   std::vector<NDArray*> cArrs = {c};
   if (!whatToDoWithC.empty()) {
     cArrs = std::vector<NDArray*>(whatToDoWithC.size() + 1, c);
-    for (int i = 0; i < cArrs.size() - 1; ++i)
+    for (size_t i = 0; i < cArrs.size() - 1; ++i)
       cArrs[i + 1] =
           (whatToDoWithC[i] == 'p')
           ? new NDArray(cArrs[i]->permute(modifC[i], false, false))
@@ -338,13 +338,13 @@ NDArray* MmulHelper::tensorDot(NDArray* a, NDArray* b,
     bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0], false, false))
                                     : new NDArray(b->reshape(b->ordering(), modifB[0]));
   // rest steps for a array
-  for (int i = 1; i < whatToDoWithA.size(); ++i)
+  for (size_t i = 1; i < whatToDoWithA.size(); ++i)
     if (whatToDoWithA[i] == 'p')
       aPR->permutei(modifA[i], false, false);
     else
       aPR->reshapei(modifA[i]);
   // rest steps for b array
-  for (int i = 1; i < whatToDoWithB.size(); ++i)
+  for (size_t i = 1; i < whatToDoWithB.size(); ++i)
     if (whatToDoWithB[i] == 'p')
       bPR->permutei(modifB[i], false, false);
     else
@@ -367,8 +367,8 @@ NDArray* MmulHelper::mmul(NDArray* A, NDArray* B, NDArray* C, const double alpha
   // dot product of 2 vectors
   if (A->lengthOf() == B->lengthOf() && isAVector && isBVector &&
       (aRank != 2 ||
-       aRank == 2 && (A->isSameShape(B) ||
-                      bRank == 1 && A->sizeAt(1) == 1))) {  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
+       (aRank == 2 && (A->isSameShape(B) ||
+                      (bRank == 1 && A->sizeAt(1) == 1))))) {  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
 
 
     return dot(A, B, C, alpha, beta);

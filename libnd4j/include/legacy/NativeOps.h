@@ -139,7 +139,6 @@ SD_LIB_EXPORT OpaqueVariablesSet *executeStoredGraph(sd::Pointer *extraPointers,
                                                      sd::Pointer *inputBuffers,
                                                      sd::Pointer *inputShapes,
                                                      int *inputIndices, int numInputs);
-SD_LIB_EXPORT void scatterUpdate(sd::Pointer *extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);
 SD_LIB_EXPORT sd::LongType const *getPrimaryShapeInfo(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getPrimaryOffsets(OpaqueTadPack *pack);
 SD_LIB_EXPORT sd::LongType const *getSpecialShapeInfo(OpaqueTadPack *pack);

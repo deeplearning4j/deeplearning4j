@@ -33,11 +33,11 @@ namespace sd {
 // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and dimensions permutations for
 // transposition of two input arrays
 std::vector<LongType> ShapeUtils::evalShapeForTensorDot( LongType* aShapeInfo,  LongType* bShapeInfo,
-                                                        const std::vector<LongType> axesA,
-                                                        const std::vector<LongType> axesB,
-                                                        std::vector<LongType>& permutAt,
-                                                        std::vector<LongType>& permutBt, std::vector<LongType>& shapeAt,
-                                                        std::vector<LongType>& shapeBt) {
+                                                         const std::vector<LongType> axesA,
+                                                         const std::vector<LongType> axesB,
+                                                         std::vector<LongType>& permutAt,
+                                                         std::vector<LongType>& permutBt, std::vector<LongType>& shapeAt,
+                                                         std::vector<LongType>& shapeBt) {
   LongType axeAsize = static_cast<LongType>(axesA.size());
   LongType axeBsize = static_cast<LongType>(axesB.size());
 
@@ -147,7 +147,7 @@ std::vector<LongType> ShapeUtils::evalShapeForTensorDot(NDArray* a, NDArray* b,
 // evaluate output shape for reduce operation when input shape is empty
 LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<LongType>* dimsToExclude,
                                                LongType* shapeInfo, const DataType dataType,
-                                                     const bool keepDims, memory::Workspace* workspace) {
+                                               const bool keepDims, memory::Workspace* workspace) {
   if (dimsToExclude->size() == 0) {  // return copy of input shape
     LongType* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
     auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(outShapeInfo)->primary();
@@ -189,33 +189,21 @@ LongType* ShapeUtils::evalReduceShapeInfoEmpty(const char order, std::vector<Lon
 }
 
 LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude,
-                                                NDArray& arr, const bool keepDims, const bool supportOldShapes,
-                                                memory::Workspace* workspace) {
-  return evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace);
+                                          NDArray& arr, const bool keepDims, const bool supportOldShapes,
+                                          memory::Workspace* workspace) {
+  return const_cast<LongType*>(
+      evalReduceShapeInfo(order, dimsToExclude, arr, arr.dataType(), keepDims, supportOldShapes, workspace));
 }
 
-LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo, const bool keepDims,
-                                                const bool supportOldShapes, memory::Workspace* workspace) {
-  return evalReduceShapeInfo(order, dimsToExclude, shapeInfo, ArrayOptions::dataType(shapeInfo), keepDims,
-                             supportOldShapes, workspace);
-}
 
-//////////////////////////////////////////////////////////////////////////
-LongType* ShapeUtils::evalReduceShapeInfo(const char order,
-                                                std::vector<LongType>* dimsToExclude,
-                                                NDArray& arr,
-                                                const DataType dataType, const bool keepDims,
-                                                const bool supportOldShapes, memory::Workspace* workspace) {
-  return evalReduceShapeInfo(order, dimsToExclude, arr.shapeInfo(), dataType, keepDims, supportOldShapes, workspace);
-}
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape resulting from reduce operation
 LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo,
                                           const DataType dataType,
-                                                const bool keepDims,
-                                                const bool supportOldShapes,
-                                                memory::Workspace* workspace) {
+                                          const bool keepDims,
+                                          const bool supportOldShapes,
+                                          memory::Workspace* workspace) {
   if (ArrayOptions::arrayType(shapeInfo) == EMPTY)
     return evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
 
@@ -367,21 +355,7 @@ LongType* ShapeUtils::evalPermShapeInfo(LongType* dimensions, LongType rank, NDA
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
-                                                   const bool setContigStrides) {
-  LongType rank = arr.rankOf();
 
-  // note we do this because of stack allocation crashes
-  //  if the stack is used a vector's data can cause crashes when it goes out of scope
-  LongType* dims = new LongType[rank];
-  for (LongType i = 0; i < rank; i++) {
-    dims[i] = rank - 1 - i;
-  }
-
-  auto ret = evalPermShapeInfo(dims, rank, &arr, workspace, setContigStrides);
-  delete[] dims;
-  return ret;
-}
 
 //////////////////////////////////////////////////////////////////////////
 bool ShapeUtils::copyVectorPart(std::vector<LongType>& target, std::vector<LongType>& source, LongType rank,
@@ -701,8 +675,8 @@ std::vector<LongType> ShapeUtils::evalBroadcastBackwardAxis(const LongType* oper
 
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeUtils::matrixProductShape(LongType* theFirstShape, LongType* theSecondShape,
-                                               bool shouldTranspondFirst, bool shouldTranspondSecond, DataType dtype,
-                                               memory::Workspace* workspace) {
+                                         bool shouldTranspondFirst, bool shouldTranspondSecond, DataType dtype,
+                                         memory::Workspace* workspace) {
   auto inA = theFirstShape;
   auto inB = theSecondShape;
   LongType* shape;

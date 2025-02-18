@@ -25,20 +25,24 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.bytedeco.javacpp.LongPointer;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JEnvironmentVars;
-import org.nd4j.linalg.api.buffer.*;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Optional;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.Assign;
@@ -46,7 +50,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -55,17 +58,13 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
-import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.common.primitives.AtomicBoolean;
-import org.nd4j.common.primitives.Optional;
-import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.nativeblas.*;
+import org.nd4j.nativeblas.OpaqueConstantShapeBuffer;
+import org.nd4j.nativeblas.OpaqueNDArray;
+import org.nd4j.nativeblas.OpaqueTadPack;
 
 import java.util.*;
 
@@ -997,26 +996,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public boolean isExperimentalMode() {
         return experimentalMode.get();
-    }
-
-    @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long[] axis) {
-        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
-        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
-
-        if (tadY.getSecond().length() != indices.length())
-            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
-
-        val arrayOpaque = OpaqueNDArray.fromINDArray(array);
-        val updatesOpaque = OpaqueNDArray.fromINDArray(updates);
-        val indicesOpaque = OpaqueNDArray.fromINDArray(indices);
-
-        INDArray dimm = Nd4j.createFromArray(axis);
-        val dimmOpaque = OpaqueNDArray.fromINDArray(dimm);
-
-        Nd4j.getNativeOps().scatterUpdate(null,op.ordinal(),arrayOpaque,indicesOpaque,updatesOpaque,dimmOpaque);
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
     }
 
     @Override

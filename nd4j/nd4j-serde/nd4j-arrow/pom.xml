@@ -84,10 +84,6 @@
             <artifactId>nd4j-common</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-        </dependency>
 
     </dependencies>
 
