@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(xw_plus_b) {
   auto weightsShape =
       (1 == nWeightsFormat) ? ShapeUtils::evalTransposeShapeInfo(*weights, block.getWorkspace()) : inputShape->at(1);
 
-  auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, aTranspose,
+  auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), const_cast<sd::LongType *>(weightsShape), aTranspose,
                                                     bTranspose,
                                                     ArrayOptions::dataType(inputShape->at(0)), block.getWorkspace());
 

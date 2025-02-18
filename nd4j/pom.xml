@@ -47,7 +47,6 @@
         <module>nd4j-tensorflow-lite</module>
         <module>nd4j-onnxruntime</module>
         <module>nd4j-tvm</module>
-        <module>nd4j-common-tests</module>
         <module>samediff-import</module>
     </modules>
 
@@ -56,6 +55,12 @@
             <id>profiler</id>
             <modules>
                 <module>nd4j-profiler</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>platform-tests</id>
+            <modules>
+                <module>nd4j-common-tests</module>
             </modules>
         </profile>
     </profiles>

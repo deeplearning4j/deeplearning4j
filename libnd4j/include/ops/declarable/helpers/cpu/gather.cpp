@@ -74,9 +74,9 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
 
         const sd::LongType numOfSubArrs = indices->lengthOf();
 
-        auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn,true);
+        auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn);
         delete dimsIn;
-        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut,true);
+        auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), &dimsOut);
         auto inTadShapeInfo = inTadPack->primaryShapeInfo();
         auto outTadShapeInfo = outTadPack->primaryShapeInfo();
 
@@ -120,8 +120,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
       std::vector<sd::LongType> axesVec = {axis};
       std::vector<sd::LongType> *dims = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
 
-      auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims,true);
-      auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims,true);
+      auto inTadPack = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
+      auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
       delete dims;
 
       auto inTadShapeInfo = inTadPack->primaryShapeInfo();

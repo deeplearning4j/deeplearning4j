@@ -37,7 +37,7 @@ static void onehot_(void* voutput, sd::LongType const* zShapeInfo, void const* v
 
   // Get TAD pack once
   auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(zShapeInfo),
-                                                                       reinterpret_cast<LongType*>(&axis),1,true);
+                                                                       reinterpret_cast<LongType*>(&axis),1);
 
   // Cache TAD shape information
   const auto tadShapeInfo = tadPack->primaryShapeInfo();

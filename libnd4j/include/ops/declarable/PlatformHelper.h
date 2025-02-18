@@ -49,7 +49,7 @@ class SD_LIB_EXPORT PlatformHelper {
  public:
   PlatformHelper(const char *name, samediff::Engine engine);
 
-  ~PlatformHelper() = default;
+  virtual ~PlatformHelper() = default;
 
   std::string name();
 

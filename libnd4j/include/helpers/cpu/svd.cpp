@@ -223,7 +223,7 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
   for (int i = 1; i < len; i++)
     if (diagInterval.template t<T>(i) < epsBig) {
       deflation1(col1, shift, i, len);
-      for (int i = 0; i < len; ++i) diagInterval.template r<T>(i) = _m.t<T>(col1 + shift + i, col1 + shift + i);
+      for (int j = 0; j < len; ++j) diagInterval.template r<T>(j) = _m.t<T>(col1 + shift + j, col1 + shift + j);
     }
 
   {
@@ -438,7 +438,6 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
       }
 
       T fLeft = secularEq(leftShifted, col0, diag, permut, diagShifted, shift);
-      T fRight = secularEq(rightShifted, col0, diag, permut, diagShifted, shift);
 
       while (rightShifted - leftShifted >
              (T)2.f * DataTypeUtils::eps<T>() *
@@ -569,7 +568,7 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
 
   std::vector<sd::LongType> permutShape = {(int)indices.size()};
   NDArray permut(_m.ordering(), permutShape, _m.dataType(), _m.getContext());
-  for (int k = 0; k < indices.size(); ++k) permut.template r<T>(k) = (T)indices[k];
+  for (size_t k = 0; k < indices.size(); ++k) permut.template r<T>(k) = (T)indices[k];
 
   std::vector<sd::LongType> shape = {size,1};
   NDArray shifts(_m.ordering(), shape, _m.dataType(), _m.getContext());
@@ -589,9 +588,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
       temp1.swapUnsafe(temp2);
 
       if (_calcV) {
-        auto temp1 = V({0, 0, i, i + 1});
-        auto temp2 = V({0, 0, i + 1, i + 2});
-        temp1.swapUnsafe(temp2);
+        auto temp1V = V({0, 0, i, i + 1});
+        auto temp2V = V({0, 0, i + 1, i + 2});
+        temp1V.swapUnsafe(temp2V);
       }
     }
   }
@@ -608,10 +607,10 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray& U, NDArray& singVals, NDA
 
 
   if (_calcV) {
-    auto temp2 = V({0, 0, 0, curSize}, true);
+    auto temp2V = V({0, 0, 0, curSize}, true);
     for (int i = 0; i < curSize / 2; ++i) {
-      auto temp3 = temp2({0, 0, i, i + 1});
-      auto temp4 = temp2({0, 0, curSize - 1 - i, curSize - i});
+      auto temp3 = temp2V({0, 0, i, i + 1});
+      auto temp4 = temp2V({0, 0, curSize - 1 - i, curSize - i});
       temp3.swapUnsafe(temp4);
     }
   }

@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class ScatterUpdate extends DynamicCustomOp {
+public class  ScatterUpdate extends DynamicCustomOp {
     public enum UpdateOp {
         ADD,
         SUBTRACT,
@@ -86,7 +86,7 @@ public class ScatterUpdate extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> gradOut){
+    public List<SDVariable> doDiff(List<SDVariable> gradOut) {
         //3 args: ref, indices, updates
         //For non-modified indices, input gradient (reference) is same as output gradient
         //For modified indices, dL/dref = dL/dOut * dOut/dRef = dL/dOut * d(update)/dRef = 0

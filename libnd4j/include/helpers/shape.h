@@ -413,9 +413,7 @@ SD_LIB_EXPORT SD_HOST_DEVICE void removeIndex(T1 const *data, T2 const *indexes,
 
 
 
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *createScalarShapeInfo();
 
-SD_LIB_EXPORT SD_HOST_DEVICE sd::LongType *createScalarShapeInfo(sd::LongType *ret);
 
 /**
 * Generate an int buffer
@@ -500,6 +498,42 @@ SD_LIB_EXPORT SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs, sd::Long
                                                  const sd::LongType *dimsToExclude = nullptr,
                                                  sd::LongType dimsLen = -1);
 
+SD_INLINE SD_HOST SD_LIB_EXPORT sd::LongType tensorsAlongDimension(const sd::LongType* shapeInfo, sd::LongType* dimensions, sd::LongType dimensionLength) {
+  // Guard against null or empty dimensions
+  if (dimensions == nullptr || dimensionLength == 0)
+    throw std::invalid_argument("Invalid input: dimensions not specified (null or length 0)");
+
+  const sd::LongType rank = shape::rank(shapeInfo);
+
+  // Single tensor case
+  if (dimensionLength >= rank || (dimensionLength == 1 && dimensions[0] == SD_MAX_INT))
+    return 1;
+
+  // Handle negative dimensions
+  for(int i = 0; i < dimensionLength; i++) {
+    if(dimensions[i] < 0)
+      dimensions[i] += rank;
+  }
+
+  // Calculate product of shape along specified dimensions
+  sd::LongType tensorLen = 1;
+  for(int i = 0; i < dimensionLength; i++) {
+    tensorLen *= shape::sizeAt(shapeInfo, dimensions[i]);
+  }
+
+  // Handle empty tensor case
+  if(tensorLen == 0)
+    return 1;
+
+  // Calculate number of tensors
+  sd::LongType length = shape::length(shapeInfo);
+  sd::LongType numTensors = length / tensorLen;
+
+  if(numTensors >= SD_MAX_INT)
+    throw std::invalid_argument("Tensors along dimension cannot be >= Integer.MAX_VALUE");
+
+  return numTensors;
+}
 
 
 /**

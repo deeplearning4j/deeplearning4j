@@ -94,10 +94,6 @@ public interface NativeOps {
               String mode);
 
 
-
-
- void scatterUpdate(PointerPointer extraPointers, int opCode, OpaqueNDArray array, OpaqueNDArray indices, OpaqueNDArray updates, OpaqueNDArray axis);
-
  OpaqueResultWrapper executeFlatGraph(PointerPointer extraPointers, Pointer flatBufferPointer);
 
  OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers,
@@ -408,17 +404,12 @@ public interface NativeOps {
  org.nd4j.nativeblas.OpaqueDataBuffer dbAllocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  org.nd4j.nativeblas.OpaqueDataBuffer dbCreateExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
  void setShapeBuffer(LongPointer inputShapeData, int dt, LongPointer bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
- void setShapeBuffer(LongBuffer inputShapeData, int dt, LongBuffer bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
- void setShapeBuffer(long[] inputShapeData, int dt, long[] bufferToSet, char order, int elementWiseStride, boolean isEmpty, boolean isView);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(LongPointer shapeInfo);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(LongBuffer shapeInfo);
+
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(long[] shapeInfo);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBuffer(int rank, LongBuffer shape, LongBuffer strides, int dtype, char order, long ews, boolean empty);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBuffer(int rank, long[] shape, long[] strides, int dtype, char order, long ews, boolean empty);
+
+
  org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongBuffer shape, LongBuffer strides, int dtype, char order, long ews, long extras);
- org.nd4j.nativeblas.OpaqueConstantShapeBuffer shapeBufferEx(int rank, long[] shape, long[] strides, int dtype, char order, long ews, long extras);
+
  org.nd4j.nativeblas.OpaqueDataBuffer allocateDataBuffer(long elements, int dataType, boolean allocateBoth);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongPointer headerSize);
  Pointer numpyHeaderForNd4j(Pointer data, Pointer shapeBuffer, long wordSize, LongBuffer headerSize);

@@ -54,8 +54,8 @@ Status LegacyReduce3Op::validateAndExecute(Context &block) {
     for (size_t e = 0; e < dims.size(); e++)
       if (dims[e] < 0) dims[e] += x->rankOf();
 
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims,true);
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims,true);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), &dims);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), &dims);
 
     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 

@@ -105,7 +105,7 @@ sd::NDArray *sd::ops::DeclarableOp::getZ(Context &ctx, int inputId) {
   NDArray *z = nullptr;
 
   if (ctx.isFastPath()) {
-    if (ctx.fastpath_out().size() <= inputId) {
+    if (ctx.fastpath_out().size() <= static_cast<size_t>(inputId)) {
       if (ctx.isInplace()) {
         z = ctx.fastpath_in()[inputId];
       } else
@@ -221,7 +221,6 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     if (Environment::getInstance().isProfiling() && node != nullptr) inputStart = std::chrono::system_clock::now();
 
-    int cntIn = 0;
     // we build list of input shapes
     if (fp) {
       for (const auto p : ctx.fastpath_in()) {
@@ -244,7 +243,6 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         } else {
           canUseFastPath = false;
         }
-        cntIn++;
       }
     }
 
@@ -362,7 +360,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
         }
       } else {
         auto fout = ctx.fastpath_out();
-        auto idx = cnt++;
+        size_t idx = cnt++;
         if (fout.size() <= idx) {
           // array doesnt exist
           auto outArr = new NDArray(out, true, ctx.launchContext());
@@ -446,11 +444,11 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
 void sd::ops::DeclarableOp::DeclarableOp::traceExecIfNeeded(Context &block) {
   if(OpRegistrator::getInstance().traceOps()) {
     std::vector<const LongType *> *inputShapeBuffers = new std::vector<const LongType *>();
-    for(int i = 0; i < block.width(); i++) {
+    for(size_t i = 0; i < block.width(); i++) {
       inputShapeBuffers->push_back(block.variable(i)->getNDArray()->shapeInfo());
     }
     std::vector<const LongType *> *outputShapeBuffers = new std::vector<const LongType *>();
-    for(int i = 0; i < block.outputWidth(); i++) {
+    for(size_t i = 0; i < block.outputWidth(); i++) {
       outputShapeBuffers->push_back(block.fastpath_out()[i]->shapeInfo());
     }
 
@@ -486,7 +484,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   _registrator.unlock();
 
   // rolling over inputs first
-  int cnt = 0, inT = 0;
+  size_t cnt = 0, inT = 0;
   std::vector<sd::DataType> inputTypes(block.width());
   if (block.isFastPath()) {
     for (auto array : block.fastpath_in()) {
@@ -503,7 +501,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
         auto inputTypes2 = _descriptor->getInputTypesForInput(cnt);
         if(inputTypes2.size() > 1) {
           std::string allTypes;
-          for(int i = 0; i < inputTypes2.size(); i++) {
+          for(size_t i = 0; i < inputTypes2.size(); i++) {
             allTypes += DataTypeUtils::asString(inputTypes2[i]);
             if(i < inputTypes2.size() - 1) {
               allTypes += ",";
@@ -511,14 +509,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
           }
           sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data types[%s]\n", _descriptor->getOpName()->data(), cnt,
                     ctype.c_str(),allTypes.c_str());
-        } else  if(!inputTypes2.size() < 1){
-          auto typeAsString = DataTypeUtils::asString(inputTypes2[0]);
-          sd_printf("Op [%s] failed check for input [%i], DataType: [%s] Expected data type[%s]\n", _descriptor->getOpName()->data(), cnt,
-                    ctype.c_str(),typeAsString.c_str());
-        } else {
-          sd_printf("Op [%s] data types empty \n",_descriptor->getOpName()->data());
         }
-
 
         return sd::Status::BAD_ARGUMENTS;
       }
@@ -546,7 +537,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   }
 
   if (block.isFastPath()) {
-    int index = 0;
+    size_t index = 0;
     for (auto array : block.fastpath_out()) {
       if (array == nullptr) continue;
 
@@ -595,7 +586,7 @@ sd::Status sd::ops::DeclarableOp::validateDataTypes(Context &block) {
   } else {
     // checking optionally available outputs
     auto varSpace = block.getVariableSpace();
-    for (int index = 0; index < DataTypeUtils::max<int>(); index++) {
+    for (size_t index = 0; index < static_cast<size_t>(DataTypeUtils::max<int>()); index++) {
       if (varSpace != nullptr && varSpace->hasVariable(block.nodeId(), index)) {
         auto var = block.variable(block.nodeId(), index);
 
@@ -746,7 +737,7 @@ sd::Status sd::ops::DeclarableOp::execute(Context *block) {
                 type.c_str(), first->c_str());
     }
 
-    for (int e = 0; e < numOutputs; e++) {
+    for (size_t e = 0; e < static_cast<size_t>(numOutputs); e++) {
       // if given output index doesn't exist - we're done
       sd_printf("Declarable op execute: processing output %d\n",e);
 
@@ -996,18 +987,16 @@ sd::Status sd::ops::DeclarableOp::execute(sd::graph::RandomGenerator &rng, const
   block.markInplace(isInplace);
   block.setDataType(0, type);
 
-  // we need this line for tests basically
-  // if (rng != nullptr)
   block.setRng(rng);
 
-  for (int e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
+  for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
   // FIXME: iargs should be sd::LongType
-  for (int e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(static_cast<int>(iArgs.at(e)));
 
-  for (int e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(static_cast<int>(bArgs.at(e)));
+  for (size_t e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(static_cast<int>(bArgs.at(e)));
 
-  for (int e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
+  for (size_t e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
 
   sd::Status result = this->execute(&block);
 
@@ -1069,12 +1058,12 @@ sd::Status DeclarableOp::execute(const std::vector<NDArray *> &inputs, const std
                                  bool isInplace) {
   Context ctx(1);
 
-  for (int e = 0; e < inputs.size(); e++) {
+  for (size_t e = 0; e < inputs.size(); e++) {
     ctx.setInputArray(e, inputs[e]);
   }
 
 
-  for (int e = 0; e < outputs.size(); e++) {
+  for (size_t e = 0; e < outputs.size(); e++) {
     ctx.setOutputArray(e, outputs[e]);
   }
 
@@ -1154,13 +1143,13 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
   block.fillInputs(in);
   block.markInplace(isInplace);
 
-  for (int e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
+  for (size_t e = 0; e < tArgs.size(); e++) block.getTArguments()->emplace_back(tArgs.at(e));
 
-  for (int e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
+  for (size_t e = 0; e < iArgs.size(); e++) block.getIArguments()->emplace_back(iArgs.at(e));
 
-  for (int e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(bArgs.at(e));
+  for (size_t e = 0; e < bArgs.size(); e++) block.getBArguments()->push_back(bArgs.at(e));
 
-  for (int e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
+  for (size_t e = 0; e < dArgs.size(); e++) block.getDArguments()->push_back(dArgs.at(e));
 
   sd::Status status = this->execute(&block);
   ResultSet arrayList;
@@ -1186,7 +1175,7 @@ sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const
         } else
           break;
       }
-      for(int e = 0; e < block.fastpath_out().size(); e++) {
+      for(size_t e = 0; e < block.fastpath_out().size(); e++) {
         auto arr = block.fastpath_out()[e];
         if (!arr->isAttached()) {
           arr->setContext(sd::LaunchContext::defaultContext());
@@ -1236,7 +1225,7 @@ sd::Status sd::ops::DeclarableOp::validateInputDimensionsMatch(Context &block) {
   if (block.width() == 0) return sd::Status::OK;
 
   NDArray *a0 = block.array(0);
-  for (int e = 1; e < block.width(); e++) {
+  for (size_t e = 1; e < block.width(); e++) {
     auto aV = block.array(e);
     if (!shape::equalsSoft(a0->shapeInfo(), aV->shapeInfo())) return sd::Status::BAD_DIMENSIONS;
   }

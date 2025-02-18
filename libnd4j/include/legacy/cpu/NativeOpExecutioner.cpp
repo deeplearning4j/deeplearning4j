@@ -665,13 +665,14 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext *lc, int opNum, const vo
   const auto yLen = shape::length(hYShapeInfo);
 
   sd::TadPack *tadPack;
-
+  sd::LongType *castedConst = const_cast<sd::LongType *>(hXShapeInfo);
+  sd::LongType *hYShapeInfoNonConst = const_cast<sd::LongType *>(hYShapeInfo);
   if (xLen == yLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(castedConst, dimension, dimensionLength);
   } else if (yLen > xLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfoNonConst, dimension, dimensionLength);
   } else {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(castedConst, dimension, dimensionLength);
   }
 
   auto func = PRAGMA_THREADS_FOR {
@@ -696,7 +697,7 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext *lc, int opNum, const
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+  auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(const_cast<sd::LongType *>(hXShapeInfo), dimension, dimensionLength);
 
   // TODO: make it 2d
   auto func = PRAGMA_THREADS_FOR {
@@ -726,13 +727,14 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext *lc, int opNum, const
   const auto yLen = shape::length(hYShapeInfo);
 
   sd::TadPack *tadPack;
-
+  sd::LongType *castedConst = const_cast<sd::LongType *>(hXShapeInfo);
+  sd::LongType *hYShapeInfoNonConst = const_cast<sd::LongType *>(hYShapeInfo);
   if (xLen == yLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(castedConst, dimension, dimensionLength);
   } else if (yLen > xLen) {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfoNonConst, dimension, dimensionLength);
   } else {
-    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(castedConst, dimension, dimensionLength);
   }
 
   auto func = PRAGMA_THREADS_FOR {

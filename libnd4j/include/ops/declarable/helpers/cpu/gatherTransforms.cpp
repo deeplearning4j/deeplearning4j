@@ -130,7 +130,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
       } else {
         std::vector<sd::LongType> axesVec = {axis};
         auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions,true);
+        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
 
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
                                                       tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),

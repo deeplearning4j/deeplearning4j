@@ -84,12 +84,6 @@ std::string OpRegistrator::local_to_string(int value) {
   return os.str();
 }
 
-void OpRegistrator::sigIntHandler(int sig) {}
-
-void OpRegistrator::exitHandler() {}
-
-void OpRegistrator::sigSegVHandler(int sig) {}
-
 OpRegistrator::~OpRegistrator() {
 #ifndef _RELEASE
   _msvc.clear();

@@ -31,22 +31,22 @@ namespace sd {
 class SD_LIB_EXPORT ShapeList {
  protected:
 
-  std::vector<const sd::LongType *> _shapes;
+  std::vector< sd::LongType *> _shapes;
   bool _destroyed = false;
   bool _autoremovable = false;
   bool _workspace = false;
 
  public:
-  ShapeList(const sd::LongType *shape = nullptr);
-  ShapeList(const std::vector<const sd::LongType *> &shapes, bool isWorkspace);
-  ShapeList(const std::vector<const sd::LongType *> &shapes);
+  ShapeList( sd::LongType *shape = nullptr);
+  ShapeList(const std::vector< sd::LongType *> &shapes, bool isWorkspace);
+  ShapeList(const std::vector< sd::LongType *> &shapes);
 
   ~ShapeList();
 
   void destroy();
   int size() const;
-  const sd::LongType *at(int idx);
-  void push_back(const sd::LongType *shape);
+   sd::LongType *at(int idx);
+  void push_back( sd::LongType *shape);
 
   /**
    * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory
