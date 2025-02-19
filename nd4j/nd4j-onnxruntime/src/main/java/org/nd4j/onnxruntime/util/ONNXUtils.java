@@ -215,11 +215,13 @@ public class ONNXUtils {
      */
     public static INDArray getArray(Value value) {
         DataType dataType = dataTypeForOnnxType(value.GetTypeInfo().GetONNXType());
-        LongPointer shape = value.GetTensorTypeAndShapeInfo().GetShape();
+        LongVector shape = value.GetTensorTypeAndShapeInfo().GetShape();
         long[] shapeConvert;
         if(shape != null) {
             shapeConvert = new long[(int) value.GetTensorTypeAndShapeInfo().GetDimensionsCount()];
-            shape.get(shapeConvert);
+            for(int  j = 0; j < shapeConvert.length; j++) {
+                shapeConvert[j] = shape.get(j);
+            }
         } else {
             shapeConvert = new long[]{1};
         }

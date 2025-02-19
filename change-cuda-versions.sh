@@ -26,7 +26,7 @@
 
 set -e
 
-VALID_VERSIONS=( 9.2 10.0 10.1 10.2 11.0 11.1 11.2 11.4 11.6 11.8 12.1 12.3)
+VALID_VERSIONS=( 9.2 10.0 10.1 10.2 11.0 11.1 11.2 11.4 11.6 11.8 12.1 12.3 12.6)
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -53,6 +53,10 @@ check_cuda_version() {
 check_cuda_version "$VERSION"
 
 case $VERSION in
+ 12.6)
+    VERSION2="9.5"
+    VERSION3="1.5.11"
+    ;;
  12.3)
     VERSION2="8.9"
     VERSION3="1.5.10"
