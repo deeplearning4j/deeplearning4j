@@ -51,16 +51,6 @@ public interface NativeOps {
               OpaqueNDArray shuffleMap);
 
 
- void average(PointerPointer extras,
-              OpaqueNDArrayArr x,
-              OpaqueNDArray z,int n,
-              long length, boolean propagate);
-
- void accumulate(PointerPointer extras,
-                 OpaqueNDArrayArr x,
-                 OpaqueNDArray z,
-                 int n,
-                 long length);
 
  void pullRows(PointerPointer extraPointers,
                OpaqueNDArray x,
@@ -235,7 +225,6 @@ public interface NativeOps {
  int getShapeInfoLength(OpaqueTadPack pack);
  int memcpyConstantAsync(long dst, Pointer src, long size, int flags, Pointer reserved);
  Pointer getConstantSpace();
-  void average(PointerPointer extras, org.nd4j.nativeblas.OpaqueNDArray x, org.nd4j.nativeblas.OpaqueNDArray z, int n, long length, boolean propagate);
  boolean isExperimentalEnabled();
  void setOmpMinThreads(int threads);
  int getDevice();
@@ -279,7 +268,6 @@ public interface NativeOps {
                      OpaqueNDArray y,
                      OpaqueNDArray dimension,
                      boolean descending);
- void sortCooIndices(PointerPointer extraPointers, org.nd4j.nativeblas.OpaqueNDArray indices, org.nd4j.nativeblas.OpaqueNDArray values);
  void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
  void munmapFile(PointerPointer extraPointers, LongBuffer ptrMap, long length);
  void munmapFile(PointerPointer extraPointers, long[] ptrMap, long length);

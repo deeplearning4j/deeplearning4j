@@ -247,11 +247,13 @@ public class OnnxRuntimeRunner implements Closeable  {
                     break;
                 case ONNX_TYPE_TENSOR:
                     DataBuffer buffer = getDataBuffer(outValue);
-                    LongPointer longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
+                    LongVector longPointer = outValue.GetTensorTypeAndShapeInfo().GetShape();
                     //shape info can be null
                     if(longPointer != null) {
                         long[] shape = new long[(int) longPointer.capacity()];
-                        longPointer.get(shape);
+                        for(int j = 0; j < shape.length; j++) {
+                            shape[j] = longPointer.get(j);
+                        }
                         ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer).reshape(shape));
                     } else {
                         ret.put((outputNodeNames.get(BytePointer.class, i)).getString(), Nd4j.create(buffer));

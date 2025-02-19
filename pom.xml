@@ -118,6 +118,7 @@
 
 
     <properties>
+        <backend.requires></backend.requires>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <encoding>UTF-8</encoding>
@@ -173,12 +174,12 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <!-- Must not be empty. Otherwise the command line will fail. Put all arguments here needed for customization. If overridden, ensure not empty.-->
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
-         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
+        <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
-        <javacpp.version>1.5.10</javacpp.version>
-        <javacpp-presets.version>1.5.10</javacpp-presets.version>
-        <javacv.version>1.5.10</javacv.version>
+        <javacpp.version>1.5.11</javacpp.version>
+        <javacpp-presets.version>1.5.11</javacpp-presets.version>
+        <javacv.version>1.5.11</javacv.version>
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
@@ -189,17 +190,17 @@
 
         <moditect.generate.skip>true</moditect.generate.skip>
         <moditect.add.skip>false</moditect.add.skip>
-        <moditect.version>1.0.0.RC2</moditect.version>
+        <moditect.version>1.2.2.Final</moditect.version>
 
-        <python.version>3.12.1</python.version>
+        <python.version>3.13.0</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.26.3</numpy.version>
+        <numpy.version>2.1.3</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
-        <onnx.version>1.15.0</onnx.version>
+        <onnx.version>1.17.0</onnx.version>
         <onnx.javacpp.version>${onnx.version}-${javacpp-presets.version}</onnx.javacpp.version>
-        <openblas.version>0.3.26</openblas.version>
-        <mkl.version>2024.0</mkl.version>
-        <opencv.version>4.9.0</opencv.version>
+        <openblas.version>0.3.28</openblas.version>
+        <mkl.version>2025.0</mkl.version>
+        <opencv.version>4.10.0</opencv.version>
         <hdf5.version>1.14.3</hdf5.version>
         <tensorflow.version>1.15.5</tensorflow.version>
         <!--- Hardcoded since TF1 isn't updating anymore-->
@@ -229,12 +230,12 @@
         <junit.version>5.8.0-M1</junit.version>
         <junit.platform.launcher.version>1.8.0-M1</junit.platform.launcher.version>
         <archunit.version>0.14.1</archunit.version>
-        <logback.version>1.5.12</logback.version>
+        <logback.version>1.5.16</logback.version>
         <jackson.version>2.16.0</jackson.version>
         <jackson.databind.version>2.16.0</jackson.databind.version>
         <shaded.snakeyaml.version>1.33</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.21.7</google.protobuf.version>
         <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
@@ -292,10 +293,6 @@
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
         <jetspeed-mvn-maven-plugin.version>2.3.1</jetspeed-mvn-maven-plugin.version>
 
-
-        <!-- Scala 2.12.x -->
-        <scala212.version>2.12.14</scala212.version>
-        <scala212.binary.version>2.12</scala212.binary.version>
 
         <lz4.version>1.7.0</lz4.version>
 
@@ -543,15 +540,105 @@
     <build>
         <pluginManagement>
             <plugins>
-
                 <plugin>
                     <groupId>org.moditect</groupId>
                     <artifactId>moditect-maven-plugin</artifactId>
                     <version>${moditect.version}</version>
                     <configuration>
-                        <jvmVersion>9</jvmVersion>
+                        <skip>${moditect.generate.skip}</skip>
+                        <outputDirectory>${project.build.directory}/modules</outputDirectory>
                         <overwriteExistingFiles>true</overwriteExistingFiles>
-                        <outputDirectory>${project.build.directory}</outputDirectory>
+                        <modules>
+                            <!-- ND4J Core API -->
+                            <module>
+                                <artifact>
+                                    <groupId>org.nd4j</groupId>
+                                    <artifactId>nd4j-api</artifactId>
+                                    <version>${project.version}</version>
+                                </artifact>
+                                <moduleInfo>
+                                    <name>org.nd4j.api</name>
+                                    <exports>
+                                        org.nd4j.linalg.api.*;
+                                        org.nd4j.autodiff.*;
+                                        org.nd4j.evaluation.*;
+                                    </exports>
+                                    <requires>
+                                        java.base;
+                                        org.nd4j.common;
+                                        org.bytedeco.javacpp;
+                                    </requires>
+                                </moduleInfo>
+                            </module>
+
+                            <!-- ND4J Common -->
+                            <module>
+                                <artifact>
+                                    <groupId>org.nd4j</groupId>
+                                    <artifactId>nd4j-common</artifactId>
+                                    <version>${project.version}</version>
+                                </artifact>
+                                <moduleInfo>
+                                    <name>org.nd4j.common</name>
+                                    <exports>
+                                        org.nd4j.common.*;
+                                    </exports>
+                                    <requires>
+                                        java.base;
+                                        org.bytedeco.javacpp;
+                                    </requires>
+                                </moduleInfo>
+                            </module>
+
+                            <!-- CPU Backend -->
+                            <module>
+                                <artifact>
+                                    <groupId>org.nd4j</groupId>
+                                    <artifactId>nd4j-native</artifactId>
+                                    <version>${project.version}</version>
+                                </artifact>
+                                <moduleInfo>
+                                    <name>org.nd4j.cpu</name>
+                                    <exports>
+                                        org.nd4j.linalg.cpu.nativecpu.*;
+                                    </exports>
+                                    <requires>
+                                        java.base;
+                                        org.nd4j.common;
+                                        org.nd4j.api;
+                                        org.bytedeco.javacpp;
+                                        org.bytedeco.openblas;
+                                    </requires>
+                                </moduleInfo>
+                            </module>
+
+                            <!-- CUDA Backend -->
+                            <module>
+                                <artifact>
+                                    <groupId>org.nd4j</groupId>
+                                    <artifactId>nd4j-cuda-12.3</artifactId>
+                                    <version>${project.version}</version>
+                                </artifact>
+                                <moduleInfo>
+                                    <name>org.nd4j.cuda</name>
+                                    <exports>
+                                        org.nd4j.linalg.cuda.*;
+                                    </exports>
+                                    <requires>
+                                        java.base;
+                                        org.nd4j.common;
+                                        org.nd4j.api;
+                                        org.bytedeco.javacpp;
+                                        org.bytedeco.cuda;
+                                    </requires>
+                                </moduleInfo>
+                            </module>
+                        </modules>
+                        <jdepsExtraArgs>
+                            <arg>--ignore-missing-deps</arg>
+                            <arg>--multi-release</arg>
+                            <arg>9</arg>
+                        </jdepsExtraArgs>
                     </configuration>
                     <executions>
                         <execution>
@@ -560,49 +647,6 @@
                             <goals>
                                 <goal>generate-module-info</goal>
                             </goals>
-                            <configuration>
-                                <modules>
-                                    <module>
-                                        <artifact>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>${project.artifactId}</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifact>
-
-                                        <moduleInfo>
-                                            <name>${module.name}</name>
-                                            <exports>
-                                                *;
-                                            </exports>
-                                            <open>true</open>
-                                        </moduleInfo>
-
-                                    </module>
-                                </modules>
-                                <jdepsExtraArgs>
-                                    <arg>--ignore-missing-deps</arg>
-                                    <arg>--multi-release</arg>
-                                    <arg>9</arg>
-                                </jdepsExtraArgs>
-                                <skip>${moditect.generate.skip}</skip>
-                            </configuration>
-                        </execution>
-
-                        <execution>
-                            <id>add-module-infos</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>add-module-info</goal>
-                            </goals>
-                            <configuration>
-                                <modules>
-                                    <module>
-                                        <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
-                                        <moduleInfoFile>${project.basedir}/src/main/java9/module-info.java</moduleInfoFile>
-                                    </module>
-                                </modules>
-                                <skip>${moditect.add.skip}</skip>
-                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -721,12 +765,12 @@
                     <configuration>
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
-                    <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                    </compilerArgs>
+                        <compilerArgs>
+                            <arg>--add-exports</arg>
+                            <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                            <arg>--add-opens</arg>
+                            <arg>java.base/java.nio=ALL-UNNAMED</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -971,6 +1015,20 @@
     </build>
 
     <profiles>
+
+        <profile>
+            <id>native-backend</id>
+            <properties>
+                <backend.requires>,org.bytedeco.openblas,org.nd4j.cpu.api,nd4j.cpu.preset</backend.requires>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cuda-backend</id>
+            <properties>
+                <backend.requires>,org.bytedeco.cuda,org.nd4j.cuda.api,nd4j.cuda.preset</backend.requires>
+            </properties>
+        </profile>
         <profile>
             <id>parallel-tests</id>
             <properties>

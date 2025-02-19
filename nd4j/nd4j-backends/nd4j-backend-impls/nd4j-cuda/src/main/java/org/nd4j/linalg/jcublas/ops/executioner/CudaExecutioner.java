@@ -1696,35 +1696,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return experimentalMode.get();
     }
 
-    @Override
-    public void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, long[] axis) {
-        val context = AtomicAllocator.getInstance().getDeviceContext();
 
-        val tadX = tadManager.getTADOnlyShapeInfo(array, axis);
-        val tadY = tadManager.getTADOnlyShapeInfo(updates, axis);
-
-        if (tadY.getSecond().length() != indices.length())
-            throw new IllegalStateException("Number of updates doesn't match number of indices. Bad dimensions used?");
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        val stuff = extraz.get().put(null, context.getOldStream());
-
-
-        OpaqueNDArray xb = OpaqueNDArray.fromINDArray(array);
-        OpaqueNDArray yb = OpaqueNDArray.fromINDArray(updates);
-        OpaqueNDArray zb = OpaqueNDArray.fromINDArray(indices);
-        INDArray axisArray = Nd4j.createFromArray(axis);
-        OpaqueNDArray axis2 = OpaqueNDArray.fromINDArray(axisArray);
-        Nd4j.getNativeOps().scatterUpdate(
-                stuff,
-                op.ordinal(),
-                xb,zb,yb,axis2);
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
-    }
 
     @Override
     public OpContext buildContext() {
@@ -1815,15 +1787,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val dbf = Nd4j.getNativeOps().shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
-
-        if (Nd4j.getNativeOps().lastErrorCode() != 0)
-            throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
-
-        val result = new CudaLongDataBuffer(Nd4j.getNativeOps().getConstantShapeBufferPrimary(dbf), Nd4j.getNativeOps().getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
-
-
-        return result;
+      return createShapeInfo(shape, stride, elementWiseStride, order, dtype, ArrayOptionsHelper.toggleBitSet(0,ArrayOptionsHelper.ATYPE_EMPTY_BIT));
     }
 
     @Override

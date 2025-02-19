@@ -83,7 +83,12 @@ public class NumpyArray extends PythonType<INDArray> {
             //See: https://numpy.org/doc/1.17/reference/c-api.array.html#importing-the-api
             //DO NOT REMOVE
             if(Boolean.parseBoolean(System.getProperty(ADD_JAVACPP_NUMPY_TO_PATH,DEFAULT_ADD_JAVACPP_NUMPY_TO_PATH))) {
-                Py_AddPath(numpy.cachePackages());
+               for(File packageDir : numpy.cachePackages()) {
+                   PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
+                   PySys_SetObject("path", pythonPath);
+                   Py_DecRef(pythonPath);
+               }
+
             }
 
             //ensure python doesn't get initialized twice, this call is needed before numpy import array

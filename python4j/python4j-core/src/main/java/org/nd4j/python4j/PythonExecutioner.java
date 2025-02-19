@@ -37,7 +37,6 @@ import org.bytedeco.cpython.global.python;
 import org.nd4j.common.io.ClassPathResource;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.helper.python.Py_SetPath;
 
 /**
  * PythonExecutioner handles executing python code either from passed in python code
@@ -86,7 +85,7 @@ public class PythonExecutioner {
 
         //set the main thread state for the gil
         PythonGIL.setMainThreadState();
-        if(_Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
+        if(Py_IsFinalizing() != 1 && PythonConstants.releaseGilAutomatically())
             PyEval_SaveThread();
 
     }
@@ -330,7 +329,11 @@ public class PythonExecutioner {
             File[] packages = packagesList.toArray(new File[0]);
 
             if (path == null) {
-                Py_AddPath(packages);
+                for (File packageDir : packages) {
+                    PyObject pythonPath = PyUnicode_FromString(packageDir.getAbsolutePath());
+                    PySys_SetObject("path", pythonPath);
+                    Py_DecRef(pythonPath);
+                }
             } else {
                 StringBuffer sb = new StringBuffer();
 
@@ -357,7 +360,9 @@ public class PythonExecutioner {
                         break;
                 }
 
-                Py_AddPath(sb.toString());
+                PyObject pythonPath = PyUnicode_FromString(sb.toString());
+                PySys_SetObject("path", pythonPath);
+                Py_DecRef(pythonPath);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
