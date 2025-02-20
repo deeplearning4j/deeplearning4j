@@ -20,7 +20,7 @@
 
 include "array.fbs";	//For FlatArray
 
-namespace sd.graph;
+namespace graph;
 
 /*
 An "Event" is any value that may occur multiple times (score vs. iteration, or accuracy for example)

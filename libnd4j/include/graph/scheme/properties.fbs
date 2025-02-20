@@ -18,7 +18,7 @@
 
 include "array.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 
 table FlatProperties {

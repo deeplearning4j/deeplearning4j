@@ -19,7 +19,7 @@
 include "array.fbs";
 include "utils.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 // Variable type for variables
 enum VarType:byte {

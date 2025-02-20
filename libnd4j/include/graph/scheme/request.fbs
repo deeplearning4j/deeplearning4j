@@ -19,7 +19,7 @@
 include "variable.fbs";
 include "config.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 table FlatInferenceRequest {
     id:long; // id of the graph to be executed

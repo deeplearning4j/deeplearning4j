@@ -93,6 +93,7 @@ LOG_OUTPUT="none"
 PRINT_MATH="OFF"
 KEEP_NVCC="OFF"
 PREPROCESS="ON"  # Initialize PREPROCESS variable
+CMAKE_ARGUMENTS=""
 
 while [[ $# -gt 0 ]]
 do
@@ -100,6 +101,11 @@ do
     value="${2:-}"
     # Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
     case $key in
+      --generate-flatc)
+                export GENERATE_FLATC="ON"
+                CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DGENERATE_FLATC=ON"
+                shift # past argument
+                ;;
         -ol|--optimization-level)
             OPTIMIZATION_LEVEL="$value"
             shift # past argument

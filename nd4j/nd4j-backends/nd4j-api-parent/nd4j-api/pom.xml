@@ -101,6 +101,9 @@
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
+
+
+
         <!-- Shaded version of Jackson -->
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -141,6 +144,43 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>cpu</id>
+            <activation>
+                <property>
+                    <name>libnd4j.generate.flatc</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>libnd4j</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>${javacpp.platform}</classifier>
+                    <type>zip</type>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>cuda</id>
+            <activation>
+                <property>
+                    <name>libnd4j.generate.flatc</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>libnd4j</artifactId>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                    <classifier>${javacpp.platform}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <activation>
                 <!-- By default protoc provided binaries don't need a protocCommand. One is downloaded. Protoc plugin does not support

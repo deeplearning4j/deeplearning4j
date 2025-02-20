@@ -641,7 +641,14 @@ if (${HELPERS_cudnn})
     endif()
 endif()
 
-# Download and unpack flatbuffers at configure time
+# Before the flatbuffers download section
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+    set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
+else()
+    set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Disable flatc build" FORCE)
+endif()
+
+# Existing flatbuffers download section
 configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
@@ -656,15 +663,52 @@ if(result)
     message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
 endif()
 
-# Add flatbuffers directly to our build.
+# Add flatbuffers directly to build
 add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
         ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
         EXCLUDE_FROM_ALL)
 
-set(HAVE_FLATBUFFERS 1)
-set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
-include_directories(${FLATBUFFERS_PATH}/include)
+# After flatbuffers is added, handle generation if enabled
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+    # First, ensure flatc is built
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build --target flatc
+            RESULT_VARIABLE FLATC_BUILD_RESULT
+    )
+    if(FLATC_BUILD_RESULT)
+        message(FATAL_ERROR "Failed to build flatc: ${FLATC_BUILD_RESULT}")
+    endif()
 
+    set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
+    message("Using flatc from: ${FLATC_EXECUTABLE}")
+
+    # Create required directories
+    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated/sd
+    )
+
+    # Run flatc generation
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
+            bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+            RESULT_VARIABLE FLATC_RESULT
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    if(FLATC_RESULT)
+        message(FATAL_ERROR "Flatbuffer generation failed: ${FLATC_RESULT}")
+    endif()
+
+    # Copy Java files
+    execute_process(
+            COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+            RESULT_VARIABLE COPY_RESULT
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+    if(COPY_RESULT)
+        message(FATAL_ERROR "Java file copying failed: ${COPY_RESULT}")
+    endif()
+endif()
 
 configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)

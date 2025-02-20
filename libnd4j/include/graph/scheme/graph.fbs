@@ -24,7 +24,7 @@ include "result.fbs";
 include "request.fbs";
 include "array.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 table UpdaterState {
 	paramName:string;					//Name of the parameter the updater state is for
