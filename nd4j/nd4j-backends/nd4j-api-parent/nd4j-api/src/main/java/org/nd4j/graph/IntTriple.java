@@ -48,11 +48,8 @@ public final class IntTriple extends Table {
   public IntTriple __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int first() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateFirst(int first) { int o = __offset(4); if (o != 0) { bb.putInt(o + bb_pos, first); return true; } else { return false; } }
   public int second() { int o = __offset(6); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateSecond(int second) { int o = __offset(6); if (o != 0) { bb.putInt(o + bb_pos, second); return true; } else { return false; } }
   public int third() { int o = __offset(8); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateThird(int third) { int o = __offset(8); if (o != 0) { bb.putInt(o + bb_pos, third); return true; } else { return false; } }
 
   public static int createIntTriple(FlatBufferBuilder builder,
       int first,
@@ -79,27 +76,6 @@ public final class IntTriple extends Table {
 
     public IntTriple get(int j) { return get(new IntTriple(), j); }
     public IntTriple get(IntTriple obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public IntTripleT unpack() {
-    IntTripleT _o = new IntTripleT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(IntTripleT _o) {
-    int _oFirst = first();
-    _o.setFirst(_oFirst);
-    int _oSecond = second();
-    _o.setSecond(_oSecond);
-    int _oThird = third();
-    _o.setThird(_oThird);
-  }
-  public static int pack(FlatBufferBuilder builder, IntTripleT _o) {
-    if (_o == null) return 0;
-    return createIntTriple(
-      builder,
-      _o.getFirst(),
-      _o.getSecond(),
-      _o.getThird());
   }
 }
 

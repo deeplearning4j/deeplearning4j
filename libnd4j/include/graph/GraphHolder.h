@@ -57,8 +57,8 @@ class SD_LIB_EXPORT GraphHolder {
 
   bool hasGraphAny(LongType graphId);
 
-  flatbuffers::Offset<FlatResult> execute(LongType graphId, flatbuffers::FlatBufferBuilder& builder,
-                                          const FlatInferenceRequest* request);
+  flatbuffers::Offset<::graph::FlatResult> execute(LongType graphId, flatbuffers::FlatBufferBuilder& builder,
+                                          const ::graph::FlatInferenceRequest* request);
 
   void replaceGraph(LongType graphId, Graph* graph);
 

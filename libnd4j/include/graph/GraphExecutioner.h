@@ -28,8 +28,8 @@
 #include <graph/ResultWrapper.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <graph/scheme/graph_generated.h>
-#include <graph/scheme/node_generated.h>
+#include <graph/generated/graph_generated.h>
+#include <graph/generated/node_generated.h>
 #include <sys/stat.h>
 
 #define TF_INPUT "Placeholder"
@@ -60,8 +60,8 @@ class SD_LIB_EXPORT GraphExecutioner {
    */
   static ResultWrapper *executeFlatBuffer(Pointer pointer);
 
-  static flatbuffers::Offset<FlatResult> execute(Graph *graph, flatbuffers::FlatBufferBuilder &builder,
-                                                 const FlatInferenceRequest *request);
+  static flatbuffers::Offset<::graph::FlatResult> execute(Graph *graph, flatbuffers::FlatBufferBuilder &builder,
+                                                 const ::graph::FlatInferenceRequest *request);
 
   static Graph *importFromTensorFlow(const char *fileName);
 

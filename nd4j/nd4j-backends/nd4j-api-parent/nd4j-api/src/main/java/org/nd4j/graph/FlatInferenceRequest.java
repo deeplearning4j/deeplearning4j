@@ -48,7 +48,6 @@ public final class FlatInferenceRequest extends Table {
   public FlatInferenceRequest __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateId(long id) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, id); return true; } else { return false; } }
   public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
   public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
@@ -86,36 +85,6 @@ public final class FlatInferenceRequest extends Table {
 
     public FlatInferenceRequest get(int j) { return get(new FlatInferenceRequest(), j); }
     public FlatInferenceRequest get(FlatInferenceRequest obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatInferenceRequestT unpack() {
-    FlatInferenceRequestT _o = new FlatInferenceRequestT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatInferenceRequestT _o) {
-    long _oId = id();
-    _o.setId(_oId);
-    org.nd4j.graph.FlatVariableT[] _oVariables = new org.nd4j.graph.FlatVariableT[variablesLength()];
-    for (int _j = 0; _j < variablesLength(); ++_j) {_oVariables[_j] = (variables(_j) != null ? variables(_j).unpack() : null);}
-    _o.setVariables(_oVariables);
-    if (configuration() != null) _o.setConfiguration(configuration().unpack());
-    else _o.setConfiguration(null);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatInferenceRequestT _o) {
-    if (_o == null) return 0;
-    int _variables = 0;
-    if (_o.getVariables() != null) {
-      int[] __variables = new int[_o.getVariables().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatVariableT _e : _o.getVariables()) { __variables[_j] = org.nd4j.graph.FlatVariable.pack(builder, _e); _j++;}
-      _variables = createVariablesVector(builder, __variables);
-    }
-    int _configuration = _o.getConfiguration() == null ? 0 : org.nd4j.graph.FlatConfiguration.pack(builder, _o.getConfiguration());
-    return createFlatInferenceRequest(
-      builder,
-      _o.getId(),
-      _variables,
-      _configuration);
   }
 }
 

@@ -75,28 +75,5 @@ public final class FlatArrayList extends Table {
     public FlatArrayList get(int j) { return get(new FlatArrayList(), j); }
     public FlatArrayList get(FlatArrayList obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
   }
-  public FlatArrayListT unpack() {
-    FlatArrayListT _o = new FlatArrayListT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatArrayListT _o) {
-    org.nd4j.graph.FlatArrayT[] _oList = new org.nd4j.graph.FlatArrayT[listLength()];
-    for (int _j = 0; _j < listLength(); ++_j) {_oList[_j] = (list(_j) != null ? list(_j).unpack() : null);}
-    _o.setList(_oList);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatArrayListT _o) {
-    if (_o == null) return 0;
-    int _list = 0;
-    if (_o.getList() != null) {
-      int[] __list = new int[_o.getList().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatArrayT _e : _o.getList()) { __list[_j] = org.nd4j.graph.FlatArray.pack(builder, _e); _j++;}
-      _list = createListVector(builder, __list);
-    }
-    return createFlatArrayList(
-      builder,
-      _list);
-  }
 }
 

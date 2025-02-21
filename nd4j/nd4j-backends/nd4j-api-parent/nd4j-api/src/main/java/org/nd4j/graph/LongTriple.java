@@ -48,11 +48,8 @@ public final class LongTriple extends Table {
   public LongTriple __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long first() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFirst(long first) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, first); return true; } else { return false; } }
   public long second() { int o = __offset(6); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateSecond(long second) { int o = __offset(6); if (o != 0) { bb.putLong(o + bb_pos, second); return true; } else { return false; } }
   public long third() { int o = __offset(8); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateThird(long third) { int o = __offset(8); if (o != 0) { bb.putLong(o + bb_pos, third); return true; } else { return false; } }
 
   public static int createLongTriple(FlatBufferBuilder builder,
       long first,
@@ -79,27 +76,6 @@ public final class LongTriple extends Table {
 
     public LongTriple get(int j) { return get(new LongTriple(), j); }
     public LongTriple get(LongTriple obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public LongTripleT unpack() {
-    LongTripleT _o = new LongTripleT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(LongTripleT _o) {
-    long _oFirst = first();
-    _o.setFirst(_oFirst);
-    long _oSecond = second();
-    _o.setSecond(_oSecond);
-    long _oThird = third();
-    _o.setThird(_oThird);
-  }
-  public static int pack(FlatBufferBuilder builder, LongTripleT _o) {
-    if (_o == null) return 0;
-    return createLongTriple(
-      builder,
-      _o.getFirst(),
-      _o.getSecond(),
-      _o.getThird());
   }
 }
 

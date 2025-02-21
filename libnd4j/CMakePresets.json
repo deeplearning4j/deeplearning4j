@@ -12,6 +12,7 @@
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "SD_LIBRARY_NAME": "nd4jcpu",
                 "SD_CPU": true,
+                "GENERATE_FLATC": "ON",
                 "SD_ARCH": "x86-64",
                 "SD_GCC_FUNCTRACE": "ON",
                 "PRINT_MATH": "ON",
@@ -36,7 +37,7 @@
                 "PRINT_INDICES": "ON",
                 "SD_BUILD_TESTS": "OFF",
                 "PRINT_MATH": "ON",
-
+                "GENERATE_FLATC": "ON",
                 "SD_ALL_OPS": true,
                 "CMAKE_BUILD_TYPE" : "Debug",
                 "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
@@ -62,6 +63,7 @@
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",
                 "SD_BUILD_TESTS": "OFF",
+                "GENERATE_FLATC": "ON",
                 "CUDA_TOOLKIT_ROOT_DIR": "/usr/local/cuda",
                 "CMAKE_CUDA_COMPILER": "/usr/local/cuda/bin/nvcc"
             }
@@ -80,6 +82,7 @@
                 "SD_LIBRARY_NAME": "nd4jcuda",
                 "SD_ALL_OPS": true,
                 "SD_CUDA": true,
+                "GENERATE_FLATC": "ON",
                 "BLAS":true,
                 "SD_GCC_FUNCTRACE": "ON",
                 "__CUDACC__" : "ON",

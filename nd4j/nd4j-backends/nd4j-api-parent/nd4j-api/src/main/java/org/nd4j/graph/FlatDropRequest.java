@@ -48,7 +48,6 @@ public final class FlatDropRequest extends Table {
   public FlatDropRequest __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateId(long id) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, id); return true; } else { return false; } }
 
   public static int createFlatDropRequest(FlatBufferBuilder builder,
       long id) {
@@ -69,21 +68,6 @@ public final class FlatDropRequest extends Table {
 
     public FlatDropRequest get(int j) { return get(new FlatDropRequest(), j); }
     public FlatDropRequest get(FlatDropRequest obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatDropRequestT unpack() {
-    FlatDropRequestT _o = new FlatDropRequestT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatDropRequestT _o) {
-    long _oId = id();
-    _o.setId(_oId);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatDropRequestT _o) {
-    if (_o == null) return 0;
-    return createFlatDropRequest(
-      builder,
-      _o.getId());
   }
 }
 

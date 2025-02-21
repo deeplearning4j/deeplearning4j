@@ -53,9 +53,7 @@ public final class UIHardwareState extends Table {
   public LongVector gpuMemoryVector(LongVector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer gpuMemoryAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
   public ByteBuffer gpuMemoryInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 8); }
-  public boolean mutateGpuMemory(int j, long gpuMemory) { int o = __offset(4); if (o != 0) { bb.putLong(__vector(o) + j * 8, gpuMemory); return true; } else { return false; } }
   public long hostMemory() { int o = __offset(6); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateHostMemory(long hostMemory) { int o = __offset(6); if (o != 0) { bb.putLong(o + bb_pos, hostMemory); return true; } else { return false; } }
 
   public static int createUIHardwareState(FlatBufferBuilder builder,
       int gpuMemoryOffset,
@@ -81,29 +79,6 @@ public final class UIHardwareState extends Table {
 
     public UIHardwareState get(int j) { return get(new UIHardwareState(), j); }
     public UIHardwareState get(UIHardwareState obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIHardwareStateT unpack() {
-    UIHardwareStateT _o = new UIHardwareStateT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIHardwareStateT _o) {
-    long[] _oGpuMemory = new long[gpuMemoryLength()];
-    for (int _j = 0; _j < gpuMemoryLength(); ++_j) {_oGpuMemory[_j] = gpuMemory(_j);}
-    _o.setGpuMemory(_oGpuMemory);
-    long _oHostMemory = hostMemory();
-    _o.setHostMemory(_oHostMemory);
-  }
-  public static int pack(FlatBufferBuilder builder, UIHardwareStateT _o) {
-    if (_o == null) return 0;
-    int _gpuMemory = 0;
-    if (_o.getGpuMemory() != null) {
-      _gpuMemory = createGpuMemoryVector(builder, _o.getGpuMemory());
-    }
-    return createUIHardwareState(
-      builder,
-      _gpuMemory,
-      _o.getHostMemory());
   }
 }
 

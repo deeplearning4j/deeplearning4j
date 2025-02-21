@@ -18,7 +18,6 @@ ExternalProject_Add(flatbuffers
         -DCMAKE_BUILD_TYPE=Release
     DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src && git clone https://github.com/google/flatbuffers/ ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
     UPDATE_COMMAND    ""
-    BUILD_COMMAND     ""
     INSTALL_COMMAND   ""
     TEST_COMMAND      ""
 )

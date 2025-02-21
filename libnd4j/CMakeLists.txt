@@ -679,6 +679,7 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         message(FATAL_ERROR "Failed to build flatc: ${FLATC_BUILD_RESULT}")
     endif()
 
+
     set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
     message("Using flatc from: ${FLATC_EXECUTABLE}")
 
@@ -709,6 +710,7 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         message(FATAL_ERROR "Java file copying failed: ${COPY_RESULT}")
     endif()
 endif()
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include)
 
 configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)

@@ -51,7 +51,6 @@ public final class FrameIteration extends Table {
   public ByteBuffer frameAsByteBuffer() { return __vector_as_bytebuffer(4, 1); }
   public ByteBuffer frameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 1); }
   public int iteration() { int o = __offset(6); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
-  public boolean mutateIteration(int iteration) { int o = __offset(6); if (o != 0) { bb.putShort(o + bb_pos, (short) iteration); return true; } else { return false; } }
 
   public static int createFrameIteration(FlatBufferBuilder builder,
       int frameOffset,
@@ -75,25 +74,6 @@ public final class FrameIteration extends Table {
 
     public FrameIteration get(int j) { return get(new FrameIteration(), j); }
     public FrameIteration get(FrameIteration obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FrameIterationT unpack() {
-    FrameIterationT _o = new FrameIterationT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FrameIterationT _o) {
-    String _oFrame = frame();
-    _o.setFrame(_oFrame);
-    int _oIteration = iteration();
-    _o.setIteration(_oIteration);
-  }
-  public static int pack(FlatBufferBuilder builder, FrameIterationT _o) {
-    if (_o == null) return 0;
-    int _frame = _o.getFrame() == null ? 0 : builder.createString(_o.getFrame());
-    return createFrameIteration(
-      builder,
-      _frame,
-      _o.getIteration());
   }
 }
 

@@ -101,8 +101,8 @@ void GraphHolder::replaceGraph(sd::LongType graphId, Graph* graph) {
   this->unlockWrite(graphId);
 }
 
-flatbuffers::Offset<FlatResult> GraphHolder::execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
-                                                     const FlatInferenceRequest* request) {
+flatbuffers::Offset<::graph::FlatResult> GraphHolder::execute(sd::LongType graphId, flatbuffers::FlatBufferBuilder& builder,
+                                                     const ::graph::FlatInferenceRequest* request) {
   if (!hasGraph(graphId)) throw unknown_graph_exception(graphId);
 
   lockRead(graphId);

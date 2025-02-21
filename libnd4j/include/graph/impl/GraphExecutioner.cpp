@@ -19,9 +19,9 @@
 //
 // @author raver119@gmail.com
 //
-#include <graph/scheme/graph_generated.h>
-#include <graph/scheme/node_generated.h>
-#include <graph/scheme/result_generated.h>
+#include <graph/generated/graph_generated.h>
+#include <graph/generated/node_generated.h>
+#include <graph/generated/result_generated.h>
 
 #include <graph/GraphExecutioner.h>
 #include <graph/Node.h>
@@ -44,7 +44,7 @@
 #include <graph/FlatUtils.h>
 #include <graph/ResultWrapper.h>
 #include <graph/execution/LogicExecutor.h>
-#include <graph/scheme/array_generated.h>
+#include <graph/generated/array_generated.h>
 #include <helpers/BitwiseUtils.h>
 #include <helpers/ShapeUtils.h>
 
@@ -67,17 +67,17 @@ namespace graph {
  * @return
  */
 Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace *variableSpace) {
-  OpType opType = node->opType();
+  ::graph::OpType opType = node->opType();
   int opNum = node->opNum();
   //    std::string opName = *(node->getCustomOp()->getOpName());
 
-  if (opType == OpType_BOOLEAN) {
+  if (opType == ::graph::OpType_BOOLEAN) {
     sd_debug("Executing boolean graph node_%i", node->id());
-  } else if (opType == OpType_LOGIC) {
+  } else if (opType == ::graph::OpType_LOGIC) {
     sd_debug("Executing logic graph node_%i", node->id());
-  } else if (opType == OpType_GRAPH) {
+  } else if (opType == ::graph::OpType_GRAPH) {
     sd_debug("Executing embedded graph node_%i", node->id());
-  } else if (opType != OpType_CUSTOM) {
+  } else if (opType != ::graph::OpType_CUSTOM) {
     sd_debug("Executing node_%i{%i}\n", node->id(), opNum);
   } else {
     sd_debug("Executing node_%i{%s}\n", node->id(), node->getCustomOp()->getOpName()->c_str());
@@ -221,7 +221,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 
   LongType timeStart = Environment::getInstance().isProfiling() ? GraphProfile::currentTime() : 0L;
 
-  bool pe = graph->getExecutorConfiguration()->_executionMode == ExecutionMode_AUTO;
+  bool pe = graph->getExecutorConfiguration()->_executionMode == ::graph::ExecutionMode_AUTO;
 
   // basically if at some point code diverges, code branch might be _DISABLED_, and all nodes within that branch will be
   // disabled as well
@@ -259,7 +259,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
       sd_debug("Step: %lld; Node: %i <%s>\n", exec_counter, node->id(), node->name()->c_str());
 
       // on first non-Exit node after loop we can rewind (if planned)
-      if (!(node->opType() == OpType_LOGIC && node->opNum() == logic::Exit)) {
+      if (!(node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::Exit)) {
         // VALIDATED
 
         // if we're out of frame - let's remove it from queue
@@ -274,7 +274,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 
         // TODO: move inactivity check right here
         bool shouldSkip = false;
-        if (node->opType() == OpType_LOGIC && node->opNum() == logic::Merge) {
+        if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::Merge) {
           // Merge node has own checkout logic
 
           auto inputId0 = node->input()->at(0);
@@ -323,7 +323,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 
       flowPath->markNodeActive(node->id(), true);
 
-      if (node->opType() == OpType_LOGIC && node->opNum() == logic::Enter) {
+      if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::Enter) {
         // Enter operation
         // VALIDATED
 
@@ -339,7 +339,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
         auto status = LogicExecutor::processNode(graph, node);
         if (status != Status::OK) return status;
 
-      } else if (node->opType() == OpType_LOGIC && node->opNum() == logic::NextIteration) {
+      } else if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::NextIteration) {
         /**
          * NextIteration is special case: after successful execution of this op - we're changing execution position
          */
@@ -365,7 +365,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
           continue;
         }
 
-      } else if (node->opType() == OpType_LOGIC && node->opNum() == logic::Exit) {
+      } else if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::Exit) {
         // Exit node is another special case: it can rewind executioner to specific point in graph
         // VALIDATED
 
@@ -395,7 +395,7 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
           leftFrame = true;
         }
 
-      } else if (node->opType() == OpType_LOGIC) {
+      } else if (node->opType() == ::graph::OpType_LOGIC) {
         /**
          * If this LOGIC op, we'll use another execution model here
          */
@@ -481,11 +481,9 @@ Status GraphExecutioner::execute(Graph *graph, VariableSpace *variableSpace) {
 ResultWrapper *GraphExecutioner::executeFlatBuffer(Pointer pointer) {
   uint8_t *buffer = reinterpret_cast<uint8_t *>(pointer);
 
-  // sd_debug("Trying to restore graph\n", 0);
 
-  auto restoredGraph = GetFlatGraph(buffer);
+  auto restoredGraph = ::graph::GetFlatGraph(buffer);
 
-  // sd_debug("Graph restored\n", 0);
 
   // converting FlatGraph to internal representation
   auto nativeGraph = new Graph(restoredGraph);
@@ -505,18 +503,17 @@ ResultWrapper *GraphExecutioner::executeFlatBuffer(Pointer pointer) {
     sd_printf("Graph execution failed with status: [%i]\n", status) return nullptr;
   }
 
-  // sd_debug("Building output...\n", 0);
 
   flatbuffers::FlatBufferBuilder builder(1024);
 
   // fetching time reports
-  std::vector<flatbuffers::Offset<FlatTiming>> timings_vector;
+  std::vector<flatbuffers::Offset<::graph::FlatTiming>> timings_vector;
   for (int e = 0; e < (int)nativeGraph->getAllNodes()->size(); e++) {
     Node *node = nativeGraph->getAllNodes()->at(e);
 
     if (node->getContextPrototype() == nullptr) continue;
 
-    auto pair = CreateLongPair(builder, flowPath.outerTime(node->id()), flowPath.innerTime(node->id()));
+    auto pair = ::graph::CreateLongPair(builder, flowPath.outerTime(node->id()), flowPath.innerTime(node->id()));
     if (node->getName() != nullptr) {
       auto name = builder.CreateString(node->getName()->c_str());
       auto fr = CreateFlatTiming(builder, node->id(), name, pair);
@@ -531,7 +528,7 @@ ResultWrapper *GraphExecutioner::executeFlatBuffer(Pointer pointer) {
   auto outputs = nativeGraph->fetchOutputs();
   auto size = static_cast<int>(outputs->size());
   int arrays = 0;
-  std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
+  std::vector<flatbuffers::Offset<::graph::FlatVariable>> variables_vector;
   for (int e = 0; e < size; e++) {
     auto var = outputs->at(e);
 
@@ -544,9 +541,9 @@ ResultWrapper *GraphExecutioner::executeFlatBuffer(Pointer pointer) {
     auto fArray = FlatUtils::toFlatArray(builder, *array);
 
     auto fName = builder.CreateString(*(var->getName()));
-    auto id = CreateIntPair(builder, var->id(), var->index());
+    auto id = ::graph::CreateIntPair(builder, var->id(), var->index());
 
-    auto fv = CreateFlatVariable(builder, id, fName, static_cast<DType>(array->dataType()), 0, fArray);
+    auto fv = CreateFlatVariable(builder, id, fName, static_cast<::graph::DType>(array->dataType()), 0, fArray);
 
     variables_vector.push_back(fv);
     arrays++;
@@ -612,8 +609,8 @@ uint8_t *readFlatBuffers(const char *filename) {
   return data;
 }
 
-flatbuffers::Offset<FlatResult> GraphExecutioner::execute(Graph *graph, flatbuffers::FlatBufferBuilder &builder,
-                                                          const FlatInferenceRequest *request) {
+flatbuffers::Offset<::graph::FlatResult> GraphExecutioner::execute(Graph *graph, flatbuffers::FlatBufferBuilder &builder,
+                                                          const ::graph::FlatInferenceRequest *request) {
   ExecutionResult result;
   auto varSpace = graph->getVariableSpace();
 
@@ -659,7 +656,7 @@ Graph *GraphExecutioner::importFromFlatBuffers(const char *filename) {
 }
 
 Graph *GraphExecutioner::importFromFlatPointer(Pointer ptr) {
-  auto fg = GetFlatGraph(reinterpret_cast<uint8_t *>(ptr));
+  auto fg = ::graph::GetFlatGraph(reinterpret_cast<uint8_t *>(ptr));
   auto restoredGraph = new Graph(fg);
 
   return restoredGraph;

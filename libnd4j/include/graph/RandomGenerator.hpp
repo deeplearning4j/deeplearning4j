@@ -20,10 +20,10 @@
 // @author raver119@protonmail.com
 //
 // relies on xoroshiro64** and xoroshiro128 implementations
-#include <array/DataTypeUtils.h>
-#include <graph/RandomGenerator.h>
-#include <helpers/logger.h>
-#include <system/op_boilerplate.h>
+#include "../array/DataTypeUtils.h"
+#include "./RandomGenerator.h"
+#include "../helpers/logger.h"
+#include "../system/op_boilerplate.h"
 
 #include <chrono>
 

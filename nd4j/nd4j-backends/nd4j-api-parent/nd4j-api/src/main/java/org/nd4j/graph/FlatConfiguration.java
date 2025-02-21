@@ -48,21 +48,13 @@ public final class FlatConfiguration extends Table {
   public FlatConfiguration __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateId(long id) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, id); return true; } else { return false; } }
   public byte executionMode() { int o = __offset(6); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateExecutionMode(byte executionMode) { int o = __offset(6); if (o != 0) { bb.put(o + bb_pos, executionMode); return true; } else { return false; } }
   public byte profilingMode() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateProfilingMode(byte profilingMode) { int o = __offset(8); if (o != 0) { bb.put(o + bb_pos, profilingMode); return true; } else { return false; } }
   public byte outputMode() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateOutputMode(byte outputMode) { int o = __offset(10); if (o != 0) { bb.put(o + bb_pos, outputMode); return true; } else { return false; } }
   public boolean timestats() { int o = __offset(12); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
-  public boolean mutateTimestats(boolean timestats) { int o = __offset(12); if (o != 0) { bb.put(o + bb_pos, (byte)(timestats ? 1 : 0)); return true; } else { return false; } }
   public long footprintForward() { int o = __offset(14); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFootprintForward(long footprintForward) { int o = __offset(14); if (o != 0) { bb.putLong(o + bb_pos, footprintForward); return true; } else { return false; } }
   public long footprintBackward() { int o = __offset(16); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFootprintBackward(long footprintBackward) { int o = __offset(16); if (o != 0) { bb.putLong(o + bb_pos, footprintBackward); return true; } else { return false; } }
   public byte direction() { int o = __offset(18); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateDirection(byte direction) { int o = __offset(18); if (o != 0) { bb.put(o + bb_pos, direction); return true; } else { return false; } }
 
   public static int createFlatConfiguration(FlatBufferBuilder builder,
       long id,
@@ -106,42 +98,6 @@ public final class FlatConfiguration extends Table {
 
     public FlatConfiguration get(int j) { return get(new FlatConfiguration(), j); }
     public FlatConfiguration get(FlatConfiguration obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatConfigurationT unpack() {
-    FlatConfigurationT _o = new FlatConfigurationT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatConfigurationT _o) {
-    long _oId = id();
-    _o.setId(_oId);
-    byte _oExecutionMode = executionMode();
-    _o.setExecutionMode(_oExecutionMode);
-    byte _oProfilingMode = profilingMode();
-    _o.setProfilingMode(_oProfilingMode);
-    byte _oOutputMode = outputMode();
-    _o.setOutputMode(_oOutputMode);
-    boolean _oTimestats = timestats();
-    _o.setTimestats(_oTimestats);
-    long _oFootprintForward = footprintForward();
-    _o.setFootprintForward(_oFootprintForward);
-    long _oFootprintBackward = footprintBackward();
-    _o.setFootprintBackward(_oFootprintBackward);
-    byte _oDirection = direction();
-    _o.setDirection(_oDirection);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatConfigurationT _o) {
-    if (_o == null) return 0;
-    return createFlatConfiguration(
-      builder,
-      _o.getId(),
-      _o.getExecutionMode(),
-      _o.getProfilingMode(),
-      _o.getOutputMode(),
-      _o.getTimestats(),
-      _o.getFootprintForward(),
-      _o.getFootprintBackward(),
-      _o.getDirection());
   }
 }
 

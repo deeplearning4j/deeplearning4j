@@ -26,6 +26,7 @@
 #include <system/op_boilerplate.h>
 
 #include "ExecutorConfiguration.h"
+#include "graph/generated/request_generated.h"
 
 namespace sd {
 namespace graph {
@@ -50,7 +51,7 @@ class SD_LIB_EXPORT InferenceRequest {
   void appendVariable(Variable *variable);
 
 #ifndef __JAVACPP_HACK__
-  flatbuffers::Offset<FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);
+  flatbuffers::Offset<::graph::FlatInferenceRequest> asFlatInferenceRequest(flatbuffers::FlatBufferBuilder &builder);
 #endif
 };
 }  // namespace graph

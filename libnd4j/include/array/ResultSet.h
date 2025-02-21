@@ -26,7 +26,7 @@
 
 #ifndef LIBND4J_RESULTSET_H
 #define LIBND4J_RESULTSET_H
-#include <graph/scheme/result_generated.h>
+#include <graph/generated/result_generated.h>
 #include <system/common.h>
 
 #include <vector>
@@ -47,7 +47,7 @@ class SD_LIB_EXPORT ResultSet {
   explicit ResultSet();
 
 #ifndef __JAVACPP_HACK__
-  ResultSet(const graph::FlatResult *result);
+  ResultSet(const ::graph::FlatResult *result);
 #endif
 
   ResultSet(const ResultSet &other) noexcept;

@@ -74,7 +74,7 @@ Status LogicWhile::processNode(Graph* graph, Node* node) {
 
     for (Node* v : *scope->nodes()) {
       // v->getBlock()->updateVariables();
-      if (v->opType() == OpType_LOGIC) {
+      if (v->opType() == ::graph::OpType_LOGIC) {
         sd_debug("Falling back to logic\n", "");
         LogicExecutor::processNode(graph, v);
       } else {
@@ -105,7 +105,7 @@ Status LogicWhile::processNode(Graph* graph, Node* node) {
       for (; e < scopeBody->nodes()->size() - 1; e++) {
         Node* v = scopeBody->nodes()->at(e);
 
-        if (v->opType() == OpType_LOGIC) {
+        if (v->opType() == ::graph::OpType_LOGIC) {
           sd_debug("Falling back to logic\n", "");
           LogicExecutor::processNode(graph, v);
         } else {

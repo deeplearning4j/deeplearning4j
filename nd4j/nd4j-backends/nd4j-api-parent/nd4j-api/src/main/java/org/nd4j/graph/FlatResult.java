@@ -48,7 +48,6 @@ public final class FlatResult extends Table {
   public FlatResult __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateId(long id) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, id); return true; } else { return false; } }
   public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
   public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
@@ -60,9 +59,7 @@ public final class FlatResult extends Table {
   public org.nd4j.graph.FlatTiming.Vector timingVector() { return timingVector(new org.nd4j.graph.FlatTiming.Vector()); }
   public org.nd4j.graph.FlatTiming.Vector timingVector(org.nd4j.graph.FlatTiming.Vector obj) { int o = __offset(8); return o != 0 ? obj.__assign(__vector(o), 4, bb) : null; }
   public long footprintForward() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFootprintForward(long footprintForward) { int o = __offset(10); if (o != 0) { bb.putLong(o + bb_pos, footprintForward); return true; } else { return false; } }
   public long footprintBackward() { int o = __offset(12); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFootprintBackward(long footprintBackward) { int o = __offset(12); if (o != 0) { bb.putLong(o + bb_pos, footprintBackward); return true; } else { return false; } }
 
   public static int createFlatResult(FlatBufferBuilder builder,
       long id,
@@ -101,49 +98,6 @@ public final class FlatResult extends Table {
 
     public FlatResult get(int j) { return get(new FlatResult(), j); }
     public FlatResult get(FlatResult obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatResultT unpack() {
-    FlatResultT _o = new FlatResultT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatResultT _o) {
-    long _oId = id();
-    _o.setId(_oId);
-    org.nd4j.graph.FlatVariableT[] _oVariables = new org.nd4j.graph.FlatVariableT[variablesLength()];
-    for (int _j = 0; _j < variablesLength(); ++_j) {_oVariables[_j] = (variables(_j) != null ? variables(_j).unpack() : null);}
-    _o.setVariables(_oVariables);
-    org.nd4j.graph.FlatTimingT[] _oTiming = new org.nd4j.graph.FlatTimingT[timingLength()];
-    for (int _j = 0; _j < timingLength(); ++_j) {_oTiming[_j] = (timing(_j) != null ? timing(_j).unpack() : null);}
-    _o.setTiming(_oTiming);
-    long _oFootprintForward = footprintForward();
-    _o.setFootprintForward(_oFootprintForward);
-    long _oFootprintBackward = footprintBackward();
-    _o.setFootprintBackward(_oFootprintBackward);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatResultT _o) {
-    if (_o == null) return 0;
-    int _variables = 0;
-    if (_o.getVariables() != null) {
-      int[] __variables = new int[_o.getVariables().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatVariableT _e : _o.getVariables()) { __variables[_j] = org.nd4j.graph.FlatVariable.pack(builder, _e); _j++;}
-      _variables = createVariablesVector(builder, __variables);
-    }
-    int _timing = 0;
-    if (_o.getTiming() != null) {
-      int[] __timing = new int[_o.getTiming().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatTimingT _e : _o.getTiming()) { __timing[_j] = org.nd4j.graph.FlatTiming.pack(builder, _e); _j++;}
-      _timing = createTimingVector(builder, __timing);
-    }
-    return createFlatResult(
-      builder,
-      _o.getId(),
-      _variables,
-      _timing,
-      _o.getFootprintForward(),
-      _o.getFootprintBackward());
   }
 }
 

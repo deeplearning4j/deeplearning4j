@@ -157,7 +157,7 @@ void Variable::setNDArray(NDArray *array) {
 
 VariableType Variable::variableType() { return _variableType; }
 
-Variable::Variable(const FlatVariable *flatVariable) {
+Variable::Variable(const ::graph::FlatVariable *flatVariable) {
   auto vid = flatVariable->id();
   this->_id = vid->first();
   this->_index = vid->second();
@@ -170,7 +170,7 @@ Variable::Variable(const FlatVariable *flatVariable) {
   int8_t *buffer = nullptr;
 
   switch (flatVariable->variabletype()) {
-    case VarType_VARIABLE: {
+    case ::graph::VarType_VARIABLE: {
       // ?????
       if (flatVariable->ndarray() != nullptr) {
         auto ar = flatVariable->ndarray();
@@ -179,11 +179,11 @@ Variable::Variable(const FlatVariable *flatVariable) {
 
       _variableType = NDARRAY;
     } break;
-    case VarType_CONSTANT: {
+    case ::graph::VarType_CONSTANT: {
       if (flatVariable->ndarray() == nullptr) THROW_EXCEPTION("CONSTANT variable must have NDArray bundled");
 
       auto ar = flatVariable->ndarray();
-      if (ar->dtype() == DType_UTF8) {
+      if (ar->dtype() == ::graph::DType_UTF8) {
         _ndarray = FlatUtils::fromFlatArray(ar);
       } else {
         _ndarray = FlatUtils::fromFlatArray(ar);
@@ -191,7 +191,7 @@ Variable::Variable(const FlatVariable *flatVariable) {
 
       _variableType = NDARRAY;
     } break;
-    case VarType_ARRAY: {
+    case ::graph::VarType_ARRAY: {
       // ?????
       if (flatVariable->ndarray() != nullptr) {
         auto ar = flatVariable->ndarray();
@@ -201,7 +201,7 @@ Variable::Variable(const FlatVariable *flatVariable) {
 
       _variableType = NDARRAY;
     } break;
-    case VarType_PLACEHOLDER: {
+    case ::graph::VarType_PLACEHOLDER: {
       if (flatVariable->shape() == nullptr && flatVariable->ndarray() == nullptr)
         THROW_EXCEPTION("PLACEHOLDER variable must have shape defined");
 
@@ -256,7 +256,7 @@ void Variable::setId(int id, int idx) {
   _index = idx;
 }
 
-flatbuffers::Offset<FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
+flatbuffers::Offset<::graph::FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBufferBuilder &builder) {
   if (this->hasNDArray()) {
     auto array = this->getNDArray();
     auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
@@ -264,17 +264,17 @@ flatbuffers::Offset<FlatVariable> Variable::asFlatVariable(flatbuffers::FlatBuff
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
     // packing array
-    auto fArray = CreateFlatArray(builder, fShape, fBuffer, (DType)array->dataType());
+    auto fArray = CreateFlatArray(builder, fShape, fBuffer, (::graph::DType)array->dataType());
 
     // packing id/index of this var
-    auto fVid = CreateIntPair(builder, this->_id, this->_index);
+    auto fVid = ::graph::CreateIntPair(builder, this->_id, this->_index);
 
     // name is still optional
     flatbuffers::Offset<flatbuffers::String> stringId = 0;
     if (!this->_name.empty()) stringId = builder.CreateString(this->_name);
 
     // returning array
-    return CreateFlatVariable(builder, fVid, stringId, static_cast<DType>(array->dataType()), 0, fArray);
+    return CreateFlatVariable(builder, fVid, stringId, static_cast<::graph::DType>(array->dataType()), 0, fArray);
   } else {
     THROW_EXCEPTION("Variable::asFlatVariable isn't possible for NDArrayList");
   }

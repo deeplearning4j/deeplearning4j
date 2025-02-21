@@ -23,7 +23,7 @@
 #ifndef LIBND4J_GNODE_H
 #define LIBND4J_GNODE_H
 #include <array/NDArray.h>
-#include <graph/scheme/node_generated.h>
+#include <graph/generated/node_generated.h>
 #include <ops/declarable/DeclarableOp.h>
 
 #include <atomic>
@@ -42,7 +42,7 @@ class SD_LIB_EXPORT Node {
   // TODO: this field must be removed
   DataType _dataType;
 
-  OpType _opType;
+  ::graph::OpType _opType;
   ContextPrototype *_protoContext = nullptr;
   LongType _opNum;
   int _id;
@@ -74,7 +74,7 @@ class SD_LIB_EXPORT Node {
   // this field is used to delete attached customOp
   bool _isDeductable = false;
 
-  OpClass _opClass;
+  ::graph::OpClass _opClass;
 
   // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
   Graph *_graph = nullptr;
@@ -96,17 +96,17 @@ class SD_LIB_EXPORT Node {
   explicit Node(ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {},
                 std::initializer_list<int> output = {}, std::initializer_list<int> dimensions = {}, float scalar = 0.0f,
                 std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-  explicit Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {},
+  explicit Node(::graph::OpType opType = ::graph::OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {},
                 std::initializer_list<int> output = {}, std::initializer_list<int> dimensions = {}, float scalar = 0.0f,
                 std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-  explicit Node(const FlatNode *node);
+  explicit Node(const ::graph::FlatNode *node);
   ~Node();
 
   bool equals(Node *other);
 
   DataType dataType();
   ContextPrototype *protoContext();
-  OpType opType();
+  ::graph::OpType opType();
   LongType opNum();
   int id();
   std::vector<std::pair<int, int>> *input();
@@ -177,7 +177,7 @@ class SD_LIB_EXPORT Node {
   bool isInplace();
   void markInplace(bool reallyInplace);
 
-  OpClass getOpClass();
+  ::graph::OpClass getOpClass();
 
   // these methods are used for internal profiling
   void setOuterTime(LongType time);
@@ -189,7 +189,7 @@ class SD_LIB_EXPORT Node {
   int scopeId();
   std::string *scopeName();
 
-  void setOpType(OpType opType);
+  void setOpType(::graph::OpType opType);
 
   // clone Node
   Node *clone();
@@ -222,9 +222,9 @@ class SD_LIB_EXPORT Node {
     for (auto v : *other->getDimensions()) this->_dimensions.emplace_back(v);
   }
 
-  static ops::DeclarableOp *buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum,
+  static ops::DeclarableOp *buildOpByType(::graph::OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum,
                                               NDArray *scalar);
-  static void deleteOpByType(OpType opType, void *op);
+  static void deleteOpByType(::graph::OpType opType, void *op);
 };
 }  // namespace graph
 }  // namespace sd

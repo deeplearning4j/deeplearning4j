@@ -48,9 +48,7 @@ public final class UIHistogram extends Table {
   public UIHistogram __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte type() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateType(byte type) { int o = __offset(4); if (o != 0) { bb.put(o + bb_pos, type); return true; } else { return false; } }
   public long numbins() { int o = __offset(6); return o != 0 ? (long)bb.getInt(o + bb_pos) & 0xFFFFFFFFL : 0L; }
-  public boolean mutateNumbins(long numbins) { int o = __offset(6); if (o != 0) { bb.putInt(o + bb_pos, (int) numbins); return true; } else { return false; } }
   public org.nd4j.graph.FlatArray binranges() { return binranges(new org.nd4j.graph.FlatArray()); }
   public org.nd4j.graph.FlatArray binranges(org.nd4j.graph.FlatArray obj) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public org.nd4j.graph.FlatArray y() { return y(new org.nd4j.graph.FlatArray()); }
@@ -93,43 +91,6 @@ public final class UIHistogram extends Table {
 
     public UIHistogram get(int j) { return get(new UIHistogram(), j); }
     public UIHistogram get(UIHistogram obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIHistogramT unpack() {
-    UIHistogramT _o = new UIHistogramT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIHistogramT _o) {
-    byte _oType = type();
-    _o.setType(_oType);
-    long _oNumbins = numbins();
-    _o.setNumbins(_oNumbins);
-    if (binranges() != null) _o.setBinranges(binranges().unpack());
-    else _o.setBinranges(null);
-    if (y() != null) _o.setY(y().unpack());
-    else _o.setY(null);
-    String[] _oBinlabels = new String[binlabelsLength()];
-    for (int _j = 0; _j < binlabelsLength(); ++_j) {_oBinlabels[_j] = binlabels(_j);}
-    _o.setBinlabels(_oBinlabels);
-  }
-  public static int pack(FlatBufferBuilder builder, UIHistogramT _o) {
-    if (_o == null) return 0;
-    int _binranges = _o.getBinranges() == null ? 0 : org.nd4j.graph.FlatArray.pack(builder, _o.getBinranges());
-    int _y = _o.getY() == null ? 0 : org.nd4j.graph.FlatArray.pack(builder, _o.getY());
-    int _binlabels = 0;
-    if (_o.getBinlabels() != null) {
-      int[] __binlabels = new int[_o.getBinlabels().length];
-      int _j = 0;
-      for (String _e : _o.getBinlabels()) { __binlabels[_j] = builder.createString(_e); _j++;}
-      _binlabels = createBinlabelsVector(builder, __binlabels);
-    }
-    return createUIHistogram(
-      builder,
-      _o.getType(),
-      _o.getNumbins(),
-      _binranges,
-      _y,
-      _binlabels);
   }
 }
 

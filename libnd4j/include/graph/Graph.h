@@ -32,9 +32,9 @@
 #include <graph/Stash.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <graph/scheme/config_generated.h>
-#include <graph/scheme/graph_generated.h>
-#include <graph/scheme/node_generated.h>
+#include <graph/generated/config_generated.h>
+#include <graph/generated/graph_generated.h>
+#include <graph/generated/node_generated.h>
 #include <ops/declarable/OpDescriptor.h>
 
 namespace sd {
@@ -77,7 +77,7 @@ class SD_LIB_EXPORT Graph {
   void prepareOutputs();
 
  public:
-  Graph(const FlatGraph *flatGraph = nullptr, VariableSpace *variableSpace = nullptr);
+  Graph(const ::graph::FlatGraph *flatGraph = nullptr, VariableSpace *variableSpace = nullptr);
 
   ~Graph();
 

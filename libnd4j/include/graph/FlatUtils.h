@@ -23,8 +23,8 @@
 #ifndef LIBND4J_FLATUTILS_H
 #define LIBND4J_FLATUTILS_H
 #include <array/NDArray.h>
-#include <graph/scheme/array_generated.h>
-#include <graph/scheme/node_generated.h>
+#include <graph/generated/array_generated.h>
+#include <graph/generated/node_generated.h>
 
 #include <utility>
 
@@ -32,13 +32,13 @@ namespace sd {
 namespace graph {
 class SD_LIB_EXPORT FlatUtils {
  public:
-  static std::pair<int, int> fromIntPair(IntPair* pair);
+  static std::pair<int, int> fromIntPair(::graph::IntPair* pair);
 
-  static std::pair<LongType, LongType> fromLongPair(LongPair* pair);
+  static std::pair<LongType, LongType> fromLongPair(::graph::LongPair* pair);
 
-  static NDArray* fromFlatArray(const FlatArray* flatArray);
+  static NDArray* fromFlatArray(const ::graph::FlatArray* flatArray);
 
-  static flatbuffers::Offset<FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder& builder, NDArray& array);
+  static flatbuffers::Offset<::graph::FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder& builder, NDArray& array);
 };
 }  // namespace graph
 }  // namespace sd

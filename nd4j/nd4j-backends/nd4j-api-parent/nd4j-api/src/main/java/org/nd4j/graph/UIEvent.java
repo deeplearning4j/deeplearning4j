@@ -48,23 +48,15 @@ public final class UIEvent extends Table {
   public UIEvent __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte eventType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateEventType(byte eventType) { int o = __offset(4); if (o != 0) { bb.put(o + bb_pos, eventType); return true; } else { return false; } }
   public byte eventSubType() { int o = __offset(6); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateEventSubType(byte eventSubType) { int o = __offset(6); if (o != 0) { bb.put(o + bb_pos, eventSubType); return true; } else { return false; } }
   public int nameIdx() { int o = __offset(8); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateNameIdx(int nameIdx) { int o = __offset(8); if (o != 0) { bb.putInt(o + bb_pos, nameIdx); return true; } else { return false; } }
   public long timestamp() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateTimestamp(long timestamp) { int o = __offset(10); if (o != 0) { bb.putLong(o + bb_pos, timestamp); return true; } else { return false; } }
   public int iteration() { int o = __offset(12); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateIteration(int iteration) { int o = __offset(12); if (o != 0) { bb.putInt(o + bb_pos, iteration); return true; } else { return false; } }
   public int epoch() { int o = __offset(14); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateEpoch(int epoch) { int o = __offset(14); if (o != 0) { bb.putInt(o + bb_pos, epoch); return true; } else { return false; } }
   public short variableId() { int o = __offset(16); return o != 0 ? bb.getShort(o + bb_pos) : 0; }
-  public boolean mutateVariableId(short variableId) { int o = __offset(16); if (o != 0) { bb.putShort(o + bb_pos, variableId); return true; } else { return false; } }
   public org.nd4j.graph.FrameIteration frameIter() { return frameIter(new org.nd4j.graph.FrameIteration()); }
   public org.nd4j.graph.FrameIteration frameIter(org.nd4j.graph.FrameIteration obj) { int o = __offset(18); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
   public int plugin() { int o = __offset(20); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
-  public boolean mutatePlugin(int plugin) { int o = __offset(20); if (o != 0) { bb.putShort(o + bb_pos, (short) plugin); return true; } else { return false; } }
 
   public static int createUIEvent(FlatBufferBuilder builder,
       byte eventType,
@@ -109,46 +101,6 @@ public final class UIEvent extends Table {
 
     public UIEvent get(int j) { return get(new UIEvent(), j); }
     public UIEvent get(UIEvent obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIEventT unpack() {
-    UIEventT _o = new UIEventT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIEventT _o) {
-    byte _oEventType = eventType();
-    _o.setEventType(_oEventType);
-    byte _oEventSubType = eventSubType();
-    _o.setEventSubType(_oEventSubType);
-    int _oNameIdx = nameIdx();
-    _o.setNameIdx(_oNameIdx);
-    long _oTimestamp = timestamp();
-    _o.setTimestamp(_oTimestamp);
-    int _oIteration = iteration();
-    _o.setIteration(_oIteration);
-    int _oEpoch = epoch();
-    _o.setEpoch(_oEpoch);
-    short _oVariableId = variableId();
-    _o.setVariableId(_oVariableId);
-    if (frameIter() != null) _o.setFrameIter(frameIter().unpack());
-    else _o.setFrameIter(null);
-    int _oPlugin = plugin();
-    _o.setPlugin(_oPlugin);
-  }
-  public static int pack(FlatBufferBuilder builder, UIEventT _o) {
-    if (_o == null) return 0;
-    int _frameIter = _o.getFrameIter() == null ? 0 : org.nd4j.graph.FrameIteration.pack(builder, _o.getFrameIter());
-    return createUIEvent(
-      builder,
-      _o.getEventType(),
-      _o.getEventSubType(),
-      _o.getNameIdx(),
-      _o.getTimestamp(),
-      _o.getIteration(),
-      _o.getEpoch(),
-      _o.getVariableId(),
-      _frameIter,
-      _o.getPlugin());
   }
 }
 

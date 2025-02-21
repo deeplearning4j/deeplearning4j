@@ -48,7 +48,6 @@ public final class UIStaticInfoRecord extends Table {
   public UIStaticInfoRecord __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public byte infoType() { int o = __offset(4); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateInfoType(byte infoType) { int o = __offset(4); if (o != 0) { bb.put(o + bb_pos, infoType); return true; } else { return false; } }
 
   public static int createUIStaticInfoRecord(FlatBufferBuilder builder,
       byte infoType) {
@@ -69,21 +68,6 @@ public final class UIStaticInfoRecord extends Table {
 
     public UIStaticInfoRecord get(int j) { return get(new UIStaticInfoRecord(), j); }
     public UIStaticInfoRecord get(UIStaticInfoRecord obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIStaticInfoRecordT unpack() {
-    UIStaticInfoRecordT _o = new UIStaticInfoRecordT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIStaticInfoRecordT _o) {
-    byte _oInfoType = infoType();
-    _o.setInfoType(_oInfoType);
-  }
-  public static int pack(FlatBufferBuilder builder, UIStaticInfoRecordT _o) {
-    if (_o == null) return 0;
-    return createUIStaticInfoRecord(
-      builder,
-      _o.getInfoType());
   }
 }
 

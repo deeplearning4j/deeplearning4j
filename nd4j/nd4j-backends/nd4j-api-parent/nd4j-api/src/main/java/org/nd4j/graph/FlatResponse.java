@@ -48,7 +48,6 @@ public final class FlatResponse extends Table {
   public FlatResponse __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int status() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateStatus(int status) { int o = __offset(4); if (o != 0) { bb.putInt(o + bb_pos, status); return true; } else { return false; } }
 
   public static int createFlatResponse(FlatBufferBuilder builder,
       int status) {
@@ -69,21 +68,6 @@ public final class FlatResponse extends Table {
 
     public FlatResponse get(int j) { return get(new FlatResponse(), j); }
     public FlatResponse get(FlatResponse obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatResponseT unpack() {
-    FlatResponseT _o = new FlatResponseT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatResponseT _o) {
-    int _oStatus = status();
-    _o.setStatus(_oStatus);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatResponseT _o) {
-    if (_o == null) return 0;
-    return createFlatResponse(
-      builder,
-      _o.getStatus());
   }
 }
 

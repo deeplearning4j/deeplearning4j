@@ -27,7 +27,7 @@
 
 #include <array/ArrayOptions.h>
 #include <array/DataType.h>
-#include <graph/scheme/array_generated.h>
+#include <graph/generated/array_generated.h>
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/bfloat16.h>
@@ -40,7 +40,7 @@ class SD_LIB_EXPORT DataTypeUtils {
  public:
   static int asInt(DataType type);
   static DataType fromInt(int dtype);
-  static DataType fromFlatDataType(graph::DType dtype);
+  static DataType fromFlatDataType(::graph::DType dtype);
   SD_INLINE static std::string asString(DataType dataType);
 
   template <typename T>

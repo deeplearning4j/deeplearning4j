@@ -1071,7 +1071,7 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
 
   // Node is dynamically created, and has nothing beyond it: only inputs and outputs
   // this node has id of 0, and inputs are
-  Node node(OpType_LOGIC, opHash, 0);
+  Node node(::graph::OpType_LOGIC, opHash, 0);
 
   // mapping inputs
   for (int e = 0; e < numInputs; e++) {

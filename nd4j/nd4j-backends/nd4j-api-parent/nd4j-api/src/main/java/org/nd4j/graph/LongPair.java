@@ -48,9 +48,7 @@ public final class LongPair extends Table {
   public LongPair __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long first() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateFirst(long first) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, first); return true; } else { return false; } }
   public long second() { int o = __offset(6); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateSecond(long second) { int o = __offset(6); if (o != 0) { bb.putLong(o + bb_pos, second); return true; } else { return false; } }
 
   public static int createLongPair(FlatBufferBuilder builder,
       long first,
@@ -74,24 +72,6 @@ public final class LongPair extends Table {
 
     public LongPair get(int j) { return get(new LongPair(), j); }
     public LongPair get(LongPair obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public LongPairT unpack() {
-    LongPairT _o = new LongPairT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(LongPairT _o) {
-    long _oFirst = first();
-    _o.setFirst(_oFirst);
-    long _oSecond = second();
-    _o.setSecond(_oSecond);
-  }
-  public static int pack(FlatBufferBuilder builder, LongPairT _o) {
-    if (_o == null) return 0;
-    return createLongPair(
-      builder,
-      _o.getFirst(),
-      _o.getSecond());
   }
 }
 

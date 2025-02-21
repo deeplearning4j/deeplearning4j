@@ -35,7 +35,6 @@ OpDescriptor::OpDescriptor(int numInputs, const char* opName, bool isScalar) {
 
   _opName = opName;
   _hash = HashHelper::getInstance().getLongHash(_opName);
-  _opClass = graph::OpClass_CONDITIONAL;
 
   _scalar = isScalar;
 }
@@ -46,7 +45,6 @@ OpDescriptor::OpDescriptor(int numInputs, std::string opName, bool isScalar) {
 
   _opName = opName;
   _hash = HashHelper::getInstance().getLongHash(_opName);
-  _opClass = graph::OpClass_CONDITIONAL;
 
   _scalar = isScalar;
 }
@@ -79,7 +77,6 @@ OpDescriptor::OpDescriptor(int numInputs, int numOutputs, const char* opName, bo
   _divergent = false;
 
   // just default value
-  _opClass = graph::OpClass_TRANSFORM;
 }
 
 // constructor for configurable op

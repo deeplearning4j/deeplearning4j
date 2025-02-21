@@ -53,18 +53,14 @@ public final class FlatArray extends Table {
   public LongVector shapeVector(LongVector obj) { int o = __offset(4); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(4, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 4, 8); }
-  public boolean mutateShape(int j, long shape) { int o = __offset(4); if (o != 0) { bb.putLong(__vector(o) + j * 8, shape); return true; } else { return false; } }
   public byte buffer(int j) { int o = __offset(6); return o != 0 ? bb.get(__vector(o) + j * 1) : 0; }
   public int bufferLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
   public ByteVector bufferVector() { return bufferVector(new ByteVector()); }
   public ByteVector bufferVector(ByteVector obj) { int o = __offset(6); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer bufferAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer bufferInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
-  public boolean mutateBuffer(int j, byte buffer) { int o = __offset(6); if (o != 0) { bb.put(__vector(o) + j * 1, buffer); return true; } else { return false; } }
   public byte dtype() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateDtype(byte dtype) { int o = __offset(8); if (o != 0) { bb.put(o + bb_pos, dtype); return true; } else { return false; } }
   public byte byteOrder() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateByteOrder(byte byteOrder) { int o = __offset(10); if (o != 0) { bb.put(o + bb_pos, byteOrder); return true; } else { return false; } }
 
   public static int createFlatArray(FlatBufferBuilder builder,
       int shapeOffset,
@@ -101,40 +97,6 @@ public final class FlatArray extends Table {
 
     public FlatArray get(int j) { return get(new FlatArray(), j); }
     public FlatArray get(FlatArray obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatArrayT unpack() {
-    FlatArrayT _o = new FlatArrayT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatArrayT _o) {
-    long[] _oShape = new long[shapeLength()];
-    for (int _j = 0; _j < shapeLength(); ++_j) {_oShape[_j] = shape(_j);}
-    _o.setShape(_oShape);
-    byte[] _oBuffer = new byte[bufferLength()];
-    for (int _j = 0; _j < bufferLength(); ++_j) {_oBuffer[_j] = buffer(_j);}
-    _o.setBuffer(_oBuffer);
-    byte _oDtype = dtype();
-    _o.setDtype(_oDtype);
-    byte _oByteOrder = byteOrder();
-    _o.setByteOrder(_oByteOrder);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatArrayT _o) {
-    if (_o == null) return 0;
-    int _shape = 0;
-    if (_o.getShape() != null) {
-      _shape = createShapeVector(builder, _o.getShape());
-    }
-    int _buffer = 0;
-    if (_o.getBuffer() != null) {
-      _buffer = createBufferVector(builder, _o.getBuffer());
-    }
-    return createFlatArray(
-      builder,
-      _shape,
-      _buffer,
-      _o.getDtype(),
-      _o.getByteOrder());
   }
 }
 

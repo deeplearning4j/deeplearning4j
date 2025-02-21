@@ -27,7 +27,7 @@ ResultSet::ResultSet() {
   //
 }
 
-ResultSet::ResultSet(const graph::FlatResult* result) {
+ResultSet::ResultSet(const ::graph::FlatResult* result) {
   for (size_t e = 0; e < result->variables()->size(); e++) {
     auto var = result->variables()->Get(e);
 

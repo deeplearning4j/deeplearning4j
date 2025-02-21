@@ -35,7 +35,7 @@ OpTracker& OpTracker::getInstance() {
   return instance;
 }
 
-void OpTracker::storeOperation(OpType opType, const OpDescriptor& descriptor) {
+void OpTracker::storeOperation(::graph::OpType opType, const OpDescriptor& descriptor) {
   // check out CPU features
   if (!isMinimalRequirementsMet()) {
     auto binaryLevel = ::binaryLevel();
@@ -75,7 +75,7 @@ void OpTracker::storeOperation(OpType opType, const OpDescriptor& descriptor) {
   if (std::find(vec.begin(), vec.end(), descriptor) == vec.end()) _map[opType].emplace_back(descriptor);
 }
 
-void OpTracker::storeOperation(OpType opType, const char* opName, const LongType opNum) {
+void OpTracker::storeOperation(::graph::OpType opType, const char* opName, const LongType opNum) {
   OpDescriptor descriptor(0, opName, false);
   descriptor.setOpNum((int)opNum);
   descriptor.setHash(-1);

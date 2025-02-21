@@ -48,7 +48,6 @@ public final class UISystemInfo extends Table {
   public UISystemInfo __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int physicalCores() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutatePhysicalCores(int physicalCores) { int o = __offset(4); if (o != 0) { bb.putInt(o + bb_pos, physicalCores); return true; } else { return false; } }
 
   public static int createUISystemInfo(FlatBufferBuilder builder,
       int physicalCores) {
@@ -69,21 +68,6 @@ public final class UISystemInfo extends Table {
 
     public UISystemInfo get(int j) { return get(new UISystemInfo(), j); }
     public UISystemInfo get(UISystemInfo obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UISystemInfoT unpack() {
-    UISystemInfoT _o = new UISystemInfoT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UISystemInfoT _o) {
-    int _oPhysicalCores = physicalCores();
-    _o.setPhysicalCores(_oPhysicalCores);
-  }
-  public static int pack(FlatBufferBuilder builder, UISystemInfoT _o) {
-    if (_o == null) return 0;
-    return createUISystemInfo(
-      builder,
-      _o.getPhysicalCores());
   }
 }
 

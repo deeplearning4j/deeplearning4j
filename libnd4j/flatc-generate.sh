@@ -42,26 +42,7 @@ fi
 mkdir -p ./include/graph/generated
 
 # Generate flatbuffer files using built flatc with correct package
-"$FLATC_PATH" --cpp --java -o ./include/graph/generated -I ./include/graph/scheme \
-    --gen-object-api \
-    --gen-compare \
-    --gen-mutable \
-    --reflect-names \
-    --java-package-prefix org.nd4j \
-    ./include/graph/scheme/node.fbs \
-    ./include/graph/scheme/graph.fbs \
-    ./include/graph/scheme/result.fbs \
-    ./include/graph/scheme/config.fbs \
-    ./include/graph/scheme/array.fbs \
-    ./include/graph/scheme/utils.fbs \
-    ./include/graph/scheme/variable.fbs \
-    ./include/graph/scheme/sequence.fbs
-
-"$FLATC_PATH" --cpp --java -o ./include/graph/generated -I ./include/graph/scheme \
-    --gen-object-api \
-    --gen-compare \
-    --gen-mutable \
-    --reflect-names \
+"$FLATC_PATH" -o ./include/graph/generated -I ./include/graph/scheme -j -b -t -c \
     --java-package-prefix org.nd4j \
     ./include/graph/scheme/node.fbs \
     ./include/graph/scheme/graph.fbs \
@@ -73,12 +54,19 @@ mkdir -p ./include/graph/generated
     ./include/graph/scheme/variable.fbs \
     ./include/graph/scheme/properties.fbs
 
-"$FLATC_PATH" --cpp --java -o ./include/graph/generated -I ./include/graph/scheme \
-    --gen-object-api \
-    --gen-compare \
-    --gen-mutable \
-    --reflect-names \
-    --grpc \
+"$FLATC_PATH" -o ./include/graph/generated -I ./include/graph/scheme -j -b \
+    --java-package-prefix org.nd4j \
+    ./include/graph/scheme/node.fbs \
+    ./include/graph/scheme/graph.fbs \
+    ./include/graph/scheme/result.fbs \
+    ./include/graph/scheme/request.fbs \
+    ./include/graph/scheme/config.fbs \
+    ./include/graph/scheme/array.fbs \
+    ./include/graph/scheme/utils.fbs \
+    ./include/graph/scheme/variable.fbs \
+    ./include/graph/scheme/properties.fbs
+
+"$FLATC_PATH" -o ./include/graph/generated -I ./include/graph/scheme -j -b --grpc \
     --java-package-prefix org.nd4j \
     ./include/graph/scheme/uigraphstatic.fbs \
     ./include/graph/scheme/uigraphevents.fbs

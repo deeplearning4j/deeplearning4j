@@ -48,7 +48,6 @@ public final class UIAddName extends Table {
   public UIAddName __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int nameIdx() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateNameIdx(int nameIdx) { int o = __offset(4); if (o != 0) { bb.putInt(o + bb_pos, nameIdx); return true; } else { return false; } }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
@@ -75,25 +74,6 @@ public final class UIAddName extends Table {
 
     public UIAddName get(int j) { return get(new UIAddName(), j); }
     public UIAddName get(UIAddName obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIAddNameT unpack() {
-    UIAddNameT _o = new UIAddNameT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIAddNameT _o) {
-    int _oNameIdx = nameIdx();
-    _o.setNameIdx(_oNameIdx);
-    String _oName = name();
-    _o.setName(_oName);
-  }
-  public static int pack(FlatBufferBuilder builder, UIAddNameT _o) {
-    if (_o == null) return 0;
-    int _name = _o.getName() == null ? 0 : builder.createString(_o.getName());
-    return createUIAddName(
-      builder,
-      _o.getNameIdx(),
-      _name);
   }
 }
 

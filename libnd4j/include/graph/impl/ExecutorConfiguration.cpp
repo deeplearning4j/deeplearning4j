@@ -23,7 +23,7 @@
 
 namespace sd {
 namespace graph {
-ExecutorConfiguration::ExecutorConfiguration(const FlatConfiguration *conf) {
+ExecutorConfiguration::ExecutorConfiguration(const ::graph::FlatConfiguration *conf) {
   if (conf != nullptr) {
     _profilingMode = conf->profilingMode();
     _executionMode = conf->executionMode();
@@ -33,9 +33,9 @@ ExecutorConfiguration::ExecutorConfiguration(const FlatConfiguration *conf) {
     _footprintBackward = conf->footprintBackward();
     _direction = conf->direction();
   } else {
-    _profilingMode = ProfilingMode_NONE;
-    _executionMode = ExecutionMode_SEQUENTIAL;
-    _outputMode = OutputMode_IMPLICIT;
+    _profilingMode = ::graph::ProfilingMode_NONE;
+    _executionMode = ::graph::ExecutionMode_SEQUENTIAL;
+    _outputMode = ::graph::OutputMode_IMPLICIT;
     _timestats = false;
   }
 };
@@ -53,7 +53,7 @@ ExecutorConfiguration *ExecutorConfiguration::clone() {
   return clone;
 };
 
-flatbuffers::Offset<FlatConfiguration> ExecutorConfiguration::asFlatConfiguration(
+flatbuffers::Offset<::graph::FlatConfiguration> ExecutorConfiguration::asFlatConfiguration(
     flatbuffers::FlatBufferBuilder &builder) {
   return CreateFlatConfiguration(builder, 0, _executionMode, _profilingMode, _outputMode, _timestats,
                                  _footprintBackward, _footprintBackward);

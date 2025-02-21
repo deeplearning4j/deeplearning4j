@@ -53,16 +53,13 @@ public final class UIVariable extends Table {
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
   public byte type() { int o = __offset(8); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateType(byte type) { int o = __offset(8); if (o != 0) { bb.put(o + bb_pos, type); return true; } else { return false; } }
   public byte datatype() { int o = __offset(10); return o != 0 ? bb.get(o + bb_pos) : 0; }
-  public boolean mutateDatatype(byte datatype) { int o = __offset(10); if (o != 0) { bb.put(o + bb_pos, datatype); return true; } else { return false; } }
   public long shape(int j) { int o = __offset(12); return o != 0 ? bb.getLong(__vector(o) + j * 8) : 0; }
   public int shapeLength() { int o = __offset(12); return o != 0 ? __vector_len(o) : 0; }
   public LongVector shapeVector() { return shapeVector(new LongVector()); }
   public LongVector shapeVector(LongVector obj) { int o = __offset(12); return o != 0 ? obj.__assign(__vector(o), bb) : null; }
   public ByteBuffer shapeAsByteBuffer() { return __vector_as_bytebuffer(12, 8); }
   public ByteBuffer shapeInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 12, 8); }
-  public boolean mutateShape(int j, long shape) { int o = __offset(12); if (o != 0) { bb.putLong(__vector(o) + j * 8, shape); return true; } else { return false; } }
   public String controlDeps(int j) { int o = __offset(14); return o != 0 ? __string(__vector(o) + j * 4) : null; }
   public int controlDepsLength() { int o = __offset(14); return o != 0 ? __vector_len(o) : 0; }
   public StringVector controlDepsVector() { return controlDepsVector(new StringVector()); }
@@ -156,100 +153,6 @@ public final class UIVariable extends Table {
 
     public UIVariable get(int j) { return get(new UIVariable(), j); }
     public UIVariable get(UIVariable obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public UIVariableT unpack() {
-    UIVariableT _o = new UIVariableT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(UIVariableT _o) {
-    if (id() != null) _o.setId(id().unpack());
-    else _o.setId(null);
-    String _oName = name();
-    _o.setName(_oName);
-    byte _oType = type();
-    _o.setType(_oType);
-    byte _oDatatype = datatype();
-    _o.setDatatype(_oDatatype);
-    long[] _oShape = new long[shapeLength()];
-    for (int _j = 0; _j < shapeLength(); ++_j) {_oShape[_j] = shape(_j);}
-    _o.setShape(_oShape);
-    String[] _oControlDeps = new String[controlDepsLength()];
-    for (int _j = 0; _j < controlDepsLength(); ++_j) {_oControlDeps[_j] = controlDeps(_j);}
-    _o.setControlDeps(_oControlDeps);
-    String _oOutputOfOp = outputOfOp();
-    _o.setOutputOfOp(_oOutputOfOp);
-    String[] _oInputsForOp = new String[inputsForOpLength()];
-    for (int _j = 0; _j < inputsForOpLength(); ++_j) {_oInputsForOp[_j] = inputsForOp(_j);}
-    _o.setInputsForOp(_oInputsForOp);
-    String[] _oControlDepsForOp = new String[controlDepsForOpLength()];
-    for (int _j = 0; _j < controlDepsForOpLength(); ++_j) {_oControlDepsForOp[_j] = controlDepsForOp(_j);}
-    _o.setControlDepsForOp(_oControlDepsForOp);
-    String[] _oControlDepsForVar = new String[controlDepsForVarLength()];
-    for (int _j = 0; _j < controlDepsForVarLength(); ++_j) {_oControlDepsForVar[_j] = controlDepsForVar(_j);}
-    _o.setControlDepsForVar(_oControlDepsForVar);
-    String _oGradientVariable = gradientVariable();
-    _o.setGradientVariable(_oGradientVariable);
-    String _oUiLabelExtra = uiLabelExtra();
-    _o.setUiLabelExtra(_oUiLabelExtra);
-    if (constantValue() != null) _o.setConstantValue(constantValue().unpack());
-    else _o.setConstantValue(null);
-  }
-  public static int pack(FlatBufferBuilder builder, UIVariableT _o) {
-    if (_o == null) return 0;
-    int _id = _o.getId() == null ? 0 : org.nd4j.graph.IntPair.pack(builder, _o.getId());
-    int _name = _o.getName() == null ? 0 : builder.createString(_o.getName());
-    int _shape = 0;
-    if (_o.getShape() != null) {
-      _shape = createShapeVector(builder, _o.getShape());
-    }
-    int _controlDeps = 0;
-    if (_o.getControlDeps() != null) {
-      int[] __controlDeps = new int[_o.getControlDeps().length];
-      int _j = 0;
-      for (String _e : _o.getControlDeps()) { __controlDeps[_j] = builder.createString(_e); _j++;}
-      _controlDeps = createControlDepsVector(builder, __controlDeps);
-    }
-    int _outputOfOp = _o.getOutputOfOp() == null ? 0 : builder.createString(_o.getOutputOfOp());
-    int _inputsForOp = 0;
-    if (_o.getInputsForOp() != null) {
-      int[] __inputsForOp = new int[_o.getInputsForOp().length];
-      int _j = 0;
-      for (String _e : _o.getInputsForOp()) { __inputsForOp[_j] = builder.createString(_e); _j++;}
-      _inputsForOp = createInputsForOpVector(builder, __inputsForOp);
-    }
-    int _controlDepsForOp = 0;
-    if (_o.getControlDepsForOp() != null) {
-      int[] __controlDepsForOp = new int[_o.getControlDepsForOp().length];
-      int _j = 0;
-      for (String _e : _o.getControlDepsForOp()) { __controlDepsForOp[_j] = builder.createString(_e); _j++;}
-      _controlDepsForOp = createControlDepsForOpVector(builder, __controlDepsForOp);
-    }
-    int _controlDepsForVar = 0;
-    if (_o.getControlDepsForVar() != null) {
-      int[] __controlDepsForVar = new int[_o.getControlDepsForVar().length];
-      int _j = 0;
-      for (String _e : _o.getControlDepsForVar()) { __controlDepsForVar[_j] = builder.createString(_e); _j++;}
-      _controlDepsForVar = createControlDepsForVarVector(builder, __controlDepsForVar);
-    }
-    int _gradientVariable = _o.getGradientVariable() == null ? 0 : builder.createString(_o.getGradientVariable());
-    int _uiLabelExtra = _o.getUiLabelExtra() == null ? 0 : builder.createString(_o.getUiLabelExtra());
-    int _constantValue = _o.getConstantValue() == null ? 0 : org.nd4j.graph.FlatArray.pack(builder, _o.getConstantValue());
-    return createUIVariable(
-      builder,
-      _id,
-      _name,
-      _o.getType(),
-      _o.getDatatype(),
-      _shape,
-      _controlDeps,
-      _outputOfOp,
-      _inputsForOp,
-      _controlDepsForOp,
-      _controlDepsForVar,
-      _gradientVariable,
-      _uiLabelExtra,
-      _constantValue);
   }
 }
 

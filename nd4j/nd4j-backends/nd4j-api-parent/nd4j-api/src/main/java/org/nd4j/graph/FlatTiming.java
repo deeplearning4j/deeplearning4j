@@ -48,7 +48,6 @@ public final class FlatTiming extends Table {
   public FlatTiming __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public int id() { int o = __offset(4); return o != 0 ? bb.getInt(o + bb_pos) : 0; }
-  public boolean mutateId(int id) { int o = __offset(4); if (o != 0) { bb.putInt(o + bb_pos, id); return true; } else { return false; } }
   public String name() { int o = __offset(6); return o != 0 ? __string(o + bb_pos) : null; }
   public ByteBuffer nameAsByteBuffer() { return __vector_as_bytebuffer(6, 1); }
   public ByteBuffer nameInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 6, 1); }
@@ -80,29 +79,6 @@ public final class FlatTiming extends Table {
 
     public FlatTiming get(int j) { return get(new FlatTiming(), j); }
     public FlatTiming get(FlatTiming obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatTimingT unpack() {
-    FlatTimingT _o = new FlatTimingT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatTimingT _o) {
-    int _oId = id();
-    _o.setId(_oId);
-    String _oName = name();
-    _o.setName(_oName);
-    if (timing() != null) _o.setTiming(timing().unpack());
-    else _o.setTiming(null);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatTimingT _o) {
-    if (_o == null) return 0;
-    int _name = _o.getName() == null ? 0 : builder.createString(_o.getName());
-    int _timing = _o.getTiming() == null ? 0 : org.nd4j.graph.LongPair.pack(builder, _o.getTiming());
-    return createFlatTiming(
-      builder,
-      _o.getId(),
-      _name,
-      _timing);
   }
 }
 

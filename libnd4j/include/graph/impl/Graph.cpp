@@ -100,7 +100,7 @@ LongType Graph::estimateRequiredMemory() {
         }
 
         delete outSha;
-      } else if (node->getOpClass() == OpClass_TRANSFORM) {
+      } else if (node->getOpClass() == ::graph::OpClass_TRANSFORM) {
         auto vec = node->input();
 
         auto in = node->input()->at(0);
@@ -135,7 +135,7 @@ LongType Graph::estimateRequiredMemory() {
           shapes.push_back(newShape);
         }
 
-      } else if (node->getOpClass() == OpClass_REDUCTION) {
+      } else if (node->getOpClass() == ::graph::OpClass_REDUCTION) {
         LongType  *newShape = nullptr;
 
         // if that's scalar output - we don't care about previous node
@@ -170,7 +170,7 @@ LongType Graph::estimateRequiredMemory() {
         result += shape::length(newShape) * DataTypeUtils::sizeOfElement(node->dataType());
 
         shapes.push_back(newShape);
-      } else if (node->getOpClass() == OpClass_MULTIPLICATOR) {
+      } else if (node->getOpClass() == ::graph::OpClass_MULTIPLICATOR) {
         // can't be in non-special op
       }
 
@@ -254,7 +254,7 @@ Graph::~Graph() {
 void Graph::addNode(Node *node) {
   _built.store(false);
 
-  if (node->opType() == OpType_LOGIC) {
+  if (node->opType() == ::graph::OpType_LOGIC) {
     // SCOPE
     if (node->opNum() == logic::Scope) {
       auto scope = new Scope(node->id(), node->getName() != nullptr ? node->getName()->c_str() : "");
@@ -278,7 +278,7 @@ void Graph::addNode(Node *node) {
   _variableSpace->putVariable(node->id(), nodeState);
 
   // here we're filling our blocks with future variables
-  if (node->opType() == OpType_LOGIC && node->opNum() == logic::While) {
+  if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::While) {
     // filling while
     int inputs = node->input()->size();
     for (int e = 0; e < inputs - 2; e++) {
@@ -336,7 +336,7 @@ void Graph::addNode(Node *node) {
   }
 
   // we're saving only ops that have internal outpus here
-  if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE)
+  if (_configuration->_outputMode == ::graph::OutputMode_VARIABLE_SPACE)
     if (node->hasInternalOutputs()) pushToOutputOnce(node->id());
 
   // if outputs are undefined, we have to auto-create variable
@@ -363,8 +363,8 @@ void Graph::addNode(Node *node) {
               node->hasInternalOutputs());
 
     // we're pushing this node to output only
-    if ((!node->hasInternalOutputs() && (_configuration->_outputMode == OutputMode_IMPLICIT ||
-                                         _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT))) {
+    if ((!node->hasInternalOutputs() && (_configuration->_outputMode == ::graph::OutputMode_IMPLICIT ||
+                                         _configuration->_outputMode == ::graph::OutputMode_EXPLICIT_AND_IMPLICIT))) {
       for (int e = 0; e < (int)node->output()->size(); e++) {
         if (node->output()->at(e).first < 0) pushToOutputOnce(node->output()->at(e).first);
       }
@@ -548,7 +548,7 @@ Status Graph::buildGraph() {
             auto iNode = _mapped->at(nodeId);
 
             if (maxLayer < iNode->getLayer()) maxLayer = iNode->getLayer();
-          } else if (node->opType() == OpType_LOGIC) {
+          } else if (node->opType() == ::graph::OpType_LOGIC) {
             // just allow it?
           } else  // checking if that's static variable
           if (nodeId > 0 && !_variableSpace->hasExternalVariable(nodeId)) {
@@ -680,7 +680,7 @@ void Graph::tagInplaceNodes() {
 
 void Graph::prepareOutputs() {
   // if we're dumping everything out there - we'll add external variables as well
-  if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) {
+  if (_configuration->_outputMode == ::graph::OutputMode_VARIABLE_SPACE) {
     auto ext = _variableSpace->getExternalVariables();
     sd_verbose("Number of external variables: %i\n", ext->size()) for (unsigned int e = 0; e < ext->size(); e++) {
       pushToOutputOnce(ext->at(e)->id());
@@ -694,7 +694,7 @@ void Graph::prepareOutputs() {
       if (std::find(_output.begin(), _output.end(), node->id()) == _output.end()) _output.emplace_back(node->id());
     }
 
-  } else if (_configuration->_outputMode == OutputMode_IMPLICIT) {
+  } else if (_configuration->_outputMode == ::graph::OutputMode_IMPLICIT) {
     // we're adding final nodes of the graph. those, not used as input anywhere
     sd_debug("Paring nodes... \n", "");
 
@@ -755,7 +755,7 @@ void Graph::prepareOutputs() {
   }
 }
 
-Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
+Graph::Graph(const ::graph::FlatGraph *flatGraph, VariableSpace *variableSpace) {
   this->_onion = new SD_MAP_IMPL<int, std::vector<Node *> *>();
   this->_mapped = new SD_MAP_IMPL<int, Node *>();
   this->_nodes = new std::vector<int>();
@@ -787,14 +787,14 @@ Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
       _variableSpace->putVariable(pair, var);
 
       // if that's VariableSpace mode - we're pushing it to _output
-      if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) pushToOutputOnce(var->id());
+      if (_configuration->_outputMode == ::graph::OutputMode_VARIABLE_SPACE) pushToOutputOnce(var->id());
     }
   }
 
   // at this point we expect all variables are already registered
   // we're saving outputs only if explicit mode is set
-  if (_configuration->_outputMode == OutputMode_EXPLICIT ||
-      _configuration->_outputMode == OutputMode_EXPLICIT_AND_IMPLICIT) {
+  if (_configuration->_outputMode == ::graph::OutputMode_EXPLICIT ||
+      _configuration->_outputMode == ::graph::OutputMode_EXPLICIT_AND_IMPLICIT) {
     if (flatGraph != nullptr && flatGraph->outputs() != nullptr) {
       for (unsigned int e = 0; e < flatGraph->outputs()->size(); e++) {
         auto out = flatGraph->outputs()->Get(e);
@@ -842,7 +842,7 @@ Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
    *  1) this is FeedForward pass ONLY
    *  2) OPTIMIZED mode is set, so no intermediate results are going to be used
    */
-  if (_configuration->_direction == Direction_FORWARD_ONLY && _configuration->_outputMode == OutputMode_OPTIMIZED)
+  if (_configuration->_direction == ::graph::Direction_FORWARD_ONLY && _configuration->_outputMode == ::graph::OutputMode_OPTIMIZED)
     this->tagInplaceNodes();
 }
 
@@ -946,10 +946,10 @@ Status Graph::validate() {
 void Graph::printOutNode(Node *node) {
   sd_printf("%i. ", node->id());
   switch (node->opType()) {
-    case OpType_CUSTOM: {
+    case ::graph::OpType_CUSTOM: {
       printf("%s; ", node->getCustomOp()->getOpName()->c_str());
     } break;
-    case OpType_LOGIC: {
+    case ::graph::OpType_LOGIC: {
       printf("%s; ", EnumUtils::_LogicOpToString(node->opNum()));
     } break;
     default: {
@@ -965,7 +965,7 @@ void Graph::printOutNode(Node *node) {
     if (e < node->input()->size() - 1) sd_printf(", ", "");
   }
 
-  if (node->opType() == OpType_CUSTOM) {
+  if (node->opType() == ::graph::OpType_CUSTOM) {
     auto ctx = node->protoContext();
     if (ctx->getIArguments()->size() > 0) {
       printf("]; iArgs: [");
@@ -1019,7 +1019,7 @@ void Graph::printOut() {
       Node *node = _onion->at(l)->at(n);
 
       // we're skipping Scopes here
-      if (node->opType() == OpType_LOGIC && node->opNum() == logic::Scope) continue;
+      if (node->opType() == ::graph::OpType_LOGIC && node->opNum() == logic::Scope) continue;
 
       printOutNode(node);
     }

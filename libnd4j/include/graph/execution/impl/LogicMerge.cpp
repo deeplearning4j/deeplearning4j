@@ -39,7 +39,7 @@ Status LogicMerge::processNode(Graph *graph, Node *node) {
     auto secondNode = graph->nodeById(inputAddr1.first);
 
     // checking for NextIteration
-    if (secondNode->opType() == OpType_LOGIC && secondNode->opNum() == 80L) {
+    if (secondNode->opType() == ::graph::OpType_LOGIC && secondNode->opNum() == 80L) {
       isWhile = true;
 
       // notifying NextIteration node for rewind index

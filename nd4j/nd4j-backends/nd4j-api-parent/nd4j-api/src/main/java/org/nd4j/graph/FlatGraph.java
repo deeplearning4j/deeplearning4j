@@ -48,7 +48,6 @@ public final class FlatGraph extends Table {
   public FlatGraph __assign(int _i, ByteBuffer _bb) { __init(_i, _bb); return this; }
 
   public long id() { int o = __offset(4); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
-  public boolean mutateId(long id) { int o = __offset(4); if (o != 0) { bb.putLong(o + bb_pos, id); return true; } else { return false; } }
   public org.nd4j.graph.FlatVariable variables(int j) { return variables(new org.nd4j.graph.FlatVariable(), j); }
   public org.nd4j.graph.FlatVariable variables(org.nd4j.graph.FlatVariable obj, int j) { int o = __offset(6); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int variablesLength() { int o = __offset(6); return o != 0 ? __vector_len(o) : 0; }
@@ -140,95 +139,6 @@ public final class FlatGraph extends Table {
 
     public FlatGraph get(int j) { return get(new FlatGraph(), j); }
     public FlatGraph get(FlatGraph obj, int j) {  return obj.__assign(__indirect(__element(j), bb), bb); }
-  }
-  public FlatGraphT unpack() {
-    FlatGraphT _o = new FlatGraphT();
-    unpackTo(_o);
-    return _o;
-  }
-  public void unpackTo(FlatGraphT _o) {
-    long _oId = id();
-    _o.setId(_oId);
-    org.nd4j.graph.FlatVariableT[] _oVariables = new org.nd4j.graph.FlatVariableT[variablesLength()];
-    for (int _j = 0; _j < variablesLength(); ++_j) {_oVariables[_j] = (variables(_j) != null ? variables(_j).unpack() : null);}
-    _o.setVariables(_oVariables);
-    org.nd4j.graph.FlatNodeT[] _oNodes = new org.nd4j.graph.FlatNodeT[nodesLength()];
-    for (int _j = 0; _j < nodesLength(); ++_j) {_oNodes[_j] = (nodes(_j) != null ? nodes(_j).unpack() : null);}
-    _o.setNodes(_oNodes);
-    org.nd4j.graph.IntPairT[] _oOutputs = new org.nd4j.graph.IntPairT[outputsLength()];
-    for (int _j = 0; _j < outputsLength(); ++_j) {_oOutputs[_j] = (outputs(_j) != null ? outputs(_j).unpack() : null);}
-    _o.setOutputs(_oOutputs);
-    if (configuration() != null) _o.setConfiguration(configuration().unpack());
-    else _o.setConfiguration(null);
-    String[] _oPlaceholders = new String[placeholdersLength()];
-    for (int _j = 0; _j < placeholdersLength(); ++_j) {_oPlaceholders[_j] = placeholders(_j);}
-    _o.setPlaceholders(_oPlaceholders);
-    String[] _oLossVariables = new String[lossVariablesLength()];
-    for (int _j = 0; _j < lossVariablesLength(); ++_j) {_oLossVariables[_j] = lossVariables(_j);}
-    _o.setLossVariables(_oLossVariables);
-    String _oTrainingConfig = trainingConfig();
-    _o.setTrainingConfig(_oTrainingConfig);
-    org.nd4j.graph.UpdaterStateT[] _oUpdaterState = new org.nd4j.graph.UpdaterStateT[updaterStateLength()];
-    for (int _j = 0; _j < updaterStateLength(); ++_j) {_oUpdaterState[_j] = (updaterState(_j) != null ? updaterState(_j).unpack() : null);}
-    _o.setUpdaterState(_oUpdaterState);
-  }
-  public static int pack(FlatBufferBuilder builder, FlatGraphT _o) {
-    if (_o == null) return 0;
-    int _variables = 0;
-    if (_o.getVariables() != null) {
-      int[] __variables = new int[_o.getVariables().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatVariableT _e : _o.getVariables()) { __variables[_j] = org.nd4j.graph.FlatVariable.pack(builder, _e); _j++;}
-      _variables = createVariablesVector(builder, __variables);
-    }
-    int _nodes = 0;
-    if (_o.getNodes() != null) {
-      int[] __nodes = new int[_o.getNodes().length];
-      int _j = 0;
-      for (org.nd4j.graph.FlatNodeT _e : _o.getNodes()) { __nodes[_j] = org.nd4j.graph.FlatNode.pack(builder, _e); _j++;}
-      _nodes = createNodesVector(builder, __nodes);
-    }
-    int _outputs = 0;
-    if (_o.getOutputs() != null) {
-      int[] __outputs = new int[_o.getOutputs().length];
-      int _j = 0;
-      for (org.nd4j.graph.IntPairT _e : _o.getOutputs()) { __outputs[_j] = org.nd4j.graph.IntPair.pack(builder, _e); _j++;}
-      _outputs = createOutputsVector(builder, __outputs);
-    }
-    int _configuration = _o.getConfiguration() == null ? 0 : org.nd4j.graph.FlatConfiguration.pack(builder, _o.getConfiguration());
-    int _placeholders = 0;
-    if (_o.getPlaceholders() != null) {
-      int[] __placeholders = new int[_o.getPlaceholders().length];
-      int _j = 0;
-      for (String _e : _o.getPlaceholders()) { __placeholders[_j] = builder.createString(_e); _j++;}
-      _placeholders = createPlaceholdersVector(builder, __placeholders);
-    }
-    int _lossVariables = 0;
-    if (_o.getLossVariables() != null) {
-      int[] __lossVariables = new int[_o.getLossVariables().length];
-      int _j = 0;
-      for (String _e : _o.getLossVariables()) { __lossVariables[_j] = builder.createString(_e); _j++;}
-      _lossVariables = createLossVariablesVector(builder, __lossVariables);
-    }
-    int _trainingConfig = _o.getTrainingConfig() == null ? 0 : builder.createString(_o.getTrainingConfig());
-    int _updaterState = 0;
-    if (_o.getUpdaterState() != null) {
-      int[] __updaterState = new int[_o.getUpdaterState().length];
-      int _j = 0;
-      for (org.nd4j.graph.UpdaterStateT _e : _o.getUpdaterState()) { __updaterState[_j] = org.nd4j.graph.UpdaterState.pack(builder, _e); _j++;}
-      _updaterState = createUpdaterStateVector(builder, __updaterState);
-    }
-    return createFlatGraph(
-      builder,
-      _o.getId(),
-      _variables,
-      _nodes,
-      _outputs,
-      _configuration,
-      _placeholders,
-      _lossVariables,
-      _trainingConfig,
-      _updaterState);
   }
 }
 
