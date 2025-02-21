@@ -52,7 +52,8 @@ mkdir -p ./include/graph/generated
     ./include/graph/scheme/array.fbs \
     ./include/graph/scheme/utils.fbs \
     ./include/graph/scheme/variable.fbs \
-    ./include/graph/scheme/properties.fbs
+    ./include/graph/scheme/properties.fbs \
+    ./include/graph/scheme/sequence.fbs
 
 "$FLATC_PATH" -o ./include/graph/generated -I ./include/graph/scheme -j -b \
     --java-package-prefix org.nd4j \
@@ -64,7 +65,8 @@ mkdir -p ./include/graph/generated
     ./include/graph/scheme/array.fbs \
     ./include/graph/scheme/utils.fbs \
     ./include/graph/scheme/variable.fbs \
-    ./include/graph/scheme/properties.fbs
+    ./include/graph/scheme/properties.fbs \
+     ./include/graph/scheme/sequence.fbs
 
 "$FLATC_PATH" -o ./include/graph/generated -I ./include/graph/scheme -j -b --grpc \
     --java-package-prefix org.nd4j \
