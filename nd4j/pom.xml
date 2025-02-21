@@ -48,6 +48,8 @@
         <module>nd4j-onnxruntime</module>
         <module>nd4j-tvm</module>
         <module>samediff-import</module>
+        <module>nd4j-web</module>
+
     </modules>
 
     <profiles>

@@ -25,7 +25,7 @@
 
 namespace sd {
 namespace graph {
-ExecutionResult::ExecutionResult(const FlatResult* flatResult) {
+ExecutionResult::ExecutionResult(const ::graph::FlatResult* flatResult) {
   if (flatResult->variables() != nullptr) {
     for (size_t e = 0; e < flatResult->variables()->size(); e++) {
       auto fv = flatResult->variables()->Get(e);
@@ -86,8 +86,8 @@ Variable* ExecutionResult::byId(const char* str) {
   return byId(p);
 }
 
-flatbuffers::Offset<FlatResult> ExecutionResult::asFlatResult(flatbuffers::FlatBufferBuilder& builder) {
-  std::vector<flatbuffers::Offset<FlatVariable>> vec;
+flatbuffers::Offset<::graph::FlatResult> ExecutionResult::asFlatResult(flatbuffers::FlatBufferBuilder& builder) {
+  std::vector<flatbuffers::Offset<::graph::FlatVariable>> vec;
   for (Variable* v : _variables) {
     vec.emplace_back(v->asFlatVariable(builder));
   }

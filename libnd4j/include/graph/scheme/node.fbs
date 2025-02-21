@@ -20,7 +20,7 @@ include "array.fbs";
 include "utils.fbs";
 include "properties.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 
 // this structure describes single operation within graph

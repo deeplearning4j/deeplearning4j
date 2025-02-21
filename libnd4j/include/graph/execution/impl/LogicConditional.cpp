@@ -79,7 +79,7 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
 
     // last node is either return or just last op
     auto *node2 = scopeFalse->nodes()->at(nodes - 1);
-    if (node2->opType() == OpType_LOGIC && node2->opNum() == 40) {
+    if (node2->opType() == ::graph::OpType_LOGIC && node2->opNum() == 40) {
       isReturn = true;
       LogicReturn::processNode(graph, node2);
     } else {
@@ -98,7 +98,7 @@ Status LogicConditional::processNode(Graph *graph, Node *node) {
 
     // last node is either return or just last op
     auto node2 = scopeTrue->nodes()->at(nodes - 1);
-    if (node2->opType() == OpType_LOGIC && node2->opNum() == 40) {
+    if (node2->opType() == ::graph::OpType_LOGIC && node2->opNum() == 40) {
       isReturn = true;
       LogicReturn::processNode(graph, node2);
     } else {

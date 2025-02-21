@@ -20,7 +20,7 @@ include "node.fbs";
 include "utils.fbs";
 include "variable.fbs";
 
-namespace sd.graph;
+namespace graph;
 
 table FlatTiming {
     id:int; // ID of the node for this time report

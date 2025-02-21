@@ -685,7 +685,7 @@ void execRandom2(Pointer *extraPointers, int opNum, Pointer state, OpaqueDataBuf
 
 Pointer initRandom(Pointer *extraPointers, long seed, long bufferSize, Pointer ptrToBuffer) {
   try {
-    auto generator = new graph::RandomGenerator(seed, seed);
+    auto generator = new sd::graph::RandomGenerator(seed, seed);
 
     return (Pointer)generator;
   } catch (std::exception &e) {
@@ -696,19 +696,19 @@ Pointer initRandom(Pointer *extraPointers, long seed, long bufferSize, Pointer p
 }
 
 void refreshBuffer(Pointer *extraPointers, long seed, Pointer ptrRandom) {
-  auto generator = reinterpret_cast<graph::RandomGenerator *>(ptrRandom);
+  auto generator = reinterpret_cast<sd::graph::RandomGenerator *>(ptrRandom);
 
   generator->setStates(seed);
 }
 
 void reSeedBuffer(Pointer *extraPointers, long seed, Pointer ptrRandom) {
-  auto generator = reinterpret_cast<graph::RandomGenerator *>(ptrRandom);
+  auto generator = reinterpret_cast<sd::graph::RandomGenerator *>(ptrRandom);
 
   generator->setStates(seed);
 }
 
 void destroyRandom(Pointer ptrBuffer) {
-  auto buffer = reinterpret_cast<graph::RandomGenerator *>(ptrBuffer);
+  auto buffer = reinterpret_cast<sd::graph::RandomGenerator *>(ptrBuffer);
   delete buffer;
 }
 
@@ -832,7 +832,7 @@ void setShapeBuffer(LongType *inputShapeData,DataType dt,LongType *bufferToSet,c
 ////////////////////////////////////////////////////////////////////////
 
 
-void setGraphContextCudaContext(graph::Context *ptr, void *stream, void *reductionPointer,
+void setGraphContextCudaContext(sd::graph::Context *ptr, void *stream, void *reductionPointer,
                                 void *allocationPointer) {}
 
 

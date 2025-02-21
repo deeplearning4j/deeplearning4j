@@ -16,31 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// Created by raver119 on 22.11.2017.
-//
+include "array.fbs";
 
-#ifndef LIBND4J_FLATUTILS_H
-#define LIBND4J_FLATUTILS_H
-#include <array/NDArray.h>
-#include <graph/generated/array_generated.h>
-#include <graph/generated/node_generated.h>
+namespace graph;
 
-#include <utility>
+table SequenceItem {
+  name:string;
+  associated_variable:[FlatArray];
+}
 
-namespace sd {
-namespace graph {
-class SD_LIB_EXPORT FlatUtils {
- public:
-  static std::pair<int, int> fromIntPair(::graph::IntPair* pair);
+table SequenceItemRoot {
+  sequence_items:[SequenceItem];
+}
 
-  static std::pair<LongType, LongType> fromLongPair(::graph::LongPair* pair);
-
-  static NDArray* fromFlatArray(const ::graph::FlatArray* flatArray);
-
-  static flatbuffers::Offset<::graph::FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder& builder, NDArray& array);
-};
-}  // namespace graph
-}  // namespace sd
-
-#endif  // LIBND4J_FLATUTILS_H
+root_type SequenceItemRoot;

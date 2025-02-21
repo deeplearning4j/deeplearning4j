@@ -5936,6 +5936,7 @@ public class SameDiff extends SDBaseOps {
             }
 
 
+
             reverseMap.put(variable.name(), varIdx);
 
             log.trace("Adding [{}] as [{}]", variable.name(), varIdx);

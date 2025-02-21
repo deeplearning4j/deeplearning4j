@@ -25,9 +25,7 @@
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <graph/VariableType.h>
-#include <graph/scheme/array_generated.h>
-#include <graph/scheme/graph_generated.h>
-#include <graph/scheme/node_generated.h>
+
 
 #include <string>
 
@@ -87,7 +85,7 @@ class SD_LIB_EXPORT Variable {
   Variable(NDArray *array = nullptr, const char *name = nullptr);
 
 #ifndef __JAVACPP_HACK__
-  Variable(const FlatVariable *flatVariable);
+  Variable(const ::graph::FlatVariable *flatVariable);
 #endif
 
   ~Variable();
@@ -138,7 +136,7 @@ class SD_LIB_EXPORT Variable {
    * @param builder
    * @return
    */
-  flatbuffers::Offset<FlatVariable> asFlatVariable(flatbuffers::FlatBufferBuilder &builder);
+  flatbuffers::Offset<::graph::FlatVariable> asFlatVariable(flatbuffers::FlatBufferBuilder &builder);
 #endif
 };
 }  // namespace graph

@@ -46,7 +46,7 @@ sd::Status GraphState::registerScope(int scopeId) {
   auto scope = new Scope(scopeId);
   _scopes[scopeId] = scope;
 
-  auto scopeWrapper = new Node(OpType_LOGIC, 10, scopeId);
+  auto scopeWrapper = new Node(::graph::OpType_LOGIC, 10, scopeId);
   _graph->addNode(scopeWrapper);
 
   return sd::Status::OK;
@@ -111,7 +111,7 @@ sd::Status GraphState::defineReturn(int scopeId, int nodeId, ArgumentsList args)
   auto scope = _scopes[scopeId];
 
   // creating new Node for RETURN
-  auto node = new Node(OpType_LOGIC, 40, nodeId);
+  auto node = new Node(::graph::OpType_LOGIC, 40, nodeId);
   node->setScopeInfo(scopeId);
 
   // mapping inputs here

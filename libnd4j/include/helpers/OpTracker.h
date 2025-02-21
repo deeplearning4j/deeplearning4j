@@ -22,7 +22,7 @@
 
 #ifndef LIBND4J_OP_TRACKER_H
 #define LIBND4J_OP_TRACKER_H
-#include <graph/scheme/utils_generated.h>
+#include <graph/generated/utils_generated.h>
 #include <ops/declarable/OpDescriptor.h>
 
 #include <atomic>
@@ -35,7 +35,7 @@ class SD_LIB_EXPORT OpTracker {
   std::string _export;
 
   int _operations = 0;
-  std::map<graph::OpType, std::vector<ops::OpDescriptor>> _map;
+  std::map<::graph::OpType, std::vector<ops::OpDescriptor>> _map;
 
   OpTracker() = default;
   ~OpTracker() = default;
@@ -49,8 +49,8 @@ class SD_LIB_EXPORT OpTracker {
   int totalGroups();
   int totalOperations();
 
-  void storeOperation(graph::OpType opType, const ops::OpDescriptor& descriptor);
-  void storeOperation(graph::OpType opType, const char* opName, const LongType opNum);
+  void storeOperation(::graph::OpType opType, const ops::OpDescriptor& descriptor);
+  void storeOperation(::graph::OpType opType, const char* opName, const LongType opNum);
 
   const char* exportOperations();
 };

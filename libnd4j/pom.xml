@@ -42,6 +42,8 @@
 
 
     <properties>
+        <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
+
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
         <cuda.version>12.3</cuda.version>
         <cudnn.version>8.9</cudnn.version>
@@ -360,6 +362,7 @@
                                 <goals>
                                     <goal>build</goal>
                                 </goals>
+
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
@@ -404,9 +407,11 @@
                                         <argument>${libnd4j.printmath}</argument>
                                         <argument>--preprocess</argument>
                                         <argument>${libnd4j.preprocess}</argument>
-
+                                        <argument>--generate-flatc</argument>
+                                        <argument>${libnd4j.generate.flatc}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
+
                                 </configuration>
                             </execution>
                         </executions>
@@ -544,7 +549,8 @@
                                         <argument>${libnd4j.printmath}</argument>
                                         <argument>--preprocess</argument>
                                         <argument>${libnd4j.preprocess}</argument>
-
+                                        <argument>--generate-flatc</argument>
+                                        <argument>${libnd4j.generate.flatc}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

@@ -22,28 +22,28 @@
 
 #ifndef LIBND4J_EXECUTORCONFIGURATION_H
 #define LIBND4J_EXECUTORCONFIGURATION_H
-#include <graph/scheme/config_generated.h>
+#include <graph/generated/config_generated.h>
 #include <system/common.h>
 
 namespace sd {
 namespace graph {
 class SD_LIB_EXPORT ExecutorConfiguration {
  public:
-  ProfilingMode _profilingMode;
-  ExecutionMode _executionMode;
-  OutputMode _outputMode;
+  ::graph::ProfilingMode _profilingMode;
+  ::graph::ExecutionMode _executionMode;
+  ::graph::OutputMode _outputMode;
   bool _timestats;
   LongType _footprintForward = 0L;
   LongType _footprintBackward = 0L;
-  Direction _direction = Direction_FORWARD_ONLY;
+  ::graph::Direction _direction = ::graph::Direction_FORWARD_ONLY;
 
-  explicit ExecutorConfiguration(const FlatConfiguration *conf = nullptr);
+  explicit ExecutorConfiguration(const ::graph::FlatConfiguration *conf = nullptr);
   ~ExecutorConfiguration() = default;
 
   ExecutorConfiguration *clone();
 
 #ifndef __JAVACPP_HACK__
-  flatbuffers::Offset<FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
+  flatbuffers::Offset<::graph::FlatConfiguration> asFlatConfiguration(flatbuffers::FlatBufferBuilder &builder);
 #endif
 };
 }  // namespace graph

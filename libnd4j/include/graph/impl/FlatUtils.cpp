@@ -28,13 +28,13 @@
 
 namespace sd {
 namespace graph {
-std::pair<int, int> FlatUtils::fromIntPair(IntPair *pair) { return std::pair<int, int>(pair->first(), pair->second()); }
+std::pair<int, int> FlatUtils::fromIntPair(::graph::IntPair *pair) { return std::pair<int, int>(pair->first(), pair->second()); }
 
-std::pair<LongType, LongType> FlatUtils::fromLongPair(LongPair *pair) {
+std::pair<LongType, LongType> FlatUtils::fromLongPair(::graph::LongPair *pair) {
   return std::pair<LongType, LongType>(pair->first(), pair->second());
 }
 
-NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
+NDArray *FlatUtils::fromFlatArray(const ::graph::FlatArray *flatArray) {
   auto rank = static_cast<int>(flatArray->shape()->Get(0));
   auto newShape = new LongType[shape::shapeInfoLength(rank)];
   memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
@@ -49,9 +49,6 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
   }
   // TODO fix UTF16 and UTF32
   if (dtype == UTF8) {
-    bool isBe = BitwiseUtils::isBE();
-    bool canKeep = (isBe && flatArray->byteOrder() == ByteOrder_BE) ||
-                   (!isBe && flatArray->byteOrder() == ByteOrder_LE);
 
     std::vector<std::string> substrings(length);
     std::vector<LongType> shapeVector(rank);
@@ -103,15 +100,15 @@ NDArray *FlatUtils::fromFlatArray(const FlatArray *flatArray) {
   return array;
 }
 
-flatbuffers::Offset<FlatArray> FlatUtils::toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array) {
+flatbuffers::Offset<::graph::FlatArray> FlatUtils::toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array) {
   auto byteVector = array.asByteVector();
 
   auto fBuffer = builder.CreateVector(byteVector);
   auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
 
-  auto bo = static_cast<ByteOrder>(BitwiseUtils::asByteOrder());
+  auto bo = static_cast<::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
-  return CreateFlatArray(builder, fShape, fBuffer, static_cast<DType>(array.dataType()), bo);
+  return CreateFlatArray(builder, fShape, fBuffer, static_cast<::graph::DType>(array.dataType()), bo);
 }
 }  // namespace graph
 }  // namespace sd

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-namespace sd.graph;
+namespace graph;
 
 enum ProfilingMode:byte {
     NONE,   // no checks for Z values

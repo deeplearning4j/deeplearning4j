@@ -23,7 +23,7 @@
 #ifndef LIBND4J_OPDESCRIPTOR_H
 #define LIBND4J_OPDESCRIPTOR_H
 #include <array/DataType.h>
-#include <graph/scheme/node_generated.h>
+#include <graph/generated/node_generated.h>
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
 
@@ -133,9 +133,6 @@ class SD_LIB_EXPORT OpDescriptor {
   // minimal required/expected number of inputs/outpus for this given op
   int _numInputs = 1;
   int _numOutputs = 1;
-
-  // enum for ops. deprecated. will be removed
-  graph::OpClass _opClass;
 
   // special flag for divergent ops - ops that CAN and WILL modify graph behavior. Literally: IF, CASE.
   bool _divergent = false;

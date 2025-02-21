@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-namespace sd.graph;
+namespace graph;
 
 // byte order for arrays/buffers
 enum ByteOrder:byte {

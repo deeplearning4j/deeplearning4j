@@ -40,10 +40,10 @@
 
     <build>
         <plugins>
-        <!--    <plugin>
+            <plugin>
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
-            </plugin>-->
+            </plugin>
         </plugins>
     </build>
 
@@ -309,9 +309,9 @@
         </dependency>
         <!-- For SameDiff UI -->
         <dependency>
-            <groupId>org.webjars.npm</groupId>
-            <artifactId>flatbuffers</artifactId>
-            <version>1.9.0</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-web</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
