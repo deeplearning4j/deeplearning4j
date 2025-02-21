@@ -310,7 +310,7 @@
         <!-- For SameDiff UI -->
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-web</artifactId>
+            <artifactId>nd4j-webjar</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

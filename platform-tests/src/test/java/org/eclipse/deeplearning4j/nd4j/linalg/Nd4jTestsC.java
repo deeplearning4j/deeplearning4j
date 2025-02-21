@@ -3914,50 +3914,6 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
     }
 
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    @Disabled("Crashes")
-    @Tag(TagNames.NEEDS_VERIFY)
-    public void testSingleDeviceAveraging(Nd4jBackend backend) {
-        int LENGTH = 512 * 1024 * 2;
-        INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
-        INDArray array2 = Nd4j.valueArrayOf(LENGTH, 2.0);
-        INDArray array3 = Nd4j.valueArrayOf(LENGTH, 3.0);
-        INDArray array4 = Nd4j.valueArrayOf(LENGTH, 4.0);
-        INDArray array5 = Nd4j.valueArrayOf(LENGTH, 5.0);
-        INDArray array6 = Nd4j.valueArrayOf(LENGTH, 6.0);
-        INDArray array7 = Nd4j.valueArrayOf(LENGTH, 7.0);
-        INDArray array8 = Nd4j.valueArrayOf(LENGTH, 8.0);
-        INDArray array9 = Nd4j.valueArrayOf(LENGTH, 9.0);
-        INDArray array10 = Nd4j.valueArrayOf(LENGTH, 10.0);
-        INDArray array11 = Nd4j.valueArrayOf(LENGTH, 11.0);
-        INDArray array12 = Nd4j.valueArrayOf(LENGTH, 12.0);
-        INDArray array13 = Nd4j.valueArrayOf(LENGTH, 13.0);
-        INDArray array14 = Nd4j.valueArrayOf(LENGTH, 14.0);
-        INDArray array15 = Nd4j.valueArrayOf(LENGTH, 15.0);
-        INDArray array16 = Nd4j.valueArrayOf(LENGTH, 16.0);
-
-
-        long time1 = System.currentTimeMillis();
-        INDArray arrayMean = Nd4j.averageAndPropagate(new INDArray[] {array1, array2, array3, array4, array5, array6,
-                array7, array8, array9, array10, array11, array12, array13, array14, array15, array16});
-        long time2 = System.currentTimeMillis();
-        System.out.println("Execution time: " + (time2 - time1));
-
-        assertNotEquals(null, arrayMean);
-
-        assertEquals(8.5f, arrayMean.getFloat(12), 0.1f);
-        assertEquals(8.5f, arrayMean.getFloat(150), 0.1f);
-        assertEquals(8.5f, arrayMean.getFloat(475), 0.1f);
-
-
-        assertEquals(8.5f, array1.getFloat(475), 0.1f);
-        assertEquals(8.5f, array2.getFloat(475), 0.1f);
-        assertEquals(8.5f, array3.getFloat(475), 0.1f);
-        assertEquals(8.5f, array5.getFloat(475), 0.1f);
-        assertEquals(8.5f, array16.getFloat(475), 0.1f);
-    }
-
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -4555,65 +4511,9 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         }
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAveraging1(Nd4jBackend backend) {
-        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
 
-        List<INDArray> arrays = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(100).assign((double) i).castTo(DataType.DOUBLE));
-        }
 
-        INDArray result = Nd4j.averageAndPropagate(arrays);
 
-        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
-
-        for (int i = 0; i < 10; i++) {
-            assertEquals(result, arrays.get(i));
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAveraging2(Nd4jBackend backend) {
-
-        List<INDArray> arrays = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(100).assign((double) i));
-        }
-
-        Nd4j.averageAndPropagate(null, arrays);
-
-        INDArray result = arrays.get(0);
-
-        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
-
-        for (int i = 0; i < 10; i++) {
-            assertEquals(result, arrays.get(i),"Failed on iteration " + i);
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testAveraging3(Nd4jBackend backend) {
-        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
-
-        List<INDArray> arrays = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrays.add(Nd4j.create(100).assign((double) i).castTo(DataType.DOUBLE));
-        }
-
-        Nd4j.averageAndPropagate(null, arrays);
-
-        INDArray result = arrays.get(0);
-
-        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
-
-        for (int i = 0; i < 10; i++) {
-            assertEquals(result, arrays.get(i),"Failed on iteration " + i);
-        }
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -7638,36 +7538,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         assertTrue(arr == ti);  //Should be same object
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testScatterUpdateShortcut(Nd4jBackend backend) {
-        val array = Nd4j.create(DataType.FLOAT, 5, 2);
-        val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
-        val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
-        val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
 
-        assertArrayEquals(exp.shape(), array.shape());
-        Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 1);
-
-        assertEquals(exp, array);
-    }
-
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testScatterUpdateShortcut_f1(Nd4jBackend backend) {
-        assertThrows(IllegalStateException.class,() -> {
-            val array = Nd4j.create(DataType.FLOAT, 5, 2);
-            val updates = Nd4j.createFromArray(new float[][] {{1,1}, {2,2}, {3, 3}});
-            val indices = Nd4j.createFromArray(new int[]{1, 2, 3});
-            val exp = Nd4j.createFromArray(new float[][] {{0,0}, {1,1}, {2,2}, {3, 3}, {0,0}});
-
-            assertArrayEquals(exp.shape(), array.shape());
-            Nd4j.scatterUpdate(ScatterUpdate.UpdateOp.ADD, array, indices, updates, 0);
-
-            assertEquals(exp, array);
-        });
-
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

@@ -1061,7 +1061,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
 
     public INDArray getX(Op op, OpContext oc) {
-        if( oc != null )
+        if( oc != null)
             return oc.getInputArray(0);
         return op.x();
     }

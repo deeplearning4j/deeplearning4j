@@ -1,0 +1,16 @@
+{
+  "name": "@eclipse/nd4j-webjar",
+  "version": "${project.version}",
+  "description": "WebJar for ND4J Flatbuffer bindings",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^4.9.0",
+    "flatbuffers": "^23.5.26"
+  },
+  "license": "Apache-2.0"
+}
