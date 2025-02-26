@@ -327,75 +327,65 @@ NDArray NDArray::tile(const std::vector<sd::LongType>& reps)  {
   // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer
   DataBuffer * newBuff =
       new DataBuffer(shape::length(newShapeInfo) * sizeOfT(), dataType(), getContext()->getWorkspace());
-  auto desc = new ShapeDescriptor(newShapeInfo, false);
   // assign new shape and new buffer to resulting array
-  NDArray result(newBuff,desc , getContext());
+  NDArray result(newBuff,newShapeInfo , getContext());
   // fill newBuff, loop through all elements of newBuff
   // looping through _buffer goes automatically by means of getSubArrayIndex applying
   const auto resultLen = result.lengthOf();
   auto xType = this->dataType();
-  if (result.ordering() == 'c') {  //  ews == 1 always here
+  auto func = PRAGMA_THREADS_FOR {
+    for (auto i = start; i < stop; i++) {
+      auto xOffset = result.getOffset(i);
+      auto yOffset = shape::subArrayOffset(i, newShapeInfo, shapeInfo());
+      BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,
+                            (result.buffer(), xOffset, this->buffer(), yOffset), SD_COMMON_TYPES);
+    }
+  };
 
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto yOffset = shape::subArrayOffset(i, newShapeInfo, shapeInfo());
-        BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.buffer(), i, this->buffer(), yOffset),
-                              SD_COMMON_TYPES);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, resultLen);
-  } else {
-    auto func = PRAGMA_THREADS_FOR {
-      for (auto i = start; i < stop; i++) {
-        auto xOffset = result.getOffset(i);
-        auto yOffset = shape::subArrayOffset(i, newShapeInfo, shapeInfo());
-        BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,
-                              (result.buffer(), xOffset, this->buffer(), yOffset), SD_COMMON_TYPES);
-      }
-    };
-
-    samediff::Threads::parallel_for(func, 0, resultLen);
-  }
+  samediff::Threads::parallel_for(func, 0, resultLen);
   result.tickWriteHost();
   return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
-void NDArray::tile(const std::vector<sd::LongType>& reps, NDArray& target)  {
+void NDArray::tile(const std::vector<LongType>& reps, NDArray& target) {
+  // Validate the tile operation
   auto repProd = shape::prodLong(reps.data(), reps.size());
-  if (repProd < 1) THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
+  if (repProd < 1)
+    THROW_EXCEPTION("NDArray::tile: reps can't contain 0s");
 
-  // evaluate true tile shapeInfo for comparison with target shapeInfo
-  auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
-  if (!shape::equalsSoft(newShapeInfo, target.shapeInfo())) {
-    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
+  // Validate the target shape
+  auto correctShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
+  if (!shape::equalsSoft(correctShapeInfo, target.shapeInfo())) {
+    THROW_EXCEPTION("NDArray::tile method - shapeInfo of target array is not suitable for tile operation!");
   }
 
-  // fill newBuff, loop through all elements of newBuff
-  // looping through _buffer goes automatically by means of getSubArrayIndex applying
-  const int ews = target.ews();
   const auto targetLen = target.lengthOf();
-  if (target.ordering() == 'c' && ews == 1) {  //  ews == 1 always here
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), i, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
+
+  // Safely calculate source array offset
+  for (LongType i = 0; i < targetLen; ++i) {
+    // Calculate target array offset
+    auto xOffset = target.getOffset(i);
+
+    // Calculate source coordinates based on target coordinates
+    LongType targetCoords[SD_MAX_RANK];
+    INDEX2COORDS(i, shape::rank(target.shapeInfo()), shape::shapeOf(target.shapeInfo()), targetCoords);
+
+    // Map target coordinates to source coordinates manually
+    LongType sourceCoords[SD_MAX_RANK];
+    for (int d = 0; d < shape::rank(shapeInfo()); d++) {
+      // Apply modulo for each dimension
+      sourceCoords[d] = targetCoords[d] % shape::sizeAt(shapeInfo(), d);
     }
-  } else if (target.ordering() == 'c' && ews > 1) {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), i * ews, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
-  } else {
-    for (sd::LongType i = 0; i < targetLen; ++i) {
-      auto xOffset = target.getOffset(i);
-      auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
-      BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
-                            (target.buffer(), xOffset, buffer(), yOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
-    }
+
+    // Calculate source offset from source coordinates
+    LongType sourceOffset;
+    COORDS2INDEX(shape::rank(shapeInfo()), shape::stride(shapeInfo()), sourceCoords, sourceOffset);
+
+    // Copy the value
+    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign,
+                          (target.buffer(), xOffset, buffer(), sourceOffset), SD_COMMON_TYPES, SD_COMMON_TYPES);
   }
 }
 

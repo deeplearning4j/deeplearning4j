@@ -815,9 +815,9 @@ SD_LIB_EXPORT SD_INLINE SD_HOST int outerArrayOffsets(sd::LongType *maxOffsets, 
 // max array is outer for min array, min array is sub-array of max array
 // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array
 // (already stored in maxIdxs)
-SD_LIB_EXPORT  SD_INLINE SD_HOST void maxIndToMinInd(sd::LongType *maxIdxs, sd::LongType *minIdxs,
-                                                     const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
-                                                     const sd::LongType *dimsToExclude, sd::LongType dimsLen) {
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void maxIndToMinInd(sd::LongType *maxIdxs, sd::LongType *minIdxs,
+                                                           const sd::LongType *maxShapeInfo, const sd::LongType *minShapeInfo,
+                                                           const sd::LongType *dimsToExclude, sd::LongType dimsLen) {
   const auto maxRank = shape::rank(maxShapeInfo);
   const auto minRank = shape::rank(minShapeInfo);
 
@@ -830,12 +830,15 @@ SD_LIB_EXPORT  SD_INLINE SD_HOST void maxIndToMinInd(sd::LongType *maxIdxs, sd::
         if (i < dimsLen)
           minIdxs[i] = maxIdxs[i];
         else {
-          if (maxIdxs[i] > minShapeInfo[i + 1])
-            minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
-          else if (maxIdxs[i] == minShapeInfo[i + 1])
-            minIdxs[i] = 0;
-          else
+          // FIX: Ensure proper modulo for tiling with dimensions of size 1
+          sd::LongType dimSize = shape::shapeOf(minShapeInfo)[i];
+          // Only use modulo for non-zero dimension sizes to avoid division by zero
+          if (dimSize > 0) {
+            minIdxs[i] = maxIdxs[i] % dimSize;
+          } else {
+            // Handle the case where dimension size is 0 (should be rare)
             minIdxs[i] = maxIdxs[i];
+          }
         }
       }
     } else {
@@ -846,24 +849,32 @@ SD_LIB_EXPORT  SD_INLINE SD_HOST void maxIndToMinInd(sd::LongType *maxIdxs, sd::
           continue;
         }
 
-        if (maxIdxs[i] > minShapeInfo[i + 1])
-          minIdxs[i] = maxIdxs[i] % minShapeInfo[i + 1];
-        else if (maxIdxs[i] == minShapeInfo[i + 1])
-          minIdxs[i] = 0;
-        else
+        // FIX: Ensure proper modulo for tiling with dimensions of size 1
+        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[i];
+        // Only use modulo for non-zero dimension sizes to avoid division by zero
+        if (dimSize > 0) {
+          minIdxs[i] = maxIdxs[i] % dimSize;
+        } else {
+          // Handle the case where dimension size is 0 (should be rare)
           minIdxs[i] = maxIdxs[i];
+        }
       }
     }
   } else {
     if (dimsToExclude == nullptr) {  // --> means dimsToExclude == {0,1,2,...,dimsLen-1}
 
       for (sd::LongType i = 0; i < minRank; ++i) {
-        if (maxIdxs[i + dimsLen] > minShapeInfo[i + 1])
-          minIdxs[i] = maxIdxs[i + dimsLen] % minShapeInfo[i + 1];
-        else if (maxIdxs[i + dimsLen] == minShapeInfo[i + 1])
-          minIdxs[i] = 0;
-        else
-          minIdxs[i] = maxIdxs[i + dimsLen];
+        // FIX: Ensure proper modulo for tiling with dimensions of size 1
+        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[i + 1];
+        sd::LongType maxIdx = maxIdxs[i + dimsLen];
+
+        // Only use modulo for non-zero dimension sizes to avoid division by zero
+        if (dimSize > 0) {
+          minIdxs[i] = maxIdx % dimSize;
+        } else {
+          // Handle the case where dimension size is 0 (should be rare)
+          minIdxs[i] = maxIdx;
+        }
       }
     } else {
       for (sd::LongType minI = 0, maxI = 0, dim = 0; maxI < maxRank; ++maxI) {
@@ -872,12 +883,16 @@ SD_LIB_EXPORT  SD_INLINE SD_HOST void maxIndToMinInd(sd::LongType *maxIdxs, sd::
           continue;
         }
 
-        if (maxIdxs[maxI] == minShapeInfo[minI + 1])
-          minIdxs[minI] = 0;
-        else if (maxIdxs[maxI] > minShapeInfo[minI + 1])
-          minIdxs[minI] = maxIdxs[maxI] % minShapeInfo[minI + 1];
-        else
+        // FIX: Ensure proper modulo for tiling with dimensions of size 1
+        sd::LongType dimSize = shape::shapeOf(minShapeInfo)[minI + 1];
+
+        // Only use modulo for non-zero dimension sizes to avoid division by zero
+        if (dimSize > 0) {
+          minIdxs[minI] = maxIdxs[maxI] % dimSize;
+        } else {
+          // Handle the case where dimension size is 0 (should be rare)
           minIdxs[minI] = maxIdxs[maxI];
+        }
         ++minI;
       }
     }

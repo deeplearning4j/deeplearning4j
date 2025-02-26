@@ -1116,7 +1116,7 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Djava.compiler=NONE    ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.classes=org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Djava.compiler=NONE -Dorg.bytedeco.javacpp.logger.debug=true   ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.classes=org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

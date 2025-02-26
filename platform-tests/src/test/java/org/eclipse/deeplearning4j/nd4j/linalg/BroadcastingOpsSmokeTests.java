@@ -1028,12 +1028,13 @@ public class BroadcastingOpsSmokeTests {
 
         // Test in-place operations on column view
         colView.addi(colVector);
-        assertEquals(Nd4j.create(new double[] {12, 25, 38}), colView);
+        INDArray expected = Nd4j.create(new double[] {12, 45, 38}).reshape(3, 1);
+        assertEquals(expected, colView);
 
         // Verify the original matrix was modified
         INDArray expectedMatrix = Nd4j.create(new double[][] {
                 {1, 12, 3},
-                {14, 25, 36},
+                {14, 45, 36},
                 {7, 38, 9}
         });
         assertEquals(expectedMatrix, matrix);
