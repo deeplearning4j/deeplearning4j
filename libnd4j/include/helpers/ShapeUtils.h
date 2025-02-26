@@ -116,7 +116,7 @@ class SD_LIB_EXPORT ShapeUtils {
   static std::vector<LongType> getDimsWithSameShape(NDArray& arr1, NDArray& arr2);
 
   // evaluate shapeInfo for resulting array of tile operation
-  static const LongType* evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
+  static LongType* evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
                                            memory::Workspace* workspace);
 
   // returns shape part of shapeInfo as std::vector

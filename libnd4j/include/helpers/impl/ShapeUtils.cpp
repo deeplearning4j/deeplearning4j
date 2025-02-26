@@ -495,7 +495,7 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for resulting array from tile operation
-const LongType* ShapeUtils::evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
+LongType* ShapeUtils::evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
                                               memory::Workspace* workspace) {
   // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities
   // (then simply reshape or do nothing)
