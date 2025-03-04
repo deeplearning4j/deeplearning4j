@@ -32,45 +32,154 @@
 namespace sd {
 #ifndef __JAVACPP_HACK__
 
-// Add make_unique implementation for pre-C++14
 class SD_LIB_EXPORT TadTrieNode {
  private:
   std::vector<std::unique_ptr<TadTrieNode>> _children;
   LongType _value;
   int _level;
   bool _isDimension;
-  TadPack* _tadPack;  // Now accessed atomically
+  TadPack* _tadPack;  // Accessed atomically
   int _shapeRank;     // Store the rank of the original shape for verification
+  size_t _nodeHash;   // Additional hash for quick comparison
+  LongType* _originalStrides; // Store the original strides signature (optional)
+  int _stridesLength;  // Length of the strides array
 
  public:
   TadTrieNode(LongType value = 0, int level = 0, bool isDimension = true, int shapeRank = 0)
-      : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr), _shapeRank(shapeRank) {}
+      : _value(value), _level(level), _isDimension(isDimension), _tadPack(nullptr),
+        _shapeRank(shapeRank), _nodeHash(0), _originalStrides(nullptr), _stridesLength(0) {}
 
-  ~TadTrieNode() = default;
+  ~TadTrieNode() {
+    // Clean up original strides if allocated
+    if (_originalStrides != nullptr) {
+      delete[] _originalStrides;
+      _originalStrides = nullptr;
+    }
+  }
 
+  // Improved child finding with hash-based optimization
   TadTrieNode* findOrCreateChild(LongType value, int level, bool isDimension, int shapeRank = 0) {
+    // First check using hash-based comparison if available
+    size_t childHash = computeChildHash(value, isDimension, shapeRank);
+
     for (auto& child : _children) {
-      if (child->value() == value && child->isDimension() == isDimension && child->shapeRank() == shapeRank) {
-        return child.get();
+      if (child->_nodeHash == childHash) {
+        // Fast path: hash match, do detailed comparison
+        if (child->value() == value &&
+            child->isDimension() == isDimension &&
+            child->shapeRank() == shapeRank) {
+          return child.get();
+        }
       }
     }
+
+    // Not found, create new child
 #ifndef __JAVACPP_HACK__
     auto newNode = std::make_unique<TadTrieNode>(value, level, isDimension, shapeRank);
+    newNode->_nodeHash = childHash;
     auto* ptr = newNode.get();
     _children.push_back(std::move(newNode));
 #endif
     return ptr;
   }
 
+  // Compute hash for faster child comparison
+  size_t computeChildHash(LongType value, bool isDimension, int shapeRank) const {
+    size_t hash = 17;
+    hash = hash * 31 + static_cast<size_t>(value);
+    hash = hash * 13 + (isDimension ? 1 : 0);
+    hash = hash * 7 + static_cast<size_t>(shapeRank);
+    return hash;
+  }
+
+  // Method to store stride information
+  void storeStrides(LongType* strides, int length) {
+    if (_originalStrides != nullptr) {
+      delete[] _originalStrides;
+    }
+
+    if (strides && length > 0) {
+      _originalStrides = new LongType[length];
+      _stridesLength = length;
+
+      // Copy strides
+      for (int i = 0; i < length; i++) {
+        _originalStrides[i] = strides[i];
+      }
+    }
+  }
+
+
+  // Standard getters
   const std::vector<std::unique_ptr<TadTrieNode>>& children() const { return _children; }
   LongType value() const { return _value; }
   int level() const { return _level; }
   bool isDimension() const { return _isDimension; }
   int shapeRank() const { return _shapeRank; }
 
-  void setPack(TadPack* pack);
+  size_t nodeHash() const { return _nodeHash; }
+
+
+
+  // Enhanced TadPack setter with stride storage
+  void setPack(TadPack* pack) {
+    if (!pack) return;
+
+    // Use atomic compare-and-swap for thread safety
+    TadPack* expectedNull = nullptr;
+    if (_tadPack == nullptr &&
+        __sync_bool_compare_and_swap(&_tadPack, expectedNull, pack)) {
+      // Successfully set the pack
+
+      // Store stride information for future comparisons
+      if (pack->primaryShapeInfo()) {
+        int rank = shape::rank(pack->primaryShapeInfo());
+        LongType* strides = shape::stride(pack->primaryShapeInfo());
+        storeStrides(strides, rank);
+      }
+
+      return;
+    } else if (_tadPack != nullptr) {
+      // Pack is already set - check if we need to update strides
+      if (pack != _tadPack) {
+        // Clean up the unneeded new pack
+        delete pack;
+      }
+    }
+  }
 
   TadPack* pack() const { return _tadPack; }
+
+  bool operator==(const TadTrieNode& rhs)  {
+    if (_value != rhs._value ||
+        _level != rhs._level ||
+        _isDimension != rhs._isDimension ||
+        _shapeRank != rhs._shapeRank) {
+      return false;
+    }
+
+    // Compare strides if available
+    if (_stridesLength > 0 && rhs._stridesLength > 0) {
+      if (_stridesLength != rhs._stridesLength) {
+        return false;
+      }
+
+      for (int i = 0; i < _stridesLength; i++) {
+        if (_originalStrides[i] != rhs._originalStrides[i]) {
+          return false;
+        }
+      }
+    }
+
+    // Compare TadPacks if both exist
+    if (_tadPack && rhs._tadPack) {
+      return *_tadPack == *rhs._tadPack;
+    }
+
+    // Compare children recursively if needed
+    return _children == rhs._children;
+  }
+
 };
 
 #if __cplusplus >= 201703L
@@ -108,6 +217,13 @@ class SD_LIB_EXPORT DirectTadTrie {
   DirectTadTrie(DirectTadTrie&&) = delete;
   DirectTadTrie& operator=(DirectTadTrie&&) = delete;
 
+  TadPack* enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx);
+  bool exists(const std::vector<LongType>& dimensions, LongType* originalShape);
+  // Enhanced stride-aware hash computation
+  size_t computeStrideAwareHash(const std::vector<LongType>& dimensions, LongType* originalShape) ;
+
+  // Dimension compatibility check
+  bool areDimensionsCompatible(const std::vector<LongType>& dimensions, const TadPack* pack) ;
   // Enhanced getOrCreate with improved thread safety
   TadPack* getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape);
 
@@ -166,7 +282,6 @@ class SD_LIB_EXPORT DirectTadTrie {
   // Original helper methods preserved
   TadPack* search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const;
   std::vector<LongType> sortDimensions(const std::vector<LongType>& dimensions) const;
-  bool dimensionsEqual(const std::vector<LongType>& a, const std::vector<LongType>& b) const;
   const TadTrieNode* findChild(const TadTrieNode* node, LongType value, int level, bool isDimension, int shapeRank) const;
   TadPack* insert(std::vector<LongType>& dimensions, LongType* originalShape);
 };

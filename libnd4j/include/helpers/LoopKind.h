@@ -89,7 +89,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, c
   auto zOrder = shape::order(zShapeInfo);
 
   // First check scalar broadcast cases
-  if (xRank == yRank && xRank == zRank && xOrder == 'c' && yOrder == 'c' && zOrder == 'c' && xRank >= 2) {
+  if (yRank < 1 && xRank == yRank && xRank == zRank && xOrder == 'c' && yOrder == 'c' && zOrder == 'c' && xRank >= 2) {
     // Validate shapes are equal till last dim
     for (int e = 0; e < xRank - 1; e++) {
       if (xShapeInfo[e + 1] != yShapeInfo[e + 1]) break;
@@ -112,11 +112,18 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, c
       if (vecShape[0] == zShape[1]) return BROADCAST_2D;
     }
 
-    // Case 2: Matrix + column vector broadcasting
-    if ((xRank == 2 && yRank == 2) || (yRank == 2 && xRank == 2)) {
-      const auto* smallerShape = xRank == 1 ? shape::shapeOf(xShapeInfo) : shape::shapeOf(yShapeInfo);
-      if ((smallerShape[0] == zShape[0] && smallerShape[1] == 1) ||
-          (smallerShape[0] == 1 && smallerShape[1] == zShape[1])) {
+    // Case 2: Matrix + column vector broadcasting (nx1)
+    if (xRank == 2 && yRank == 2) {
+      const auto xShape = shape::shapeOf(xShapeInfo);
+      const auto yShape = shape::shapeOf(yShapeInfo);
+
+      // Improved check for column vector - explicitly check for yShape[1] == 1
+      if (yShape[0] == zShape[0] && yShape[1] == 1) {
+        return BROADCAST_2D;
+      }
+
+      // Also check for row vector - explicitly check for yShape[0] == 1
+      if (yShape[0] == 1 && yShape[1] == zShape[1]) {
         return BROADCAST_2D;
       }
     }
@@ -145,17 +152,14 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const LongType* xShapeInfo, c
     countUnityDimsInX += (1 == shape::sizeAt(xShapeInfo, i)) ? 1 : 0;
   }
 
-  bool bNotCommonVectorCase = (countUnityDimsInY != yRank - 1) && (countUnityDimsInX != xRank - 1);
 
-  if (bNDLoopsRanks && bNotCommonVectorCase) {
-    if (3 == xRank) return BROADCAST_3D;
-    if (4 == xRank) return BROADCAST_4D;
-    if (5 == xRank) return BROADCAST_5D;
-  }
+  if (3 == xRank) return BROADCAST_3D;
+  if (4 == xRank) return BROADCAST_4D;
+  if (5 == xRank) return BROADCAST_5D;
+
 
   return COMMON;
 }
-
 //////////////////////////////////////////////////////////////////////////////
 LoopKind::Kind LoopKind::deduceKindOfLoopXYZ(const LongType* xShapeInfo, const LongType* yShapeInfo,
                                              const LongType* zShapeInfo) {

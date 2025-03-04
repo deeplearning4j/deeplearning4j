@@ -614,10 +614,6 @@ template <typename OpType>
 void BroadcastBool<X, Z>::exec(const void *vx, const sd::LongType *xShapeInfo, const void *vy,
                                const sd::LongType *yShapeInfo, void *vz, const sd::LongType *zShapeInfo,
                                void *vextraParams) {
-
-
-  printf("BroadcastBool<X, Z>::exec\n");
-  fflush(stdout);
   const X *x = reinterpret_cast<const X *>(vx);
   const X *y = reinterpret_cast<const X *>(vy);
   Z *z = reinterpret_cast<Z *>(vz);

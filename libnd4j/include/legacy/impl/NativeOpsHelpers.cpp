@@ -658,8 +658,6 @@ const char *getAllCustomOps() { return sd::ops::OpRegistrator::getInstance().get
 OpaqueShapeList *calculateOutputShapes2(sd::Pointer *extraPointers, sd::LongType hash, OpaqueContext *context) {
   try {
     auto op = sd::ops::OpRegistrator::getInstance().getOperation(hash);
-    printf("Obtained op: %s\n", op->getOpName()->c_str());
-    fflush(stdout);
     sd::ShapeList inShapes;
 
     for (size_t e = 0; e < context->width(); e++) {
