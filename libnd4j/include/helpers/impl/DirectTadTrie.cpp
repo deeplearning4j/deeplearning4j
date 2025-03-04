@@ -27,225 +27,232 @@
 
 namespace sd {
 
-void TadTrieNode::setPack(TadPack* pack) {
-  if (!pack) return;
+TadPack* DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, LongType* originalShape, size_t stripeIdx) {
+  const TadTrieNode* current = _roots[stripeIdx].get();
+  int rank = shape::rank(originalShape);
 
-  // Use atomic compare-and-swap for thread safety
-  TadPack* expectedNull = nullptr;
-  if (_tadPack == nullptr &&
-      __sync_bool_compare_and_swap(&_tadPack, expectedNull, pack)) {
-    // Successfully set the pack
-    return;
-  } else if (_tadPack != nullptr) {
-    // Pack is already set - DO NOTHING
-    // Cleanup the unneeded new pack
-    if (pack != _tadPack) {
-      delete pack;  // Clean up the unneeded new pack
+  // Navigate to dimension length node
+  current = findChild(current, dimensions.size(), 0, false, rank);
+  if (!current) return nullptr;
+
+  // Navigate through dimension nodes
+  for (size_t i = 0; i < dimensions.size(); i++) {
+    current = findChild(current, dimensions[i], i + 1, true, rank);
+    if (!current) return nullptr;
+  }
+
+  // Found a matching node, now verify TadPack compatibility with shape signature
+  TadPack* pack = current->pack();
+  if (!pack) return nullptr;
+
+  // Get the stored shape info from the TadPack
+  LongType* storedShapeInfo = pack->primaryShapeInfo();
+  LongType* storedStrides = shape::stride(storedShapeInfo);
+  int storedRank = shape::rank(storedShapeInfo);
+
+  // Compare with expected strides and shape
+  // Create a temporary calculator to check what the strides should be
+  TadCalculator tempCalc(originalShape);
+  tempCalc.createTadPack(dimensions);
+  LongType* expectedShapeInfo = tempCalc.tadShape().primary();
+  LongType* expectedStrides = shape::stride(expectedShapeInfo);
+
+  // Check if strides are compatible
+  for (int i = 0; i < storedRank; i++) {
+    if (storedStrides[i] != expectedStrides[i]) {
+      return nullptr; // Strides don't match, not the right TadPack
     }
   }
+
+  // Additional verification for shape dimensions
+  LongType* storedShape = shape::shapeOf(storedShapeInfo);
+  LongType* expectedShape = shape::shapeOf(expectedShapeInfo);
+  for (int i = 0; i < storedRank; i++) {
+    if (storedShape[i] != expectedShape[i]) {
+      return nullptr; // Shape dimensions don't match
+    }
+  }
+
+  // Verify order and data type match
+  if (shape::order(storedShapeInfo) != shape::order(expectedShapeInfo) ||
+      ArrayOptions::dataType(storedShapeInfo) != ArrayOptions::dataType(expectedShapeInfo)) {
+    return nullptr;
+  }
+
+  // If everything matches, return the found TadPack
+  return pack;
 }
 
-bool DirectTadTrie::dimensionsEqual(const std::vector<LongType>& a, const std::vector<LongType>& b) const {
-    return a == b;  // Vectors should already be sorted
+// Enhanced stride-aware hash computation
+size_t DirectTadTrie::computeStrideAwareHash(const std::vector<LongType>& dimensions, LongType* originalShape)  {
+  if (!originalShape) return 0;
+
+  size_t hash = 17; // Prime number starting point
+
+  // Add dimension-specific hash contribution with position-dependence
+  for (size_t i = 0; i < dimensions.size(); i++) {
+    hash = hash * 31 + static_cast<size_t>(dimensions[i]) * (i + 1);
+  }
+
+  // Add rank - critical for distinguishing different dimension arrays
+  int rank = shape::rank(originalShape);
+  hash = hash * 13 + rank * 19;
+
+  // Add shape signature based on shape dimensions with position-dependence
+  LongType* shapeInfo = shape::shapeOf(originalShape);
+  for (int i = 0; i < rank; i++) {
+    hash = hash * 17 + static_cast<size_t>(shapeInfo[i]) * (11 + i);
+  }
+
+  // Add stride information to make the hash more specific
+  LongType* strides = shape::stride(originalShape);
+  for (int i = 0; i < rank; i++) {
+    hash = hash * 23 + static_cast<size_t>(strides[i]) * (7 + i);
+  }
+
+  // Add total element count to distinguish differently sized arrays
+  hash = hash * 41 + shape::length(originalShape);
+
+  // Add data type and order information
+  hash = hash * 29 + static_cast<size_t>(ArrayOptions::dataType(originalShape));
+  hash = hash * 37 + static_cast<size_t>(shape::order(originalShape));
+
+  // Compute the final stripe index
+  return hash % NUM_STRIPES;
 }
 
-bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape) const {
-    const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
-    int rank = shape::rank(originalShape);
-    TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+// Check if dimensions are compatible with a TadPack
 
-    const TadTrieNode* current = _roots[stripeIdx].get();
 
-    // First level: dimension length
-    for (const auto& child : current->children()) {
-      if (child->value() == static_cast<LongType>(dimensions.size()) && 
-          !child->isDimension() && 
-          child->shapeRank() == rank) {
-        current = child.get();
-        goto found_length;
-      }
-    }
-    return false;
+bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* originalShape)  {
+  if (!originalShape) return false;
 
-found_length:
-    // Second level: dimensions
-    for (size_t i = 0; i < dimensions.size(); i++) {
-      bool found = false;
-      for (const auto& child : current->children()) {
-        if (child->value() == dimensions[i] && 
-            child->isDimension() && 
-            child->shapeRank() == rank) {
-          current = child.get();
-          found = true;
-          break;
-        }
-      }
-      if (!found) return false;
-    }
+  const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
+  TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
-    return current->pack() != nullptr;
+  // Using the enhanced search method which verifies TadPack compatibility
+  return enhancedSearch(dimensions, originalShape, stripeIdx) != nullptr;
 }
 
 std::vector<LongType> DirectTadTrie::sortDimensions(const std::vector<LongType>& dimensions) const {
-    std::vector<LongType> sorted = dimensions;
-    std::sort(sorted.begin(), sorted.end());
-    return sorted;
+  std::vector<LongType> sorted = dimensions;
+  std::sort(sorted.begin(), sorted.end());
+  return sorted;
 }
 
 TadPack* DirectTadTrie::search(const std::vector<LongType>& dimensions, int originalShapeRank, size_t stripeIdx) const {
-    // No need for locking - caller handles locking (e.g., in getOrCreate)
-    const TadTrieNode* current = _roots[stripeIdx].get();
+  // No need for locking - caller handles locking (e.g., in getOrCreate)
+  const TadTrieNode* current = _roots[stripeIdx].get();
 
-    // First level: dimension length
-    current = findChild(current, dimensions.size(), 0, false, originalShapeRank);
+  // First level: dimension length
+  current = findChild(current, dimensions.size(), 0, false, originalShapeRank);
+  if (!current) return nullptr;
+
+  // Second level: dimensions
+  for (size_t i = 0; i < dimensions.size(); i++) {
+    current = findChild(current, dimensions[i], i + 1, true, originalShapeRank);
     if (!current) return nullptr;
+  }
 
-    // Second level: dimensions
-    for (size_t i = 0; i < dimensions.size(); i++) {
-        current = findChild(current, dimensions[i], i + 1, true, originalShapeRank);
-        if (!current) return nullptr;
-    }
-
-    return current->pack();
+  return current->pack();
 }
 
 // Critical method that needs revision for better thread safety
 TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType* originalShape) {
-    if (!originalShape) {
-        THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
-    }
+  if (!originalShape) {
+    THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
+  }
 
-    int rank = shape::rank(originalShape);
-    const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
-    
-    // First try a read-only lookup without obtaining a write lock
-    {
-        std::unique_lock<TAD_MUTEX_TYPE> readLock(_mutexes[stripeIdx]);
-        TadPack* existing = search(dimensions, rank, stripeIdx);
-        if (existing != nullptr) {
-            // Verify dimensions match by using node path, which we already traversed in search
-            return existing;
-        }
+  // Use the enhanced hash computation for better distribution
+  const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
+
+  // First try a read-only lookup
+  {
+    TAD_LOCK_TYPE<TAD_MUTEX_TYPE> readLock(_mutexes[stripeIdx]);
+    TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
+    if (existing) {
+      return existing;
     }
-    
-    // If not found, grab exclusive lock and try again
-    std::unique_lock<TAD_MUTEX_TYPE> writeLock(_mutexes[stripeIdx]);
-    
-    // Check again under the write lock
-    TadPack* existing = search(dimensions, rank, stripeIdx);
-    if (existing != nullptr) {
-        return existing;
-    }
-    
-    // Not found, need to create a new TAD pack
-    TadTrieNode* current = _roots[stripeIdx].get();
-    
-    // First level: dimension length node with shape rank
-    current = current->findOrCreateChild(dimensions.size(), 0, false, rank);
-    if (!current) {
-        THROW_EXCEPTION("Failed to create dimension length node");
-    }
-    
-    // Second level: dimension nodes with shape rank
-    for (size_t i = 0; i < dimensions.size(); i++) {
-        current = current->findOrCreateChild(dimensions[i], i + 1, true, rank);
-        if (!current) {
-            THROW_EXCEPTION("Failed to create dimension node");
-        }
-    }
-    
-    // Check if the node already has a TAD pack (another thread might have created it)
-    if (TadPack* nodeExisting = current->pack()) {
-        return nodeExisting;
-    }
-    
-    // Create the TAD pack under the exclusive lock
-    try {
-        // Create calculator and TAD pack atomically
-        TadCalculator calculator(originalShape);
-        calculator.createTadPack(dimensions);
-        
-        TadPack* newPack = new TadPack(
-            calculator.tadShape(),
-            calculator.tadOffsets(),
-            calculator.numberOfTads(),
-            dimensions.data(),
-            dimensions.size());
-        
-        // Set the pack in the node (setPack handles the synchronization)
-        current->setPack(newPack);
-        
-        // Verify the node has a valid pack now 
-        TadPack* result = current->pack();
-        if (result == nullptr) {
-            THROW_EXCEPTION("Failed to set TAD pack in node");
-        }
-        
-        return result;
-    } catch (const std::exception& e) {
-        std::string msg = "TAD creation failed: ";
-        msg += e.what();
-        THROW_EXCEPTION(msg.c_str());
-    }
+  }
+
+  // If not found, use insert which will handle the write lock
+  return insert(dimensions, originalShape);
 }
 
 TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* originalShape) {
-    // Note: This method is kept for compatibility but is no longer used directly.
-    // getOrCreate should be used instead, which has proper synchronization.
-    int rank = shape::rank(originalShape);
-    const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
-    std::unique_lock<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
-    
-    TadTrieNode* current = _roots[stripeIdx].get();
+  if (!originalShape) {
+    THROW_EXCEPTION("Original shape cannot be null in TAD calculation");
+  }
 
-    // First level: dimension length
-    current = current->findOrCreateChild(dimensions.size(), 0, false, rank);
-    if (!current) return nullptr;
+  int rank = shape::rank(originalShape);
+  // Use the enhanced hash computation for better distribution
+  const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
+  std::unique_lock<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
-    // Second level: dimensions
-    for (size_t i = 0; i < dimensions.size(); i++) {
-        current = current->findOrCreateChild(dimensions[i], i + 1, true, rank);
-        if (!current) return nullptr;
+  // Check if a compatible TadPack already exists
+  TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
+  if (existing) {
+    return existing;
+  }
+
+  // No compatible TadPack found, create a new one
+  TadTrieNode* current = _roots[stripeIdx].get();
+
+  // First level: dimension length node with shape rank
+  current = current->findOrCreateChild(dimensions.size(), 0, false, rank);
+  if (!current) {
+    THROW_EXCEPTION("Failed to create dimension length node");
+  }
+
+  // Second level: dimension nodes with shape rank
+  for (size_t i = 0; i < dimensions.size(); i++) {
+    current = current->findOrCreateChild(dimensions[i], i + 1, true, rank);
+    if (!current) {
+      THROW_EXCEPTION("Failed to create dimension node");
     }
+  }
 
-    // Create TAD pack if needed
-    if (!current->pack()) {
-        try {
-          TadCalculator calculator(originalShape);
-          calculator.createTadPack(dimensions);
+  // Create the TadPack only if it doesn't exist yet
+  if (!current->pack()) {
+    try {
+      TadCalculator calculator(originalShape);
+      calculator.createTadPack(dimensions);
 
-          TadPack* newPack = new TadPack(
-              calculator.tadShape(),
-              calculator.tadOffsets(),
-              calculator.numberOfTads(),
-              dimensions.data(),
-              dimensions.size());
+      // Create a new TadPack with full dimension information
+      TadPack* newPack = new TadPack(
+          calculator.tadShape(),
+          calculator.tadOffsets(),
+          calculator.numberOfTads(),
+          dimensions.data(),
+          dimensions.size());
 
-          current->setPack(newPack);
+      // Store the TadPack in the node (setPack handles synchronization)
+      current->setPack(newPack);
 
-        } catch (const std::exception& e) {
-          std::string msg = "TAD creation failed: ";
-          msg += e.what();
-          THROW_EXCEPTION(msg.c_str());
-        }
+    } catch (const std::exception& e) {
+      std::string msg = "TAD creation failed: ";
+      msg += e.what();
+      THROW_EXCEPTION(msg.c_str());
     }
+  }
 
-    return current->pack();
+  return current->pack();
 }
 
-const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType value, int level, bool isDimension, int shapeRank) const {
-    if (!node) return nullptr;
 
-    for (const auto& child : node->children()) {
-        if (child->value() == value &&
-            child->level() == level &&
-            child->isDimension() == isDimension &&
-            child->shapeRank() == shapeRank) {
-          return child.get();
-        }
+const TadTrieNode* DirectTadTrie::findChild(const TadTrieNode* node, LongType value, int level, bool isDimension, int shapeRank) const {
+  if (!node) return nullptr;
+
+  for (const auto& child : node->children()) {
+    if (child->value() == value &&
+        child->level() == level &&
+        child->isDimension() == isDimension &&
+        child->shapeRank() == shapeRank) {
+      return child.get();
     }
-    
-    return nullptr;
+  }
+
+  return nullptr;
 }
 
 }  // namespace sd

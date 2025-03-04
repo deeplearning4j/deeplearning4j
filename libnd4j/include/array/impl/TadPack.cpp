@@ -39,6 +39,8 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes,
     }
   }
 
+  computeHash();
+
 }
 
 LongType* TadPack::primaryShapeInfo() {
@@ -94,4 +96,78 @@ void TadPack::print(const char* msg) {
 }
 
 LongType TadPack::shapeInfoLength() { return shape::shapeInfoLength(primaryShapeInfo()); }
+bool TadPack::operator==( TadPack& other)  {
+  // Compare number of TADs
+  if (_numTads != other._numTads)
+    return false;
+
+  // Compare shape information
+  LongType* thisShape = primaryShapeInfo();
+  LongType* otherShape = other.primaryShapeInfo();
+
+  // Check for null shape info
+  if ((thisShape == nullptr) != (otherShape == nullptr))
+    return false;
+
+  if (thisShape != nullptr) {
+    // Compare rank
+    const int thisRank = shape::rank(thisShape);
+    const int otherRank = shape::rank(otherShape);
+    if (thisRank != otherRank)
+      return false;
+
+    // Compare shape order
+    if (shape::order(thisShape) != shape::order(otherShape))
+      return false;
+
+    // Compare data type
+    if (ArrayOptions::dataType(thisShape) != ArrayOptions::dataType(otherShape))
+      return false;
+
+    // Compare shape dimensions
+    for (int i = 0; i < thisRank; i++) {
+      if (shape::shapeOf(thisShape)[i] != shape::shapeOf(otherShape)[i])
+        return false;
+    }
+
+    // Compare shape strides
+    for (int i = 0; i < thisRank; i++) {
+      if (shape::stride(thisShape)[i] != shape::stride(otherShape)[i])
+        return false;
+    }
+  }
+
+  // Compare dimensions array
+  if ((_dimensions == nullptr) != (other._dimensions == nullptr))
+    return false;
+
+  if (_dimensions != nullptr) {
+    if (_dimensionsLength != other._dimensionsLength)
+      return false;
+
+    for (LongType i = 0; i < _dimensionsLength; i++) {
+      if (_dimensions[i] != other._dimensions[i])
+        return false;
+    }
+  }
+
+  // Compare offsets
+  LongType* thisOffsets = primaryOffsets();
+  LongType* otherOffsets = other.primaryOffsets();
+
+  // Check for null offsets
+  if ((thisOffsets == nullptr) != (otherOffsets == nullptr))
+    return false;
+
+  if (thisOffsets != nullptr) {
+    for (LongType i = 0; i < _numTads; i++) {
+      if (thisOffsets[i] != otherOffsets[i])
+        return false;
+    }
+  }
+
+  return true;
+}
+
+
 }  // namespace sd

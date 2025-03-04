@@ -3066,7 +3066,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     private void applyBroadcastOp(INDArray vector, final char operation) {
         Nd4j.getCompressor().autoDecompress(this);
         int alongDimension = Shape.isRowVectorShape(vector.shape()) ?
-                -1 : -0;
+                -1 : 0;
         switch (operation) {
             case 'a':
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(this, vector, this, alongDimension));

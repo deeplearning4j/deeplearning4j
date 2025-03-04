@@ -927,8 +927,10 @@ public class BroadcastingOpsSmokeTests {
         INDArray colVector = Nd4j.create(new double[] {10, 20}).reshape(2, 1);
 
         // Test row vector broadcasting
+
         INDArray rowAddResult = subView.addRowVector(rowVector);
         INDArray rowMulResult = subView.mulRowVector(rowVector);
+
 
         // Test column vector broadcasting
         INDArray colAddResult = subView.addColumnVector(colVector);
