@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8.2)
 
 project(flatbuffers-download NONE)
 
-# Force clean everything first
-file(REMOVE_RECURSE ${CMAKE_CURRENT_BINARY_DIR}/*)
 
 include(ExternalProject)
 ExternalProject_Add(flatbuffers
@@ -16,7 +14,8 @@ ExternalProject_Add(flatbuffers
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DFLATBUFFERS_BUILD_FLATC=ON
         -DCMAKE_BUILD_TYPE=Release
-    DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src && git clone https://github.com/google/flatbuffers/ ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+   DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src COMMAND git clone https://github.com/google/flatbuffers/ ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+
     UPDATE_COMMAND    ""
     INSTALL_COMMAND   ""
     TEST_COMMAND      ""

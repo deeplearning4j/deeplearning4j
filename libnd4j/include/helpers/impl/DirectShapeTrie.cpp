@@ -1,12 +1,15 @@
-#include <helpers/DirectShapeTrie.h>
-#include <array/ConstantShapeBuffer.h>
-#include <array/PrimaryPointerDeallocator.h>
-#include <array/DataType.h>
 #include <array/ArrayOptions.h>
+#include <array/ConstantShapeBuffer.h>
+#include <array/DataType.h>
+#include <array/PrimaryPointerDeallocator.h>
+#include <helpers/DirectShapeTrie.h>
 #include <helpers/shape.h>
 #include <system/common.h>
-#include <memory>
+
 #include <atomic>
+#include <memory>
+
+#include "helpers/ShapeBufferCreatorHelper.h"
 
 namespace sd {
 
@@ -143,16 +146,6 @@ void DirectShapeTrie::validateShapeInfo(const LongType* shapeInfo) const {
     }
 }
 
-ConstantShapeBuffer* DirectShapeTrie::createBuffer(const LongType* shapeInfo) {
-    const int shapeInfoLength = shape::shapeInfoLength(shape::rank(shapeInfo));
-    LongType* shapeCopy = new LongType[shapeInfoLength];
-    std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-
-    auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(new PrimaryPointerDeallocator(), [] (PrimaryPointerDeallocator* ptr) { delete ptr; });
-    auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
-    return new ConstantShapeBuffer(hPtr);
-}
-
 const ShapeTrieNode* DirectShapeTrie::findChild(const ShapeTrieNode* node, LongType value,
                                               int level, bool isShape, int shapeHash) const {
     if (!node) return nullptr;
@@ -279,31 +272,12 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
             return nodeExisting;
         }
     }
+
     
     // Create the shape buffer
     try {
-        const int shapeInfoLength = shape::shapeInfoLength(rank);
-        LongType* shapeCopy = new LongType[shapeInfoLength];
-        std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-        
-        auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
-            new PrimaryPointerDeallocator(),
-            [] (PrimaryPointerDeallocator* ptr) { delete ptr; }
-        );
-        
-        auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
-        auto buffer = new ConstantShapeBuffer(hPtr);
-        
-        // Set the buffer in the node (setBuffer handles the synchronization)
-        current->setBuffer(buffer);
-        
-        // Verify the node has a valid buffer now
-        ConstantShapeBuffer* result = current->buffer();
-        if (result == nullptr) {
-            THROW_EXCEPTION("Failed to set shape buffer in node");
-        }
-        
-        return result;
+        ConstantShapeBuffer* buffer = ShapeBufferCreatorHelper::getCurrentCreator().create(shapeInfo, rank);
+        return buffer;
     } catch (const std::exception& e) {
         std::string msg = "Shape buffer creation failed: ";
         msg += e.what();

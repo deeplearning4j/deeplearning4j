@@ -3,7 +3,7 @@
 
 #include <array/ConstantShapeBuffer.h>
 #include <system/common.h>
-
+#include "ShapeBufferPlatformHelper.h"
 #include <array>
 #include <atomic>
 #include <memory>
@@ -78,6 +78,8 @@ class SD_LIB_EXPORT DirectShapeTrie {
       // Make sure mutexes are properly initialized
       new (&_mutexes[i]) SHAPE_MUTEX_TYPE();  // Explicit initialization
     }
+
+    ShapeBufferPlatformHelper::initialize();
   }
 
   // Delete copy constructor and assignment
@@ -87,9 +89,6 @@ class SD_LIB_EXPORT DirectShapeTrie {
   // Delete move operations
   DirectShapeTrie(DirectShapeTrie&&) = delete;
   DirectShapeTrie& operator=(DirectShapeTrie&&) = delete;
-
-  // Create a shape buffer from shapeInfo
-  ConstantShapeBuffer* createBuffer(const LongType* shapeInfo);
 
   // Improved thread-safe getOrCreate
   ConstantShapeBuffer* getOrCreate(const LongType* shapeInfo);

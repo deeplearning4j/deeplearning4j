@@ -69,9 +69,20 @@ using namespace sd;
 
 
 
+//these are mainly for cuda
+sd::Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return nullptr; }
 
+sd::Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return nullptr; }
 
+sd::Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return nullptr; }
 
+sd::Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return nullptr; }
+
+sd::Pointer lcCopyStream(OpaqueLaunchContext *lc) { return nullptr; }
+
+sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return nullptr; }
+
+sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return nullptr; }
 
 
 void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,

@@ -1563,19 +1563,6 @@ const char *lastErrorMessage() { return sd::LaunchContext::defaultContext()->err
 
 sd::LaunchContext *defaultLaunchContext() { return sd::LaunchContext::defaultContext(); }
 
-sd::Pointer lcScalarPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcReductionPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcAllocationPointer(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcExecutionStream(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcCopyStream(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcBlasHandle(OpaqueLaunchContext *lc) { return nullptr; }
-
-sd::Pointer lcSolverHandle(OpaqueLaunchContext *lc) { return nullptr; }
 
 
 

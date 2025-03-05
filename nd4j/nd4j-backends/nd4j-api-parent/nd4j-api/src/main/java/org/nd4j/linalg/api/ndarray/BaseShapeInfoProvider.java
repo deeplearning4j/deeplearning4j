@@ -64,11 +64,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     @Override
     public Pair<DataBuffer, long[]> createShapeInformation(long[] shape, char order, DataType dataType) {
         long[] stride = Nd4j.getStrides(shape, order);
-
-        // this won't be view, so ews is 1
-        int ews = 1;
-
-        return createShapeInformation(shape, stride, ews, order, dataType, false);
+        return createShapeInformation(shape, stride, 0, order, dataType, false);
     }
 
     @Override

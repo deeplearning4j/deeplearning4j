@@ -51,6 +51,7 @@
 #include "../NativeOps.h"
 #include <system/type_boilerplate.h>
 #include <loops/special_kernels.h>
+#include <execution/LaunchContext.h>
 cudaDeviceProp *deviceProperties;
 cudaFuncAttributes *funcAttributes = new cudaFuncAttributes[64];
 int blockLimit = 128;
@@ -127,6 +128,23 @@ sd::Status execCustomOp2(sd::Pointer *extraPointers, sd::LongType  hash, Context
     return sd::Status::KERNEL_FAILURE;
   }
 }
+
+
+sd::Pointer lcScalarPointer(OpaqueLaunchContext lc) { return lc->getScalarPointer(); }
+
+sd::Pointer lcReductionPointer(OpaqueLaunchContext lc) { return lc->getReductionPointer(); }
+
+sd::Pointer lcAllocationPointer(OpaqueLaunchContext lc) { return lc->getAllocationPointer(); }
+
+sd::Pointer lcExecutionStream(OpaqueLaunchContext lc) { return lc->getCudaStream(); }
+
+sd::Pointer lcCopyStream(OpaqueLaunchContext lc) { return lc->getCudaSpecialStream(); }
+
+sd::Pointer lcBlasHandle(OpaqueLaunchContext lc) { return lc->getCublasHandle(); }
+
+sd::Pointer lcSolverHandle(OpaqueLaunchContext lc) { return lc->getCusolverHandle(); }
+
+
 /*
  * Basic CUDA constants here: number of blocks per MP
  */
