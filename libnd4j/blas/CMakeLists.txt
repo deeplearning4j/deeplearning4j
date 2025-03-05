@@ -356,7 +356,16 @@ if(SD_CUDA)
         file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ../include/ops/declarable/helpers/cuda/*.cu ../include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
-        file(GLOB_RECURSE HELPERS_SOURCES ../include/build_info.cpp ../include/ConstMessages.cpp ../include/helpers/*.cpp ../include/helpers/cuda/*.cu ../include/helpers/*.h)
+        file(GLOB_RECURSE HELPERS_SOURCES
+                ../include/build_info.cpp
+                ../include/ConstMessages.cpp
+                ../include/helpers/*.cpp
+                ../include/helpers/cuda/*.cu
+                ../include/helpers/*.h)
+        file(GLOB CPU_HELPERS_TO_EXCLUDE
+                ../include/helpers/cpu/*.cpp)
+        # remove helpers/cpu
+        list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
         file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h)
         file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
