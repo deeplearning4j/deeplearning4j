@@ -4,82 +4,94 @@
 # /* ******************************************************************************
 #  *
 #  *
-#  * This program and the accompanying materials are made available under the
-#  * terms of the Apache License, Version 2.0 which is available at
-#  * https://www.apache.org/licenses/LICENSE-2.0.
+#  * this program and the accompanying materials are made available under the
+#  * terms of the apache license, version 2.0 which is available at
+#  * https://www.apache.org/licenses/license-2.0.
 #  *
-#  *  See the NOTICE file distributed with this work for additional
+#  *  see the notice file distributed with this work for additional
 #  *  information regarding copyright ownership.
-#  * Unless required by applicable law or agreed to in writing, software
-#  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-#  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  * License for the specific language governing permissions and limitations
-#  * under the License.
+#  * unless required by applicable law or agreed to in writing, software
+#  * distributed under the license is distributed on an "as is" basis, without
+#  * warranties or conditions of any kind, either express or implied. see the
+#  * license for the specific language governing permissions and limitations
+#  * under the license.
 #  *
-#  * SPDX-License-Identifier: Apache-2.0
+#  * spdx-license-identifier: apache-2.0
 #  ******************************************************************************/
 #
 
 set -exo pipefail
-JAVA_CALL="java "
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+java_call="java "
+script_dir=$( cd -- "$( dirname -- "${bash_source[0]}" )" &> /dev/null && pwd )
 
-source "${SCRIPT_DIR}/env.sh"
-# Find libjvm.so
-if [[ -n $LIBJVM_SO ]]; then
-    LIBJVM_PATH=$LIBJVM_SO
+#source "${script_dir}/env.sh"
+# find libjvm.so
+if [[ -n $libjvm_so ]]; then
+    libjvm_path=$libjvm_so
 else
-    JAVA_REAL_PATH=$(readlink -f $(which java))
-    JAVA_HOME=$(dirname $(dirname $JAVA_REAL_PATH))
-    LIBJVM_PATH=$(find $JAVA_HOME -type f -name "libjvm.so" | grep "/server/" | head -n 1)
+    java_real_path=$(readlink -f $(which java))
+    java_home=$(dirname $(dirname $java_real_path))
+    libjvm_path=$(find $java_home -type f -name "libjvm.so" | grep "/server/" | head -n 1)
 fi
 
-# If libjvm.so not found, terminate
-if [[ -z $LIBJVM_PATH ]]; then
+# if libjvm.so not found, terminate
+if [[ -z $libjvm_path ]]; then
     echo "libjvm.so not found"
     exit 1
 fi
 
-# If TEST_RUNNER_PREFIX is not empty and contains "valgrind"
-if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
-    # Create a file to store the suppression information
-    SUPPRESSION_FILE="valgrind_suppressions.supp"
+# if test_runner_prefix is not empty and contains "valgrind"
+if [[ -n $test_runner_prefix && $test_runner_prefix =~ "valgrind" ]]; then
+    # create a file to store the suppression information
+    suppression_file="valgrind_suppressions.supp"
 
-    # If suppression file exists, delete it
-    if [[ -f $SUPPRESSION_FILE ]]; then
-        rm -f $SUPPRESSION_FILE
+    # if suppression file exists, delete it
+    if [[ -f $suppression_file ]]; then
+        rm -f $suppression_file
     fi
 
-    # Generate the suppression file for all memcheck error types except Param
-    echo "Generating Valgrind suppression file at $SUPPRESSION_FILE..."
-    for error_type in Addr1 Addr2 Addr4 Addr8 Value1 Value2 Value4 Value8 Jump Cond
+    # generate the suppression file for all memcheck error types except param
+    echo "generating valgrind suppression file at $suppression_file..."
+    for error_type in addr1 addr2 addr4 addr8 value1 value2 value4 value8 jump cond
     do
-        cat << EOF >> $SUPPRESSION_FILE
+        cat << eof >> $suppression_file
 {
-    SuppressLibJvm${error_type}
-    Memcheck:${error_type}
+    suppresslibjvm${error_type}
+    memcheck:${error_type}
     ...
-    obj:$LIBJVM_PATH
+    obj:$libjvm_path
 }
-EOF
+eof
     done
 
-    echo "Valgrind suppression file has been generated."
+    echo "valgrind suppression file has been generated."
 
-    # Check if "--suppressions" already exists in TEST_RUNNER_PREFIX
-    if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
-        TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$SUPPRESSION_FILE --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+    # check if "--suppressions" already exists in test_runner_prefix
+    if [[ $test_runner_prefix != *"--suppressions"* ]]; then
+        test_runner_prefix="$test_runner_prefix   --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
     fi
 
-    JAVA_CALL="${JAVA_CALL} -Djava.compiler=NONE"
+    java_call="${java_call} -djava.compiler=none"
 fi
+# if test_runner_prefix is not empty and contains "compute-sanitizer"
+if [[ -n $test_runner_prefix && $test_runner_prefix =~ "compute-sanitizer" ]]; then
+    # set default options for compute-sanitizer if none are specified
+    if [[ $test_runner_prefix == *"compute-sanitizer"* && $test_runner_prefix != *"--tool"* ]]; then
+        # add default options for comprehensive memory checking
+        test_runner_prefix="$test_runner_prefix --tool=memcheck --leak-check=full --report-api-errors=all"
+    fi
 
+    # add jvm option to disable jit compilation to help with debugging
+    java_call="${java_call} -djava.compiler=none"
 
-# Print the final command
-echo "$TEST_RUNNER_PREFIX $JAVA_CALL $@"
-$TEST_RUNNER_PREFIX $JAVA_CALL "$@"
+    echo "running with cuda compute-sanitizer"
+fi
+export CUDA_VISIBLE_DEVICES=1
+# print the final command
+echo "$test_runner_prefix $java_call $@"
+$test_runner_prefix $java_call "$@"
 
-# If TEST_RUNNER_PREFIX is not empty and contains "valgrind", remove the suppression file
-if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
-    rm -f $SUPPRESSION_FILE
+# if test_runner_prefix is not empty and contains "valgrind", remove the suppression file
+if [[ -n $test_runner_prefix && $test_runner_prefix =~ "valgrind" ]]; then
+    rm -f $suppression_file
 fi

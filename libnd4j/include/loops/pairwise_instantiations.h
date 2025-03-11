@@ -26,10 +26,11 @@
 //
 // Instantiated by genCompilation
 //
+#include <loops/pairwise_transform.h>
 #include <system/type_boilerplate.h>
 #include <types/types.h>
-#include <loops/pairwise_transform.h>
-#include <loops/cpu/pairwise.hpp>
+
+#include "../types/types.h"
 
 // Note: Instantiations are generated to prevent compiler memory issues
 
@@ -59,4 +60,10 @@
  (GET(9, (SD_NUMERIC_TYPES)), \
      GET(10, (SD_NUMERIC_TYPES)))
 
+#define PRINT_NUMERIC_TYPES_PARTS \
+    PRINT SD_NUMERIC_TYPES_PART_2
+
+
+
 #endif  // LIBND4J_PAIRWISE_INSTANTIATIONS_H
+

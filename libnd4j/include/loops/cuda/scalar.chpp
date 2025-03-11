@@ -23,14 +23,16 @@
 #ifndef SCALAR_CU
 #define SCALAR_CU
 
-#include "loops/scalar.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <system/op_boilerplate.h>
-
 #include <types/types.h>
+#include <loops/pairwise_instantiations.h>
 
-    using namespace simdOps;
+#include "../../types/types.h"
+#include "loops/scalar.h"
+
+using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
@@ -257,7 +259,8 @@ void ScalarTransform<X, Y, Z>::executeCudaShaped(
       SCALAR_OPS);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+
+        ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::executeCudaAlongDimension(
     dim3& launchDims,

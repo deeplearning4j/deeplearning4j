@@ -149,42 +149,112 @@ endif()
 
 
 
-# Define Combinations
-set(COMBINATIONS_3
-        "0,0,0"
-        "0,0,2"
-        "0,1,2"
-        "0,2,0"
-        "0,2,1"
-        "0,2,2"
-        "1,0,0"
-        "1,1,1"
-        "1,1,2"
-        "1,2,0"
-        "1,2,1"
-        "1,2,2"
-        "2,0,0"
-        "2,0,1"
-        "2,0,2"
-        "2,1,0"
-        "2,1,1"
-        "2,1,2"
-        "2,2,0"
-        "2,2,1"
-        "2,2,2"
-)
-set(COMBINATIONS_2
-        "0,0"
-        "0,1"
-        "1,0"
-        "1,1"
-        "0,2"
-        "2,0"
-        "1,2"
-        "2,1"
-        "2,2"
-)
+# The following existing code section will now use the optimized COMBINATIONS_3:
+foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
+    foreach(COMBINATION ${COMBINATIONS_3})
+        genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CMAKE_BINARY_DIR}/cuda_generated")
+    endforeach()
+endforeach()
 
+
+# Define a function to generate individual CUDA files for each type combination
+# Find and replace the existing function:
+function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
+    # ...existing implementation...
+endfunction()
+
+# REPLACE WITH THIS IMPLEMENTATION:
+
+function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
+    # Split the COMBINATION string into a list
+    string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
+
+    # Extract combination values
+    list(GET COMB_LIST 0 COMB1)
+    list(GET COMB_LIST 1 COMB2)
+    list(GET COMB_LIST 2 COMB3)
+
+    # Get the base name from the template file
+    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
+
+    # Read the template content
+    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
+
+    # Extract class and method names using regex
+    string(REGEX MATCH "([a-zA-Z0-9_:]+),[ \n\t]*::([a-zA-Z0-9_]+)" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
+    set(CLASS_NAME ${CMAKE_MATCH_1})
+    set(METHOD_NAME ${CMAKE_MATCH_2})
+
+    # Clean class name for file naming
+    string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
+
+    # Extract function signature to create a hash
+    string(REGEX MATCH "::${METHOD_NAME}\\(([^;]+)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
+    set(FUNCTION_ARGS "${CMAKE_MATCH_1}")
+
+    # Create a signature identifier based on parameter count and types
+    set(PARAM_COUNT 0)
+    set(SIGNATURE_ID "")
+
+    # Split the function arguments and count them
+    string(REPLACE "," ";" ARGS_LIST "${FUNCTION_ARGS}")
+    list(LENGTH ARGS_LIST PARAM_COUNT)
+
+    # Create a hash of the signature
+    foreach(ARG ${ARGS_LIST})
+        # Extract just the type name from the parameter
+        string(REGEX MATCH "^[^*& \t]+" TYPE_NAME "${ARG}")
+        if(TYPE_NAME)
+            # Append to the signature ID
+            string(APPEND SIGNATURE_ID "_${TYPE_NAME}")
+        endif()
+    endforeach()
+
+    # Create a shorter hash if the signature is too long
+    if(SIGNATURE_ID MATCHES ".{30,}")
+        string(MD5 SIGNATURE_HASH "${SIGNATURE_ID}")
+        string(SUBSTRING "${SIGNATURE_HASH}" 0 8 SIGNATURE_ID)
+        set(SIGNATURE_ID "_h${SIGNATURE_ID}")
+    endif()
+
+    # Output filename with signature identifier
+    set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
+    set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
+
+    # Check if this file already exists - if so, no need to regenerate
+    if(EXISTS "${GENERATED_FILE}")
+        # Add to CUDA_GENERATED_SOURCES without regenerating
+        list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
+        set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+        return()
+    endif()
+
+    # Extract just the necessary header information
+    set(START_MARKER "ITERATE_COMBINATIONS_3")
+    string(FIND "${TEMPLATE_CONTENT}" "${START_MARKER}" START_POS)
+    if(START_POS EQUAL -1)
+        message(FATAL_ERROR "Could not find ITERATE_COMBINATIONS_3 in template file ${TEMPLATE_FILE}")
+    endif()
+
+    string(SUBSTRING "${TEMPLATE_CONTENT}" 0 ${START_POS} HEADER_CONTENT)
+
+    # Create streamlined content with just the single instantiation needed
+    set(NEW_CONTENT "${HEADER_CONTENT}\n\n// Single function instantiation for ${CLASS_NAME}::${METHOD_NAME}\n")
+    string(APPEND NEW_CONTENT "template void ${CLASS_NAME}::${METHOD_NAME}<SD_SINGLE_TYPE_${COMB1}, SD_SINGLE_TYPE_${COMB2}, SD_SINGLE_TYPE_${COMB3}>(${FUNCTION_ARGS});\n")
+
+    # Create directory if needed
+    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+
+    # Write the processed content to the output file
+    file(WRITE "${GENERATED_FILE}" "${NEW_CONTENT}")
+
+    # Set properties and add to sources
+    set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
+    list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
+    set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+
+    message(STATUS "Generated: ${GENERATED_FILE}")
+endfunction()
 
 # Define genPartitionCombination Function
 function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR)
@@ -266,6 +336,8 @@ set(GEN_COMPILATION_TEMPLATES
 set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
 )
+
+
 
 # Example Usage of genPartitionCombination
 # Define combinations for ITERATE_COMBINATIONS_3
@@ -436,6 +508,56 @@ function(genCompilation FILE_ITEM)
     endif()
 
     set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+endfunction()
+
+
+# Define a function to generate individual CUDA files for each type combination
+# Define a function to generate individual CUDA files for each type combination
+# Define a function to generate individual CUDA files for each type combination
+function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
+    # Split the COMBINATION string into a list
+    string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
+
+    # Extract combination values
+    list(GET COMB_LIST 0 COMB1)
+    list(GET COMB_LIST 1 COMB2)
+    list(GET COMB_LIST 2 COMB3)
+
+    # Get the base name from the template file
+    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
+
+    # Read the template content
+    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
+
+    # Extract class and method names using regex
+    string(REGEX MATCH "([a-zA-Z0-9_:]+),[ \n\t]*::([a-zA-Z0-9_]+)" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
+    set(CLASS_NAME ${CMAKE_MATCH_1})
+    set(METHOD_NAME ${CMAKE_MATCH_2})
+
+    # Clean class name for file naming
+    string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
+
+    # Output filename
+    set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}_${COMB1}_${COMB2}_${COMB3}.cu")
+    set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
+
+    # Replace placeholders with actual values
+    string(REPLACE "@COMB1@" "${COMB1}" MODIFIED_CONTENT "${TEMPLATE_CONTENT}")
+    string(REPLACE "@COMB2@" "${COMB2}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+    string(REPLACE "@COMB3@" "${COMB3}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+
+    # Create directory if needed
+    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+
+    # Write the content
+    file(WRITE "${GENERATED_FILE}" "${MODIFIED_CONTENT}")
+
+    # Set properties and add to sources
+    set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
+    list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
+    set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+
+    message(STATUS "Generated: ${GENERATED_FILE}")
 endfunction()
 
 # MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively
@@ -649,18 +771,23 @@ else()
 endif()
 
 # Existing flatbuffers download section
-configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
-execute_process(COMMAND ${CMAKE_COMMAND}  "${CMAKE_GENERATOR}" .
-        RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
-if(result)
-    message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
-endif()
-execute_process(COMMAND ${CMAKE_COMMAND} --build .
-        RESULT_VARIABLE result
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download )
-if(result)
-    message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download-complete.marker")
+    configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download)
+    if(result)
+        message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download)
+    if(result)
+        message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
+    endif()
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download-complete.marker" "Download complete")
+else()
+    message(STATUS "Flatbuffers already downloaded, skipping download step")
 endif()
 
 # Add flatbuffers directly to build

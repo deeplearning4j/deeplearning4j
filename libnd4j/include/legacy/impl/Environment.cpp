@@ -174,6 +174,7 @@ Environment::Environment() {
 #ifdef __CUDABLAS__
   int devCnt = 0;
   cudaGetDeviceCount(&devCnt);
+  printf("During environment initialization we found [%i] CUDA devices\n", devCnt);
   auto devProperties = new cudaDeviceProp[devCnt];
   for (int i = 0; i < devCnt; i++) {
     cudaSetDevice(i);

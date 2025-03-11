@@ -1082,7 +1082,11 @@ void initializeDevicesAndFunctions() {
       cudaSetDevice(i);
       cudaGetDeviceProperties(&deviceProperties[i], i);
 
-      cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+      cudaDeviceSetLimit(cudaLimitStackSize, 8192);
+      cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1048576 * 128);
+
+
+
     }
 
     cudaSetDevice(0);

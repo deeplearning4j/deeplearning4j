@@ -72,9 +72,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-native</backend.artifactId>
+        <backend.artifactId>nd4j-cuda-12.3</backend.artifactId>
         <!-- UDF package names for TestUdf -->
-        <org.nd4j.linalg.api.ops.udf.classes>org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf</org.nd4j.linalg.api.ops.udf.classes>
+        <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.30</lombok.version>
         <derby.version>10.13.1.1</derby.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
@@ -250,11 +250,6 @@
 
     <dependencies>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-log-analyzer</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -441,7 +436,11 @@
         </dependency>
 
 
-
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-12.3</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.derby</groupId>
             <artifactId>derby</artifactId>
@@ -585,7 +584,7 @@
             <properties>
                 <org.nd4j.cpu.priority>10000</org.nd4j.cpu.priority>
                 <org.nd4j.gpu.priority>0</org.nd4j.gpu.priority>
-                <org.nd4j.noarraygc>true</org.nd4j.noarraygc>
+                <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
             </properties>
         </profile>
         <profile>
@@ -594,7 +593,7 @@
                 <activeByDefault>false</activeByDefault>
                 <property>
                     <name>backend.artifactId</name>
-                    <value>nd4j-cuda-12.1</value>
+                    <value>nd4j-cuda-12.3</value>
                 </property>
             </activation>
             <properties>
@@ -604,6 +603,8 @@
                 <test.heap.size>14g</test.heap.size>
                 <test.offheap.size>14g</test.offheap.size>
                 <surefire.threads>4</surefire.threads>
+                <org.nd4j.noarraygc>false</org.nd4j.noarraygc>
+
                 <!-- Uses the new system properties resolution on nd4j backend
        to handle the backend selection. Note this only used to work via
        environment variables.
@@ -624,12 +625,8 @@
                     <classifier>${platform.classifier}</classifier>
                 </dependency>
 
-                <dependency>
-                    <groupId>org.bytedeco</groupId>
-                    <artifactId>cuda-platform-redist</artifactId>
-                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-                </dependency>
             </dependencies>
+
         </profile>
 
         <profile>
@@ -1097,6 +1094,8 @@
                         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
                     </properties>
                     <environmentVariables>
+                        <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
+                        <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>
@@ -1107,7 +1106,6 @@
                         <TEST_RUNNER_PREFIX>${test.prefix}</TEST_RUNNER_PREFIX>
                         <LIBJVM_PATH>${libjvm.path}</LIBJVM_PATH>
                         <TEST_FILTER></TEST_FILTER>
-                        <CUDA_VISIBLE_DEVICES>1</CUDA_VISIBLE_DEVICES>
                     </environmentVariables>
                     <classpathDependencyExcludes>
                         <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
@@ -1116,7 +1114,7 @@
                     </classpathDependencyExcludes>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <shutdown>kill</shutdown>
-                    <argLine>-Djava.compiler=NONE -Dorg.bytedeco.javacpp.logger.debug=true   ${jdk9.exports} -Dorg.nd4j.linalg.api.ops.udf.classes=org.nd4j.testops.TestUdf,org.nd4j.testops.TestAddUdf  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
+                    <argLine>-Djava.compiler=NONE -Dorg.bytedeco.javacpp.logger.debug=true   ${jdk9.exports}  -Dorg.nd4j.arraynogc=${test.nogc}  -Dorg.bytedeco.javacpp.nopointergc=${test.nogc} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
                     <forkCount>${surefire.forks}</forkCount>
                     <threadCount>${surefire.threads}</threadCount>
                     <perCoreThreadCount>false</perCoreThreadCount>

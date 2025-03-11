@@ -21,10 +21,10 @@
 
 #ifndef PAIRWISE_CU
 #define PAIRWISE_CU
+#include <loops/pairwise_instantiations.h>
 
 #include "../pairwise_transform.h"
-
-    using namespace simdOps;
+using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
@@ -105,11 +105,11 @@ void SD_HOST PairWiseTransform<X, Y, Z>::intermediateShaped(dim3& launchDims,
                                                             sd::LongType const* zShapeInfo,
                                                             void* vextraParams) {
   pairwiseSimpleShaped<X, Y, Z, OpType>
-      <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
-          vx, xShapeInfo,
-          vy, yShapeInfo,
-          vz, zShapeInfo,
-          vextraParams);
+  <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+      vx, xShapeInfo,
+      vy, yShapeInfo,
+      vz, zShapeInfo,
+      vextraParams);
   sd::DebugHelper::checkErrorCode(stream, "PairWiseTransform intermediateShaped(...) failed");
 }
 

@@ -20,11 +20,12 @@
 // @author raver119@gmail.com
 //
 #include <loops/cuda/scalar.chpp>
+#include <system/type_boilerplate.h>
 #cmakedefine SD_PAIRWISE_TYPES_GEN
 #if defined(SD_PAIRWISE_TYPES_GEN) && defined(SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@)
 namespace functions {
     namespace scalar {
-        BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN ScalarTransform, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
+    BUILD_PAIRWISE_TEMPLATE(extern template class SD_LIB_HIDDEN ScalarTransform, , SD_PAIRWISE_TYPES_@FL_TYPE_INDEX@);
     }
 }
 #endif
