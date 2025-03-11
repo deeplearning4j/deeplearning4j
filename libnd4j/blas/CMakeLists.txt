@@ -345,6 +345,60 @@ if(SD_CUDA)
 
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -allow-unsupported-compiler -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
+
+
+
+        # Generate CUDA template instantiations
+        # Create output directory for CUDA generated files
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cuda_generated")
+
+        # Initialize the list of CUDA generated sources
+        set(CUDA_GENERATED_SOURCES "")
+
+        # Get all CUDA template files from comb_compilation_units directory
+        file(GLOB CUDA_TEMPLATE_FILES
+                "../include/loops/cuda/comb_compilation_units/*.cu.in"
+        )
+
+        if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
+            # If selective types are enabled, count them
+            set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
+            message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST")
+        else()
+            # Default number of types if not using selective types
+            set(NUM_TYPES 10)
+            message(STATUS "Using default number of types: ${NUM_TYPES}")
+        endif()
+       include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/TypeMST.cmake)
+
+
+        # Decide whether to use all combinations or optimized MST combinations
+       set(SD_USE_MST_TYPES ON)
+        # Decide whether to use all combinations or optimized MST combinations
+        if(SD_USE_MST_TYPES)
+            # Generate optimized type combinations
+            generate_mst_combinations()
+            message(STATUS "Using optimized type combinations instead of all possible combinations")
+        else()
+            # Use all possible combinations (original behavior)
+            set(COMBINATIONS_3 ${ALL_TYPE_COMBINATIONS})
+            message(STATUS "Using all possible type combinations")
+        endif()
+
+        # For each template file, generate individual function files per type combination
+        foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
+            foreach(COMBINATION ${COMBINATIONS_3})
+                genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CMAKE_BINARY_DIR}/cuda_generated")
+            endforeach()
+        endforeach()
+
+
+
+        # Add all generated CUDA files to the sources
+        if(CUDA_GENERATED_SOURCES)
+            list(APPEND ALL_SOURCES ${CUDA_GENERATED_SOURCES})
+        endif()
+
         # Gather CUDA Source Files
         file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
@@ -367,12 +421,18 @@ if(SD_CUDA)
         # remove helpers/cpu
         list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
         file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
-        file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h ../include/loops/*.chpp)
         file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ../include/loops/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
+        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/loops/cuda/comb_compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
 
+        # Generate Compilation Units
+        foreach(FL_ITEM ${COMPILATION_UNITS})
+            genCompilation(${FL_ITEM})
+        endforeach()
         set(ALL_SOURCES
+                ${CUDA_GENERATED_SOURCES}
                 ${PERF_SOURCES}
                 ${EXCEPTIONS_SOURCES}
                 ${EXEC_SOURCES}
@@ -392,10 +452,9 @@ if(SD_CUDA)
                 ${LOOPS_SOURCES_CUDA}
         )
 
-        # Generate Compilation Units
-        foreach(FL_ITEM ${COMPILATION_UNITS})
-            genCompilation(${FL_ITEM})
-        endforeach()
+
+
+
 
         # Include cuDNN Sources if Available
         if(HAVE_CUDNN)
@@ -406,7 +465,7 @@ if(SD_CUDA)
         # Create Object Library
         if(SD_GCC_FUNCTRACE STREQUAL "ON")
             add_library(samediff_obj OBJECT
-                    ${LOOPS_SOURCES_CUDA}
+                    ${CUDA_GENERATED_SOURCES}
                     ${LEGACY_SOURCES}
                     ${HELPERS_CPP}
                     ${CUSTOMOPS_HELPERS_SOURCES}
@@ -429,6 +488,7 @@ if(SD_CUDA)
             )
         else()
             add_library(samediff_obj OBJECT
+                    ${CUDA_GENERATED_SOURCES}
                     ${LOOPS_SOURCES_CUDA}
                     ${LEGACY_SOURCES}
                     ${HELPERS_CPP}
@@ -489,7 +549,6 @@ if(SD_CUDA)
                 ${CUDA_CUBLAS_LIBRARIES}
                 ${CUDA_cusolver_LIBRARY}
                 ${CUDNN}
-                ${MKLDNN}
         )
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
 
@@ -565,11 +624,6 @@ elseif(SD_CPU)
         genCompilation(${FL_ITEM})
     endforeach()
 
-    # Include cuDNN Sources if Available
-    if(HAVE_CUDNN)
-        message("cuDNN included")
-        file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
-    endif()
 
     # Create Object Library
     add_library(samediff_obj OBJECT

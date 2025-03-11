@@ -1176,6 +1176,8 @@
 #define SD_PAIRWISE_TYPES_0 (float, float, float)
 #endif
 
+
+
 #if COUNT_NARG(SD_NUMERIC_TYPES) > 0
 #define SD_NUMERIC_TYPES_0 GET_ELEMENT(0, SD_NUMERIC_TYPES)
 #endif

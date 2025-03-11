@@ -27,7 +27,7 @@
 #include <system/Environment.h>
 #include <system/op_boilerplate.h>
 #include <types/types.h>
-
+#include <loops/pairwise_instantiations.h>
 #include <stdexcept>
 #include <string>
 
@@ -462,7 +462,25 @@ SD_DEVICE void BroadcastInt<X>::transformCuda(
 }
 
 
+#define INSTANTIATE_TEMPLATE(X) \
+template <> void BroadcastInt<GET_SECOND(X)>::execInverseBroadcast( \
+    dim3 launchDims,\
+    cudaStream_t* stream,\
+    int opNum,\
+    void const* x,\
+    sd::LongType const* xShapeInfo,\
+    void const* y,\
+    sd::LongType const* yShapeInfo,\
+    void* z,\
+    sd::LongType const* zShapeInfo,\
+    sd::LongType* dimension,\
+    sd::LongType dimensionLength,\
+    sd::LongType const* tadOnlyShapeInfo,\
+    sd::LongType const* tadOffsets,\
+    sd::LongType const* tadOnlyShapeInfoZ,\
+    sd::LongType const* tadOffsetsZ);\
 
+ITERATE_LIST((SD_NUMERIC_TYPES), INSTANTIATE_TEMPLATE)
 
 //////////////////////////////////////////////////////////////////////////////
 // Instantiate templates for common integer types
@@ -472,3 +490,7 @@ BUILD_SINGLE_TEMPLATE(
 
 }  // namespace broadcast
 }  // namespace functions
+
+
+
+

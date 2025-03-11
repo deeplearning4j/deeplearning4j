@@ -50,6 +50,12 @@ ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo
  }
  return buffer;
 }
+ConstantShapeBuffer* ConstantShapeHelper::createSubArrShapeInfo( sd::LongType* inShapeInfo,  LongType* dims,
+                                                                 sd::LongType dimsSize) {
+ sd::LongType* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, nullptr);
+ auto ret = bufferForShapeInfo(newShapeInfo);
+ return ret;
+}
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(DataType dataType, char order,
                                                             const std::vector<LongType>& shape) {

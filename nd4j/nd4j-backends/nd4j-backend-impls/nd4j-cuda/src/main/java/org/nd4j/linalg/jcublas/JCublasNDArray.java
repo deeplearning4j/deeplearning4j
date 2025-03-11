@@ -426,6 +426,10 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, newShape, newStride, offset, ews, ordering, dataType, isView);
     }
 
+    public JCublasNDArray(LongShapeDescriptor longShapeDescriptor) {
+        super(longShapeDescriptor);
+    }
+
     @Override
     public INDArray dup() {
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {

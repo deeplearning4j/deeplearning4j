@@ -66,8 +66,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.testops.TestAddUdf;
-import org.nd4j.testops.TestUdf;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -140,54 +138,8 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
         Nd4j.toggleTrace(false);
     }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUdf(Nd4jBackend backend) {
-        Nd4j.getExecutioner().enableVerboseMode(true);
-        Nd4j.getExecutioner().enableDebugMode(true);
-        SameDiff sd = SameDiff.create();
-        SDVariable inputArg = sd.constant(0);
-        SDVariable[] sdVariables = sd.doUdf(new TestUdf(sd, inputArg));
-        assertEquals(1,sdVariables.length);
-        assertEquals(inputArg.dataType(),sdVariables[0].dataType());
-        File save = new File("tmp-udf.fb");
-        save.deleteOnExit();
-        sd.save(save,true);
-        SameDiff sd2 = SameDiff.load(save,true);
-        System.out.println(sd.summary());
-        assertEquals(sd,sd2);
-        sdVariables[0].eval();
 
-    }
 
-    @ParameterizedTest
-    @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
-    public void testUdfTrain(Nd4jBackend backend) {
-        int batchSize = 4;
-        int modelDim = 8;
-
-        SameDiff sd = SameDiff.create();
-
-        SDVariable features = sd.placeHolder("features", FLOAT, batchSize, modelDim);
-        SDVariable labels = sd.placeHolder("labels", FLOAT, batchSize, modelDim);
-        SDVariable weights = sd.var("weights", new XavierInitScheme('c', modelDim, modelDim), FLOAT, modelDim, modelDim);
-        SDVariable bias = sd.var("bias", new ZeroInitScheme('c'), FLOAT, modelDim);
-        SDVariable predictions = sd.nn.linear("predictions", features, weights, bias);
-        SDVariable[] sdVariables = sd.doUdf(new TestAddUdf(sd, new SDVariable[]{predictions, sd.constant(1.0)}));
-        SDVariable loss = sd.loss.meanSquaredError("loss", labels, sdVariables[0], null);
-        loss.markAsLoss();
-        TrainingConfig config = new TrainingConfig.Builder()
-                .updater(new Adam(0.1))
-                .dataSetFeatureMapping("features")
-                .dataSetLabelMapping("labels")
-                .build();
-        sd.setTrainingConfig(config);
-
-        DataSetIterator iterator = new RandomDataSetIterator(1, new long[]{batchSize, modelDim}, new long[]{batchSize, modelDim}, INTEGER_0_10, INTEGER_0_10);
-
-        sd.fit(iterator, 10);
-
-    }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")

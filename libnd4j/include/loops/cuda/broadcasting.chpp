@@ -31,8 +31,9 @@
 #include <stdexcept>
 #include <helpers/StringUtils.h>
 #include <ops/specials_cuda.h>
+#include <loops/pairwise_instantiations_single.h>
 
-    using namespace simdOps;
+using namespace simdOps;
 
 template<typename X, typename Y, typename Z, typename OpClass>
 static SD_KERNEL void broadcastSimple(
@@ -434,6 +435,7 @@ SD_DEVICE void Broadcast<X,Y,Z>::transformCuda(
     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
   }
 }
+
 
 } // namespace broadcast
 } // namespace functions

@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8.2)
 
 project(flatbuffers-download NONE)
 
-
 include(ExternalProject)
 ExternalProject_Add(flatbuffers
     GIT_REPOSITORY    https://github.com/google/flatbuffers/
@@ -12,10 +11,8 @@ ExternalProject_Add(flatbuffers
     CMAKE_ARGS
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DFLATBUFFERS_BUILD_FLATC=ON
+        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
         -DCMAKE_BUILD_TYPE=Release
-   DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -E rm -rf ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src COMMAND git clone https://github.com/google/flatbuffers/ ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
-
     UPDATE_COMMAND    ""
     INSTALL_COMMAND   ""
     TEST_COMMAND      ""
