@@ -23,12 +23,6 @@
 #include <math/templatemath.h>
 
 namespace sd {
-Triple CudaLaunchHelper::getFlatLaunchParams(LongType length, int SM, int CORES, int SHARED_MEMORY) {
-  // TODO: to be implemented
-  Triple triple(1, 2, 3);
-
-  return triple;
-}
 
 int CudaLaunchHelper::getReductionBlocks(LongType xLength, int blockSize) {
   int div = xLength / blockSize;

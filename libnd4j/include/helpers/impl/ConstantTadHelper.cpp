@@ -58,6 +58,8 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
     errorMessage += e.what();
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  return nullptr;
 }
 
 } // namespace sd

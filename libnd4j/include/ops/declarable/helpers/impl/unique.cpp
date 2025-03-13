@@ -49,6 +49,7 @@ static LongType uniqueCount_(NDArray* input) {
 
 LongType uniqueCount(LaunchContext* context, NDArray* input) {
   BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), SD_COMMON_TYPES);
+  return 0;
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::LongType uniqueCount_, (NDArray * input), SD_COMMON_TYPES);
@@ -102,6 +103,9 @@ Status uniqueFunctor(LaunchContext* context, NDArray* input, NDArray* values, ND
   indices->syncToDevice();
 
   if (counts != nullptr) counts->syncToDevice();
+
+
+  return sd::Status::KERNEL_FAILURE;
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::Status uniqueFunctor_,

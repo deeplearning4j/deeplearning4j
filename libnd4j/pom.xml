@@ -60,6 +60,8 @@
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
+        <!-- Used during cuda compilation. Shows information about ptxas assembly for debugging cuda.-->
+        <libnd4j.ptxas>OFF</libnd4j.ptxas>
         <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
          FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
          FOR ADDRESS USE: address,float-divide-by-zero,float-cast-overflow

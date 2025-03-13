@@ -121,6 +121,7 @@ sd::graph::Variable* sd::graph::VariableSpace::getVariable(std::pair<int, int>& 
   }
   sd_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
   THROW_EXCEPTION("Unknown variable requested");
+  return nullptr;
 }
 
 bool sd::graph::VariableSpace::hasVariable(int id) { return _variables.count(id) == 1 || _temporary.count(id) == 1; }
@@ -128,7 +129,6 @@ bool sd::graph::VariableSpace::hasVariable(int id) { return _variables.count(id)
 bool sd::graph::VariableSpace::hasVariable(std::pair<int, int>& id) { return _paired.count(id) > 0; }
 
 void sd::graph::VariableSpace::putOutputVariable(Variable* variable) {
-  // putVariable(_auto_counter--, variable);
   putVariable(variable->id(), variable);
 }
 

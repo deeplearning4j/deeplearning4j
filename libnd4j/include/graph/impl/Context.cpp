@@ -252,6 +252,8 @@ Variable *Context::variable(std::pair<int, int> &p) {
     errorMessage += "\n";
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  return nullptr;
 }
 
 void Context::pushNDArrayToVariableSpace(int nodeId, int index, NDArray *array, bool removable) {
@@ -355,6 +357,8 @@ NDArray *Context::outputArray(int idx) {
   errorMessage += std::to_string(_fastpath_out.size());
 
   THROW_EXCEPTION(errorMessage.c_str());
+
+  return nullptr;
 }
 
 NDArray *Context::array(int idx) {

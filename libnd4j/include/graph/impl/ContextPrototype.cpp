@@ -89,6 +89,8 @@ DataType ContextPrototype::dataType(int index) {
   } else {
     return _dArgs.at(index);
   }
+
+  return DataType::UNKNOWN;
 }
 
 void ContextPrototype::setDataType(int index, DataType type) {

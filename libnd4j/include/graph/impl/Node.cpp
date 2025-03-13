@@ -688,6 +688,8 @@ sd::ops::DeclarableOp* sd::graph::Node::buildOpByType(::graph::OpType opType, in
     default:
       THROW_EXCEPTION("Bad opType passed in");
   }
+
+  return nullptr;
 }
 
 bool Node::isDeductable() { return _isDeductable; }

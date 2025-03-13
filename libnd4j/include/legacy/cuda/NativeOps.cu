@@ -82,7 +82,7 @@ bool supportedP2P = false;
 
 int minThreads = 32;
 
-__constant__ char deviceConstantMemory[49152];
+__constant__ char deviceConstantMemory[65536];
 
 
 

@@ -88,6 +88,7 @@ Variable *VariableProxy::getVariable(int id) {
 
   sd_printf("Unable to get Variable to proxy: [%i]\n", id);
   THROW_EXCEPTION("Bad arguments");
+  return nullptr;
 }
 
 Variable *VariableProxy::getVariable(int id, int idx) {
@@ -97,6 +98,7 @@ Variable *VariableProxy::getVariable(int id, int idx) {
 
   sd_printf("Unable to get Variable to proxy: [%i:%i]\n", id, idx);
   THROW_EXCEPTION("Bad arguments");
+  return nullptr;
 }
 
 Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
@@ -106,6 +108,7 @@ Variable *VariableProxy::getVariable(std::pair<int, int> &pair) {
 
   sd_printf("Unable to get Variable to proxy: [%i:%i]\n", pair.first, pair.second);
   THROW_EXCEPTION("Bad arguments");
+  return nullptr;
 }
 
 Variable *VariableProxy::getVariable(std::string *symbol) {
@@ -115,6 +118,7 @@ Variable *VariableProxy::getVariable(std::string *symbol) {
 
   sd_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
   THROW_EXCEPTION("Bad arguments");
+  return nullptr;
 }
 
 void VariableProxy::replaceVariable(Variable *variable) {

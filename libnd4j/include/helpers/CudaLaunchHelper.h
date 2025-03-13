@@ -29,7 +29,6 @@
 namespace sd {
 class SD_LIB_EXPORT CudaLaunchHelper {
  public:
-  static Triple getFlatLaunchParams(sd::LongType length, int SM, int CORES, int SHARED_MEMORY);
   static int getReductionBlocks(sd::LongType xLength, int blockSize = 512);
 };
 }  // namespace sd
