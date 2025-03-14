@@ -35,7 +35,7 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vecto
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
-  return tadForDimensions(descriptor->originalShape().toShapeInfo(), descriptor->axis().data(),
+  return tadForDimensions(descriptor->originalShape(), descriptor->axis().data(),
                           descriptor->axis().size());
 }
 
@@ -46,7 +46,7 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* 
     if (dimLength <= 0) THROW_EXCEPTION("Invalid dimension length");
 
     int rank = shape::rank(originalShape);
-    if (rank <= 0) THROW_EXCEPTION("Invalid shape rank");
+    if (rank < 0) THROW_EXCEPTION("Invalid shape rank");
 
     std::vector<LongType> dims(dimensions, dimensions + dimLength);
 

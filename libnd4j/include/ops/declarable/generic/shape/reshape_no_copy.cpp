@@ -112,7 +112,9 @@ DECLARE_SHAPE_FN(reshape_no_copy) {
     }
   }
 
-  return SHAPELIST(CONSTANT(newShapeInfo));
+
+  auto newShape2 = ConstantShapeHelper::getInstance().createFromExisting(newShapeInfo);
+  return SHAPELIST(CONSTANT(newShape2));
 }
 
 DECLARE_TYPES(reshape_no_copy) {

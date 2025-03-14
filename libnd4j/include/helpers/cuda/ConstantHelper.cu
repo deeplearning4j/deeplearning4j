@@ -112,8 +112,15 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
     int8_t *ptr = nullptr;
     ALLOCATE_SPECIAL(ptr, workspace, numBytes, int8_t);
     auto res = cudaMemcpy(ptr, src, numBytes, cudaMemcpyHostToDevice);
-    if (res != 0) throw cuda_exception::build("cudaMemcpy failed", res);
+    if (res != 0) {
+      std::string errorMessage = "cudaMemcpy failed with error code " + std::to_string(res);
+      auto lastError = cudaGetLastError(); // get last error
+      if (lastError != cudaSuccess) {
+        errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+      }
 
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
     return ptr;
   } else {
     auto originalBytes = numBytes;
@@ -124,7 +131,15 @@ void *ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Works
 
     auto res = cudaMemcpyToSymbol(deviceConstantMemory, const_cast<const void *>(src), originalBytes, constantOffset,
                                   cudaMemcpyHostToDevice);
-    if (res != 0) throw cuda_exception::build("cudaMemcpyToSymbol failed", res);
+    if (res != 0) {
+      std::string errorMessage = "cudaMemcpyToSymbol failed with error code " + std::to_string(res);
+      auto lastError = cudaGetLastError(); // get last error
+      if (lastError != cudaSuccess) {
+        errorMessage += "; last error: " + std::string(cudaGetErrorString(lastError));
+      }
+
+      THROW_EXCEPTION(errorMessage.c_str());
+    }
 
     return reinterpret_cast<int8_t *>(constantPtr) + constantOffset;
   }
@@ -165,7 +180,7 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
     } else if (descriptor.isInteger()) {
       BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric,
                             (nullptr, const_cast<sd::LongType *>(descriptor.integerValues().data()),
-                             descriptor.length(), cbuff->pointer()),
+                                descriptor.length(), cbuff->pointer()),
                             (sd::DataType::INT64, sd::LongType), SD_COMMON_TYPES);
     }
 

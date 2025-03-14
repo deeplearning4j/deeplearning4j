@@ -38,9 +38,7 @@ import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -131,9 +129,6 @@ public class AtomicAllocator implements Allocator {
 
     }
 
-    protected Map<Long, AllocationPoint> allocationsMap(){
-        return allocationsMap;
-    }
 
     public void applyConfiguration() {
         CudaEnvironment.getInstance().notifyConfigurationApplied();
@@ -657,9 +652,4 @@ public class AtomicAllocator implements Allocator {
         return Nd4j.getConstantHandler().getConstantBuffer(array, DataType.DOUBLE);
     }
 
-    @Override
-    public DataBuffer moveToConstant(DataBuffer dataBuffer) {
-        Nd4j.getConstantHandler().moveToConstantSpace(dataBuffer);
-        return dataBuffer;
-    }
 }
