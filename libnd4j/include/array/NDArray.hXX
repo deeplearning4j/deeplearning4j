@@ -2639,7 +2639,7 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
                                           other.buffer(),
                                           otherShapeInfo,
                                           other.specialBuffer(),
-                                          otherShapeInfo,
+                                          other.specialShapeInfo(),
                                           nullptr
         , allowParallelism);
     thisArray.registerSpecialUse({&thisArray}, {&other}); // Registering through the instance

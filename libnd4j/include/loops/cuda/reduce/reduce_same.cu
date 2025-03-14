@@ -42,7 +42,7 @@ SD_KERNEL void simpleReduce(
     void* z,
     const sd::LongType* zShapeInfo) {
 
-  functions::reduce::ReduceSameFunction<X>::template transformCudaXD<OpType>(
+  functions::reduce::ReduceSameFunction<X>::template transformCuda<OpType>(
       x,
       outerXTadShapeInfo,
       innerXTadShapeInfo,
@@ -107,7 +107,7 @@ SD_DEVICE void ReduceSameFunction<X>::aggregatePartials(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_DEVICE void ReduceSameFunction<X>::transformCudaXD(
+SD_DEVICE void ReduceSameFunction<X>::transformCuda(
     const void* vx,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -329,7 +329,7 @@ SD_DEVICE void ReduceSameFunction<X>::execScalarCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
 template <typename OpType>
-SD_HOST void ReduceSameFunction<X>::intermediateXD(
+SD_HOST void ReduceSameFunction<X>::intermediate(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -356,7 +356,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(
         *stream);
     if (res != 0) {
       throw sd::cuda_exception::build(
-          "ReduceSameFunction<X>::intermediateXD: failed to copy temporary scalar", res);
+          "ReduceSameFunction<X>::intermediate: failed to copy temporary scalar", res);
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -393,7 +393,7 @@ SD_HOST void ReduceSameFunction<X>::intermediateXD(
         vreductionBuffer,
         z,
         dZShapeInfo);
-    sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediateXD(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "ReduceSameFunction intermediate(...) failed");
   }
 }
 
@@ -472,7 +472,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X>
-SD_HOST void ReduceSameFunction<X>::execReduceXD(
+SD_HOST void ReduceSameFunction<X>::execReduce(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -495,7 +495,7 @@ SD_HOST void ReduceSameFunction<X>::execReduceXD(
         nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_T(
-        intermediateXD,
+        intermediate,
         PARAMS(
             launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z, dZShapeInfo,
             hZShapeInfo, dims),

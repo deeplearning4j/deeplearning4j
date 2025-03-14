@@ -33,7 +33,6 @@ TadDescriptor::TadDescriptor(const TadDescriptor &other) {
 
 TadDescriptor::TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
                              const bool keepUnitiesInShape) {
-  ShapeDescriptor *descriptor = new ShapeDescriptor(originalShape, false);
 
   _axis.resize(length);
   for (LongType e = 0; e < length; e++) {
@@ -42,17 +41,8 @@ TadDescriptor::TadDescriptor(const LongType *originalShape, const LongType *dime
 
   if (length > 1) std::sort(_axis.begin(), _axis.end());
 
-  _originalShape = *descriptor;
+  _originalShape = const_cast<sd::LongType *>(originalShape);
   _unitiesInShape = keepUnitiesInShape;
-}
-
-TadDescriptor::TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<LongType> &dimensions,
-                             const bool keepUnitiesInShape) {
-  _originalShape = descriptor;
-  _axis = dimensions;
-  _unitiesInShape = keepUnitiesInShape;
-
-  if (_axis.size() > 1) std::sort(_axis.begin(), _axis.end());
 }
 
 bool TadDescriptor::operator==(const TadDescriptor &other) const {
@@ -67,9 +57,7 @@ bool TadDescriptor::operator<(const TadDescriptor &other) const {
 
 std::vector<LongType> &TadDescriptor::axis() { return _axis; }
 
-ShapeDescriptor &TadDescriptor::originalShape() { return _originalShape; }
-
-ShapeDescriptor const &TadDescriptor::originalShapeConst() const { return _originalShape; }
+LongType *TadDescriptor::originalShape() { return _originalShape; }
 
 bool TadDescriptor::areUnitiesinShape() const { return _unitiesInShape; }
 }  // namespace sd
@@ -80,13 +68,6 @@ size_t hash<sd::TadDescriptor>::operator()(const sd::TadDescriptor &k) const {
 
   // Start with initial hash from unities flag
   uint64_t hash = ModularHasher::hash_scalar(k.areUnitiesinShape());
-
-  // Combine with original shape hash
-  hash = ModularHasher::combine_hashes({
-      hash,
-      std::hash<sd::ShapeDescriptor>()(k.originalShapeConst())
-  });
-
   // Hash the axis vector
   auto& axes = const_cast<sd::TadDescriptor&>(k).axis();
   if (!axes.empty()) {

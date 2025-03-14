@@ -148,6 +148,8 @@ HHsequence BiDiagonalUp::makeHHsequence_(const char type) {
 HHsequence BiDiagonalUp::makeHHsequence(const char type) {
   auto xType = _HHmatrix.dataType();
   BUILD_SINGLE_SELECTOR(xType, return makeHHsequence_, (type);, SD_FLOAT_TYPES);
+  NDArray dummy = NDArray();
+  return HHsequence(dummy, dummy, 'u');
 }
 
 BUILD_SINGLE_TEMPLATE(template void BiDiagonalUp::_evalData, (), SD_FLOAT_TYPES);

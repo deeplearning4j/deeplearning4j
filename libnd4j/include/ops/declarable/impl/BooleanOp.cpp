@@ -59,6 +59,8 @@ bool BooleanOp::verify(Context &block) {
     sd_printf("Got error %i during [%s] evaluation: ", (int)status, this->getOpDescriptor()->getOpName()->c_str());
     THROW_EXCEPTION("Internal error");
   }
+
+  return false;
 }
 
 bool BooleanOp::prepareOutputs(Context &ctx) {

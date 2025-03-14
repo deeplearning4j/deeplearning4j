@@ -290,6 +290,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
 Status LegacyRandomOp::validateAndExecute(Context& block) {
   auto z = OUTPUT_VARIABLE(0);
   BUILD_SINGLE_SELECTOR(z->dataType(), return validateAndExecute_, (block), SD_FLOAT_TYPES);
+  return sd::Status::KERNEL_FAILURE;
 }
 
 /**
@@ -313,6 +314,8 @@ ShapeList* LegacyRandomOp::calculateOutputShape(ShapeList* inputShape, Context& 
     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', zShapeVector));
   } else
     THROW_EXCEPTION("LegacyRandomOp: Unknown input data type!");
+
+  return nullptr;
 }
 
 Status LegacyRandomOp::execute(Context* block) { return DeclarableOp::execute(block); }

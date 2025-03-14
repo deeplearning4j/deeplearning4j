@@ -28,7 +28,7 @@
 namespace sd {
 class SD_LIB_EXPORT TadDescriptor {
  private:
-  ShapeDescriptor _originalShape;
+  sd::LongType *_originalShape;
 
   std::vector<LongType> _axis;
 
@@ -36,8 +36,6 @@ class SD_LIB_EXPORT TadDescriptor {
 
  public:
   explicit TadDescriptor(const LongType *originalShape, const LongType *dimensions, const LongType length,
-                         const bool keepUnitiesInShape = false);
-  explicit TadDescriptor(const ShapeDescriptor &descriptor, const std::vector<LongType> &dimensions,
                          const bool keepUnitiesInShape = false);
   ~TadDescriptor() = default;
 
@@ -56,8 +54,7 @@ class SD_LIB_EXPORT TadDescriptor {
   bool operator<(const TadDescriptor &other) const;
 
   std::vector<LongType> &axis();
-  ShapeDescriptor &originalShape();
-  ShapeDescriptor const &originalShapeConst() const;
+  LongType *originalShape();
   bool areUnitiesinShape() const;
 };
 }  // namespace sd

@@ -112,10 +112,11 @@ NDArray* processCondition(LaunchContext* context, int mode, NDArray* arg, NDArra
   if (numResult != nullptr) numResult->syncToDevice();
 
   compScalar.syncToDevice();
+  return nullptr;
 }
 BUILD_SINGLE_TEMPLATE(template NDArray* processCondition_,
                       (int mode, sd::NDArray* arg, sd::NDArray* comp, sd::NDArray* output, sd::NDArray* numResult,
-                       sd::NDArray& compScalar),
+                          sd::NDArray& compScalar),
                       SD_FLOAT_TYPES);
 
 template <typename T>

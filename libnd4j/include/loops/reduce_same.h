@@ -60,7 +60,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                              void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
   template <typename OpType>
-  static SD_DEVICE void transformCudaXD(const void *vx, const sd::LongType *outerXTadShapeInfo,
+  static SD_DEVICE void transformCuda(const void *vx, const sd::LongType *outerXTadShapeInfo,
                                         const sd::LongType *innerXTadShapeInfo, void *extraParams,
                                         void *reductionBuffer, void *vz, const sd::LongType *zShapeInfo);
 
@@ -73,7 +73,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                          void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
   template <typename OpType>
-  static SD_HOST void intermediateXD(dim3 launchDims, cudaStream_t *stream, const void *vx,
+  static SD_HOST void intermediate(dim3 launchDims, cudaStream_t *stream, const void *vx,
                                      const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                      void *extraParams, void *reductionBuffer, void *vz,
                                      const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
@@ -86,7 +86,7 @@ class SD_LIB_HIDDEN ReduceSameFunction {
                                        sd::LongType dimensionLength,
                                        void *reductionBuffer, sd::LongType const *tadOnlyShapeInfo);
 
-  static SD_HOST void execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
+  static SD_HOST void execReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *vx,
                                    const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo, void *extraParams,
                                    void *reductionBuffer, void *vz, const sd::LongType *dZShapeInfo,
                                    const sd::LongType *hZShapeInfo, const long long int *dims);

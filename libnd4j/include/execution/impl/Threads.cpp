@@ -146,6 +146,9 @@ Span2 Span2::build(int loop, uint64_t threadID, uint64_t numThreads, int64_t sta
     default:
       THROW_EXCEPTION("");
   }
+
+  return Span2(startX, stopX, incX, 0, 0, incY);
+
 }
 
 int64_t Span::startX() const {

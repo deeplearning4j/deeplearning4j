@@ -81,7 +81,7 @@ OpArgsHolder::OpArgsHolder(OpArgsHolder&& other) noexcept
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
 OpArgsHolder& OpArgsHolder::operator=(const OpArgsHolder& other) {
-  THROW_EXCEPTION("OpArgsHolder::OpArgsHolder assignment operator: don't use me !");
+  return *this;
 }
 
 ////////////////////////////////////////////////////////////////////////

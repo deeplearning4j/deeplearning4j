@@ -94,7 +94,7 @@ PRINT_MATH="OFF"
 KEEP_NVCC="OFF"
 PREPROCESS="ON"  # Initialize PREPROCESS variable
 CMAKE_ARGUMENTS=""
-
+PTXAS_INFO="OFF"
 while [[ $# -gt 0 ]]
 do
     key="$1"
@@ -106,6 +106,10 @@ do
                 CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DGENERATE_FLATC=ON"
                 shift # past argument
                 ;;
+    -ptxas|--ptxas-info)
+            PTXAS_INFO="$value"
+            shift # past argument
+            ;;
         -ol|--optimization-level)
             OPTIMIZATION_LEVEL="$value"
             shift # past argument
@@ -712,6 +716,7 @@ if [ "$LOG_OUTPUT" == "none" ]; then
         -DPRINT_INDICES="$PRINT_INDICES" \
         -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+        -DSD_PTXAS="$PTXAS_INFO" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \
@@ -739,6 +744,7 @@ else
         -DPRINT_INDICES="$PRINT_INDICES" \
         -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
         -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
+        -DSD_PTXAS="$PTXAS_INFO" \
         "$BLAS_ARG" \
         "$ARCH_ARG" \
         "$NAME_ARG" \
@@ -773,6 +779,7 @@ if [ "$PREPROCESS" == "ON" ]; then
            -DSD_KEEP_NVCC_OUTPUT="$KEEP_NVCC" \
            -DSD_GCC_FUNCTRACE="$FUNC_TRACE" \
             -DSD_PREPROCESS="$PREPROCESS" \
+           -DSD_PTXAS="$PTXAS_INFO" \
            "$BLAS_ARG" \
            "$ARCH_ARG" \
            "$NAME_ARG" \
@@ -804,6 +811,7 @@ if [ "$PREPROCESS" == "ON" ]; then
            "$ARCH_ARG" \
            "$NAME_ARG" \
            "$OP_OUTPUT_FILE_ARG" \
+           -DSD_PTXAS="$PTXAS_INFO" \
            -DSD_SANITIZE="${SANITIZE}" \
            -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}" \
            "$USE_LTO" \

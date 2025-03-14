@@ -23,7 +23,8 @@
 set -exo pipefail
 java_call="java "
 script_dir=$( cd -- "$( dirname -- "${bash_source[0]}" )" &> /dev/null && pwd )
-
+echo "RUNNING WITH CUSTOM JVM"
+echo "TEST RUNNER PREFIX: $test_runner_prefix"
 #source "${script_dir}/env.sh"
 # find libjvm.so
 if [[ -n $libjvm_so ]]; then
@@ -41,7 +42,7 @@ if [[ -z $libjvm_path ]]; then
 fi
 
 # if test_runner_prefix is not empty and contains "valgrind"
-if [[ -n $test_runner_prefix && $test_runner_prefix =~ "valgrind" ]]; then
+if [[ -n $TEST_RUNNER_PREFIX && TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
     # create a file to store the suppression information
     suppression_file="valgrind_suppressions.supp"
 
@@ -67,31 +68,27 @@ eof
     echo "valgrind suppression file has been generated."
 
     # check if "--suppressions" already exists in test_runner_prefix
-    if [[ $test_runner_prefix != *"--suppressions"* ]]; then
-        test_runner_prefix="$test_runner_prefix   --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+    if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
+        $TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
     fi
 
-    java_call="${java_call} -djava.compiler=none"
+    java_call="${java_call} -Djava.compiler=none"
 fi
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
-if [[ -n $test_runner_prefix && $test_runner_prefix =~ "compute-sanitizer" ]]; then
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
+    TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX} --tool=memcheck"
     # set default options for compute-sanitizer if none are specified
-    if [[ $test_runner_prefix == *"compute-sanitizer"* && $test_runner_prefix != *"--tool"* ]]; then
-        # add default options for comprehensive memory checking
-        test_runner_prefix="$test_runner_prefix --tool=memcheck --leak-check=full --report-api-errors=all"
-    fi
-
     # add jvm option to disable jit compilation to help with debugging
-    java_call="${java_call} -djava.compiler=none"
+    java_call="${java_call}  -Djava.compiler=none"
 
     echo "running with cuda compute-sanitizer"
 fi
 export CUDA_VISIBLE_DEVICES=1
 # print the final command
-echo "$test_runner_prefix $java_call $@"
-$test_runner_prefix $java_call "$@"
+echo "$TEST_RUNNER_PREFIX $java_call $@"
+$TEST_RUNNER_PREFIX $java_call "$@"
 
 # if test_runner_prefix is not empty and contains "valgrind", remove the suppression file
-if [[ -n $test_runner_prefix && $test_runner_prefix =~ "valgrind" ]]; then
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
     rm -f $suppression_file
 fi

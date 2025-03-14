@@ -2003,7 +2003,7 @@ void * _bufferWithOffset(LongType offset,DataBuffer *buffer) {
 //note this is meant to be used with primary() (host side/cpu) use specialBuffer() for device side buffers
 void *NDArray::buffer() {
   BUILD_SINGLE_SELECTOR(dataType(), return _bufferWithOffset, (offset(),getDataBuffer()),SD_COMMON_TYPES);
-
+  return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -26,18 +26,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 public interface ConstantHandler {
 
     /**
-     * If specific hardware supports dedicated constant memory,
-     * this method forces DataBuffer passed in to be moved
-     * to that constant memory.
-     *
-     * PLEASE NOTE: This method implementation is hardware-dependant.
-     *
-     * @param dataBuffer
-     * @return
-     */
-    long moveToConstantSpace(DataBuffer dataBuffer);
-
-    /**
      *
      * PLEASE NOTE: This method implementation is hardware-dependant.
      * PLEASE NOTE: This method does NOT allow concurrent use of any array

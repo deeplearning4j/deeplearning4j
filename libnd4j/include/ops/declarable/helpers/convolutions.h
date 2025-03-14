@@ -93,6 +93,8 @@ class SD_LIB_HIDDEN ConvolutionUtils {
     } else {
       THROW_EXCEPTION("Unsupported weight format");
     }
+
+    return 0;
   }
 
   static inline LongType sizeOfOutChannels(const LongType *shapeInfo,LongType weightsFormat) {

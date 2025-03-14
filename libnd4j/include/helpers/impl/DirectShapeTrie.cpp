@@ -24,12 +24,20 @@ void ShapeTrieNode::setBuffer(ConstantShapeBuffer* buf) {
     return;
   } else if (_buffer != nullptr) {
     // Buffer is already set - DO NOTHING
-    // Just keep using the existing buffer - NO DELETION!
+    // Just keep using the existing buffer
 
-    // If we want to be extra cautious, we can delete the new buffer
-    // that wasn't needed (since we're keeping the old one)
+    // IMPORTANT: Only delete the new buffer if we're sure it's safe to do so
+    // Check if the shapes are actually the same before deleting
     if (buf != _buffer) {
-      delete buf;  // Clean up the unneeded new buffer
+      if (shape::equalsSoft(buf->primary(), _buffer->primary())) {
+        // The shapes match, safe to delete the duplicate
+       // delete buf;
+      } else {
+        // The shapes don't match - this is an error condition!
+        // We should log this and NOT delete the buffer as it may be used elsewhere
+        printf("WARNING: Attempted to set different shape buffer on same node!\n");
+        // Don't delete - it might be used elsewhere
+      }
     }
   }
 }
@@ -277,12 +285,15 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
     // Create the shape buffer
     try {
         ConstantShapeBuffer* buffer = ShapeBufferCreatorHelper::getCurrentCreator().create(shapeInfo, rank);
+        current->setBuffer(buffer);
         return buffer;
     } catch (const std::exception& e) {
         std::string msg = "Shape buffer creation failed: ";
         msg += e.what();
         THROW_EXCEPTION(msg.c_str());
     }
+
+    return nullptr;
 }
 
 bool DirectShapeTrie::exists(const LongType* shapeInfo) const {

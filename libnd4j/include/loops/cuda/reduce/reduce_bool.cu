@@ -43,7 +43,7 @@ SD_KERNEL void simpleReduce(
     void* z,
     const sd::LongType* zShapeInfo) {
 
-  functions::reduce::ReduceBoolFunction<X, Z>::template transformCudaXD<OpType>(
+  functions::reduce::ReduceBoolFunction<X, Z>::template transformCuda<OpType>(
       x,
       outerXTadShapeInfo,
       innerXTadShapeInfo,
@@ -113,7 +113,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::aggregatePartials(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceBoolFunction<X, Z>::transformCudaXD(
+SD_DEVICE void ReduceBoolFunction<X, Z>::transformCuda(
     const void* vx,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -319,7 +319,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::execScalarCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(
+SD_HOST void ReduceBoolFunction<X, Z>::intermediate(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -346,7 +346,7 @@ SD_HOST void ReduceBoolFunction<X, Z>::intermediateXD(
         *stream);
     if (res != 0) {
       throw sd::cuda_exception::build(
-          "ReduceBoolFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
+          "ReduceBoolFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -465,7 +465,7 @@ SD_HOST void ReduceBoolFunction<X, Y>::execReduceScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST void ReduceBoolFunction<X, Y>::execReduceXD(
+SD_HOST void ReduceBoolFunction<X, Y>::execReduce(
     dim3 launchDims,
     cudaStream_t* stream,
     const int opNum,
@@ -490,7 +490,7 @@ SD_HOST void ReduceBoolFunction<X, Y>::execReduceXD(
         nullptr);
   } else {
     DISPATCH_BY_OPNUM_TT(
-        intermediateXD,
+        intermediate,
         PARAMS(
             launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams,
             vreductionBuffer, z, dZShapeInfo, hZShapeInfo, dims),

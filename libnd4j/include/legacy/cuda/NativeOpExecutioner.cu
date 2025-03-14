@@ -537,7 +537,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
   dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
-                        ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
+                        ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES);
 }
@@ -575,7 +575,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
   dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
-                        ::execReduceXD(launchDims, stream, opNum, dX,
+                        ::execReduce(launchDims, stream, opNum, dX,
                                        const_cast<sd::LongType*>(dXShapeInfo),
                                        const_cast<sd::LongType*>(hXShapeInfo), extraParams,
                                        reductionPointer, dZ,
@@ -608,7 +608,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
   dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
-                        ::execReduceXD(launchDims, stream, opNum, dX, const_cast<sd::LongType*>(dXShapeInfo),
+                        ::execReduce(launchDims, stream, opNum, dX, const_cast<sd::LongType*>(dXShapeInfo),
                                        const_cast<sd::LongType*>(hXShapeInfo), extraParams,
                                        reductionPointer, dZ,
                                        const_cast<sd::LongType*>(dZShapeInfo), const_cast<sd::LongType*>(hZShapeInfo), dimension),
@@ -644,7 +644,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
   dim3 launchDims = getReduceDims(numBlocks);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
-                        ::execReduceXD(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
+                        ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
                                        reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }

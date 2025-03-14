@@ -25,6 +25,23 @@
 
 namespace sd {
 
-void CudaPointerDeallocator::release(void *ptr) { cudaFree(ptr); }
+void CudaPointerDeallocator::release(void *ptr) {
+  if (ptr == nullptr) return;
 
+  // Check if this is a valid device pointer before freeing
+  cudaPointerAttributes attributes;
+  cudaError_t result = cudaPointerGetAttributes(&attributes, ptr);
+
+  if (result == cudaSuccess) {
+    // Only free if it's a regular device pointer
+    // cudaMemoryTypeDevice is for regular allocations we can free
+    if (attributes.type == cudaMemoryTypeDevice) {
+      cudaFree(ptr);
+    }
+    // Don't free other types (like constant memory)
+  } else {
+    // Clear the error and don't try to free this pointer
+    cudaGetLastError(); // Clear the error state
+  }
+}
 }  // namespace sd

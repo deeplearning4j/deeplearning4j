@@ -53,7 +53,7 @@ class ReduceFloatFunction {
                                        const sd::LongType *tadOnlyShapeInfo);
 
   template <typename OpType>
-  static SD_DEVICE void transformCudaXD(const void *vx, const sd::LongType *outerXTadShapeInfo,
+  static SD_DEVICE void transformCuda(const void *vx, const sd::LongType *outerXTadShapeInfo,
                                         const sd::LongType *innerXTadShapeInfo, void *extraParams,
                                         void *vreductionBuffer, void *vz, const sd::LongType *zShapeInfo);
 
@@ -66,7 +66,7 @@ class ReduceFloatFunction {
                                          void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
   template <typename OpType>
-  static SD_HOST void intermediateXD(dim3 launchDims, cudaStream_t *stream, const void *vx,
+  static SD_HOST void intermediate(dim3 launchDims, cudaStream_t *stream, const void *vx,
                                      const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo,
                                      void *extraParams, void *vreductionBuffer, void *vz,
                                      const sd::LongType *dZShapeInfo, const sd::LongType *hZShapeInfo,
@@ -79,7 +79,7 @@ class ReduceFloatFunction {
                                        sd::LongType dimensionLength,
                                        void *reductionBuffer, const sd::LongType *tadOnlyShapeInfo);
 
-  static SD_HOST void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
+  static SD_HOST void execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                    const sd::LongType *dXShapeInfo, const sd::LongType *hXShapeInfo, void *extraParams,
                                    void *vreductionBuffer, void *vz, const sd::LongType *dZShapeInfo,
                                    const sd::LongType *hZShapeInfo, const sd::LongType *dims);
