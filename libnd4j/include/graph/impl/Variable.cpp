@@ -278,6 +278,8 @@ flatbuffers::Offset<::graph::FlatVariable> Variable::asFlatVariable(flatbuffers:
   } else {
     THROW_EXCEPTION("Variable::asFlatVariable isn't possible for NDArrayList");
   }
+
+  return CreateFlatVariable(builder, 0, 0, static_cast<::graph::DType>(0), 0, 0);
 }
 }  // namespace graph
 }  // namespace sd

@@ -53,6 +53,7 @@ sd::LongType listDiffCount(sd::LaunchContext* context, NDArray* values, NDArray*
   BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), SD_COMMON_TYPES);
 
   NDArray::registerPrimaryUse({}, {values, keep});
+  return 0;
 }
 
 BUILD_SINGLE_TEMPLATE(template sd::LongType listDiffCount_, (NDArray * values, NDArray* keep);, SD_COMMON_TYPES);
@@ -110,7 +111,7 @@ sd::Status listDiffFunctor(sd::LaunchContext* context, NDArray* values, NDArray*
   } else if (DataTypeUtils::isZ(xType)) {
     BUILD_SINGLE_SELECTOR(xType, result = listDiffFunctor_, (values, keep, output1, output2), SD_INTEGER_TYPES);
   } else {
-    THROW_EXCEPTION("ListDiff: Only integer and floating point data types are supported");
+   return sd::Status::KERNEL_FAILURE;
   }
 
   NDArray::registerPrimaryUse({output1, output2}, {values, keep});

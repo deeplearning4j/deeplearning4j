@@ -161,7 +161,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         super(pointer, indexer, length);
 
         // allocating interop buffer
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, false);
+        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, true);
         // passing existing pointer to native holder
         this.ptrDataBuffer.setPrimaryBuffer(pointer, length);
 
@@ -361,7 +361,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.elementSize =  (byte) elementSize;
 
         // we allocate native DataBuffer AND it will contain our device pointer
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, false);
+        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length, type, true);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, length * type.width());
 
         if (initialize) {
@@ -1531,7 +1531,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         type = currentType;
 
         if (ptrDataBuffer == null) {
-            ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, false);
+            ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(length(), type, true);
             this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
         }
 

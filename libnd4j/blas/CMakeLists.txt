@@ -200,7 +200,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
         endif()
 
         # Set C++ compiler and flags
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all  -Wall -Wextra -Werror -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -262,7 +262,7 @@ if(SD_CUDA)
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             if(SD_GCC_FUNCTRACE STREQUAL "ON")
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
                 add_compile_definitions(SD_GCC_FUNCTRACE)
             else()
@@ -306,7 +306,7 @@ if(SD_CUDA)
         endif()
 
         # Cap the number of registers to prevent resource exhaustion
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --maxrregcount=40 ")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128  ")
 
         # Define CUDA Architectures
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
@@ -371,6 +371,11 @@ if(SD_CUDA)
         endif()
        include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/TypeMST.cmake)
 
+        # 2. Process the compilation_units templates
+        file(GLOB CUDA_COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in)
+        foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
+            genCompilation(${FL_ITEM})
+        endforeach()
 
         # Decide whether to use all combinations or optimized MST combinations
        set(SD_USE_MST_TYPES ON)
@@ -423,7 +428,7 @@ if(SD_CUDA)
         file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h ../include/loops/*.chpp)
         file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
-        file(GLOB_RECURSE LOOPS_SOURCES_CUDA ../include/loops/*.cu)
+        file(GLOB_RECURSE LOOPS_SOURCES_CUDA ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/loops/cuda/comb_compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
 
@@ -485,6 +490,8 @@ if(SD_CUDA)
                     ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
                     ${CUSTOMOPS_GENERIC_SOURCES}
+                    ${LOOPS_SOURCES_CUDA}
+
             )
         else()
             add_library(samediff_obj OBJECT
@@ -509,6 +516,8 @@ if(SD_CUDA)
                     ${CUSTOMOPS_ONEDNN_SOURCES}
                     ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
                     ${CUSTOMOPS_GENERIC_SOURCES}
+                    ${LOOPS_SOURCES_CUDA}
+
             )
         endif()
 

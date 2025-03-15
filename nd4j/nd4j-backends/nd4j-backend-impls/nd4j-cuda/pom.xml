@@ -125,6 +125,7 @@
                                 <exclude>*.so</exclude>
                                 <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
                             </excludes>
+
                         </configuration>
                     </execution>
                     <execution>
@@ -331,8 +332,8 @@
                                 <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>
                             </linkPaths>
                             <compilerOptions>
-                                <compilerOption>${javacpp.compiler.options}</compilerOption>
                                 <compilerOption>-std=c++17</compilerOption>
+                                <compilerOption>-Wl,--no-undefined</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -346,8 +347,7 @@
                                     <skip>${javacpp.parser.skip}</skip>
                                     <deleteJniFiles>false</deleteJniFiles>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets
-                                    </classOrPackageName>
+                                    <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets</classOrPackageName>
                                 </configuration>
                             </execution>
                             <execution>
@@ -477,7 +477,10 @@
                                 <compilerOption>-fno-optimize-sibling-calls</compilerOption>
                                 <compilerOption>-g</compilerOption>
                                 <compilerOption>-fPIC</compilerOption>
+                                <compilerOption>-std=c++17</compilerOption>
+
                             </compilerOptions>
+
                         </configuration>
                         <executions>
                             <execution>
@@ -489,10 +492,9 @@
                                 <configuration>
                                     <skip>${javacpp.parser.skip}</skip>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets
-                                        <deleteJniFiles>false</deleteJniFiles>
+                                    <classOrPackageName>org.nd4j.presets.cuda.Nd4jCudaPresets</classOrPackageName>
+                                    <deleteJniFiles>false</deleteJniFiles>
 
-                                    </classOrPackageName>
                                 </configuration>
                             </execution>
                             <execution>

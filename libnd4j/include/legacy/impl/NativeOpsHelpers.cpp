@@ -279,6 +279,7 @@ sd::Pointer numpyHeaderForNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::Lo
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
   BUILD_SINGLE_SELECTOR(type, return _numpyHeaderForNd4j, (data, shapeBuffer, wordSize, headerSize), SD_COMMON_TYPES);
+  return nullptr;
 }
 
 /**
@@ -370,6 +371,7 @@ long numpyHeaderLengthWordSize(sd::Pointer shapeBuffer,long wordSize) {
   auto shapeBufferCast = reinterpret_cast<sd::LongType*>(shapeBuffer);
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
   BUILD_SINGLE_SELECTOR(type, return _numpyHeaderLengthWordSize, (shapeBuffer, wordSize), SD_COMMON_TYPES);
+  return 0;
 
 }
 
@@ -378,6 +380,7 @@ long numpyHeaderLength(OpaqueDataBuffer *opaqueDataBuffer,sd::Pointer shapeBuffe
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
 
   BUILD_SINGLE_SELECTOR(type, return _numpyHeaderLength, (opaqueDataBuffer, shapeBuffer), SD_COMMON_TYPES);
+  return 0;
 
 }
 
@@ -388,6 +391,7 @@ sd::Pointer numpyFromNd4j(sd::Pointer data, sd::Pointer shapeBuffer, sd::LongTyp
   auto type = sd::ArrayOptions::dataType(shapeBufferCast);
 
   BUILD_SINGLE_SELECTOR(type, return _numpyFromNd4j, (data, shapeBuffer, wordSize), SD_COMMON_TYPES);
+  return nullptr;
 }
 
 
@@ -637,6 +641,8 @@ sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::Lon
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     THROW_EXCEPTION(e.what());
   }
+
+  return nullptr;
 }
 void munmapFile(sd::Pointer *extraPointers, sd::LongType  *ptrMap, sd::LongType  length) {}
 
@@ -1155,6 +1161,8 @@ int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer hX, sd::LongType c
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     return 0;
   }
+
+  return 0;
 }
 
 
@@ -1387,7 +1395,7 @@ const char* getNpyArrayNameFromMap(void* map, int index, char* nameBuffer) {
       memcpy(nameBuffer, it->first.c_str(), len_of_str);
     }
   }
-  THROW_EXCEPTION("No array at index.");
+  return "";
 }
 
 void* getNpyArrayFromMap(void* map, int index) {
@@ -1402,7 +1410,8 @@ void* getNpyArrayFromMap(void* map, int index) {
       return arr;
     }
   }
-  THROW_EXCEPTION("No array at index.");
+
+ return nullptr;
 }
 
 
@@ -1682,6 +1691,7 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
     THROW_EXCEPTION(e.what());
   }
 
+  return nullptr;
 
 }
 

@@ -59,7 +59,7 @@ class HHsequence {
    *  constructor
    */
   HHsequence(NDArray& vectors, NDArray& coeffs, const char type);
-
+  HHsequence() = delete;
   /**
    *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
    *

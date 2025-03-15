@@ -239,7 +239,6 @@ __device__ void ScalarBoolTransform<X,Z>::transformCuda(
  }
 }
 
-// omitted code for transformCuda with EWS etc, for brevity
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>

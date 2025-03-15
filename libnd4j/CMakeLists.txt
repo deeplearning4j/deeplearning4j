@@ -113,8 +113,10 @@ if (SD_CUDA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
-
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler --ptxas-options=-v  -Xptxas -O1")
+    if("${SD_PTXAS}" STREQUAL  "ON")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+    endif()
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler  ")
     if(SD_KEEP_NVCC_OUTPUT)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
     endif()
@@ -157,13 +159,7 @@ foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
 endforeach()
 
 
-# Define a function to generate individual CUDA files for each type combination
-# Find and replace the existing function:
-function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
-    # ...existing implementation...
-endfunction()
 
-# REPLACE WITH THIS IMPLEMENTATION:
 
 function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     # Split the COMBINATION string into a list
@@ -573,8 +569,8 @@ endif()
 # -fsanitize=leak
 if (SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64*" OR "${SD_ARCH}" MATCHES "armv8-a")
         set(SD_ARCH armv8-a)
@@ -583,8 +579,8 @@ elseif (APPLE)
     endif()
 
 
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-return-type -Wno-braced-scalar-init -Wno-unknown-pragmas -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-return-type -Wno-braced-scalar-init -Wno-unknown-pragmas -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
     set(SD_X86_BUILD true)
     if (SD_CUDA)

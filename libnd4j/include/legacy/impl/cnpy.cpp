@@ -106,6 +106,7 @@ char cnpy::mapType() {
     return '?';
 }
 
+
 sd::DataType cnpy::dataTypeFromHeader(char *data) {
   // indices for type & data size
   const int st = 10;
@@ -133,10 +134,14 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
           return sd::DataType::INT32;
         case '8':
           return sd::DataType::INT64;
+
         default:
-          THROW_EXCEPTION("Only data sizes of [1, 2, 4, 8] are supported for Integer data types import");
+          return sd::DataType::UNKNOWN;
+
+
       }
     case 'f':
+
       switch (s) {
         case '1':
           return sd::DataType::FLOAT8;
@@ -147,7 +152,7 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
         case '8':
           return sd::DataType::DOUBLE;
         default:
-          THROW_EXCEPTION("Only data sizes of [1, 2, 4, 8] are supported for Float data types import");
+          return sd::DataType::UNKNOWN;
       }
     case 'u':
       switch (s) {
@@ -160,13 +165,18 @@ sd::DataType cnpy::dataTypeFromHeader(char *data) {
         case '8':
           return sd::DataType::UINT64;
         default:
-          THROW_EXCEPTION("Only data sizes of [1, 2, 4, 8] are supported for Unsigned data types import");
+          return sd::DataType::UNKNOWN;
+
       }
     case 'c':
-      THROW_EXCEPTION("Import of complex data types isn't supported yet");
+      return sd::DataType::UNKNOWN;
+
     default:
-      THROW_EXCEPTION("Unknown type marker");
+      return sd::DataType::UNKNOWN;
+
   }
+
+  return sd::DataType::UNKNOWN;
 }
 
 template <typename T>
@@ -546,7 +556,7 @@ cnpy::NpyArray cnpy::npzLoad(std::string fname, std::string varname) {
 
   fclose(fp);
   printf("npz_load: Error! Variable name %s not found in %s!\n", varname.c_str(), fname.c_str());
-  THROW_EXCEPTION("Variable wasn't found in file");
+  return NpyArray();
 }
 
 /**

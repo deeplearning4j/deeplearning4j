@@ -42,7 +42,7 @@ SD_KERNEL void simpleReduce(
     void* z,
     const sd::LongType* zShapeInfo) {
 
-  functions::reduce::ReduceLongFunction<X, Z>::template transformCudaXD<OpType>(
+  functions::reduce::ReduceLongFunction<X, Z>::template transformCuda<OpType>(
       x,
       outerXTadShapeInfo,
       innerXTadShapeInfo,
@@ -137,7 +137,7 @@ SD_DEVICE void ReduceLongFunction<X, Z>::aggregatePartials(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_DEVICE void ReduceLongFunction<X, Z>::transformCudaXD(
+SD_DEVICE void ReduceLongFunction<X, Z>::transformCuda(
     const void* vx,
     const sd::LongType* outerXTadShapeInfo,
     const sd::LongType* innerXTadShapeInfo,
@@ -339,7 +339,7 @@ SD_DEVICE void ReduceLongFunction<X, Z>::execScalarCuda(
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(
+SD_HOST void ReduceLongFunction<X, Z>::intermediate(
     dim3 launchDims,
     cudaStream_t* stream,
     const void* x,
@@ -366,7 +366,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(
         *stream);
     if (res != 0) {
       throw sd::cuda_exception::build(
-          "ReduceLongFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
+          "ReduceLongFunction<X,Z>::intermediate: failed to copy temporary scalar", res);
     }
 
     auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
@@ -394,7 +394,7 @@ SD_HOST void ReduceLongFunction<X, Z>::intermediateXD(
             z,
             dZShapeInfo);
   }
-  sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction intermediateXD(...) failed");
+  sd::DebugHelper::checkErrorCode(stream, "ReduceLongFunction intermediate(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -472,7 +472,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceScalar(
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-SD_HOST void ReduceLongFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
+SD_HOST void ReduceLongFunction<X, Y>::execReduce(dim3 launchDims, cudaStream_t *stream, int opNum, const void *vx,
                                                     sd::LongType *dXShapeInfo,  sd::LongType *hXShapeInfo, void *extraParams,
                                                     void *vreductionBuffer, void *vz,  sd::LongType *dZShapeInfo,
                                                     sd::LongType *hZShapeInfo,  sd::LongType *dims) {
@@ -486,7 +486,7 @@ SD_HOST void ReduceLongFunction<X, Y>::execReduceXD(dim3 launchDims, cudaStream_
         nullptr, 0, vreductionBuffer, nullptr);
   } else {
     DISPATCH_BY_OPNUM_TT(
-        intermediateXD,
+        intermediate,
         PARAMS(launchDims, stream, vx, dXShapeInfo, hXShapeInfo,
                extraParams, vreductionBuffer, vz, dZShapeInfo, hZShapeInfo, dims),
         OPS_A(REDUCE_LONG_OPS));

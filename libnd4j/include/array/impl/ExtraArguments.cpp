@@ -79,7 +79,7 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
 #ifdef __CUDABLAS__
   // TODO: maybe make it asynchronous eventually?
   cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
-  delete target;
+  delete[] target;
 #endif
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void ExtraArguments::convertAndCopy,
