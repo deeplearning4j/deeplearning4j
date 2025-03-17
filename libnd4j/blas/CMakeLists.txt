@@ -355,10 +355,6 @@ if(SD_CUDA)
         # Initialize the list of CUDA generated sources
         set(CUDA_GENERATED_SOURCES "")
 
-        # Get all CUDA template files from comb_compilation_units directory
-        file(GLOB CUDA_TEMPLATE_FILES
-                "../include/loops/cuda/comb_compilation_units/*.cu.in"
-        )
 
         if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
             # If selective types are enabled, count them
@@ -390,6 +386,14 @@ if(SD_CUDA)
             message(STATUS "Using all possible type combinations")
         endif()
 
+
+
+
+        # Get all CUDA template files from comb_compilation_units directory
+        file(GLOB CUDA_TEMPLATE_FILES
+                "../include/loops/cuda/comb_compilation_units/*.cu.in"
+        )
+
         # For each template file, generate individual function files per type combination
         foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
             foreach(COMBINATION ${COMBINATIONS_3})
@@ -400,9 +404,8 @@ if(SD_CUDA)
 
 
         # Add all generated CUDA files to the sources
-        if(CUDA_GENERATED_SOURCES)
-            list(APPEND ALL_SOURCES ${CUDA_GENERATED_SOURCES})
-        endif()
+        list(APPEND ALL_SOURCES ${CUDA_GENERATED_SOURCES})
+
 
         # Gather CUDA Source Files
         file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
@@ -430,7 +433,7 @@ if(SD_CUDA)
         file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
-        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/loops/cuda/comb_compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
+        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
 
         # Generate Compilation Units
         foreach(FL_ITEM ${COMPILATION_UNITS})
