@@ -53,3 +53,22 @@ ITERATE_COMBINATIONS_3(
         sd::LongType const* tadOnlyShapeInfoZ,
         sd::LongType const* tadOffsetsZ);
 );
+
+ITERATE_COMBINATIONS_3(
+    SD_SINGLE_TYPE_@COMB1@,
+    SD_SINGLE_TYPE_@COMB2@,
+    SD_SINGLE_TYPE_@COMB3@,
+    INSTANT_PROCESS_COMBINATION_3,
+    functions::broadcast::Broadcast,
+    ::execBroadcast(
+        dim3 launchDims,
+        cudaStream_t* stream,
+        int opNum,
+        void const* x,
+        sd::LongType const* xShapeInfo,
+        void const* y,
+        sd::LongType const* yShapeInfo,
+        void* z,
+        sd::LongType const* zShapeInfo);
+);
+

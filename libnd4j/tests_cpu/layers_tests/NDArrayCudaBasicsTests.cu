@@ -159,8 +159,8 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
 
   Pointer nativeStream = (Pointer)malloc(sizeof(cudaStream_t));
   CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
-  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(&nativeStream));
-  auto stream = reinterpret_cast<cudaStream_t*>(&nativeStream);
+  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t>(&nativeStream));
+  auto stream = reinterpret_cast<cudaStream_t>(&nativeStream);
 
 
   LaunchContext lc(stream, nullptr, nullptr);
@@ -169,7 +169,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_1) {
                                              y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(),
                                              z.specialShapeInfo(), nullptr);
   z.tickWriteDevice();
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, res);
 
   for (int e = 0; e < z.lengthOf(); e++) ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -186,15 +186,15 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_2) {
 
   Pointer nativeStream = (Pointer)malloc(sizeof(cudaStream_t));
   CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
-  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(&nativeStream));
-  auto stream = reinterpret_cast<cudaStream_t*>(&nativeStream);
+  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t>(&nativeStream));
+  auto stream = reinterpret_cast<cudaStream_t>(&nativeStream);
 
-  LaunchContext lc(stream, *stream, nullptr, nullptr);
+  LaunchContext lc(stream, stream, nullptr, nullptr);
   NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), x.specialBuffer(),
                                              x.specialShapeInfo(), nullptr, y.shapeInfo(), y.specialBuffer(),
                                              y.specialShapeInfo(), nullptr, z.shapeInfo(), z.specialBuffer(),
                                              z.specialShapeInfo(), nullptr);
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, res);
 
   for (int e = 0; e < z.lengthOf(); e++) ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -211,20 +211,20 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_3) {
 
   Pointer nativeStream = (Pointer)malloc(sizeof(cudaStream_t));
   CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
-  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(&nativeStream));
-  auto stream = reinterpret_cast<cudaStream_t*>(&nativeStream);
+  cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t>(&nativeStream));
+  auto stream = reinterpret_cast<cudaStream_t>(&nativeStream);
 
-  LaunchContext lc(stream, *stream, nullptr, nullptr);
+  LaunchContext lc(stream, stream, nullptr, nullptr);
   NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(),
                                              x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(),
                                              y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(),
                                              z.specialShapeInfo(), nullptr);
   z.tickWriteDevice();
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, res);
   z.syncToHost();
   cudaMemcpy(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost);
-  res = cudaStreamSynchronize(*stream);
+  res = cudaStreamSynchronize(stream);
   z.tickWriteHost();
   ASSERT_EQ(0, res);
   for (int e = 0; e < z.lengthOf(); e++) {
@@ -360,7 +360,7 @@ TEST_F(NDArrayCudaBasicsTests, TestPrimitiveNeg_01) {
   NativeOpExecutioner::execTransformSame(x.getContext(), transform::Neg, x.buffer(), x.shapeInfo(), x.specialBuffer(),
                                          x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(),
                                          y.specialShapeInfo(), nullptr, nullptr, nullptr);
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, res);
   y.tickWriteDevice();
 
@@ -535,13 +535,13 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
   cudaError_t cudaResult;
 
   LaunchContext* pLc = x.getContext();  //(&stream);
-  cudaStream_t* stream = pLc->getCudaStream();
+  cudaStream_t stream = pLc->getCudaStream();
   // allocate required amount of global device memory and copy host data to it
 
   for (int i = 0; i < devicePtrs.size(); ++i) {
     cudaResult = cudaMalloc(reinterpret_cast<void**>(&devicePtrs[i]), hostData[i].second);
     ASSERT_EQ(0, cudaResult);
-    cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, *stream);
+    cudaMemcpyAsync(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice, stream);
   }
 
   NDArray::registerSpecialUse({&z}, {&x, &y});
@@ -651,7 +651,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
 
   // create cuda stream and LaunchContext
   cudaError_t cudaResult;
-  cudaStream_t* stream = x.getContext()->getCudaStream();
+  cudaStream_t stream = x.getContext()->getCudaStream();
   LaunchContext* pLc = x.getContext();
 
   // allocate required amount of global device memory and copy host data to it
@@ -668,7 +668,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
                                      z.specialShapeInfo(), (LongType*)devicePtrs[0], dimensions.size(),
                                      (LongType*)devicePtrs[1], (LongType*)devicePtrs[2], nullptr, nullptr);
 
-  cudaResult = cudaStreamSynchronize(*stream);
+  cudaResult = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, cudaResult);
   // free allocated global device memory
   for (int i = 0; i < devicePtrs.size(); ++i) cudaFree(devicePtrs[i]);
@@ -709,7 +709,7 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
   NativeOpExecutioner::execReduceSameScalar(x.getContext(), reduce::Sum, x.buffer(), x.shapeInfo(), x.specialBuffer(),
                                             x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(),
                                             y.specialShapeInfo());
-  auto res = cudaStreamSynchronize(*stream);
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_EQ(0, res);
   y.syncToHost();
 
@@ -1708,8 +1708,8 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
                                          extras.argumentsAsT(FLOAT32), exp.buffer(), exp.shapeInfo(),
                                          exp.specialBuffer(), exp.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(),
                                          tmp.specialBuffer(), tmp.specialShapeInfo());
-  cudaStream_t* stream = x.getContext()->getCudaStream();
-  auto res = cudaStreamSynchronize(*stream);
+  cudaStream_t stream = x.getContext()->getCudaStream();
+  auto res = cudaStreamSynchronize(stream);
   ASSERT_TRUE(exp.isSameShape(diag));
   ASSERT_TRUE(exp.equalsTo(diag));
 }
