@@ -1529,6 +1529,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
             ret.setLayers(clonedLayers);
         }
+        ret.score = this.score;
         return ret;
     }
 
