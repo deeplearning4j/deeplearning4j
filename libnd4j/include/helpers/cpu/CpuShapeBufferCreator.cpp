@@ -28,9 +28,9 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
     LongType* shapeCopy = new LongType[shapeInfoLength];
     std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
     
-    auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
-        new PrimaryPointerDeallocator(),
-        [] (PrimaryPointerDeallocator* ptr) { delete ptr; }
+    auto deallocator = std::shared_ptr<PointerDeallocator>(
+        new PointerDeallocator(),
+        [] (PointerDeallocator* ptr) { delete ptr; }
     );
     
     auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);

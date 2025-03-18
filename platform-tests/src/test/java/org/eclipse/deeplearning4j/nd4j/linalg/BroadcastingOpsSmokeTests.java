@@ -1019,7 +1019,6 @@ public class BroadcastingOpsSmokeTests {
         // Get views
         INDArray rowView = matrix.getRow(1);
         INDArray colView = matrix.getColumn(1);
-
         // Create vectors for broadcasting
         INDArray rowVector = Nd4j.create(new double[] {10, 20, 30});
         INDArray colVector = Nd4j.create(new double[] {10, 20, 30}).reshape(3, 1);

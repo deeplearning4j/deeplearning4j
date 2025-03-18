@@ -868,26 +868,6 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         // no-op
     }
 
-
-
-
-    private long _length(long[] shape) {
-        // scalar case
-        if (shape.length == 0)
-            return 1;
-        else if (shape.length == 1)
-            return shape[0];
-        else {
-            long length = 1;
-            for (int e = 0; e < shape.length; e++)
-                length *= shape[e];
-
-            return length;
-        }
-    }
-
-
-
     @Override
     public Map<String, CustomOpDescriptor> getCustomOperations() {
         throw new UnsupportedOperationException();

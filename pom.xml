@@ -713,11 +713,18 @@
                     <configuration>
                         <args>
                             <arg>-Xjsr305=strict</arg>
+                            <arg>-Xextended-compiler-checks</arg>
+                            <arg>-Xskip-runtime-version-check</arg>
                         </args>
                         <compilerPlugins>
                             <plugin>spring</plugin>
                             <plugin>jpa</plugin>
+                            <plugin>all-open</plugin>
                         </compilerPlugins>
+                        <pluginOptions>
+                            <option>all-open:annotation=com.google.protobuf.GeneratedMessageV3</option>
+                            <option>all-open:annotation=org.nd4j.shade.protobuf.GeneratedMessageV3</option>
+                        </pluginOptions>
                     </configuration>
                     <dependencies>
                         <dependency>
