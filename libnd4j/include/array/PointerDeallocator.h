@@ -32,7 +32,7 @@ namespace sd {
 class SD_LIB_EXPORT PointerDeallocator {
  public:
   PointerDeallocator() = default;
-  ~PointerDeallocator() = default;
+  virtual ~PointerDeallocator() = default;
 
   virtual void release(void *ptr);
 };

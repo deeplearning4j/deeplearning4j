@@ -1544,56 +1544,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return customOps;
     }
 
+
     /**
      * This method executes given CustomOp
      *
      * PLEASE NOTE: You're responsible for input/output validation
-     * PLEASE NOTE: right now this operations are executing on CPU
-     * @param op
+     * @param op Operation to execute
      */
     @Override
-    public INDArray[] exec(CustomOp op) {
-
-        Nd4j.getExecutioner().commit();
-
-        boolean shapeOverride = false;
-        if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
-            try {
-                val list = this.calculateOutputShape(op);
-                if (list.isEmpty())
-                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
-
-                for (val shape: list)
-                    op.addOutputArgument(Nd4j.create(shape, false));
-
-                shapeOverride = true;
-            } catch (Exception e) {
-                throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
-            }
-        }
-
-
-
+    public  INDArray[] exec(@NonNull CustomOp op) {
         val name = op.opName();
-        try (val context = (CudaOpContext) buildContext()) {
-            // optionally skip shape validation on op execution
-            if (shapeOverride)
-                context.shapeFunctionOverride(true);
-
-            context.markInplace(op.isInplaceCall());
-
-            // transferring rng state
-            context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
-
-            //transferring input/output arrays
-            context.setInputArrays(op.inputArguments());
-            context.setOutputArrays(op.outputArguments());
-
-            // transferring static args
-            context.setBArguments(op.bArgs());
-            context.setIArguments(op.iArgs());
-            context.setTArguments(op.tArgs());
-            context.setDArguments(op.dArgs());
+        try (val context = buildContext()) {
+            op.setupOpContextFromCustomOp(context);
+            boolean shapeOverride = op.initializeOutputs(context);
+            long start = profilingConfigurableHookIn(op,context);
+            initOpContext(op, shapeOverride, context);
 
             val result = exec(op, context);
             val states = context.getRngStates();
@@ -1601,16 +1566,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             // pulling states back
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+            profilingConfigurableHookOut(op,context,start);
 
             return result;
         } catch (ND4JOpProfilerException e) {
+
             throw e;
         } catch (Exception e) {
-            StringBuilder message = new StringBuilder();
-            message.append("Op [" + name + "] execution failed with error " + "Cuda last error message: " + cudaGetErrorName(org.bytedeco.cuda.global.cublas.cublasGetError()).getString());
-            throw new RuntimeException(message.toString(), e);
+            throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
+
+
     }
+
+
 
 
     @Override

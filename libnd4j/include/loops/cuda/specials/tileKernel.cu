@@ -175,16 +175,22 @@
 
     if (outOrder == 'c') {
       for (LongType i = tid; i < resultLength; i += totalThreads) {
-        // We do direct linear offset for output as i
-        // The offset in the input is determined by the out-coords
-        // mapped to the input stride
-        sd::LongType coords[SD_MAX_RANK];
+        sd::LongType outCoords[SD_MAX_RANK];
+        sd::LongType inCoords[SD_MAX_RANK];
         sd::LongType inOffset;
 
-        INDEX2COORDS(i, outRank, outShapePtr, coords);
-        COORDS2INDEX(outRank, inStridePtr, coords, inOffset);
+        // Get output coordinates
+        INDEX2COORDS(i, outRank, outShapePtr, outCoords);
 
-        outData[i] = static_cast<X>(inData[inOffset]);
+        // Map to input coordinates (using modulo for tiling)
+        for (int d = 0; d < inRank; d++) {
+          inCoords[d] = outCoords[d] % inShapePtr[d];
+        }
+
+        // Get input offset from input coordinates
+        COORDS2INDEX(inRank, inStridePtr, inCoords, inOffset);
+
+        outData[i] = inData[inOffset];
       }
     }
     else {
