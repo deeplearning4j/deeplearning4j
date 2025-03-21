@@ -52,8 +52,6 @@ void HHcolPivQR::_evalData() {
   NDArray normsUpd(_qr.ordering(), colsShape , _qr.dataType(), _qr.getContext());
   NDArray normsDir(_qr.ordering(),colsShape , _qr.dataType(), _qr.getContext());
 
-  int transpNum = 0;
-
   for (int k = 0; k < cols; ++k)
     normsDir.r<T>(k) = normsUpd.r<T>(k) = _qr({0, 0, k, k + 1}).reduceNumber(reduce::Norm2).t<T>(0);
 
@@ -82,7 +80,6 @@ void HHcolPivQR::_evalData() {
       math::sd_swap<T>(normsUpd.r<T>(k), normsUpd.r<T>(biggestColIndex));
       math::sd_swap<T>(normsDir.r<T>(k), normsDir.r<T>(biggestColIndex));
 
-      ++transpNum;
     }
 
     T normX, c;
@@ -97,9 +94,9 @@ void HHcolPivQR::_evalData() {
     if (max > maxPivot) maxPivot = max;
 
     if (k < rows && (k + 1) < cols) {
-      NDArray qrBlock = _qr({k, rows, k + 1, cols}, true);
+      NDArray qrBlock2 = _qr({k, rows, k + 1, cols}, true);
       NDArray tail = _qr({k + 1, rows, k, k + 1}, true);
-      Householder<T>::mulLeft(qrBlock, tail, _coeffs.t<T>(k));
+      Householder<T>::mulLeft(qrBlock2, tail, _coeffs.t<T>(k));
     }
 
     for (int j = k + 1; j < cols; ++j) {

@@ -32,7 +32,7 @@ void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step
   // classic one
   auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); };
 
-  input->applyPairwiseLambda(*step, lambda, *output);
+  input->applyPairwiseLambda(step, lambda, output);
 }
 
 void applyGradientDescent(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {

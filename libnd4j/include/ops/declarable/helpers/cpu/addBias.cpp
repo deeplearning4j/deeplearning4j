@@ -379,7 +379,7 @@ static void addBias_(NDArray& input, NDArray& bias, NDArray& output, const bool 
   if (rank > 5) {
     const sd::LongType channelDim = isNCHW ? 1 : input.rankOf() - 1;  // second or last
     std::vector<sd::LongType> channelDimVec = {channelDim};
-    const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add,&channelDimVec , bias, output);
+    const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add,&channelDimVec , &bias, &output);
     return;
   }
 

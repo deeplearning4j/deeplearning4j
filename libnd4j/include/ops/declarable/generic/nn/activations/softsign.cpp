@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(softsign, 1, 1, true, 0, 0) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(transform::SoftSign, *z);
+  first->applyTransform(transform::SoftSign, z);
 
   STORE_RESULT(*z);
 
@@ -48,8 +48,6 @@ CONFIGURABLE_OP_IMPL(softsign_bp, 2, 1, true, 0, 0) {
   auto epsilon = INPUT_VARIABLE(1);
 
   auto z = OUTPUT_VARIABLE(0);
-
-  // input->applyPairwiseTransform(pairwise::SoftsignDerivativeE, epsilon, z, nullptr);
   helpers::softSignDerivative(block.launchContext(), input, epsilon, z);
 
   return Status::OK;

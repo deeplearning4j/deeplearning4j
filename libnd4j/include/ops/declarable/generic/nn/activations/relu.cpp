@@ -34,7 +34,7 @@ CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-  first->applyScalar(scalar::RELU, scalar, *z);
+  first->applyScalar(scalar::RELU, scalar, z);
 
   STORE_RESULT(*z);
 
@@ -48,8 +48,6 @@ CONFIGURABLE_OP_IMPL(relu_bp, 2, 1, true, 0, 0) {
   auto epsilon = INPUT_VARIABLE(1);
 
   auto z = OUTPUT_VARIABLE(0);
-
-  // input->applyPairwiseTransform(pairwise::RELUDerivativeE, epsilon, z, nullptr);
   helpers::reluDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

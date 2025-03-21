@@ -42,17 +42,17 @@ CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
     shift.assign(T_ARG(0));
   }
 
-  means->applyScalarArr(scalar::Divide, *counts, *resMeans);
+  means->applyScalarArr(scalar::Divide, counts, resMeans);
 
   NDArray squareMeans = resMeans->dup('c', false);
   NDArray tempVariances = resVariances->dup('c', false);
 
-  squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
-  variances->applyScalarArr(scalar::Divide, *counts, tempVariances);
-  tempVariances.applyPairwiseTransform(pairwise::Subtract, squareMeans, *resVariances);
+  squareMeans.applyTransform(transform::Square, &squareMeans, nullptr);
+  variances->applyScalarArr(scalar::Divide, counts, &tempVariances);
+  tempVariances.applyPairwiseTransform(pairwise::Subtract, &squareMeans, resVariances);
 
   if (shift.e<double>(0) != 0) {
-    resMeans->applyScalarArr(scalar::Add, shift, *resMeans);
+    resMeans->applyScalarArr(scalar::Add, &shift, resMeans);
   }
 
   return Status::OK;

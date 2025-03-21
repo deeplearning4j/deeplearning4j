@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
       auto x = INPUT_VARIABLE(i);
       auto z = OUTPUT_VARIABLE(i);
 
-      x->applyTransform(transform::Identity, *z);
+      x->applyTransform(transform::Identity, z);
     }
   }
 

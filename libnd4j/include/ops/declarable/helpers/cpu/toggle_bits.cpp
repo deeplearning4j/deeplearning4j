@@ -26,14 +26,14 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static void toggle_bits__(NDArray& in, NDArray& out) {
+static void toggle_bits__(NDArray* in, NDArray* out) {
   auto lambda = LAMBDA_T(_x) { return BitwiseUtils::flip_bits(_x); };
 
-  in.applyLambda<T>(lambda, out);
+  in->applyLambda<T>(lambda, out);
 }
 
-void __toggle_bits(sd::LaunchContext* context, NDArray& in, NDArray& out) {
-  BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
+void __toggle_bits(sd::LaunchContext* context, NDArray* in, NDArray* out) {
+  BUILD_SINGLE_SELECTOR(in->dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
 }
 }  // namespace helpers
 }  // namespace ops

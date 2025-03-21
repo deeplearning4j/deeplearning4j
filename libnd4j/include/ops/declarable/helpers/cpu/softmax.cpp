@@ -161,16 +161,16 @@ SD_INLINE void softmax_loop(const T* input, T* output, const sd::LongType* offse
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
-  const int rank = input.rankOf();
+static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output, const int dimension) {
+  const int rank = input->rankOf();
 
-  if (input.isVector()) {
-    if (rank == 1 || input.sizeAt(dimension) != 1)
-      softMaxForVector_<T>(input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo());
+  if (input->isVector()) {
+    if (rank == 1 || input->sizeAt(dimension) != 1)
+      softMaxForVector_<T>(input->buffer(), input->shapeInfo(), output->buffer(), output->shapeInfo());
     else
-      output = 1.;
-  } else if (input.isSameShapeStrict(output)) {
-    TadPack *tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(),
+      *output = 1.;
+  } else if (input->isSameShapeStrict(*output)) {
+    TadPack *tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),
                                                                              dimension);
     auto tadShapeInfo = tadPack->primaryShapeInfo();
     auto tadOffsets = tadPack->primaryOffsets();
@@ -178,8 +178,8 @@ static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output
     const sd::LongType tadLen = shape::length(tadShapeInfo);
 
     if (shape::elementWiseStride(tadShapeInfo) == 1) {
-      auto inBuff = input.bufferAsT<T>();
-      T* outBuff = output.bufferAsT<T>();
+      auto inBuff = input->bufferAsT<T>();
+      T* outBuff = output->bufferAsT<T>();
 
       softmax_loop(inBuff, outBuff, tadOffsets, numOfSubArrs, tadLen);
     } else {
@@ -191,8 +191,8 @@ static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output
 
       auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
-          auto inBuff = input.bufferAsT<T>() + tadOffsets[i];
-          auto outBuff = output.bufferAsT<T>() + tadOffsets[i];
+          auto inBuff = input->bufferAsT<T>() + tadOffsets[i];
+          auto outBuff = output->bufferAsT<T>() + tadOffsets[i];
 
           T max = -DataTypeUtils::max<T>();
           T sum = 0.f;
@@ -215,17 +215,17 @@ static void softmax_(sd::LaunchContext* context, NDArray& input, NDArray& output
     }
   } else {
     std::vector<sd::LongType> dimensionVec = {dimension};
-    NDArray max = input.reduceAlongDimension(sd::reduce::Max, &dimensionVec, true);
-    input.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), max, output, false);
-    output.applyTransform(sd::transform::Exp, output);
-    NDArray sum = output.reduceAlongDimension(sd::reduce::Sum, &dimensionVec, true);
-    output /= sum;
+    NDArray max = input->reduceAlongDimension(sd::reduce::Max, &dimensionVec, true);
+    input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), &max, output, false);
+    output->applyTransform(sd::transform::Exp, output);
+    NDArray sum = output->reduceAlongDimension(sd::reduce::Sum, &dimensionVec, true);
+    *output /= sum;
   }
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmax(sd::LaunchContext* context, NDArray& input, NDArray& output, const int dimension) {
-  BUILD_SINGLE_SELECTOR(input.dataType(), softmax_, (context, input, output, dimension), SD_FLOAT_TYPES);
+void softmax(LaunchContext* context, NDArray* input, NDArray* output, const int dimension) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), softmax_, (context, input, output, dimension), SD_FLOAT_TYPES);
 }
 
 }  // namespace helpers

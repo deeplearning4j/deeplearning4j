@@ -39,8 +39,9 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
                "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !",
                ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
-  auto nNegative = n->reduceNumber(reduce::IsNegative, nullptr);
-  auto xPositive = x->reduceNumber(reduce::IsPositive, nullptr);
+  void* extraArgs = nullptr;
+  auto nNegative = n->reduceNumber(reduce::IsNegative, extraArgs);
+  auto xPositive = x->reduceNumber(reduce::IsPositive, extraArgs);
   bool nPositiveFlag = !nNegative.e<bool>(0);  // require all n >= 0
   bool xPositiveFlag = xPositive.e<bool>(0);   // require all x > 0
   REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be >= 0 !");

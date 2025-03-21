@@ -34,7 +34,7 @@ CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyScalar(scalar::RELU6, T_ARG(0), *output);
+  input->applyScalar(scalar::RELU6, T_ARG(0), output);
 
   return Status::OK;
 }
@@ -47,7 +47,6 @@ CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::RELU6DerivativeE, gradO, gradI, nullptr);
   helpers::relu6Derivative(block.launchContext(), input, gradO, gradI);
   return Status::OK;
 }

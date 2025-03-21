@@ -39,7 +39,7 @@ BROADCASTABLE_OP_IMPL(rshift_bits, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   x->applyTrueBroadcast(BroadcastIntOpsTuple::custom(scalar::ShiftRight, pairwise::ShiftRight, broadcast::ShiftRight),
-                        *y, *z, false);
+                        y, z, false);
 
   return Status::OK;
 }

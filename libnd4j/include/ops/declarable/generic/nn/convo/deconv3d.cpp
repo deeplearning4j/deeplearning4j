@@ -313,7 +313,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
     std::vector<LongType> biasShape = {gradB->lengthOf()};
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), biasShape, false));
     std::vector<sd::LongType> dims = {{0, 2, 3, 4}};
-    gradO->reduceAlongDimension(reduce::Sum, *gradB, &dims);  // sum over bS, oD, oH, oW
+    gradO->reduceAlongDimension(reduce::Sum, gradB, &dims);  // sum over bS, oD, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 

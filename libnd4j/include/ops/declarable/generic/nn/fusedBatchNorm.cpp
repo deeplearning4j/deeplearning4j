@@ -117,7 +117,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
 
   if (isTraining) {
     int power = 2;
-    xAffected.applyScalar(scalar::Pow, power, xAffected);
+    xAffected.applyScalar(scalar::Pow, power, &xAffected);
     std::vector<sd::LongType > dim = {0};
 
     auto sum = xAffected.reduceAlongDimension(reduce::Sum, &dim);

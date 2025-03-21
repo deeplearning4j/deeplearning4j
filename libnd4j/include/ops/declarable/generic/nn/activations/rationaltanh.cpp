@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(rationaltanh, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(transform::RationalTanh, *output);
+  input->applyTransform(transform::RationalTanh, output);
   STORE_RESULT(output);
 
   return Status::OK;
@@ -48,7 +48,6 @@ CONFIGURABLE_OP_IMPL(rationaltanh_bp, 2, 1, true, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::RationalTanhDerivativeE, epsilon, z, nullptr);
   helpers::rationalTanhDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

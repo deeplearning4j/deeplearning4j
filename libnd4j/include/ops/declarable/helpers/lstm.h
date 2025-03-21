@@ -34,14 +34,14 @@ static SD_INLINE NDArray sigmoid(NDArray& arr) {
 }
 
 static SD_INLINE void sigmoidInplace(NDArray& arr) {
-  (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, const_cast<NDArray&>(arr));
+  arr.applyTransform(transform::Sigmoid, &arr);
 }
 
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray tanh(NDArray& arr) { return (const_cast<NDArray&>(arr)).transform(transform::Tanh); }
 
 static SD_INLINE void tanhInplace(NDArray& arr) {
-  (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, const_cast<NDArray&>(arr));
+  arr.applyTransform(transform::Tanh, &arr);
 }
 
 //////////////////////////////////////////////////////////////////////////

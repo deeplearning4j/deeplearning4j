@@ -105,7 +105,6 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
   //----- add biases if required -----//
   if (bias)
-    // output->applyBroadcast(broadcast::Add, {1}, bias);
     helpers::addBias(block, *output, *bias, *output, true);
 
   if (!isNCHW) delete output;
@@ -303,7 +302,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     std::vector<LongType> bShape = {gradB->lengthOf()};
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(), bShape, false));
     std::vector<sd::LongType> axesForReduction = {0, 2, 3};  // bS, oH, oW
-    gradO->reduceAlongDimension(reduce::Sum, *gradB, &axesForReduction);  // sum over bS, oH, oW
+    gradO->reduceAlongDimension(reduce::Sum, gradB, &axesForReduction);  // sum over bS, oH, oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 

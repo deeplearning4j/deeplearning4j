@@ -363,7 +363,7 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
 
     if (_calcU && _m.t<T>(i, i) < (T)0.) {
       auto temp = _u({0, 0, i, i + 1}, true);
-      temp.applyTransform(transform::Neg, temp, nullptr);
+      temp.applyTransform(transform::Neg, &temp, nullptr);
     }
   }
 

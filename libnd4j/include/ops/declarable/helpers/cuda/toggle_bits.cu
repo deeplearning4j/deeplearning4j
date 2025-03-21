@@ -27,17 +27,17 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-void toggle_bits__(NDArray &in, NDArray &out) {
+void toggle_bits__(NDArray *in, NDArray *out) {
   auto lambda = LAMBDA_T(_x) {
     return ~_x;
   };
 
-  in.applyLambda(lambda, out);
+  in->applyLambda(lambda, out);
 }
-BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray & in, NDArray &out), SD_INTEGER_TYPES);
+BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray * in, NDArray *out), SD_INTEGER_TYPES);
 
-void __toggle_bits(LaunchContext *context, NDArray &in, NDArray &out) {
-  BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
+void __toggle_bits(LaunchContext *context, NDArray *in, NDArray *out) {
+  BUILD_SINGLE_SELECTOR(in->dataType(), toggle_bits__, (in, out), SD_INTEGER_TYPES);
 }
 }  // namespace helpers
 }  // namespace ops

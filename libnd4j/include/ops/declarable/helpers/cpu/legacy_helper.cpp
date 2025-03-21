@@ -31,7 +31,7 @@ template <typename T>
 static void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); };
 
-  theFirst->applyPairwiseLambda<T>(*theSecond, functor, *theFirst);
+  theFirst->applyPairwiseLambda<T>(theSecond, functor, theFirst);
 }
 
 void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond) {
@@ -43,22 +43,8 @@ static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   T zero = (T)0.f;
   auto functor = LAMBDA_TT(x, y, zero) { return x > zero ? y : zero; };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 
-  /*
-  auto x =  input->bufferAsT<T>();
-  auto y =  epsilon->bufferAsT<T>();
-  auto z =  output->bufferAsT<T>();
-
-  int length = input->lengthOf();
-
-  T zero = (T) 0.f;
-
-  PRAGMA_OMP_PARALLEL_FOR
-  for (int e = 0; e < length; e++) {
-      z[e] = x[e] > zero ? y[e] : zero;
-  }
-  */
 }
 
 void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -69,7 +55,7 @@ template <typename T>
 static void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.f && x < (T)6.f ? y : T(0.f); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void relu6Derivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -82,7 +68,7 @@ static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* outp
 
   auto functor = LAMBDA_TT(x, y, alphaT) { return x < 0 ? alphaT * y : y; };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void leakyReluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -97,7 +83,7 @@ static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, co
 
   auto functor = LAMBDA_TT(x, y, alphaT) { return y * sd::math::sd_eluderivative<T, T>(x, alphaT); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void eluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -109,7 +95,7 @@ template <typename T>
 static void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * simdOps::SELUDerivative<T>::op(x, nullptr); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void seluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -120,7 +106,7 @@ template <typename T>
 static void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void cubeDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -132,7 +118,7 @@ template <typename T>
 static void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void reduceNorm1(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -147,7 +133,7 @@ static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output)
            sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(x)));
   };
 
-  logits->applyPairwiseLambda<T>(*labels, functor, *output);
+  logits->applyPairwiseLambda<T>(labels, functor, output);
 }
 
 void sigmCrossEntropy(sd::LaunchContext* context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -164,7 +150,7 @@ static void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* out
     return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
   };
 
-  logits->applyPairwiseLambda<T>(*labels, functor, *output);
+  logits->applyPairwiseLambda<T>(labels, functor, output);
 }
 
 void sigmCrossEntropyGrad(sd::LaunchContext* context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -179,7 +165,7 @@ static void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
     return y * ((T)1.0f - (th * th));
   };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void tanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -192,7 +178,7 @@ static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* outpu
     return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
   };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor,output);
 }
 
 void hardTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -203,7 +189,7 @@ template <typename T>
 static void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void rationalTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -215,7 +201,7 @@ template <typename T>
 static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (sd::math::sd_tanhderivative<T, T>(x)) : (T)0.0f; };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void rectifiedTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -232,7 +218,7 @@ static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* outpu
     return y * ((T)1.0f / (ss * ss));
   };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void softSignDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -246,7 +232,7 @@ static void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* outpu
     return y * (p / (p + 1.));
   };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void softPlusDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -263,7 +249,7 @@ static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output
     return y * (s * ((T)1.0f - s));
   };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void sigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -274,7 +260,7 @@ template <typename T>
 static void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); };
 
-  input->applyPairwiseLambda<T>(*epsilon, functor, *output);
+  input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
 
 void hardSigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -285,30 +271,30 @@ template <typename T>
 static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray tempInput = input->dup();
-  input->applyTransform(transform::Exp, tempInput);
+  input->applyTransform(transform::Exp, &tempInput);
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
-  output->applyTransform(transform::Log, *output);
+  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  output->applyTransform(transform::Log, output);
 }
 
 template <typename T>
 static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray tempInput = input->dup();
-  input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
-  tempInput.applyTransform(transform::Exp, tempInput);
+  input->applyPairwiseTransform(pairwise::Subtract, subtrah, &tempInput);
+  tempInput.applyTransform(transform::Exp, &tempInput);
 
   std::vector<sd::LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<sd::LongType>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
-  output->applyTransform(transform::Log, *output);
+  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  output->applyTransform(transform::Log, output);
 }
 
 void logSumExp(sd::LaunchContext* context, NDArray* input, NDArray* axis, NDArray* output) {
@@ -338,15 +324,13 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * 
   };
 
   if (weights->isScalar()) {
-    const_cast<NDArray*>(input)->applyPairwiseLambda<T>(const_cast<NDArray&>(*targets), mainRoutineT1, *output);
+    input->applyPairwiseLambda<T>(targets, mainRoutineT1, output);
   } else {
     std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-    targetVector->applyScalar(scalar::Add, -1.f, *targetVector);
+    targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
 
-    std::unique_ptr<NDArray> targetTensor(new NDArray(*targets));
-    *targetTensor = (*targetVector * *targetTensor) + T(1.f);
-    const_cast<NDArray*>(input)->applyTriplewiseLambda<T>(const_cast<NDArray&>(*targets), *targetTensor.get(),
-                                                          mainRoutineT2, *output);
+    *targets = (*targets * *targets) + T(1.f);
+    input->applyTriplewiseLambda<T>(targets, targets,mainRoutineT2, output);
   }
 }
 

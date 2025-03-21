@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(reduce_sum, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Sum, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Sum, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -130,9 +130,9 @@ CUSTOM_OP_IMPL(reduce_sum_bp, -1, 1, false, 0, 0) {
         gradOShapeKeepDims);
     auto r = gradO->reshape(gradO->ordering(),
                             shape);  // for example could be something like [a,b] -> [1,a,1,b]
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), r, *gradI);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &r, gradI);
   } else
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), *gradO, *gradI);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), gradO, gradI);
 
   return sd::Status::OK;
 }

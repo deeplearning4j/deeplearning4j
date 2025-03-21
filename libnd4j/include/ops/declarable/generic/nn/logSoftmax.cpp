@@ -43,7 +43,7 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
                "%i, but got dimension = %i instead !",
                rank, dim);
 
-  helpers::logSoftmax(block.launchContext(), *input, *output, dim);
+  helpers::logSoftmax(block.launchContext(), input, output, dim);
 
   return sd::Status::OK;
 }
@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 3, 1, true, 0, 0) {
                "%i, but got dimension = %i instead !",
                rank, dim);
 
-  helpers::softmax(block.launchContext(), *input, *gradI, dim);
+  helpers::softmax(block.launchContext(), input, gradI, dim);
 
   std::vector<sd::LongType> dimVec;
   dimVec.push_back(dim);

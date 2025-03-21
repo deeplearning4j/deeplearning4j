@@ -63,7 +63,7 @@ LongType barnes_row_count(NDArray* rowP, NDArray* colP, LongType N, NDArray& row
   countRowsKernel<<<1, 1, 128, *stream>>>(pRowCounts, pRows, pCols, N);
   sd::DebugHelper::checkErrorCode(stream, "countRows  failed");
 
-  NDArray numElementsArr = rowCounts.sumNumber();  // reduceAlongDimension(reduce::Sum, {});
+  NDArray numElementsArr = rowCounts.sumNumber();
   auto numElements = numElementsArr.e<LongType>(0);
   return numElements;
 }
@@ -259,7 +259,7 @@ void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* ou
     return res;
   };
 
-  input->applyTriplewiseLambda(*gradX, *epsilon, gainsInternal, *output);
+  input->applyTriplewiseLambda(gradX, epsilon, gainsInternal, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

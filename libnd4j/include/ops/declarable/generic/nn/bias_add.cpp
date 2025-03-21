@@ -89,7 +89,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
   std::vector<sd::LongType> channel;
   channel.push_back(channelDim);
   auto dims = ShapeUtils::evalDimsToExclude(gradO->rankOf(), 1,channel.data());
-  gradO->reduceAlongDimension(sd::reduce::Sum, *gradB, dims);
+  gradO->reduceAlongDimension(sd::reduce::Sum, gradB, dims);
   delete dims;
   return sd::Status::OK;
 }

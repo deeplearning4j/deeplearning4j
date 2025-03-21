@@ -47,9 +47,9 @@ CONFIGURABLE_OP_IMPL(sgd_updater, 1, 1, true, 0, 0) {
     REQUIRE_TRUE(lr->isScalar(), 0, "SGD UPDATER OP: Learning rate has to be a scalar, but instead got rank %i!",
                  lr->rankOf());
 
-    input->applyScalarArr(scalar::Multiply, *lr, *output);
+    input->applyScalarArr(scalar::Multiply, lr, output);
   } else {
-    input->applyScalar(scalar::Multiply, T_ARG(0), *output);
+    input->applyScalar(scalar::Multiply, T_ARG(0), output);
   }
 
   return Status::OK;

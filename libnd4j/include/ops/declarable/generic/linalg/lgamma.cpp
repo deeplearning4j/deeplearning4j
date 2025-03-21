@@ -34,7 +34,7 @@ namespace ops {
 OP_IMPL(lgamma, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
-  helpers::lgamma(block.launchContext(), *x, *z);
+  helpers::lgamma(block.launchContext(), x, z);
 
   return Status::OK;
 }

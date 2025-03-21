@@ -290,7 +290,7 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
 
   // x - mean
   NDArray xMinusMean(x);  // empty array with same shape as x
-  const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, axes, *mean, xMinusMean);
+  const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
   // stdInv
   NDArray stdInv = *variance + epsilon;
@@ -314,14 +314,14 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   dfdv *= -Ninv;
 
   // dvdm/2  + (x - m)
-  xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dvdm, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dvdm, &xMinusMean);
   // dfdv * (dvdm/2  + (x - m))
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, dfdv, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &dfdv, &xMinusMean);
   // add dfdm / N
-  xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dfdm, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dfdm, xMinusMean);
   // * gamma
   auto gamma = (*weights)({0, 1, 0, 0});
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, gamma, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &gamma, &xMinusMean);
 
   *dLdI += xMinusMean;
 }

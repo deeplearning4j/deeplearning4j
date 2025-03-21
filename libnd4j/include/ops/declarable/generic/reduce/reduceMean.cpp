@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(reduce_mean, -1, 1, false, 0, 0) {
                  input->rankOf(), input->rankOf(), item);
   }
 
-  input->reduceAlongDimension(reduce::Mean, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Mean, output, &dimensions, keepDims);
   return sd::Status::OK;
 }
 
@@ -145,7 +145,7 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
       *gradI *= gradO->reshape(gradO->ordering(),
                                shape);  // for example could be something like [a,b] -> [1,a,1,b]
     } else {
-      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), *gradO, *gradI);
+      gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
   }
 

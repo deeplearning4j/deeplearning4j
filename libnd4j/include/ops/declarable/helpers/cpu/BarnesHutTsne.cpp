@@ -164,11 +164,11 @@ template <typename T>
 static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
   auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
     T res = sd::math::sd_sign<T, T>(grad) != sd::math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
-    if (res < .01) res = .01;
+    if (res < .01) res = static_cast<T>(.01);
     return res;
   };
 
-  input->applyTriplewiseLambda<T>(*gradX, *epsilon, gainsInternal, *output);
+  input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
 }
 
 void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {

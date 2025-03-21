@@ -59,7 +59,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::NormMax, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::NormMax, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -131,7 +131,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, -1, 1, false, 0, 0) {
     const sd::LongType ind = indOfAbsMaxElem.t<sd::LongType>(0);
     const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
     auto put = sign * gradO->e(0);
-    gradI->p(ind, put);
+    gradI->p(ind, &put);
 
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, &dimensions);

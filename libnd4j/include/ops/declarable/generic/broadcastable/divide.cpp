@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
     gradX->assign((*epsNext) / (*y));
     // Y gradient
     gradY->assign((*epsNext) * (*x) / ((*y) * (*y)));
-    gradY->applyTransform(transform::Neg, *gradY);
+    gradY->applyTransform(transform::Neg, gradY);
 
   } else if (y->isScalar()) {
     // scalar case
@@ -82,16 +82,16 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
     gradY->assign(tmp * tmpX / ((*y) * (*y)));
-    gradY->applyTransform(transform::Neg, *gradY);
+    gradY->applyTransform(transform::Neg, gradY);
 
-    epsNext->applyScalarArr(scalar::Divide, *y, *gradX);
+    epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
     // broadcast case
 
     auto preX = *epsNext / *y;
 
     NDArray negX(*x);
-    x->applyTransform(transform::Neg, negX);
+    x->applyTransform(transform::Neg, &negX);
     auto preY = *epsNext * negX / ((*y) * (*y));
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());

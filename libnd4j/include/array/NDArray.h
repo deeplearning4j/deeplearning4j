@@ -359,13 +359,13 @@ class SD_LIB_EXPORT NDArray {
    * This method returns new array with the same shape & data type
    * @return
    */
-  NDArray &like();
+  NDArray *like();
 
   /**
    * This method returns new uninitialized array with the same shape & data type
    * @return
    */
-  NDArray &ulike();
+  NDArray *ulike();
 
   /**
    *  this constructor creates new NDArray with shape matching "other" array,
@@ -709,13 +709,13 @@ class SD_LIB_EXPORT NDArray {
    *  keepDims - if true then put unities in place of reduced dimensions
    *  extras - extra parameters
    */
-  void reduceAlongDimension(reduce::FloatOps op, NDArray &target, const std::vector<LongType> *dimensions,
+  void reduceAlongDimension(reduce::FloatOps op, NDArray *target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true);
-  void reduceAlongDimension(reduce::SameOps op, NDArray &target, const std::vector<LongType> *dimensions,
+  void reduceAlongDimension(reduce::SameOps op, NDArray *target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true);
-  void reduceAlongDimension(reduce::BoolOps op, NDArray &target, const std::vector<LongType> *dimensions,
+  void reduceAlongDimension(reduce::BoolOps op, NDArray *target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true);
-  void reduceAlongDimension(reduce::LongOps op, NDArray &target, const std::vector<LongType> *dimensions,
+  void reduceAlongDimension(reduce::LongOps op, NDArray *target, const std::vector<LongType> *dimensions,
                             const bool keepDims = false, const bool checkTargetShape = true);
 
   /**
@@ -734,10 +734,10 @@ class SD_LIB_EXPORT NDArray {
   NDArray reduceNumber(reduce::BoolOps ops, void *extraParams = nullptr);
   NDArray reduceNumber(reduce::LongOps ops, void *extraParams = nullptr);
 
-  void reduceNumber(reduce::FloatOps ops, NDArray &target, void *extraParams = nullptr);
-  void reduceNumber(reduce::SameOps ops, NDArray &target, void *extraParams = nullptr);
-  void reduceNumber(reduce::BoolOps ops, NDArray &target, void *extraParams = nullptr);
-  void reduceNumber(reduce::LongOps ops, NDArray &target, void *extraParams = nullptr);
+  void reduceNumber(reduce::FloatOps ops, NDArray *target, void *extraParams = nullptr);
+  void reduceNumber(reduce::SameOps ops, NDArray *target, void *extraParams = nullptr);
+  void reduceNumber(reduce::BoolOps ops, NDArray *target, void *extraParams = nullptr);
+  void reduceNumber(reduce::LongOps ops, NDArray *target, void *extraParams = nullptr);
 
   /**
    *  returns element index which corresponds to some condition imposed by operation
@@ -751,17 +751,11 @@ class SD_LIB_EXPORT NDArray {
    */
   LongType argMax(std::initializer_list<LongType> dimensions = {});
 
-  // FIXME: remove this method eventually
-  void makeBothActual()  {
-    syncToDevice();
-    syncToHost();
-  }
-
-  void applyTransform(transform::FloatOps op, NDArray &target, ExtraArguments *extraParams = nullptr);
-  void applyTransform(transform::SameOps op, NDArray &target, ExtraArguments *extraParams = nullptr);
-  void applyTransform(transform::AnyOps op, NDArray &target, ExtraArguments *extraParams = nullptr);
-  void applyTransform(transform::BoolOps op, NDArray &target, ExtraArguments *extraParams = nullptr);
-  void applyTransform(transform::StrictOps op, NDArray &target, ExtraArguments *extraParams = nullptr);
+  void applyTransform(transform::FloatOps op, NDArray *target, ExtraArguments *extraParams = nullptr);
+  void applyTransform(transform::SameOps op, NDArray *target, ExtraArguments *extraParams = nullptr);
+  void applyTransform(transform::AnyOps op, NDArray *target, ExtraArguments *extraParams = nullptr);
+  void applyTransform(transform::BoolOps op, NDArray *target, ExtraArguments *extraParams = nullptr);
+  void applyTransform(transform::StrictOps op, NDArray *target, ExtraArguments *extraParams = nullptr);
 
   /**
    *  apply OpName transformation to this array and store result in new array to be returned
@@ -781,7 +775,7 @@ class SD_LIB_EXPORT NDArray {
    *  other - second array necessary for pairwise operation
    *  extraParams - extra parameters for operation
    */
-  void applyPairwiseTransform(pairwise::Ops op, NDArray &other, ExtraArguments *extraParams = nullptr);
+  void applyPairwiseTransform(pairwise::Ops op, NDArray *other, ExtraArguments *extraParams = nullptr);
 
   /**
    *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
@@ -789,13 +783,13 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    *  extraParams - extra parameters for operation
    */
-  void applyPairwiseTransform(pairwise::Ops op, NDArray &other, NDArray &target,
+  void applyPairwiseTransform(pairwise::Ops op, NDArray *other, NDArray *target,
                               ExtraArguments *extraParams = nullptr);
 
-  void applyPairwiseTransform(pairwise::BoolOps op, NDArray &other, NDArray &target,
+  void applyPairwiseTransform(pairwise::BoolOps op, NDArray *other, NDArray *target,
                               ExtraArguments *extraParams = nullptr);
 
-  void applyPairwiseTransform(pairwise::IntOps op, NDArray &other, NDArray &target,
+  void applyPairwiseTransform(pairwise::IntOps op, NDArray *other, NDArray *target,
                               ExtraArguments *extraParams = nullptr);
 
 
@@ -808,40 +802,37 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    *  extraParams - extra parameters for operation
    */
-  void applyBroadcast(broadcast::Ops op, const std::initializer_list<LongType> *dimensions, NDArray &tad,
-                      NDArray &target, ExtraArguments *extraArgs = nullptr);
+  void applyBroadcast(broadcast::Ops op, const std::initializer_list<LongType> *dimensions, NDArray *tad,
+                      NDArray *target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(broadcast::Ops op, const std::vector<LongType> *dimensions, NDArray &tad, NDArray &target,
+  void applyBroadcast(broadcast::Ops op, const std::vector<LongType> *dimensions, NDArray *tad, NDArray *target,
                       ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(broadcast::BoolOps op, const std::vector<LongType> *dimensions, NDArray &tad,
-                      NDArray &target, ExtraArguments *extraArgs = nullptr);
+  void applyBroadcast(broadcast::BoolOps op, const std::vector<LongType> *dimensions, NDArray *tad,
+                      NDArray *target, ExtraArguments *extraArgs = nullptr);
 
-  void applyBroadcast(broadcast::IntOps op, const std::vector<LongType> *dimensions, NDArray &tad, NDArray &target,
+  void applyBroadcast(broadcast::IntOps op, const std::vector<LongType> *dimensions, NDArray *tad, NDArray *target,
                       ExtraArguments *extraArgs = nullptr);
 
   /**
    *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the
    * possibility of broadcasting other - input array extraParams - extra parameters for operation
    */
-  NDArray applyTrueBroadcast(BroadcastOpsTuple op, NDArray &other,
-                             ExtraArguments *extraArgs = nullptr) &;
-  NDArray applyTrueBroadcast(BroadcastOpsTuple op, NDArray &&other, ExtraArguments *extraArgs = nullptr) &;
-  NDArray applyTrueBroadcast(BroadcastOpsTuple op, NDArray &&other, ExtraArguments *extraArgs = nullptr) &&;
-  NDArray applyTrueBroadcast(BroadcastOpsTuple op, NDArray &other, ExtraArguments *extraArgs = nullptr) &&;
+  NDArray *applyTrueBroadcast(BroadcastOpsTuple op, NDArray *other,
+                             ExtraArguments *extraArgs = nullptr);
 
   /**
    *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the
    * possibility of broadcasting other - input array target - where to store result checkTargetShape - if true check
    * whether target shape is suitable for broadcasting extraParams - extra parameters for operation
    */
-  void applyTrueBroadcast(BroadcastOpsTuple op, NDArray &other, NDArray &target,
+  void applyTrueBroadcast(BroadcastOpsTuple op, NDArray *other, NDArray *target,
                           const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr);
 
-  void applyTrueBroadcast(BroadcastBoolOpsTuple op, NDArray &other, NDArray &target,
+  void applyTrueBroadcast(BroadcastBoolOpsTuple op, NDArray *other, NDArray *target,
                           const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr);
 
-  void applyTrueBroadcast(BroadcastIntOpsTuple op, NDArray &other, NDArray &target,
+  void applyTrueBroadcast(BroadcastIntOpsTuple op, NDArray *other, NDArray *target,
                           const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr);
 
   /**
@@ -851,14 +842,14 @@ class SD_LIB_EXPORT NDArray {
    *  extraParams - extra parameters for operation
    */
   template <typename T>
-  void applyScalar(scalar::Ops op, const T scalar, NDArray &target, ExtraArguments *extraParams = nullptr);
+  void applyScalar(scalar::Ops op, const T scalar, NDArray *target, ExtraArguments *extraParams = nullptr);
 
   template <typename T>
-  void applyScalar(scalar::BoolOps op, const T scalar, NDArray &target,
+  void applyScalar(scalar::BoolOps op, const T scalar, NDArray *target,
                    ExtraArguments *extraParams = nullptr);
 
   template <typename T>
-  void applyScalar(scalar::IntOps op, const T scalar, NDArray &target, ExtraArguments *extraParams = nullptr);
+  void applyScalar(scalar::IntOps op, const T scalar, NDArray *target, ExtraArguments *extraParams = nullptr);
 
   /**
    *  apply a scalar operation to an array
@@ -866,30 +857,30 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    *  extraParams - extra parameters for operation
    */
-  void applyScalarArr(scalar::Ops op,  NDArray &scalar, NDArray &target,
+  void applyScalarArr(scalar::Ops op,  NDArray *scalar, NDArray *target,
                       ExtraArguments *extraParams = nullptr);
 
-  void applyScalarArr(scalar::BoolOps op,  NDArray &scalar, NDArray &target,
+  void applyScalarArr(scalar::BoolOps op,  NDArray *scalar, NDArray *target,
                       ExtraArguments *extraParams = nullptr);
 
-  void applyScalarArr(scalar::IntOps op,  NDArray &scalar, NDArray &target,
+  void applyScalarArr(scalar::IntOps op,  NDArray *scalar, NDArray *target,
                       ExtraArguments *extraParams = nullptr);
 
-#if defined(__CUDABLAS__)
+#if defined(SD_CUDA)
   template <typename Lambda>
-  SD_INLINE void applyLambda(Lambda func, NDArray &target);
+  SD_INLINE void applyLambda(Lambda func, NDArray *target);
 
   template <typename Lambda>
-  SD_INLINE void applyPairwiseLambda(NDArray &other, Lambda func, NDArray &target);
+  SD_INLINE void applyPairwiseLambda(NDArray *other, Lambda func, NDArray *target);
 
   template <typename Lambda>
-  SD_INLINE void applyIndexedLambda(Lambda func, NDArray &target);
+  SD_INLINE void applyIndexedLambda(Lambda func, NDArray *target);
 
   template <typename Lambda>
-  SD_INLINE void applyIndexedPairwiseLambda(NDArray &other, Lambda func, NDArray &target);
+  SD_INLINE void applyIndexedPairwiseLambda(NDArray *other, Lambda func, NDArray *target);
 
   template <typename Lambda>
-  SD_INLINE void applyTriplewiseLambda(NDArray &second, NDArray &third, Lambda func, NDArray &target);
+  SD_INLINE void applyTriplewiseLambda(NDArray *second, NDArray *third, Lambda func, NDArray *target);
 #else
 
   /**
@@ -898,7 +889,7 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    */
   template <typename T>
-  void applyLambda(const std::function<T(T)> &func, NDArray &target);
+  void applyLambda(const std::function<T(T)> &func, NDArray *target);
 
   /**
    *  apply pairwise operation "func" to an array
@@ -907,16 +898,16 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    */
   template <typename T>
-  void applyPairwiseLambda(NDArray &other, const std::function<T(T, T)> &func, NDArray &target);
+  void applyPairwiseLambda(NDArray *other, const std::function<T(T, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyIndexedLambda(const std::function<T(sd::LongType, T)> &func, NDArray &target);
+  void applyIndexedLambda(const std::function<T(sd::LongType, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyIndexedPairwiseLambda(NDArray &other, const std::function<T(sd::LongType, T, T)> &func, NDArray &target);
+  void applyIndexedPairwiseLambda(NDArray *other, const std::function<T(sd::LongType, T, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyTriplewiseLambda(NDArray &second, NDArray &third, const std::function<T(T, T, T)> &func, NDArray &target);
+  void applyTriplewiseLambda(NDArray *second, NDArray *third, const std::function<T(T, T, T)> &func, NDArray *target);
 #endif
 
   /**
@@ -933,7 +924,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along
    *  extraArgs - extra parameters for operation
    */
-  void applyIndexReduce(indexreduce::Ops op, NDArray &target, const std::vector<LongType> *dimensions,
+  void applyIndexReduce(indexreduce::Ops op, NDArray *target, const std::vector<LongType> *dimensions,
                         const ExtraArguments *extraParams = nullptr);
 
   /**
@@ -941,7 +932,7 @@ class SD_LIB_EXPORT NDArray {
    *  other - input array
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyReduce3(reduce3::Ops op,  NDArray &other, const ExtraArguments *extraParams = nullptr);
+  NDArray applyReduce3(reduce3::Ops op,  NDArray *other, const ExtraArguments *extraParams = nullptr);
 
   /**
    *  apply reduce3 operation OpName to this and other array, return result in new output array
@@ -949,7 +940,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along (tads not axis)
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyAllReduce3(reduce3::Ops op,  NDArray &other, const std::vector<LongType> *dimensions,
+  NDArray applyAllReduce3(reduce3::Ops op,  NDArray *other, const std::vector<LongType> *dimensions,
                           const ExtraArguments *extraParams = nullptr);
 
   /**
@@ -958,7 +949,7 @@ class SD_LIB_EXPORT NDArray {
    *  dimensions - vector of dimensions to reduce along (same as reduceAlongDimension)
    *  extraArgs - extra parameters for operation
    */
-  NDArray applyReduce3(reduce3::Ops op,  NDArray &other, const std::vector<LongType> &dimensions,
+  NDArray applyReduce3(reduce3::Ops op,  NDArray *other, const std::vector<LongType> &dimensions,
                        const ExtraArguments *extraParams = nullptr);
 
   /**
@@ -1014,47 +1005,47 @@ class SD_LIB_EXPORT NDArray {
    *  add given row vector to all rows of this array
    *  row - row vector to add
    */
-  void addiRowVector(NDArray &row);
+  void addiRowVector(NDArray *row);
 
   /**
    *  add given row vector to all rows of this array, store result in target
    *  row - row vector to add
    *  target - where to store result
    */
-  void addRowVector(NDArray &row, NDArray &target);
+  void addRowVector(NDArray *row, NDArray *target);
 
   /**
    *  multiply all rows of this array on given row vector, store result in target
    *  row - row vector to multiply on
    *  target - where to store result
    */
-  void mulRowVector(NDArray &row, NDArray &target);
+  void mulRowVector(NDArray *row, NDArray *target);
 
   /**
    *  divide all rows of this array on given row vector, store result in target
    *  row - row vector to divide on
    *  target - where to store result
    */
-  void divRowVector(NDArray &row, NDArray &target);
+  void divRowVector(NDArray *row, NDArray *target);
 
   /**
    *  add given column vector to all columns of this array, store result in target
    *  column - column vector to add
    *  target - where to store result
    */
-  void addColumnVector(NDArray &column, NDArray &target);
+  void addColumnVector(NDArray *column, NDArray *target);
 
   /**
    *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
    *  column - column vector to add
    */
-  void addiColumnVector(NDArray &column);
+  void addiColumnVector(NDArray *column);
 
   /**
    *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
    *  column - column vector to multiply on
    */
-  void muliColumnVector(NDArray &column);
+  void muliColumnVector(NDArray *column);
 
   /**
    *  returns number of bytes used by _buffer & _shapeInfo
@@ -1181,8 +1172,8 @@ class SD_LIB_EXPORT NDArray {
    * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
    * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
    */
-  void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, LongType *&subArrShapeInfo,
-                                LongType *&subArrOffsets, bool keepUnitiesInShape = false);
+  void getSubArrShapeAndOffsets(const std::vector<LongType> &dimsToExclude, LongType *subArrShapeInfo,
+                                LongType *subArrOffsets, bool keepUnitiesInShape = false);
 
 
   /**
@@ -1503,7 +1494,7 @@ class SD_LIB_EXPORT NDArray {
 
 
 
-  void p(const LongType i, NDArray &value);
+  void p(const LongType i, NDArray *value);
 
   /**
    *  assigns given scalar to 2D array element by given indexes
@@ -1526,7 +1517,7 @@ class SD_LIB_EXPORT NDArray {
 
   template <typename T>
   void p(const LongType i, const LongType j, const LongType k, const LongType l, const T value);
-  void p(const LongType i, const LongType j, const LongType k, const LongType l, NDArray &value);
+  void p(const LongType i, const LongType j, const LongType k, const LongType l, NDArray *value);
 
   template<typename T> typename std::enable_if<DataTypeUtils::scalarTypesForNDarray<T>::value, void>::type p(const sd::LongType i, const T value);
   template<typename T> typename std::enable_if<DataTypeUtils::stringTypesForNDarray<T>::value, void>::type p(const sd::LongType i, const T value);

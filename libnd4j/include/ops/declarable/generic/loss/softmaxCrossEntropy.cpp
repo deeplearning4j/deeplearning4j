@@ -108,7 +108,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
       break;
 
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      E.reduceNumber(reduce::Sum, *output);
+      E.reduceNumber(reduce::Sum, output);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
@@ -283,13 +283,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
         *dLdp *= *weights;
         *dLdl *= *weights;
       } else {
-        dLdp->applyBroadcast(broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
-        dLdl->applyBroadcast(broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
+        dLdp->applyBroadcast(broadcast::Multiply, dimensions, weightsBroad, dLdp);
+        dLdl->applyBroadcast(broadcast::Multiply, dimensions, weightsBroad, dLdl);
 
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
         } else
           dLdw->assign(E);
       }
@@ -316,14 +316,14 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
           *dLdw = 0.;
         } else {
           NDArray temp = *weightsBroad / sum;
-          dLdp->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdp);
-          dLdl->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdl);
+          dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
+          dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-                .reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+                .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           } else
             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
         }
@@ -350,13 +350,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
           dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
         } else {
           NDArray temp = *weightsBroad / numOfNonZeroWeights;
-          dLdp->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdp);
-          dLdl->applyBroadcast(broadcast::Multiply, dimensions, temp, *dLdl);
+          dLdp->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdp);
+          dLdl->applyBroadcast(broadcast::Multiply, dimensions, &temp, dLdl);
 
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-            E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+            E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
           } else
             dLdw->assign(E / numOfNonZeroWeights);

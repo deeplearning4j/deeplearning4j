@@ -323,7 +323,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
   if (gradB) {
     std::vector<LongType> bShape = { gradB->lengthOf()};
     if (gradB->rankOf() == 2) gradB = new NDArray(gradB->reshape(gradB->ordering(),bShape, false));
-    gradO->reduceAlongDimension(reduce::Sum, *gradB, &gradOaxesForDot);  // sum over bS oD oH oW
+    gradO->reduceAlongDimension(reduce::Sum, gradB, &gradOaxesForDot);  // sum over bS oD oH oW
     if (gradB != OUTPUT_VARIABLE(2)) delete gradB;
   }
 

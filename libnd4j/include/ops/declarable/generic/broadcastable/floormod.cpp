@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
   NDArray temp(*epsNext);
   BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
   if (gradY->rankOf() == gradX->rankOf()) {
-    epsNext->applyPairwiseTransform(pairwise::Multiply, temp, *gradY);
+    epsNext->applyPairwiseTransform(pairwise::Multiply, &temp, gradY);
   } else  { // epsNext is greater than gradY
     std::vector<LongType> dims(epsNext->rankOf() * 2);
     LongType gap = epsNext->rankOf() - gradY->rankOf();
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
     }
     auto tempIn((temp)(dims));
     NDArray negTempIn = -tempIn;
-    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, negTempIn, *gradY);
+    (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, &negTempIn, gradY);
   }
   return Status::OK;
 }

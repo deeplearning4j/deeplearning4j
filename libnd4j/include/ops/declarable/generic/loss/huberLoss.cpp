@@ -67,9 +67,9 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
   auto error = *predictions - *labels;
-  error.applyTransform(transform::Abs, error);
+  error.applyTransform(transform::Abs, &error);
   NDArray quadratic(error.shapeInfo(), block.getWorkspace());
-  error.applyScalar(scalar::MinPairwise, delta, quadratic);
+  error.applyScalar(scalar::MinPairwise, &delta, &quadratic);
 
   NDArray E = quadratic * quadratic * 0.5f + (error - quadratic) * delta;
 
@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
       break;
     }
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      E.reduceNumber(reduce::Sum, *output);
+      E.reduceNumber(reduce::Sum, output);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
@@ -208,20 +208,20 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
 
   NDArray diff = *predictions - *labels;
   NDArray absDiff(diff);
-  absDiff.applyTransform(transform::Abs, absDiff);
+  absDiff.applyTransform(transform::Abs, &absDiff);
   NDArray quadratic(absDiff);
-  absDiff.applyScalar(scalar::MinPairwise, delta, quadratic);
+  absDiff.applyScalar(scalar::MinPairwise, delta, &quadratic);
 
   NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic) * delta;
 
   NDArray lteMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::LessThanOrEqual, delta, lteMask);
+  absDiff.applyScalar(scalar::LessThanOrEqual, &delta, &lteMask);
 
   NDArray gtMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::GreaterThan, delta, gtMask);
+  absDiff.applyScalar(scalar::GreaterThan, &delta, &gtMask);
 
   NDArray signDiff(diff);
-  diff.applyTransform(transform::Sign, signDiff);
+  diff.applyTransform(transform::Sign, &signDiff);
 
   auto gtMaskFloat = gtMask.cast(diff.dataType());
   auto lteMaskFloat = lteMask.cast(diff.dataType());
@@ -240,7 +240,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
       else if (weights != weightsBroad) {
         std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-        E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+        E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
       } else
         dLdw->assign(E);
       break;
@@ -269,7 +269,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-              .reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+              .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
         } else
           dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
       }
@@ -297,7 +297,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;
         } else
           dLdw->assign(E / numOfNonZeroWeightsScalar);

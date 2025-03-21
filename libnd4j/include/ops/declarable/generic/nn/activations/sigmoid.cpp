@@ -31,7 +31,7 @@ CONFIGURABLE_OP_IMPL(sigmoid, 1, 1, true, 0, 0) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(transform::Sigmoid, *z);
+  first->applyTransform(transform::Sigmoid, z);
 
   STORE_RESULT(*z);
 

@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(reduce_prod, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Prod, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Prod, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -138,7 +138,7 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
     // *** calculations *** //
 
     auto products = input->reduceAlongDimension(reduce::Prod, &dimensions, true);
-    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), products, *gradI);
+    gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &products, gradI);
     *gradI /= *input;
 
     if (!keepDims) {

@@ -55,12 +55,13 @@ static SD_KERNEL void matrixMinorKernel(T* outBuffer, LongType* outShape, T* inB
 
 template <typename T>
 NDArray matrixMinor(LaunchContext* context, NDArray& in, LongType col) {
-  NDArray m = in.ulike();
-  m.setIdentity();
-  m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
+  NDArray *m = in.ulike();
+  m->setIdentity();
+  NDArray view = *m;
+  view({col, m->rows(), col, m->columns()}).assign(in({col, m->rows(), col, m->columns()}));
 
-  m.tickWriteDevice();
-  return m;
+  m->tickWriteDevice();
+  return *m;
 }
 
 /* m = I - v v^T */
@@ -107,7 +108,7 @@ template <typename T>
 void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatrices) {
   LongType M = matrix->sizeAt(0);
   LongType N = matrix->sizeAt(1);
-  auto resQ = fullMatrices ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
+  auto resQ = fullMatrices ? *Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
   auto resR = fullMatrices ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
   NDArray z = *matrix;
@@ -123,34 +124,35 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     std::vector<LongType> zero = {0};
     auto norm = currentColumn.reduceAlongDimension(reduce::Norm2, &zero);
     if (diagonalIsPositive<T>(matrix, k))  // matrix->t<T>(k,k) > T(0.f)) // negate on positive matrix diagonal element
-      norm.applyTransform(transform::Neg, norm);  // *= -1.f;//-norm.t<T>(0);
+      norm.applyTransform(transform::Neg, &norm);  // *= -1.f;//-norm.t<T>(0);
 
-    e.p(k, norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
+    e.p(k, &norm);        // e - is filled by 0 vector except diagonal element (filled by 1)
     e += currentColumn;  // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
     auto normE = e.reduceAlongDimension(reduce::Norm2, &zero);
     e /= normE;
     q[k] = vmul<T>(context, e, M);
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, &qQ, false, false,1.0,0.0,&qQ);
-    z = std::move(qQ);
+    MmulHelper::matmul(&q[k], &z, qQ, false, false,1.0,0.0,qQ);
+    z = std::move(*qQ);
   }
   resQ.assign(q[0]);
 
   for (int i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
+    MmulHelper::matmul(&q[i],&resQ, &tempResQ, false, false,1.0,0.0,&tempResQ);
     resQ = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, &resR, false, false,1.0,0.0,&resR);
+  MmulHelper::matmul(&resQ, matrix, resR, false, false,1.0,0.0,resR);
   // resR *= -1.f;
   resQ.transposei();
 
   if (fullMatrices) {
     Q->assign(resQ);
-    R->assign(resR);
+    R->assign(*resR);
   } else {
+    NDArray resRRef = *resR;
     Q->assign(resQ({0, 0, 0, N}));
-    R->assign(resR({0, N, 0, 0}));
+    R->assign(resRRef({0, N, 0, 0}));
   }
 }
 

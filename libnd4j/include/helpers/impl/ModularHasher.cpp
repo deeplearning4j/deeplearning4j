@@ -55,27 +55,31 @@ template<> uint64_t SIMDHasher<uint64_t>::hash_chunk(const uint64_t* data, size_
   hash = tmp[0] ^ tmp[1];
 
 #else
-  // Scalar fallback with unrolling
-  for (size_t i = 0; i < size - 3; i += 4) {
-    hash ^= data[i];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= data[i+1];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= data[i+2];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
-    hash ^= data[i+3];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  if(size >= 4) {
+    // Scalar fallback with unrolling
+    for (size_t i = 0; i < size - 3; i += 4) {
+      hash ^= data[i];
+      hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+      hash ^= data[i+1];
+      hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+      hash ^= data[i+2];
+      hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+      hash ^= data[i+3];
+      hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+    }
   }
+
 #endif
 
   // Handle remaining elements
   size_t remainder = size % 4;
-  size_t start = size - remainder;
-  for (size_t i = start; i < size; i++) {
-    hash ^= data[i];
-    hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+  if(size >= 4) {
+    size_t start = size - remainder;
+    for (size_t i = start; i < size; i++) {
+      hash ^= data[i];
+      hash = (hash * GOLDEN_RATIO) ^ (hash >> 32);
+    }
   }
-
   return hash;
 }
 

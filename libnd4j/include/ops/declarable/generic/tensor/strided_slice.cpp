@@ -625,7 +625,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
   // the first case: only for scalar gradient step
   if (epsNext->lengthOf() == 1 &&
       ((indices.size() == 3 && (indices[1] - indices[0]) == 1) || (indices[2] - indices[0] == 1))) {
-    output->p(indices[0], *epsNext);
+    output->p(indices[0], epsNext);
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);
     sub.assign(*epsNext);

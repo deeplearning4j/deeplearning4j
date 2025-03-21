@@ -36,7 +36,7 @@ BROADCASTABLE_OP_IMPL(reversedivide, 0, 0) {
   BROADCAST_CHECK_EMPTY(x, y, z);
 
   REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
-  x->applyTrueBroadcast(BROADCAST(ReverseDivide), *y, *z, true);
+  x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);
 
   return Status::OK;
 }
@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
 
     // X gradient
     gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
-    gradX->applyTransform(transform::Neg, *gradX);
+    gradX->applyTransform(transform::Neg, gradX);
     // Y gradient
     gradY->assign((*epsNext) / (*x));
   } else if (y->isScalar()) {
@@ -76,14 +76,14 @@ CUSTOM_OP_IMPL(reversedivide_bp, 3, 2, false, 0, 0) {
     gradY->assign(tmp / tmpX);
 
     gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
-    gradX->applyTransform(transform::Neg, *gradX);
+    gradX->applyTransform(transform::Neg, gradX);
   } else {
     // broadcast case
 
     auto preY = (*epsNext) / (*x);
 
     auto preX = *epsNext * (*y) / ((*x) * (*x));
-    preX.applyTransform(transform::Neg, preX);
+    preX.applyTransform(transform::Neg, &preX);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());

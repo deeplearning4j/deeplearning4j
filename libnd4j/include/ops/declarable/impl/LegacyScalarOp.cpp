@@ -71,7 +71,7 @@ Status LegacyScalarOp::validateAndExecute(Context &block) {
   } else if (block.getTArguments()->size() > 0) {
     auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
-    x->applyScalarArr(static_cast<scalar::Ops>(opNum), y, *z);
+    x->applyScalarArr(static_cast<scalar::Ops>(opNum), &y, z);
     manager.synchronize();
   } else {
     NDArray::prepareSpecialUse({z}, {x, _scalar});

@@ -565,7 +565,15 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, 
 #define INDEX2COORDS(linear_index, rank, shape, coords)                    \
     do {                                                                   \
         sd::LongType idx = (linear_index);                                \
-        if ((rank) == 2) {                                                \
+        if ((rank) == 0) {                                                \
+            /* Rank 0 is a scalar, set to 0 to avoid undefined behavior */\
+            (coords)[0] = 0;                                              \
+        }                                                                  \
+        else if ((rank) == 1) {                                           \
+            /* Rank 1 is simple: the linear index is the coordinate */    \
+            (coords)[0] = idx;                                            \
+        }                                                                  \
+        else if ((rank) == 2) {                                           \
             (coords)[1] = idx % (shape)[1];                               \
             (coords)[0] = idx / (shape)[1];                               \
         }                                                                  \
@@ -646,7 +654,15 @@ SD_LIB_EXPORT SD_INLINE SD_HOST sd::LongType *keep(volatile sd::LongType *data, 
 
 #define COORDS2INDEX(rank, strides, coords, index_var)                    \
     do {                                                                  \
-        if ((rank) == 2) {                                               \
+        if ((rank) == 0) {                                               \
+            /* Rank 0 is a scalar, index is always 0 */                  \
+            (index_var) = 0;                                             \
+        }                                                                 \
+        else if ((rank) == 1) {                                          \
+            /* Rank 1 is simple: just use the stride */                  \
+            (index_var) = (coords)[0] * (strides)[0];                    \
+        }                                                                 \
+        else if ((rank) == 2) {                                          \
             (index_var) = (coords)[0] * (strides)[0] +                   \
                          (coords)[1] * (strides)[1];                      \
         }                                                                 \

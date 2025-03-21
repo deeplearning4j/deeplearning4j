@@ -206,8 +206,8 @@ static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng
     NDArray alphaBroadcasted(broadcasted, alpha->dataType(), true, context);
     NDArray betaBroadcasted(broadcasted, beta->dataType(), true, context);
 
-    copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
-    copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
+    copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha));
+    copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta));
   }
 
   auto stream = context->getCudaStream();

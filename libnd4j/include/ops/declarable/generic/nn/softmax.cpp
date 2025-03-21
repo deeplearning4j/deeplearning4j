@@ -46,7 +46,7 @@ CONFIGURABLE_OP_IMPL(softmax, 1, 1, true, 0, 0) {
                "but got dimension = %i instead !",
                rank, dim);
 
-  helpers::softmax(block.launchContext(), *input, *output, dim);
+  helpers::softmax(block.launchContext(), input, output, dim);
 
   return sd::Status::OK;
 }

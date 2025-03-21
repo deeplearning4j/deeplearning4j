@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
   // FIXME: output should be used directly here, to avoid sum
-  input->reduceNumber(reduce::SquaredNorm, *output);
+  input->reduceNumber(reduce::SquaredNorm, output);
   (*output) /= 2.;
 
   return Status::OK;

@@ -108,7 +108,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Calculate gradB
   if (gradB) {
     std::vector<LongType> axes = {1};  // Sum over bS, oH, oW
-    gradO2d.reduceAlongDimension(reduce::Sum, *gradB, &axes);
+    gradO2d.reduceAlongDimension(reduce::Sum, gradB, &axes);
   }
 
   // Calculate gradI

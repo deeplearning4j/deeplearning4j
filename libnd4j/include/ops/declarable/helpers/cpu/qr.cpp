@@ -32,11 +32,13 @@ namespace helpers {
 
 template <typename T>
 NDArray matrixMinor(NDArray& in, sd::LongType col) {
-  NDArray m = in.ulike();
-  m.setIdentity();
-  m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
+  NDArray *m = in.ulike();
+  m->setIdentity();
+  auto mRef = *m;
+  auto view =  mRef({col, m->rows(), col, m->columns()});
+  view.assign(in({col, m->rows(), col, m->columns()}));
 
-  return m;
+  return mRef;
 }
 
 /* m = I - v v^T */
@@ -59,7 +61,7 @@ template <typename T>
 void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies) {
   sd::LongType M = matrix->sizeAt(-2);
   sd::LongType N = matrix->sizeAt(-1);
-  auto resQ = fullMatricies ? Q->ulike() : NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext());
+  auto resQ = fullMatricies ? Q->ulike() : new NDArray(NDArrayFactory::create<T>(matrix->ordering(), {M, M}, Q->getContext()));
   auto resR = fullMatricies ? R->ulike() : matrix->ulike();
   std::vector<NDArray> q(M);
 
@@ -75,35 +77,41 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     auto currentColumn = z({0, 0, k, k + 1});  // retrieve k column from z to x buffer
     auto norm = currentColumn.reduceAlongDimension(reduce::Norm2,&zeroVec);
     if (matrix->t<T>(k, k) > T(0.f))  // negate on positive matrix diagonal element
-      norm *= T(-1.f);                //.applyTransform(transform::Neg, nullptr, nullptr); //t<T>(0) = -norm.t<T>(0);
+      norm *= T(-1.f);
 
 
-    e.p(k, norm);
+    e.p(k, &norm);
     e += currentColumn;  //  e += tE; // e[i] = x[i] + a * e[i] for each i from 0 to n - 1
     auto normE = e.reduceAlongDimension(reduce::Norm2, &zeroVec);
     e /= normE;
     q[k] = vmul<T>(e, M);
     auto qQ = z.ulike();
-    MmulHelper::matmul(&q[k], &z, &qQ, false, false, 0, 0, &qQ);
-    z = std::move(qQ);
+    MmulHelper::matmul(&q[k], &z, qQ, false, false, 0, 0, qQ);
+    z = std::move(*qQ);
   }
-  resQ.assign(q[0]);  //
+  resQ->assign(q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
-    MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false, 0, 0, &tempResQ);  // use mmulMxM?
+    MmulHelper::matmul(&q[i], resQ, tempResQ, false, false, 0, 0, tempResQ);  // use mmulMxM?
     resQ = std::move(tempResQ);
   }
-  MmulHelper::matmul(&resQ, matrix, &resR, false, false, 0, 0, &resR);
+  MmulHelper::matmul(resQ, matrix, resR, false, false, 0, 0, resR);
   // resR *= -1.f;
-  resQ.transposei();
+  resQ->transposei();
   if (fullMatricies) {
-    Q->assign(resQ);
-    R->assign(resR);
+    Q->assign(*resQ);
+    R->assign(*resR);
   } else {
-    Q->assign(resQ({0, 0, 0, N}));
-    R->assign(resR({0, N, 0, 0}));
+    auto resQRef = *resQ;
+    auto resRRef = *resR;
+    auto resQView = resQRef({0, 0, 0, N});
+    Q->assign(resQRef({0, 0, 0, N}));
+    R->assign(resRRef({0, N, 0, 0}));
   }
+
+  delete resQ;
+  delete resR;
 }
 
 template <typename T>

@@ -46,7 +46,7 @@ void rnnCell(sd::LaunchContext* context, NDArray* xt, NDArray* Wx, NDArray* Wh, 
   // ht is current cell output [bS x nU], that is at current time step t
   ht->assign(mmul(*xt, *Wx) + (*b)({{0, nU}}) + mmul(*hPrev, *Wh) +
              (*b)({{nU, 2 * nU}}));  // [bS x nU] + [nU]  +  [bS x nU] + [nU] = [bS x nU]
-  ht->applyTransform(transform::Tanh, *ht);
+  ht->applyTransform(transform::Tanh, ht);
 }
 
 //////////////////////////////////////////////////////////////////////////

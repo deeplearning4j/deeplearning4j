@@ -301,6 +301,212 @@ LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType
   return ret;
 }
 
+
+LongType* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<LongType>* dimsToExclude, NDArray& arr,
+                                          const DataType dataType, const bool keepDims,
+                                          const bool supportOldShapes, memory::Workspace* workspace) {
+  sd::LongType  *shapeInfo = arr.shapeInfo();
+  if (ArrayOptions::arrayType(shapeInfo) == EMPTY)
+    return evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
+
+  LongType* newShapeInfo = nullptr;
+
+  LongType rank = shape::rank(const_cast<LongType*>(shapeInfo));
+
+  if (dimsToExclude->size() == 0) {  // return scalar or array with len=1 in this case
+    if (keepDims && rank > 1) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), sd::LongType);
+      newShapeInfo[0] = rank;
+      for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
+      updateStridesAndType(newShapeInfo, shapeInfo, order);
+      ArrayOptions::setDataType(newShapeInfo, dataType);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    } else if (supportOldShapes) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
+      shape::shapeOldScalar(dataType, newShapeInfo, 'c');
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    } else {
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    }
+  }
+
+  shape::checkDimensions(rank, dimsToExclude);
+
+  LongType dimSize = dimsToExclude->size();
+
+  if (keepDims) {
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), sd::LongType);
+    newShapeInfo[0] = rank;
+
+    for (LongType i = 0; i < rank; ++i) {
+      if (std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
+                             i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
+        newShapeInfo[i + 1] = 1;
+      else
+        newShapeInfo[i + 1] = shapeInfo[i + 1];
+    }
+    updateStridesAndType(newShapeInfo, shapeInfo, order);
+    auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+    return ret;
+  }
+
+  LongType newRank = rank - dimSize;
+  if (newRank == 0 ||
+      (dimSize == 1 &&
+       dimsToExclude->at(0) == INT_MAX)) {  // check whether given dimension is meant for the whole dimension
+
+    if (supportOldShapes) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
+      shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      RELEASE(newShapeInfo, workspace);
+      return ret;
+    } else {
+
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      RELEASE(newShapeInfo, workspace);
+      return ret;
+    }
+  }
+
+  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(newRank), sd::LongType);
+  newShapeInfo[0] = newRank;  // set rank
+  LongType j = 1;
+  for (LongType i = 0; i < rank; ++i)
+    if (!std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
+                            i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
+      newShapeInfo[j++] = shapeInfo[i + 1];
+
+  // ensure whether vector has proper shape for old shape type
+  if (newRank == 1 && supportOldShapes) {
+    LongType oldValue = newShapeInfo[1];
+    RELEASE(newShapeInfo, workspace);
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);  // set newRank = 2
+    newShapeInfo[0] = 2;
+    if (dimsToExclude->at(0) == 0) {
+      newShapeInfo[1] = 1;
+      newShapeInfo[2] = oldValue;
+    } else {
+      newShapeInfo[1] = oldValue;
+      newShapeInfo[2] = 1;
+    }
+  }
+
+  updateStridesAndType(newShapeInfo, shapeInfo, order);
+
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+  return ret;
+
+
+}
+LongType* ShapeUtils::evalReduceShapeInfo(char order, std::vector<LongType>* dimsToExclude, LongType* shapeInfo, const bool keepDims,
+                                          bool supportOldShapes, memory::Workspace* workspace) {
+
+
+  sd::DataType dataType = ArrayOptions::dataType(shapeInfo);
+  if (ArrayOptions::arrayType(shapeInfo) == EMPTY)
+    return evalReduceShapeInfoEmpty(order, dimsToExclude, shapeInfo, dataType, keepDims, workspace);
+
+  LongType* newShapeInfo = nullptr;
+
+  LongType rank = shape::rank(const_cast<LongType*>(shapeInfo));
+
+  if (dimsToExclude->size() == 0) {  // return scalar or array with len=1 in this case
+    if (keepDims && rank > 1) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), sd::LongType);
+      newShapeInfo[0] = rank;
+      for (LongType i = 0; i < rank; ++i) newShapeInfo[i + 1] = 1;
+      updateStridesAndType(newShapeInfo, shapeInfo, order);
+      ArrayOptions::setDataType(newShapeInfo, dataType);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    } else if (supportOldShapes) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
+      shape::shapeOldScalar(dataType, newShapeInfo, 'c');
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    } else {
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      return ret;
+    }
+  }
+
+  shape::checkDimensions(rank, dimsToExclude);
+
+  LongType dimSize = dimsToExclude->size();
+
+  if (keepDims) {
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rank), sd::LongType);
+    newShapeInfo[0] = rank;
+
+    for (LongType i = 0; i < rank; ++i) {
+      if (std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
+                             i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
+        newShapeInfo[i + 1] = 1;
+      else
+        newShapeInfo[i + 1] = shapeInfo[i + 1];
+    }
+    updateStridesAndType(newShapeInfo, shapeInfo, order);
+    auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+    return ret;
+  }
+
+  LongType newRank = rank - dimSize;
+  if (newRank == 0 ||
+      (dimSize == 1 &&
+       dimsToExclude->at(0) == INT_MAX)) {  // check whether given dimension is meant for the whole dimension
+
+    if (supportOldShapes) {
+      ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);
+      shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      RELEASE(newShapeInfo, workspace);
+      return ret;
+    } else {
+
+      newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
+      auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+      RELEASE(newShapeInfo, workspace);
+      return ret;
+    }
+  }
+
+  ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(newRank), sd::LongType);
+  newShapeInfo[0] = newRank;  // set rank
+  LongType j = 1;
+  for (LongType i = 0; i < rank; ++i)
+    if (!std::binary_search(dimsToExclude->begin(), dimsToExclude->end(),
+                            i))  // dimsToExclude is already sorted after shape::checkDimensions() has been applied
+      newShapeInfo[j++] = shapeInfo[i + 1];
+
+  // ensure whether vector has proper shape for old shape type
+  if (newRank == 1 && supportOldShapes) {
+    LongType oldValue = newShapeInfo[1];
+    RELEASE(newShapeInfo, workspace);
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), sd::LongType);  // set newRank = 2
+    newShapeInfo[0] = 2;
+    if (dimsToExclude->at(0) == 0) {
+      newShapeInfo[1] = 1;
+      newShapeInfo[2] = oldValue;
+    } else {
+      newShapeInfo[1] = oldValue;
+      newShapeInfo[2] = 1;
+    }
+  }
+
+  updateStridesAndType(newShapeInfo, shapeInfo, order);
+
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(newShapeInfo)->primary();
+  return ret;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array which is result of repeat operation applied to arr
 std::vector<LongType> ShapeUtils::evalRepeatShape(LongType axis, const std::vector<LongType>& repeats,
@@ -496,7 +702,7 @@ bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bo
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for resulting array from tile operation
 LongType* ShapeUtils::evalTileShapeInfo(NDArray& arr, const std::vector<LongType>& reps,
-                                              memory::Workspace* workspace) {
+                                        memory::Workspace* workspace) {
   // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities
   // (then simply reshape or do nothing)
   LongType repsSize = reps.size();

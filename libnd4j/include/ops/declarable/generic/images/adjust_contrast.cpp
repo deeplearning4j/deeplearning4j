@@ -104,9 +104,9 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   // result as (x - mean) * factor + mean
   auto temp = input3D.ulike();
   std::vector<LongType> zeroTwo = {0, 2};
-  input3D.applyBroadcast(broadcast::Subtract,&zeroTwo, mean, temp);
-  temp.applyScalarArr(scalar::Multiply, *factor, temp);
-  temp.applyBroadcast(broadcast::Add, &zeroTwo, mean, output3D);
+  input3D.applyBroadcast(broadcast::Subtract,&zeroTwo, &mean, temp);
+  temp->applyScalarArr(scalar::Multiply, factor, temp);
+  temp->applyBroadcast(broadcast::Add, &zeroTwo, &mean, &output3D);
   output->assign(output3D);
   return Status::OK;
 }
