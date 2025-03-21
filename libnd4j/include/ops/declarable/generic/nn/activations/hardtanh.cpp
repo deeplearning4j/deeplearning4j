@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(hardtanh, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(transform::HardTanh, *output);
+  input->applyTransform(transform::HardTanh, output);
   STORE_RESULT(output);
 
   return Status::OK;
@@ -48,7 +48,6 @@ CONFIGURABLE_OP_IMPL(hardtanh_bp, 2, 1, true, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::HardTanhDerivativeE, epsilon, z, nullptr);
   helpers::hardTanhDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

@@ -169,14 +169,13 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
 
         count++;
       } else {
-        // meanT->assign(meanV);
-        meanV.applyScalar(scalar::Divide, count, *meanT);
+        meanV.applyScalar(scalar::Divide, count, meanT);
         idx = indices->e<sd::LongType>(i);
         meanT = listOfOutTensors.at(idx);
         meanV.assign(*listOfTensors.at(i));
         count = 1;
       }
-      meanV.applyScalar(scalar::Divide, count, *meanT);
+      meanV.applyScalar(scalar::Divide, count, meanT);
     }
   }
 }

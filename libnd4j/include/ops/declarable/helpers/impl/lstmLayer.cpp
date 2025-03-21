@@ -38,56 +38,51 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/lstmLayer.h>
-// #include <VariableSpace.h>
-// #include <ops/declarable/CustomOperations.h>
-// #include<ops/declarable/helpers/transforms.h>
-// #include <ops/declarable/helpers/legacy_helpers.h>
-// #include <array/NDArrayList.h>
-// #include <iterator>
+
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-static void applyActivation(NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
+static void applyActivation(NDArray *x, const int opId, const float alpha, const float beta, NDArray* z) {
   switch (opId) {
     case 0:
-      (const_cast<NDArray&>(x)).applyTransform(transform::Tanh, z);
+      x->applyTransform(transform::Tanh, z);
       break;
     case 1:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::RELU, 0, z);
+      x->applyScalar(scalar::RELU, 0, z);
       break;
     case 2:
-      (const_cast<NDArray&>(x)).applyTransform(transform::Sigmoid, z);
+      x->applyTransform(transform::Sigmoid, z);
       break;
     case 3: {
       ExtraArguments args({static_cast<double>(alpha), static_cast<double>(beta)});
-      (const_cast<NDArray&>(x)).applyTransform(transform::Affine, z, &args);
+      x->applyTransform(transform::Affine, z, &args);
       break;
     }
     case 4:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::LeakyRELU, alpha, z);
+      x->applyScalar(scalar::LeakyRELU, alpha, z);
       break;
     case 5:
-      thresholdRelu(x.getContext(), x, alpha, z);
+      thresholdRelu(x->getContext(), x, alpha, z);
       break;
     case 6: {
       ExtraArguments args({static_cast<double>(alpha), static_cast<double>(beta)});
-      (const_cast<NDArray&>(x)).applyTransform(transform::ScaledTanh, z, &args);
+      x->applyTransform(transform::ScaledTanh, z, &args);
       break;
     }
     case 7:
-      (const_cast<NDArray&>(x)).applyTransform(transform::HardSigmoid, z);
+      x->applyTransform(transform::HardSigmoid, z);
       break;
     case 8:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::ELU, alpha, z);
+      x->applyScalar(scalar::ELU, alpha, z);
       break;
     case 9:
-      (const_cast<NDArray&>(x)).applyTransform(transform::SoftSign, z);
+      x->applyTransform(transform::SoftSign, z);
       break;
     case 10:
-      (const_cast<NDArray&>(x)).applyTransform(transform::SoftPlus, z);
+      x->applyTransform(transform::SoftPlus, z);
       break;
     default:
       THROW_EXCEPTION("LSTM_LAYER operation: wrong id number of activation !");
@@ -95,55 +90,55 @@ static void applyActivation(NDArray& x, const int opId, const float alpha, const
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void activationDeriv(NDArray& x, const int opId, const float alpha, const float beta, NDArray& z) {
+static void activationDeriv(NDArray* x, const int opId, const float alpha, const float beta, NDArray* z) {
   switch (opId) {
     case 0:
-      (const_cast<NDArray&>(x)).applyTransform(transform::TanhDerivative, z);
+      x->applyTransform(transform::TanhDerivative, z);
       break;
     case 1:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::RELUDerivative, 0, z);
+      x->applyScalar(scalar::RELUDerivative, 0, z);
       break;
     case 2:
-      (const_cast<NDArray&>(x)).applyTransform(transform::SigmoidDerivative, z);
+      x->applyTransform(transform::SigmoidDerivative, z);
       break;
     case 3: {
-      z = alpha;
+      *z = alpha;
       break;
     }
     case 4:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::LeakyRELUDerivative, alpha, z);
+      x->applyScalar(scalar::LeakyRELUDerivative, alpha, z);
       break;
     case 5:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::RELUDerivative, alpha, z);
+      thresholdReluDerivative(x->getContext(), x, alpha, z, z);
       break;
     case 6: {
       auto func = PRAGMA_THREADS_FOR {
         for (sd::LongType i = start; i < stop; ++i) {
-          auto val = beta * x.e<float>(i);
-          z.p<float>(
+          auto val = beta * x->e<float>(i);
+          z->p<float>(
               i, alpha * beta * (1.f - sd::math::sd_tanh<float, float>(val) * sd::math::sd_tanh<float, float>(val)));
         }
       };
-      samediff::Threads::parallel_for(func, 0, x.lengthOf());
+      samediff::Threads::parallel_for(func, 0, x->lengthOf());
       break;
     }
     case 7:
-      (const_cast<NDArray&>(x)).applyTransform(transform::HardSigmoidDerivative, z);
+      x->applyTransform(transform::HardSigmoidDerivative, z);
       break;
     case 8:
-      (const_cast<NDArray&>(x)).applyScalar<float>(scalar::ELUDerivative, alpha, z);
+      x->applyScalar(scalar::ELUDerivative, alpha, z);
       break;
     case 9:
-      (const_cast<NDArray&>(x)).applyTransform(transform::SoftSignDerivative, z);
+      x->applyTransform(transform::SoftSignDerivative, z);
       break;
     case 10: {
       auto func = PRAGMA_THREADS_FOR {
         for (sd::LongType i = start; i < stop; ++i) {
-          auto val = sd::math::sd_exp<float, float>(x.e<float>(i));
-          z.p<float>(i, val / (1.f + val));
+          auto val = sd::math::sd_exp<float, float>(x->e<float>(i));
+          z->p<float>(i, val / (1.f + val));
         }
       };
-      samediff::Threads::parallel_for(func, 0, x.lengthOf());
+      samediff::Threads::parallel_for(func, 0, x->lengthOf());
       break;
     }
     default:
@@ -269,22 +264,22 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
     zf += *cI * (*Wp)({nOut, 2 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
   }
 
-  applyActivation(zi, params[3], params[4], params[5], zi);  // inplace
-  applyActivation(zf, params[3], params[4], params[5], zf);  // inplace
-  applyActivation(zg, params[6], params[7], params[8], zg);  // inplace
+  applyActivation(&zi, params[3], params[4], params[5], &zi);  // inplace
+  applyActivation(&zf, params[3], params[4], params[5], &zf);  // inplace
+  applyActivation(&zg, params[6], params[7], params[8], &zg);  // inplace
 
   c->assign(zf * *cI + zi * zg);  // [bS, nOut] * [bS, nOut] + [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
 
   // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
-  if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], *c);
+  if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], c);
 
   // peephole connections for output gate
   if (Wp != nullptr)
     zo += *c * (*Wp)({2 * nOut, 3 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
 
-  applyActivation(zo, params[3], params[4], params[5], zo);
+  applyActivation(&zo, params[3], params[4], params[5], &zo);
 
-  applyActivation(*c, params[9], params[10], params[11], *h);
+  applyActivation(c, params[9], params[10], params[11], h);
   *h *= zo;  // [bS, nOut] * [bS, nOut](or[nOut])
 }
 
@@ -326,22 +321,22 @@ void lstmLayerCell(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* hI
     zf += *cI * (*Wp)({nOut, 2 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
   }
 
-  applyActivation(zi, params[3], params[4], params[5], i);
-  applyActivation(zf, params[3], params[4], params[5], f);
-  applyActivation(zg, params[6], params[7], params[8], g);
+  applyActivation(&zi, params[3], params[4], params[5], &i);
+  applyActivation(&zf, params[3], params[4], params[5], &f);
+  applyActivation(&zg, params[6], params[7], params[8], &g);
 
   c->assign(f * *cI + i * g);  // [bS, nOut] * [bS, nOut] + [bS, nOut] * [bS, nOut] = [bS, nOut](or[nOut])
 
   // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
-  if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], *c);
+  if (params[2] != 0) c->applyScalar(scalar::LstmClip, params[2], c);
 
   // peephole connections for output gate
   if (Wp != nullptr)
     zo += *c * (*Wp)({2 * nOut, 3 * nOut});  // broadcast: [bS, nOut] + [bS, nOut] * [nOut] = [bS, nOut](or[nOut])
 
-  applyActivation(zo, params[3], params[4], params[5], o);
+  applyActivation(&zo, params[3], params[4], params[5], &o);
 
-  applyActivation(*c, params[9], params[10], params[11], *h);
+  applyActivation(c, params[9], params[10], params[11], h);
   *h *= o;  // [bS, nOut] * [bS, nOut](or[nOut])
 }
 
@@ -477,28 +472,30 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   NDArray o = x->rankOf() == 1 ? (*a)({3 * nOut, 4 * nOut})
                                : (*a)({0, 0, 3 * nOut, 4 * nOut});  // output gate o, [bS, nOut](or[nOut])
 
-  NDArray dLdz = z->ulike();  // [bS, 4*nOut](or[4*nOut])
+  NDArray *zUlike = z->ulike();  // [bS, 4*nOut](or[4*nOut])
+  NDArray dLdz = *zUlike;  // [bS, 4*nOut](or[4*nOut])
   NDArray dLdzi = x->rankOf() == 1 ? dLdz({0, nOut}) : dLdz({0, 0, 0, nOut});
   NDArray dLdzf = x->rankOf() == 1 ? dLdz({nOut, 2 * nOut}) : dLdz({0, 0, nOut, 2 * nOut});
   NDArray dLdzg = x->rankOf() == 1 ? dLdz({2 * nOut, 3 * nOut}) : dLdz({0, 0, 2 * nOut, 3 * nOut});
   NDArray dLdzo = x->rankOf() == 1 ? dLdz({3 * nOut, 4 * nOut}) : dLdz({0, 0, 3 * nOut, 4 * nOut});
 
   // dcdzi = dcdi*didzi, [bS, nOut](or[nOut])
-  activationDeriv(zi, params[3], params[4], params[5], dLdzi);  // didzi, inplace
+  activationDeriv(&zi, params[3], params[4], params[5], &dLdzi);  // didzi, inplace
   dLdzi *= g;                                                   // dcdi = g*clipDeriv
 
   // dcdzf = dcdf*dfdzf, [bS, nOut](or[nOut])
-  activationDeriv(zf, params[3], params[4], params[5], dLdzf);  // dfdzf, inplace
+  activationDeriv(&zf, params[3], params[4], params[5], &dLdzf);  // dfdzf, inplace
   dLdzf *= *cI;                                                 // dcdf = cI*clipDeriv
 
   // dcdzg = dcde*dedzg, [bS, nOut](or[nOut])
-  activationDeriv(zg, params[6], params[7], params[8], dLdzg);  // dgdzg, inplace
+  activationDeriv(&zg, params[6], params[7], params[8], &dLdzg);  // dgdzg, inplace
   dLdzg *= i;                                                   // dcdf = i*clipDeriv
 
   // dhdzo = dhdo*dodzo = actH(c)*dodzo, [bS, nOut](or[nOut])
-  activationDeriv(zo, params[3], params[4], params[5], dLdzo);
-  NDArray temp = dLdzo.ulike();
-  applyActivation(*c, params[9], params[10], params[11], temp);  // actH(c), inplace
+  activationDeriv(&zo, params[3], params[4], params[5], &dLdzo);
+  NDArray *dLdzoUlike = dLdzo.ulike();
+  NDArray temp = *dLdzoUlike;
+  applyActivation(c, params[9], params[10], params[11], &temp);  // actH(c), inplace
   dLdzo *= temp;
 
   // dcdcI
@@ -508,8 +505,9 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
   clipDeriv(params[2], *c, dLdzi, dLdzf, dLdzg, dcdcI);
 
   // dhdc
-  NDArray dhdc = c->ulike();
-  activationDeriv(*c, params[9], params[10], params[11], dhdc);  // [bS, nOut]
+  NDArray *cUlike = c->ulike();
+  NDArray dhdc = *cUlike;
+  activationDeriv(c, params[9], params[10], params[11], &dhdc);  // [bS, nOut]
   dhdc *= o;
 
   if (Wp) {
@@ -582,16 +580,21 @@ void lstmLayerCellBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* 
     NDArray temp2(Wp->ordering(), shape, Wp->dataType(), Wp->getContext());
     std::vector<sd::LongType> dims = {0};
 
-    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (std::move(dLdzi) * (*cI)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({0, nOut}) += temp2;
-    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (std::move(dLdzf) * (*cI)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({nOut, 2 * nOut}) += temp2;
-    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
+    (std::move(dLdzo) * (*c)).reduceAlongDimension(reduce::Sum, &temp2, &dims);  // [bS, nOut] -> reduce -> [nOut]
     (*dLdWp)({2 * nOut, 3 * nOut}) += temp2;
 
   }
 
+  delete zUlike;
+  delete cUlike;
+  delete dLdzoUlike;
+
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 void lstmLayerTimeLoop(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArray* seqLen,
@@ -936,10 +939,12 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
 
   std::vector<LongType> zShape = {sL, bS, 4 * nOut};
   NDArray z(x->ordering(), zShape, type, x->getContext());
-  NDArray a = z.ulike();
+  NDArray *zUlike2 = z.ulike();
+  NDArray a = *zUlike2;
   std::vector<LongType> hShape = {sL + 1, bS, nOut};
   NDArray h(x->ordering(), hShape, type, x->getContext());
-  NDArray c = h.ulike();
+  NDArray *hUlike = h.ulike();
+  NDArray c = *hUlike;
 
   // create sets of required (depends on seqLen presence) sub-arrays
   std::vector<sd::LongType> *dims;
@@ -1189,7 +1194,8 @@ void lstmLayerTimeLoopBp(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, NDArr
   delete dLdcLSet;
   delete hISet;
   delete cISet;
-
+  delete zUlike2;
+  delete hUlike;
   if (!hI) delete dLdh0;
   if (!cI) delete dLdc0;
 }

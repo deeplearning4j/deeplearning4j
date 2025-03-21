@@ -231,15 +231,15 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // input - mean
   NDArray xMinusMean(input);  // empty array with same shape as input
-  input->applyBroadcast(sd::broadcast::Subtract, &axes, *mean, xMinusMean);
+  input->applyBroadcast(sd::broadcast::Subtract, &axes, mean, &xMinusMean);
 
   // stdInv
   NDArray stdInv = *variance + epsilon;
-  stdInv.applyTransform(transform::Reciprocal, stdInv);  // 1 / (variance + epsilon)
-  stdInv.applyTransform(transform::Sqrt, stdInv);        // 1 / (variance + epsilon)^0.5
+  stdInv.applyTransform(transform::Reciprocal, &stdInv);  // 1 / (variance + epsilon)
+  stdInv.applyTransform(transform::Sqrt, &stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dvdm (use dLdM as storage for dvdm)
-  xMinusMean.reduceAlongDimension(sd::reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
+  xMinusMean.reduceAlongDimension(sd::reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);
   *dLdM *= -Ninv;
 
   // g_sum
@@ -250,11 +250,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
   gSum *= Ninv;
-  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, gSum, *dLdI);
-  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, stdInv, *dLdI);
+  dLdO->applyBroadcast(sd::broadcast::Subtract, &axes, &gSum, dLdI);
+  dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, &stdInv, dLdI);
 
   // dLdV <- [g*(x - m)]_sum
-  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
+  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
 
   // dLdG
   *dLdV *= stdInv;
@@ -265,12 +265,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   *dLdV *= -Ninv;            // -0.5f * (2 / N);
 
   // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
-  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, *dLdM, xMinusMean);
-  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, *dLdV, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, dLdM, &xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, dLdV, &xMinusMean);
 
   // dLdI
   *dLdI += xMinusMean;
-  if (applyScale) dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, *gamma, *dLdI);
+  if (applyScale) dLdI->applyBroadcast(sd::broadcast::Multiply, &axes, gamma, dLdI);
 
   *dLdM = 0;  // put zeros so far
   *dLdV = 0;  // put zeros so far

@@ -31,7 +31,7 @@ OP_IMPL(boolean_not, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  x->applyTransform(transform::Not, *z);
+  x->applyTransform(transform::Not, z);
 
   return Status::OK;
 }

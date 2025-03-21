@@ -31,7 +31,7 @@ OP_IMPL(rint, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  x->applyTransform(transform::Rint, *z);
+  x->applyTransform(transform::Rint, z);
 
   return Status::OK;
 }

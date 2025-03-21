@@ -53,14 +53,14 @@ static SD_KERNEL void fillRegularizerKernel(T* ioMatrixData, const LongType* ioM
   }
 }
 template <typename T>
-static void fillRegularizer(LaunchContext* context, NDArray& ioMatrix, double const value) {
+static void fillRegularizer(LaunchContext* context, NDArray* ioMatrix, double const value) {
   std::vector<LongType> dims = {-2, -1};
-  auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix.shapeInfo(), &dims);
+  auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix->shapeInfo(), &dims);
   auto stream = context->getCudaStream();
-  auto rows = ioMatrix.sizeAt(-2);
+  auto rows = ioMatrix->sizeAt(-2);
   dim3 launchDims = getLaunchDims("lstsq_reg");
   fillRegularizerKernel<T><<<launchDims.y,launchDims.x,launchDims.z, *stream>>>(
-      ioMatrix.dataBuffer()->specialAsT<T>(), ioMatrix.specialShapeInfo(), lastDimsTads->specialShapeInfo(),
+      ioMatrix->dataBuffer()->specialAsT<T>(), ioMatrix->specialShapeInfo(), lastDimsTads->specialShapeInfo(),
       lastDimsTads->specialOffsets(), lastDimsTads->numberOfTads(), rows, (T)value);
 
 }
@@ -78,25 +78,25 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
     // 2. Computing B' = A^T * b
     auto rightOutput = output->ulike();
 
-    MmulHelper::matmul(leftInput, rightInput, &rightOutput, true, false,1.0,0.0,&rightOutput);  // Computing B' = A^T * b
+    MmulHelper::matmul(leftInput, rightInput, rightOutput, true, false,1.0,0.0,rightOutput);  // Computing B' = A^T * b
     // 3. Regularization ( indeed A' = A2 - l2Regularizer * I)
     if (l2Regularizer != 0.0) {
       auto regularizer = leftOutput.ulike();
-      regularizer.nullify();
+      regularizer->nullify();
       fillRegularizer<T>(context, regularizer, (T)l2Regularizer);
-      leftOutput += regularizer;
+      leftOutput += *regularizer;
     }
 
     // 4. Cholesky decomposition -- output matrix is square and lower triangular
     cholesky(context, &leftOutput, &leftOutput, true);  // inplace decomposition
     // 5. Solve two triangular systems:
-    auto rightB = rightOutput.ulike();
-    rightB.nullify();
+    auto rightB = rightOutput->ulike();
+    rightB->nullify();
 
-    triangularSolveFunctor(context, &leftOutput, &rightOutput, true, false, &rightB);
+    triangularSolveFunctor(context, &leftOutput, rightOutput, true, false, rightB);
 
     adjointMatrix(context, &leftOutput, true, &leftOutput);
-    triangularSolveFunctor(context, &leftOutput, &rightB, false, false, output);
+    triangularSolveFunctor(context, &leftOutput, rightB, false, false, output);
     // All done
   } else {  // QR decomposition approach
     // Equation for solve Rx = Q^T * b, where A = Q * R, where Q - orthogonal matrix, and R - upper triangular
@@ -110,9 +110,9 @@ Status leastSquaresSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDA
     qr(context, leftInput, &Q, &R, true);
     // 2. b` = Q^t * b:
     auto rightOutput = rightInput->ulike();
-    MmulHelper::matmul(&Q, rightInput, &rightOutput, true, false,1.0,0.0,&rightOutput);
+    MmulHelper::matmul(&Q, rightInput, rightOutput, true, false,1.0,0.0,rightOutput);
     // 3. Solve triangular system
-    triangularSolveFunctor(context, &R, &rightOutput, false, false, output);
+    triangularSolveFunctor(context, &R, rightOutput, false, false, output);
   }
   return Status::OK;
 }

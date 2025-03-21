@@ -31,7 +31,7 @@ OP_IMPL(Floor, 1, 1, true) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(transform::Floor, *z);
+  first->applyTransform(transform::Floor, z);
 
   STORE_RESULT(*z);
 

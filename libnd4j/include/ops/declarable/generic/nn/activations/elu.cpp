@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(elu, 1, 1, true, -2, 0) {
 
   const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
 
-  input->applyScalar(scalar::ELU, alpha, *output);
+  input->applyScalar(scalar::ELU, alpha, output);
 
   return Status::OK;
 }
@@ -50,7 +50,6 @@ CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, -2, 0) {
 
   const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
 
-  // input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, output);
   helpers::eluDerivative(block.launchContext(), input, epsilon, output, alpha);
 
   return Status::OK;

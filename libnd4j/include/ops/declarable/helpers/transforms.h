@@ -72,15 +72,15 @@ SD_LIB_HIDDEN void mergeAvgBp(LaunchContext* context, NDArray& gradient, std::ve
 SD_LIB_HIDDEN void mergeAdd(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output);
 SD_LIB_HIDDEN void mergeAddBp(LaunchContext* context, NDArray& gradient, std::vector<NDArray*>& outArrs);
 
-SD_LIB_HIDDEN void clipByNorm(LaunchContext* context, NDArray& input, NDArray& output,
-                              const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool isInplace,
+SD_LIB_HIDDEN void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output,
+                              const std::vector<LongType>& dimensions, NDArray* clipNorm, const bool isInplace,
                               const bool useAverage);
 
 SD_LIB_HIDDEN void clipByGlobalNorm(LaunchContext* context, std::vector<NDArray*> & inputs, double clipNorm,
                                     memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);
 
-SD_LIB_HIDDEN void clipByNormBp(LaunchContext* context, NDArray& input, NDArray& gradO,
-                                NDArray& gradI /*output*/, const std::vector<LongType>& dimensions, NDArray& clipNorm,
+SD_LIB_HIDDEN void clipByNormBp(LaunchContext* context, NDArray* input, NDArray* gradO,
+                                NDArray* gradI /*output*/, const std::vector<LongType>& dimensions, NDArray* clipNorm,
                                 const bool useAverage);
 
 SD_LIB_HIDDEN void clipByAveragedNorm(LaunchContext* context, NDArray& input, NDArray& output,
@@ -90,8 +90,8 @@ SD_LIB_HIDDEN void clipByAveragedNorm(LaunchContext* context, NDArray& input, ND
 SD_LIB_HIDDEN void mirrorPad(LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                              const int mode);
 
-SD_LIB_HIDDEN void clipByValue(LaunchContext* context, NDArray& input, double leftBound, double rightBound,
-                               NDArray& output);
+SD_LIB_HIDDEN void clipByValue(LaunchContext* context, NDArray* input, double leftBound, double rightBound,
+                               NDArray* output);
 
 SD_LIB_HIDDEN void mirrorPad(LaunchContext* context, NDArray& input, NDArray& paddings, NDArray& output,
                              const int mode);

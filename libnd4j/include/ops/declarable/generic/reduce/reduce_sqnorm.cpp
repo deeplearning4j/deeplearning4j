@@ -58,7 +58,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, -1, 1, false, 0, 0) {
         "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         input->rankOf(), input->rankOf(), item);
 
-  input->reduceAlongDimension(reduce::SquaredNorm, *gradI, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::SquaredNorm, gradI, &dimensions, keepDims);
 
   return sd::Status::OK;
 }

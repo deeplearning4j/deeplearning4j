@@ -36,7 +36,7 @@ CONFIGURABLE_OP_IMPL(thresholdedrelu, 1, 1, true, 0, 0) {
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-  helpers::thresholdRelu(block.launchContext(), *input, scalar, *output);
+  helpers::thresholdRelu(block.launchContext(), input, scalar, output);
 
   return Status::OK;
 }

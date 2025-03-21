@@ -94,7 +94,7 @@ void lstmCell(sd::LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* c
   ct->assign(sigmoidOut);
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
-  if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, *ct);
+  if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, ct);
 
   if (peephole) zot += (*ct) * (*Wc)({{2 * nOut, 3 * nOut}});  // add peephole connections to output gate zot + ct*Wc
 
@@ -105,7 +105,7 @@ void lstmCell(sd::LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* c
   if (projection) {
     ht->assign(mmul(htNoPeepHole, *Wp));  // [bS x nOut] * [ nOut x numProj] = [bS x numProj]
     // if clipping projection is provided then projected cell output state is clipped by this value
-    if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, *ht);
+    if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, ht);
   } else
     ht->assign(htNoPeepHole);
 }
@@ -174,7 +174,7 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
   // Concat inputs: [xt, yt-1]: concat([bs,nIn],[bs,nOut]) -> [bs, (nIn+nOut)]
   NDArray concatOut(xt->ordering(), cOutShape, xt->dataType(),
                     xt->getContext());
-  helpers::concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, {1});
+  helpers::concat(xt->getContext(), {const_cast<NDArray*>(xt), const_cast<NDArray*>(yLast)}, concatOut, 1);
 
   auto m = mmul(concatOut, *W);  // mmul: [bs, (nIn+nOut)] * [(nIn+nOut), 4*nOut] = [bs, 4*nOut]
   m += (*b);                     // addiRowVector
@@ -197,13 +197,13 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
   PRAGMA_OMP_PARALLEL
   PRAGMA_OMP_SINGLE {
     PRAGMA_OMP_TASK
-    zz.applyTransform(transform::Tanh, *z);  // z = tanh(zz)
+    zz.applyTransform(transform::Tanh, z);  // z = tanh(zz)
 
     PRAGMA_OMP_TASK
-    zi.applyTransform(transform::Sigmoid, *i);  // i = sigmoid(zi)
+    zi.applyTransform(transform::Sigmoid, i);  // i = sigmoid(zi)
 
     PRAGMA_OMP_TASK
-    zf.applyTransform(transform::Sigmoid, *f);  // f = sigmoid(zf);
+    zf.applyTransform(transform::Sigmoid, f);  // f = sigmoid(zf);
   }
 
   if (z->ews() == 1 && i->ews() == 1 && c->ews() == 1 && cLast->ews() == 1 && f->ews() == 1 && h->ews() == 1 &&
@@ -213,14 +213,14 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
     BUILD_SINGLE_SELECTOR(z->dataType(), fusedTanh, (z, i, c, cLast, f, h), SD_FLOAT_TYPES);
   } else {
     // cell state = blockInput .* inputGate + prevCellState .* forgetGate
-    z->applyPairwiseTransform(pairwise::Multiply, *i, *c);  // c = z * i
+    z->applyPairwiseTransform(pairwise::Multiply, i, c);  // c = z * i
     auto temp = (*f) * (*cLast);
     *c += temp;                              // c = (i * z) + (zf * (*cLast))
-    c->applyTransform(transform::Tanh, *h);  // h = tanh(c)
+    c->applyTransform(transform::Tanh, h);  // h = tanh(c)
   }
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
-  if (clippingCellValue > 0.0) c->applyScalar(scalar::LstmClip, clippingCellValue, *c);
+  if (clippingCellValue > 0.0) c->applyScalar(scalar::LstmClip, clippingCellValue, c);
 
   // add peephole connections to output gate zot + ct*Wc
   if (peephole) {
@@ -228,11 +228,11 @@ void lstmBlockCell(NDArray* xt, NDArray* cLast, NDArray* yLast, NDArray* W, NDAr
     zo += prod;
   }
 
-  zo.applyTransform(transform::Sigmoid, *o);  // o = sigmoid(zo)
+  zo.applyTransform(transform::Sigmoid, o);  // o = sigmoid(zo)
 
   // current cell output = ot*tanh(ct)
-  c->applyTransform(transform::Tanh, *h);                 // h = tanh(c)
-  o->applyPairwiseTransform(pairwise::Multiply, *h, *y);  // y = o * h
+  c->applyTransform(transform::Tanh, h);                 // h = tanh(c)
+  o->applyPairwiseTransform(pairwise::Multiply, h, y);  // y = o * h
 }
 
 }  // namespace helpers

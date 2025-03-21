@@ -468,7 +468,7 @@ TEST_F(NDArrayTest, TestTransform1) {
   float *e = new float[4]{1, 2, 3, 4};
   auto exp = new NDArray(e, cShape);
 
-  array->applyTransform(transform::Abs, *array);
+  array->applyTransform(transform::Abs, array);
 
   ASSERT_TRUE(exp->equalsTo(array));
 
@@ -517,7 +517,7 @@ TEST_F(NDArrayTest, TestApplyTransform1) {
   float *e = new float[4]{1, 2, 3, 4};
   auto exp = new NDArray(e, cShape);
 
-  array->applyTransform(transform::Abs, *array);
+  array->applyTransform(transform::Abs, array);
 
   ASSERT_TRUE(exp->equalsTo(array));
 

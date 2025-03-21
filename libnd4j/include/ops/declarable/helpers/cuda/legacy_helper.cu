@@ -34,7 +34,7 @@ template <typename T>
 void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,7 @@ template <typename T>
 void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +64,7 @@ void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
     return math::sd_max<T>(x, (T)0.f) - x * y + math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(x)));
   };
 
-  logits->applyPairwiseLambda(*labels, functor, *output);
+  logits->applyPairwiseLambda(labels, functor, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
     return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
   };
 
-  logits->applyPairwiseLambda(*labels, functor, *output);
+  logits->applyPairwiseLambda(labels, functor, output);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void sigmCrossEntropyGrad(LaunchContext* context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -97,7 +97,7 @@ void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
     return y * ((T)1.0f / (ss * ss));
   };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +113,7 @@ void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
     return y * (p / (p + 1.));
   };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void softPlusDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -131,7 +131,7 @@ void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
     return y * (s * ((T)1.0f - s));
   };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void sigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -142,7 +142,7 @@ template <typename T>
 void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void hardSigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -154,30 +154,30 @@ template <typename T>
 void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray tempInput = input->dup();
-  input->applyTransform(transform::Exp, tempInput);
+  input->applyTransform(transform::Exp, &tempInput);
   std::vector<LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
-  output->applyTransform(transform::Log, *output);
+  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  output->applyTransform(transform::Log, output);
 }
 
 template <typename T>
 void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
   // reduce along axis with
   NDArray tempInput = input->dup();
-  input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
-  tempInput.applyTransform(transform::Exp, tempInput);
+  input->applyPairwiseTransform(pairwise::Subtract, subtrah, &tempInput);
+  tempInput.applyTransform(transform::Exp, &tempInput);
 
   std::vector<LongType> axisVector;
   if (axis != nullptr) {
     axisVector.resize(axis->lengthOf());
     for (size_t i = 0; i < axisVector.size(); ++i) axisVector[i] = axis->e<int>(i);
   }
-  tempInput.reduceAlongDimension(reduce::Sum, *output, &axisVector);
-  output->applyTransform(transform::Log, *output);
+  tempInput.reduceAlongDimension(reduce::Sum, output, &axisVector);
+  output->applyTransform(transform::Log, output);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,15 +208,15 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, 
   };
 
   if (weights->isScalar()) {
-    const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray&>(*targets), mainRoutineT1, *output);
+    input->applyPairwiseLambda(targets, mainRoutineT1, output);
   } else {
     std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-    targetVector->applyScalar(scalar::Add, -1.f, *targetVector);
+    targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
 
     std::unique_ptr<NDArray> targetTensor(new NDArray(*targets));
     *targetTensor = (*targetVector * *targetTensor) + T(1.f);
-    const_cast<NDArray*>(input)->applyTriplewiseLambda(const_cast<NDArray&>(*targets), *targetTensor.get(),
-                                                       mainRoutineT2, *output);
+    input->applyPairwiseLambda(targetTensor.get(), mainRoutineT2, output);
+
   }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

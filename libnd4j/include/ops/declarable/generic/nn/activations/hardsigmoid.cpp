@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(hardsigmoid, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(transform::HardSigmoid, *output);
+  input->applyTransform(transform::HardSigmoid, output);
   STORE_RESULT(output);
 
   return Status::OK;

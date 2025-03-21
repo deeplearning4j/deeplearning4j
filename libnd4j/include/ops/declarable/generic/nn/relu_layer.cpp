@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(relu_layer, 3, 1, false, 0, 0) {
 
   auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-  output->applyScalar(sd::scalar::RELU, scalar, *output);
+  output->applyScalar(sd::scalar::RELU, scalar, output);
 
   return sd::Status::OK;
 }

@@ -106,7 +106,7 @@ void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int nu
     return (sd::math::sd_floor<T, T>(val / scale + T(0.5f)) * scale + nudgedMin);
   };
 
-  input->applyLambda<T>(fakeQuantizationWithMinMax, *output);
+  input->applyLambda<T>(fakeQuantizationWithMinMax, output);
 }
 
 void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {

@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(reduce_norm1, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Norm1, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Norm1, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -109,7 +109,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, -1, 1, false, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto gradI = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(sd::transform::Sign, *gradI);
+  input->applyTransform(sd::transform::Sign, gradI);
 
   bool keepDims = false;
   auto dimensions = *block.getIArguments();

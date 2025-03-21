@@ -40,7 +40,7 @@ BROADCASTABLE_OP_IMPL(cyclic_rshift_bits, 0, 0) {
 
   x->applyTrueBroadcast(
       BroadcastIntOpsTuple::custom(scalar::CyclicShiftRight, pairwise::CyclicShiftRight, broadcast::CyclicShiftRight),
-      *y, *z, false);
+      y, z, false);
 
   return Status::OK;
 }

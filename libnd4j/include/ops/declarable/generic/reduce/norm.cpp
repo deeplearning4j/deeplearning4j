@@ -53,27 +53,27 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
       REQUIRE_TRUE(dims.size() == 2 || (input->rankOf() == 2 && dims.size() == 0), 0,
                    "Norm: Frobenius is defined for 2D matrices or TADS only");
       // fro
-      input->reduceAlongDimension(reduce::NormFrobenius, *output, &dims, false, output->rankOf() == 2);
+      input->reduceAlongDimension(reduce::NormFrobenius, output, &dims, false, output->rankOf() == 2);
     } break;
     case 1: {
       // euclidean
       if ((input->rankOf() == 2 && dims.size() == 0) || dims.size() == 2) {
-        input->reduceAlongDimension(reduce::NormFrobenius, *output, &dims, false, output->rankOf() == 2);
+        input->reduceAlongDimension(reduce::NormFrobenius, output, &dims, false, output->rankOf() == 2);
       } else {
-        input->reduceAlongDimension(reduce::Norm2, *output, &dims, false, output->rankOf() == 2);
+        input->reduceAlongDimension(reduce::Norm2, output, &dims, false, output->rankOf() == 2);
       }
     } break;
     case 2: {
       // 1
-      input->reduceAlongDimension(reduce::Norm1, *output, &dims, false, output->rankOf() == 2);
+      input->reduceAlongDimension(reduce::Norm1, output, &dims, false, output->rankOf() == 2);
     } break;
     case 3: {
       // 2
-      input->reduceAlongDimension(reduce::Norm2, *output, &dims, false, output->rankOf() == 2);
+      input->reduceAlongDimension(reduce::Norm2, output, &dims, false, output->rankOf() == 2);
     } break;
     case 4: {
       // inf-norm
-      input->reduceAlongDimension(reduce::NormMax, *output, &dims, false, output->rankOf() == 2);
+      input->reduceAlongDimension(reduce::NormMax, output, &dims, false, output->rankOf() == 2);
     } break;
     default: {
       // p-norm
@@ -81,7 +81,7 @@ REDUCTION_OP_IMPL(norm, 1, 1, false, 1, -2) {
                    "P-Norm reductions requires 2 TArguments, but only 1 was provided");
       // FIXME: p is required here
       // T p = T_ARG(1);
-      input->reduceAlongDimension(reduce::NormP, *output, &dims, false, output->rankOf() == 2);
+      input->reduceAlongDimension(reduce::NormP, output, &dims, false, output->rankOf() == 2);
     }
   }
 

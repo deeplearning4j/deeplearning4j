@@ -94,21 +94,21 @@ void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray &output) {
+void prelu(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *output) {
   PointersManager manager(context, "prelu");
 
   dim3 launchDims = getLaunchDims("prelu");
 
-  const auto xType = input.dataType();
-  const auto yType = alpha.dataType();
+  const auto xType = input->dataType();
+  const auto yType = alpha->dataType();
 
-  NDArray::prepareSpecialUse({&output}, {&input, &alpha});
+  NDArray::prepareSpecialUse({output}, {&input, &alpha});
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluCudaLauncher,
-      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
-          input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), output.specialBuffer()),
+      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input->specialBuffer(),
+          input->specialShapeInfo(), alpha->specialBuffer(), alpha->specialShapeInfo(), output->specialBuffer()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({&output}, {&input, &alpha});
+  NDArray::registerSpecialUse({output}, {&input, &alpha});
 
   manager.synchronize();
 }
@@ -196,26 +196,26 @@ void SD_HOST preluBPCudaLauncher(const int blocksPerGrid, const int threadsPerBl
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(LaunchContext *context, NDArray&input, NDArray&alpha, NDArray&dLdO, NDArray &dLdI,
-             NDArray &dLdA) {
-  dLdA.nullify();
+void preluBP(LaunchContext *context, NDArray *input, NDArray *alpha, NDArray *dLdO, NDArray *dLdI,
+             NDArray *dLdA) {
+  dLdA->nullify();
 
   PointersManager manager(context, "preluBP");
 
   dim3 launchDims = getLaunchDims("prelu");
 
-  const auto xType = input.dataType();
-  const auto zType = alpha.dataType();
+  const auto xType = input->dataType();
+  const auto zType = alpha->dataType();
 
-  NDArray::prepareSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
+  NDArray::prepareSpecialUse({dLdI, dLdA}, {input, alpha, dLdO});
   BUILD_SINGLE_SELECTOR_TWICE(
       xType, preluBPCudaLauncher,
-      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input.specialBuffer(),
-          input.specialShapeInfo(), alpha.specialBuffer(), alpha.specialShapeInfo(), dLdO.specialBuffer(),
-          dLdO.specialShapeInfo(), dLdI.specialBuffer(), dLdI.specialShapeInfo(), dLdA.specialBuffer(),
-          dLdA.specialShapeInfo()),
+      (launchDims.x, launchDims.y, launchDims.z, context->getCudaStream(), input->specialBuffer(),
+          input->specialShapeInfo(), alpha->specialBuffer(), alpha->specialShapeInfo(), dLdO->specialBuffer(),
+          dLdO->specialShapeInfo(), dLdI->specialBuffer(), dLdI->specialShapeInfo(), dLdA->specialBuffer(),
+          dLdA->specialShapeInfo()),
       SD_FLOAT_TYPES);
-  NDArray::registerSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
+  NDArray::registerSpecialUse({&dLdI, &dLdA}, {input, alpha, dLdO});
 
   manager.synchronize();
 }
@@ -402,46 +402,46 @@ static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
-  const int rank = input.rankOf();
+void softmax(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
+  const int rank = input->rankOf();
 
   PointersManager manager(context, "helpers::softmax");
 
-  if (input.isVector()) {
-    if (rank == 1 || input.sizeAt(dimension) != 1) {
-      NDArray::prepareSpecialUse({&output}, {&input});
-      BUILD_SINGLE_SELECTOR(input.dataType(), softMaxForVectorCudaLauncher,
-                            (context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(),
-                                output.specialBuffer(), output.specialShapeInfo(),1),
+  if (input->isVector()) {
+    if (rank == 1 || input->sizeAt(dimension) != 1) {
+      NDArray::prepareSpecialUse({output}, {input});
+      BUILD_SINGLE_SELECTOR(input->dataType(), softMaxForVectorCudaLauncher,
+                            (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(),
+                                output->specialBuffer(), output->specialShapeInfo(),1),
                             SD_FLOAT_TYPES);
-      NDArray::registerSpecialUse({&output}, {&input});
+      NDArray::registerSpecialUse({output}, {input});
     } else
-      output = 1.;
+      *output = 1.;
   } else {
-    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
-    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {dimension});
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimension});
 
     dim3 softmaxDims = getSoftmaxDims(packZ->numberOfTads());
 
 
-    NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher,
+    NDArray::prepareSpecialUse({output}, {input});
+    BUILD_SINGLE_SELECTOR(input->dataType(), softMaxCudaLauncher,
                           (softmaxDims.x, softmaxDims.y,
                               softmaxDims.z,
                               context->getCudaStream(),
-                              input.specialBuffer(),
+                              input->specialBuffer(),
                               packX->specialShapeInfo(),
-                              packX->specialOffsets(), output.specialBuffer(),
+                              packX->specialOffsets(), output->specialBuffer(),
                               packZ->specialShapeInfo(),
                               packZ->specialOffsets(),packX->numberOfTads()),
                           SD_FLOAT_TYPES);
-    NDArray::registerSpecialUse({&output}, {&input});
+    NDArray::registerSpecialUse({output}, {input});
 
   }
 
   manager.synchronize();
 
-  output.tickWriteDevice();
+  output->tickWriteDevice();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -546,33 +546,34 @@ void logSoftMaxForVectorCudaLauncher(const cudaStream_t *stream, const void *vx,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
-  if (!input.isActualOnDeviceSide()) input.syncToDevice();
-  const int rank = input.rankOf();
+void logSoftmax(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
+  if (!input->isActualOnDeviceSide()) input->syncToDevice();
+  const int rank = input->rankOf();
 
-  if (input.isVector()) {
-    if (rank == 1 || input.sizeAt(dimension) != 1) {
+  if (input->isVector()) {
+    if (rank == 1 || input->sizeAt(dimension) != 1) {
       BUILD_SINGLE_SELECTOR(
-          input.dataType(), logSoftMaxForVectorCudaLauncher,
-          (context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer()),
+          input->dataType(), logSoftMaxForVectorCudaLauncher,
+          (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer()),
           SD_FLOAT_TYPES);
-      input.tickReadDevice();
+      input->tickReadDevice();
     } else
-      output = 0.;
+      *output = 0.;
   } else {
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
-    auto maxAlongDim = const_cast<NDArray &>(input).reduceAlongDimension(reduce::Max, &dim, true);
-    (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dim, true);
-    output /= sumAlongDim;
-    output.applyTransform(transform::Log, output);
-    input.tickReadDevice();
+    auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
+    auto inputMinusMax = *input - maxAlongDim;
+    inputMinusMax.applyTransform(transform::Exp, output);  // output contains exponents temporarily
+    auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dim, true);
+    *output /= sumAlongDim;
+    output->applyTransform(transform::Log, output);
+    input->tickReadDevice();
   }
 
   PointersManager manager(context, "helpers::logSoftmax");
   manager.synchronize();
 
-  output.tickWriteDevice();
+  output->tickWriteDevice();
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -679,41 +680,42 @@ void softMaxDerivForVectorCudaLauncher(const cudaStream_t *stream, const void *v
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(LaunchContext *context, NDArray&input, NDArray &output, const int dimension) {
-  if (!input.isActualOnDeviceSide()) input.syncToDevice();
-  const int rank = input.rankOf();
+void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, const int dimension) {
+  if (!input->isActualOnDeviceSide()) input->syncToDevice();
+  const int rank = input->rankOf();
   LongType temp;
 
-  if (shape::isCommonVector(input.shapeInfo(), temp)) {
+  if (shape::isCommonVector(input->shapeInfo(), temp)) {
     BUILD_SINGLE_SELECTOR(
-        input.dataType(), softMaxDerivForVectorCudaLauncher,
-        (context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer()),
+        input->dataType(), softMaxDerivForVectorCudaLauncher,
+        (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer()),
         SD_FLOAT_TYPES);
-    input.tickReadDevice();
+    input->tickReadDevice();
   } else {
     std::vector<LongType> dim = {static_cast<LongType>(dimension)};
-    auto maxAlongDim = const_cast<NDArray &>(input).reduceAlongDimension(reduce::Max, &dim, true);
-    (input - maxAlongDim).applyTransform(transform::Exp, output);  // output contains exponents temporarily
-    auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, &dim, true);
-    output /= sumAlongDim;
-    output *= (1.f - output);  // derivative
-    input.tickReadDevice();
+    auto maxAlongDim = const_cast<NDArray *>(input)->reduceAlongDimension(reduce::Max, &dim, true);
+    auto inputMinusMax = *input - maxAlongDim;
+    inputMinusMax.applyTransform(transform::Exp, output);  // output contains exponents temporarily
+    auto sumAlongDim = output->reduceAlongDimension(reduce::Sum, &dim, true);
+    *output /= sumAlongDim;
+    *output *= (1.f - *output);  // derivative
+    input->tickReadDevice();
   }
 
   PointersManager manager(context, "helpers::softmaxDerivative");
   manager.synchronize();
 
-  output.tickWriteDevice();
+  output->tickWriteDevice();
 }
 
 template <typename T>
-void thresholdRelu_(NDArray const &input, double threshold, NDArray &output) {
+void thresholdRelu_(NDArray const *input, double threshold, NDArray *output) {
   auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; };
-  const_cast<NDArray &>(input).applyLambda(routine, output);
+  const_cast<NDArray *>(input)->applyLambda(routine, output);
 }
 
-void thresholdRelu(LaunchContext *context, NDArray &input, double threshold, NDArray &output) {
-  BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
+void thresholdRelu(LaunchContext *context, NDArray *input, double threshold, NDArray *output) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), thresholdRelu_, (input, threshold, output), SD_FLOAT_TYPES);
 }
 
 template <typename T>
@@ -725,7 +727,7 @@ void thresholdReluDerivative_(NDArray *input, double theta, NDArray *dLdO, NDArr
       return static_cast<T>(0);
   };
 
-  input->applyPairwiseLambda(*dLdO, derivative, *output);
+  input->applyPairwiseLambda(dLdO, derivative, output);
 }
 
 void thresholdReluDerivative(LaunchContext *context, NDArray *input, double threshold, NDArray *dLdO,

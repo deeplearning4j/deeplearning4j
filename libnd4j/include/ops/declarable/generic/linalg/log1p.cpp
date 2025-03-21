@@ -31,7 +31,7 @@ OP_IMPL(Log1p, 1, 1, true) {
   auto x = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  x->applyTransform(transform::Log1p, *z);
+  x->applyTransform(transform::Log1p, z);
 
   STORE_RESULT(z);
 

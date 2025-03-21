@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
     std::vector<sd::LongType> bShape = {INPUT_VARIABLE(2)->lengthOf(), 1};
     b = new NDArray(INPUT_VARIABLE(2)->reshape('c', bShape));
     if(z->isMatrix()) {
-      z->addiColumnVector(*b);
+      z->addiColumnVector(b);
     } else {
       *z += *b;
     }
@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
 
     if(z->isMatrix()) {
       // adding b vector
-      z->addiRowVector(*b);
+      z->addiRowVector(b);
     } else  {
       *z += *b;
     }

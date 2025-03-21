@@ -33,7 +33,7 @@ template <typename T>
 void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); };
 
-  theFirst->applyPairwiseLambda(*theSecond, functor, *theFirst);
+  theFirst->applyPairwiseLambda(theSecond, functor,theFirst);
 }
 
 void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond) {
@@ -44,7 +44,7 @@ template <typename T>
 void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void reluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -55,7 +55,7 @@ template <typename T>
 void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return x > (T)0.f && x < (T)6.f ? y : T(0.f); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void relu6Derivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -68,7 +68,7 @@ void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, con
 
   auto functor = LAMBDA_TT(x, y, alphaT) { return x < 0 ? alphaT * y : y; };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void leakyReluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -83,7 +83,7 @@ void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const flo
 
   auto functor = LAMBDA_TT(x, y, alphaT) { return y * math::sd_eluderivative<T, T>(x, alphaT); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void eluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput,
@@ -95,7 +95,7 @@ template <typename T>
 void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) { return y * simdOps::SELUDerivative<T>::op(x, nullptr); };
 
-  input->applyPairwiseLambda(*epsilon, functor, *output);
+  input->applyPairwiseLambda(epsilon, functor, output);
 }
 
 void seluDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

@@ -36,10 +36,9 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void fillRegularizer(NDArray& ioMatrix, double const value) {
-  auto lastDims = ioMatrix.allTensorsAlongDimension({-2, -1});
-  auto rows = ioMatrix.sizeAt(-2);
-  // auto cols = ioMatrix.sizeAt(-1);
+static void fillRegularizer(NDArray* ioMatrix, double const value) {
+  auto lastDims = ioMatrix->allTensorsAlongDimension({-2, -1});
+  auto rows = ioMatrix->sizeAt(-2);
 
   for (auto x = 0; x < lastDims.size(); x++) {
     for (auto r = 0; r < rows; r++) {
@@ -62,12 +61,11 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     // 2. Computing B' = A^T * b
     auto rightOutput = output->ulike();
 
-    MmulHelper::matmul(leftInput, rightInput, &rightOutput, true, false, 0, 0, &rightOutput);  // Computing B' = A^T * b
+    MmulHelper::matmul(leftInput, rightInput, rightOutput, true, false, 0, 0, rightOutput);  // Computing B' = A^T * b
     // 3. due l2Regularizer = 0, skip regularization ( indeed A' = A2 - l2Regularizer * I)
     auto regularizer = leftOutput.ulike();
     fillRegularizer<T>(regularizer, l2Regularizer);
-    //            regularizer *= l2Regularizer;
-    leftOutput += regularizer;
+    leftOutput += *regularizer;
     // 4. Cholesky decomposition -- output matrix is square and lower triangular
     //            auto leftOutputT = leftOutput.ulike();
     auto status = helpers::cholesky(context, &leftOutput, &leftOutput, true);  // inplace decomposition
@@ -76,10 +74,10 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     // solve one upper triangular system (to avoid float problems)
 
     // 5. Solve two triangular systems:
-    auto rightB = rightOutput.ulike();
-    helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, true, false, &rightB);
+    auto rightB = rightOutput->ulike();
+    helpers::triangularSolveFunctor(context, &leftOutput, rightOutput, true, false, rightB);
     helpers::adjointMatrix(context, &leftOutput, true, &leftOutput);
-    helpers::triangularSolveFunctor(context, &leftOutput, &rightB, false, false, output);
+    helpers::triangularSolveFunctor(context, &leftOutput, rightB, false, false, output);
     // All done
   } else {  // QR decomposition approach
     // Equation for solve Rx = Q^T * b, where A = Q * R, where Q - orthogonal matrix, and R - upper triangular
@@ -93,9 +91,9 @@ sd::Status leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray* leftIn
     helpers::qr(context, leftInput, &Q, &R, true);
     // 2. b` = Q^t * b:
     auto rightOutput = rightInput->ulike();
-    MmulHelper::matmul(&Q, rightInput, &rightOutput, true, false, 0, 0, &rightOutput);
+    MmulHelper::matmul(&Q, rightInput, rightOutput, true, false, 0, 0, rightOutput);
     // 3. Solve triangular system
-    helpers::triangularSolveFunctor(context, &R, &rightOutput, false, false, output);
+    helpers::triangularSolveFunctor(context, &R, rightOutput, false, false, output);
   }
   NDArray::registerPrimaryUse({output}, {leftInput, rightInput});
   return sd::Status::OK;

@@ -442,7 +442,7 @@ static Status topKFunctor_(LaunchContext* context, NDArray* input, NDArray* valu
   // we get top K values first
   if (k == 1) {
     std::vector<LongType> dims = {input->rankOf() - 1};
-    input->applyIndexReduce(indexreduce::IndexMax, *indices, &dims);
+    input->applyIndexReduce(indexreduce::IndexMax, indices, &dims);
 
     dim3 launchDims = getLaunchDims("top_k_mover");
     // copy values on specified indices

@@ -315,13 +315,13 @@ CUSTOM_OP_IMPL(lstmLayerCellBp, 7, 5, false, 1, 3) {
       x->rankOf() == 1 ? std::vector<LongType>({4 * nOut}) : std::vector<LongType>({bS, 4 * nOut});
 
   NDArray z(x->ordering(), zShape, x->dataType(), block.launchContext());
-  NDArray a = z.ulike();
-  NDArray h = cI->ulike();
-  NDArray c = cI->ulike();
+  NDArray *a = z.ulike();
+  NDArray *h = cI->ulike();
+  NDArray *c = cI->ulike();
 
-  helpers::lstmLayerCell(x, Wx, Wr, b, hI, cI, Wp, params, &z, &a, &h, &c);
+  helpers::lstmLayerCell(x, Wx, Wr, b, hI, cI, Wp, params, &z, a, h, c);
 
-  helpers::lstmLayerCellBp(x, Wx, Wr, b, hI, cI, Wp, dLdh, nullptr, nullptr, &z, &a, &c, params, dLdx, dLdWx, dLdWr,
+  helpers::lstmLayerCellBp(x, Wx, Wr, b, hI, cI, Wp, dLdh, nullptr, nullptr, &z, a, c, params, dLdx, dLdWx, dLdWr,
                            dLdhI, dLdcI, dLdb, dLdWp);
 
   return Status::OK;

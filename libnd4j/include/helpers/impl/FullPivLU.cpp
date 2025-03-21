@@ -49,7 +49,6 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   std::vector<int> rowsInds(rows), colsInds(cols);
 
-  int numOfTranspos = 0;
   int nonZeroPivots1 = diagLen;
 
   T maxPivot = T(0);
@@ -85,13 +84,11 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
       NDArray row1 = LU({k, k + 1, 0, 0}, true);
       NDArray row2 = LU({rowPivot, rowPivot + 1, 0, 0}, true);
       row1.swapUnsafe(row2);
-      ++numOfTranspos;
     }
     if (k != colPivot) {
       NDArray col1 = LU({0, 0, k, k + 1}, true);
       NDArray col2 = LU({0, 0, colPivot, colPivot + 1}, true);
       col1.swapUnsafe(col2);
-      ++numOfTranspos;
     }
 
     if (k < rows - 1) LU({k + 1, rows, k, k + 1}, true) /= LU.t<T>(k, k);
@@ -135,7 +132,8 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
 
   //***************************************************//
 
-  NDArray c = b.ulike();
+  NDArray *bUlike = b.ulike();
+  NDArray c = *bUlike;
 
   for (int i = 0; i < rows; ++i) c({i, i + 1, 0, 0}, true).assign(b({rowsPermut2[i], rowsPermut2[i] + 1, 0, 0}, true));
 
@@ -156,6 +154,8 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
     x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).assign(c({i, i + 1, 0, 0}, true));
 
   for (int i = nonZeroPivots2; i < cols; ++i) x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).nullify();
+
+  delete bUlike;
 }
 
 BUILD_SINGLE_TEMPLATE(template class FullPivLU, , SD_FLOAT_TYPES);

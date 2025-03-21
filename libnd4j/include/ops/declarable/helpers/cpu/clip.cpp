@@ -31,15 +31,15 @@ namespace ops {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, const std::vector<LongType>& dimensions,
-                NDArray& clipNorm, const bool isInplace, const bool useAverage) {
+void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& dimensions,
+                NDArray* clipNorm, const bool isInplace, const bool useAverage) {
   NDArray* z = nullptr;
 
   if (isInplace) {
-    z = &input;
+    z = input;
   } else {
-    output.assign(input);
-    z = &output;
+    output->assign(*input);
+    z = output;
   }
 
   if (dimensions.empty()) {
@@ -48,7 +48,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
     NDArray actualNorm = useAverage ? z->reduceAlongDimension(reduce::Norm2, &emptyVec) / z->lengthOf()
                                           : z->reduceAlongDimension(reduce::Norm2, &emptyVec);
     int idx = 0;
-    if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *z *= clipNorm / actualNorm;
+    if (actualNorm.e<float>(0) > clipNorm->e<float>(0)) *z *= *clipNorm / actualNorm;
   } else {
     auto listOfSubArrs = z->allTensorsAlongDimension(dimensions);
 
@@ -58,7 +58,7 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
          NDArray actualNorm =
             useAverage ? listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec) / listOfSubArrs.at(i)->lengthOf()
                        : listOfSubArrs.at(i)->reduceAlongDimension(reduce::Norm2, &emptyVec);
-        if (actualNorm.e<float>(0) > clipNorm.e<float>(0)) *listOfSubArrs.at(i) *= clipNorm / actualNorm;
+        if (actualNorm.e<float>(0) > clipNorm->e<float>(0)) *listOfSubArrs.at(i) *= *clipNorm / actualNorm;
       }
     };
     samediff::Threads::parallel_tad(func, 0, listOfSubArrs.size());
@@ -67,17 +67,17 @@ void clipByNorm(sd::LaunchContext* context, NDArray& input, NDArray& output, con
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void clipByNormBp_(NDArray& input, NDArray& gradO, NDArray& gradI,
-                          const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool useAverage) {
-  const int rank = input.rankOf();
+static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
+                          const std::vector<LongType>& dimensions, NDArray *clipNorm, const bool useAverage) {
+  const int rank = input->rankOf();
 
-  auto norm2 = input.reduceAlongDimension(reduce::Norm2, &dimensions);
-  auto sums = input.reduceAlongDimension(reduce::Sum, &dimensions);
+  auto norm2 = input->reduceAlongDimension(reduce::Norm2, &dimensions);
+  auto sums = input->reduceAlongDimension(reduce::Sum, &dimensions);
 
   if (norm2.lengthOf() == 1) {
-    const T norm = useAverage ? norm2.e<T>(0) / input.lengthOf() : norm2.e<T>(0);
+    const T norm = useAverage ? norm2.e<T>(0) / input->lengthOf() : norm2.e<T>(0);
 
-    auto clipVal = clipNorm.e<T>(0);
+    auto clipVal = clipNorm->e<T>(0);
 
     if (norm > clipVal) {
       const T sum = sums.e<T>(0);  // reduce to scalar
@@ -88,15 +88,15 @@ static void clipByNormBp_(NDArray& input, NDArray& gradO, NDArray& gradI,
         return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
       };
 
-      const_cast<NDArray&>(input).applyPairwiseLambda<T>(const_cast<NDArray&>(gradO), lambda, gradI);
+      input->applyPairwiseLambda<T>(gradO, lambda, gradI);
     } else
-      gradI.assign(gradO);
+      gradI->assign(*gradO);
   } else {
-    auto gradISubArrs = gradI.allTensorsAlongDimension({dimensions});
-    auto gradOSubArrs = gradO.allTensorsAlongDimension({dimensions});
-    auto inputSubArrs = input.allTensorsAlongDimension({dimensions});
+    auto gradISubArrs = gradI->allTensorsAlongDimension({dimensions});
+    auto gradOSubArrs = gradO->allTensorsAlongDimension({dimensions});
+    auto inputSubArrs = input->allTensorsAlongDimension({dimensions});
 
-    auto clipVal = clipNorm.e<T>(0);
+    auto clipVal = clipNorm->e<T>(0);
 
     auto func = PRAGMA_THREADS_FOR {
       for (auto i = start; i < stop; i++) {
@@ -116,7 +116,7 @@ static void clipByNormBp_(NDArray& input, NDArray& gradO, NDArray& gradI,
             return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
           };
 
-          inputSubArr->applyPairwiseLambda<T>(*gradOSubArr, lambda, *gradISubArr);
+          inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
         } else
           gradISubArr->assign(*gradOSubArr);
       }
@@ -125,16 +125,14 @@ static void clipByNormBp_(NDArray& input, NDArray& gradO, NDArray& gradI,
   }
 }
 BUILD_SINGLE_TEMPLATE(template void clipByNormBp_,
-                      (NDArray& input, NDArray& gradO, NDArray& gradI, const std::vector<sd::LongType>& dimensions,
-                       NDArray& clipNorm, const bool useAverage),
+                      (NDArray *input, NDArray *gradO, NDArray *gradI, const std::vector<sd::LongType>& dimensions,
+                       NDArray *clipNorm, const bool useAverage),
                       SD_FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNormBp(sd::LaunchContext* context, NDArray& input, NDArray& gradO, NDArray& gradI,
-                  const std::vector<LongType>& dimensions, NDArray& clipNorm, const bool useAverage) {
-  NDArray castedInput = gradI.dataType() == input.dataType() ? input : input.cast(gradI.dataType());
-
-  BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBp_, (castedInput, gradO, gradI, dimensions, clipNorm, useAverage),
+void clipByNormBp(sd::LaunchContext* context, NDArray *input, NDArray  *gradO, NDArray *gradI,
+                  const std::vector<LongType>& dimensions, NDArray* clipNorm, const bool useAverage) {
+  BUILD_SINGLE_SELECTOR(gradI->dataType(), clipByNormBp_, (input, gradO, gradI, dimensions, clipNorm, useAverage),
                         SD_FLOAT_TYPES);
 }
 
@@ -162,7 +160,7 @@ static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd
       output->assign(*input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-      input->applyLambda<T>(lambda, *output);
+      input->applyLambda<T>(lambda, output);
     }
   }
 }
@@ -178,22 +176,22 @@ BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
                       SD_FLOAT_TYPES);
 
 template <typename T>
-static void clipByValue_(NDArray& input, double leftBound, double rightBound, NDArray& output) {
+static void clipByValue_(NDArray* input, double leftBound, double rightBound, NDArray* output) {
   auto routine = LAMBDA_T(_x, leftBound, rightBound) {
     if (_x > rightBound) return rightBound;
     if (_x < leftBound) return leftBound;
     return _x;
   };
 
-  input.applyLambda<T>(routine, output);
+  input->applyLambda<T>(routine, output);
 }
 
-void clipByValue(sd::LaunchContext* context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
-  BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
+void clipByValue(LaunchContext* context, NDArray* input, double leftBound, double rightBound, NDArray* output) {
+  BUILD_SINGLE_SELECTOR(input->dataType(), clipByValue_, (input, leftBound, rightBound, output), SD_FLOAT_TYPES);
 }
 
 BUILD_SINGLE_TEMPLATE(template void clipByValue_,
-                      (NDArray & input, double leftBound, double rightBound, NDArray& output);
+                      (NDArray * input, double leftBound, double rightBound, NDArray* output);
                       , SD_FLOAT_TYPES);
 
 }  // namespace helpers

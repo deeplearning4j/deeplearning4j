@@ -34,16 +34,15 @@ CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
   REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
   auto tmp = x->dup(x->ordering());
-  tmp.applyTransform(transform::Neg, tmp);
+  tmp.applyTransform(transform::Neg, &tmp);
 
   auto z = OUTPUT_VARIABLE(0);
 
   helpers::concat(block.launchContext(), {x, &tmp}, *z, x->rankOf() - 1);
-  // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
   // TODO: make this configurable?
   double threshold = 0.0;
-  z->applyScalar(scalar::RELU, threshold, *z);
+  z->applyScalar(scalar::RELU, threshold, z);
 
   STORE_RESULT(z);
 
@@ -77,7 +76,6 @@ CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {
   auto actv = tmpResult.at(0);
 
   // now we do RELU backward pass
-  // actv->applyPairwiseTransform(pairwise::RELUDerivativeE, *epsilon, nullptr);
   helpers::reluDerivative(block.launchContext(), actv, epsilonNext);
   // now we split updated array into 2 chunks along last dimension
   concat_bp opc;
@@ -88,7 +86,7 @@ CUSTOM_OP_IMPL(crelu_bp, 2, 1, false, 0, 0) {
   auto pos = dec.at(0);
   auto neg = dec.at(1);
 
-  pos->applyPairwiseTransform(pairwise::Subtract, *neg, *epsilon);
+  pos->applyPairwiseTransform(pairwise::Subtract, neg, epsilon);
 
   return Status::OK;
 }

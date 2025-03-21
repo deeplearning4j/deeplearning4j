@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(reduce_min, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size() > 0)
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Min, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Min, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -125,7 +125,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, -1, 1, false, 0, 0) {
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMin);
     auto right = gradO->e(0);
-    gradI->p(indOfMaxElem.e<sd::LongType>(0),right);
+    gradI->p(indOfMaxElem.e<sd::LongType>(0),&right);
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, &dimensions);
     auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());

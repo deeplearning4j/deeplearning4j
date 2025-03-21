@@ -63,13 +63,13 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
 
   if (x->isSameShape(y)) {
     // PWT case case
-    epsNext->applyTransform(transform::Neg, *gradX);
+    epsNext->applyTransform(transform::Neg, gradX);
     gradY->assign(*epsNext);
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     gradY->assign(tmp);
-    epsNext->applyTransform(transform::Neg, *gradX);
+    epsNext->applyTransform(transform::Neg, gradX);
   } else {
     // broadcastable
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -77,9 +77,9 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-      sum.applyTransform(transform::Neg, *gradX);
+      sum.applyTransform(transform::Neg, gradX);
     } else {
-      epsNext->applyTransform(transform::Neg, *gradX);
+      epsNext->applyTransform(transform::Neg, gradX);
     }
 
     if (axisY.size() > 0) {

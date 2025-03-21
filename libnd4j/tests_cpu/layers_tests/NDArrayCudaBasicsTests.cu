@@ -254,7 +254,6 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_5) {
 
   auto exp = NDArrayFactory::create<double>('c', {5}, {2, 4, 6, 8, 10});
   x += y;
-  // x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
   x.syncToHost();
   for (int e = 0; e < x.lengthOf(); e++) {
     ASSERT_NEAR(exp.e<double>(e), x.e<double>(e), 1e-5);

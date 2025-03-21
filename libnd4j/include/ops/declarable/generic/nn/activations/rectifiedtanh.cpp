@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(rectifiedtanh, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(transform::RectifiedTanh, *output);
+  input->applyTransform(transform::RectifiedTanh, output);
   STORE_RESULT(output);
 
   return Status::OK;
@@ -48,7 +48,6 @@ CONFIGURABLE_OP_IMPL(rectifiedtanh_bp, 2, 1, true, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::RectifiedTanhDerivativeE, epsilon, z, nullptr);
   helpers::rectifiedTanhDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

@@ -37,7 +37,7 @@ OP_IMPL(toggle_bits, -1, -1, true) {
     REQUIRE_TRUE(x->dataType() == z->dataType(), 0, "Toggle bits requires input and output to have same type");
     REQUIRE_TRUE(x->isZ(), 0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
 
-    helpers::__toggle_bits(block.launchContext(), *x, *z);
+    helpers::__toggle_bits(block.launchContext(), x, z);
   }
   return Status::OK;
 }

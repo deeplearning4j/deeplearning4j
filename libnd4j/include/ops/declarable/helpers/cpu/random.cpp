@@ -127,8 +127,8 @@ void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArr
     NDArray alphaBroadcasted(broadcasted, alpha->dataType(), false, context);
     NDArray betaBroadcasted(broadcasted, beta->dataType(), false, context);
 
-    copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
-    copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
+    copyAlpha = alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha);
+    copyBeta = betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta);
   }
   bool directOutput = output->ews() == 1 && output->ordering() == 'c';
   T* outputBuf = output->dataBuffer()->primaryAsT<T>();

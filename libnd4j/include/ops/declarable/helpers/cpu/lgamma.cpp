@@ -31,20 +31,20 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // calculate digamma function for array elements
 template <typename T>
-static void lgamma_(NDArray& x, NDArray& z) {
+static void lgamma_(NDArray* x, NDArray* z) {
   auto lgammaProc = LAMBDA_T(x_) {
     auto output = math::sd_lgamma<T,T>(x_);
     return output;
   };
 
-  x.applyLambda<T>(lgammaProc, z);
+  x->applyLambda<T>(lgammaProc, z);
 }
 
-void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
-  BUILD_SINGLE_SELECTOR(x.dataType(), lgamma_, (x, z), SD_FLOAT_TYPES);
+void lgamma(sd::LaunchContext* context, NDArray* x, NDArray* z) {
+  BUILD_SINGLE_SELECTOR(x->dataType(), lgamma_, (x, z), SD_FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void lgamma_, (NDArray & x, NDArray& z), SD_FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void lgamma_, (NDArray * x, NDArray* z), SD_FLOAT_TYPES);
 
 }  // namespace helpers
 }  // namespace ops

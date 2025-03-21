@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0) {
   auto logExp = (*logits - maxAlongDim).transform(transform::Exp);
   auto logSoftMax = (logExp / logExp.reduceAlongDimension(reduce::Sum, &dimension, true)).transform(transform::Log);
 
-  (-(*labels) * logSoftMax).reduceAlongDimension(reduce::Sum, *output, &dimension);
+  (-(*labels) * logSoftMax).reduceAlongDimension(reduce::Sum, output, &dimension);
 
   return Status::OK;
 }
@@ -119,8 +119,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
 
 
   // dEdl = -log(softmax)
-  softmax.applyTransform(transform::Log, *dLdl);
-  dLdl->applyTransform(transform::Neg,*dLdl);
+  softmax.applyTransform(transform::Log, dLdl);
+  dLdl->applyTransform(transform::Neg,dLdl);
   return Status::OK;
 
 }

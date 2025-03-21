@@ -35,9 +35,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 static SD_INLINE NDArray activation(NDArray& arr) {
-  // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();
   auto result = NDArray(&arr, false, arr.getContext());
-  (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, result);
+  arr.applyTransform(transform::Tanh,&result);
   return result;
 }
 
@@ -292,7 +291,7 @@ void sruBI(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray* 
            NDArray* mask, NDArray* ht, NDArray* ct) {
   //  x = x * mask
   std::vector<LongType> dims = {1,2};
-  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
@@ -572,7 +571,7 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
              NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
   //  x = x * mask
   std::vector<LongType> dims = {1, 2};
-  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, *mask, *x);  // apply mask
+  if (mask) x->applyBroadcast(broadcast::Multiply, &dims, mask, x);  // apply mask
 
   // U = x * w
   NDArray wi = mmul(*x, *w);  //  U [time x bS x 6*K]
@@ -611,7 +610,7 @@ void sruBIBP(LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDArray
 
   std::vector<LongType> dims2 = {0};
   // gradB
-  gradBias.reduceAlongDimension(reduce::Sum, *gradB, &dims2);  // [4*K]
+  gradBias.reduceAlongDimension(reduce::Sum, gradB, &dims2);  // [4*K]
 
   // gradW
   x->permutei({0, 2, 1}, false, false);                       // [time, bS, 2*K] -> [time, 2*K,  bS]

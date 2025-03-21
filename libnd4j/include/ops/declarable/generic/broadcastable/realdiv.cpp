@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    epsNext->applyPairwiseTransform(pairwise::Divide, *y, *gradX);
+    epsNext->applyPairwiseTransform(pairwise::Divide, y, gradX);
 
     // Y gradient
 
@@ -82,14 +82,14 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
     auto tmpX = x->reduceNumber(reduce::Sum);
     gradY->assign(tmp * -tmpX / ((*y) * (*y)));
 
-    epsNext->applyScalarArr(scalar::Divide, *y, *gradX);
+    epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
     // broadcast case
 
     auto preX = *epsNext / *y;
 
     NDArray negX(*x);
-    x->applyTransform(transform::Neg, negX);
+    x->applyTransform(transform::Neg, &negX);
     auto preY = *epsNext * negX / ((*y) * (*y));
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());

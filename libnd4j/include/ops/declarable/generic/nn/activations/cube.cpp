@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(cube, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  input->applyTransform(transform::Cube, *output);
+  input->applyTransform(transform::Cube, output);
   STORE_RESULT(output);
 
   return Status::OK;
@@ -45,8 +45,6 @@ CONFIGURABLE_OP_IMPL(cube_bp, 2, 1, true, 0, 0) {
   auto epsilon = INPUT_VARIABLE(1);
 
   auto z = OUTPUT_VARIABLE(0);
-
-  // input->applyPairwiseTransform(pairwise::CUBEDerivativeE, epsilon, z, nullptr);
   helpers::cubeDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

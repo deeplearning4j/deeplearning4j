@@ -49,9 +49,9 @@ CUSTOM_OP_IMPL(reduce_logsumexp, -1, 1, false, 0, -2) {
   // void* whereMax = (void*)();
   auto internal = (*input);
   internal -= maxVals;
-  internal.applyTransform(transform::Exp, internal);
-  internal.reduceAlongDimension(reduce::Sum, *output, &axes, keepDims, false);  //, (void*)&maxVals);
-  output->applyTransform(transform::Log, *output);
+  internal.applyTransform(transform::Exp, &internal);
+  internal.reduceAlongDimension(reduce::Sum, output, &axes, keepDims, false);  //, (void*)&maxVals);
+  output->applyTransform(transform::Log, output);
   (*output) += maxVals;
   return sd::Status::OK;
 }

@@ -84,32 +84,32 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
   const LongType yLen = y->lengthOf();
 
   if (x->isScalar() && y->isScalar()) {  // both are scalars
-    y->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
-    x->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
+    y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
+    x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
 
   } else if (x->isScalar()) {  // x is scalar and y is not
     dLdx->assign((*y * *dLdz).reduceNumber(reduce::Sum));
-    dLdz->applyScalarArr(scalar::Multiply, *x, *dLdy);
+    dLdz->applyScalarArr(scalar::Multiply, x, dLdy);
   } else if (y->isScalar()) {  // y is scalar and x is not
     dLdy->assign((*x * *dLdz).reduceNumber(reduce::Sum));
-    dLdz->applyScalarArr(scalar::Multiply, *y, *dLdx);
+    dLdz->applyScalarArr(scalar::Multiply, y, dLdx);
   } else if (x->isSameShape(y)) {
-    x->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
-    y->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
+    x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
+    y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (x->isSameShape(dLdz)) {
     auto yTiled = NDArray(dLdz, false, block.launchContext());
     y->tile(yTiled);
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
     dLdy->assign((*x * *dLdz).reduceAlongDimension(reduce::Sum, &axesForY));
-    yTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
+    yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx);
   } else if (y->isSameShape(dLdz)) {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     x->tile(xTiled);
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
 
     dLdx->assign((*y * *dLdz).reduceAlongDimension(reduce::Sum, &axesForX));
-    xTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
+    xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy);
   } else {
     auto xTiled = NDArray(dLdz, false, block.launchContext());
     auto yTiled = NDArray(dLdz, false, block.launchContext());

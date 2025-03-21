@@ -105,8 +105,8 @@ CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
   sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
   NDArray val = NDArray(output->dup());
 
-  gradOut->applyPairwiseTransform(pairwise::Multiply, *output, val);
-  val.applyPairwiseTransform(pairwise::Divide, *input, val);
+  gradOut->applyPairwiseTransform(pairwise::Multiply, output, &val);
+  val.applyPairwiseTransform(pairwise::Divide, input, &val);
   if (!exclusive && !reverse) {
     if (dims.size())
       sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);

@@ -83,18 +83,18 @@ void gruCell(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* W, ND
   // reset gate
   r->assign(mmul(*x, Wrx) + mmul(*hI, Wrh) +
             br);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
-  r->applyTransform(transform::Sigmoid, *r);
+  r->applyTransform(transform::Sigmoid, r);
 
   // update gate
   u->assign(mmul(*x, Wux) + mmul(*hI, Wuh) +
             bu);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
-  u->applyTransform(transform::Sigmoid, *u);
+  u->applyTransform(transform::Sigmoid, u);
 
   NDArray rTimeHi = *r * *hI;
   // cell gate c = activation(x × Wcx + (r * hlast) × Wch + bc)
   c->assign(mmul(*x, Wcx) + mmul(rTimeHi, Wch) +
             *bc);  // [bS, nIn] × [nIn, nOut] + [bS, nOut] × [nOut, nOut] + [nOut] = [bS, nOut]
-  c->applyTransform(transform::Tanh, *c);
+  c->applyTransform(transform::Tanh, c);
 
   // cell output
   h->assign(*u * *hI + (1.f - *u) * *c);
@@ -136,7 +136,8 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
   const int nIn = x->sizeAt(1);
   const int nOut = hI->sizeAt(1);
 
-  NDArray temp = gates->ulike();
+  NDArray *gatesULike = gates->ulike();
+  NDArray temp = *gatesULike;
   MmulHelper::mmul(x, Wx, &temp);  // [bS, nIn] × [nIn, 3*nOut] = [bS, 3*nOut]
   temp += *b;
 
@@ -152,19 +153,19 @@ void gruCell(NDArray* x, NDArray* hI, NDArray* Wx, NDArray* Wh, NDArray* b,
 
   // reset and update gates
   ru += temp({0, 0, 0, 2 * nOut});
-  ru.applyTransform(transform::Sigmoid, ru);
+  ru.applyTransform(transform::Sigmoid, &ru);
 
 
   // cell gate
   c.assign(c * r + temp({0, 0, 2 * nOut, 3 * nOut}));
-  c.applyTransform(transform::Tanh, c);
+  c.applyTransform(transform::Tanh, &c);
 
 
 
   // cell output
   h->assign(u * *hI + (1.f - u) * c);
 
-
+  delete gatesULike;
 
 }
 
@@ -270,16 +271,16 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hLast, NDArray* 
 
   // reset gate
   NDArray r = mmul(*x, Wrx) + mmul(*hLast, Wrh) + br;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  r.applyTransform(transform::Sigmoid, r);
+  r.applyTransform(transform::Sigmoid, &r);
 
   // update gate
   NDArray u = mmul(*x, Wux) + mmul(*hLast, Wuh) + bu;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  u.applyTransform(transform::Sigmoid, u);
+  u.applyTransform(transform::Sigmoid, &u);
 
   // cell gate c = activation(x×Wcx + (r*hlast)×Wcu + bc)
   NDArray rTimesHLast2 =r * *hLast;
   NDArray c =  mmul(*x, Wcx) + mmul(rTimesHLast2, Wch) + *bc;  // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-  c.applyTransform(transform::Tanh, c);
+  c.applyTransform(transform::Tanh, &c);
 
   // h = (1 - u) * c + u * hPrev
 
@@ -456,7 +457,8 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
 
   const int nOut = hI->sizeAt(1);
 
-  NDArray dLdz = gates->ulike();  // [bS, 3*nOut]
+  NDArray *gatesULike = gates->ulike();
+  NDArray dLdz = *gatesULike;  // [bS, 3*nOut]
 
   NDArray dLdzru = dLdz({0, 0, 0, 2 * nOut});  // [bS, 2*nOut]
 
@@ -505,6 +507,7 @@ void gruCellBp(sd::LaunchContext* context, NDArray* x, NDArray* hI, NDArray* Wx,
   NDArray hITranspose = hI->transpose();
   // dLdWr
   *dLdWh += mmul(hITranspose, dLdz);  // [nOut, bS] x [bS, 3*nOut] = [nOut, 3*nOut]
+  delete gatesULike;
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(softplus, 1, 1, true, 0, 0) {
   auto first = INPUT_VARIABLE(0);
   auto z = OUTPUT_VARIABLE(0);
 
-  first->applyTransform(transform::SoftPlus, *z);
+  first->applyTransform(transform::SoftPlus, z);
 
   STORE_RESULT(*z);
 
@@ -49,7 +49,6 @@ CONFIGURABLE_OP_IMPL(softplus_bp, 2, 1, true, 0, 0) {
 
   auto z = OUTPUT_VARIABLE(0);
 
-  // input->applyPairwiseTransform(pairwise::SoftplusDerivativeE, epsilon, z, nullptr);
   helpers::softPlusDerivative(block.launchContext(), input, epsilon, z);
   return Status::OK;
 }

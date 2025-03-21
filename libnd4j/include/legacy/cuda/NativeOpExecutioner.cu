@@ -884,10 +884,34 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
   dim3 launchDims = getLaunchDims("transformScan");
   BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame,
                         ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
-                                                 dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
+                                                 dZShapeInfo, zRank, nullptr, nullptr, tadShapeInfo, tadOffsets),
                         SD_COMMON_TYPES);
 }
 
+
+void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                              const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
+                                              const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                                              void *extraParams) {
+        auto stream = lc->getCudaStream();
+        auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+        auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+        if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
+            THROW_EXCEPTION(
+                    "NativeOpExecutioner::execTransformStrict:: unable to execute on strings. Please write logic higher level in "
+                    "each op for the string data type.")
+        }
+
+        if (xType != zType) {
+            THROW_EXCEPTION("NativeOpExecutioner::execTransformStrict requires X & Z to have same type");
+        }
+
+        dim3 launchDims = getLaunchDims("transformScan");
+        BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
+                              ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), nullptr, nullptr, nullptr, nullptr),
+                              SD_COMMON_TYPES);
+
+}
 
 
 ////////////////////////////////////////////////////////////////////////

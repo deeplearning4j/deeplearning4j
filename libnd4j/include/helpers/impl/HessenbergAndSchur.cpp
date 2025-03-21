@@ -45,7 +45,7 @@ Hessenberg<T>::Hessenberg(NDArray& matrix) {
     THROW_EXCEPTION("ops::helpers::Hessenberg constructor: input array must be 2D square matrix !");
 
   _H = matrix.dup(matrix.ordering());
-  _Q = matrix.ulike();
+  _Q = *matrix.ulike();
 
   evalData();
 }
@@ -105,8 +105,8 @@ void Schur<T>::evalData(NDArray& matrix) {
 
 
   if (scale < DataTypeUtils::min_positive<T>()) {
-    t = matrix.ulike();
-    u = matrix.ulike();
+    t = *matrix.ulike();
+    u = *matrix.ulike();
 
     t.nullify();
     u.setIdentity();

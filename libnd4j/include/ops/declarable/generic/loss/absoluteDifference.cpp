@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
       break;
 
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      E.reduceNumber(reduce::Sum, *output);
+      E.reduceNumber(reduce::Sum, output);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
@@ -200,10 +200,10 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
   NDArray E = *predictions - *labels;
 
   // dE_i/dp_i = sign(p_i - y_i)
-  E.applyTransform(transform::Sign, *dLdp);  // dE/dp
+  E.applyTransform(transform::Sign, dLdp);  // dE/dp
   // dE_i/dy_i = -sign(p_i - y_i)
 
-  E.applyTransform(transform::Abs, E);
+  E.applyTransform(transform::Abs, &E);
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -215,7 +215,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
       else if (weights != weightsBroad) {
         std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-        E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+        E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
       } else
         dLdw->assign(E);
       break;
@@ -241,7 +241,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
-              .reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+              .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
         } else
           dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
       }
@@ -268,7 +268,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
         else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-          E.reduceAlongDimension(reduce::Sum, *dLdw, &axesToReduceAlong, true);
+          E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;
         } else
           dLdw->assign(E / numOfNonZeroWeightsScalar);

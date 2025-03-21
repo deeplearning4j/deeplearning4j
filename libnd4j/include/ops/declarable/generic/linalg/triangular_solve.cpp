@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(triangular_solve, 2, 1, false, 0, 0) {
   auto input = a;
   if (useAdjoint) {
     auto adjointA = a->ulike();
-    helpers::adjointMatrix(block.launchContext(), a, isLower, &adjointA);
+    helpers::adjointMatrix(block.launchContext(), a, isLower, adjointA);
     input = new NDArray(adjointA);
     isLower = !isLower;
   };

@@ -40,10 +40,10 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     // PWT case case
 
     // X gradient
-    epsNext->applyTriplewiseLambda(*x, *y, lambdaX, *gradX);
+    epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
 
     // Y gradient
-    epsNext->applyTriplewiseLambda(*x, *y, lambdaY, *gradY);
+    epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
 
   } else if (y->isScalar()) {
     T s = y->e<T>(0);
@@ -57,7 +57,7 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     else
       gradY->assign(zero);
 
-    epsNext->applyPairwiseLambda(*x, lambdaS, *gradX);
+    epsNext->applyPairwiseLambda(x, lambdaS, gradX);
   } else {
     // broadcast case
 
@@ -71,8 +71,8 @@ void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     preX.tileToShape(targetShape, preX);
     preY.tileToShape(targetShape, preY);
 
-    epsNext->applyTriplewiseLambda(preX, preY, lambdaX, preX);
-    epsNext->applyTriplewiseLambda(preX, preY, lambdaY, preY);
+    epsNext->applyTriplewiseLambda(&preX, &preY, lambdaX, &preX);
+    epsNext->applyTriplewiseLambda(&preX, &preY, lambdaY, &preY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());

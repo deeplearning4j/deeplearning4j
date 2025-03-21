@@ -76,27 +76,27 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
                ShapeUtils::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils::shapeAsString(dLdz).c_str());
 
   // dL/dy = x^y * log(x) * dL/dz
-  auto temp = x->applyTrueBroadcast(BroadcastOpsTuple::Pow(), *y);  // a = x^y
-  x->applyTransform(transform::Log, *dLdx);                         // b = log(x)
-  dLdx->applyScalar(scalar::ReplaceNans, 0, *dLdx);
-  temp *= *dLdx;  // c = b*a
-  temp *= *dLdz;  // dL/dy = c * dL/dz
+  auto temp = x->applyTrueBroadcast(BroadcastOpsTuple::Pow(), y);  // a = x^y
+  x->applyTransform(transform::Log, dLdx);                         // b = log(x)
+  dLdx->applyScalar(scalar::ReplaceNans, 0, dLdx);
+  *temp *= *dLdx;  // c = b*a
+  *temp *= *dLdz;  // dL/dy = c * dL/dz
   if (dLdy->isSameShape(*dLdz)) {
-    dLdy->assign(temp);
+    dLdy->assign(*temp);
   } else {
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
-    dLdy->assign(temp.reduceAlongDimension(reduce::Sum, &axesForY));  // dL/dy = sum(c * dL/dz)
+    dLdy->assign(temp->reduceAlongDimension(reduce::Sum, &axesForY));  // dL/dy = sum(c * dL/dz)
   }
 
   // dL/dx = y*x^(y-1) * dL/dz
-  x->applyTrueBroadcast(BroadcastOpsTuple::PowDerivative(), *y, temp);  // a = y*x^(y-1)
-  temp *= *dLdz;                                                        // dLdx = a*dL/dz
+  x->applyTrueBroadcast(BroadcastOpsTuple::PowDerivative(), y, temp);  // a = y*x^(y-1)
+  *temp *= *dLdz;                                                        // dLdx = a*dL/dz
 
   if (dLdx->isSameShape(*dLdz)) {
-    dLdx->assign(temp);  // dLdx = a*dL/dz
+    dLdx->assign(*temp);  // dLdx = a*dL/dz
   } else {
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    dLdx->assign(temp.reduceAlongDimension(reduce::Sum, &axesForX));  // dLdx = a*dL/dz
+    dLdx->assign(temp->reduceAlongDimension(reduce::Sum, &axesForX));  // dLdx = a*dL/dz
   }
 
   return Status::OK;

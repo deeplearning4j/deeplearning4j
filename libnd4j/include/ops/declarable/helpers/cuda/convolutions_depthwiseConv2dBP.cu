@@ -114,7 +114,7 @@ static void depthwiseConv2dBP_(NDArray* input, NDArray* weights, NDArray* bias, 
       gradBR = new NDArray(gradB->reshape(gradB->ordering(), lenShape,false));
     }
     std::vector<LongType> dims =  {0, indOoH, indOoH + 1};
-    gradO->reduceAlongDimension(reduce::Sum, *gradBR,&dims, false);  // sum over bS, oH, oW
+    gradO->reduceAlongDimension(reduce::Sum, gradBR,&dims, false);  // sum over bS, oH, oW
     if (gradBR != gradB) delete gradBR;
   }
 

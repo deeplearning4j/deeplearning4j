@@ -64,7 +64,7 @@ CONFIGURABLE_OP_IMPL(layer_norm, 2, 1, false, 0, -1) {
   standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
   std::vector<sd::LongType> dimcVec = {dimC};
-  output->applyBroadcast(sd::broadcast::Multiply, &dimcVec, *gain, *output);
+  output->applyBroadcast(sd::broadcast::Multiply, &dimcVec, gain, output);
   if (bias != nullptr) {
     helpers::addBias(block, *output, *bias, *output, isNCHW);
   }
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
                  input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
     std::vector<sd::LongType> dimCVector = {dimC};
     auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
-    eps->reduceAlongDimension(sd::reduce::Sum, *dLdb, vec);
+    eps->reduceAlongDimension(sd::reduce::Sum, dLdb, vec);
   }
 
   NDArray standardized(input->shapeInfo(), false, block.launchContext());
@@ -116,15 +116,14 @@ CUSTOM_OP_IMPL(layer_norm_bp, 3, -1, false, 0, -1) {
   std::vector<bool> bargs = {};
 
   standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-  standardized.applyPairwiseTransform(sd::pairwise::Multiply, *eps, standardized);
+  standardized.applyPairwiseTransform(sd::pairwise::Multiply, eps, &standardized);
   std::vector<sd::LongType> dimCVector = {dimC};
   auto vec = ShapeUtils::evalDimsToExclude(input->rankOf(),1,dimCVector.data());
-  standardized.reduceAlongDimension(sd::reduce::Sum, *dLdg, vec);
+  standardized.reduceAlongDimension(sd::reduce::Sum, dLdg, vec);
 
   sd::ops::standardize_bp standardizeBp;
   std::vector<sd::LongType> dimvC = {dimC};
-  // eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gain, dLdx);
-  eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, *gain, *dLdx);
+  eps->applyBroadcast(sd::broadcast::Multiply, &dimvC, gain, dLdx);
 
   auto dLdx_tmp = dLdx->dup();
   std::vector<NDArray *> standardizeBpArgs = {input, &dLdx_tmp};

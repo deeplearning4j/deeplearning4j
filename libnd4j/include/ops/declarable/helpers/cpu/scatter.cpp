@@ -86,7 +86,7 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
         sd::LongType idx = indices.e<sd::LongType>(i);
         NDArray out = output({idx, idx + 1});
         NDArray updateE = updates.e(i);
-        out.applyPairwiseTransform(op, updateE);
+        out.applyPairwiseTransform(op, &updateE);
       }
     };
 
@@ -103,7 +103,7 @@ void scatter(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, NDA
       for (auto i = start; i < stop; i++) {
         NDArray outSubArr = output(indices.e<sd::LongType>(i), std::vector<sd::LongType >({0}));
         NDArray updSubArr = updates(i, dimsToExcludeUpd);
-        outSubArr.applyPairwiseTransform(op, updSubArr);
+        outSubArr.applyPairwiseTransform(op, &updSubArr);
       }
     };
 
@@ -125,7 +125,8 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
         sd::LongType idx = indices.e<sd::LongType>(i);
         NDArray out = output({idx, idx + 1});
         NDArray updatesE = updates.e(i);
-        out.applyPairwiseTransform(op, updatesE, nullptr);
+        ExtraArguments *extraArgs = nullptr;
+        out.applyPairwiseTransform(op, &updatesE, extraArgs);
       }
     };
 
@@ -149,7 +150,7 @@ void scatterND(sd::LaunchContext* context, pairwise::Ops op, NDArray& indices, N
         NDArray outSubArr = output(idxRangeOut);
         NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
-        outSubArr.applyPairwiseTransform(op, updSubArr);
+        outSubArr.applyPairwiseTransform(op, &updSubArr);
       }
     };
 

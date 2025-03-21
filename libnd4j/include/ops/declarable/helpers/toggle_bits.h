@@ -28,9 +28,9 @@ namespace sd {
 namespace ops {
 namespace helpers {
 template <typename T>
-static void toggle_bits__(LaunchContext* context, NDArray& in, NDArray& out);
+static void toggle_bits__(LaunchContext* context, NDArray* in, NDArray* out);
 
-SD_LIB_HIDDEN void __toggle_bits(LaunchContext* context, NDArray& in, NDArray& out);
+SD_LIB_HIDDEN void __toggle_bits(LaunchContext* context, NDArray* in, NDArray* out);
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd

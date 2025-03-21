@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(reduce_max, -1, 1, false, 0, 0) {
   else if (block.getTArguments()->size() > 0)
     keepDims = (bool)T_ARG(0);
 
-  input->reduceAlongDimension(reduce::Max, *output, &dimensions, keepDims);
+  input->reduceAlongDimension(reduce::Max, output, &dimensions, keepDims);
 
   return sd::Status::OK;
 }
@@ -133,7 +133,7 @@ CUSTOM_OP_IMPL(reduce_max_bp, -1, 1, false, 0, 0) {
   if (gradO->lengthOf() == 1) {
     auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMax);
     NDArray right2 = gradO->e(0);
-    gradI->p(indOfMaxElem.t<sd::LongType>(0),right2);
+    gradI->p(indOfMaxElem.t<sd::LongType>(0),&right2);
   } else {
     auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMax, &dimensions);
   auto vec = ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions.size(),dimensions.data());

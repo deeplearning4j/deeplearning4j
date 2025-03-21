@@ -366,7 +366,7 @@ static sd::Status determinant_(LaunchContext* context, NDArray* input, NDArray* 
   for (sd::LongType e = 0; e < output->lengthOf(); e++) {
     for (sd::LongType k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) matrix.p(row, input->e<T>(k));
     auto ret = lup_<T, sd::LongType>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
-    output->p(e, ret);
+    output->p(e, &ret);
   }
 
   return sd::Status::OK;

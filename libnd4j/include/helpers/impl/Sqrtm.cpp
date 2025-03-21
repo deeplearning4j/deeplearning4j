@@ -251,10 +251,9 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
 
   Schur<T> schur(in);
 
-  NDArray& t1 = schur.t;
-  NDArray& t2 = schur.u;
 
-  NDArray sqrtT = in.ulike();
+  NDArray *inULike = in.ulike();
+  NDArray sqrtT = *inULike;
   sqrtT.nullify();
 
   sqrtmQuasiTrianDiag<T>(schur.t, sqrtT);
@@ -264,6 +263,7 @@ void Sqrtm<T>::calc(NDArray& in, NDArray& out) {
   // out = U * sqrtT * U^T;
   NDArray temp = mmul(sqrtT, second);
   MmulHelper::mmul(&schur.u, &temp, &out);
+  delete inULike;
 }
 
 BUILD_SINGLE_TEMPLATE(template class Sqrtm, , SD_FLOAT_TYPES);

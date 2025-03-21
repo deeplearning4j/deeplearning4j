@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
     varianceOp.execute({input}, {variances}, {}, axes, {keepDims}, {}, false);
   }
 
-  input->reduceAlongDimension(reduce::Mean, *means, &axis, keepDims);
+  input->reduceAlongDimension(reduce::Mean, means, &axis, keepDims);
 
   return Status::OK;
 }

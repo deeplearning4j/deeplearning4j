@@ -233,8 +233,8 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
       std::vector<sd::LongType> ySumShape = {1,ySum.lengthOf()};
       auto ySumRow = ySum.reshape(ySum.ordering(),ySumShape);
       // execute proper multiplication: rows for first input, columns for second
-      dldx->mulRowVector(ySumRow, *dldx);
-      dldy->muliColumnVector(xSumRow);
+      dldx->mulRowVector(&ySumRow, dldx);
+      dldy->muliColumnVector(&xSumRow);
     }
 
     return Status::OK;

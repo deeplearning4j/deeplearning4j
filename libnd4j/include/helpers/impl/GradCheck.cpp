@@ -81,9 +81,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
       for (int k = 0; k < numOutArrs; ++k) {  // loop through output arrays
         if (loss == SUM)
-          outArrsFF.at(k)->reduceNumber(reduce::Sum, tmpScalar);
+          outArrsFF.at(k)->reduceNumber(reduce::Sum, &tmpScalar);
         else
-          outArrsFF.at(k)->reduceNumber(reduce::Mean, tmpScalar);
+          outArrsFF.at(k)->reduceNumber(reduce::Mean, &tmpScalar);
         scorePlus += tmpScalar.e<double>(0);
       }
 
@@ -94,9 +94,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
       for (int k = 0; k < numOutArrs; ++k) {  // loop through output arrays
         if (loss == SUM)
-          outArrsFF.at(k)->reduceNumber(reduce::Sum, tmpScalar);
+          outArrsFF.at(k)->reduceNumber(reduce::Sum, &tmpScalar);
         else
-          outArrsFF.at(k)->reduceNumber(reduce::Mean, tmpScalar);
+          outArrsFF.at(k)->reduceNumber(reduce::Mean, &tmpScalar);
         scoreMinus += tmpScalar.e<double>(0);
       }
 

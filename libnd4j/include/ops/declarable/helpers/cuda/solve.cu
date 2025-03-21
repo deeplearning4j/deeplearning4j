@@ -56,16 +56,16 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
   auto permuShape = rightInput->getShapeAsVector();
   permuShape.pop_back();
   auto permutations = NDArrayFactory::create<LongType>('c', permuShape, context);
-  lu(context, leftInput, &leftOutput, &permutations);
-  auto leftLower = leftOutput.dup();
+  lu(context, leftInput, leftOutput, &permutations);
+  auto leftLower = leftOutput->dup();
 
   auto rightOutput = rightInput->ulike();
 
   const std::vector<LongType> dims1 = {-2, -1};
 
   auto P = leftInput->ulike();
-  P.nullify();
-  auto PPart = P.allTensorsAlongDimension({-2, -1});
+  P->nullify();
+  auto PPart = P->allTensorsAlongDimension({-2, -1});
   auto permutationsPart = permutations.allTensorsAlongDimension({-1});
   for (auto batch = 0; batch < permutationsPart.size(); batch++) {
     for (LongType row = 0; row < PPart[batch]->rows(); row++) {
@@ -74,17 +74,17 @@ static Status solveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray*
     }
   }
 
-  P.tickWriteHost();
+  P->tickWriteHost();
 
   auto rightPart = rightInput->ulike();
 
-  MmulHelper::matmul(&P, rightInput, &rightPart,false,false, 0.0, 0.0,&rightPart);
+  MmulHelper::matmul(P, rightInput, rightPart,false,false, 0.0, 0.0,rightPart);
   ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
   for (auto i = 0; i < leftLowerPart.size(); i++) {
     for (LongType r = 0; r < leftLowerPart[i]->rows(); r++) leftLowerPart[i]->r<T>(r, r) = (T)1.f;
   }
-  triangularSolveFunctor(context, &leftLower, &rightPart, true, false, &rightOutput);
-  triangularSolveFunctor(context, &leftOutput, &rightOutput, false, false, output);
+  triangularSolveFunctor(context, &leftLower, rightPart, true, false, rightOutput);
+  triangularSolveFunctor(context, leftOutput, rightOutput, false, false, output);
   NDArray::registerPrimaryUse({output}, {leftInput, rightInput});
 
   return Status::OK;
