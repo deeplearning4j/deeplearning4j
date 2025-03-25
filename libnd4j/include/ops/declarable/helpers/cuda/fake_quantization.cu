@@ -75,7 +75,7 @@ void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int nu
     } else
       val = x;
     return (math::sd_floor<T, T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
-  };
+  });
 
   input->applyLambda(wiseMinMaxAndSoOn, output);
 }

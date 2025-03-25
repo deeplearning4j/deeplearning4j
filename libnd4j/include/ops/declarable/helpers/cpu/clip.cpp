@@ -86,7 +86,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
       auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
         return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
-      };
+      });
 
       input->applyPairwiseLambda<T>(gradO, lambda, gradI);
     } else
@@ -114,7 +114,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
           auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
             return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
-          };
+          });
 
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
         } else
@@ -159,7 +159,7 @@ static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd
     if (normS <= clipNorm) {
       output->assign(*input);
     } else {
-      auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
+      auto lambda = LAMBDA_T(_x, factor) { return _x * factor; });
       input->applyLambda<T>(lambda, output);
     }
   }
@@ -181,7 +181,7 @@ static void clipByValue_(NDArray* input, double leftBound, double rightBound, ND
     if (_x > rightBound) return rightBound;
     if (_x < leftBound) return leftBound;
     return _x;
-  };
+  });
 
   input->applyLambda<T>(routine, output);
 }

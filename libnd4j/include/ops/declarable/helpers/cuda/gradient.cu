@@ -30,7 +30,7 @@ template <typename T>
 void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight,
                                   NDArray* output) {
   // classic one
-  auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); };
+  auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); });
 
   input->applyPairwiseLambda(step, lambda, output);
 }

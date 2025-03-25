@@ -392,7 +392,7 @@ TEST_F(NDArrayTest2, Test_TriplewiseLambda_1) {
 
   float extra = 1.0f;
 
-  auto la = LAMBDA_DDD(_t, _u, _v, extra) { return _t + _u + _v + extra; };
+  auto la = LAMBDA_DDD(_t, _u, _v, extra) { return _t + _u + _v + extra; });
 
   t.applyTriplewiseLambda<double>(u, v, la, t);
 
@@ -407,7 +407,7 @@ TEST_F(NDArrayTest2, Test_TriplewiseLambda_2) {
 
   float extra = 1.0f;
 
-  auto la = LAMBDA_DDD(_t, _u, _v, extra) { return _t + _u + _v + extra; };
+  auto la = LAMBDA_DDD(_t, _u, _v, extra) { return _t + _u + _v + extra; });
 
   t.applyTriplewiseLambda<double>(u, v, la, t);
 

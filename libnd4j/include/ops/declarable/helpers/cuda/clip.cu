@@ -262,7 +262,7 @@ void clipByNormBp_(LaunchContext* context, NDArray* input, NDArray* gradO, NDArr
 
       auto lambda = LAMBDA_TT(x, y, sum, factor1, factor2) {
         return factor1 * y * (static_cast<T>(1.f) - factor2 * x * sum);
-      };
+      });
 
       input->applyPairwiseLambda(gradO, lambda, gradI);
       const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray*>(gradO), lambda, gradI);
@@ -331,7 +331,7 @@ void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*>& inputs, do
     if (static_cast<double>(globalNorm) <= clipNorm) {
       output->assign(*input);
     } else {
-      auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
+      auto lambda = LAMBDA_T(_x, factor) { return _x * factor; });
       input->applyLambda(lambda, output);
     }
   }

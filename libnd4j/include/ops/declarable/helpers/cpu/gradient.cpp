@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 static void applyGradientDescent_(NDArray* input, NDArray* step, double weight, NDArray* output) {
-  auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); };
+  auto lambda = LAMBDA_TT(_x, _y, weight) { return _x - (_y * weight); });
 
   input->applyPairwiseLambda<T>(step, lambda, output);
 }

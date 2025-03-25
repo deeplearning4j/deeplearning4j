@@ -2787,67 +2787,91 @@ void throwException(const char* exceptionMessage);
     throw sd::allocation_exception::build(MSG, BYTES); \
   };
 
-#ifdef __CUDABLAS__
 
-#define LAMBDA_T(X, ...) [=] SD_HOST_DEVICE(T X) -> T
-#define LAMBDA_TT(X, Y, ...) [=] SD_DEVICE(T X, T Y) -> T
-#define LAMBDA_TTT(t, u, v, ...) [=] SD_DEVICE(T t, T u, T v) -> T
+#include <functional>
 
-#define ILAMBDA_T(X, ...) [=] SD_DEVICE(sd::LongType _idx, T X) -> T
-#define ILAMBDA_TT(X, Y, ...) [=] SD_DEVICE(sd::LongType _idx, T X, T Y) -> T
-
-#define LAMBDA_D(X, ...) [=] SD_HOST_DEVICE(double X) -> double
-#define LAMBDA_DD(X, Y, ...) [=] SD_HOST_DEVICE(double X, double Y) -> double
-#define LAMBDA_DDD(t, u, v, ...) [=] SD_HOST_DEVICE(double t, double u, double v) -> double
-
-#define LAMBDA_H(X, ...) [__VA_ARGS__] SD_HOST_DEVICE(float16 X) -> float16
-#define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] SD_HOST_DEVICE(float16 X, float16 Y) -> float16
-
-#define ILAMBDA_D(X, ...) [__VA_ARGS__] SD_HOST_DEVICE(sd::LongType _idx, double X) -> double
-#define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] SD_HOST_DEVICE(sd::LongType _idx, double X, double Y) -> double
-
-#define ILAMBDA_F(X, ...) [__VA_ARGS__] SD_HOST_DEVICE(sd::LongType _idx, float X) -> float
-#define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] SD_HOST_DEVICE(sd::LongType _idx, float X, float Y) -> float
-
-#define LAMBDA_F(X, ...) [__VA_ARGS__] SD_HOST_DEVICE(float X) -> float
-#define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] SD_HOST_DEVICE(float X, float Y) -> float
-#define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__] SD_HOST_DEVICE(float t, float u, float v) -> float
-
+// ======== Environment Detection ========
+// CUDA environment detection
+#if defined(__CUDACC__) || defined(__CUDA_ARCH__)
+#define IS_CUDA_ENVIRONMENT 1
 #else
-
-#define LAMBDA_T(X, ...) [__VA_ARGS__](T X) -> T
-#define LAMBDA_TT(X, Y, ...) [__VA_ARGS__](T X, T Y) -> T
-#define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__](T t, T u, T v) -> T
-
-#define ILAMBDA_T(X, ...) [__VA_ARGS__](sd::LongType _idx, T X) -> T
-#define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__](sd::LongType _idx, T X, T Y) -> T
-
-#define LAMBDA_D(X, ...) [__VA_ARGS__](double X) -> double
-#define LAMBDA_DD(X, Y, ...) [__VA_ARGS__](double X, double Y) -> double
-#define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__](double t, double u, double v) -> double
-
-#define LAMBDA_H(X, ...) [__VA_ARGS__](float16 X) -> float16
-#define LAMBDA_HH(X, Y, ...) [__VA_ARGS__](float16 X, float16 Y) -> float16
-
-#define ILAMBDA_D(X, ...) [__VA_ARGS__](sd::LongType _idx, double X) -> double
-#define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__](sd::LongType _idx, double X, double Y) -> double
-
-#define ILAMBDA_F(X, ...) [__VA_ARGS__](sd::LongType _idx, float X) -> float
-#define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__](sd::LongType _idx, float X, float Y) -> float
-
-#define LAMBDA_F(X, ...) [__VA_ARGS__](float X) -> float
-#define LAMBDA_FF(X, Y, ...) [__VA_ARGS__](float X, float Y) -> float
-#define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__](float t, float u, float v) -> float
-
+#define IS_CUDA_ENVIRONMENT 0
 #endif
 
-// stuff for benchmarks
+// nvfunctional availability detection
+#if IS_CUDA_ENVIRONMENT && defined(NVFUNCTIONAL_AVAILABLE)
+#include <nvfunctional>
+#define HAS_NVFUNCTIONAL 1
+#else
+#define HAS_NVFUNCTIONAL 0
+#endif
+
+// ======== Function Implementation Selection ========
+#if HAS_NVFUNCTIONAL
+// Use nvfunctional when available in CUDA context
+template<typename Signature>
+using portable_function = nvfunctional::function<Signature>;
+#else
+// Fall back to std::function
+template<typename Signature>
+using portable_function = std::function<Signature>;
+#endif
+
+#ifndef __JAVACPP_HACK__
+// ======== Host/Device Decorators ========
+#if IS_CUDA_ENVIRONMENT
+#define HOST_DEVICE __host__ __device__
+#define DEVICE_ONLY __device__
+#define HOST_ONLY __host__
+#else
+#define HOST_DEVICE
+#define DEVICE_ONLY
+#define HOST_ONLY
+#endif
+#endif
+// ======== Lambda Function Macros ========
+// Generic type T lambdas
+#define LAMBDA_T(X, ...) portable_function<T(T)>([__VA_ARGS__] HOST_DEVICE (T X) -> T
+#define LAMBDA_TT(X, Y, ...) portable_function<T(T,T)>([__VA_ARGS__] HOST_DEVICE (T X, T Y) -> T
+#define LAMBDA_TTT(t, u, v, ...) portable_function<T(T,T,T)>([__VA_ARGS__] HOST_DEVICE (T t, T u, T v) -> T
+
+// Indexed lambdas for generic type T
+#define ILAMBDA_T(X, ...) portable_function<T(sd::LongType,T)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, T X) -> T
+#define ILAMBDA_TT(X, Y, ...) portable_function<T(sd::LongType,T,T)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, T X, T Y) -> T
+
+// Double-specific lambdas
+#define LAMBDA_D(X, ...) portable_function<double(double)>([__VA_ARGS__] HOST_DEVICE (double X) -> double
+#define LAMBDA_DD(X, Y, ...) portable_function<double(double,double)>([__VA_ARGS__] HOST_DEVICE (double X, double Y) -> double
+#define LAMBDA_DDD(t, u, v, ...) portable_function<double(double,double,double)>([__VA_ARGS__] HOST_DEVICE (double t, double u, double v) -> double
+
+// Float16-specific lambdas
+#define LAMBDA_H(X, ...) portable_function<float16(float16)>([__VA_ARGS__] HOST_DEVICE (float16 X) -> float16
+#define LAMBDA_HH(X, Y, ...) portable_function<float16(float16,float16)>([__VA_ARGS__] HOST_DEVICE (float16 X, float16 Y) -> float16
+
+// Indexed double lambdas
+#define ILAMBDA_D(X, ...) portable_function<double(sd::LongType,double)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, double X) -> double
+#define ILAMBDA_DD(X, Y, ...) portable_function<double(sd::LongType,double,double)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, double X, double Y) -> double
+
+// Indexed float lambdas
+#define ILAMBDA_F(X, ...) portable_function<float(sd::LongType,float)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, float X) -> float
+#define ILAMBDA_FF(X, Y, ...) portable_function<float(sd::LongType,float,float)>([__VA_ARGS__] HOST_DEVICE (sd::LongType _idx, float X, float Y) -> float
+
+// Float-specific lambdas
+#define LAMBDA_F(X, ...) portable_function<float(float)>([__VA_ARGS__] HOST_DEVICE (float X) -> float
+#define LAMBDA_FF(X, Y, ...) portable_function<float(float,float)>([__VA_ARGS__] HOST_DEVICE (float X, float Y) -> float
+#define LAMBDA_FFF(t, u, v, ...) portable_function<float(float,float,float)>([__VA_ARGS__] HOST_DEVICE (float t, float u, float v) -> float
+
+// ======== Device-specific variants ========
+// Use these when you need explicit control over execution context
+#define DEVICE_LAMBDA_T(X, ...) portable_function<T(T)>([__VA_ARGS__] DEVICE_ONLY (T X) -> T
+#define HOST_LAMBDA_T(X, ...) portable_function<T(T)>([__VA_ARGS__] HOST_ONLY (T X) -> T
+
+// ======== Benchmark-specific lambdas ========
+// These don't need portable_function since they're just capturing lambdas
 #define GENERATE_XYZ() [&](ResultSet & x, ResultSet & y, ResultSet & z)
 #define GENERATE_XZ() [&](ResultSet & x, ResultSet & z)
-
 #define PARAMETRIC_XYZ() [&](Parameters & p, ResultSet & x, ResultSet & y, ResultSet & z)
 #define PARAMETRIC_XZ() [&](Parameters & p, ResultSet & x, ResultSet & z)
-
 #define PARAMETRIC_D() [&](Parameters & p) -> Context*
 
 #ifdef __CUDABLAS__

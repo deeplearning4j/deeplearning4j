@@ -30,7 +30,7 @@ PointerWrapper::PointerWrapper(void *ptr, const std::shared_ptr<PointerDeallocat
 }
 
 PointerWrapper::~PointerWrapper() {
-  if (_deallocator.get() != nullptr) _deallocator->release(_pointer);
+ // if (_deallocator.get() != nullptr) _deallocator->release(_pointer);
 }
 
 void *PointerWrapper::pointer() const { return _pointer; }

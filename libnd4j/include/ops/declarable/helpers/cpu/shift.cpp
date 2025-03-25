@@ -28,7 +28,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 void rshift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto lambda = LAMBDA_T(x, shift) { return x >> shift; };
+  auto lambda = LAMBDA_T(x, shift) { return x >> shift; });
 
   input->applyLambda<T>(lambda, output);
 }
@@ -39,7 +39,7 @@ void rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t 
 
 template <typename T>
 void shift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
-  auto lambda = LAMBDA_T(x, shift) { return x << shift; };
+  auto lambda = LAMBDA_T(x, shift) { return x << shift; });
 
   input->applyLambda<T>(lambda, output);
 }
@@ -51,7 +51,7 @@ void shift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, uint32_t s
 template <typename T>
 void cyclic_rshift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
   auto step = (sizeof(T) * 8) - shift;
-  auto lambda = LAMBDA_T(x, shift, step) { return x >> shift | x << step; };
+  auto lambda = LAMBDA_T(x, shift, step) { return x >> shift | x << step; });
 
   input->applyLambda<T>(lambda, output);
 }
@@ -63,7 +63,7 @@ void cyclic_rshift_bits(LaunchContext *launchContext, NDArray *x, NDArray *z, ui
 template <typename T>
 void cyclic_shift_bits_(LaunchContext *launchContext, NDArray *input, NDArray *output, uint32_t shift) {
   auto step = (sizeof(T) * 8) - shift;
-  auto lambda = LAMBDA_T(x, shift, step) { return x << shift | x >> step; };
+  auto lambda = LAMBDA_T(x, shift, step) { return x << shift | x >> step; });
 
   input->applyLambda<T>(lambda, output);
 }

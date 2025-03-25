@@ -3682,7 +3682,7 @@ void *NDArray::operator new(size_t i) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
   if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
-    //  free(p);
+      free(p);
   }
 }
 

@@ -32,7 +32,7 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); };
+  auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -46,7 +46,7 @@ void cubeDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSecon
 // return (x >= X(0.f) ? y: -y);
 template <typename T>
 void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; };
+  auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -62,7 +62,7 @@ template <typename T>
 void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     return math::sd_max<T>(x, (T)0.f) - x * y + math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(x)));
-  };
+  });
 
   logits->applyPairwiseLambda(labels, functor, output);
 }
@@ -81,7 +81,7 @@ void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
     if (x <= 0) return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + math::sd_exp<T, T>(x));
     auto e = math::sd_exp<T, T>(-x);
     return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
-  };
+  });
 
   logits->applyPairwiseLambda(labels, functor, output);
 }
@@ -95,7 +95,7 @@ void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T ss = (T)1.f + math::sd_abs<T,T>(x);
     return y * ((T)1.0f / (ss * ss));
-  };
+  });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -111,7 +111,7 @@ void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T p = math::sd_pow<T, T, T>(static_cast<T>(M_E), x);
     return y * (p / (p + 1.));
-  };
+  });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -129,7 +129,7 @@ void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T s = math::sd_sigmoid<T, T>(x);
     return y * (s * ((T)1.0f - s));
-  };
+  });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -140,7 +140,7 @@ void sigmoidDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theSe
 
 template <typename T>
 void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); };
+  auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -201,11 +201,11 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, 
     return (1. - _z) * _x +
            targetWeight * (math::sd_log<T, T>((T)1.f + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) +
                                             math::sd_max(-_x, T(0.f)));
-  };
+  });
 
   auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
     return (((T)1.0 - _z) * _x) + _w * (math::sd_log<T, T>(T(1.) + math::sd_exp<T, T>(-math::sd_abs<T,T>(_x))) + math::sd_max(-_x, T(0.f)));
-  };
+  });
 
   if (weights->isScalar()) {
     input->applyPairwiseLambda(targets, mainRoutineT1, output);
@@ -213,9 +213,8 @@ void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * input, 
     std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
     targetVector->applyScalar(scalar::Add, -1.f, targetVector.get());
 
-    std::unique_ptr<NDArray> targetTensor(new NDArray(*targets));
-    *targetTensor = (*targetVector * *targetTensor) + T(1.f);
-    input->applyPairwiseLambda(targetTensor.get(), mainRoutineT2, output);
+    *targets = (*targetVector * *targets) + T(1.f);
+    input->applyPairwiseLambda(targets, mainRoutineT1, output);
 
   }
 }
