@@ -404,11 +404,10 @@ class SD_LIB_EXPORT NativeOpExecutioner {
    * @param dimension
    * @param dimensionLength
    */
-  static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
-                               const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                               long long int *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
-                               const sd::LongType *tadOffsets, bool biasCorrected);
+  static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, sd::LongType *hXShapeInfo,
+                               const void *dX, sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                               sd::LongType *hZShapeInfo, void *dZ, sd::LongType *dZShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType *tadShapeInfo,
+                               sd::LongType *tadOffsets, bool biasCorrected);
 
   /**
    *
@@ -419,9 +418,9 @@ class SD_LIB_EXPORT NativeOpExecutioner {
    * @param result
    * @param resultShapeInfo
    */
-  static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
-                               const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+  static void execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX, sd::LongType *hXShapeInfo,
+                               const void *dX, sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                               sd::LongType *hZShapeInfo, void *dZ, sd::LongType *dZShapeInfo,
                                bool biasCorrected);
 
   /**
@@ -433,9 +432,9 @@ class SD_LIB_EXPORT NativeOpExecutioner {
    * @param result
    * @param resultShapeInfo
    */
-  static void execSummaryStatsScalar(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
-                                     const void *dX, const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                                     const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+  static void execSummaryStatsScalar(sd::LaunchContext *lc, int opNum, const void *hX, sd::LongType *hXShapeInfo,
+                                     const void *dX, sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                                     sd::LongType *hZShapeInfo, void *dZ, sd::LongType *dZShapeInfo,
                                      bool biasCorrected);
 
   static void execRandom(sd::LaunchContext *lc, int opNum, sd::Pointer state, void *hZ,

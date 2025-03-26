@@ -49,7 +49,7 @@ SD_KERNEL void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const
 
   __shared__ LongType xLen, xRank, zRank, invRank, inmRank, stvRank, stmRank;
   __shared__ T epsilonT;
-  __shared__ bool bEWS, bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
+  __shared__ bool bOrdering, bXZsame, bXInUSame, bXStUSame, bXInMSame, bXStMSame;
   __shared__ LongType *sharedMem;
   __shared__ const LongType *xShape, *zShape, *invShape, *inmShape, *stvShape, *stmShape;
   __shared__ const LongType *xStride, *zStride, *invStride, *inmStride, *stvStride, *stmStride;
@@ -85,9 +85,6 @@ SD_KERNEL void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const
     stmShape = shape::shapeOf(stmShapeInfo);
     stmStride = shape::stride(stmShapeInfo);
 
-    bEWS = 1 == shape::elementWiseStride(xShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo) &&
-           1 == shape::elementWiseStride(stmShapeInfo) && 1 == shape::elementWiseStride(inmShapeInfo) &&
-           1 == shape::elementWiseStride(stvShapeInfo) && 1 == shape::elementWiseStride(invShapeInfo);
     bOrdering = shape::order(xShapeInfo) == shape::order(zShapeInfo) &&
                 shape::order(zShapeInfo) == shape::order(stmShapeInfo) &&
                 shape::order(stmShapeInfo) == shape::order(inmShapeInfo) &&
@@ -102,12 +99,12 @@ SD_KERNEL void adamUpdaterCuda(const void* vx, const LongType* xShapeInfo, const
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+  LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset = i, zOffset = i, initMOffset = i, initUOffset = i, stMOffset = i, stUOffset = i;
 
-    if (!bEWS || !bOrdering) {
+    if (!bOrdering) {
       INDEX2COORDS(i, xRank, xShape, coords);
       COORDS2INDEX(xRank, xStride, coords, xOffset);
 

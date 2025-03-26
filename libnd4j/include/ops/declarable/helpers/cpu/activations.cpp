@@ -200,7 +200,7 @@ bool checkAlphaShapeLen(std::vector<sd::LongType> const& expectedShape, sd::Long
 }
 template <typename T>
 static void thresholdRelu_(NDArray *input, double threshold, NDArray* output) {
-  auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; };
+  auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; });
   input->applyLambda<T>(routine, output);
 }
 
@@ -216,7 +216,7 @@ static void thresholdReluDerivative_(sd::LaunchContext* context, NDArray* input,
       return grO;
     else
       return static_cast<T>(0);
-  };
+  });
 
   input->applyPairwiseLambda<T>(dLdO, derivative, output);
 }

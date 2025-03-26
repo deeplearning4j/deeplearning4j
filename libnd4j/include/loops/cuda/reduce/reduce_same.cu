@@ -170,6 +170,7 @@ SD_DEVICE void ReduceSameFunction<X>::transformCuda(
     if (sameOffsets) {
       zOffset = outerOffset;
     } else {
+      INDEX2COORDS(r, zRank, zShapePtr, coords);
       COORDS2INDEX(zRank, zStridePtr, coords, zOffset);
     }
 

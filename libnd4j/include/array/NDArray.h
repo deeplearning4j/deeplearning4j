@@ -866,22 +866,7 @@ class SD_LIB_EXPORT NDArray {
   void applyScalarArr(scalar::IntOps op,  NDArray *scalar, NDArray *target,
                       ExtraArguments *extraParams = nullptr);
 
-#if defined(SD_CUDA)
-  template <typename Lambda>
-  SD_INLINE void applyLambda(Lambda func, NDArray *target);
 
-  template <typename Lambda>
-  SD_INLINE void applyPairwiseLambda(NDArray *other, Lambda func, NDArray *target);
-
-  template <typename Lambda>
-  SD_INLINE void applyIndexedLambda(Lambda func, NDArray *target);
-
-  template <typename Lambda>
-  SD_INLINE void applyIndexedPairwiseLambda(NDArray *other, Lambda func, NDArray *target);
-
-  template <typename Lambda>
-  SD_INLINE void applyTriplewiseLambda(NDArray *second, NDArray *third, Lambda func, NDArray *target);
-#else
 
   /**
    *  apply operation "func" to an array
@@ -889,7 +874,7 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    */
   template <typename T>
-  void applyLambda(const std::function<T(T)> &func, NDArray *target);
+  void applyLambda(std::function<T(T)> &func, NDArray *target);
 
   /**
    *  apply pairwise operation "func" to an array
@@ -898,17 +883,16 @@ class SD_LIB_EXPORT NDArray {
    *  target - where to store result
    */
   template <typename T>
-  void applyPairwiseLambda(NDArray *other, const std::function<T(T, T)> &func, NDArray *target);
+  void applyPairwiseLambda(NDArray *other,  std::function<T(T, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyIndexedLambda(const std::function<T(sd::LongType, T)> &func, NDArray *target);
+  void applyIndexedLambda( std::function<T(sd::LongType, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyIndexedPairwiseLambda(NDArray *other, const std::function<T(sd::LongType, T, T)> &func, NDArray *target);
+  void applyIndexedPairwiseLambda(NDArray *other,  std::function<T(sd::LongType, T, T)> &func, NDArray *target);
 
   template <typename T>
-  void applyTriplewiseLambda(NDArray *second, NDArray *third, const std::function<T(T, T, T)> &func, NDArray *target);
-#endif
+  void applyTriplewiseLambda(NDArray *second, NDArray *third,  std::function<T(T, T, T)> &func, NDArray *target);
 
   /**
    *  reduces dimensions in this array relying on index operation OpName

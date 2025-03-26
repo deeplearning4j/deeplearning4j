@@ -497,6 +497,234 @@ NDArray NDArray::operator-() && {
   return std::move(*this);
 }
 
+template <typename T1, typename T2, typename>
+NDArray operator-(T1 &&arr1, T2 &&arr2) {
+  if (arr1.isS() || arr2.isS())
+    THROW_EXCEPTION("operator-(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+  if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+    throw sd::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot multiply different types",
+                                        arr1.dataType(), arr2.dataType());
 
+  PointersManager pointersManager(arr1.getContext(), "operator-(T&& arr1, T&& arr2)");
+
+  if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+    const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+    const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+    NDArray *result = nullptr;
+    if (isArr1Rvalue)
+      result = const_cast<NDArray *>(&arr1);
+    else if (isArr2Rvalue)
+      result = const_cast<NDArray *>(&arr2);
+    else
+      result = new NDArray(arr1.shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.shapeInfo(), arr2.shapeInfo()),
+                           false, arr1.getContext());
+
+    NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+    NativeOpExecutioner::execPairwiseTransform(
+        arr1.getContext(), sd::pairwise::Subtract, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
+        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
+        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+    if (!isArr1Rvalue && !isArr2Rvalue) {
+      NDArray res = std::move(*result);
+      delete result;
+      return res;
+    }
+
+    return std::move(*result);
+  }
+
+  NDArray* arr1Addr = &arr1;
+  NDArray* arr2Addr = &arr2;
+  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), arr2Addr);
+  return *ret;
+}
+
+
+
+template SD_LIB_EXPORT NDArray operator-<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator-<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray operator-<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator-<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
+
+
+template <typename T1, typename T2, typename>
+NDArray operator*(T1 &&arr1, T2 &&arr2) {
+  if (arr1.isS() || arr2.isS()) {
+    THROW_EXCEPTION("operator*(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+  }
+  if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
+    std::string errorMessage;
+    errorMessage += "operator*(T&& arr1, T&& arr2): Cannot multiply different types";
+    errorMessage += " arr1.dataType()=";
+    errorMessage += DataTypeUtils::asString(arr1.dataType());
+    errorMessage += " arr2.dataType()=";
+    errorMessage += DataTypeUtils::asString(arr2.dataType());
+    errorMessage += " arr1.shapeInfo()=";
+    errorMessage += ShapeUtils::shapeAsString(arr1.shapeInfo());
+    errorMessage += " arr2.shapeInfo()=";
+    errorMessage += ShapeUtils::shapeAsString(arr2.shapeInfo());
+    errorMessage += " arr1.ordering()=";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+  PointersManager pointersManager(arr1.getContext(), "operator*(T&& arr1, T&& arr2)");
+
+  if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+    const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+    const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+    NDArray *result = nullptr;
+    if (isArr1Rvalue) {
+      result = const_cast<NDArray *>(&arr1);
+    }    else if (isArr2Rvalue) {
+      result = const_cast<NDArray *>(&arr2);
+    } else {
+      result = new NDArray(arr1.shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.shapeInfo(), arr2.shapeInfo()),
+                           false, arr1.getContext());
+    }
+    NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+    NativeOpExecutioner::execPairwiseTransform(
+        arr1.getContext(), sd::pairwise::Multiply, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
+        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
+        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+    if (!isArr1Rvalue && !isArr2Rvalue) {
+      NDArray res = std::move(*result);
+      delete result;
+      return res;
+    }
+
+    return std::move(*result);
+  }
+
+  NDArray* arr1Addr = &arr1;
+  NDArray* arr2Addr = &arr2;
+  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), arr2Addr);
+  return *ret;
+}
+template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator*<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray operator*<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator*<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray sd::operator*<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
+
+
+template <typename T1, typename T2, typename>
+NDArray operator+(T1 &&arr1, T2 &&arr2) {
+  if (arr1.isS() || arr2.isS())
+    THROW_EXCEPTION("operator+(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+  if (arr1.dataType() != arr2.dataType() &&
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL)) {
+    std::string errorMessage;
+    errorMessage += "operator+(T&& arr1, T&& arr2): Cannot multiply different types";
+    errorMessage += " arr1.dataType()=";
+    errorMessage += DataTypeUtils::asString(arr1.dataType());
+    errorMessage += " arr2.dataType()=";
+    errorMessage += DataTypeUtils::asString(arr2.dataType());
+    errorMessage += " arr1.shapeInfo()=";
+    errorMessage += ShapeUtils::shapeAsString(arr1.shapeInfo());
+    errorMessage += " arr2.shapeInfo()=";
+    errorMessage += ShapeUtils::shapeAsString(arr2.shapeInfo());
+    errorMessage += " arr1.ordering()=";
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
+  PointersManager pointersManager(arr1.getContext(), "operator+(T&& arr1, T&& arr2)");
+
+  if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+    const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+    const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+    NDArray *result = nullptr;
+    if (isArr1Rvalue)
+      result = const_cast<NDArray *>(&arr1);
+    else if (isArr2Rvalue)
+      result = const_cast<NDArray *>(&arr2);
+    else
+      result = new NDArray(arr1.shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.shapeInfo(), arr2.shapeInfo()),
+                           false, arr1.getContext());
+
+    NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+    NativeOpExecutioner::execPairwiseTransform(
+        arr1.getContext(), sd::pairwise::Add, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
+        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
+        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+    if (!isArr1Rvalue && !isArr2Rvalue) {
+      NDArray res = std::move(*result);
+      delete result;
+      return res;
+    }
+
+    return std::move(*result);
+  }
+
+  NDArray* arr1Addr = &arr1;
+  NDArray* arr2Addr = &arr2;
+  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Add(), arr2Addr);
+  return *ret;
+}
+template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator+<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray operator+<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator+<NDArray, NDArray, void>(NDArray &&arr1, NDArray &&arr2);
+
+
+template <typename T1, typename T2, typename>
+NDArray operator/(T1 &&arr1, T2 &&arr2) {
+  if (arr1.isS() || arr2.isS())
+    THROW_EXCEPTION("operator/(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+  if (!Environment::getInstance().isExperimentalBuild() && arr1.dataType() != arr2.dataType() &&
+      (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+    throw sd::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot multiply different types",
+                                        arr1.dataType(), arr2.dataType());
+
+  PointersManager pointersManager(arr1.getContext(), "operator/(T&& arr1, T&& arr2)");
+
+  if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+    const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+    const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+    NDArray *result = nullptr;
+    if (isArr1Rvalue)
+      result = const_cast<NDArray *>(&arr1);
+    else if (isArr2Rvalue)
+      result = const_cast<NDArray *>(&arr2);
+    else
+      result = new NDArray(arr1.shapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.shapeInfo(), arr2.shapeInfo()),
+                           false, arr1.getContext());
+
+    NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+    NativeOpExecutioner::execPairwiseTransform(
+        arr1.getContext(), sd::pairwise::Divide, arr1.buffer(), arr1.shapeInfo(), arr1.specialBuffer(),
+        arr1.specialShapeInfo(), arr2.buffer(), arr2.shapeInfo(), arr2.specialBuffer(), arr2.specialShapeInfo(),
+        result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+    if (!isArr1Rvalue && !isArr2Rvalue) {
+      NDArray res = std::move(*result);
+      delete result;
+      return res;
+    }
+
+    return std::move(*result);
+  }
+
+  NDArray* arr1Addr = &arr1;
+  NDArray* arr2Addr = &arr2;
+  NDArray *ret =  std::forward<T1>(arr1).applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), arr2Addr);
+  return *ret;
+}
+template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray &, void>(NDArray &arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator/<NDArray &, NDArray, void>(NDArray &arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray &, void>(NDArray &&arr1, NDArray &arr2);
+template SD_LIB_EXPORT NDArray operator/<NDArray&&, NDArray &&, void>(NDArray &&arr1, NDArray &&arr2);
+template SD_LIB_EXPORT NDArray operator/<NDArray, NDArray, void>(sd::NDArray&&, sd::NDArray&&);
 
 } // namespace sd

@@ -536,7 +536,7 @@ void execReduceSame(sd::Pointer *extraPointers,
 void execReduceSame2(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void *extraParams, OpaqueNDArray z, OpaqueNDArray dimension) {
   try {
     x->prepareSpecialUse({z}, {x});
-    dimension->preparePrimaryUse({}, {dimension});
+    dimension->prepareSpecialUse({}, {dimension});
 
     auto dimensionData = dimension != nullptr ? reinterpret_cast<sd::LongType *>(dimension->buffer()) : nullptr;
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
@@ -1667,8 +1667,8 @@ void execSummaryStatsTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x,
 
     auto tadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionData, dimensionLength);
-    auto tadShapeInfo = tadPack->primaryShapeInfo();
-    auto tadOffsets = tadPack->primaryOffsets();
+    auto tadShapeInfo = tadPack->specialShapeInfo();
+    auto tadOffsets = tadPack->specialOffsets();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execSummaryStats(
@@ -1730,12 +1730,12 @@ void execReduce3Tad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, void
     sd:: LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
     auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dim, dimensionLength);
-    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-    auto xOffsets = xTadPack->primaryOffsets();
+    auto xTadShapeInfo = xTadPack->specialShapeInfo();
+    auto xOffsets = xTadPack->specialOffsets();
 
     auto yTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dim, dimensionLength);
-    auto yTadShapeInfo = yTadPack->primaryShapeInfo();
-    auto yOffsets = yTadPack->primaryOffsets();
+    auto yTadShapeInfo = yTadPack->specialShapeInfo();
+    auto yOffsets = yTadPack->specialOffsets();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 
@@ -1828,12 +1828,12 @@ void execScalarBoolTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, O
     sd::LongType dimensionLength = static_cast<sd::LongType>(shape::length(dimension->shapeInfo()));
 
     auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dim, dimensionLength);
-    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-    auto xOffsets = xTadPack->primaryOffsets();
+    auto xTadShapeInfo = xTadPack->specialShapeInfo();
+    auto xOffsets = xTadPack->specialOffsets();
 
     auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dim, dimensionLength);
-    auto zTadShapeInfo = zTadPack->primaryShapeInfo();
-    auto zOffsets = zTadPack->primaryOffsets();
+    auto zTadShapeInfo = zTadPack->specialShapeInfo();
+    auto zOffsets = zTadPack->specialOffsets();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execScalarBool(
@@ -1900,13 +1900,13 @@ void execScalarTad(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaqu
 
     auto xTadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
-    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-    auto xOffsets = xTadPack->primaryOffsets();
+    auto xTadShapeInfo = xTadPack->specialShapeInfo();
+    auto xOffsets = xTadPack->specialOffsets();
 
     auto zTadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(z->shapeInfo(), dimensionPtr, dimensionLength);
-    auto zTadShapeInfo = zTadPack->primaryShapeInfo();
-    auto zOffsets = zTadPack->primaryOffsets();
+    auto zTadShapeInfo = zTadPack->specialShapeInfo();
+    auto zOffsets = zTadPack->specialOffsets();
 
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
@@ -2198,13 +2198,13 @@ void execReduce3All(sd::Pointer *extraPointers, int opNum, OpaqueNDArray x, Opaq
 
     auto xTadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dimensionPtr, dimensionLength);
-    auto xTadShapeInfo = xTadPack->primaryShapeInfo();
-    auto xOffsets = xTadPack->primaryOffsets();
+    auto xTadShapeInfo = xTadPack->specialShapeInfo();
+    auto xOffsets = xTadPack->specialOffsets();
 
     auto yTadPack =
         sd::ConstantTadHelper::getInstance().tadForDimensions(y->shapeInfo(), dimensionPtr, dimensionLength);
-    auto yTadShapeInfo = yTadPack->primaryShapeInfo();
-    auto yOffsets = yTadPack->primaryOffsets();
+    auto yTadShapeInfo = yTadPack->specialShapeInfo();
+    auto yOffsets = yTadPack->specialOffsets();
 
     sd::LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
     NativeOpExecutioner::execReduce3All(&lc, opNum,

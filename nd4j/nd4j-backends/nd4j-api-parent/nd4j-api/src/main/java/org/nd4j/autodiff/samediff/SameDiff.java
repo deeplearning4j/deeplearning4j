@@ -2542,9 +2542,12 @@ public class SameDiff extends SDBaseOps {
                 } else if(m.hasValues()) {
                     INDArray prediction = m.getValueOutputs().get(e.getKey()).getTensorValue();
                     for (IEvaluation eval : e.getValue()) {
-                        INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
-                        INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
-                        eval.eval(label, prediction, mask);
+                        INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey())).castTo(DataType.INT64);
+                        INDArray maskAttempt = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
+                        if(maskAttempt != null) {
+                            maskAttempt = maskAttempt.castTo(DataType.INT64);
+                        }
+                        eval.eval(label, prediction, maskAttempt);
                     }
                 }
 

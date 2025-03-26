@@ -709,9 +709,9 @@ void softmaxDerivative(LaunchContext *context, NDArray *input, NDArray *output, 
 }
 
 template <typename T>
-void thresholdRelu_(NDArray const *input, double threshold, NDArray *output) {
-  auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; };
-  const_cast<NDArray *>(input)->applyLambda(routine, output);
+void thresholdRelu_(NDArray  *input, double threshold, NDArray *output) {
+  auto routine = LAMBDA_T(_x, threshold) { return _x > (T)threshold ? _x : (T)0.f; });
+  input->applyLambda(routine, output);
 }
 
 void thresholdRelu(LaunchContext *context, NDArray *input, double threshold, NDArray *output) {
@@ -725,7 +725,7 @@ void thresholdReluDerivative_(NDArray *input, double theta, NDArray *dLdO, NDArr
       return grO;
     else
       return static_cast<T>(0);
-  };
+  });
 
   input->applyPairwiseLambda(dLdO, derivative, output);
 }

@@ -30,7 +30,7 @@ template <typename T>
 void toggle_bits__(NDArray *in, NDArray *out) {
   auto lambda = LAMBDA_T(_x) {
     return ~_x;
-  };
+  });
 
   in->applyLambda(lambda, out);
 }

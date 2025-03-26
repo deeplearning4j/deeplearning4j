@@ -31,9 +31,9 @@ namespace helpers {
 
 template <typename T>
 static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; };
+  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
 
-  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; };
+  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
 
   if (x->isSameShape(y)) {
     // PWT case case
@@ -46,7 +46,7 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
 
   } else if (y->isScalar()) {
     T s = y->e<T>(0);
-    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x <= s ? _e : (T)0.; };
+    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x <= s ? _e : (T)0.; });
     float zero = 0.0f;
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
@@ -90,9 +90,9 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
 }
 template <typename T>
 void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
-  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; };
+  auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
 
-  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; };
+  auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
 
   if (x->isSameShape(y)) {
     // PWT case case
@@ -105,7 +105,7 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
 
   } else if (y->isScalar()) {
     T s = y->e<T>(0);
-    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x >= s ? _e : (T)0.; };
+    auto lambdaS = LAMBDA_TT(_e, _x, s) { return _x >= s ? _e : (T)0.; });
 
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);

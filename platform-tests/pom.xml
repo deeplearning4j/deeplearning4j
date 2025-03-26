@@ -111,8 +111,8 @@
         <org.bytedeco.javacpp.logger.debug>true</org.bytedeco.javacpp.logger.debug>
         <!-- Needed for CUDA: https://github.com/google/sanitizers/issues/629 -->
         <test.asan.options></test.asan.options>
-        <tests>samediff,rng,java-only,dl4j-old-api,ndarray-indexing,compression,loss-functions,keras,python,tensorflow,onnx</tests>
-        <excludedTests>large-resources,downloads,long-running-test</excludedTests>
+        <tests></tests>
+        <excludedTests></excludedTests>
         <!--
         Some notes on preload:
         1. Typical uses for debugging are pre loading address sanitizer or jemalloc to track down allocation bugs.
@@ -1040,7 +1040,7 @@
                     </properties>
                     <environmentVariables>
                         <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
-                        <CUDA_VISIBLE_DEVICES>0</CUDA_VISIBLE_DEVICES>
+                        <CUDA_VISIBLE_DEVICES>1</CUDA_VISIBLE_DEVICES>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>

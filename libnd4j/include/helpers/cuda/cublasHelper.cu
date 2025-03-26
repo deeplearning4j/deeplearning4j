@@ -93,7 +93,7 @@ CublasHelper::CublasHelper() {
 CublasHelper::~CublasHelper() {
   auto numDevices = AffinityManager::numberOfDevices();
 
-  for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
+ // for (int e = 0; e < numDevices; e++) destroyHandle_(_cache[e]);
 }
 
 CublasHelper& CublasHelper::getInstance() {

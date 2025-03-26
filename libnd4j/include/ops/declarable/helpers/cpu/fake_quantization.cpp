@@ -104,7 +104,7 @@ void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int nu
     // converse value with scale and shifted with nudged min
     val -= nudgedMin;
     return (sd::math::sd_floor<T, T>(val / scale + T(0.5f)) * scale + nudgedMin);
-  };
+  });
 
   input->applyLambda<T>(fakeQuantizationWithMinMax, output);
 }

@@ -424,76 +424,76 @@ static SD_KERNEL void lambdaTriplewiseKernel(const void *vw, const sd::LongType 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyLambda(Lambda func, NDArray &target) {
+void NDArray::applyLambda(Lambda func, NDArray *target) {
   auto dtype = this->dataType();
 
-  if (dtype != target.dataType()) THROW_EXCEPTION("NDArray::applyLambda X/Z data types must be the same");
+  if (dtype != target->dataType()) THROW_EXCEPTION("NDArray::applyLambda X/Z data types must be the same");
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
       ::lambdaLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(),
-                       target.specialBuffer(), target.specialShapeInfo(), func),
+                       target->specialBuffer(), target->specialShapeInfo(), func),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyPairwiseLambda(NDArray&other, Lambda func, NDArray &target) {
+void NDArray::applyPairwiseLambda(NDArray *other, Lambda func, NDArray *target) {
   auto dtype = this->dataType();
 
-  if (dtype != target.dataType() || dtype != other.dataType())
+  if (dtype != target->dataType() || dtype != other->dataType())
     THROW_EXCEPTION("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
-  bool otherIsScalar = other.isScalar();
+  bool otherIsScalar = other->isScalar();
   prepareSpecialUse({&target}, {this, &other});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
       ::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), otherIsScalar,
-                               other.specialBuffer(), other.specialShapeInfo(), target.specialBuffer(),
-                               target.specialShapeInfo(), func),
+                               other->specialBuffer(), other->specialShapeInfo(), target->specialBuffer(),
+                               target->specialShapeInfo(), func),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyIndexedLambda(Lambda func, NDArray &target) {
+void NDArray::applyIndexedLambda(Lambda func, NDArray *target) {
   auto dtype = this->dataType();
-  if (dtype != target.dataType())
+  if (dtype != target->dataType())
     THROW_EXCEPTION("NDArray::applyIndexedLambda X/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
       ::lambdaIndexedLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(),
-                              target.specialBuffer(), target.specialShapeInfo(), func),
+                              target->specialBuffer(), target->specialShapeInfo(), func),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyIndexedPairwiseLambda(NDArray &other, Lambda func, NDArray &target) {
+void NDArray::applyIndexedPairwiseLambda(NDArray *other, Lambda func, NDArray *target) {
   auto dtype = this->dataType();
-  if (dtype != target.dataType() || dtype != other.dataType())
+  if (dtype != target->dataType() || dtype != other->dataType())
     THROW_EXCEPTION("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this, &other});
   BUILD_SINGLE_SELECTOR(
       dtype, LambdaHelper,
       ::lambdaIndexedPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(),
-                                      other.specialBuffer(), other.specialShapeInfo(), target.specialBuffer(),
-                                      target.specialShapeInfo(), func),
+                                      other->specialBuffer(), other->specialShapeInfo(), target->specialBuffer(),
+                                      target->specialShapeInfo(), func),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyTriplewiseLambda(NDArray &second, NDArray &third, Lambda func, NDArray &target) {
+void NDArray::applyTriplewiseLambda(NDArray *second, NDArray *third, Lambda func, NDArray *target) {
   auto dtype = this->dataType();
 
-  if (dtype != target.dataType() || dtype != second.dataType() || dtype != third.dataType())
+  if (dtype != target->dataType() || dtype != second.dataType() || dtype != third.dataType())
     THROW_EXCEPTION("NDArray::applyTriplewiseLambda X/Y/Z data types must be the same");
 
   prepareSpecialUse({&target}, {this, &second, &third});
@@ -501,7 +501,7 @@ void NDArray::applyTriplewiseLambda(NDArray &second, NDArray &third, Lambda func
       dtype, LambdaHelper,
       ::lambdaTriplewiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(),
                                  second.specialBuffer(), second.specialShapeInfo(), third.specialBuffer(),
-                                 third.specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func),
+                                 third.specialShapeInfo(), target->specialBuffer(), target->specialShapeInfo(), func),
       SD_COMMON_TYPES);
   registerSpecialUse({&target}, {this, &second, &third});
 }

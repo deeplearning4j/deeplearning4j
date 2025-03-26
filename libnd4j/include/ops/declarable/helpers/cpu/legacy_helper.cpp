@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 static void reluDerivative__(NDArray* theFirst, NDArray* theSecond) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); };
+  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f ? y : T(0.f); });
 
   theFirst->applyPairwiseLambda<T>(theSecond, functor, theFirst);
 }
@@ -41,7 +41,7 @@ void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
 template <typename T>
 static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   T zero = (T)0.f;
-  auto functor = LAMBDA_TT(x, y, zero) { return x > zero ? y : zero; };
+  auto functor = LAMBDA_TT(x, y, zero) { return x > zero ? y : zero; });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 
@@ -53,7 +53,7 @@ void reluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
 
 template <typename T>
 static void relu6Derivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f && x < (T)6.f ? y : T(0.f); };
+  auto functor = LAMBDA_TT(x, y) { return x > (T)0.f && x < (T)6.f ? y : T(0.f); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -66,7 +66,7 @@ template <typename T>
 static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
   const T alphaT = static_cast<T>(alpha);
 
-  auto functor = LAMBDA_TT(x, y, alphaT) { return x < 0 ? alphaT * y : y; };
+  auto functor = LAMBDA_TT(x, y, alphaT) { return x < 0 ? alphaT * y : y; });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -81,7 +81,7 @@ template <typename T>
 static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
   const T alphaT = static_cast<T>(alpha);
 
-  auto functor = LAMBDA_TT(x, y, alphaT) { return y * sd::math::sd_eluderivative<T, T>(x, alphaT); };
+  auto functor = LAMBDA_TT(x, y, alphaT) { return y * sd::math::sd_eluderivative<T, T>(x, alphaT); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -93,7 +93,7 @@ void eluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theSe
 
 template <typename T>
 static void seluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::SELUDerivative<T>::op(x, nullptr); };
+  auto functor = LAMBDA_TT(x, y) { return y * simdOps::SELUDerivative<T>::op(x, nullptr); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -104,7 +104,7 @@ void seluDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
 
 template <typename T>
 static void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); };
+  auto functor = LAMBDA_TT(x, y) { return y * (3 * x * x); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -116,7 +116,7 @@ void cubeDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* theS
 // return (x >= X(0.f) ? y: -y);
 template <typename T>
 static void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; };
+  auto functor = LAMBDA_TT(x, y) { return x > T(0.f) ? y : -y; });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -131,7 +131,7 @@ static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output)
   auto functor = LAMBDA_TT(x, y) {
     return sd::math::sd_max<T>(x, (T)0.f) - x * y +
            sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(x)));
-  };
+  });
 
   logits->applyPairwiseLambda<T>(labels, functor, output);
 }
@@ -148,7 +148,7 @@ static void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* out
     if (x <= 0) return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + sd::math::sd_exp<T, T>(x));
     auto e = sd::math::sd_exp<T, T>(-x);
     return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
-  };
+  });
 
   logits->applyPairwiseLambda<T>(labels, functor, output);
 }
@@ -163,7 +163,7 @@ static void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T th = sd::math::sd_tanh<T, T>(x);
     return y * ((T)1.0f - (th * th));
-  };
+  });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -176,7 +176,7 @@ template <typename T>
 static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
-  };
+  });
 
   input->applyPairwiseLambda<T>(epsilon, functor,output);
 }
@@ -187,7 +187,7 @@ void hardTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* 
 
 template <typename T>
 static void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); };
+  auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -199,7 +199,7 @@ void rationalTanhDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArr
 
 template <typename T>
 static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (sd::math::sd_tanhderivative<T, T>(x)) : (T)0.0f; };
+  auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (sd::math::sd_tanhderivative<T, T>(x)) : (T)0.0f; });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -216,7 +216,7 @@ static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* outpu
   auto functor = LAMBDA_TT(x, y) {
     T ss = (T)1.f + sd::math::sd_abs<T,T>(x);
     return y * ((T)1.0f / (ss * ss));
-  };
+  });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -230,7 +230,7 @@ static void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* outpu
   auto functor = LAMBDA_TT(x, y) {
     T p = sd::math::sd_pow<T, T, T>(static_cast<T>(M_E), x);
     return y * (p / (p + 1.));
-  };
+  });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -247,7 +247,7 @@ static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output
   auto functor = LAMBDA_TT(x, y) {
     T s = sd::math::sd_sigmoid<T, T>(x);
     return y * (s * ((T)1.0f - s));
-  };
+  });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -258,7 +258,7 @@ void sigmoidDerivative(sd::LaunchContext* context, NDArray* theFirst, NDArray* t
 
 template <typename T>
 static void hardSigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); };
+  auto functor = LAMBDA_TT(x, y) { return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr); });
 
   input->applyPairwiseLambda<T>(epsilon, functor, output);
 }
@@ -316,12 +316,12 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray * targets, NDArray * 
     return (1. - _z) * _x +
            targetWeight * (sd::math::sd_log<T, T>((T)1.f + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
                            sd::math::sd_max(-_x, T(0.f)));
-  };
+  });
 
   auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
     return (((T)1.0 - _z) * _x) + _w * (sd::math::sd_log<T, T>(T(1.) + sd::math::sd_exp<T, T>(-sd::math::sd_abs<T,T>(_x))) +
                                         sd::math::sd_max(-_x, T(0.f)));
-  };
+  });
 
   if (weights->isScalar()) {
     input->applyPairwiseLambda<T>(targets, mainRoutineT1, output);

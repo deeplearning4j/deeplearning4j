@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 template <typename T>
 static void toggle_bits__(NDArray* in, NDArray* out) {
-  auto lambda = LAMBDA_T(_x) { return BitwiseUtils::flip_bits(_x); };
+  auto lambda = LAMBDA_T(_x) { return BitwiseUtils::flip_bits(_x); });
 
   in->applyLambda<T>(lambda, out);
 }

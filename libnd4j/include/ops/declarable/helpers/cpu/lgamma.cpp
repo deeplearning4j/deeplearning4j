@@ -35,7 +35,7 @@ static void lgamma_(NDArray* x, NDArray* z) {
   auto lgammaProc = LAMBDA_T(x_) {
     auto output = math::sd_lgamma<T,T>(x_);
     return output;
-  };
+  });
 
   x->applyLambda<T>(lgammaProc, z);
 }

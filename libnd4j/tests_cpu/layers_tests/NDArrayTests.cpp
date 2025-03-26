@@ -2164,7 +2164,7 @@ TEST_F(NDArrayTest, Test_Lambda_1) {
   auto x = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
   auto exp = NDArrayFactory::create<float>('c', {1, 5}, {4, 5, 6, 7, 8});
 
-  auto lambda = LAMBDA_F(_val) { return _val + 3.0f; };
+  auto lambda = LAMBDA_F(_val) { return _val + 3.0f; });
 
   x.applyLambda<float>(lambda, x);
 
@@ -2177,7 +2177,7 @@ TEST_F(NDArrayTest, Test_Lambda_2) {
   auto y = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 1, 2, 1});
   auto exp = NDArrayFactory::create<float>('c', {1, 5}, {3, 5, 3, 5, 3});
 
-  auto lambda = LAMBDA_FF(_x, _y) { return _x + _y + 1.0f; };
+  auto lambda = LAMBDA_FF(_x, _y) { return _x + _y + 1.0f; });
 
   x.applyPairwiseLambda<float>(y, lambda, x);
 
@@ -2190,7 +2190,7 @@ TEST_F(NDArrayTest, Test_Lambda_3) {
   auto y = NDArrayFactory::create<double>('c', {1, 5}, {1, 2, 1, 2, 1});
   auto exp = NDArrayFactory::create<double>('c', {1, 5}, {4, 8, 4, 8, 4});
 
-  auto lambda = LAMBDA_DD(_x, _y) { return (_x + _y) * 2; };
+  auto lambda = LAMBDA_DD(_x, _y) { return (_x + _y) * 2; });
 
   x.applyPairwiseLambda<double>(y, lambda, x);
 

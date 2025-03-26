@@ -166,7 +166,7 @@ static void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDAr
     T res = sd::math::sd_sign<T, T>(grad) != sd::math::sd_sign<T, T>(eps) ? x + T(.2) : x * T(.8);
     if (res < .01) res = static_cast<T>(.01);
     return res;
-  };
+  });
 
   input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
 }

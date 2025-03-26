@@ -33,10 +33,10 @@ namespace helpers {
 // calculate digamma function for array elements
 template <typename T>
 void lgamma_(NDArray* x, NDArray* z) {
-  auto lgammaProc = LAMBDA_T(x_, dtype) {
+  auto lgammaProc = LAMBDA_T(x_) {
     return T(DataTypeUtils::fromT<T>() == DOUBLE ? ::lgamma(x_)
                  : ::lgammaf(x_));
-  };
+  });
 
   x->applyLambda(lgammaProc, z);
 }

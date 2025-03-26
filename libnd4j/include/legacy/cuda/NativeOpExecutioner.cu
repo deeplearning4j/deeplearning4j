@@ -48,7 +48,7 @@
 #include <loops/transform_same.h>
 #include <loops/transform_strict.h>
 #include <system/op_boilerplate.h>
-
+#include <helpers/ConstantTadHelper.h>
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -204,9 +204,9 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext* lc, int op
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNum, void const* hX,
-                                                 sd::LongType const* hXShapeInfo, void const* dX,
-                                                 sd::LongType const* dXShapeInfo, void* extraParams, void* hZ,
-                                                 sd::LongType const* hZShapeInfo, void* dZ, sd::LongType const* dZShapeInfo,
+                                                 sd::LongType* hXShapeInfo, void const* dX,
+                                                 sd::LongType* dXShapeInfo, void* extraParams, void* hZ,
+                                                 sd::LongType* hZShapeInfo, void* dZ, sd::LongType* dZShapeInfo,
                                                  bool biasCorrected) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -222,7 +222,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext* lc, int opNu
   }
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
-      ::execSummaryStatsReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ,
+      ::execSummaryStatsReduceScalar(launchDims, stream, opNum, const_cast<void*>(dX), dXShapeInfo, hXShapeInfo, extraParams, dZ,
                                      dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
@@ -538,7 +538,7 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext* lc, int opNum, void 
 
   BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction,
                         ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
-                                       reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
+                                     reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES);
 }
 
@@ -576,11 +576,11 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext* lc, int opNum, void 
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
                         ::execReduce(launchDims, stream, opNum, dX,
-                                       const_cast<sd::LongType*>(dXShapeInfo),
-                                       const_cast<sd::LongType*>(hXShapeInfo), extraParams,
-                                       reductionPointer, dZ,
-                                       const_cast<sd::LongType*>(dZShapeInfo),
-                                       const_cast<sd::LongType*>(hZShapeInfo), dimension),
+                                     const_cast<sd::LongType*>(dXShapeInfo),
+                                     const_cast<sd::LongType*>(hXShapeInfo), extraParams,
+                                     reductionPointer, dZ,
+                                     const_cast<sd::LongType*>(dZShapeInfo),
+                                     const_cast<sd::LongType*>(hZShapeInfo), dimension),
                         SD_COMMON_TYPES, SD_LONG_TYPES);
 }
 
@@ -609,9 +609,9 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext* lc, int opNum, void 
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
                         ::execReduce(launchDims, stream, opNum, dX, const_cast<sd::LongType*>(dXShapeInfo),
-                                       const_cast<sd::LongType*>(hXShapeInfo), extraParams,
-                                       reductionPointer, dZ,
-                                       const_cast<sd::LongType*>(dZShapeInfo), const_cast<sd::LongType*>(hZShapeInfo), dimension),
+                                     const_cast<sd::LongType*>(hXShapeInfo), extraParams,
+                                     reductionPointer, dZ,
+                                     const_cast<sd::LongType*>(dZShapeInfo), const_cast<sd::LongType*>(hZShapeInfo), dimension),
                         SD_COMMON_TYPES, SD_BOOL_TYPES);
 }
 
@@ -645,7 +645,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext* lc, int opNum, cons
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction,
                         ::execReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
-                                       reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
+                                     reductionPointer, dZ, dZShapeInfo, hZShapeInfo, dimension),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -855,7 +855,7 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext* lc, int opNum,
                         ::execReduceScalar(launchDims, stream, opNum, dX,
                                            const_cast<sd::LongType*>(dXShapeInfo),
                                            const_cast<sd::LongType*>(hXShapeInfo), extraParams, dZ,
-                         const_cast<sd::LongType*>(dZShapeInfo), const_cast<sd::LongType*>(hZShapeInfo), nullptr, 0, reductionPointer, nullptr),
+                                           const_cast<sd::LongType*>(dZShapeInfo), const_cast<sd::LongType*>(hZShapeInfo), nullptr, 0, reductionPointer, nullptr),
                         SD_COMMON_TYPES, SD_LONG_TYPES);
 }
 
@@ -889,27 +889,57 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext* lc, int opNum, vo
 }
 
 
+void NativeOpExecutioner::execTransformFloat(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
+                                             const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
+                                             const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                                             void *extraParams) {
+  auto stream = lc->getCudaStream();
+
+  auto xRank = shape::rank(hXShapeInfo);
+  auto zRank = shape::rank(hZShapeInfo);
+  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
+    THROW_EXCEPTION(
+        "NativeOpExecutioner::execTransformFloat:: unable to execute on strings. Please write logic higher level in "
+        "each op for the string data type.")
+  }
+
+  if (xType != zType) {
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
+  }
+
+  dim3 launchDims = getLaunchDims("transformScan");
+  BUILD_DOUBLE_SELECTOR(xType,xType, functions::transform::TransformFloat,
+                        ::executeTransformShaped(launchDims, stream,  opNum, dX,
+                                                 dXShapeInfo, xRank,extraParams, dZ,
+                                                 dZShapeInfo, zRank,
+                                                 nullptr,nullptr,
+                                                 nullptr,nullptr),
+                        SD_COMMON_TYPES,SD_COMMON_TYPES);
+}
+
 void NativeOpExecutioner::execTransformStrict(sd::LaunchContext *lc, int opNum, const void *hX, const sd::LongType *hXShapeInfo,
                                               const void *dX, const sd::LongType *dXShapeInfo, void *hZ,
                                               const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
                                               void *extraParams) {
-        auto stream = lc->getCudaStream();
-        auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-        auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-        if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
-            THROW_EXCEPTION(
-                    "NativeOpExecutioner::execTransformStrict:: unable to execute on strings. Please write logic higher level in "
-                    "each op for the string data type.")
-        }
+  auto stream = lc->getCudaStream();
+  auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+  auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+  if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(zType)) {
+    THROW_EXCEPTION(
+        "NativeOpExecutioner::execTransformStrict:: unable to execute on strings. Please write logic higher level in "
+        "each op for the string data type.")
+  }
 
-        if (xType != zType) {
-            THROW_EXCEPTION("NativeOpExecutioner::execTransformStrict requires X & Z to have same type");
-        }
+  if (xType != zType) {
+    THROW_EXCEPTION("NativeOpExecutioner::execTransformStrict requires X & Z to have same type");
+  }
 
-        dim3 launchDims = getLaunchDims("transformScan");
-        BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
-                              ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), nullptr, nullptr, nullptr, nullptr),
-                              SD_COMMON_TYPES);
+  dim3 launchDims = getLaunchDims("transformScan");
+  BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict,
+                        ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dZ, dZShapeInfo, shape::rank(hZShapeInfo), nullptr, nullptr, nullptr, nullptr),
+                        SD_COMMON_TYPES);
 
 }
 
@@ -950,9 +980,9 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, void const* hX,
-                                           sd::LongType const* hXShapeInfo, void const* dX, sd::LongType const* dXShapeInfo,
-                                           void* extraParams, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-                                           sd::LongType const* dZShapeInfo, bool biasCorrected) {
+                                           sd::LongType* hXShapeInfo, void const* dX, sd::LongType* dXShapeInfo,
+                                           void* extraParams, void* hZ, sd::LongType* hZShapeInfo, void* dZ,
+                                           sd::LongType* dZShapeInfo, bool biasCorrected) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
 
@@ -971,17 +1001,17 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
   }
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
-      ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo,
+      ::execSummaryStatsReduce(launchDims, stream, opNum, const_cast<void*>(dX), dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo,
                                hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, void const* hX,
-                                           sd::LongType const* hXShapeInfo, void const* dX, sd::LongType const* dXShapeInfo,
-                                           void* extraParams, void* hZ, sd::LongType const* hZShapeInfo, void* dZ,
-                                           sd::LongType const* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength,
-                                           sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets,
+                                           sd::LongType* hXShapeInfo, void const* dX, sd::LongType* dXShapeInfo,
+                                           void* extraParams, void* hZ, sd::LongType* hZShapeInfo, void* dZ,
+                                           sd::LongType* dZShapeInfo, sd::LongType* dimension, sd::LongType dimensionLength,
+                                           sd::LongType* tadShapeInfo, sd::LongType* tadOffsets,
                                            bool biasCorrected) {
   auto stream = lc->getCudaStream();
   auto reductionPointer = lc->getReductionPointer();
@@ -999,14 +1029,26 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext* lc, int opNum, voi
     std::string errorMessage = "NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type. Z type: " + sd::DataTypeUtils::asString(zType);
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
+  // First, compute TAD shape info if needed based on dimensions
+  sd::LongType* computedTadShapeInfo = tadShapeInfo;
+  sd::LongType* computedTadOffsets = tadOffsets;
+
+  // If tadShapeInfo is not provided but dimensions are, compute them
+  if (dimensionLength > 0 && dimension != nullptr && tadShapeInfo == nullptr) {
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    computedTadShapeInfo = tadPack->specialShapeInfo();
+    computedTadOffsets = tadPack->specialOffsets();
+  }
+
+  // Now call the available signature without dimension parameters
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
-                        ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
-                                                 dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, tadShapeInfo,
-                                                 tadOffsets, biasCorrected, reductionPointer),
+                        ::execSummaryStatsReduce(launchDims, stream, opNum, const_cast<void*>(dX), dXShapeInfo, hXShapeInfo, extraParams,
+                                                 dZ, dZShapeInfo, hZShapeInfo, computedTadShapeInfo,
+                                                 computedTadOffsets, biasCorrected, reductionPointer),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
-
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////
 void NativeOpExecutioner::execReduce3(sd::LaunchContext* lc, int opNum, void const* hX, sd::LongType const* hXShapeInfo,
                                       void const* dX, sd::LongType const* dXShapeInfo, void* extraParams, void const* hY,
                                       sd::LongType const* hYShapeInfo, void const* dY, sd::LongType const* dYShapeInfo,

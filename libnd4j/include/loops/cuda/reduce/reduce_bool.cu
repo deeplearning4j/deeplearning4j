@@ -176,6 +176,7 @@ SD_DEVICE void ReduceBoolFunction<X, Z>::transformCuda(
     if (sameOffsets) {
       zOffset = outerOffset;
     } else {
+      INDEX2COORDS(r, zRank, zShapePtr, coords);
       COORDS2INDEX(zRank, zStridePtr, coords, zOffset);
     }
 

@@ -34,7 +34,7 @@ void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T th = math::sd_tanh<T, T>(x);
     return y * ((T)1.0f - (th * th));
-  };
+  });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -48,7 +48,7 @@ void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
   auto functor = LAMBDA_TT(x, y) {
     T th = math::sd_tanh<T, T>(x);
     return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
-  };
+  });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -59,7 +59,7 @@ void hardTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* theS
 
 template <typename T>
 void rationalTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); };
+  auto functor = LAMBDA_TT(x, y) { return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr); });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
@@ -71,7 +71,7 @@ void rationalTanhDerivative(LaunchContext* context, NDArray* theFirst, NDArray* 
 
 template <typename T>
 void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-  auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (math::sd_tanhderivative<T, T>(x)) : (T)0.0f; };
+  auto functor = LAMBDA_TT(x, y) { return x > (T)0.0f ? y * (math::sd_tanhderivative<T, T>(x)) : (T)0.0f; });
 
   input->applyPairwiseLambda(epsilon, functor, output);
 }
