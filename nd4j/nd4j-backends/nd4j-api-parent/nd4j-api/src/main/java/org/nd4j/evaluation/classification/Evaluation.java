@@ -459,9 +459,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 guessIndex = Nd4j.argMax(predictions2d.mulRowVector(costArray.castTo(predictions2d.dataType())), 1);
             } else {
                 //Standard case: argmax
-                guessIndex = Nd4j.argMax(predictions2d, 1);
+                guessIndex = Nd4j.argMax(predictions2d.castTo(DataType.INT64), 1);
             }
-            INDArray realOutcomeIndex = Nd4j.argMax(labels2d, 1);
+            INDArray realOutcomeIndex = Nd4j.argMax(labels2d.castTo(DataType.INT64), 1);
             val nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
