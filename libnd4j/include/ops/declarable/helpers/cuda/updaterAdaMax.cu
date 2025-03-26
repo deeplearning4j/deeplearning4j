@@ -98,7 +98,7 @@ SD_KERNEL void adaMaxUpdaterCuda(const void* vx, const LongType* xShapeInfo, con
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+  LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initMOffset, initUOffset, stMOffset, stUOffset;

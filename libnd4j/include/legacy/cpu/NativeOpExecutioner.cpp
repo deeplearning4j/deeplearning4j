@@ -963,9 +963,9 @@ void NativeOpExecutioner::execScalarInt(
  * @param hZShapeInfo
  */
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX,
-                                           const sd::LongType *hXShapeInfo, const void *dX,
-                                           const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                                           const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
+                                           sd::LongType *hXShapeInfo, const void *dX,
+                                           sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                                           sd::LongType *hZShapeInfo, void *dZ, sd::LongType *dZShapeInfo,
                                            bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -986,10 +986,10 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
  * @param hZShapeInfo
  */
 void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNum, const void *hX,
-                                                 const sd::LongType *hXShapeInfo, const void *dX,
-                                                 const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                                                 const sd::LongType *hZShapeInfo, void *dZ,
-                                                 const sd::LongType *dZShapeInfo, bool biasCorrected) {
+                                                 sd::LongType *hXShapeInfo, const void *dX,
+                                                 sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                                                 sd::LongType *hZShapeInfo, void *dZ,
+                                                 sd::LongType *dZShapeInfo, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1011,11 +1011,11 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
  * @param dimensionLength
  */
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, const void *hX,
-                                           const sd::LongType *hXShapeInfo, const void *dX,
-                                           const sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
-                                           const sd::LongType *hZShapeInfo, void *dZ, const sd::LongType *dZShapeInfo,
-                                           sd::LongType *dimension, sd::LongType dimensionLength, const sd::LongType *tadShapeInfo,
-                                           const sd::LongType *tadOffsets, bool biasCorrected) {
+                                           sd::LongType *hXShapeInfo, const void *dX,
+                                           sd::LongType *dXShapeInfo, void *extraParams, void *hZ,
+                                           sd::LongType *hZShapeInfo, void *dZ, sd::LongType *dZShapeInfo,
+                                           sd::LongType *dimension, sd::LongType dimensionLength, sd::LongType *tadShapeInfo,
+                                           sd::LongType *tadOffsets, bool biasCorrected) {
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 

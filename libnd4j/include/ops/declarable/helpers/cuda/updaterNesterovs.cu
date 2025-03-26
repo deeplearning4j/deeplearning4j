@@ -81,7 +81,7 @@ SD_KERNEL void nesterovsUpdaterCuda(const void* vx, const LongType* xShapeInfo, 
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+  LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset, zOffset, initOffset, stOffset;

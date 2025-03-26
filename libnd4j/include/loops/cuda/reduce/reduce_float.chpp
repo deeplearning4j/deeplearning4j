@@ -170,7 +170,7 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCuda(
   __syncthreads();
 
   sd::LongType coords[SD_MAX_RANK];
-
+  sd::LongType zCoords[SD_MAX_RANK];
   for (sd::LongType r = blockIdx.x; r < numTads; r += gridDim.x) {
     INDEX2COORDS(r, outerRank, outerShapePtr, coords);
 
@@ -181,8 +181,8 @@ SD_DEVICE void ReduceFloatFunction<X,Z>::transformCuda(
     if (sameOffsets) {
       zOffset = outerOffset;
     } else {
-      // we must compute the zOffset separately
-      COORDS2INDEX(zRank, zStridePtr, coords, zOffset);
+      INDEX2COORDS(r, zRank, zShapePtr, zCoords);
+      COORDS2INDEX(zRank, zStridePtr, zCoords, zOffset);
     }
 
     const X* xTad = x + outerOffset;

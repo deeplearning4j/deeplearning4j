@@ -116,7 +116,7 @@ SD_KERNEL void amsGradUpdaterCuda(const void* vx, const LongType* xShapeInfo, co
   }
   __syncthreads();
 
-  auto coords = sharedMem + threadIdx.x * SD_MAX_RANK;
+  LongType coords[SD_MAX_RANK];
 
   for (LongType i = blockIdx.x * blockDim.x + threadIdx.x; i < xLen; i += gridDim.x * blockDim.x) {
     LongType xOffset = i, zOffset = i, initMOffset = i, initVOffset = i, initHOffset = i, stMOffset = i, stVOffset = i,

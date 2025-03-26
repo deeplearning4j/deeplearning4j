@@ -222,64 +222,57 @@ class SummaryStatsReduce {
 
 #ifdef __CUDACC__
 
-  static SD_INLINE SD_DEVICE Z startingValue(X const* input) { return static_cast<Z>(0); }
+  static SD_INLINE SD_DEVICE Z startingValue(X * input) { return static_cast<Z>(0); }
 
   template <typename OpType>
   static SD_DEVICE void aggregatePartials(SummaryStatsData<X>* sPartials, sd::LongType tid, sd::LongType numElements,
                                           void* extraParams);
 
   template <typename OpType>
-  static SD_DEVICE void transform(void const* dx, sd::LongType const* xShapeInfo, void* extraParams, void* vz,
-                                  sd::LongType const* zShapeInfo, sd::LongType* dimension,
+  static SD_DEVICE void transform(void * dx, sd::LongType * xShapeInfo, void* extraParams, void* vz,
+                                  sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   long long int dimensionLength,
                                   int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
-                                  sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets);
+                                  sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
-  static SD_DEVICE void transform(const int opNum, void const* dx, sd::LongType const* xShapeInfo, void* extraParams,
-                                  void* vz, sd::LongType const* zShapeInfo, sd::LongType* dimension,
+  static SD_DEVICE void transform( int opNum, void * dx, sd::LongType * xShapeInfo, void* extraParams,
+                                  void* vz, sd::LongType * zShapeInfo, sd::LongType* dimension,
                                   sd::LongType dimensionLength,
                                   int postProcessOrNot, sd::LongType* allocationBuffer, void* reductionBuffer,
-                                  sd::LongType const* tadOnlyShapeInfo, sd::LongType const* tadOffsets);
+                                  sd::LongType * tadOnlyShapeInfo, sd::LongType * tadOffsets);
 
-  static SD_HOST void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x,
-                                                   sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo,
-                                                   void* extraParams, void* vz, sd::LongType const* zShapeInfo,
-                                                   sd::LongType const* hzShapeInfo, sd::LongType const* tadShapeInfo,
-                                                   sd::LongType const* tadOffsets, bool biasCorrected,
+  static SD_HOST void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t* stream, int opNum, void * x,
+                                                   sd::LongType * xShapeInfo, sd::LongType * hxShapeInfo,
+                                                   void* extraParams, void* vz, sd::LongType * zShapeInfo,
+                                                   sd::LongType * hzShapeInfo, sd::LongType * tadShapeInfo,
+                                                   sd::LongType * tadOffsets, bool biasCorrected,
                                                    void* reductionBuffer);
-  static SD_HOST void execSummaryStatsReduce(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x,
-                                             sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo,
-                                             void* extraParams, void* vz, sd::LongType const* zShapeInfo,
-                                             sd::LongType const* hzShapeInfo, sd::LongType const* tadShapeInfo,
-                                             sd::LongType const* tadOffsets, bool biasCorrected, void* reductionBuffer);
-  static SD_HOST void execSummaryStatsReduce(dim3& launchDims, cudaStream_t* stream, int opNum, void const* x,
-                                             sd::LongType const* xShapeInfo, sd::LongType const* hxShapeInfo,
-                                             void* extraParams, void* vz, sd::LongType const* zShapeInfo,
-                                             sd::LongType const* hzShapeInfo, sd::LongType* dimension,
-                                             long long int dimensionLength,
-                                             sd::LongType const* tadShapeInfo, sd::LongType const* tadOffsets,
-                                             bool biasCorrected, void* reductionBuffer);
+  static SD_HOST void execSummaryStatsReduce(dim3& launchDims, cudaStream_t* stream, int opNum, void * x,
+                                             sd::LongType * xShapeInfo, sd::LongType * hxShapeInfo,
+                                             void* extraParams, void* vz, sd::LongType * zShapeInfo,
+                                             sd::LongType * hzShapeInfo, sd::LongType * tadShapeInfo,
+                                             sd::LongType * tadOffsets, bool biasCorrected, void* reductionBuffer);
 #else
 
-  static Z execScalar(int opNum, bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams);
+  static Z execScalar(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams);
 
-  static void execScalar(int opNum, bool biasCorrected, const void *x, const sd::LongType *xShapeInfo,
-                         void *extraParams, void *vz, const sd::LongType *resultShapeInfoBuffer);
+  static void execScalar(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo,
+                         void *extraParams, void *vz,  sd::LongType *resultShapeInfoBuffer);
 
-  static void exec(int opNum, bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams,
-                   void *vz, const sd::LongType *resultShapeInfoBuffer, long long int *dimension,
+  static void exec(int opNum, bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams,
+                   void *vz,  sd::LongType *resultShapeInfoBuffer, long long int *dimension,
                    long long int dimensionLength);
 
   template <typename OpType>
-  static Z execScalar(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams);
+  static Z execScalar(bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams);
 
   template <typename OpType>
-  static void execScalar(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *vz,
-                         const sd::LongType *resultShapeInfoBuffer);
+  static void execScalar(bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams, void *vz,
+                          sd::LongType *resultShapeInfoBuffer);
 
   template <typename OpType>
-  static void exec(bool biasCorrected, const void *x, const sd::LongType *xShapeInfo, void *extraParams, void *vz,
-                   const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength);
+  static void exec(bool biasCorrected,  void *x,  sd::LongType *xShapeInfo, void *extraParams, void *vz,
+                    sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength);
 #endif
 };
 }  // namespace summarystats
