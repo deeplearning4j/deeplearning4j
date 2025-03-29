@@ -23,11 +23,13 @@ package org.nd4j.linalg.api.ops.compat;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.List;
@@ -60,8 +62,8 @@ public class CompatSparseToDense extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
-        return Arrays.asList(LongShapeDescriptor.fromShape(oc.getInputArrays().get(1).toLongVector(),oc.getInputArrays().get(0).dataType()));
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
+        return Arrays.asList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(oc.getInputArrays().get(1).toLongVector(),oc.getInputArrays().get(0).dataType()).toShapeInfo()));
     }
 
     @Override

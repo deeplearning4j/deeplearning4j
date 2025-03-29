@@ -27,6 +27,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -57,7 +58,7 @@ public class TestCustomOps extends BaseNd4jTestWithBackends {
 
         val outShape = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, outShape.size());
-        assertArrayEquals(new long[]{1, 29, 29, 264}, outShape.get(0).getShape());
+        assertArrayEquals(new long[]{1, 29, 29, 264}, Shape.shape(outShape.get(0).asLong()));
 
         Nd4j.getExecutioner().exec(op); //Crash here
     }

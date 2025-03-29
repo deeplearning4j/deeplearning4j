@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
@@ -449,12 +450,12 @@ public class Variance extends BaseReduceOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
         if(oc == null && args().length < 1) {
@@ -467,9 +468,9 @@ public class Variance extends BaseReduceOp {
         }
         long[] inputShape = (argShape == null || Shape.isPlaceholderShape(argShape) ? x.shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+        val ret = new ArrayList<DataBuffer>(1);
         val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
+        ret.add(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, resultType()).toShapeInfo()));
         return ret;
     }
 

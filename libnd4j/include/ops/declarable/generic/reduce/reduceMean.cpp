@@ -142,8 +142,8 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
 
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      *gradI *= gradO->reshape(gradO->ordering(),
-                               shape);  // for example could be something like [a,b] -> [1,a,1,b]
+      NDArray reshapedGradO = gradO->reshape(gradO->ordering(), shape);
+      *gradI *= reshapedGradO;
     } else {
       gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
@@ -172,9 +172,11 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
       "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
       rank, item);
 
-  sd::LongType *gradIshapeInfo(nullptr);
-  COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-  return SHAPELIST(CONSTANT(gradIshapeInfo));
+  sd::LongType *gradIshapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+  memcpy(gradIshapeInfo, in, shape::shapeInfoByteLength(in));
+  auto ret =  SHAPELIST(CONSTANT(gradIshapeInfo));
+  delete[] gradIshapeInfo;
+  return ret;
 }
 
 DECLARE_TYPES(reduce_mean_bp) {

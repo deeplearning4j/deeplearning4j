@@ -22,6 +22,7 @@ package org.nd4j.autodiff.samediff.internal.memory;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -47,6 +48,11 @@ public class NoOpMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
     @Override
     public void close() {
         //No-op
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
+       return Nd4j.createFromDescriptor(dataBuffer);
     }
 
 }

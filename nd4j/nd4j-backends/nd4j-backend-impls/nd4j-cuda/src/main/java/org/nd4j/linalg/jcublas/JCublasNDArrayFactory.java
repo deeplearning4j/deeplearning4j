@@ -192,6 +192,18 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         return new JCublasNDArray(data, shape, ordering);
     }
 
+
+
+    @Override
+    public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        JCublasNDArray jCublasNDArray = new JCublasNDArray();
+        jCublasNDArray.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(jCublasNDArray.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,jCublasNDArray.length(),false);
+        jCublasNDArray.setData(buff);
+        return jCublasNDArray;
+    }
+
     @Override
     public INDArray create(LongShapeDescriptor longShapeDescriptor) {
         return new JCublasNDArray(longShapeDescriptor);
@@ -201,13 +213,21 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new CudaUtf8Buffer(strings);
-        val list = new ArrayList<>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
-        return null;
+        return new JCublasNDArray(dataType,shape,strides,0,ordering,currentWorkspace);
+    }
+
+    @Override
+    public INDArray create(DataBuffer dataBuffer, DataBuffer descriptor) {
+        JCublasNDArray jCublasNDArray = new JCublasNDArray();
+        jCublasNDArray.setShapeInfoDataBuffer(descriptor);
+        DataType dt = Shape.dataType(jCublasNDArray.shapeInfoJava());
+        jCublasNDArray.setData(dataBuffer);
+        return jCublasNDArray;
     }
 
     @Override

@@ -36,6 +36,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -194,7 +195,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                         layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW ? 0 : 1);  //0: NCHW, 1=NHWC
 
         DynamicCustomOp build = b.build();
-        long[] shape = build.calculateOutputShape().get(0).getShape();
+        long[] shape = Shape.shape(build.calculateOutputShape().get(0).asLong());
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), shape, 'c');
         build.addOutputArgument(output);

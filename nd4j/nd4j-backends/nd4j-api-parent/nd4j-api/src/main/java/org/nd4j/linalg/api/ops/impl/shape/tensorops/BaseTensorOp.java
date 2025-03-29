@@ -20,13 +20,12 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -73,7 +72,7 @@ public abstract class BaseTensorOp extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         throw new UnsupportedOperationException("calculateOutputShape() is not supported for tensor ops.");
     }
 

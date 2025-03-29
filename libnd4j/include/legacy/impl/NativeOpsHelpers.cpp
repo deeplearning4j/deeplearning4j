@@ -567,16 +567,11 @@ int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(r
 OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
                                         char order,
                                         sd::LongType ews, sd::LongType extras) {
-  try {
 
     auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
+
 }
 
 void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
@@ -588,7 +583,10 @@ void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    THROW_EXCEPTION(e.what());
   }
+
+
 }
 
 
@@ -606,8 +604,11 @@ OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    THROW_EXCEPTION(e.what());
+
   }
+
+  return nullptr;
 }
 
 sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::LongType length) {
@@ -1749,7 +1750,7 @@ sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
-  delete dataBuffer;
+  //delete dataBuffer;
 }
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {

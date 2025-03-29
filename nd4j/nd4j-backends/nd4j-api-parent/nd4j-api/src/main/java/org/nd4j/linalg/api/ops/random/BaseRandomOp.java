@@ -24,14 +24,11 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.RandomOp;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -72,7 +69,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 

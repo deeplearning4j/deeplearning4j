@@ -112,7 +112,7 @@ void ResultSet::delContent() {
       auto buffer = v->dataBuffer();
       deleted.push_back(buffer);
       if (!v->isView() && v->shapeInfo() != nullptr) {
-        delete v;
+      //  delete v;
       }
     }
   }

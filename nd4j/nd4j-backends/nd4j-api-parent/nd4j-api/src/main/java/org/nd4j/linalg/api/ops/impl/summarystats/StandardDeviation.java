@@ -24,12 +24,14 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -349,7 +351,7 @@ public class StandardDeviation extends Variance {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         if(args().length < 1) {
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
@@ -360,9 +362,9 @@ public class StandardDeviation extends Variance {
         }
         long[] inputShape = (argShape == null || Shape.isPlaceholderShape(argShape) ? x().shape() : argShape);
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+        val ret = new ArrayList<DataBuffer>(1);
         val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());
-        ret.add(LongShapeDescriptor.fromShape(reducedShape, resultType()));
+        ret.add(Nd4j.createBuffer(LongShapeDescriptor.fromShape(reducedShape, resultType()).toShapeInfo()));
         return ret;
     }
 }

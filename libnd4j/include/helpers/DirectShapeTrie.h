@@ -20,7 +20,7 @@ namespace sd {
 
 class SD_LIB_EXPORT ShapeTrieNode {
  private:
-  std::vector<std::unique_ptr<ShapeTrieNode>> _children;
+  std::vector<ShapeTrieNode*> _children;
   LongType _value;
   int _level;
   bool _isShape;
@@ -38,19 +38,46 @@ class SD_LIB_EXPORT ShapeTrieNode {
   ~ShapeTrieNode() = default;
 
   ShapeTrieNode* findOrCreateChild(LongType value, int level, bool isShape, int shapeHash = 0) {
-    for (auto& child : _children) {
-      if (child->value() == value && child->isShape() == isShape && child->shapeHash() == shapeHash) {
-        return child.get();
+    // Reserve space upfront to avoid reallocation during pushback
+    if (level == 0) {  // This is where it's crashing based on the stack trace
+      printf("findOrCreateChild: value=%lld, level=%d, isShape=%d, shapeHash=%d, size=%zu, capacity=%zu\n",
+             (long long)value, level, isShape, shapeHash, _children.size(), _children.capacity());
+    }
+
+    // Existing reserve code - add safety check
+    if (_children.size() == _children.capacity()) {
+      if (_children.size() > 1000) {
+        printf("WARNING: Extremely large children array in findOrCreateChild: %zu\n", _children.size());
+      }
+
+      try {
+        _children.reserve(_children.size() + 10);
+      } catch (const std::exception& e) {
+        printf("ERROR in reserve: %s\n", e.what());
+        // Continue anyway - it will throw its own exception if allocation fails
       }
     }
-    
-    auto newNode = std::make_unique<ShapeTrieNode>(value, level, isShape, shapeHash);
-    auto* ptr = newNode.get();
-    _children.push_back(std::move(newNode));
-    return ptr;
+
+
+    printf("findOrCreateChild: passed children reserve\n");
+    fflush(stdout);
+
+    for (auto& child : _children) {
+      if(child != nullptr) {
+        if (child->value() == value && child->level() == level && child->isShape() == isShape &&
+            (shapeHash == 0 || child->shapeHash() == shapeHash)) {
+          return child;
+        }
+      }
+
+    }
+
+    auto newNode = new ShapeTrieNode(value, level, isShape, shapeHash);
+    _children.push_back(newNode);
+    return newNode;
   }
 
-  const std::vector<std::unique_ptr<ShapeTrieNode>>& children() const { return _children; }
+  const std::vector<ShapeTrieNode*>& children() const { return _children; }
   LongType value() const { return _value; }
   int level() const { return _level; }
   bool isShape() const { return _isShape; }
@@ -67,14 +94,14 @@ class SD_LIB_EXPORT ShapeTrieNode {
 class SD_LIB_EXPORT DirectShapeTrie {
  private:
   static const size_t NUM_STRIPES = 256; // Increased from 32 to reduce collisions
-  std::array<std::unique_ptr<ShapeTrieNode>, NUM_STRIPES> _roots;
+  std::array<ShapeTrieNode*, NUM_STRIPES> _roots;
   mutable std::array<SHAPE_MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
 
  public:
   // Constructor
   DirectShapeTrie() {
     for (size_t i = 0; i < NUM_STRIPES; i++) {
-      _roots[i] = std::make_unique<ShapeTrieNode>(0, 0, false);
+      _roots[i] = new ShapeTrieNode(0, 0, false);
       // Make sure mutexes are properly initialized
       new (&_mutexes[i]) SHAPE_MUTEX_TYPE();  // Explicit initialization
     }

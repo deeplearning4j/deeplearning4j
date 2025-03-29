@@ -49,6 +49,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMLayerOutputs;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -413,7 +414,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0).getShape());
+        assertArrayEquals(exp, Shape.shape(outSizes.get(0).asLong()));
 
         INDArray grad = Nd4j.create(exp);
 
@@ -424,9 +425,8 @@ public class TestLayerOpValidation extends BaseOpValidation {
         val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
 
-        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
+        assertArrayEquals(inSize, Shape.shape(outSizesBP.get(0).asLong()));
     }
-
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -453,7 +453,7 @@ public class TestLayerOpValidation extends BaseOpValidation {
         long[] exp = new long[]{1, outH, outW, 3};    //NHWC
 
         assertEquals(1, outSizes.size());
-        assertArrayEquals(exp, outSizes.get(0).getShape());
+        assertArrayEquals(exp, Shape.shape(outSizes.get(0).asLong()));
 
         INDArray grad = Nd4j.create(exp);
 
@@ -462,11 +462,10 @@ public class TestLayerOpValidation extends BaseOpValidation {
 
         val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
-        assertArrayEquals(inSize, outSizesBP.get(0).getShape());
+        assertArrayEquals(inSize, Shape.shape(outSizesBP.get(0).asLong()));
 
         Nd4j.getExecutioner().execAndReturn(avg2dDeriv);
     }
-
 
     private static int[] ncdhwToNdhwc(int[] in) {
         return new int[]{in[0], in[2], in[3], in[4], in[1]};

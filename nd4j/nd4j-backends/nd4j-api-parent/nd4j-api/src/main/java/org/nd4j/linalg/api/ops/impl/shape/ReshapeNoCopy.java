@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -101,13 +102,13 @@ public class ReshapeNoCopy extends DynamicCustomOp {
                 if (list.isEmpty())
                     throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-                LongShapeDescriptor needsCopyShape = list.get(0);
-                if(ArrayOptionsHelper.arrayNeedsCopy(needsCopyShape.getExtras())) {
-                    INDArray newOut = Nd4j.create(needsCopyShape, false);
+                DataBuffer needsCopyShape = list.get(0);
+                if(ArrayOptionsHelper.arrayNeedsCopy(needsCopyShape.asLong())) {
+                    INDArray newOut = Nd4j.createFromDescriptor(needsCopyShape);
                     addOutputArgument(newOut);
                 } else {
 
-                    INDArray newOut = Nd4j.create(inputArguments.get(0).data(),needsCopyShape);
+                    INDArray newOut = Nd4j.createFromDescriptor(inputArguments.get(0).data(),needsCopyShape);
                     addOutputArgument(newOut);
                 }
 

@@ -29,9 +29,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.config.ExecutionResult;
 import org.nd4j.autodiff.samediff.config.SDValue;
-import org.nd4j.autodiff.samediff.config.SDValueType;
-import org.nd4j.autodiff.samediff.internal.AbstractSession;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -282,21 +280,21 @@ public class Invoke extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return Collections.emptyList();
     }
 
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         /**
          * TODO: Figure out how to invoke calculate output shape
          * for a graph. This may involve adding a new function
          * to a samediff graph that just calls compute shape for everything.
          */
-        List<LongShapeDescriptor> ret = new ArrayList<>();
+        List<DataBuffer> ret = new ArrayList<>();
         for(int i = 0; i < getNumOutputs(); i++) {
-            ret.add(LongShapeDescriptor.fromShape(new int[]{1},DataType.DOUBLE));
+            ret.add(Nd4j.createBuffer(LongShapeDescriptor.fromShape(new int[]{1},DataType.DOUBLE).toShapeInfo()));
         }
 
 

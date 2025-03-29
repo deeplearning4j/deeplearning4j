@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -122,8 +123,8 @@ public class MaxOut extends BaseTransformOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+    public List<DataBuffer> calculateOutputShape() {
+        val ret = new ArrayList<DataBuffer>(1);
         if(arg() == null)
             throw new ND4JIllegalStateException("No arg found for op!");
 
@@ -131,7 +132,7 @@ public class MaxOut extends BaseTransformOp {
         if(arr == null)
             return Collections.emptyList();
 
-        ret.add(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatingPointType()));
+        ret.add(Nd4j.createBuffer(LongShapeDescriptor.fromShape(arr.shape(), Nd4j.defaultFloatingPointType()).toShapeInfo()));
         return ret;
     }
 }

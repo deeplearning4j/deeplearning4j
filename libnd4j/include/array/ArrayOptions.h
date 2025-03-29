@@ -137,10 +137,9 @@ class SD_LIB_EXPORT ArrayOptions {
   static SD_HOST void validateSingleDataType(LongType property);
   static SD_HOST void setPropertyBit(LongType *shapeInfo, LongType property);
   static SD_HOST void setPropertyBits(LongType *shapeInfo, std::initializer_list<LongType> properties);
-
-  static SD_HOST bool isSparseArray(LongType *shapeInfo);
+  static SD_HOST sd::LongType numDataTypesSet(sd::LongType property);
   static SD_HOST bool isUnsigned(LongType *shapeInfo);
-
+  static SD_HOST bool isSparseArray(sd::LongType *shapeInfo);
   static SD_HOST DataType dataType(const LongType *shapeInfo);
 
   static SD_HOST SpaceType spaceType(LongType *shapeInfo);

@@ -29,21 +29,28 @@ namespace sd {
 ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, int rank) {
     const int shapeInfoLength = shape::shapeInfoLength(rank);
     LongType* shapeCopy = new LongType[shapeInfoLength];
-    std::memcpy(shapeCopy, shapeInfo, shapeInfoLength * sizeof(LongType));
-    
-    auto deallocator = std::shared_ptr<PrimaryPointerDeallocator>(
-        new PrimaryPointerDeallocator(),
-        [] (PrimaryPointerDeallocator* ptr) { delete ptr; }
+    for(int i = 0; i < shapeInfoLength; i++) {
+        shapeCopy[i] = shapeInfo[i];
+    }
+
+    auto deallocator = std::shared_ptr<CudaPointerDeallocator>(
+        new CudaPointerDeallocator(),
+        [] (CudaPointerDeallocator* ptr) {
+        //  delete ptr;
+        }
     );
     
     auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
     
     // Create device pointer for CUDA
     auto dPtr = std::make_shared<PointerWrapper>(
-        ConstantHelper::getInstance().replicatePointer(hPtr->pointer(),
-                                                   shape::shapeInfoByteLength(hPtr->pointerAsT<sd::LongType>())),
+        ConstantHelper::getInstance().replicatePointer(shapeCopy,
+                                                   shapeInfoLength * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
-        
+
+    if(dPtr->pointer() == nullptr) {
+        THROW_EXCEPTION("Failed to allocate device memory for shape buffer");
+    }
     ConstantShapeBuffer *buffer = new ConstantShapeBuffer(hPtr, dPtr);
     
     return buffer;

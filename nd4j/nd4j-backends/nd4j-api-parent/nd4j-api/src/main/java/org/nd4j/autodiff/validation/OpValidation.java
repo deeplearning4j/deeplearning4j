@@ -21,6 +21,7 @@
 package org.nd4j.autodiff.validation;
 
 import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -383,7 +384,7 @@ public class OpValidation {
         collectCoverageInformation(testCase);
 
         //Check shape function:
-        List<LongShapeDescriptor> outShapes;
+        List<DataBuffer> outShapes;
         try {
             outShapes = Nd4j.getExecutioner().calculateOutputShape(testCase.op());
         } catch (Throwable t) {
@@ -401,7 +402,12 @@ public class OpValidation {
             if(!Objects.equals(exp.dataType(), act.dataType())) {
                 return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
-            if(!Arrays.equals(act.getShape(), exp.getShape())){
+            long[] shapeInfo = act.asLong();
+            long[] actShape = new long[(int) shapeInfo[0]];
+            for(int j = 1; j < shapeInfo.length; j++) {
+                actShape[j - 1] = shapeInfo[j];
+            }
+            if(!Arrays.equals(actShape, exp.getShape())) {
                 return "Shape function check failed for output " + i + ": expected shape " + exp + ", actual shape " + act;
             }
         }

@@ -122,9 +122,11 @@ bool reshapeNoAlloc(const sd::LongType* inShape,
 
   shape::setShape(outShape, const_cast<sd::LongType*>(newShape.data()));
   shape::setStride(outShape, newStrides.data());
+  if(ArrayOptions::numDataTypesSet(ArrayOptions::extra(outShape)) < 1) {
+    ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
+  }
+
   shape::setOrder(outShape, order);
-  ArrayOptions::resetFlags(outShape);
-  ArrayOptions::setDataType(outShape, ArrayOptions::dataType(inShape));
 
   return true;
 }

@@ -6364,7 +6364,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{}, shape.getShape());
+        assertArrayEquals(new long[]{}, Shape.shape(shape.asLong()));
 
         Nd4j.getExecutioner().exec(op);
 
@@ -6386,13 +6386,12 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{}, shape.getShape());
+        assertArrayEquals(new long[]{}, Shape.shape(shape.asLong()));
 
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(exp, output);
     }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testVectorSqueeze(Nd4jBackend backend) {
@@ -6406,7 +6405,7 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(new long[]{6}, shape.getShape());
+        assertArrayEquals(new long[]{6}, Shape.shape(shape.asLong()));
 
         Nd4j.getExecutioner().exec(op);
 
@@ -6442,14 +6441,13 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
                 .build();
 
         val shape = Nd4j.getExecutioner().calculateOutputShape(op).get(0);
-        assertArrayEquals(exp.shape(), shape.getShape());
+        assertArrayEquals(exp.shape(), Shape.shape(shape.asLong()));
 
         Nd4j.getExecutioner().exec(op);
 
         assertArrayEquals(exp.shape(), output.shape());
         assertEquals(exp, output);
     }
-
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
@@ -8414,13 +8412,11 @@ public class Nd4jTestsC extends BaseNd4jTestWithBackends {
         c.addOutputArgument(out);
         Nd4j.getExecutioner().exec(c);
 
-        List<LongShapeDescriptor> l = c.calculateOutputShape();
+        List<DataBuffer> l = c.calculateOutputShape();
 
-//        System.out.println(Arrays.toString(l.get(0).getShape()));
 
         //from [4,4,3] to [2,4,6] then crop to [2,4,5]
     }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testToFromByteArray() throws IOException {

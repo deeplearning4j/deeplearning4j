@@ -83,6 +83,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -2246,7 +2247,7 @@ public class SameDiffTests extends BaseNd4jTestWithBackends {
 
         assertEquals(1, shapes.size());
 
-        assertArrayEquals(expShape, shapes.get(0).getShape());
+        assertArrayEquals(expShape, Shape.shape(shapes.get(0).asLong()));
     }
 
 

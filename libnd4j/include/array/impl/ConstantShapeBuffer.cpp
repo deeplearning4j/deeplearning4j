@@ -48,7 +48,7 @@ LongType *ConstantShapeBuffer::primary()  {
 }
 
  LongType *ConstantShapeBuffer::special()  {
-  return _specialShapeInfo ? reinterpret_cast<LongType *>(_specialShapeInfo->pointer()) : nullptr;
+  return reinterpret_cast<LongType *>(_specialShapeInfo->pointer());
 }
 
  LongType *ConstantShapeBuffer::platform()  {

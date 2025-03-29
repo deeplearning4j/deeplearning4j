@@ -36,7 +36,7 @@ void CudaPointerDeallocator::release(void *ptr) {
     // Only free if it's a regular device pointer
     // cudaMemoryTypeDevice is for regular allocations we can free
     if (attributes.type == cudaMemoryTypeDevice) {
-      cudaFree(ptr);
+      //cudaFree(ptr);
     }
     // Don't free other types (like constant memory)
   } else {

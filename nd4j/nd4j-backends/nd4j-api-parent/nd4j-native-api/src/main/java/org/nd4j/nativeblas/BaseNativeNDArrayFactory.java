@@ -733,4 +733,5 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
     }
 
+    public abstract INDArray createFromDescriptor(DataBuffer shapeInformation);
 }

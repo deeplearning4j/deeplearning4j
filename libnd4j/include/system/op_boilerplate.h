@@ -2621,7 +2621,6 @@
 #else
 
 // we intentionally add 8 tail bytes here to avoid problems with atomic operations
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                              \
   if (WORKSPACE == nullptr) {                                                                                          \
     cudaError_t prevError = cudaGetLastError();                                                                        \

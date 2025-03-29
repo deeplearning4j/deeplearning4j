@@ -59,6 +59,13 @@ LongType* ShapeBuilders::createScalarShapeInfo(const DataType dataType, memory::
   newShape[3] = ArrayOptions::setDataTypeValue(ArrayOptions::defaultFlag(), dataType);
   newShape[4] = 1;
   newShape[5] = 99;
+
+
+  DataType actualType = ArrayOptions::dataType(newShape);
+  if (actualType != dataType) {
+    printf("ERROR: Data type mismatch in scalarShapeInfo - requested %d but got %d\n",
+           DataTypeUtils::asInt(dataType), DataTypeUtils::asInt(actualType));
+  }
   return newShape;
 }
 LongType* ShapeBuilders::createVectorShapeInfo(const DataType dataType, const LongType length,
@@ -219,9 +226,7 @@ LongType* ShapeBuilders::createShapeInfo(const DataType dataType, const char ord
 ////////////////////////////////////////////////////////////////////////////////
 LongType* ShapeBuilders::copyShapeInfo(const LongType* inShapeInfo, const bool copyStrides,
                                        memory::Workspace* workspace) {
-  LongType* outShapeInfo = nullptr;
-  ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), sd::LongType);
-
+  LongType* outShapeInfo = new LongType[shape::shapeInfoLength(shape::rank(inShapeInfo))];
   memcpy(outShapeInfo, inShapeInfo, shape::shapeInfoByteLength(inShapeInfo));
 
   if (!copyStrides) shape::updateStrides(outShapeInfo, shape::order(outShapeInfo), false);

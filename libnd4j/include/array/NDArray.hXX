@@ -1815,9 +1815,6 @@ void NDArray::assign(NDArray other, bool allowParallelism) {
 
   NDArray::copyDataForAssign(*this, other, modifiedOtherShapeInfo, allowParallelism);
 
-  if (modifiedOtherShapeInfo != other.shapeInfo()) {
-    RELEASE(const_cast<sd::LongType*>(modifiedOtherShapeInfo), getContext()->getWorkspace());
-  }
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -1947,7 +1944,7 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
   if(t == nullptr) {
-   THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
+    THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
   }
 
   t[offset] = y;
@@ -2659,14 +2656,34 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
 // Adjusts shape for assignment without modifying the original array
 const sd::LongType* NDArray::modifyShapeForAssign( NDArray& thisArray,  NDArray& other) {
   if (!shape::shapeEquals(thisArray.shapeInfo(), other.shapeInfo())) {
-    std::vector<sd::LongType> thisShape = thisArray.getShapeAsVector();
-    return reshapeShapeInfo(other, other.ordering(), thisShape);
+    std::vector<sd::LongType> *thisShape = new std::vector<sd::LongType>(thisArray.getShapeAsVector());
+    auto ret = reshapeShapeInfo(other, other.ordering(), *thisShape);
+    delete thisShape;
+    return ret;
   }
   return other.shapeInfo();
 }
 
 // Reshape logic modularized into a static helper function
 sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::vector<sd::LongType>& newShape) {
+  //nothing to do for scalar shape info
+  if(array.isScalar()) {
+    //no need for strides with scalar just set shape
+    sd::LongType  *ret = new sd::LongType[newShape.size()];
+    ret[0] = newShape.size();
+    for (size_t i = 0; i < newShape.size(); i++) {
+      ret[i + 1] = newShape[i];
+    }
+
+    shape::setOrder(ret, 'c');
+    ArrayOptions::setExtra(ret, ArrayOptions::defaultFlag());
+    ArrayOptions::setDataType(ret, array.dataType());
+    auto ret2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(ret);
+    delete[] ret;
+    return ret2->primary();
+  }
+
+
   if (order != 'c' && order != 'f') {
     std::string errorMessage = "reshapeShapeInfo: unknown order, must be 'c' or 'f', received: ";
     errorMessage += order;
@@ -2704,20 +2721,19 @@ sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
 
-  sd::LongType* shapeInfoNew = nullptr;
-  ALLOCATE(shapeInfoNew, array.getContext()->getWorkspace(),
-           shape::shapeInfoLength(shape_vector.size()), sd::LongType);
+
+  sd::LongType* shapeInfoNew =  new sd::LongType[shape::shapeInfoLength(shape_vector.size())];
   shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
   bool canReshape = ops::helpers::reshapeNoAlloc(array.shapeInfo(), shape_vector, order, shapeInfoNew);
-  ArrayOptions::setDataType(shapeInfoNew, ArrayOptions::dataType(array.shapeInfo()));
-  shape::setOrder(shapeInfoNew, order);
-
   if (!canReshape) {
     shape::calcStrides(shapeInfoNew, order);
+    shape::setOrder(shapeInfoNew, order);
+
   }
 
   auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew)->primary();
-  return const_cast<sd::LongType*>(ret);
+  delete[] shapeInfoNew;
+  return ret;
 }
 
 NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
@@ -3682,7 +3698,7 @@ void *NDArray::operator new(size_t i) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
   if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
-      free(p);
+    //free(p);
   }
 }
 
@@ -4005,7 +4021,7 @@ NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCor
   NDArray result(newShape, true, getContext());
 
   this->varianceAlongDimension(op, result, biasCorrected, copy);
-  delete copy;
+  //delete copy;
   return result;
 }
 
@@ -4014,7 +4030,7 @@ NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCor
                                         const std::initializer_list<LongType> *dimensions)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   auto ret = varianceAlongDimension(op, biasCorrected, copy);
-  delete copy;
+ // delete copy;
   return ret;
 }
 
@@ -4023,7 +4039,7 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
                                      const std::initializer_list<LongType> *dimensions)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   varianceAlongDimension(op, target, biasCorrected, copy);
-  delete copy;
+  //delete copy;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4955,7 +4971,7 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray *target, cons
 
   NDArray::registerSpecialUse({target}, {this});
 
-  delete copy;
+  //delete copy;
 
 }
 
@@ -5043,7 +5059,7 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray *target, cons
     NativeOpExecutioner::execReduceBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                         nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
-     delete dims;
+    delete dims;
   }
   synchronize("NDArray::reduceAlongDimension LongOps");
 
@@ -5196,9 +5212,9 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
     THROW_EXCEPTION(errorMessage.c_str());
   }
   if(isScalar()) {
-        // Direct value assignment, no need for scalar.isS() check
-        templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
-        return;
+    // Direct value assignment, no need for scalar.isS() check
+    templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
+    return;
   }
 
   sd::LongType coords[1] = {i};

@@ -947,6 +947,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         return customOps;
     }
 
+    @Override
+    public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        NDArray ndArray = new NDArray();
+        ndArray.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(ndArray.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,ndArray.length(),false);
+        ndArray.setData(buff);
+        return ndArray;
+    }
 
 
 
