@@ -2695,14 +2695,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
     ArrayOptions::setDataType(ret, array.dataType());
 
     auto ret2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(ret);
-
-
-    // Important: Check ownership - if bufferForShapeInfo copies the data, we need to free ret
-    // Otherwise we have a memory leak
-    delete[] ret;  // Remove this if bufferForShapeInfo takes ownership
-
-
-
+    delete[] ret;
     return ret2->primary();
   }
 

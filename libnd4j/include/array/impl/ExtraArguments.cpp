@@ -51,7 +51,7 @@ ExtraArguments::ExtraArguments() {
 ExtraArguments::~ExtraArguments() {
   for (auto p : _pointers) {
 #ifdef __CUDABLAS__
-   // cudaFree(p);
+    cudaFree(p);
 #else  // CPU branch
     delete reinterpret_cast<int8_t *>(p);
 #endif
@@ -77,9 +77,8 @@ void ExtraArguments::convertAndCopy(Pointer pointer, LongType offset) {
   }
 
 #ifdef __CUDABLAS__
-  // TODO: maybe make it asynchronous eventually?
   cudaMemcpy(pointer, target, length * DataTypeUtils::sizeOf(DataTypeUtils::fromT<T>()), cudaMemcpyHostToDevice);
-  //delete[] target;
+  delete[] target;
 #endif
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void ExtraArguments::convertAndCopy,
