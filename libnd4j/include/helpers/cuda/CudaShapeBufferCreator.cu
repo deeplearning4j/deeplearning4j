@@ -36,14 +36,14 @@ ConstantShapeBuffer* CudaShapeBufferCreator::create(const LongType* shapeInfo, i
     auto deallocator = std::shared_ptr<CudaPointerDeallocator>(
         new CudaPointerDeallocator(),
         [] (CudaPointerDeallocator* ptr) {
-        //  delete ptr;
+          delete ptr;
         }
     );
     
-    auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
+    auto hPtr = new PointerWrapper(shapeCopy, deallocator);
     
     // Create device pointer for CUDA
-    auto dPtr = std::make_shared<PointerWrapper>(
+    auto dPtr =new PointerWrapper(
         ConstantHelper::getInstance().replicatePointer(shapeCopy,
                                                    shapeInfoLength * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());

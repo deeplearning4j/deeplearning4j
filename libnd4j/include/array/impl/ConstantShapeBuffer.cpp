@@ -24,17 +24,30 @@
 #include <array/ConstantShapeBuffer.h>
 
 namespace sd {
-ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary)
-    : ConstantShapeBuffer(primary, std::shared_ptr<PointerWrapper>(nullptr)) {
+ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary)
+    : ConstantShapeBuffer(primary, nullptr) {
 #if defined(SD_GCC_FUNCTRACE)
   st = backward::StackTrace();
   st.load_here(32);
 #endif
 
 }
+ConstantShapeBuffer::ConstantShapeBuffer() {
+  _primaryShapeInfo = nullptr;
+  _specialShapeInfo = nullptr;
+}
+ConstantShapeBuffer::~ConstantShapeBuffer() {
+  if(_primaryShapeInfo != nullptr)
+    delete _primaryShapeInfo;
+  _primaryShapeInfo = nullptr;
 
-ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &primary,
-                                         const std::shared_ptr<PointerWrapper> &special) {
+  if(_specialShapeInfo != nullptr)
+    delete _specialShapeInfo;
+  _specialShapeInfo = nullptr;
+}
+
+ConstantShapeBuffer::ConstantShapeBuffer( PointerWrapper* primary,
+                                          PointerWrapper* special) {
   _primaryShapeInfo = primary;
   _specialShapeInfo = special;
 #if defined(SD_GCC_FUNCTRACE)
@@ -44,14 +57,22 @@ ConstantShapeBuffer::ConstantShapeBuffer(const std::shared_ptr<PointerWrapper> &
 }
 
 LongType *ConstantShapeBuffer::primary()  {
-  return reinterpret_cast<LongType *>(_primaryShapeInfo->pointer());
+  if(_primaryShapeInfo != nullptr) {
+    return reinterpret_cast<LongType *>(_primaryShapeInfo->pointer());
+  }
+
+  return nullptr;
 }
 
- LongType *ConstantShapeBuffer::special()  {
-  return reinterpret_cast<LongType *>(_specialShapeInfo->pointer());
+LongType *ConstantShapeBuffer::special()  {
+  if(_specialShapeInfo != nullptr) {
+    return reinterpret_cast<LongType *>(_specialShapeInfo->pointer());
+  }
+
+  return nullptr;
 }
 
- LongType *ConstantShapeBuffer::platform()  {
+LongType *ConstantShapeBuffer::platform()  {
 #ifdef __CUDABLAS__
   return special();
 #else

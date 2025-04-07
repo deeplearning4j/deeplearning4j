@@ -63,7 +63,7 @@ public class OpaqueNDArray extends Pointer {
             OpaqueDataBuffer buffer,
             OpaqueDataBuffer specialBuffer,
             long offset) {
-        return Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset);
+        return Nd4j.getNativeOps().create(shapeInfo, buffer, specialBuffer, offset).retainReference();
     }
 
     /**
@@ -121,7 +121,7 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the buffer.
      */
     public static Pointer getOpaqueNDArrayBuffer(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArrayBuffer(array);
+        return Nd4j.getNativeOps().getOpaqueNDArrayBuffer(array).retainReference();
     }
 
     /**
@@ -132,7 +132,7 @@ public class OpaqueNDArray extends Pointer {
      * @return A Pointer to the special buffer.
      */
     public static Pointer getOpaqueNDArraySpecialBuffer(OpaqueNDArray array) {
-        return Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array);
+        return Nd4j.getNativeOps().getOpaqueNDArraySpecialBuffer(array).retainReference();
     }
 
     /**

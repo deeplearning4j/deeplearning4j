@@ -52,9 +52,9 @@ TadPack* DirectTadTrie::enhancedSearch(const std::vector<LongType>& dimensions, 
 
   // Compare with expected strides and shape
   // Create a temporary calculator to check what the strides should be
-  TadCalculator tempCalc(originalShape);
-  tempCalc.createTadPack(dimensions);
-  LongType* expectedShapeInfo = tempCalc.tadShape().primary();
+  TadCalculator *tempCalc = new TadCalculator(originalShape);
+  tempCalc->createTadPack(dimensions);
+  LongType* expectedShapeInfo = tempCalc->tadShape()->primary();
   LongType* expectedStrides = shape::stride(expectedShapeInfo);
 
   // Check if strides are compatible
@@ -215,14 +215,14 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
   // Create the TadPack only if it doesn't exist yet
   if (!current->pack()) {
     try {
-      TadCalculator calculator(originalShape);
-      calculator.createTadPack(dimensions);
+      TadCalculator *calculator = new TadCalculator(originalShape);
+      calculator->createTadPack(dimensions);
 
       // Create a new TadPack with full dimension information
       TadPack* newPack = new TadPack(
-          calculator.tadShape(),
-          calculator.tadOffsets(),
-          calculator.numberOfTads(),
+          calculator->tadShape(),
+          calculator->tadOffsets(),
+          calculator->numberOfTads(),
           dimensions.data(),
           dimensions.size());
 

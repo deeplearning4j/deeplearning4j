@@ -125,9 +125,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             lastOp.set(op.opName());
 
         Pointer hostYShapeInfo =
-                op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
+                op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer()).retainReference();
         Pointer hostZShapeInfo =
-                op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
+                op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer()).retainReference();
 
         val x = OpaqueNDArray.fromINDArray(op.x());
         val y = OpaqueNDArray.fromINDArray(op.y());
@@ -653,7 +653,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 devTadOffsets, // 11
                 devTadShapeInfoZ,  // 12
                 devTadOffsetsZ); // 13
-      val xb = OpaqueNDArray.fromINDArray(x);
+        val xb = OpaqueNDArray.fromINDArray(x);
         val yb = OpaqueNDArray.fromINDArray(y);
         val zb = OpaqueNDArray.fromINDArray(z);
         val dimension = OpaqueNDArray.fromINDArray(op.dimensions().castTo(DataType.LONG));
@@ -1693,7 +1693,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-      return createShapeInfo(shape, stride, elementWiseStride, order, dtype, ArrayOptionsHelper.toggleBitSet(0,ArrayOptionsHelper.ATYPE_EMPTY_BIT));
+        return createShapeInfo(shape, stride, elementWiseStride, order, dtype, ArrayOptionsHelper.toggleBitSet(0,ArrayOptionsHelper.ATYPE_EMPTY_BIT));
     }
 
     @Override
@@ -1717,14 +1717,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        OpaqueTadPack pack = Nd4j.getNativeOps().tadOnlyShapeInfo( array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length);
+        OpaqueTadPack pack = Nd4j.getNativeOps().tadOnlyShapeInfo( array.shapeInfoDataBuffer().opaqueBuffer(), new LongPointer(ArrayUtil.toLongArray(dimension)), dimension.length).retainReference();
 
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
-        val tadShape = new CudaLongDataBuffer(Nd4j.getNativeOps().getPrimaryShapeInfo(pack), Nd4j.getNativeOps().getSpecialShapeInfo(pack), Nd4j.getNativeOps().getShapeInfoLength(pack));
-        val tadOffsets = new CudaLongDataBuffer(Nd4j.getNativeOps().getPrimaryOffsets(pack), Nd4j.getNativeOps().getSpecialOffsets(pack), Nd4j.getNativeOps().getNumberOfTads(pack));
-
+        LongPointer primaryShapeInfo = Nd4j.getNativeOps().getPrimaryShapeInfo(pack).retainReference();
+        LongPointer specialShapeInfo = Nd4j.getNativeOps().getSpecialShapeInfo(pack).retainReference();
+        long shapeInfoLength =  Nd4j.getNativeOps().getShapeInfoLength(pack);
+        LongPointer primaryOffsets = Nd4j.getNativeOps().getPrimaryOffsets(pack).retainReference();
+        LongPointer specialOffsets =  Nd4j.getNativeOps().getSpecialOffsets(pack).retainReference();
+        long numTads = Nd4j.getNativeOps().getNumberOfTads(pack);
+        val tadShape = new CudaLongDataBuffer(primaryShapeInfo, specialShapeInfo,shapeInfoLength);
+        val tadOffsets = new CudaLongDataBuffer(primaryOffsets, specialOffsets, numTads);
 
         return new TadPack(tadShape, tadOffsets);
     }
@@ -1735,7 +1740,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         val dbf = Nd4j.getNativeOps().constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
-
+        dbf.retainReference();
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
@@ -1751,7 +1756,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 
         val dbf = Nd4j.getNativeOps().constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
-
+        dbf.retainReference();
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
 

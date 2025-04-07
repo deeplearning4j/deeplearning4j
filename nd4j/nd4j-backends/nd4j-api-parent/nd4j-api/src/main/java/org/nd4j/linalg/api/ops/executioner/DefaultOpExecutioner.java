@@ -1132,7 +1132,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     protected DataBuffer getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
-        return Nd4j.createBuffer(ptr,Shape.shapeInfoLength(rank),DataType.INT64);
+        int len = Shape.shapeInfoLength(rank);
+        return Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
     }
 
 

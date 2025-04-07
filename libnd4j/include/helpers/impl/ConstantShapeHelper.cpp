@@ -28,6 +28,7 @@
 namespace sd {
 
 ConstantShapeHelper::~ConstantShapeHelper() {
+
 }
 
 ConstantShapeHelper::ConstantShapeHelper() {
@@ -44,8 +45,15 @@ ConstantShapeBuffer* ConstantShapeHelper::createConstBuffFromExisting(sd::LongTy
 }
 
 ConstantShapeBuffer* ConstantShapeHelper::bufferForShapeInfo(LongType* shapeInfo) {
+ if(shapeInfo == nullptr) {
+   THROW_EXCEPTION("shapeInfo is nullptr");
+ }
+ if(shape::rank(shapeInfo) < 0 || shape::rank(shapeInfo) > SD_MAX_RANK) {
+   THROW_EXCEPTION("shapeInfo is not a valid rank.");
+ }
+
  auto buffer = _shapeTrie.getOrCreate(shapeInfo);
- if (!buffer || !buffer->primary()) {
+ if (buffer == nullptr || buffer->primary() == nullptr) {
    THROW_EXCEPTION("Failed to get/create shape buffer");
  }
  return buffer;

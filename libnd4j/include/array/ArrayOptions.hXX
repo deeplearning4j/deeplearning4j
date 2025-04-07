@@ -248,7 +248,6 @@ SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
 long long int numDataTypesSet(sd::LongType property);
 long long int numDataTypesSet(sd::LongType property);
 SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
-  validateSingleDataType(property);
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const sd::DataType dataTypes[] = DATA_TYPES;
   const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);

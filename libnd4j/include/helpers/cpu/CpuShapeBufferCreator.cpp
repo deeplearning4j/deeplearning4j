@@ -33,7 +33,7 @@ ConstantShapeBuffer* CpuShapeBufferCreator::create(const LongType* shapeInfo, in
         [] (PointerDeallocator* ptr) { delete ptr; }
     );
     
-    auto hPtr = std::make_shared<PointerWrapper>(shapeCopy, deallocator);
+    auto hPtr = new PointerWrapper(shapeCopy, deallocator);
     auto buffer = new ConstantShapeBuffer(hPtr);
     
     return buffer;

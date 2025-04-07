@@ -1304,7 +1304,6 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
   auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
   if (sd::DataTypeUtils::isS(xType) || sd::DataTypeUtils::isS(yType) || sd::DataTypeUtils::isS(zType)) {
     THROW_EXCEPTION(
         "NativeOpExecutioner::execScalar:: unable to execute on strings. Please write logic higher level in each op "

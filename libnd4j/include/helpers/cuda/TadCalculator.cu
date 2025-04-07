@@ -77,12 +77,11 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
         ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), numOfSubArrs * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
-    _tadOffsets = ConstantOffsetsBuffer(oPtr, offDPtr);
-    _tadShape = *shapesBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
+    _tadShape = shapesBuffer;
     _numTads = numOfSubArrs;
     
-    // Clean up the original shape buffer since we've created a copy
-    delete shapesBuffer;
+
   } else {
     // Base case: number of sub arrays is zero, use original shape
     const LongType subArrRank = rank;
@@ -105,12 +104,10 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
         ConstantHelper::getInstance().replicatePointer(oPtr->pointer(), 1 * sizeof(LongType)),
         std::make_shared<CudaPointerDeallocator>());
     
-    _tadOffsets = ConstantOffsetsBuffer(oPtr, offDPtr);
-    _tadShape = *shapesBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr, offDPtr);
+    _tadShape = shapesBuffer;
     _numTads = 1;
-    
-    // Clean up the original shape buffer since we've created a copy
-    delete shapesBuffer;
+
   }
 
   delete dimsToExclude;

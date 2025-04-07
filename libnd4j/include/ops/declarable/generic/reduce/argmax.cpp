@@ -61,8 +61,6 @@ CUSTOM_OP_IMPL(argmax, 1, 1, false, 0, -2) {
 DECLARE_SHAPE_FN(argmax) {
   auto firstInputShape = inputShape->at(0);
   if(shape::isScalar(firstInputShape)) {
-    printf("first argmax scalar calculate output shape\n");
-    fflush(stdout);
     return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64));
   }
   std::vector<LongType> dims;
@@ -91,17 +89,11 @@ DECLARE_SHAPE_FN(argmax) {
 
   // special case - output is scalar
   if (dims.empty() || (dims.size() == 1 && dims.at(0) == DataTypeUtils::max<int>())) {
-    printf("argmax scalar\n");
-    fflush(stdout);
     auto ret = ConstantShapeHelper::getInstance().scalarShapeInfo(dtype);
-    printf("Datatype of scalar: %i\n", DataTypeUtils::asInt(ArrayOptions::dataType(ret)));
-    fflush(stdout);
     return SHAPELIST(ret);
   }
 
   auto ret = ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace());
-  printf("Datatype of non scalar: %i\n", DataTypeUtils::asInt(ArrayOptions::dataType(ret)));
-  fflush(stdout);
   return SHAPELIST(ret);
 }
 }  // namespace ops

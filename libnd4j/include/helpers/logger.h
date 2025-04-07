@@ -80,8 +80,6 @@ SD_INLINE void _printHostBuffer(void* bufferVoid, sd::DataType dataType, sd::Lon
   T *buffer = reinterpret_cast<T *>(bufferVoid);
   // Validate offset
   if (offset < 0 || offset >= length) {
-    printf("Invalid offset: %lld. Must be between 0 and %lld.\n", offset, length - 1);
-    fflush(stdout);
     return;
   }
 

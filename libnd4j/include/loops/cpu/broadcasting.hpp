@@ -455,8 +455,6 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
           // Broadcast along first dimension
           PRAGMA_OMP_SIMD
           for (auto i = start; i < stop; i++) {
-            printf("6 Handling tad: %lld\n", i);
-            fflush(stdout);
             auto oX = x + (xTadOffset ? xTadOffset[i] : 0);
             auto oZ = z + (zTadOffset ? zTadOffset[i] : 0);
 
@@ -482,8 +480,6 @@ void Broadcast<X, Y, Z>::exec(const void* vx, const sd::LongType* xShapeInfo,
           // Default broadcasting behavior - broadcast along the last dimension
           PRAGMA_OMP_SIMD
           for (auto i = start; i < stop; i++) {
-            printf("5 Handling tad: %lld\n", i);
-            fflush(stdout);
             auto oX = x + (xTadOffset ? xTadOffset[i] : 0);
             auto oZ = z + (zTadOffset ? zTadOffset[i] : 0);
 

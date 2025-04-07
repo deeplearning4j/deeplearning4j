@@ -65,8 +65,8 @@ public class DeviceTADManager extends BasicTADManager {
             dimension = new long[] {Integer.MAX_VALUE};
 
         val pack = Nd4j.getExecutioner().tadShapeInfoAndOffsets(array, dimension);
-
-
-        return new Pair<>(pack.getTadShapeInfo(), pack.getTadOffsets());
+        DataBuffer tadShapeInfo = pack.getTadShapeInfo();
+        DataBuffer offsets = pack.getTadOffsets();
+        return new Pair<>(tadShapeInfo, offsets);
     }
 }

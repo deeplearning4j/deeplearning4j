@@ -40,8 +40,8 @@ namespace sd {
 class SD_LIB_EXPORT TadCalculator {
  private:
   LongType* _originalShape;       // Original shape info pointer
-  ConstantShapeBuffer _tadShape;        // Calculated TAD shape buffer
-  ConstantOffsetsBuffer _tadOffsets;    // Calculated TAD offsets buffer
+  ConstantShapeBuffer *_tadShape;        // Calculated TAD shape buffer
+  ConstantOffsetsBuffer *_tadOffsets;    // Calculated TAD offsets buffer
   LongType _numTads;                    // Number of TADs
 
  public:
@@ -50,7 +50,7 @@ class SD_LIB_EXPORT TadCalculator {
     * @param originalShape Pointer to the original shape information
    */
   explicit TadCalculator(LongType* originalShape);
-  ~TadCalculator() = default;
+  ~TadCalculator();
 
   /**
     * Creates a TAD pack for the given dimensions
@@ -62,13 +62,13 @@ class SD_LIB_EXPORT TadCalculator {
     * Returns the calculated TAD shape buffer
     * @return ConstantShapeBuffer containing TAD shape information
    */
-  ConstantShapeBuffer tadShape() const { return _tadShape; }
+  ConstantShapeBuffer *tadShape() const { return _tadShape; }
 
   /**
     * Returns the calculated TAD offsets buffer
     * @return ConstantOffsetsBuffer containing TAD offset information
    */
-  ConstantOffsetsBuffer tadOffsets() const { return _tadOffsets; }
+  ConstantOffsetsBuffer *tadOffsets() const { return _tadOffsets; }
 
   /**
     * Returns the number of TADs calculated

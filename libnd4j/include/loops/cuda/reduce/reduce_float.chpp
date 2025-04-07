@@ -264,10 +264,13 @@ SD_DEVICE void ReduceFloatFunction<X, Z>::execScalarCuda(
     INDEX2COORDS(i, xRank, xShapePtr, xCoords);
     COORDS2INDEX(xRank, xStridePtr, xCoords, xOffset);
 
-    sPartials[threadIdx.x] = OpType::update(
-        sPartials[threadIdx.x],
-        OpType::op(x[xOffset], extraParams),
-        extraParams);
+    if(xOffset < length) {
+      sPartials[threadIdx.x] = OpType::update(
+          sPartials[threadIdx.x],
+          OpType::op(x[xOffset], extraParams),
+          extraParams);
+    }
+
   }
   __syncthreads();
 

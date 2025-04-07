@@ -1405,7 +1405,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                     //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                     boolean isOutput = allReqVariables.contains(outNames[i]);
                     reqShape = Nd4j.createBuffer(asJava);
-                    INDArray out = mmgr.allocateFromDescriptor(isOutput, reqShape);
+                    INDArray out = mmgr.allocateFromDescriptor(false, reqShape);
                     if(Shape.isEmpty(asJava) && !out.isEmpty()) {
                         throw new IllegalStateException("Output shape was empty, but created array was not.");
                     }

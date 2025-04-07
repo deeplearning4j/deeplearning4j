@@ -40,26 +40,17 @@ TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
-  try {
     if (!originalShape) THROW_EXCEPTION("Original shape is null");
     if (!dimensions) THROW_EXCEPTION("Dimensions array is null");
     if (dimLength <= 0) THROW_EXCEPTION("Invalid dimension length");
 
-    int rank = shape::rank(originalShape);
+    sd::LongType rank = shape::rank(originalShape);
     if (rank < 0) THROW_EXCEPTION("Invalid shape rank");
 
     std::vector<LongType> dims(dimensions, dimensions + dimLength);
 
     // Single attempt pattern - no double locking
     return _trie.getOrCreate(dims, originalShape);
-
-  } catch (const std::exception& e) {
-    std::string errorMessage = "TAD creation failed: ";
-    errorMessage += e.what();
-    THROW_EXCEPTION(errorMessage.c_str());
-  }
-
-  return nullptr;
 }
 
 } // namespace sd
