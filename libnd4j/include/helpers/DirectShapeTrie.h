@@ -147,7 +147,14 @@ class SD_LIB_EXPORT DirectShapeTrie {
     }
 
     // Clean up all root nodes
-    delete _roots;
+    if (_roots != nullptr) {
+      for (size_t i = 0; i < NUM_STRIPES; i++) {
+        if ((*_roots)[i] != nullptr) {
+          delete (*_roots)[i];
+        }
+      }
+      delete _roots;
+    }
   }
 
   // Delete move operations
