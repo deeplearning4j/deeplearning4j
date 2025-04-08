@@ -3730,7 +3730,7 @@ void *NDArray::operator new(size_t i) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
   if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
-    //free(p);
+    free(p);
   }
 }
 
@@ -4053,7 +4053,7 @@ NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCor
   NDArray result(newShape, true, getContext());
 
   this->varianceAlongDimension(op, result, biasCorrected, copy);
-  //delete copy;
+  delete copy;
   return result;
 }
 
@@ -4062,7 +4062,7 @@ NDArray NDArray::varianceAlongDimension(sd::variance::Ops op, const bool biasCor
                                         const std::initializer_list<LongType> *dimensions)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   auto ret = varianceAlongDimension(op, biasCorrected, copy);
-  // delete copy;
+  delete copy;
   return ret;
 }
 
@@ -4071,7 +4071,7 @@ void NDArray::varianceAlongDimension(sd::variance::Ops op, NDArray &target, cons
                                      const std::initializer_list<LongType> *dimensions)  {
   std::vector<sd::LongType> *copy = new std::vector<sd::LongType>(*dimensions);
   varianceAlongDimension(op, target, biasCorrected, copy);
-  //delete copy;
+  delete copy;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -5003,7 +5003,7 @@ void NDArray::reduceAlongDimension(sd::reduce::SameOps op, NDArray *target, cons
 
   NDArray::registerSpecialUse({target}, {this});
 
-  //delete copy;
+  delete copy;
 
 }
 

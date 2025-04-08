@@ -392,7 +392,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
 
     if (!canUseFastPath) ctx.forbidFastPath(true);
 
-    //delete outSha;
+    delete outSha;
 
     // saving arrayTime
     if (Environment::getInstance().isProfiling() && node != nullptr) {
@@ -431,7 +431,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, sd::LongType *shape) 
     var->setNDArray(new NDArray(buffer, shapeInfo, block.launchContext()));
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
-   // delete var->getNDArray();
+    delete var->getNDArray();
     auto shapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(__shape)->primary();
     DataBuffer * buffer =
         new DataBuffer(len * sizeof(int8_t), ArrayOptions::dataType(shapeInfo), workspace);
@@ -468,7 +468,7 @@ bool sd::ops::DeclarableOp::allocateResult(Context &block, std::initializer_list
     var->setNDArray(new NDArray(order, shape2, block.dataType(), block.launchContext()));
   } else if (var->getNDArray()->lengthOf() != len) {
     // if length not match - lets reallocate array
-    //delete var->getNDArray();
+    delete var->getNDArray();
     var->setNDArray(new NDArray(order, shape2, block.dataType(), block.launchContext()));
   }
 
@@ -801,7 +801,7 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
       sd_debug("calling get variable\n", 0);
       auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
       sd_debug("after calling get variable", 0);
-     // if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
+      if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
       var->setNDArray(array);
       var->markRemovable(true);
@@ -819,7 +819,7 @@ void DeclarableOp::overwriteResult(Context &block, int outputIdx, NDArray *array
   auto varSpace = block.getVariableSpace();
   if (varSpace->hasVariable(block.getNodeId(), outputIdx)) {
     auto var = varSpace->getVariable(block.getNodeId(), outputIdx);
-  //  if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
+    if (var->getNDArray() != nullptr && var->isRemovable()) delete var->getNDArray();
 
     var->setNDArray(array);
     var->markRemovable(true);
