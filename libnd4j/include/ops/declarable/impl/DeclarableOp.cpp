@@ -376,7 +376,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
             auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
             if (eShapeInfoString != aShapeInfoString) {
-              //delete outSha;
+              delete outSha;
 
               sd_printf(
                   "OP PREPARE OUTPUTS: OP name: %s Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "

@@ -1759,7 +1759,7 @@ sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
-  //delete dataBuffer;
+  delete dataBuffer;
 }
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {
