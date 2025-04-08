@@ -83,9 +83,9 @@ DeclarableOp::DeclarableOp(int numInputs, int numOutputs, const char *opName, bo
 }
 
 DeclarableOp::~DeclarableOp() {
-  //if (_descriptor != nullptr) delete _descriptor;
+  if (_descriptor != nullptr) delete _descriptor;
 
- // if (_scalar != nullptr) delete _scalar;
+  if (_scalar != nullptr) delete _scalar;
 }
 
 OpDescriptor *DeclarableOp::getOpDescriptor() { return _descriptor; }
@@ -335,7 +335,7 @@ int sd::ops::DeclarableOp::prepareOutputs(Context &ctx) {
             auto aShape = ShapeUtils::shapeAsString(shape);
             auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
             auto aShapeInfoString = ShapeUtils::shapeInfoAsString(shape);
-           // delete outSha;
+            delete outSha;
 
             sd_printf(
                 "OP PREPARE OUTPUTS: Op name: %s Failed to set output for op context. Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output "
