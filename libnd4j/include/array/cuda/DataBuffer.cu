@@ -310,7 +310,7 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
 void DataBuffer::deleteSpecial() {
   if (_isOwnerSpecial && _specialBuffer != nullptr && getLenInBytes() != 0) {
     auto p = reinterpret_cast<int8_t*>(_specialBuffer);
-    // RELEASE_SPECIAL(p, _workspace);
+    RELEASE_SPECIAL(p, _workspace);
     _specialBuffer = nullptr;
     _isOwnerSpecial = false;
 
