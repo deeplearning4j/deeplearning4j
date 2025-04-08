@@ -75,6 +75,7 @@ class SD_LIB_EXPORT TadCalculator {
     * @return Number of TADs
    */
   LongType numberOfTads() const { return _numTads; }
+  virtual ~TadCalculator();
 };
 
 } // namespace sd
