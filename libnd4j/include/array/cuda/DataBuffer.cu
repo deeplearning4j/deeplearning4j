@@ -186,6 +186,21 @@ void DataBuffer::showCounters(const char* msg1, const char* msg2) {
 }
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
+  if (_specialBuffer != nullptr) {
+    return;
+  }
+
+  if (_lenInBytes == 0) {
+    std::string errorMessage;
+    errorMessage += "DataBuffer::allocateSpecial: ";
+    errorMessage += "Special buffer is already allocated";
+    errorMessage += " or length is 0";
+    errorMessage += "Length is: ";
+    errorMessage += std::to_string(getLenInBytes());
+    errorMessage += "Special buffer is nullptr : ";
+    errorMessage += std::to_string(_specialBuffer == nullptr);
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 #if defined(SD_GCC_FUNCTRACE)
   if(Environment::getInstance().isFuncTracePrintAllocate()) {
     allocationStackTraceSpecial = new StackTrace();
@@ -198,10 +213,20 @@ void DataBuffer::allocateSpecial() {
     auto deviceId = AffinityManager::currentDeviceId();
 
     if (_workspace == nullptr) {
-      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes()))
-        throw allocation_exception::build("Requested amount exceeds device limits",
-                                          memory::MemoryCounter::getInstance().deviceLimit(deviceId),
-                                              getLenInBytes());
+      if (!memory::MemoryCounter::getInstance().validate(getLenInBytes())) {
+        std::string errorMessage;
+        errorMessage += "DataBuffer::allocateSpecial: ";
+        errorMessage += "Requested amount exceeds device limits";
+        errorMessage += "DeviceId: ";
+        errorMessage += std::to_string(deviceId);
+        errorMessage += "Device limit: ";
+        errorMessage += std::to_string(memory::MemoryCounter::getInstance().deviceLimit(deviceId));
+        errorMessage += "Requested amount: ";
+        errorMessage += std::to_string(getLenInBytes());
+        errorMessage += "Special buffer is nullptr : ";
+        errorMessage += std::to_string(_specialBuffer == nullptr);
+        THROW_EXCEPTION(errorMessage.c_str());
+      }
     }
 
     ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
@@ -234,10 +259,25 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
   allocatePrimary();
 
   auto res = cudaStreamSynchronize(*context->getCudaStream());
-  if (res != 0) throw cuda_exception::build("DataBuffer::syncToPrimary failed to to some previous kernel failre", res);
+  if (res != 0)  {
+    std::string errorMessage;
+    errorMessage += "DataBuffer::syncToPrimary: cudaStreamSynchronize failed: ";
+    errorMessage += std::to_string(getLenInBytes());
+    errorMessage += cudaGetErrorString(res);
+    errorMessage += "Special buffer is nullptr : ";
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   res = cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
-  if (res != 0) throw cuda_exception::build("DataBuffer::syncToPrimary cudaMemcpy failed", res);
+  if (res != 0) {
+        std::string errorMessage;
+        errorMessage += "DataBuffer::syncToPrimary: cudaMemcpy failed: ";
+        errorMessage += std::to_string(getLenInBytes());
+        errorMessage += cudaGetErrorString(res);
+        errorMessage += "Special buffer is nullptr : ";
+        errorMessage += std::to_string(_specialBuffer == nullptr);
+        THROW_EXCEPTION(errorMessage.c_str());
+  }
 
   readPrimary();
 }
@@ -254,7 +294,14 @@ void DataBuffer::syncToSpecial(const bool forceSync) {
   allocateSpecial();
 
   auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
-  if (res != 0) throw cuda_exception::build("DataBuffer::syncToSpecial cudaMemcpy failed", res);
+  if (res != 0) {
+    std::string errorMessage;
+    errorMessage += "Failed to copy dataBuffer::syncToSpecial: ";
+    errorMessage += std::to_string(getLenInBytes());
+    errorMessage += cudaGetErrorString(res);
+    THROW_EXCEPTION(errorMessage.c_str());
+
+  }
 
   readSpecial();
 }

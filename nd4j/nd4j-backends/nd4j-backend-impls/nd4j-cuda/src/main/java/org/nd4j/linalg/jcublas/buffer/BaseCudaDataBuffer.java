@@ -373,7 +373,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         // let deallocator pick up this object
         this.deallocationId = Nd4j.getDeallocatorService().pickObject(this);
-        lazyAllocateHostPointer();
     }
 
     protected void initPointers(long length, int elementSize, boolean initialize, @NonNull MemoryWorkspace workspace) {
@@ -416,6 +415,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         workspaceGenerationId = workspace.getGenerationId();
         this.attached = true;
         this.parentWorkspace = workspace;
+        initHostPointerAndIndexer();
     }
 
     /**
@@ -546,7 +546,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (released.get())
             throw new IllegalStateException("You can't use DataBuffer once it was released");
 
-        // FIXME: very bad thing,
         lazyAllocateHostPointer();
 
         return super.pointer();
@@ -1519,7 +1518,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationPoint.tickHostWrite();
     }
 
-    // Rest of the existing code remains unchanged...
 
     /**
      * Initialize pointer and indexer based on the current data type

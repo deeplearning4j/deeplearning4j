@@ -98,7 +98,20 @@ std::u32string NDArray::e(sd::LongType i)  {
 }
 
 LongType NDArray::getOffset(const LongType i) {
+  if (!isScalar() && i >= lengthOf()) {
+    std::string errorMessage;
+    errorMessage += "Requested index is out of range: [";
+    errorMessage += StringUtils::valueToString<sd::LongType>(i);
+    errorMessage += "] vs ";
+    errorMessage += StringUtils::valueToString<sd::LongType>(lengthOf());
+    errorMessage += " on array with shape ";
+    errorMessage += ShapeUtils::shapeAsString(shapeInfo());
+    THROW_EXCEPTION(errorMessage.c_str());
+  }
+
+
   return _offset + i;
+
 }
 
 template <>
@@ -1810,14 +1823,8 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 // This method assigns values of given NDArray to this one
 void NDArray::assign(NDArray other, bool allowParallelism) {
   NDArray::validateAssign(*this, other);
-
   const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(*this, other);
-
   NDArray::copyDataForAssign(*this, other, modifiedOtherShapeInfo, allowParallelism);
-
-  if (modifiedOtherShapeInfo != other.shapeInfo()) {
-    RELEASE(const_cast<sd::LongType*>(modifiedOtherShapeInfo), getContext()->getWorkspace());
-  }
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -1947,7 +1954,7 @@ void NDArray::templatedSet(void *buffer, LongType offset, void *value) {
   auto t = reinterpret_cast<T *>(buffer);
   const auto y = *(reinterpret_cast<const Y *>(value));
   if(t == nullptr) {
-   THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
+    THROW_EXCEPTION("NDArray::templatedSet: first buffer is nullptr");
   }
 
   t[offset] = y;
@@ -2659,19 +2666,45 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
 // Adjusts shape for assignment without modifying the original array
 const sd::LongType* NDArray::modifyShapeForAssign( NDArray& thisArray,  NDArray& other) {
   if (!shape::shapeEquals(thisArray.shapeInfo(), other.shapeInfo())) {
-    std::vector<sd::LongType> thisShape = thisArray.getShapeAsVector();
-    return reshapeShapeInfo(other, other.ordering(), thisShape);
+    std::vector<sd::LongType> *thisShape = new std::vector<sd::LongType>(thisArray.getShapeAsVector());
+    auto ret = reshapeShapeInfo(other, other.ordering(), *thisShape);
+    delete thisShape;
+    return ret;
   }
   return other.shapeInfo();
 }
 
 // Reshape logic modularized into a static helper function
-sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::vector<sd::LongType>& newShape) {
+// Reshape logic modularized into a static helper function
+sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::vector<sd::LongType>& newShape) {
+  //nothing to do for scalar shape info
+  if(array.isScalar()) {
+    //no need for strides with scalar just set shape
+    sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(newShape.size())];
+    // Initialize memory to prevent garbage values
+    memset(ret, 0, sizeof(sd::LongType) * shape::shapeInfoLength(newShape.size()));
+
+    ret[0] = newShape.size();
+    for (size_t i = 0; i < newShape.size(); i++) {
+      ret[i + 1] = newShape[i];
+    }
+
+
+    shape::setOrder(ret, 'c');
+    ArrayOptions::setExtra(ret, ArrayOptions::defaultFlag());
+    ArrayOptions::setDataType(ret, array.dataType());
+
+    auto ret2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(ret);
+    delete[] ret;
+    return ret2->primary();
+  }
+
   if (order != 'c' && order != 'f') {
     std::string errorMessage = "reshapeShapeInfo: unknown order, must be 'c' or 'f', received: ";
     errorMessage += order;
     THROW_EXCEPTION(errorMessage.c_str());
   }
+
 
   std::vector<sd::LongType> shape_vector;
   int numberNegativesOnes = 0;
@@ -2695,6 +2728,7 @@ sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::
     }
   }
 
+
   sd::LongType arrLength = 1;
   for (const auto& dim : shape_vector) {
     arrLength *= dim;
@@ -2704,20 +2738,36 @@ sd::LongType* NDArray::reshapeShapeInfo( NDArray& array, char order, const std::
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
 
-  sd::LongType* shapeInfoNew = nullptr;
-  ALLOCATE(shapeInfoNew, array.getContext()->getWorkspace(),
-           shape::shapeInfoLength(shape_vector.size()), sd::LongType);
+
+  size_t shapeInfoLength = shape::shapeInfoLength(shape_vector.size());
+
+
+  sd::LongType* shapeInfoNew = new sd::LongType[shapeInfoLength];
+
+  // Initialize to prevent garbage values
+  memset(shapeInfoNew, 0, sizeof(sd::LongType) * shapeInfoLength);
+
   shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
+
   bool canReshape = ops::helpers::reshapeNoAlloc(array.shapeInfo(), shape_vector, order, shapeInfoNew);
-  ArrayOptions::setDataType(shapeInfoNew, ArrayOptions::dataType(array.shapeInfo()));
-  shape::setOrder(shapeInfoNew, order);
 
   if (!canReshape) {
     shape::calcStrides(shapeInfoNew, order);
+    shape::setOrder(shapeInfoNew, order);
   }
 
-  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew)->primary();
-  return const_cast<sd::LongType*>(ret);
+  // Additional validation before passing to buffer
+  if (shapeInfoNew == nullptr) {
+    THROW_EXCEPTION("reshapeShapeInfo: shapeInfoNew is null after initialization!");
+  }
+
+
+  auto ret = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfoNew);
+
+  delete[] shapeInfoNew;
+
+
+  return ret->primary();
 }
 
 NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
@@ -2726,11 +2776,9 @@ NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bo
   if (copyToNewBuff) {
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
     this->applyTransform(transform::Assign, ret, nullptr);
-    RELEASE(const_cast<sd::LongType*>(newShapeInfo), getContext()->getWorkspace());
     return *ret;
   } else {
     NDArray* ret = new NDArray(getDataBuffer(), const_cast<sd::LongType*>(newShapeInfo), getContext(), offset());
-    RELEASE(const_cast<sd::LongType*>(newShapeInfo), getContext()->getWorkspace());
     return *ret;
   }
 }
@@ -3682,7 +3730,7 @@ void *NDArray::operator new(size_t i) {
 ////////////////////////////////////////////////////////////////////////
 void NDArray::operator delete(void *p) {
   if (!sd::memory::MemoryRegistrator::getInstance().hasWorkspaceAttached()) {
-      free(p);
+    free(p);
   }
 }
 
@@ -5043,7 +5091,7 @@ void NDArray::reduceAlongDimension(sd::reduce::BoolOps op, NDArray *target, cons
     NativeOpExecutioner::execReduceBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(),
                                         nullptr, target->buffer(), zShapeInfoH, target->specialBuffer(), zShapeInfoD,
                                         dims->data(), dims->size());
-     delete dims;
+    delete dims;
   }
   synchronize("NDArray::reduceAlongDimension LongOps");
 
@@ -5119,9 +5167,9 @@ template SD_LIB_EXPORT void NDArray::p(const sd::LongType i, const sd::LongType 
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, NDArray *scalar) {
-  if (!scalar->isScalar())
+  if (scalar->lengthOf() > 1) {
     THROW_EXCEPTION("NDArray::p method: input array must be scalar!");
-
+  }
   if (i >= _length) {
     std::string errorMessage;
     errorMessage += "NDArray::p(i, NDArray_scalar): input index is out of array length !";
@@ -5196,9 +5244,9 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
     THROW_EXCEPTION(errorMessage.c_str());
   }
   if(isScalar()) {
-        // Direct value assignment, no need for scalar.isS() check
-        templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
-        return;
+    // Direct value assignment, no need for scalar.isS() check
+    templatedSet<T, T>(buffer(), 0, dataType(), (void*)&value);
+    return;
   }
 
   sd::LongType coords[1] = {i};

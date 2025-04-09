@@ -52,6 +52,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.eclipse.deeplearning4j.nd4j.linalg.dataset.IrisDataSetIterator;
@@ -261,6 +262,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGradients() {
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
         SameDiff sd = SameDiff.create();
 
         SDVariable i0 = sd.placeHolder("i0", FLOAT, 2,5);
@@ -275,7 +278,8 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
         SDVariable l = i2.sum();
 
         sd.setLossVariables(l);
-        INDArray gd = sd.calculateGradients(Collections.singletonMap("i0",Nd4j.rand(2,5)),"w0").get("w0");
+        INDArray value = Nd4j.rand(2,5);
+        INDArray gd = sd.calculateGradients(Collections.singletonMap("i0",value),"w0").get("w0");
         assertTrue(gd.sumNumber().doubleValue() > 0.0);
     }
 
@@ -355,56 +359,60 @@ public class SameDiffTrainingTest extends BaseNd4jTestWithBackends {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void irisTrainingValidationTest(Nd4jBackend backend) {
+        Nd4j.getExecutioner().enableDebugMode(true);
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            DataSetIterator iter = new IrisDataSetIterator(150, 150);
+            NormalizerStandardize std = new NormalizerStandardize();
+            std.fit(iter);
+            iter.setPreProcessor(std);
 
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        NormalizerStandardize std = new NormalizerStandardize();
-        std.fit(iter);
-        iter.setPreProcessor(std);
+            DataSetIterator valIter = new IrisDataSetIterator(30, 60);
+            NormalizerStandardize valStd = new NormalizerStandardize();
+            valStd.fit(valIter);
+            valIter.setPreProcessor(std);
 
-        DataSetIterator valIter = new IrisDataSetIterator(30, 60);
-        NormalizerStandardize valStd = new NormalizerStandardize();
-        valStd.fit(valIter);
-        valIter.setPreProcessor(std);
+            Nd4j.getRandom().setSeed(12345);
+            SameDiff sd = SameDiff.create();
 
-        Nd4j.getRandom().setSeed(12345);
-        SameDiff sd = SameDiff.create();
+            SDVariable in = sd.placeHolder("input", FLOAT, -1, 4);
+            SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
 
-        SDVariable in = sd.placeHolder("input", FLOAT, -1, 4);
-        SDVariable label = sd.placeHolder("label", FLOAT, -1, 3);
+            SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
+            SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
 
-        SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), FLOAT, 4, 10);
-        SDVariable b0 = sd.zero("b0", FLOAT, 1, 10);
+            SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
+            SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
 
-        SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), FLOAT, 10, 3);
-        SDVariable b1 = sd.zero("b1", FLOAT, 1, 3);
+            SDVariable z0 = in.mmul(w0).add(b0);
+            SDVariable a0 = sd.math().tanh(z0);
+            SDVariable z1 = a0.mmul(w1).add("prediction", b1);
+            SDVariable a1 = sd.nn().softmax(z1);
 
-        SDVariable z0 = in.mmul(w0).add(b0);
-        SDVariable a0 = sd.math().tanh(z0);
-        SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-        SDVariable a1 = sd.nn().softmax(z1);
+            SDVariable diff = sd.math().squaredDifference(a1, label);
+            SDVariable lossMse = diff.mul(diff).mean();
 
-        SDVariable diff = sd.math().squaredDifference(a1, label);
-        SDVariable lossMse = diff.mul(diff).mean();
+            TrainingConfig conf = new TrainingConfig.Builder()
+                    .l2(1e-4)
+                    .updater(new Adam(1e-2))
+                    .dataSetFeatureMapping("input")
+                    .dataSetLabelMapping("label")
+                    .validationEvaluation("prediction", 0, new Evaluation())
+                    .build();
 
-        TrainingConfig conf = new TrainingConfig.Builder()
-                .l2(1e-4)
-                .updater(new Adam(1e-2))
-                .dataSetFeatureMapping("input")
-                .dataSetLabelMapping("label")
-                .validationEvaluation("prediction", 0, new Evaluation())
-                .build();
+            sd.setTrainingConfig(conf);
 
-        sd.setTrainingConfig(conf);
+            History hist = sd.fit().train(iter, 50).validate(valIter, 5).exec();
 
-        History hist = sd.fit().train(iter, 50).validate(valIter, 5).exec();
+            Evaluation e = hist.finalValidationEvaluations().evaluation("prediction");
 
-        Evaluation e = hist.finalValidationEvaluations().evaluation("prediction");
+            System.out.println(e.stats());
 
-        System.out.println(e.stats());
+            double acc = e.accuracy();
 
-        double acc = e.accuracy();
+            assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
+        }
 
-        assertTrue(acc >= 0.75,"Accuracy bad: " + acc);
     }
 
 

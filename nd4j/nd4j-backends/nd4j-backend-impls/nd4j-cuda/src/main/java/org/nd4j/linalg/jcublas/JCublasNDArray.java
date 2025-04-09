@@ -67,6 +67,8 @@ public class JCublasNDArray extends BaseNDArray {
 
 
     public JCublasNDArray(DataBuffer buffer, CudaLongDataBuffer shapeInfo, long[] javaShapeInfo) {
+        this.data = buffer;
+        setShapeInfoDataBuffer(shapeInfo);
         this.jvmShapeInfo = new JvmShapeInfo(javaShapeInfo);
     }
 
@@ -430,6 +432,10 @@ public class JCublasNDArray extends BaseNDArray {
         super(longShapeDescriptor);
     }
 
+    public JCublasNDArray(DataType dataType, long[] shape, long[] strides, int i, char ordering, MemoryWorkspace currentWorkspace) {
+        super(dataType,shape,strides,currentWorkspace);
+    }
+
     @Override
     public INDArray dup() {
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {
@@ -480,6 +486,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public void setShapeInfoDataBuffer(DataBuffer buffer) {
         this.jvmShapeInfo = new JvmShapeInfo(buffer.asLong());
+        this.shapeInfoDataBuffer = buffer;
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {

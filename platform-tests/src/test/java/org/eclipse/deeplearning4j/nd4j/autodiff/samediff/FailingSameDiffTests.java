@@ -32,6 +32,7 @@ import org.nd4j.linalg.BaseNd4jTestWithBackends;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -57,12 +58,11 @@ public class FailingSameDiffTests extends BaseNd4jTestWithBackends {
     public void testEyeShape(Nd4jBackend backend) {
         val dco = DynamicCustomOp.builder("eye")
                 .addIntegerArguments(3,3)
-                //.addIntegerArguments(-99,3,3) //Also fails
                 .build();
 
         val list = Nd4j.getExecutioner().calculateOutputShape(dco);
         assertEquals(1, list.size());   //Fails here - empty list
-        assertArrayEquals(new long[]{3,3}, list.get(0).getShape());
+        assertArrayEquals(new long[]{3,3}, Shape.shape(list.get(0).asLong()));
     }
 
     @ParameterizedTest

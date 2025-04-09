@@ -29,10 +29,12 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
@@ -393,6 +395,59 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
            // if (arr.closeable())
            //     arr.close();
         }));
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
+        long[] asJava = dataBuffer.asLong();
+        if (Shape.isEmpty(asJava)) {
+            INDArray ret = Nd4j.createFromDescriptor(dataBuffer);
+            if (detached) {
+                ret = ret.detach();
+            }
+
+            return ret;
+        }
+
+        DataType dataType = Shape.dataType(asJava);
+        long[] shape = Shape.shape(asJava);
+        String arrayShape = Arrays.toString(shape);
+        Table<DataType, String, List<INDArray>> arraysForThread = getArraysForThread();
+        if (arraysForThread.contains(dataType, arrayShape) && enableCache && shape.length > 0 && !Longs.contains(shape, 0)) {
+            INDArray arr = null;
+            List<INDArray> arrays2 = arraysForThread.get(dataType, arrayShape);
+
+            while (arrays2.size() > 0) {
+                arr = arrays2.remove(0);
+                if(arr.isView()) {
+                    //set closeable to prevent reuse elsewhere
+                    arr.setCloseable(false);
+                    log.trace("Found view array with id " + arr.getId() + " in cache. Avoiding allocation.");
+                } else {
+                    break;
+                }
+            }
+
+            if (arr != null && arr.ordering() != Shape.order(asJava)) {
+                arr.setOrder(Shape.order(asJava));
+            }
+
+            if (arr != null && !arr.wasClosed()) {
+                // Decrement cache size
+                currentCacheSize.set(currentCacheSize.get() - dataType.width() * arr.data().length());
+                // We need to assign new Id. this way we will break any possible relationship it
+                // had in Tracker.
+                // the old cache was recreating New Array using buffer and thus gaining new
+                // reference . Note that it had IdentityHash with references being keys
+                getLruCache().remove(arr.getId());
+                getLruCacheValues().remove(arr.getId());
+                ((BaseNDArray) arr).assignNewId();
+                return arr; // Allocated from cache
+            }
+        }
+
+        // Allocation failed, allocate new array
+        return Nd4j.createUninitializedDetached(dataType, shape);
     }
 
 

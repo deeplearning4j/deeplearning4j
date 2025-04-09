@@ -136,7 +136,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .build();
 
 
-        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor);
+        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo());
         setShapeInformation(shapeInformation);
 
         this.offset = offset;
@@ -161,7 +161,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     // this field holds jvm copy of shapeInfo
     protected transient JvmShapeInfo jvmShapeInfo;
-    private DataBuffer shapeInfoDataBuffer;
+    protected DataBuffer shapeInfoDataBuffer;
 
 
     private static final AtomicLong arrayCounter = new AtomicLong(0);
@@ -269,7 +269,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .build();
 
 
-        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor);
+        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo());
         setShapeInformation(shapeInformation);
         init(shape, stride);
         logCreationFromConstructor();
@@ -279,6 +279,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public BaseNDArray(DataType dataType, long[] shape, long[] strides, MemoryWorkspace currentWorkspace) {
         this(Nd4j.createBuffer(dataType, ArrayUtil.prodLong(shape), false, currentWorkspace), shape, strides, 0, Nd4j.order());
     }
+
+
+
 
 
     public BaseNDArray(LongShapeDescriptor descriptor) {
@@ -296,7 +299,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = buffer;
         if (buffer.length() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Length of buffer can not be >= Integer.MAX_VALUE");
-        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor);
+        Pair<DataBuffer, long[]> shapeInformation = getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo());
         setShapeInformation(shapeInformation);
         init(longShapeDescriptor.getShape(),longShapeDescriptor.getStride());
         this.offset = longShapeDescriptor.getOffset();
@@ -322,7 +325,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .ews(1)
                 .build();
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
     }
 
@@ -363,7 +366,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .offset(offset)
                 .build();
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
         logCreationFromConstructor();
     }
@@ -426,7 +429,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ))
                 .build();
 
-        setShapeInformation(getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
         this.offset = offset;
         logCreationFromConstructor();
@@ -573,7 +576,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     .build();
 
 
-            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+            setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
 
             logCreationFromConstructor();
         } catch (Exception e) {
@@ -641,7 +644,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .ews(Shape.elementWiseStride(shape, stride, ordering == 'f'))
                 .extras(ArrayOptionsHelper.composeTypicalChecks(Nd4j.dataType()))
                 .build();
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
         logCreationFromConstructor();
 
@@ -659,7 +662,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .ews(Shape.elementWiseStride(shape, stride, ordering == 'f'))
                 .extras(ArrayOptionsHelper.composeTypicalChecks(Nd4j.dataType()))
                 .build();
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
         logCreationFromConstructor();
 
@@ -736,7 +739,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         false
                 ))
                 .build();
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
 
         if (slices.get(0).isScalar()) {
@@ -791,7 +794,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .build();
 
         this.offset = offset;
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         if (data != null && data.length > 0) {
 
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -829,7 +832,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 ))
                 .build();
 
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         if (data != null && data.length > 0) {
             this.data = Nd4j.createTypedBuffer(data, DataType.FLOAT);
             if (offset >= data.length)
@@ -860,7 +863,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         false
                 ))
                 .build();
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         if (data != null && data.length > 0) {
             this.data = Nd4j.createBuffer(data);
             if (offset >= data.length)
@@ -898,7 +901,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         false
                 ))
                 .build();
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(longShapeDescriptor.toShapeInfo()));
         init(shape, stride);
         logCreationFromConstructor();
 
@@ -1408,7 +1411,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public void setOrder(char order) {
         LongShapeDescriptor descriptor = LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), order, this.dataType(), isEmpty());
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(descriptor));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(descriptor.toShapeInfo()));
     }
 
     @Override
@@ -4005,8 +4008,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 .build();
         op.addIArgument(dimension); //Native op: last iarg is dimension
 
-        LongShapeDescriptor l = op.calculateOutputShape().get(0);
-        INDArray out = Nd4j.create(l);
+        DataBuffer l = op.calculateOutputShape().get(0);
+        INDArray out = Nd4j.createFromDescriptor(l);
         op.addOutputArgument(out);
         Nd4j.exec(op);
         return out;
@@ -6019,7 +6022,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean isEmpty() {
-        return data() == null  || data.length() < 1|| Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
+        return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
 
     @Override

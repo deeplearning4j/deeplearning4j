@@ -21,11 +21,10 @@ package org.nd4j.linalg.api.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
@@ -155,10 +154,10 @@ public abstract class UserDefinedCustomOp extends DynamicCustomOp {
     @Override
     public abstract boolean isInplaceCall();
     @Override
-    public abstract List<LongShapeDescriptor> calculateOutputShape();
+    public abstract List<DataBuffer> calculateOutputShape();
 
     @Override
-    public abstract List<LongShapeDescriptor> calculateOutputShape(OpContext oc);
+    public abstract List<DataBuffer> calculateOutputShape(OpContext oc);
     @Override
     public abstract  List<SDVariable> doDiff(List<SDVariable> f1);
 

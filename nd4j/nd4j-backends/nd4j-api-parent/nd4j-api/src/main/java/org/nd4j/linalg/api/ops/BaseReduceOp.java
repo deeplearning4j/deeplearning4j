@@ -28,8 +28,8 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -240,7 +240,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     }
 
 
-    public abstract List<LongShapeDescriptor> calculateOutputShape();
+    public abstract List<DataBuffer> calculateOutputShape();
 
 
     @Override

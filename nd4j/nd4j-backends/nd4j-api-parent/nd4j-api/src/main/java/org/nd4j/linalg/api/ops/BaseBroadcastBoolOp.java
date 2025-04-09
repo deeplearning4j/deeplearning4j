@@ -28,11 +28,13 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Broadcast;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -148,14 +150,14 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
      *
      * @return
      */
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         if(x == null || y == null)
             return Collections.emptyList();
 
         long[] shapeX = x.shape();
         long[] shapeY = y.shape();
 
-        return Collections.singletonList(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(shapeX, shapeY), DataType.BOOL));
+        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(Shape.broadcastOutputShape(shapeX, shapeY), DataType.BOOL).toShapeInfo()));
     }
 
 

@@ -567,16 +567,11 @@ int dataTypeFromNpyHeader(void *header) { return (int)cnpy::dataTypeFromHeader(r
 OpaqueConstantShapeBuffer shapeBufferEx(int rank, sd::LongType *shape, sd::LongType *strides, sd::DataType dtype,
                                         char order,
                                         sd::LongType ews, sd::LongType extras) {
-  try {
 
     auto desc = sd::ShapeBuilders::createShapeInfo(dtype, order,rank, shape, strides,nullptr, extras);
     auto buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(desc);
     return buffer;
-  } catch (std::exception &e) {
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
-  }
+
 }
 
 void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *shapeInfo, sd::Pointer specialBuffer,
@@ -588,7 +583,10 @@ void inspectArray(sd::Pointer *extraPointers, sd::Pointer buffer, sd::LongType *
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    THROW_EXCEPTION(e.what());
   }
+
+
 }
 
 
@@ -606,8 +604,11 @@ OpaqueConstantShapeBuffer cacheAndStoreShapeBuffer(sd::LongType *shapeInfo) {
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    return nullptr;
+    THROW_EXCEPTION(e.what());
+
   }
+
+  return nullptr;
 }
 
 sd::LongType *mmapFile(sd::Pointer *extraPointers, const char *fileName, sd::LongType length) {
@@ -825,15 +826,16 @@ OpaqueNDArray createOpaqueNDArray(OpaqueDataBuffer *shapeInfo,
   }
 
 
-  if(buffer == nullptr) {
-    THROW_EXCEPTION("createOpaqueNDArray: Buffer was null!");
+  if(shape::isEmpty(static_cast<sd::LongType *>(
+          shapeInfo->primary())) && buffer != nullptr) {
+        THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but buffer was not null!");
+  } else if(!shape::isEmpty(static_cast<sd::LongType *>(
+          shapeInfo->primary())) && buffer == nullptr) {
+        THROW_EXCEPTION("createOpaqueNDArray: Shape info was empty but  buffer was not null!");
   }
 
-  if(specialBuffer == nullptr) {
-    THROW_EXCEPTION("createOpaqueNDArray: Special buffer was null!");
-  }
   sd::LongType* shapeInfoCast = reinterpret_cast<sd::LongType*>(shapeInfo->primary());
-  sd::NDArray* ret = new sd::NDArray(buffer->getDataBuffer(),
+  sd::NDArray* ret = new sd::NDArray(buffer != nullptr ? buffer->getDataBuffer() : nullptr,
                                      shapeInfoCast,
                                      sd::LaunchContext::defaultContext(),
                                      offset);
@@ -1663,8 +1665,13 @@ int getShapeInfoLength(sd::TadPack *pack) { return pack->shapeInfoLength(); }
 
 sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength) {
   try {
+    if(hXShapeInfo->primary() == nullptr) {
+      THROW_EXCEPTION("tadOnlyShapeInfo: hXShapeInfo->primary() is nullptr!");
+    }
+
     auto buffPrim = reinterpret_cast<sd::LongType *>(hXShapeInfo->primary());
-    auto rankVal = buffPrim[0];
+    auto shapeFromCache = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(buffPrim)->primary();
+    auto rankVal = shapeFromCache[0];
     if(rankVal == 0) {
       //detect when the shape buffer values are unset.
       auto len = shape::shapeInfoLength(rankVal);
@@ -1682,8 +1689,11 @@ sd::TadPack *tadOnlyShapeInfo(OpaqueDataBuffer *hXShapeInfo, sd::LongType *dimen
       }
     }
 
+
+
+
     auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(
-        reinterpret_cast<sd::LongType *>(hXShapeInfo->primary()), dimension, dimensionLength);
+        shapeFromCache, dimension, dimensionLength);
     return pack;
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

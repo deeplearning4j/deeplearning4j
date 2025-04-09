@@ -22,11 +22,13 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import org.nd4j.autodiff.samediff.internal.memory.AbstractMemoryMgr;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
@@ -86,5 +88,27 @@ public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
     @Override
     public void close() {
         //No-op - DL4J workspaces handles this
+    }
+
+    @Override
+    public INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer) {
+        long[] shapeInfo = dataBuffer.asLong();
+        DataType dataType = Shape.dataType(shapeInfo);
+        long[] shape = Shape.shape(shapeInfo);
+        String wsName = detached ? outputWs : workingMemoryWs;
+        WorkspaceConfiguration wsConf = detached ? confOutput : confWorking;
+
+        if(wsName == null) {
+            //Scoped out
+            INDArray ret = Nd4j.createUninitializedDetached(dataType, shape);
+            Preconditions.checkState(!ret.isAttached(), "Returned array should be detached");
+            return ret;
+        } else {
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, wsName);
+            ws.notifyScopeBorrowed();
+            return Nd4j.createUninitialized(dataType, shape);
+
+        }
+
     }
 }

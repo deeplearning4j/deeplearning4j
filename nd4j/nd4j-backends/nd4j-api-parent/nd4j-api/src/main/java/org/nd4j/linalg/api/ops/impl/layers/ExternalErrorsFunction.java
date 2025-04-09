@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -42,7 +43,7 @@ import java.util.*;
 public class ExternalErrorsFunction extends DynamicCustomOp {
     public static final String OP_NAME = "ExternalErrorsFn";
 
-    private static final List<LongShapeDescriptor> OUT_SHAPE = Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], Nd4j.dataType()));
+    private static final List<DataBuffer> OUT_SHAPE = Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(new long[0], Nd4j.dataType()).toShapeInfo()));
 
     private Map<String,INDArray> gradients;
     private Map<String,SDVariable> gradVariables;
@@ -203,12 +204,12 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(){
+    public List<DataBuffer> calculateOutputShape(){
         return OUT_SHAPE;
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc){
+    public List<DataBuffer> calculateOutputShape(OpContext oc){
         return OUT_SHAPE;
     }
 

@@ -25,8 +25,8 @@
 #include <system/Environment.h>
 
 namespace sd {
-TadPack::TadPack(const ConstantShapeBuffer& shapes,
-                 const ConstantOffsetsBuffer& offets, LongType numTads,
+TadPack::TadPack( ConstantShapeBuffer *shapes,
+                  ConstantOffsetsBuffer *offets, LongType numTads,
                  LongType* dimensions, LongType dimLength)
     : _tadShape(shapes),
       _tadOffsets(offets) {
@@ -44,18 +44,18 @@ TadPack::TadPack(const ConstantShapeBuffer& shapes,
 }
 
 LongType* TadPack::primaryShapeInfo() {
-  if(_tadShape.primary() == nullptr)
+  if(_tadShape->primary() == nullptr)
     THROW_EXCEPTION("TadPack::primaryShapeInfo: primary shape info is nullptr!");
-  return _tadShape.primary();
+  return _tadShape->primary();
 }
 
 LongType* TadPack::primaryOffsets() {
-  return _tadOffsets.primary();
+  return _tadOffsets->primary();
 }
 
-LongType* TadPack::specialShapeInfo() { return _tadShape.special(); }
+LongType* TadPack::specialShapeInfo() { return _tadShape->special(); }
 
-LongType* TadPack::specialOffsets() { return _tadOffsets.special(); }
+LongType* TadPack::specialOffsets() { return _tadOffsets->special(); }
 
 LongType TadPack::numberOfTads() const { return _numTads; }
 
@@ -73,7 +73,7 @@ void TadPack::print(const char* msg) {
   printf("%s: ", msg);
   printf("Offsets:\n");
   for (int e = 0; e < _numTads; e++) {
-    printf("%lld, ", _tadOffsets.primary()[e]);
+    printf("%lld, ", _tadOffsets->primary()[e]);
   }
   printf("\n");
 
@@ -88,7 +88,7 @@ void TadPack::print(const char* msg) {
   }
 
   printf("tad pack shape info:");
-  shape::printShapeInfo(_tadShape.primary());
+  shape::printShapeInfo(_tadShape->primary());
   printf("\n");
   printf("number of tads: %lld\n", _numTads);
   printf("shape info length: %lld\n", _shapeInfoLength);

@@ -89,7 +89,8 @@ DECLARE_SHAPE_FN(argmax) {
 
   // special case - output is scalar
   if (dims.empty() || (dims.size() == 1 && dims.at(0) == DataTypeUtils::max<int>())) {
-    return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
+    auto ret = ConstantShapeHelper::getInstance().scalarShapeInfo(dtype);
+    return SHAPELIST(ret);
   }
 
   auto ret = ShapeUtils::evalReduceShapeInfo('c', &dims, firstInputShape, dtype, keepDims, false, block.getWorkspace());

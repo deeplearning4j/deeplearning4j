@@ -96,9 +96,7 @@ DECLARE_TYPES(reduce_mean) {
 CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto gradO = INPUT_VARIABLE(1);
-
   auto gradI = OUTPUT_VARIABLE(0);
-
   auto dimensions = *block.getIArguments();
   if (block.width() > 2) {
     auto axesVector = INPUT_VARIABLE(2);
@@ -110,7 +108,6 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
     keepDims = B_ARG(0);
   else if (block.getTArguments()->size())
     keepDims = (bool)T_ARG(0);
-
   REQUIRE_TRUE(
       dimensions.size() <= static_cast<size_t>(input->rankOf()), 0,
       "REDUCE_MEAN_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead",
@@ -124,12 +121,14 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
         input->rankOf(), input->rankOf(), item);
     dimLength *= input->sizeAt(item);
   }
+
   if (gradO->isScalar()) {
     if (dimensions.size() > 0) {
       gradI->assign(gradO->e(0) / (static_cast<double>(dimLength)));
     } else {
       gradI->assign(gradO->e(0) / (static_cast<double>(input->lengthOf())));
     }
+
   } else {
     auto val = (static_cast<double>(gradO->lengthOf() < 1 ? 1.0 : gradO->lengthOf()) )
                / (static_cast<double>(input->lengthOf() < 1 ? 1.0 : input->lengthOf()));
@@ -142,12 +141,13 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
 
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      *gradI *= gradO->reshape(gradO->ordering(),
-                               shape);  // for example could be something like [a,b] -> [1,a,1,b]
+      NDArray reshapedGradO = gradO->reshape(gradO->ordering(), shape);
+      *gradI *= reshapedGradO;
     } else {
       gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Multiply(), gradO, gradI);
     }
   }
+
 
   return sd::Status::OK;
 }
@@ -172,9 +172,11 @@ DECLARE_SHAPE_FN(reduce_mean_bp) {
       "REDUCE_MEAN_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !", rank,
       rank, item);
 
-  sd::LongType *gradIshapeInfo(nullptr);
-  COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-  return SHAPELIST(CONSTANT(gradIshapeInfo));
+  sd::LongType *gradIshapeInfo = new sd::LongType[shape::shapeInfoLength(rank)];
+  memcpy(gradIshapeInfo, in, shape::shapeInfoByteLength(in));
+  auto ret =  SHAPELIST(CONSTANT(gradIshapeInfo));
+  delete[] gradIshapeInfo;
+  return ret;
 }
 
 DECLARE_TYPES(reduce_mean_bp) {

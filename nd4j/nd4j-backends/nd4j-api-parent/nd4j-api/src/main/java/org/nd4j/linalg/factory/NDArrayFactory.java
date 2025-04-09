@@ -1480,6 +1480,8 @@ public interface NDArrayFactory {
      */
     INDArray createFromNpyPointer(Pointer pointer);
 
+    INDArray createFromDescriptor(DataBuffer shapeInformation);
+
 
     /**
      * Create from an in memory numpy header.
@@ -1572,4 +1574,6 @@ public interface NDArrayFactory {
     INDArray create(Collection<String> strings, long[] shape, char order);
 
     INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace);
+
+    INDArray create(DataBuffer dataBuffer, DataBuffer descriptor);
 }

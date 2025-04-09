@@ -38,6 +38,7 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.tests.tags.NativeTag;
 import org.nd4j.common.tests.tags.TagNames;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -52,6 +53,7 @@ import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.checkutil.CheckUtil;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1136,7 +1138,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
                     new Unstack(arr, null, i));
 
             assertEquals(1, shapes.size());
-            assertArrayEquals(new long[]{1, 1}, shapes.get(0).getShape());
+            assertArrayEquals(new long[]{1, 1}, Shape.shape(shapes.get(0).asLong()));
         }
     }
 
@@ -2019,8 +2021,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addBooleanArguments(true) //keepdim = true
                 .build();
 
-        List<LongShapeDescriptor> list = op.calculateOutputShape();
-        long[] s = list.get(0).getShape();
+        List<DataBuffer> list = op.calculateOutputShape();
+        long[] shape2 = Shape.shape(list.get(0).asLong());
+        long[] s = shape2;
         long[] exp = new long[]{2};         //(4,2).reduce(0,keepDims=true) -> [1,2] requires output array shape [2] here
 
         assertArrayEquals(exp, s);  //Fails - actual shape [1]
@@ -2040,19 +2043,16 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(in, indices, axis)
                 .build();
 
-        List<LongShapeDescriptor> shapeList = op.calculateOutputShape();
-        long[] shape = shapeList.get(0).getShape();
+        List<DataBuffer> shapeList = op.calculateOutputShape();
+        long[] shape = Shape.shape(shapeList.get(0).asLong());
         long[] expShape = new long[]{1,5};
         assertArrayEquals(expShape, shape);     //Fails: actual shape: [5]
     }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSliceShape(Nd4jBackend backend) {
 
         INDArray arr = Nd4j.arange(0, 25).reshape(1,5,5).castTo(DataType.INT);
-//        System.out.println(Arrays.toString(arr.shape()));
-//        System.out.println(arr);
 
         INDArray begin = Nd4j.createFromArray(0, 1, 2);
         INDArray size = Nd4j.createFromArray(-1, -1, -1);
@@ -2061,8 +2061,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(arr, begin, size)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        long[] shape = l.get(0).getShape();
+        List<DataBuffer> l = op.calculateOutputShape();
+        long[] shape = Shape.shape(l.get(0).asLong());
         long[] shapeExp = new long[]{1,4,3};
 
         assertArrayEquals(shapeExp, shape);
@@ -2076,10 +2076,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(in)
                 .addOutputs(Nd4j.empty(DataType.LONG))
                 .build();
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         Nd4j.getExecutioner().exec(op);
-        long[] shape = l.get(0).getShape();
-        boolean isEmpty = l.get(0).isEmpty();
+        long[] shape = Shape.shape(l.get(0).asLong());
+        boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
         assertTrue(isEmpty);    //Not empty, but should be
     }
 
@@ -2094,8 +2094,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(in, indices, axis)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        long[] shape = l.get(0).getShape();
+        List<DataBuffer> l = op.calculateOutputShape();
+        long[] shape = Shape.shape(l.get(0).asLong());
         assertArrayEquals(new long[0], shape);
 
         INDArray arr = Nd4j.create(l.get(0));
@@ -2118,63 +2118,62 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(dtype)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        long[] shape = l.get(0).getShape();
-        boolean isEmpty = l.get(0).isEmpty();
+        List<DataBuffer> l = op.calculateOutputShape();
+        long[] shape = Shape.shape(l.get(0).asLong());
+        boolean isEmpty = Shape.isEmpty(l.get(0).asLong());
         assertEquals(0, shape.length);
         assertTrue(isEmpty);
     }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testGatherEmpty(Nd4jBackend backend) {
-        /*
-        tf.reset_default_graph()
-        emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
-        ingather = tf.reshape(tf.range(start=0,limit=100,delta=1,dtype=tf.float32), [25,4])
-        gather = tf.gather(params=ingather, indices=emptyInt)
-        sess = tf.Session()
-        out = sess.run([gather])
-        print(out[0].shape);
-        print(out[0]);
-        >> (0, 4)
-        >> []
-         */
+    /*
+    tf.reset_default_graph()
+    inputFloat = tf.constant([], shape=[0,2,3], dtype=tf.float32)
+    emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
 
-//        Nd4j.getExecutioner().enableVerboseMode(true);
-//        Nd4j.getExecutioner().enableDebugMode(true);
+    gather = tf.gather(params=inputFloat, indices=emptyInt)
 
+    sess = tf.Session()
+    out = sess.run([gather])
+    print(out[0].shape)
+    print(out[0]);
+
+    > (0, 2, 3)
+    > []
+     */
+        INDArray emptyFloat = Nd4j.create(DataType.FLOAT, 0, 2, 3);
         INDArray emptyInt = Nd4j.create(DataType.INT, 0);
-        INDArray inGather = Nd4j.linspace(1,100,100,DataType.FLOAT).reshape(25,4);
-
         DynamicCustomOp op = DynamicCustomOp.builder("gather")
-                .addInputs(inGather, emptyInt)
+                .addInputs(emptyFloat, emptyInt)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        long[] shape = l.get(0).getShape();
-        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
-        boolean isEmpty = l.get(0).isEmpty();
-        assertTrue(isEmpty);
+        List<DataBuffer> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{0,2,3}, Shape.shape(l.get(0).asLong()));
+
+        INDArray out = Nd4j.empty(DataType.FLOAT);
+        op.addOutputArgument(out);
     }
 
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testSplitEmpty(Nd4jBackend backend) {
-        /*
-        tf.reset_default_graph()
-        # Hack to create empty array
-        input = tf.constant([False], dtype=tf.bool)
-        empty = tf.where(condition=input)
-        empty = tf.reshape(empty, [0,4])
-        emptyFloat = tf.cast(empty, tf.float32)
-        const1 = tf.constant(1, dtype=tf.int32)
-        split = tf.split(value=emptyFloat, num_or_size_splits=4, axis=1)
-        sess = tf.Session()
-        out = sess.run([split])
-        # print(out[0].shape);
-        print(out[0]);
-         */
+    /*
+    tf.reset_default_graph()
+    # Hack to create empty array
+    input = tf.constant([False], dtype=tf.bool)
+    empty = tf.where(condition=input)
+    empty = tf.reshape(empty, [0,4])
+    emptyFloat = tf.cast(empty, tf.float32)
+    const1 = tf.constant(1, dtype=tf.int32)
+    split = tf.split(value=emptyFloat, num_or_size_splits=4, axis=1)
+    sess = tf.Session()
+    out = sess.run([split])
+    # print(out[0].shape);
+    print(out[0]);
+     */
 
         INDArray emptyIn = Nd4j.empty(DataType.FLOAT).reshape(0, 4);
         INDArray axis = Nd4j.scalar(1);
@@ -2184,13 +2183,13 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(4) //num_splits = 4
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(4, l.size());
         for( int i=0; i<4; i++ ){
             val desc = l.get(i);
-            assertArrayEquals(new long[]{0, 1}, desc.getShape());
-            assertTrue(desc.isEmpty());
-            op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(desc.getShape()));
+            assertArrayEquals(new long[]{0, 1}, Shape.shape(desc.asLong()));
+            assertTrue(Shape.isEmpty(desc.asLong()));
+            op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(Shape.shape(desc.asLong())));
         }
 
         Nd4j.exec(op);
@@ -2199,23 +2198,23 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testConcatEmpty(Nd4jBackend backend) {
-        /*
-        TF behaviour with concatenation of empty arrays:
-        concat(empty,empty,empty) -> empty
-        cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
+    /*
+    TF behaviour with concatenation of empty arrays:
+    concat(empty,empty,empty) -> empty
+    cotcat(empty,nonEmpty) -> nonEmpty, etc (i.e., empty arrays are ignored)
 
-        tf.reset_default_graph()
-        input = tf.constant([False], dtype=tf.bool)
-        emptyFloat = tf.constant([], shape=[0,1], dtype=tf.float32)
-        var11 = tf.constant([1], dtype=tf.float32, shape=[1,1])
+    tf.reset_default_graph()
+    input = tf.constant([False], dtype=tf.bool)
+    emptyFloat = tf.constant([], shape=[0,1], dtype=tf.float32)
+    var11 = tf.constant([1], dtype=tf.float32, shape=[1,1])
 
-        concat = tf.concat(values=[emptyFloat, emptyFloat, var11, emptyFloat], axis=0)
+    concat = tf.concat(values=[emptyFloat, emptyFloat, var11, emptyFloat], axis=0)
 
-        sess = tf.Session()
-        out = sess.run([concat])
-        print(out[0].shape)
-        print(out[0]);
-         */
+    sess = tf.Session()
+    out = sess.run([concat])
+    print(out[0].shape)
+    print(out[0]);
+     */
 
         INDArray one1 = Nd4j.create(DataType.FLOAT, 1, 1);
         INDArray empty01 = Nd4j.create(DataType.FLOAT, 0, 1);
@@ -2225,10 +2224,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(0) //axis = 0
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{0, 1}, l.get(0).getShape());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{0, 1}, Shape.shape(l.get(0).asLong()));
 
         op.addOutputArgument(Nd4j.create(DataType.FLOAT, 0, 1));
         Nd4j.exec(op);
@@ -2240,8 +2239,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .build();
         l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertFalse(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{1, 1}, l.get(0).getShape());
+        assertFalse(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{1, 1}, Shape.shape(l.get(0).asLong()));
         op.addOutputArgument(Nd4j.create(DataType.FLOAT, 1, 1));
         Nd4j.exec(op);
     }
@@ -2257,10 +2256,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(0) //axis = 0
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{2, 0}, l.get(0).getShape());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{2, 0}, Shape.shape(l.get(0).asLong()));
         assertEquals(DataType.INT, l.get(0).dataType());
 
         op.addOutputArgument(Nd4j.create(DataType.INT, 2, 0));
@@ -2273,8 +2272,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .build();
         l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{1, 0}, l.get(0).getShape());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{1, 0}, Shape.shape(l.get(0).asLong()));
         op.addOutputArgument(Nd4j.create(DataType.INT, 1, 0));
         Nd4j.exec(op);
     }
@@ -2282,36 +2281,35 @@ public class TestShapeOpValidation extends BaseOpValidation {
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testEmptyGather(Nd4jBackend backend) {
-        /*
-        tf.reset_default_graph()
-        inputFloat = tf.constant([], shape=[0,2,3], dtype=tf.float32)
-        emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
+    /*
+    tf.reset_default_graph()
+    inputFloat = tf.constant([], shape=[0,2,3], dtype=tf.float32)
+    emptyInt = tf.constant([], shape=[0], dtype=tf.int32)
 
-        gather = tf.gather(params=inputFloat, indices=emptyInt)
+    gather = tf.gather(params=inputFloat, indices=emptyInt)
 
-        sess = tf.Session()
-        out = sess.run([gather])
-        print(out[0].shape)
-        print(out[0]);
+    sess = tf.Session()
+    out = sess.run([gather])
+    print(out[0].shape)
+    print(out[0]);
 
-        > (0, 2, 3)
-        > []
-         */
+    > (0, 2, 3)
+    > []
+     */
         INDArray emptyFloat = Nd4j.create(DataType.FLOAT, 0, 2, 3);
         INDArray emptyInt = Nd4j.create(DataType.INT, 0);
         DynamicCustomOp op = DynamicCustomOp.builder("gather")
                 .addInputs(emptyFloat, emptyInt)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{0,2,3}, l.get(0).getShape());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{0,2,3}, Shape.shape(l.get(0).asLong()));
 
         INDArray out = Nd4j.empty(DataType.FLOAT);
         op.addOutputArgument(out);
     }
-
     @ParameterizedTest
     @MethodSource("org.nd4j.linalg.BaseNd4jTestWithBackends#configs")
     public void testBroadcastDynamicShape1(Nd4jBackend backend) {
@@ -2376,9 +2374,9 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 )
                 .build();
 
-        List<LongShapeDescriptor> lsd = op.calculateOutputShape();
+        List<DataBuffer> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
-        long[] shape = lsd.get(0).getShape();
+        long[] shape = Shape.shape(lsd.get(0).asLong());
         long[] exp = new long[]{2,2};
         assertArrayEquals(exp, shape);
     }
@@ -2397,12 +2395,11 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(1,0,0,0,0) //Begin mask, ellipsis, end, new axis, shrink
                 .build();
 
-        List<LongShapeDescriptor> s = Nd4j.getExecutioner().calculateOutputShape(op);
+        List<DataBuffer> s = Nd4j.getExecutioner().calculateOutputShape(op);
         assertEquals(1, s.size());
 
         //Is returning shape [0], should be empty
-        long extras = s.get(0).getExtras();
-        boolean isEmpty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        boolean isEmpty = Shape.isEmpty(s.get(0).asLong());
         assertTrue(isEmpty);
     }
 
@@ -2424,10 +2421,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addOutputs(Nd4j.empty(DataType.INT))
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
         assertEquals(DataType.INT, l.get(0).dataType());
-        assertTrue(l.get(0).isEmpty()); //Should be empty array, is rank 0 scalar
+        assertTrue(Shape.isEmpty(l.get(0).asLong())); //Should be empty array, is rank 0 scalar
 
         Nd4j.exec(op);  //Execution is OK
     }
@@ -2443,8 +2440,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(in, begin, size)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        assertTrue(l.get(0).isEmpty());
+        List<DataBuffer> l = op.calculateOutputShape();
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
 
         INDArray out = Nd4j.create(DataType.INT, 0);
         op.setOutputArgument(0, out);
@@ -2463,8 +2460,8 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(in, begin, size)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        assertTrue(l.get(0).isEmpty());
+        List<DataBuffer> l = op.calculateOutputShape();
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
 
         INDArray out = Nd4j.create(DataType.INT, 0);
         op.setOutputArgument(0, out);
@@ -2483,10 +2480,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(shape, value)
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
-        assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{0,4}, Shape.shape(l.get(0).asLong()));
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
 
         op.setOutputArgument(0, Nd4j.create(DataType.FLOAT, 0, 4));
         Nd4j.exec(op);
@@ -2501,10 +2498,10 @@ public class TestShapeOpValidation extends BaseOpValidation {
 
         DynamicCustomOp op = new Fill(shape, value, null);
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        List<DataBuffer> l = op.calculateOutputShape();
         assertEquals(1, l.size());
-        assertTrue(l.get(0).isEmpty());
-        assertArrayEquals(new long[]{0,4}, l.get(0).getShape());
+        assertTrue(Shape.isEmpty(l.get(0).asLong()));
+        assertArrayEquals(new long[]{0,4}, Shape.shape(l.get(0).asLong()));
 
         op.setOutputArgument(0, Nd4j.create(DataType.FLOAT, 0, 4));
         Nd4j.exec(op);
@@ -2518,17 +2515,15 @@ public class TestShapeOpValidation extends BaseOpValidation {
                 .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4),
                         Nd4j.createFromArray(1, 0))
                 .build();
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-//        System.out.println(Arrays.toString(l.get(0).getShape()));
-        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+        List<DataBuffer> l = op.calculateOutputShape();
+        assertArrayEquals(new long[]{4, 3}, Shape.shape(l.get(0).asLong()));
 
         op = DynamicCustomOp.builder("permute")
                 .addInputs(Nd4j.rand(DataType.FLOAT, 3, 4))
                 .addIntegerArguments(1, 0)
                 .build();
         l = op.calculateOutputShape();
-//        System.out.println(Arrays.toString(l.get(0).getShape()));
-        assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
+        assertArrayEquals(new long[]{4, 3}, Shape.shape(l.get(0).asLong()));
 
 
         op = DynamicCustomOp.builder("permute")
@@ -2536,8 +2531,7 @@ public class TestShapeOpValidation extends BaseOpValidation {
                         Nd4j.createFromArray(1, 2, 0))
                 .build();
         l = op.calculateOutputShape();
-//        System.out.println(Arrays.toString(l.get(0).getShape()));
-        assertArrayEquals(new long[]{4, 5, 3}, l.get(0).getShape());
+        assertArrayEquals(new long[]{4, 5, 3}, Shape.shape(l.get(0).asLong()));
     }
 
     @ParameterizedTest

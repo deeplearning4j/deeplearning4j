@@ -23,9 +23,11 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,20 +119,20 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
         if(x.isEmpty()) {
             LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.emptyWithShape(x.shape(),x.dataType());
-            return Collections.singletonList(longShapeDescriptor);
+            return Collections.singletonList(Nd4j.createBuffer(longShapeDescriptor.toShapeInfo()));
         }
-        return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
+        return Collections.singletonList(Nd4j.createBuffer(LongShapeDescriptor.fromShape(x.shape(), x.dataType()).toShapeInfo()));
     }
 
     @Override

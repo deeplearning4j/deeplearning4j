@@ -44,7 +44,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.TadPack;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -892,11 +891,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public INDArray[] allocateOutputArrays(CustomOp op){
-        List<LongShapeDescriptor> shapes = calculateOutputShape(op);
+    public INDArray[] allocateOutputArrays(CustomOp op) {
+        List<DataBuffer> shapes = calculateOutputShape(op);
         INDArray[] out = new INDArray[shapes.size()];
         for(int i = 0; i < shapes.size(); i++) {
-            out[i] = Nd4j.create(shapes.get(i));
+            out[i] = Nd4j.createFromDescriptor(shapes.get(i));
         }
         return out;
     }
@@ -1075,7 +1074,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op) {
+    public List<DataBuffer> calculateOutputShape(@NonNull CustomOp op) {
         try(OpContext ctx = buildContext()) {
             op.setupOpContextFromCustomOp(ctx);
             return calculateOutputShape(op, ctx);
@@ -1085,9 +1084,9 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
+    public List<DataBuffer> calculateOutputShape(@NonNull CustomOp op, OpContext opContext) {
         val hash = op.opHash();
-        val result = new ArrayList<LongShapeDescriptor>();
+        val result = new ArrayList<DataBuffer>();
 
         OpaqueShapeList ptrptr;
         ptrptr = Nd4j.getNativeOps().calculateOutputShapes2(null, hash, opContext.contextPointer());
@@ -1131,42 +1130,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return result;
     }
 
-    protected LongShapeDescriptor getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
+    protected DataBuffer getShapeFromPointer(CustomOp op,OpContext ctx,LongPointer ptr) {
         val rank = (int) ptr.get(0);
-
-        val shape = new long[rank * 2 + 4];
-        for (int i = 0; i < shape.length; i++) {
-            shape[i] = ptr.get(i);
-        }
-
-        LongShapeDescriptor ret = LongShapeDescriptor.builder()
-                .shape(Shape.shape(shape))
-                .stride(Shape.stride(shape))
-                .order(Shape.order(shape))
-                .ews(Shape.elementWiseStride(shape))
-                .extras(Shape.extras(shape))
-                .offset(offsetForDescriptor(op,ctx,Shape.extras(shape)))
-                .build();
-        return ret;
-    }
-
-    private static long offsetForDescriptor(CustomOp op,OpContext ctx,long flags) {
-       for(int i = 0; i < ArrayOptionsHelper.ARRAY_COPY_OFFSET_INDEXES.length; i++) {
-           if(ArrayOptionsHelper.hasBitSet(flags,ArrayOptionsHelper.ARRAY_COPY_OFFSET_INDEXES[i])) {
-               return offsetAtIndex(op,ctx,i);
-           }
-       }
-
-        return 0;
-
-    }
-
-    private static long offsetAtIndex(CustomOp op, OpContext ctx,int idx) {
-        if(ctx != null) {
-            return ctx.getInputArray(idx).offset();
-        } else {
-            return op.getInputArgument(idx).offset();
-        }
+        int len = Shape.shapeInfoLength(rank);
+        return Nd4j.createBuffer(ptr.capacity(len),Shape.shapeInfoLength(rank),DataType.INT64);
     }
 
 

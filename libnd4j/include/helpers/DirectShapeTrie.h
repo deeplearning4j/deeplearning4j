@@ -1,3 +1,20 @@
+/* ******************************************************************************
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
+
 #ifndef DIRECTSHAPETRIE_H
 #define DIRECTSHAPETRIE_H
 
@@ -20,37 +37,62 @@ namespace sd {
 
 class SD_LIB_EXPORT ShapeTrieNode {
  private:
-  std::vector<std::unique_ptr<ShapeTrieNode>> _children;
+  std::vector<ShapeTrieNode*> _children;
   LongType _value;
   int _level;
   bool _isShape;
-  ConstantShapeBuffer* _buffer;  // Now accessed atomically
+  ConstantShapeBuffer* _buffer = nullptr;  // Now accessed atomically
   int _shapeHash;   // Store a hash of the shape for validation
-  
+
 #if defined(SD_GCC_FUNCTRACE)
   backward::StackTrace storeStackTrace;
 #endif
 
  public:
-  ShapeTrieNode(LongType value = 0, int level = 0, bool isShape = true, int shapeHash = 0)
-      : _value(value), _level(level), _isShape(isShape), _buffer(nullptr), _shapeHash(shapeHash) {}
-
-  ~ShapeTrieNode() = default;
-
-  ShapeTrieNode* findOrCreateChild(LongType value, int level, bool isShape, int shapeHash = 0) {
-    for (auto& child : _children) {
-      if (child->value() == value && child->isShape() == isShape && child->shapeHash() == shapeHash) {
-        return child.get();
-      }
-    }
-    
-    auto newNode = std::make_unique<ShapeTrieNode>(value, level, isShape, shapeHash);
-    auto* ptr = newNode.get();
-    _children.push_back(std::move(newNode));
-    return ptr;
+  ShapeTrieNode(LongType value = 0, int level = 0, bool isShape = true, sd::LongType shapeHash = 0)
+      : _value(value), _level(level), _isShape(isShape), _shapeHash(shapeHash) {
   }
 
-  const std::vector<std::unique_ptr<ShapeTrieNode>>& children() const { return _children; }
+  ~ShapeTrieNode() {
+    // Delete children
+    for (auto* child : _children) {
+      delete child;
+    }
+    _children.clear();
+
+    // Delete buffer if it exists
+    if (_buffer != nullptr) {
+      delete _buffer;
+      _buffer = nullptr;
+    }
+  }
+
+
+  // Replace the current findOrCreateChild with this more defensive version
+  ShapeTrieNode* findOrCreateChild(LongType value, int level, bool isShape, int shapeHash) {
+    // First search for existing child
+    for (auto* child : _children) {
+      if (child != nullptr &&
+          child->value() == value &&
+          child->level() == level &&
+          child->isShape() == isShape &&
+          (shapeHash == 0 || child->shapeHash() == shapeHash)) {
+        return child;
+      }
+    }
+
+    // Create new node with standard allocation
+    try {
+      auto* newNode = new ShapeTrieNode(value, level, isShape, shapeHash);
+      // Add to children using standard vector operations
+      _children.push_back(newNode);
+      return newNode;
+    } catch (const std::exception& e) {
+      return nullptr;
+    }
+  }
+
+  const std::vector<ShapeTrieNode*>& children() const { return _children; }
   LongType value() const { return _value; }
   int level() const { return _level; }
   bool isShape() const { return _isShape; }
@@ -67,16 +109,23 @@ class SD_LIB_EXPORT ShapeTrieNode {
 class SD_LIB_EXPORT DirectShapeTrie {
  private:
   static const size_t NUM_STRIPES = 256; // Increased from 32 to reduce collisions
-  std::array<std::unique_ptr<ShapeTrieNode>, NUM_STRIPES> _roots;
-  mutable std::array<SHAPE_MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
+  std::array<ShapeTrieNode*, NUM_STRIPES> *_roots;
+  std::array<SHAPE_MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
+
+  // Helper method to create a fallback buffer when trie insertion fails
+  // Always returns a valid shape buffer or throws an exception
+  ConstantShapeBuffer* createFallbackBuffer(const LongType* shapeInfo, int rank);
 
  public:
   // Constructor
   DirectShapeTrie() {
+    _roots = new std::array<ShapeTrieNode*, NUM_STRIPES>();
+    _mutexes = new std::array<SHAPE_MUTEX_TYPE*, NUM_STRIPES>();
+
     for (size_t i = 0; i < NUM_STRIPES; i++) {
-      _roots[i] = std::make_unique<ShapeTrieNode>(0, 0, false);
-      // Make sure mutexes are properly initialized
-      new (&_mutexes[i]) SHAPE_MUTEX_TYPE();  // Explicit initialization
+      (*_roots)[i] = new ShapeTrieNode(0, 0, false);
+      // Allocate mutexes on the heap
+      (*_mutexes)[i] = new SHAPE_MUTEX_TYPE();
     }
 
     ShapeBufferPlatformHelper::initialize();
@@ -86,11 +135,34 @@ class SD_LIB_EXPORT DirectShapeTrie {
   DirectShapeTrie(const DirectShapeTrie&) = delete;
   DirectShapeTrie& operator=(const DirectShapeTrie&) = delete;
 
+  ~DirectShapeTrie() {
+    // Clean up all mutexes
+    if (_mutexes != nullptr) {
+      for (size_t i = 0; i < NUM_STRIPES; i++) {
+        if ((*_mutexes)[i] != nullptr) {
+          delete (*_mutexes)[i];
+        }
+      }
+      delete _mutexes;
+    }
+
+    // Clean up all root nodes
+    if (_roots != nullptr) {
+      for (size_t i = 0; i < NUM_STRIPES; i++) {
+        if ((*_roots)[i] != nullptr) {
+          delete (*_roots)[i];
+        }
+      }
+      delete _roots;
+    }
+  }
+
   // Delete move operations
   DirectShapeTrie(DirectShapeTrie&&) = delete;
   DirectShapeTrie& operator=(DirectShapeTrie&&) = delete;
 
   // Improved thread-safe getOrCreate
+  // Always returns a valid shape buffer or throws an exception
   ConstantShapeBuffer* getOrCreate(const LongType* shapeInfo);
 
   // Check if a shape info already exists in the trie
@@ -104,7 +176,7 @@ class SD_LIB_EXPORT DirectShapeTrie {
   ConstantShapeBuffer* search(const LongType* shapeInfo, size_t stripeIdx) const;
   ConstantShapeBuffer* insert(const LongType* shapeInfo, size_t stripeIdx);
   const ShapeTrieNode* findChild(const ShapeTrieNode* node, LongType value, int level, bool isShape, int shapeHash = 0) const;
-  
+
   // Calculate a unique shape signature for additional validation
   int calculateShapeSignature(const LongType* shapeInfo) const;
 };

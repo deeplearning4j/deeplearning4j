@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +36,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.ir.OpDescriptorHolder;
 import org.nd4j.ir.OpNamespace;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -96,7 +96,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Getter
     @Setter
     protected SDVariable[] outputVariables;
-    private List<LongShapeDescriptor> outputShapes;
+    private List<DataBuffer> outputShapes;
 
     public DynamicCustomOp() {
         iArguments = new ArrayList<>();
@@ -363,18 +363,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
             if(outputVariables.length > 0 && outputArguments().isEmpty()) {
                 //override output variables to ensure data types, shapes and output arrays are properly computed
-                List<LongShapeDescriptor> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+                List<DataBuffer> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
                 if(!longShapeDescriptors.isEmpty())
                     for(int i = 0; i < longShapeDescriptors.size(); i++) {
                         if(outputVariables[i].getArr() != null) {
                             addOutputArgument(outputVariables[i].getArr());
                         } else {
                             //not yet computed
-                            long[] shape = longShapeDescriptors.get(i).getShape();
-
-                            DataType defaultType = longShapeDescriptors.get(i).dataType();
-
-                            INDArray arr = longShapeDescriptors.get(i).isEmpty() ? Nd4j.create(longShapeDescriptors.get(i)) : Nd4j.create(defaultType,shape);
+                            INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
                             addOutputArgument(arr);
                         }
 
@@ -687,12 +683,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         val descriptor = getDescriptor();
         if (outputShapes != null && !outputShapes.isEmpty())
             return outputShapes;
@@ -728,7 +724,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         }
 
-        List<LongShapeDescriptor> ret;
+        List<DataBuffer> ret;
         if(oc == null)
             ret = Nd4j.getExecutioner().calculateOutputShape(this);
         else
@@ -880,7 +876,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         protected boolean inplaceCall;
         protected boolean inplaceAllowed;
         protected long opHash;
-        protected List<LongShapeDescriptor> outputShapes = new ArrayList<>();
+        protected List<DataBuffer> outputShapes = new ArrayList<>();
 
         private List<INDArray> inputArguments = new ArrayList<>();
         private List<INDArray> outputArguments = new ArrayList<>();
@@ -1218,7 +1214,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          */
 
 
-        public DynamicCustomOpsBuilder addOutputShape(LongShapeDescriptor shape) {
+        public DynamicCustomOpsBuilder addOutputShape(DataBuffer shape) {
             this.outputShapes.add(shape);
             return this;
         }

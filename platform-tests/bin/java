@@ -76,7 +76,7 @@ eof
 fi
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
-    TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX} --tool=memcheck"
+    TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX} --tool=memcheck --report-api-errors all  --show-backtrace yes --print-limit 1000 "
     # set default options for compute-sanitizer if none are specified
     # add jvm option to disable jit compilation to help with debugging
     java_call="${java_call}  -Djava.compiler=none"

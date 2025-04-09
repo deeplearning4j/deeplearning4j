@@ -51,9 +51,7 @@ DECLARE_SHAPE_FN(cast) {
   auto inShape = inputShape->at(0);
   if(!block.getDArguments()->empty()) {
     DataType newType = block.dataType(0);
-    DataType secondComp = block.getDArguments()->at(0);
     auto desc = new ShapeDescriptor(inShape, newType, true);
-   printf("cast new data type: %s", DataTypeUtils::asString(desc->dataType()).c_str());
     auto newShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
     auto compDataType = ArrayOptions::dataType(newShapeInfo);
     if(compDataType != newType) {

@@ -28,12 +28,12 @@
 #include <system/common.h>
 
 #include <array/NDArray.h>
-
+#ifndef __JAVACPP_HACK__
 namespace sd {
 class SD_LIB_EXPORT TadPack {
  private:
-  ConstantShapeBuffer _tadShape;
-  ConstantOffsetsBuffer _tadOffsets;
+  ConstantShapeBuffer *_tadShape;
+  ConstantOffsetsBuffer *_tadOffsets;
   LongType _numTads = 0;
   LongType _shapeInfoLength = 0;
   LongType* _dimensions = nullptr;
@@ -41,8 +41,8 @@ class SD_LIB_EXPORT TadPack {
   size_t _packHash = 0;  // Cache the hash for quick comparison
 
  public:
-  explicit TadPack(const ConstantShapeBuffer& shapes,
-                   const ConstantOffsetsBuffer& offets, LongType numTads,
+  explicit TadPack( ConstantShapeBuffer *shapes,
+                    ConstantOffsetsBuffer *offets, LongType numTads,
                    LongType* dimensions = nullptr, LongType dimLength = 0);
   TadPack() = default;
   ~TadPack() {};
@@ -124,3 +124,4 @@ class SD_LIB_EXPORT TadPack {
 }  // namespace sd
 
 #endif  // DEV_TESTS_TADPACK_H
+#endif

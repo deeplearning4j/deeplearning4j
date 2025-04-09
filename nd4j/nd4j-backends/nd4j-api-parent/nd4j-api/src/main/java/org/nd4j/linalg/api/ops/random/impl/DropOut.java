@@ -24,10 +24,10 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -97,9 +97,9 @@ public class DropOut extends BaseRandomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         INDArray input = oc.getInputArray(0);
-        return Arrays.asList(input.shapeDescriptor());
+        return Arrays.asList(input.shapeInfoDataBuffer());
     }
 
     @Override

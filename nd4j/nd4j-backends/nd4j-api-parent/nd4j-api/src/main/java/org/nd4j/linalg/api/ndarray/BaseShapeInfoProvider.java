@@ -36,9 +36,8 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);
 
     @Override
-    public Pair<DataBuffer, long[]> createShapeInformation(LongShapeDescriptor descriptor) {
-        return Pair.of(Shape
-                .createShapeInformation(descriptor), descriptor.toShapeInfo());
+    public Pair<DataBuffer, long[]> createShapeInformation(long[] shapeInfo) {
+        return Pair.of(Nd4j.createBuffer(shapeInfo),shapeInfo);
     }
 
     /**

@@ -20,17 +20,14 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
-import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.factory.Environment;
@@ -313,9 +310,9 @@ public interface OpExecutioner {
      */
     INDArray[] exec(CustomOp op, OpContext context);
 
-    List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
+    List<DataBuffer> calculateOutputShape(CustomOp op);
 
-    List<LongShapeDescriptor> calculateOutputShape(CustomOp op, OpContext opContext);
+    List<DataBuffer> calculateOutputShape(CustomOp op, OpContext opContext);
 
     /**
      * Equivalent to calli

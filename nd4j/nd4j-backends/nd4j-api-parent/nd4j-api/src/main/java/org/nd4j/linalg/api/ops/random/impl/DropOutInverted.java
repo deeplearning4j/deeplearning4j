@@ -24,10 +24,12 @@ import lombok.NonNull;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -90,14 +92,14 @@ public class DropOutInverted extends BaseRandomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         return calculateOutputShape();
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         LongShapeDescriptor longShapeDescriptor = LongShapeDescriptor.fromShape(shape,dataType);
-        return Arrays.asList(longShapeDescriptor);
+        return Arrays.asList(Nd4j.createBuffer(longShapeDescriptor.toShapeInfo()));
     }
 
 }

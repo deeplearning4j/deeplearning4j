@@ -2620,27 +2620,23 @@
 
 #else
 
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
-// we intentionally add 8 tail bytes here to avoid problems with atomic operations
-#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                              \
-  if (WORKSPACE == nullptr) {                                                                                          \
-    cudaError_t prevError = cudaGetLastError();                                                                        \
-    auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8);                    \
-    cudaError_t newError = cudaGetLastError();                                                                         \
-    if (erc_##VARIABLE != 0 || newError != cudaSuccess) {                                                              \
-      const char* prevErrorString = cudaGetErrorString(prevError);                                                     \
-      const char* newErrorString = cudaGetErrorString(newError);                                                       \
-      std::string errorMessage = "[DEVICE] allocation failed. Previous error: " + std::string(prevErrorString) +      \
-                                 ", New error: " + std::string(newErrorString);                                       \
-      THROW_EXCEPTION(errorMessage.c_str());                                                           \
-    } else {                                                                                                           \
-      sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); \
-    };                                                                                                                 \
-  } else {                                                                                                             \
-    VARIABLE =                                                                                                         \
-        reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8));      \
-  }
 
+// we intentionally add 8 tail bytes here to avoid problems with atomic operations
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT)                                                             \
+  if (WORKSPACE == nullptr) {                                                                                         \
+                                                                                          \
+    /* Calculate allocation size */                                                                                   \
+    size_t allocSize = LENGTH * sizeof(TT);                                                                       \
+                                                                                                                      \
+    /* Allocation with proper error handling */                                                                       \
+    checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));                          \
+    sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::DEVICE, VARIABLE, allocSize);          \
+                                                                                                              \
+  } else {                                                                                                            \
+    /* Using workspace allocator */                                                                                   \
+    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
+    VARIABLE = reinterpret_cast<TT*>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, allocSize));            \
+  }
 #define RELEASE_SPECIAL(VARIABLE, WORKSPACE)                                         \
   if (VARIABLE != nullptr) {                                                         \
     if (WORKSPACE == nullptr) {                                                      \

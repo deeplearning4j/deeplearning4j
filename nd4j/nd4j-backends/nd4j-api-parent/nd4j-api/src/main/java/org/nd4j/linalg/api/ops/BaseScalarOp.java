@@ -27,6 +27,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -111,15 +112,15 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+    public List<DataBuffer> calculateOutputShape(OpContext oc) {
         INDArray x = oc != null ? oc.getInputArray(0) : x();
 
-        val ret = new ArrayList<LongShapeDescriptor>(1);
+        val ret = new ArrayList<DataBuffer>(1);
 
         long[] s;
         if(x != null) {
@@ -133,7 +134,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
         LongShapeDescriptor desc = x.isEmpty() ? LongShapeDescriptor.fromShape(x.shape(),Shape.pickPairwiseDataType(aT, sT)) :
                 LongShapeDescriptor.fromShape(s, Shape.pickPairwiseDataType(aT, sT));
-        ret.add(desc);
+        ret.add(Nd4j.createBuffer(desc.toShapeInfo()));
         return ret;
     }
 

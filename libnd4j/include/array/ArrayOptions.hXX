@@ -245,8 +245,9 @@ SD_HOST bool ArrayOptions::isUnsigned(sd::LongType *shapeInfo) {
     sd::DataType::UTF32 \
 }
 
+long long int numDataTypesSet(sd::LongType property);
+long long int numDataTypesSet(sd::LongType property);
 SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
-  validateSingleDataType(property);
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const sd::DataType dataTypes[] = DATA_TYPES;
   const size_t numTypes = sizeof(dataTypeFlags) / sizeof(sd::LongType);
@@ -272,6 +273,8 @@ SD_HOST sd::DataType ArrayOptions::dataTypeValue(sd::LongType property) {
 
   return sd::DataType::UNKNOWN;
 }
+
+
 
 SD_HOST void validateFlags(sd::LongType property, const sd::LongType flags[], size_t numFlags) {
   LongType flagIndices[numFlags];
@@ -311,19 +314,28 @@ SD_HOST void ArrayOptions::validateSingleDataType(sd::LongType property) {
 }
 
 
+SD_HOST sd::LongType ArrayOptions::numDataTypesSet(sd::LongType property) {
+  const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
+  const size_t numDataTypeFlags = sizeof(dataTypeFlags) / sizeof(sd::LongType);
 
+  LongType flagIndices[numDataTypeFlags];
+  sd::LongType numFlagsSet = 0;
+  for (size_t i = 0; i < numDataTypeFlags; ++i) {
+    if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
+      flagIndices[i] = 1;
+      numFlagsSet++;
+    } else {
+      flagIndices[i] = 0;
+    }
+  }
+
+  return numFlagsSet;
+}
 
 SD_HOST sd::DataType ArrayOptions::dataType(const sd::LongType *shapeInfo) {
   if(shapeInfo == nullptr)
     THROW_EXCEPTION("ArrayOptions::dataType(..) shapeInfo can not be null!");
-/*#if defined(SD_GCC_FUNCTRACE)
-  Printer p;
-  StackTrace st;
-  st.load_here();
-  FILE *fp = fopen("stacktrace-.txt", "a+");
-  p.print(st,fp);
-  fclose(fp);
-#endif*/
+
   auto extra = ArrayOptions::extra(shapeInfo);
   return ArrayOptions::dataTypeValue(extra);
 }

@@ -625,6 +625,15 @@ public class Nd4j {
     }
 
     /**
+     * Delegates to {@link NDArrayFactory#create(DataBuffer, LongShapeDescriptor)}
+     * where an array is created with the given data buffer and long shape descriptor.
+     */
+    public static INDArray createFromDescriptor(DataBuffer dataBuffer,DataBuffer descriptor) {
+        return Nd4j.getNDArrayFactory().create(dataBuffer,descriptor);
+    }
+
+
+    /**
      * Create an ndarray based on the given description,
      * @param descriptor object with data for array creation.
      * @param initialize true/false creates initialized/uninitialized array.
@@ -849,8 +858,8 @@ public class Nd4j {
                 .addIntegerArguments(axes[1])
                 .build();
 
-        List<LongShapeDescriptor> l = op.calculateOutputShape();
-        INDArray out = Nd4j.create(l.get(0).asDataType(a.dataType()));
+        List<DataBuffer> l = op.calculateOutputShape();
+        INDArray out = Nd4j.createFromDescriptor(l.get(0));
         op.addOutputArgument(out);
         Nd4j.exec(op);
 
@@ -4268,6 +4277,17 @@ public class Nd4j {
     }
 
     /**
+     * Create an array based on the data buffer.
+     *
+     * @param buffer data data buffer used for initialisation.
+     * @return the created ndarray.
+     */
+    public static INDArray createFromDescriptor(DataBuffer buffer) {
+        return INSTANCE.createFromDescriptor(buffer);
+    }
+
+
+    /**
      * Create an array of given shape and data type.
      * @param shape desired shape of new array.
      * @param dataType data type.
@@ -5657,7 +5677,7 @@ public class Nd4j {
         Preconditions.checkState((x == null && y == null) || (x != null && y != null), "Both X and Y must be" +
                 "null, or neither must be null");
         DynamicCustomOp.DynamicCustomOpsBuilder op = DynamicCustomOp.builder("where_np");
-        List<LongShapeDescriptor> outShapes;
+        List<DataBuffer> outShapes;
         if(x == null){
             //First case: condition only...
             op.addInputs(condition);
@@ -5672,16 +5692,17 @@ public class Nd4j {
         outShapes = Nd4j.getExecutioner().calculateOutputShape(o);
         INDArray[] outputs = new INDArray[outShapes.size()];
 
-        if(x == null && (outShapes.get(0) == null || outShapes.get(0).getShape().length == 0 || outShapes.get(0).getShape()[0] == 0)){
+        long rank = outShapes.get(0).getLong(0);
+        if(x == null && (outShapes.get(0) == null || rank == 0L || rank == 0L)) {
             //Empty: no conditions match
-            for( int i=0; i<outputs.length; i++) {
+            for( int i = 0 ; i < outputs.length; i++) {
                 outputs[i]  = Nd4j.empty();
             }
             return outputs;
         }
 
         for(int i = 0; i < outputs.length; i++) {
-            outputs[i] = Nd4j.create(outShapes.get(i), false);
+            outputs[i] = Nd4j.createFromDescriptor(outShapes.get(i));
         }
         op.addOutputs(outputs);
 

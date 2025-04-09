@@ -21,7 +21,7 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.val;
-import org.jetbrains.annotations.NotNull;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -129,15 +129,17 @@ public interface CustomOp  {
 
  /**
   * Calculate the output shape for this op
+  *
   * @return Output array shapes
   */
- List<LongShapeDescriptor> calculateOutputShape();
+ List<DataBuffer> calculateOutputShape();
 
  /**
   * Calculate the output shape for this op
+  *
   * @return Output array shapes
   */
- List<LongShapeDescriptor> calculateOutputShape(OpContext opContext);
+ List<DataBuffer> calculateOutputShape(OpContext opContext);
 
  /**
   * Get the custom op descriptor if one is available.
@@ -207,8 +209,8 @@ public interface CustomOp  {
     if (list.isEmpty())
      throw new ND4JIllegalStateException("Op name " + opName() + " failed to calculate output shape and data types.");
 
-    for (LongShapeDescriptor shape : list) {
-     INDArray newOut = Nd4j.create(shape, false);
+    for (DataBuffer shape : list) {
+     INDArray newOut = Nd4j.createFromDescriptor(shape);
      addOutputArgument(newOut);
     }
     shapeOverride = true;

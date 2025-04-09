@@ -22,9 +22,9 @@ package org.nd4j.linalg.api.ops.impl.reduce.custom;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.Collections;
 import java.util.List;
@@ -155,7 +155,7 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
+    public List<DataBuffer> calculateOutputShape() {
         return calculateOutputShape(null);
     }
 
@@ -169,7 +169,7 @@ public abstract class BaseDynamicCustomIndexReduction extends BaseDynamicCustomR
                 "Expected 1 or input datatype for %s, got input %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
                 "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
-        return Collections.singletonList(DataType.LONG);
+        return Collections.singletonList(DataType.INT64);
     }
 
 }

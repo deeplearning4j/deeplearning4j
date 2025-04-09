@@ -20,6 +20,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -69,4 +70,5 @@ public interface SessionMemMgr extends Closeable {
      */
     void close();
 
+    INDArray allocateFromDescriptor(boolean detached, DataBuffer dataBuffer);
 }

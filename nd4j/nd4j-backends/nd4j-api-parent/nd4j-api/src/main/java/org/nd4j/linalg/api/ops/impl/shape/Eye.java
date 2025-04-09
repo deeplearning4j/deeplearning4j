@@ -23,6 +23,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -131,11 +132,8 @@ public class Eye extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(){
-        List<LongShapeDescriptor> l = super.calculateOutputShape();
-        if(dataType != null && l != null && l.size() > 0){
-            l.set(0, l.get(0).asDataType(dataType));
-        }
+    public List<DataBuffer> calculateOutputShape() {
+        List<DataBuffer> l = super.calculateOutputShape();
         return l;
     }
 

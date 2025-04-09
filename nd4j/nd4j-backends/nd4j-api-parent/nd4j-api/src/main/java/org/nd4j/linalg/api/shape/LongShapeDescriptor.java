@@ -208,7 +208,6 @@ public class LongShapeDescriptor {
             ret[i + 1 + rank()] = stride[i];
         }
 
-        Shape.setElementWiseStride(ret, (int) ews);
         Shape.setOrder(ret, order);
         Shape.setExtras(ret, extras);
         return ret;

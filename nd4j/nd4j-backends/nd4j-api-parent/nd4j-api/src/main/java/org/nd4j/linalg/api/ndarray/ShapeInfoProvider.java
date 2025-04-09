@@ -28,7 +28,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 public interface ShapeInfoProvider {
 
 
-    Pair<DataBuffer,long[]> createShapeInformation(LongShapeDescriptor descriptor);
     /**
      * This method creates long shapeInformation buffer, based on shape being passed in
      * @param shape
@@ -64,5 +63,7 @@ public interface ShapeInfoProvider {
      * @return
      */
     long getCachedBytes();
+
+    Pair<DataBuffer,long[]> createShapeInformation(long[] shapeInfo);
 
 }
