@@ -176,10 +176,7 @@ DECLARE_SHAPE_FN(tile_bp) {
     REQUIRE_TRUE(shape::sizeAt(gradOShape, i) == shape::sizeAt(inShape, i) * reps[i], 0,
                  "TILE_BP op: shapes of input array and output's gradients array (next epsilon) are inconsistent !");
 
-  sd::LongType *gradIShape;
-  COPY_SHAPE(inShape, gradIShape);
-
-  return SHAPELIST(CONSTANT(gradIShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 
 }  // namespace ops

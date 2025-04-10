@@ -164,11 +164,7 @@ DECLARE_SHAPE_FN(reduce_max_bp) {
         item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
         "REDUCE_MAX_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
-
-  sd::LongType* outShapeInfo;
-  COPY_SHAPE(inputShape->at(0), outShapeInfo);
-
-  return SHAPELIST(CONSTANT(outShapeInfo));
+  return SHAPELIST(CONSTANT(inputShape->at(0)));
 }
 
 DECLARE_TYPES(reduce_max_bp) {

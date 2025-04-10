@@ -62,7 +62,7 @@ CUSTOM_OP_IMPL(split_v, 2, -1, false, 0, -2) {
 
     auto sub = (*input)(indices);
 
-    output->assign(sub);
+    output->assign(&sub);
 
     pos += c_size;
   }

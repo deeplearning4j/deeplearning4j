@@ -30,14 +30,14 @@ CUSTOM_OP_IMPL(expose, -2, -2, true, 0, 0) {
     if(block.getVariableSpace() == nullptr || block.getVariableSpace()->getVariables().size() != block.width()) {
       auto in = INPUT_VARIABLE(e);
       auto out = OUTPUT_VARIABLE(e);
-      out->assign(*in);
+      out->assign(in);
     } else {
       auto inVar = block.variable(e);
       if (inVar->variableType() == NDARRAY) {
         auto in = INPUT_VARIABLE(e);
         auto out = OUTPUT_VARIABLE(e);
 
-        out->assign(*in);
+        out->assign(in);
       } else if (inVar->variableType() == ARRAY_LIST) {
         auto var = block.ensureVariable(e);
         if (!var->hasNDArrayList()) {

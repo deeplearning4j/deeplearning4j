@@ -105,7 +105,7 @@ void batchToSpace(sd::LaunchContext* context, NDArray input, NDArray& output,
   inputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    output.assign(inputRearranged0);
+    output.assign(&inputRearranged0);
   } else {
     std::vector<sd::LongType> outputShape =  {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)};
     NDArray inputRearranged1 = inputRearranged0.reshape(
@@ -233,7 +233,7 @@ void batchToSpaceND(sd::LaunchContext* context, NDArray& input, NDArray& blockSh
   inputRearranged0.permutei(temp, 0, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    output.assign(inputRearranged0);
+    output.assign(&inputRearranged0);
   } else {
     //*** construct reshaping std::vector for second reshape of input array ***//
 
@@ -349,7 +349,7 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
   outputRearranged0.permutei({2, 3, 0, 4, 1, 5}, false, false);
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(input);
+    outputRearranged0.assign(&input);
   } else {
     std::vector<sd::LongType> outReArrShape =  {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)};
     NDArray outputRearranged1 = outputRearranged0.reshape(
@@ -371,7 +371,7 @@ void spaceToBatch(LaunchContext* context, NDArray& input, NDArray& output, const
 
     manager.synchronize();
 
-    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(outputRearranged1);
+    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(&outputRearranged1);
   }
 }
 
@@ -496,7 +496,7 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
   // ****** //
 
   if (input.lengthOf() == output.lengthOf()) {
-    outputRearranged0.assign(input);
+    outputRearranged0.assign(&input);
   } else {
     //*** construct reshaping std::vector for second reshape of output array ***//
     temp.resize(rank);
@@ -521,7 +521,7 @@ void spaceToBatchND(LaunchContext* context, NDArray& input, NDArray& blockShape,
 
     manager.synchronize();
 
-    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(outputRearranged1);
+    if (output.specialBuffer() != outputRearranged1.specialBuffer()) outputRearranged0.assign(&outputRearranged1);
   }
 }
 

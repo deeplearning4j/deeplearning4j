@@ -113,7 +113,7 @@ void compat_sparse_to_dense(NDArray& values, NDArray& indices, NDArray* def, NDA
 
     // write out default values, if they are present
     if (def != nullptr) {
-      output.assign(*def);
+      output.assign(def);
     }
     NDArray::preparePrimaryUse({&output}, {&values, &indices});
     // write out values

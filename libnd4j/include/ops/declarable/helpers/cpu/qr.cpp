@@ -100,14 +100,14 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
   // resR *= -1.f;
   resQ->transposei();
   if (fullMatricies) {
-    Q->assign(*resQ);
-    R->assign(*resR);
+    Q->assign(resQ);
+    R->assign(resR);
   } else {
     auto resQRef = *resQ;
     auto resRRef = *resR;
     auto resQView = resQRef({0, 0, 0, N});
-    Q->assign(resQRef({0, 0, 0, N}));
-    R->assign(resRRef({0, N, 0, 0}));
+    Q->assign(&resQRef({0, 0, 0, N}));
+    R->assign(&resRRef({0, N, 0, 0}));
   }
 
   delete resQ;

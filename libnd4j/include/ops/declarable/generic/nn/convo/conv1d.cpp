@@ -90,13 +90,13 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     ret = conv2d.execute({inputReshaped, weightsReshaped}, {outputReshaped}, {},
                          {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, originalNCW}, {});
 
-    output->assign(*outputReshaped);
+    output->assign(outputReshaped);
 
   } else {
     ret = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {},
                          {1, kW, 1, sW, 0, pW, 1, dW, paddingMode, originalNCW}, {});
 
-    output->assign(*outputReshaped);
+    output->assign(outputReshaped);
 
   }
 
@@ -257,8 +257,8 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   conv2d_bp conv2dBP;
   if(bias == nullptr) {
     if(gradO->isScalar()) {
-      gradIReshaped->assign(*gradO);
-      gradWReshaped->assign(*gradO);
+      gradIReshaped->assign(gradO);
+      gradWReshaped->assign(gradO);
     } else {
       std::vector<NDArray *> inputs = {inputReshaped, weightsReshaped, gradOReshaped};
       std::vector<NDArray *> outputs = {gradIReshaped, gradWReshaped};
@@ -273,9 +273,9 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
 
   } else {
     if(gradO->isScalar()) {
-      gradIReshaped->assign(*gradO);
-      gradWReshaped->assign(*gradO);
-      gradB->assign(*gradO);
+      gradIReshaped->assign(gradO);
+      gradWReshaped->assign(gradO);
+      gradB->assign(gradO);
     } else {
       std::vector<NDArray *> inputs = {inputReshaped, weightsReshaped,bias, gradOReshaped};
       std::vector<NDArray *> outputs = {gradIReshaped, gradWReshaped, gradB};
@@ -288,18 +288,18 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
   }
 
   if(gradIReshaped->buffer() != gradI->buffer()) {
-    gradI->assign(*gradIReshaped);
+    gradI->assign(gradIReshaped);
   }
 
 
 
   if(gradWReshaped->buffer() != gradW->buffer()) {
-    gradW->assign(*gradWReshaped);
+    gradW->assign(gradWReshaped);
   }
 
   if(bias != nullptr) {
     if(gradB->buffer() != gradB->buffer()) {
-      gradB->assign(*gradB);
+      gradB->assign(gradB);
     }
   }
 

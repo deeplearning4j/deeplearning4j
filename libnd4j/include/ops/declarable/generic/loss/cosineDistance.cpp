@@ -83,11 +83,12 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 
   switch (reductionMode) {
     case 0:  // 0 - "none", un-reduced weighted losses with the same shape as labels.
-      output->assign(E);
+      output->assign(&E);
       break;
 
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
-      output->assign(E.reduceNumber(reduce::Sum));
+      NDArray outAssign = E.reduceNumber(reduce::Sum);
+      output->assign(&outAssign);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
@@ -100,8 +101,10 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 
       if (sum.e<double>(0) == 0.)
         *output = 0.;
-      else
-        output->assign(E.reduceNumber(reduce::Sum) / sum);
+      else {
+        NDArray assign = E.reduceNumber(reduce::Sum) / sum;
+        output->assign(&assign);
+      }
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
@@ -114,9 +117,10 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 
       if (numOfNonZeroWeights == 0)
         *output = 0.;
-      else
-        output->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
-
+      else {
+        NDArray assign = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
+        output->assign(&assign);
+      }
       break;
     }
   }
@@ -238,8 +242,10 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
   if (!weights->isScalar() && !weights->isSameShape(&E))
     weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
 
-  dLdp->assign(-*labels);
-  dLdl->assign(-*predictions);
+  NDArray negLabels = -*labels;
+  NDArray negPreds = -*predictions;
+  dLdp->assign(&negLabels);
+  dLdl->assign(&negPreds);
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -248,14 +254,15 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
       *dLdl *= *weightsBroad;
 
       if (weights->isScalar() || weights->lengthOf() == 1) {
-        dLdw->assign(E.reduceNumber(reduce::Sum));
+        NDArray assign = E.reduceNumber(reduce::Sum);
+        dLdw->assign(&assign);
       } else {
         if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
         } else
-          dLdw->assign(E);
+          dLdw->assign(&E);
       }
 
       break;
@@ -285,8 +292,10 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
                 .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-          } else
-            dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
+          } else {
+            NDArray assign = (E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum);
+            dLdw->assign(&assign);
+          }
         }
       }
       break;
@@ -309,15 +318,18 @@ CUSTOM_OP_IMPL(cosine_distance_loss_grad, 3, 3, false, 0, 2) {
         *dLdl *= temp;
 
         if (weights->isScalar() || weights->lengthOf() == 1) {
-          dLdw->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
+          NDArray assign = E.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
+          dLdw->assign(&assign);
         } else {
           if (weights != weightsBroad) {
             std::vector<LongType> axesToReduceAlong =
                 ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
             E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
             *dLdw /= numOfNonZeroWeights;
-          } else
-            dLdw->assign(E / numOfNonZeroWeights);
+          } else {
+            NDArray assign5 = E / numOfNonZeroWeights;
+            dLdw->assign(&assign5);
+          }
         }
       }
       break;

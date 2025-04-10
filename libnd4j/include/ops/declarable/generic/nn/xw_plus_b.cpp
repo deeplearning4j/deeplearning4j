@@ -138,7 +138,8 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 
   // dLdb
   std::vector<LongType> dims({0});
-  dLdb->assign(dLdz->reduceAlongDimension(reduce::Sum, &dims));
+  NDArray assign = dLdz->reduceAlongDimension(reduce::Sum, &dims);
+  dLdb->assign(&assign);
 
   matmul_bp mmul_bp;
   mmul_bp.execute({x, w, dLdz}, std::vector<NDArray*>{dLdx, dLdw}, {}, {}, {});
@@ -157,14 +158,7 @@ CUSTOM_OP_IMPL(xw_plus_b_bp, 4, 3, false, 0, 0) {
 }
 
 DECLARE_SHAPE_FN(xw_plus_b_bp) {
-  LongType* xShapeInfo;
-  LongType* wShapeInfo;
-  LongType* bShapeInfo;
-
-  COPY_SHAPE(inputShape->at(0), xShapeInfo);
-  COPY_SHAPE(inputShape->at(1), wShapeInfo);
-  COPY_SHAPE(inputShape->at(2), bShapeInfo);
-  return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(wShapeInfo), CONSTANT(bShapeInfo));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)), CONSTANT(inputShape->at(2)));
 }
 
 DECLARE_TYPES(xw_plus_b_bp) {

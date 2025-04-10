@@ -140,7 +140,8 @@ CUSTOM_OP_IMPL(reduce_variance_bp, -1, 1, false, 0, 0) {
   const sd::LongType N = inputLen / grad0Length;
   const sd::LongType NminusOne = biasCorrected ? N - 1 : N;
   auto mean = input->reduceAlongDimension(reduce::Mean, &dimensions, true);
-  gradI->assign((*input - mean) * (2.0f / NminusOne));  // automatic broadcasting happens here
+  NDArray assign = (*input - mean) * (2.0f / NminusOne);
+  gradI->assign(&assign);  // automatic broadcasting happens here
   if (!keepDims) {
     auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
     auto grad0Shape =   ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims);
@@ -175,11 +176,7 @@ DECLARE_SHAPE_FN(reduce_variance_bp) {
       item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0,
       "REDUCE_VARIANCE_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
       inputShape->at(0)[0], inputShape->at(0)[0], item);
-
-  sd::LongType* gradIshapeInfo(nullptr);
-  COPY_SHAPE(in, gradIshapeInfo);
-
-  return SHAPELIST(CONSTANT(gradIshapeInfo));
+  return SHAPELIST(CONSTANT(in));
 }
 
 DECLARE_TYPES(reduce_variance_bp) {

@@ -138,7 +138,7 @@ CUSTOM_OP_IMPL(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 
   softmax /= softmax.reduceAlongDimension(reduce::Sum, &dimension, true);
 
   // dEdp = softmax - 1 (or 0)
-  dLdp->assign(softmax);
+  dLdp->assign(&softmax);
 
   // subtract unities at appropriate indexes of dLdp array
   helpers::scatterForLoss(block.launchContext(), *labels, *dLdp,

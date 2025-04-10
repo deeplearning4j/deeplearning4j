@@ -64,6 +64,10 @@ class SD_LIB_EXPORT DataBuffer {
 
   bool closed = false;
 
+  // Helper template function for printing host buffer content (implementation in .cpp)
+  template <typename T>
+  void printHostBufferContent(void* buffer, sd::LongType offset, sd::LongType length);
+
 
 
   void setCountersToZero();
@@ -172,6 +176,15 @@ class SD_LIB_EXPORT DataBuffer {
   DataBuffer  dup();
   void printHostDevice(long offset);
   static void memcpy(DataBuffer *dst, DataBuffer *src, sd::LongType startingOffset, sd::LongType dstOffset);
+  /**
+   * Print detailed buffer information including host and device content if available
+   * @param msg - Optional message to display
+   * @param offset - Starting offset for printing buffer contents
+   * @param limit - Maximum number of elements to print
+   */
+#ifndef __JAVACPP_HACK__
+  void printBufferDebug(const char* msg = nullptr, sd::LongType offset = 0, sd::LongType limit = 10);
+#endif
 };
 ///// IMPLEMENTATION OF INLINE METHODS /////
 

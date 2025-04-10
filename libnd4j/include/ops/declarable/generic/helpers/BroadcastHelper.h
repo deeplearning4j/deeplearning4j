@@ -70,9 +70,9 @@ class BroadcastHelper {
                    op.s == scalar::AMinPairwise) {
           y->applyScalarArr(op.s, x, z);
         } else if (op.s == scalar::CopyPws) {
-          z->assign(yRef);
+          z->assign(&yRef);
         } else {
-          z->assign(xRef);
+          z->assign(&xRef);
           z->applyPairwiseTransform(op.p, y, extraArgs);
         }
         return z;

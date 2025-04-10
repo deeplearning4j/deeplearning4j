@@ -51,7 +51,7 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     if (x <= y)
-      gradY->assign(tmp);
+      gradY->assign(&tmp);
     else
       gradY->assign(zero);
 
@@ -77,15 +77,15 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(preX);
+      gradX->assign(&preX);
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(preY);
+      gradY->assign(&preY);
   }
 }
 

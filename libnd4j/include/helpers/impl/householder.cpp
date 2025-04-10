@@ -59,8 +59,8 @@ void Householder<T>::evalHHmatrixData(NDArray& x, NDArray& tail, T& coeff, T& no
     if (xFirstElem >= (T)0.f) normX = -normX;  // choose opposite sign to lessen roundoff error
 
     coeff = (normX - xFirstElem) / normX;
-
-    tail.assign(xTail / (xFirstElem - normX));
+    NDArray tailAssign = xTail / (xFirstElem - normX);
+    tail.assign(&tailAssign);
   }
 }
 

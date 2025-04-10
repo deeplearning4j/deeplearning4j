@@ -101,7 +101,7 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
     NDArray &gradW2d = gradW->reshape('f', wShape,false).permute(permu,false,false);
 
     MmulHelper::matmul( &columns2d,&gradO2d, &gradW2d, true, true, 1.0, 0.0, &gradW2d);
-    gradW->assign(gradW2d);
+    gradW->assign(&gradW2d);
 
   }
 
@@ -144,7 +144,8 @@ static void conv2dBP_(sd::graph::Context& block, NDArray* input, NDArray* weight
   // Handle NHWC format if necessary
   if (!isNCHW) {
     std::vector<sd::LongType> permute = {0, 2,3,1};
-    gradI->assign(gradIPermuted->permute(permute,false,false));  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    auto permuted = gradIPermuted->permute(permute,false,false);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
+    gradI->assign(&permuted);  // [bS, iC, iH, iW] -> [bS, iH, iW, iC]
   }
 
   // Clean up

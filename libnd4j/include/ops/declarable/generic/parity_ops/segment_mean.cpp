@@ -83,18 +83,13 @@ CUSTOM_OP_IMPL(segment_mean_bp, 3, 2, false, 0, 0) {
   auto gradOut = INPUT_VARIABLE(2);
   auto output = OUTPUT_NULLIFIED(0);
   auto outIndices = OUTPUT_NULLIFIED(1);
-  outIndices->assign(*indices);
+  outIndices->assign(indices);
   return helpers::segmentMeanFunctorBP(block.launchContext(), input, indices, gradOut, output);
 }
 DECLARE_SHAPE_FN(segment_mean_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
-
-  LongType* outShape;
-  LongType* outIndex;
-  COPY_SHAPE(in, outShape);
-  COPY_SHAPE(inIdx, outIndex);
-  return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
+  return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 DECLARE_TYPES(segment_mean_bp) {
   getOpDescriptor()

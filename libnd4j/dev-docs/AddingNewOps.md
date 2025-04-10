@@ -105,9 +105,7 @@ DECLARE_SHAPE_FN(tear) {
 
     auto result = SHAPELIST();
     for (int e = 0; e < numTads; e++) {
-        int *newShape;
-        COPY_SHAPE(tad.tadOnlyShapeInfo, newShape);
-        result->push_back(newShape);
+        result->push_back(tad.tadOnlyShapeInfo);
     }
 
     return result;

@@ -146,7 +146,8 @@ Status _dropOutFunctor(sd::graph::Context& context, NDArray* input, NDArray* out
     *dropOutMultiplier += *chunk;
 
     // FIXME: we could do this in one step, aren't we?
-    output->assign(*input * *dropOutMultiplier);
+    NDArray ret = *input * *dropOutMultiplier;
+    output->assign(&ret);
   }
 
   return Status::OK;
@@ -347,8 +348,8 @@ static Status alphaDropOutFunctor_(sd::graph::Context& context, NDArray* input, 
     dropOutMultiplier->assign(one);
 
     *dropOutMultiplier += *chunk;
-
-    output->assign(*input * *dropOutMultiplier);
+    NDArray ret = *input * *dropOutMultiplier;
+    output->assign(&ret);
 
   }
 

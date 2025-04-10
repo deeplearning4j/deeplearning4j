@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
   REQUIRE_TRUE(input->rankOf() > 0, 0, "nth_element: The rank of input array should be at least 1, but %i is given",
                input->rankOf());  //
   if (output->lengthOf() == input->lengthOf())
-    output->assign(*input);
+    output->assign(input);
   else {
     helpers::nthElementFunctor(block.launchContext(), input, nVal, output, reverse);
   }

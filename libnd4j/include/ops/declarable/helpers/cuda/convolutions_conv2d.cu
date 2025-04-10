@@ -106,11 +106,11 @@ static void conv2d_(sd::graph::Context& block, NDArray* input, NDArray* weights,
 
   // Reshape and copy result to output
   if (isNCHW) {
-    output->assign(permuted);
+    output->assign(&permuted);
   } else {
     std::vector<sd::LongType> otherPermute = {0,2,3,1};
     permuted = permuted.permute(otherPermute, 0, false);
-    output->assign(permuted);
+    output->assign(&permuted);
   }
 
   //----- add biases if required -----//

@@ -85,7 +85,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "DropOut requires either TArgs or second argument to be present");
       }
 
-      if (!block.isInplace()) z->assign(*input);
+      if (!block.isInplace()) z->assign(input);
 
       RandomLauncher::applyDropOut(block.launchContext(), block.randomGenerator(), z, prob);
     } break;
@@ -263,7 +263,7 @@ Status LegacyRandomOp::validateAndExecute_(Context& block) {
         REQUIRE_TRUE(false, 0, "AlphaDropOut requires either TArgs or 5 arguments to be present");
       }
 
-      if (!block.isInplace()) z->assign(*input);
+      if (!block.isInplace()) z->assign(input);
 
       RandomLauncher::applyAlphaDropOut(block.launchContext(), block.randomGenerator(), z, prob, a, b, pa);
     } break;
@@ -301,11 +301,8 @@ Status LegacyRandomOp::validateAndExecute(Context& block) {
 ShapeList* LegacyRandomOp::calculateOutputShape(ShapeList* inputShape, Context& block) {
   auto inShape = inputShape->at(0);
   auto xType = ArrayOptions::dataType(inShape);
-  LongType* newShape;
   if (DataTypeUtils::isR(xType)) {
-    COPY_SHAPE(inShape, newShape);
-
-    return SHAPELIST(CONSTANT(newShape));
+    return SHAPELIST(CONSTANT(inShape));
   } else if (DataTypeUtils::isZ(xType)) {
     auto zShapeArr = INPUT_VARIABLE(0);
     auto zShapeVector = zShapeArr->asVectorT<LongType>();

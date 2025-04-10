@@ -58,11 +58,7 @@ sd::Status LegacyTransformOp::validateAndExecute(Context &block) {
  */
 ShapeList *LegacyTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
   auto inShape = inputShape->at(0);
-
-  sd::LongType *newShape;
-  COPY_SHAPE(inShape, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 }  // namespace ops
 }  // namespace sd

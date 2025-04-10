@@ -56,7 +56,8 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
           input->dataType() == INPUT_VARIABLE(2)->dataType(), 0,
           "PAD op: data types of input and padValue arrays should be the same but got %i and %i correspondingly !",
           input->dataType(), INPUT_VARIABLE(2)->dataType());
-      padValue.assign(INPUT_VARIABLE(2)->e(0));
+      auto get = INPUT_VARIABLE(2)->e(0);
+      padValue.assign(&get);
     } else if (!block.getTArguments()->empty())
       padValue = T_ARG(0);
   } else if (INT_ARG(0) == 1) {  // REFLECT mode

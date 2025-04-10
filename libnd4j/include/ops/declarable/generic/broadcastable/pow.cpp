@@ -82,21 +82,23 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
   *temp *= *dLdx;  // c = b*a
   *temp *= *dLdz;  // dL/dy = c * dL/dz
   if (dLdy->isSameShape(*dLdz)) {
-    dLdy->assign(*temp);
+    dLdy->assign(temp);
   } else {
     std::vector<LongType> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
-    dLdy->assign(temp->reduceAlongDimension(reduce::Sum, &axesForY));  // dL/dy = sum(c * dL/dz)
-  }
+    NDArray dLdyTemp = temp->reduceAlongDimension(reduce::Sum, &axesForY);
+    dLdy->assign(&dLdyTemp);  // dL/dy = sum(c * dL/dz)
+      }
 
   // dL/dx = y*x^(y-1) * dL/dz
   x->applyTrueBroadcast(BroadcastOpsTuple::PowDerivative(), y, temp);  // a = y*x^(y-1)
   *temp *= *dLdz;                                                        // dLdx = a*dL/dz
 
   if (dLdx->isSameShape(*dLdz)) {
-    dLdx->assign(*temp);  // dLdx = a*dL/dz
+    dLdx->assign(temp);  // dLdx = a*dL/dz
   } else {
     std::vector<LongType> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
-    dLdx->assign(temp->reduceAlongDimension(reduce::Sum, &axesForX));  // dLdx = a*dL/dz
+    NDArray dLdxTemp = temp->reduceAlongDimension(reduce::Sum, &axesForX);
+    dLdx->assign(&dLdxTemp);  // dLdx = a*dL/dz
   }
 
   return Status::OK;
@@ -105,14 +107,7 @@ CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
 DECLARE_SHAPE_FN(Pow_bp) {
   auto xShapeInfo = inputShape->at(0);
   auto yShapeInfo = inputShape->at(1);
-
-  LongType* dLdxShapeInfo = nullptr;
-  LongType* dLdyShapeInfo = nullptr;
-
-  COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
-  COPY_SHAPE(yShapeInfo, dLdyShapeInfo);
-
-  return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdyShapeInfo));
+  return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(yShapeInfo));
 }
 
 DECLARE_TYPES(Pow_bp) {

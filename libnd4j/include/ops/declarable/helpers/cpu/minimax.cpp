@@ -51,7 +51,7 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     if (x <= y)
-      gradY->assign(tmp);
+      gradY->assign(&tmp);
     else
       gradY->assign(zero);
 
@@ -77,15 +77,15 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(preX);
+      gradX->assign(&preX);
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(preY);
+      gradY->assign(&preY);
   }
 }
 template <typename T>
@@ -111,7 +111,7 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     float zero = 0.0f;
     if (x <= y)
-      gradY->assign(tmp);
+      gradY->assign(&tmp);
     else
       gradY->assign(zero);
 
@@ -137,15 +137,15 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(preX);
+      gradX->assign(&preX);
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(preY);
+      gradY->assign(&preY);
   }
 }
 

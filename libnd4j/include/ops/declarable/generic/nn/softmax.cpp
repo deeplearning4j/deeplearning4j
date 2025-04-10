@@ -56,7 +56,7 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
   auto gradO = INPUT_VARIABLE(1);
   auto softmaxedOut = INPUT_VARIABLE(2);
   auto gradI = OUTPUT_VARIABLE(0);
-  gradI->assign(*softmaxedOut);
+  gradI->assign(softmaxedOut);
   const int rank = input->rankOf();
   const int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
@@ -68,7 +68,8 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 3, 1, true, 0, 0) {
 
   std::vector<sd::LongType> dimVector = {dim};
   auto sumAlongDim = (*gradI * *gradO).reduceAlongDimension(reduce::Sum, &dimVector, true);
-  gradI->assign(*gradI * (*gradO - sumAlongDim));
+  NDArray assign =  *gradI * (*gradO - sumAlongDim);
+  gradI->assign(&assign);
 
   return sd::Status::OK;
 }

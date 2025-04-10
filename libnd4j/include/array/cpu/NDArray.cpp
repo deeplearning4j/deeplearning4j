@@ -43,7 +43,27 @@
 namespace sd {
 
 
+// NDArray implementation for .cpp file
+void NDArray::printBufferDebug(const char* msg, sd::LongType offset, sd::LongType limit) {
+  if (msg) sd_printf("%s:\n", msg);
+  if(limit < 0) limit = lengthOf();
 
+  // Print array info
+  sd_printf("NDArray: Shape=[", 0);
+  for (int i = 0; i < rankOf(); i++) {
+    sd_printf("%lld", (long long)sizeAt(i));
+    if (i < rankOf() - 1) sd_printf(",", 0);
+  }
+  sd_printf("], DataType=%s, EWS=%lld, Order=%c\n",
+            DataTypeUtils::asString(dataType()).c_str(), (long long)ews(), ordering());
+
+  // Print buffer state
+  if (_buffer != nullptr) {
+    _buffer->printBufferDebug("Buffer contents", offset, limit);
+  } else {
+    sd_printf("Buffer is nullptr\n", 0);
+  }
+}
 ////////////////////////////////////////////////////////////////////////
 
 void* NDArray::platformBuffer() { return buffer(); }

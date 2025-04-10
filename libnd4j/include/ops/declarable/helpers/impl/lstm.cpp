@@ -134,8 +134,8 @@ void lstmTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* h0, NDArray* 
     auto ct = (*c)({t, t + 1, 0, 0, 0, 0});
 
     helpers::lstmCell(context, &xt, &currentH, &currentC, Wx, Wh, Wc, Wp, b, &ht, &ct, params);
-    currentH.assign(ht);
-    currentC.assign(ct);
+    currentH.assign(&ht);
+    currentC.assign(&ct);
   }
 }
 

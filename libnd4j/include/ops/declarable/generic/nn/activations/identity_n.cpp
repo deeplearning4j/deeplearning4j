@@ -43,9 +43,7 @@ CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
 DECLARE_SHAPE_FN(identity_n) {
   auto shapes = SHAPELIST();
   for (int i = 0; i < inputShape->size(); ++i) {
-    LongType* shape;
-    COPY_SHAPE_EX(inputShape->at(i), shape, block.getWorkspace());
-    shapes->push_back(CONSTANT(shape));
+    shapes->push_back(CONSTANT(inputShape->at(i)));
   }
   return shapes;
 }

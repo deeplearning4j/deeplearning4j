@@ -2451,9 +2451,7 @@
     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width()                                  \
                                                                      : this->getOpDescriptor()->getNumberOfOutputs(); \
     for (size_t e = 0; e < opLimit; e++) {                                                                               \
-      sd::LongType* newshape;                                                                                         \
-      COPY_SHAPE(inputShape->at(0), newshape);                                                                        \
-      shapeList->push_back(CONSTANT(newshape));                                                                       \
+      shapeList->push_back(CONSTANT(inputShape->at(0)));                                                                       \
     }                                                                                                                 \
     return shapeList;                                                                                                 \
   }                                                                                                                   \

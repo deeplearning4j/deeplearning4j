@@ -334,8 +334,8 @@ static void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& r
                                                                               tempOutput.dataBuffer()->specialAsT<T>(), tempOutput.specialShapeInfo());
 
   sd::DebugHelper::checkErrorCode(stream, "fillPoissonKernel failed");
-
-  output->assign(tempOutput.cast(output->dataType()));
+  NDArray ret = tempOutput.cast(output->dataType());
+  output->assign(&ret);
   NDArray::registerSpecialUse({output,&tempOutput}, {lambda,&tempLambda});
 
   manager.synchronize();

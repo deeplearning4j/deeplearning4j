@@ -28,7 +28,7 @@ namespace helpers {
 template <typename T>
 static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool inplace) {
   auto source = input;
-  if (!inplace) output->assign(*input);
+  if (!inplace) output->assign(input);
 
   int fullLen = source->lengthOf();
   int actualShift = shift;  // % fullLen; // shift already non-negative then
@@ -79,7 +79,7 @@ static void rollFunctorLinear_(NDArray* input, NDArray* output, int shift, bool 
 
 void rollFunctorFull(sd::LaunchContext* context, NDArray* input, NDArray* output, const std::vector<LongType>& shifts,
                      const std::vector<LongType>& axes, bool inplace) {
-  if (!inplace) output->assign(*input);
+  if (!inplace) output->assign(input);
 
   auto source = output;  // input;
   for (size_t i = 0; i < axes.size(); i++) {

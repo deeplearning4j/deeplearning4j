@@ -84,9 +84,9 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!cond->e<bool>(e)) {
-          tadsZ.at(e)->assign(*tadsY.at(e));
+          tadsZ.at(e)->assign(tadsY.at(e));
         } else {
-          tadsZ.at(e)->assign(*tadsX.at(e));
+          tadsZ.at(e)->assign(tadsX.at(e));
         }
       }
 
@@ -99,11 +99,7 @@ CUSTOM_OP_IMPL(select, 3, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(select) {
   auto inShape = inputShape->at(1);
-
-  LongType *newshape;
-  COPY_SHAPE(inShape, newshape);
-
-  return SHAPELIST(CONSTANT(newshape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 
 DECLARE_TYPES(select) {

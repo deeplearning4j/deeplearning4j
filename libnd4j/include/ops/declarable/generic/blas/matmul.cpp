@@ -196,14 +196,20 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
   if (eps->isScalar()) {
     if (x->isVector() && y->isVector()) {
       if (x->isRowVector() && y->isRowVector()) {
-        dldx->assign((*eps) * y->sumNumber());
-        dldy->assign((*eps) * x->sumNumber());
+        NDArray dldxAssign = (*eps) * y->sumNumber();
+        dldx->assign(&dldxAssign);
+        NDArray dldyAssign = (*eps) * x->sumNumber();
+        dldy->assign(&dldyAssign);
       } else if (x->isColumnVector() && y->isColumnVector()) {
-        dldx->assign((*eps) * y->sumNumber());
-        dldy->assign((*eps) * x->sumNumber());
+        NDArray dldxAssign = (*eps) * y->sumNumber();
+        dldx->assign(&dldxAssign);
+        NDArray dldyAssign = (*eps) * x->sumNumber();
+        dldy->assign(&dldyAssign);
       } else {
-        dldx->assign((*eps) * (*y));
-        dldy->assign((*eps) * (*x));
+        NDArray dldxAssign = (*eps) * (*y);
+        dldx->assign(&dldxAssign);
+        NDArray dldyAssign = (*eps) * (*x);
+        dldy->assign(&dldyAssign);
       }
     } else {
       // assign all ones to shape as baseline
@@ -249,13 +255,7 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
 
 //////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(matmul_bp) {
-  LongType *xShapeInfo;
-  LongType *yShapeInfo;
-
-  COPY_SHAPE(inputShape->at(0), xShapeInfo);
-  COPY_SHAPE(inputShape->at(1), yShapeInfo);
-
-  return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(yShapeInfo));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)));
 }
 
 //////////////////////////////////////////////////////////////////////

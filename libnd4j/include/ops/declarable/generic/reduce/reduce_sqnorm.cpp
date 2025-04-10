@@ -105,7 +105,8 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    gradI->assign(2 * (*input) * gradO->e(0));
+    NDArray assign = 2 * (*input) * gradO->e(0);
+    gradI->assign(&assign);
   } else {
     bool keepDims = false;
     auto dimensions = *block.getIArguments();
@@ -138,11 +139,16 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, -1, 1, false, 0, 0) {
           ShapeUtils::evalReduceShapeInfo(gradO->ordering(), &dimensions, *input, true, false, block.getWorkspace());
       std::vector<sd::LongType> shape =  ShapeUtils::pullShapeFromShapeInfo(
           gradOShapeKeepDims);
-      gradI->assign(2. * (*input) *
-                    gradO->reshape(gradO->ordering(),
-                                   shape));  // for example could be something like [a,b] -> [1,a,1,b]
-    } else
-      gradI->assign(2. * (*input) * *gradO);
+      // First case
+      NDArray gradITemp1 = 2. * (*input) *
+                           gradO->reshape(gradO->ordering(),
+                                          shape);  // for example could be something like [a,b] -> [1,a,1,b]
+      gradI->assign(&gradITemp1);
+    } else {
+      // Second case
+      NDArray gradITemp2 = 2. * (*input) * *gradO;
+      gradI->assign(&gradITemp2);
+    }
   }
   return sd::Status::OK;
 }
@@ -167,10 +173,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
           inputShape->at(0)[0], inputShape->at(0)[0], item);
   }
 
-  sd::LongType* gradIshapeInfo(nullptr);
-  COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
-
-  return SHAPELIST(CONSTANT(gradIshapeInfo));
+  return SHAPELIST(CONSTANT(inputShape->at(0)));
 }
 
 DECLARE_TYPES(reduce_sqnorm_bp) {

@@ -148,10 +148,7 @@ DECLARE_TYPES(im2col_bp) {
 }
 
 DECLARE_SHAPE_FN(im2col_bp) {
-  sd::LongType* inShape;
-  COPY_SHAPE(inputShape->at(0), inShape);
-
-  return SHAPELIST(CONSTANT(inShape));
+  return SHAPELIST(CONSTANT(inputShape->at(0)));
 }
 }  // namespace ops
 }  // namespace sd

@@ -32,7 +32,7 @@ CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
 
   if (block.width() > 1) {
     auto s = INPUT_VARIABLE(0);
-    output->assign(*s);
+    output->assign(s);
   } else if (block.numT() > 0) {
     output->assign(T_ARG(0));
   } else if (block.numI() > 0) {

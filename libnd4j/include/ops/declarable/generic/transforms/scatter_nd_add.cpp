@@ -74,7 +74,7 @@ OP_IMPL(scatter_nd_add, 3, 1, true) {
                  numOfBadIndx);
   }
 
-  if (!block.isInplace()) output->assign(*input);
+  if (!block.isInplace()) output->assign(input);
 
   helpers::scatterND(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
 

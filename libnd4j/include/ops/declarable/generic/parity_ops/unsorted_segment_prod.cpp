@@ -128,13 +128,7 @@ DECLARE_TYPES(unsorted_segment_prod_bp) {
 DECLARE_SHAPE_FN(unsorted_segment_prod_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
-
-  LongType* outShape;
-  LongType* outIndex;
-  COPY_SHAPE(in, outShape);
-  COPY_SHAPE(inIdx, outIndex);
-  return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
-  //            return SHAPELIST(in, inIdx);
+  return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 
 }  // namespace ops
