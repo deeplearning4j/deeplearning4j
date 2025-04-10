@@ -77,13 +77,7 @@ DECLARE_SHAPE_FN(mod_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  auto shapeList = SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  auto shapeList = SHAPELIST(CONSTANT(x), CONSTANT(y));
 
   return shapeList;
 }

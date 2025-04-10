@@ -113,7 +113,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
   } else {
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
-      output->assign((*input)(intArgs[1], {axis}));
+      NDArray assign = (*input)(intArgs[1], {axis});
+      output->assign(&assign);
     } else {  // vector case
       const sd::LongType numOfSubArrs = intArgs.size() - 1;
 

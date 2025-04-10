@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
   if(x->dataBuffer() != z->dataBuffer()) {
     std::vector<sd::LongType> shape = z->getShapeAsVector();
     NDArray &reshapedX = x->reshape(z->ordering(), shape,true);
-    z->assign(reshapedX);
+    z->assign(&reshapedX);
   }
 
   return Status::OK;

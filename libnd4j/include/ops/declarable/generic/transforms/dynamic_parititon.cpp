@@ -114,8 +114,8 @@ CUSTOM_OP_IMPL(dynamic_partition_bp, 3, 2, false, 0, 1) {
 
   auto result = stitchOp.evaluate(partitions, {numPartition});
   REQUIRE_TRUE(result.status() == sd::Status::OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-  outputList[1]->assign(*indices);
-  outputList[0]->assign(*result.at(0));
+  outputList[1]->assign(indices);
+  outputList[0]->assign(result.at(0));
 
   return sd::Status::OK;
 }
@@ -128,9 +128,7 @@ DECLARE_SHAPE_FN(dynamic_partition_bp) {
   auto shapes = SHAPELIST();
   // just copy shape info from input and indices to output
   for (sd::LongType i = 0; i < 2; i++) {
-    sd::LongType *newShape;
-    COPY_SHAPE(inputShape->at(i), newShape);
-    shapes->push_back(CONSTANT(newShape));
+    shapes->push_back(CONSTANT(inputShape->at(i)));
   }
 
   return shapes;

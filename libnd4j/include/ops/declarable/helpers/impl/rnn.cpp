@@ -44,8 +44,9 @@ void rnnCell(sd::LaunchContext* context, NDArray* xt, NDArray* Wx, NDArray* Wh, 
   const int nU = hPrev->sizeAt(1);
 
   // ht is current cell output [bS x nU], that is at current time step t
-  ht->assign(mmul(*xt, *Wx) + (*b)({{0, nU}}) + mmul(*hPrev, *Wh) +
-             (*b)({{nU, 2 * nU}}));  // [bS x nU] + [nU]  +  [bS x nU] + [nU] = [bS x nU]
+  NDArray htAssign = mmul(*xt, *Wx) + (*b)({{0, nU}}) + mmul(*hPrev, *Wh) +
+                     (*b)({{nU, 2 * nU}});
+  ht->assign(&htAssign);  // [bS x nU] + [nU]  +  [bS x nU] + [nU] = [bS x nU]
   ht->applyTransform(transform::Tanh, ht);
 }
 
@@ -66,7 +67,7 @@ void rnnTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* Wx, NDArray* W
 
   // at first time step
   if (h0)
-    hFinal->assign(*h0);
+    hFinal->assign(h0);
   else
     *hFinal = 0.;
 
@@ -83,10 +84,11 @@ void rnnTimeLoop(sd::LaunchContext* context, NDArray* x, NDArray* Wx, NDArray* W
 
       if (t >= maxStep) {
         ht = 0.;
-        if (maxStep != 0) hPrev.assign((*h)({maxStep - 1, maxStep, e, e + 1, 0, 0}));
+        NDArray hPrevAssign = (*h)({maxStep - 1, maxStep, e, e + 1, 0, 0});
+        if (maxStep != 0) hPrev.assign(&hPrevAssign);
       } else {
         helpers::rnnCell(context, &xt, Wx, Wh, b, &hPrev, &ht);
-        hPrev.assign(ht);
+        hPrev.assign(&ht);
       }
     }
   }

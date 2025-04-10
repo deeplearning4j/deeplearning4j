@@ -83,19 +83,19 @@ CUSTOM_OP_IMPL(assign_bp, 3, 2, false, 0, 0) {
   gradX->assign(zero);
 
   if (x->isSameShape(y)) {
-    gradY->assign(*epsNext);
+    gradY->assign(epsNext);
   } else if (y->isScalar()) {
     auto sum = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(sum);
+    gradY->assign(&sum);
   } else {
     // broadcastable
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(*epsNext);
+      gradY->assign(epsNext);
   }
 
   return Status::OK;
@@ -108,14 +108,7 @@ DECLARE_SHAPE_FN(assign_bp) {
 
   // eps always has shape of x
   // grad always has shape of y
-
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  auto shapeList = SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  auto shapeList = SHAPELIST(CONSTANT(x), CONSTANT(y));
 
   return shapeList;
 }

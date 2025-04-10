@@ -64,11 +64,11 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
   if (x->isSameShape(y)) {
     // PWT case case
     epsNext->applyTransform(transform::Neg, gradX);
-    gradY->assign(*epsNext);
+    gradY->assign(epsNext);
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(tmp);
+    gradY->assign(&tmp);
     epsNext->applyTransform(transform::Neg, gradX);
   } else {
     // broadcastable
@@ -84,9 +84,9 @@ CUSTOM_OP_IMPL(reversesubtract_bp, 3, 2, false, 0, 0) {
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else {
-      gradY->assign(*epsNext);
+      gradY->assign(epsNext);
     }
   }
 
@@ -100,14 +100,7 @@ DECLARE_SHAPE_FN(reversesubtract_bp) {
 
   // eps always has shape of x
   // grad always has shape of y
-
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  auto shapeList = SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  auto shapeList = SHAPELIST(CONSTANT(x), CONSTANT(y));
 
   return shapeList;
 }

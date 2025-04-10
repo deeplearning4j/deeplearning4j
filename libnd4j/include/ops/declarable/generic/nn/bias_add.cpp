@@ -84,7 +84,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
   const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
   const int channelDim = isNCHW ? 1 : input->rankOf() - 1;  // second or last
 
-  gradI->assign(*gradO);
+  gradI->assign(gradO);
 
   std::vector<sd::LongType> channel;
   channel.push_back(channelDim);
@@ -99,14 +99,7 @@ DECLARE_SYN(BiasAddGrad, biasadd_bp);
 DECLARE_SHAPE_FN(biasadd_bp) {
   auto input = inputShape->at(0);
   auto bias = inputShape->at(1);
-
-  sd::LongType* epsShape;
-  sd::LongType* gradShape;
-
-  COPY_SHAPE(input, epsShape);
-  COPY_SHAPE(bias, gradShape);
-
-  return SHAPELIST(CONSTANT(epsShape), CONSTANT(gradShape));
+  return SHAPELIST(CONSTANT(input), CONSTANT(bias));
 }
 
 DECLARE_TYPES(biasadd_bp) {

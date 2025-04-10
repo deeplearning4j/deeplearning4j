@@ -151,7 +151,6 @@ SD_DEVICE void TransformAny<X, Z>::transformCuda(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// The actual "intermediateShaped" is launched by DISPATCH in the method above:
 template <typename X, typename Z>
 template <typename OpType>
 SD_HOST void TransformAny<X, Z>::intermediateShaped(

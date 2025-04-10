@@ -117,7 +117,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray *> &inArrs, N
 
   // for one Array
   if (numOfInArrs < 2) {
-    output.assign(*inArrs[0]);
+    output.assign(inArrs[0]);
     return;
   }
   bool copyCase2 = copyCaseEws1 && output.ordering() == 'c';

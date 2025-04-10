@@ -65,11 +65,7 @@ Status LegacyTransformFloatOp::validateAndExecute(Context &block) {
  */
 ShapeList *LegacyTransformFloatOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-
-  LongType *newShape;
-  COPY_SHAPE(inShape, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 }  // namespace ops
 }  // namespace sd

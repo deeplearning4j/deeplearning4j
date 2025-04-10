@@ -1539,7 +1539,7 @@ NDArray &NDArray::operator=(NDArray &other) {
 
   if (_shapeInfo != nullptr && shape::equalsTypesAndShapesSoft(_shapeInfo, other._shapeInfo)) {
     if (!other.isEmpty()) {
-      this->assign(other);
+      this->assign(&other);
     }
   } else {
     _context = other._context;
@@ -1821,10 +1821,10 @@ bool NDArray::isBroadcastableTo(NDArray &other)  {
 
 ////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one
-void NDArray::assign(NDArray other, bool allowParallelism) {
-  NDArray::validateAssign(*this, other);
-  const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(*this, other);
-  NDArray::copyDataForAssign(*this, other, modifiedOtherShapeInfo, allowParallelism);
+void NDArray::assign(NDArray *other, bool allowParallelism) {
+  NDArray::validateAssign(this, other);
+  const sd::LongType* modifiedOtherShapeInfo = NDArray::modifyShapeForAssign(this, other);
+  NDArray::copyDataForAssign(other, this, modifiedOtherShapeInfo, allowParallelism);
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -1853,7 +1853,7 @@ NDArray *NDArray::detach() {
   auto constantBuff = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo());
   auto recastShapeInfo = const_cast<sd::LongType *>(constantBuff->primary());
   auto result = new NDArray(newBuffer, recastShapeInfo, getContext());
-  result->assign(*this);
+  result->assign(this);
 
   return result;
 }
@@ -2336,21 +2336,6 @@ void NDArray::printShapeInfo(const char *msg)  {
 
 }
 
-void NDArray::printBufferRaw(const char *msg, sd::LongType limit, const bool sync)  {
-  if (sync) syncToHost();
-
-  if (limit == -1   || limit >= this->lengthOf()) {
-    limit = this->lengthOf();
-  }
-
-
-  if (msg != nullptr) {
-    sd_printf("\n%s: ", msg);
-  }
-
-  this->getDataBuffer()->printHostDevice(offset());
-}
-
 //////////////////////////////////////////////////////////////////////////
 void NDArray::printIndexedBuffer(const char *msg, sd::LongType limit)  {
   syncToHost();
@@ -2607,56 +2592,61 @@ sd::LongType NDArray::argMax(std::initializer_list<LongType> dimensions) {
 }
 
 // Validates whether the assignment operation can be performed
-void NDArray::validateAssign(NDArray& thisArray,  NDArray& other) {
+void NDArray::validateAssign(NDArray *thisArray,  NDArray *other) {
   if (&thisArray == &other) {
     sd_print("NDArray::assign: this == &other\n");
     return;
   }
 
-  if (other.isEmpty()) {
-    if (!thisArray.isEmpty()) {
+  if (other->isEmpty()) {
+    if (!thisArray->isEmpty()) {
       THROW_EXCEPTION("Cannot assign empty array to non-empty array");
     }
     return;
   }
 
-  if (thisArray.isEmpty()) {
+  if (thisArray->isEmpty()) {
     THROW_EXCEPTION("Cannot assign to an empty array");
   }
 
-  if (!other.isScalar() &&
-      (other.lengthOf() != thisArray.lengthOf() &&
-       !ShapeUtils::areShapesBroadcastable(other.shapeInfo(), thisArray.shapeInfo()))) {
-    auto shapeThis = ShapeUtils::shapeAsString(&thisArray);
-    auto shapeThat = ShapeUtils::shapeAsString(&other);
+  if (!other->isScalar() &&
+      (other->lengthOf() != thisArray->lengthOf() &&
+       !ShapeUtils::areShapesBroadcastable(other->shapeInfo(), thisArray->shapeInfo()))) {
+    auto shapeThis = ShapeUtils::shapeAsString(thisArray);
+    auto shapeThat = ShapeUtils::shapeAsString(other);
     std::string errorMessage = "Can't assign array: this shape " + shapeThis + "; other shape: " + shapeThat + "\n";
     THROW_EXCEPTION(errorMessage.c_str());
   }
 }
 
 // Performs the data copy for assignment
-void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
-  if (other.isScalar()) {
-    NativeOpExecutioner::execScalar(thisArray.getContext(), scalar::CopyPws, thisArray.buffer(), thisArray.shapeInfo(),
-                                    thisArray.specialBuffer(), thisArray.specialShapeInfo(), thisArray.buffer(),
-                                    thisArray.shapeInfo(), thisArray.specialBuffer(), thisArray.specialShapeInfo(),
-                                    other.buffer(), other.shapeInfo(), other.specialBuffer(),
-                                    other.specialShapeInfo(), nullptr, allowParallelism);
+void NDArray::copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism) {
+  if (other->isScalar()) {
+    thisArray->prepareSpecialUse({thisArray}, {other});
+    NativeOpExecutioner::execScalar(thisArray->getContext(), scalar::CopyPws, thisArray->buffer(), thisArray->shapeInfo(),
+                                    thisArray->specialBuffer(), thisArray->specialShapeInfo(), thisArray->buffer(),
+                                    thisArray->shapeInfo(), thisArray->specialBuffer(), thisArray->specialShapeInfo(),
+                                    other->buffer(), other->shapeInfo(), other->specialBuffer(),
+                                    other->specialShapeInfo(), nullptr, allowParallelism);
+    thisArray->registerSpecialUse({thisArray}, {other}); // Registering through the instance
+
   } else {
-    thisArray.prepareSpecialUse({&thisArray}, {&other});
-    NativeOpExecutioner::execTransformAny(thisArray.getContext(),
+    thisArray->prepareSpecialUse({thisArray}, {other});
+
+
+    NativeOpExecutioner::execTransformAny(thisArray->getContext(),
                                           transform::Assign,
-                                          thisArray.buffer(),
-                                          thisArray.shapeInfo(),
-                                          thisArray.specialBuffer(),
-                                          thisArray.specialShapeInfo(),
-                                          other.buffer(),
+                                          thisArray->buffer(),
+                                          thisArray->shapeInfo(),
+                                          thisArray->specialBuffer(),
+                                          thisArray->specialShapeInfo(),
+                                          other->buffer(),
                                           otherShapeInfo,
-                                          other.specialBuffer(),
-                                          other.specialShapeInfo(),
+                                          other->specialBuffer(),
+                                          other->specialShapeInfo(),
                                           nullptr
         , allowParallelism);
-    thisArray.registerSpecialUse({&thisArray}, {&other}); // Registering through the instance
+    thisArray->registerSpecialUse({thisArray}, {other}); // Registering through the instance
   }
 }
 
@@ -2664,21 +2654,21 @@ void NDArray::copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::L
 //////////////////////////////////////////////////////////////////////////
 
 // Adjusts shape for assignment without modifying the original array
-const sd::LongType* NDArray::modifyShapeForAssign( NDArray& thisArray,  NDArray& other) {
-  if (!shape::shapeEquals(thisArray.shapeInfo(), other.shapeInfo())) {
-    std::vector<sd::LongType> *thisShape = new std::vector<sd::LongType>(thisArray.getShapeAsVector());
-    auto ret = reshapeShapeInfo(other, other.ordering(), *thisShape);
+const LongType *NDArray::modifyShapeForAssign( NDArray *thisArray,  NDArray *other) {
+  if (!shape::shapeEquals(thisArray->shapeInfo(), other->shapeInfo())) {
+    std::vector<sd::LongType> *thisShape = new std::vector<sd::LongType>(thisArray->getShapeAsVector());
+    auto ret = reshapeShapeInfo(other, other->ordering(), *thisShape);
     delete thisShape;
     return ret;
   }
-  return other.shapeInfo();
+  return other->shapeInfo();
 }
 
 // Reshape logic modularized into a static helper function
 // Reshape logic modularized into a static helper function
-sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::vector<sd::LongType>& newShape) {
+LongType *NDArray::reshapeShapeInfo(NDArray *array, char order, const std::vector<sd::LongType>& newShape) {
   //nothing to do for scalar shape info
-  if(array.isScalar()) {
+  if(array->isScalar()) {
     //no need for strides with scalar just set shape
     sd::LongType *ret = new sd::LongType[shape::shapeInfoLength(newShape.size())];
     // Initialize memory to prevent garbage values
@@ -2692,7 +2682,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
 
     shape::setOrder(ret, 'c');
     ArrayOptions::setExtra(ret, ArrayOptions::defaultFlag());
-    ArrayOptions::setDataType(ret, array.dataType());
+    ArrayOptions::setDataType(ret, array->dataType());
 
     auto ret2 = ConstantShapeHelper::getInstance().bufferForShapeInfo(ret);
     delete[] ret;
@@ -2721,7 +2711,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
       if (shapeLength == 0) {
         THROW_EXCEPTION("reshapeShapeInfo: division by zero in negative dimension calculation");
       }
-      sd::LongType realShape = array.lengthOf() / shapeLength;
+      sd::LongType realShape = array->lengthOf() / shapeLength;
       shape_vector.push_back(realShape);
     } else {
       shape_vector.push_back(newShape[i]);
@@ -2734,7 +2724,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
     arrLength *= dim;
   }
 
-  if (arrLength != array.lengthOf() && !array.isScalar()) {
+  if (arrLength != array->lengthOf() && !array->isScalar()) {
     THROW_EXCEPTION("reshapeShapeInfo: bad length of new shape!");
   }
 
@@ -2749,7 +2739,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
 
   shapeInfoNew[0] = static_cast<sd::LongType>(shape_vector.size());
 
-  bool canReshape = ops::helpers::reshapeNoAlloc(array.shapeInfo(), shape_vector, order, shapeInfoNew);
+  bool canReshape = ops::helpers::reshapeNoAlloc(array->shapeInfo(), shape_vector, order, shapeInfoNew);
 
   if (!canReshape) {
     shape::calcStrides(shapeInfoNew, order);
@@ -2771,7 +2761,7 @@ sd::LongType* NDArray::reshapeShapeInfo(NDArray& array, char order, const std::v
 }
 
 NDArray& NDArray::reshape(const char order, std::vector<sd::LongType>& shape, bool copyToNewBuff) & {
-  sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(*this, order, shape);
+  sd::LongType* newShapeInfo = NDArray::reshapeShapeInfo(this, order, shape);
 
   if (copyToNewBuff) {
     NDArray* ret = new NDArray(newShapeInfo, true, getContext(), false);
@@ -3139,7 +3129,7 @@ NDArray NDArray::cast(DataType dtype)  {
 void NDArray::cast(NDArray &target, DataType dtype) {
   if (isS()) THROW_EXCEPTION("NDArray::cast: you can't use this method on String array!");
   // TODO: to be implemented properly
-  target.assign(*this);
+  target.assign(this);
 }
 
 
@@ -4131,7 +4121,7 @@ NDArray NDArray::dup(const char newOrder, bool forceOriginalBuffer)  {
 
   std::vector<sd::LongType> shape3 = isScalar() ? std::vector<sd::LongType>({0}) : shape;
   NDArray result(order, shape3, dataType(), getContext());
-  result.assign(*this);
+  result.assign(this);
 
   return result;
 }

@@ -114,10 +114,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_with_logits_grad, 2, 2, false, 0, 0) {
   // dEdp = softmax * sum_i(labels_i) - labels
   //note the eps is to account for exact 0s in the log calculation being nan
   auto labelsPlusEps = *labels + 1e-6;
-  dLdp->assign(((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true) - labelsPlusEps)));
-  auto negSoftmax = softmax;
-
-
+  NDArray assign = ((softmax * labelsPlusEps.reduceAlongDimension(reduce::Sum, &dimension, true) - labelsPlusEps));
+  dLdp->assign(&assign);
   // dEdl = -log(softmax)
   softmax.applyTransform(transform::Log, dLdl);
   dLdl->applyTransform(transform::Neg,dLdl);

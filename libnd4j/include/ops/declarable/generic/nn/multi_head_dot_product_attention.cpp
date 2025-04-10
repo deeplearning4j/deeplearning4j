@@ -131,7 +131,7 @@ CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
   projRes.permutei({0, 2, 1}, 0, false);
 
   // FIXME: bad for performance
-  output->assign(projRes);
+  output->assign(&projRes);
 
   return sd::Status::OK;
 }
@@ -293,23 +293,8 @@ DECLARE_TYPES(multi_head_dot_product_attention_bp) {
 }
 
 DECLARE_SHAPE_FN(multi_head_dot_product_attention_bp) {
-  sd::LongType *dLdq_shape;
-  COPY_SHAPE(inputShape->at(0), dLdq_shape);
-  sd::LongType *dLdk_shape;
-  COPY_SHAPE(inputShape->at(1), dLdk_shape);
-  sd::LongType *dLdv_shape;
-  COPY_SHAPE(inputShape->at(2), dLdv_shape);
-  sd::LongType *dLdWq_shape;
-  COPY_SHAPE(inputShape->at(3), dLdWq_shape);
-  sd::LongType *dLdWk_shape;
-  COPY_SHAPE(inputShape->at(4), dLdWk_shape);
-  sd::LongType *dLdWv_shape;
-  COPY_SHAPE(inputShape->at(5), dLdWv_shape);
-  sd::LongType *dLdWo_shape;
-  COPY_SHAPE(inputShape->at(6), dLdWo_shape);
-
-  return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape), CONSTANT(dLdWq_shape),
-                   CONSTANT(dLdWk_shape), CONSTANT(dLdWv_shape), CONSTANT(dLdWo_shape));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)), CONSTANT(inputShape->at(2)), CONSTANT(inputShape->at(3)),
+                   CONSTANT(inputShape->at(4)), CONSTANT(inputShape->at(5)), CONSTANT(inputShape->at(6)));
 }
 
 }  // namespace ops

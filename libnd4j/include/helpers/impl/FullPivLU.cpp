@@ -135,8 +135,10 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   NDArray *bUlike = b.ulike();
   NDArray c = *bUlike;
 
-  for (int i = 0; i < rows; ++i) c({i, i + 1, 0, 0}, true).assign(b({rowsPermut2[i], rowsPermut2[i] + 1, 0, 0}, true));
-
+  for (int i = 0; i < rows; ++i) {
+    NDArray cAssign = b({rowsPermut2[i], rowsPermut2[i] + 1, 0, 0}, true);
+    c({i, i + 1, 0, 0}, true).assign(&cAssign);
+  }
   NDArray cTopRows1 = c({0, diagLen, 0, 0}, true);
   // TriangularSolver<T>::solve(LU({0,diagLen, 0,diagLen}, true), cTopRows1, true, true, cTopRows1);
   helpers::triangularSolve2D<T>(nullptr, LU({0, diagLen, 0, diagLen}, true), cTopRows1, true, true, cTopRows1);
@@ -148,11 +150,12 @@ void FullPivLU<T>::solve(NDArray &A, NDArray &b, NDArray& x) {
   }
   NDArray cTopRows2 = c({0, nonZeroPivots2, 0, 0}, true);
   helpers::triangularSolve2D<T>(nullptr, LU({0, nonZeroPivots2, 0, nonZeroPivots2}, true), cTopRows2, false, false,
-                                     cTopRows2);
+                                cTopRows2);
 
-  for (int i = 0; i < nonZeroPivots2; ++i)
-    x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).assign(c({i, i + 1, 0, 0}, true));
-
+  for (int i = 0; i < nonZeroPivots2; ++i) {
+    NDArray cAssign = c({i, i + 1, 0, 0}, true);
+    x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).assign(&cAssign);
+  }
   for (int i = nonZeroPivots2; i < cols; ++i) x({colsPermut[i], colsPermut[i] + 1, 0, 0}, true).nullify();
 
   delete bUlike;

@@ -94,9 +94,6 @@ DECLARE_SHAPE_FN(svd) {
 
     shape::updateStrides(uShapeInfo, shape::order(inShapeInfo), false);
     shape::updateStrides(vShapeInfo, shape::order(inShapeInfo), false);
-    auto desc1 = new ShapeDescriptor(sShapeInfo, false);
-    auto desc2 = new ShapeDescriptor(uShapeInfo, false);
-    auto desc3 = new ShapeDescriptor(vShapeInfo, false);
     auto result = SHAPELIST(ConstantShapeHelper::getInstance().bufferForShapeInfo(sShapeInfo)->primary(),
                             ConstantShapeHelper::getInstance().bufferForShapeInfo(uShapeInfo)->primary(),
                             ConstantShapeHelper::getInstance().bufferForShapeInfo(vShapeInfo)->primary());

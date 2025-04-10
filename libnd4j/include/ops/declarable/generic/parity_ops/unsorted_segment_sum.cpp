@@ -96,12 +96,7 @@ CUSTOM_OP_IMPL(unsorted_segment_sum_bp, 3, 2, false, 0, 1) {
 DECLARE_SHAPE_FN(unsorted_segment_sum_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
-
-  LongType* outShape;
-  LongType* outIndex;
-  COPY_SHAPE(in, outShape);
-  COPY_SHAPE(inIdx, outIndex);
-  return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
+  return SHAPELIST(CONSTANT(in), CONSTANT(inIdx));
 }
 DECLARE_TYPES(unsorted_segment_sum_bp) {
   getOpDescriptor()

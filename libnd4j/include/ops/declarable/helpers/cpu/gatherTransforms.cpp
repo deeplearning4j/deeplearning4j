@@ -126,7 +126,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         // we want to get a scalar
         auto idx = indices->e<sd::LongType>(0);
         auto scalarNDArray = input->e(idx);
-        output->assign(scalarNDArray);
+        output->assign(&scalarNDArray);
       } else {
         std::vector<sd::LongType> axesVec = {axis};
         auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(),1,axesVec.data());
@@ -135,7 +135,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         auto tadArr = NDArray(reinterpret_cast<void*>(reinterpret_cast<T*>(input->buffer()) +
                                                       tadPack->primaryOffsets()[indices->e<sd::LongType>(0)]),
                               tadPack->primaryShapeInfo(), output->getContext(), 0, 0);
-        output->assign(tadArr);
+        output->assign(&tadArr);
         delete dimensions;
 
       }
@@ -170,7 +170,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
       NDArray view = (*input)(intArgs[1], {axis});
-      output->assign(view);
+      output->assign(&view);
     } else {  // vector case
       const sd::LongType numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), {axis});
 

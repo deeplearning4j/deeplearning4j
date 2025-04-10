@@ -43,8 +43,8 @@ DECLARE_SHAPE_FN(linear_copy) {
     return SHAPELIST(OUTPUT_VARIABLE(0)->shapeInfo());
   auto input = INPUT_VARIABLE(0);
   auto shape = INPUT_VARIABLE(1);
-  ShapeDescriptor *desc = new ShapeDescriptor(input->dataType(), shape::order(input->shapeInfo()), shape->getBufferAsVector<LongType>());
-  auto outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(desc);
+  auto shapeBuilders = ShapeBuilders::createShapeInfo(input->dataType(),shape::order(input->shapeInfo()),shape->getBufferAsVector<sd::LongType>());
+  auto outShapeInfo = ConstantShapeHelper::getInstance().createFromExisting(shapeBuilders);
   return SHAPELIST(outShapeInfo);
 
 }

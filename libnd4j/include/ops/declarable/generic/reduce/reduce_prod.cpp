@@ -107,7 +107,8 @@ CUSTOM_OP_IMPL(reduce_prod_bp, -1, 1, false, 0, 0) {
   auto gradI = OUTPUT_VARIABLE(0);
 
   if (gradO->lengthOf() == 1) {
-    gradI->assign(input->reduceNumber(sd::reduce::Prod));
+    NDArray assign = input->reduceNumber(sd::reduce::Prod);
+    gradI->assign(&assign);
     *gradI /= *input;
     *gradI *= gradO->e(0);
   } else {
@@ -173,10 +174,7 @@ DECLARE_SHAPE_FN(reduce_prod_bp) {
       "REDUCE_PROD_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
       inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* outShapeInfo;
-  COPY_SHAPE(inputShape->at(0), outShapeInfo);
-
-  return SHAPELIST(CONSTANT(outShapeInfo));
+  return SHAPELIST(CONSTANT(inputShape->at(0)));
 }
 
 DECLARE_TYPES(reduce_prod_bp) {

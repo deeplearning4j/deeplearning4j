@@ -239,13 +239,7 @@ DECLARE_SHAPE_FN(tensormmul_bp) {
                 (ArrayOptions::dataType(dLShapeInfo) == ArrayOptions::dataType(aShapeInfo))),
                0, "tensormmul_bp: A, B and dLdC data types must be the same");
 
-  LongType* dLdAShapeInfo = nullptr;
-  LongType* dLdBShapeInfo = nullptr;
-
-  COPY_SHAPE(aShapeInfo, dLdAShapeInfo);
-  COPY_SHAPE(bShapeInfo, dLdBShapeInfo);
-
-  return SHAPELIST(CONSTANT(dLdAShapeInfo), CONSTANT(dLdBShapeInfo));
+  return SHAPELIST(CONSTANT(aShapeInfo), CONSTANT(bShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////

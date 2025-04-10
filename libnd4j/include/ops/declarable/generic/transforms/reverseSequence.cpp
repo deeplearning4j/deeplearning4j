@@ -102,10 +102,7 @@ DECLARE_SHAPE_FN(reverse_sequence) {
                "batchDim dimension of input array, but got %i and %i correspondingly !",
                seqLenShapeInfo[1], inShapeInfo[batchDim + 1]);
 
-  sd::LongType* outShapeInfo = nullptr;
-  COPY_SHAPE(inShapeInfo, outShapeInfo);
-
-  return SHAPELIST(CONSTANT(outShapeInfo));
+  return SHAPELIST(CONSTANT(inShapeInfo));
 }
 
 }  // namespace ops

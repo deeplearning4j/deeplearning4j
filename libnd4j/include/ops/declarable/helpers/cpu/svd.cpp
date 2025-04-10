@@ -50,11 +50,11 @@ static void svd_(NDArray* x, const std::vector<NDArray*>& outArrs, const bool fu
 
   for (int i = 0; i < listX.size(); ++i) {
     helpers::SVD<T> svdObj(*(listX.at(i)), switchNum, calcUV, calcUV, fullUV);
-    listS.at(i)->assign(svdObj._s);
+    listS.at(i)->assign(&svdObj._s);
 
     if (calcUV) {
-      listU->at(i)->assign(svdObj._u);
-      listV->at(i)->assign(svdObj._v);
+      listU->at(i)->assign(&svdObj._u);
+      listV->at(i)->assign(&svdObj._v);
     }
   }
 

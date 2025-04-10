@@ -109,7 +109,7 @@ static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray
   int posOfNonUnityDim = -1;
   if (input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim)) {
     if ((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
-      output->assign(*input);
+      output->assign(input);
     else
       helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->buffer(), const_cast<NDArray*>(input)->shapeInfo(),
                                output->buffer(), output->shapeInfo(), seqLengths->e<int>(0));
@@ -127,7 +127,7 @@ static void reverseSequence_(sd::LaunchContext* context, NDArray* input, NDArray
       sd::LongType numOfElemsToReverse = seqLengths->e<sd::LongType>(i);
 
       if (numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-        outSubArrsSet.at(i)->assign(*inSubArrsSet.at(i));
+        outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
       } else {
         auto inInnerSet = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
         auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});

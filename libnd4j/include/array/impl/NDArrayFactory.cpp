@@ -254,7 +254,7 @@ template <>
 SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, NDArray* value, const char order,
                                                LaunchContext* context) {
   auto result = create_(order, shape, value->dataType(), context);
-  result->assign(*value);
+  result->assign(value);
   return result;
 }
 
@@ -262,7 +262,7 @@ template <>
 SD_LIB_EXPORT NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, NDArray& value, const char order,
                                                LaunchContext* context) {
   auto result = create_(order, shape, value.dataType(), context);
-  result->assign(value);
+  result->assign(&value);
   return result;
 }
 
@@ -445,7 +445,7 @@ NDArray NDArrayFactory::empty(DataType dataType, LaunchContext* context) {
 NDArray* NDArrayFactory::valueOf(std::vector<LongType>& shape, NDArray& value, const char order,
                                  LaunchContext* context) {
   auto res = create_(order, shape, value.dataType(), context);
-  res->assign(const_cast<NDArray&>(value));
+  res->assign(&value);
   return res;
 }
 

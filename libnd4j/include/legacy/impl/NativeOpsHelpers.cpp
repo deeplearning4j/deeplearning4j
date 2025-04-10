@@ -1116,7 +1116,7 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
     // varSpace->putVariable(0, e, array);
 
     auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(*t);
+    array.assign(t);
   }
 
   // removing input variables

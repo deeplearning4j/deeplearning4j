@@ -468,11 +468,11 @@ void AttentionHelper::multiHeadProjectBp(NDArray *input, NDArray *projectionMatr
                  {}, {}, {});
 
   dLdProjectionPrep.reshapei({numHeads, projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
-  dLdProjectionMatrix->assign(dLdProjectionPrep);
+  dLdProjectionMatrix->assign(&dLdProjectionPrep);
 
   dLdInputPrep.reshapei({input->sizeAt(1), miniBatchSize, seqLength});
   dLdInputPrep.permutei({1, 0, 2}, false, false);
-  dLdInput->assign(dLdInputPrep);
+  dLdInput->assign(&dLdInputPrep);
 }
 }  // namespace sd
 #endif

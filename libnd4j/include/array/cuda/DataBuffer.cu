@@ -27,7 +27,9 @@
 #include <memory/MemoryCounter.h>
 #include <system/op_boilerplate.h>
 #include <system/type_boilerplate.h>
+
 #include "../DataBuffer.h"
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 void DataBuffer::expand(const uint64_t size) {
@@ -178,6 +180,104 @@ void DataBuffer::printSpecialAllocationTraces() {
 void DataBuffer::showBufferLimited() {
 
 }
+
+template <typename T>
+SD_KERNEL void printDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongType length) {
+  T* typedBuffer = reinterpret_cast<T*>(buffer);
+
+  if (threadIdx.x == 0 && blockIdx.x == 0) {
+    printf("[ ");
+    for (sd::LongType i = offset; i < offset + length; i++) {
+      // Cast to double for consistent formatting
+      printf("%g ", (double)typedBuffer[i]);
+    }
+    printf("]");
+  }
+}
+
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT  SD_KERNEL void printDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+
+
+// Wrapper function to launch the kernel
+template <typename T>
+void launchPrintDeviceBufferKernel(void* buffer, sd::LongType offset, sd::LongType length) {
+  printDeviceBufferKernel<T><<<1, 1, 32*1024, *LaunchContext::defaultContext()->getCudaStream()>>>(
+      buffer, offset, length);
+  cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+  sd::DebugHelper::checkErrorCode(LaunchContext::defaultContext()->getCudaStream(),
+                                  "printBufferDebug kernel failed");
+}
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void launchPrintDeviceBufferKernel,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+
+
+template <typename T>
+void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::LongType length) {
+  T* typedBuffer = reinterpret_cast<T*>(buffer);
+
+  sd_printf("[ ", 0);
+  for (sd::LongType i = offset; i < offset + length; i++) {
+    // For numeric types, cast to double for consistent formatting
+    if (std::is_arithmetic<T>::value) {
+      sd_printf("%g ", (double)typedBuffer[i]);
+    } else {
+      // For non-numeric types, print as hex
+      sd_printf("0x%x ", *reinterpret_cast<int*>(&typedBuffer[i]));
+    }
+  }
+  sd_printf("]", 0);
+}
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+
+
+// DataBuffer implementation for .cu file
+void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::LongType limit) {
+  if (msg) sd_printf("%s:\n", msg);
+
+  // Print metadata
+  sd_printf("DataBuffer: DataType=%s, Length=%lld elements, DeviceId=%d\n",
+            DataTypeUtils::asString(_dataType).c_str(), (long long)getNumElements(), deviceId());
+
+  // Print host buffer content
+  if (_primaryBuffer != nullptr) {
+    sd_printf("Host buffer (@%p): ", _primaryBuffer);
+
+    sd::LongType len = getNumElements();
+    sd::LongType printLen = limit < 0 ? len : std::min(len - offset, limit);
+
+    // Print based on datatype
+    BUILD_SINGLE_SELECTOR(_dataType, printHostBufferContent,
+                          (_primaryBuffer, offset, printLen), SD_COMMON_TYPES);
+
+    if (offset + printLen < len) sd_printf("... ", 0);
+    sd_printf("\n", 0);
+  } else {
+    sd_printf("Host buffer: nullptr\n", 0);
+  }
+
+  // Print device buffer using kernel
+  if (_specialBuffer != nullptr) {
+    sd_printf("Device buffer (@%p): ", _specialBuffer);
+
+    sd::LongType len = getNumElements();
+    sd::LongType printLen = limit < 0 ? len : std::min(len - offset, limit);
+
+    // Launch kernel through wrapper function
+    BUILD_SINGLE_SELECTOR(_dataType, launchPrintDeviceBufferKernel,
+                          (_specialBuffer, offset, printLen), SD_COMMON_TYPES);
+
+    sd_printf("\n", 0);
+  } else {
+    sd_printf("Device buffer: nullptr\n", 0);
+  }
+
+  // Print sync state counters
+  sd_printf("Sync state: _counter=%lld, _writePrimary=%lld, _writeSpecial=%lld, _readPrimary=%lld, _readSpecial=%lld\n",
+            (long long)_counter.load(), (long long)_writePrimary.load(), (long long)_writeSpecial.load(),
+            (long long)_readPrimary.load(), (long long)_readSpecial.load());
+  sd_printf("isPrimaryActual=%d, isSpecialActual=%d\n", isPrimaryActual(), isSpecialActual());
+}
+
+
 
 void DataBuffer::showCounters(const char* msg1, const char* msg2) {
   sd_debug("%s %s || primary %p special %p :: wP: %d wS: %d rP: %d rS: %d\n", msg1, msg2, _primaryBuffer,

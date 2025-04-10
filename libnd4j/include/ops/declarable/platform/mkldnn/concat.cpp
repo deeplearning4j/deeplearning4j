@@ -114,7 +114,8 @@ PLATFORM_IMPL(concat, ENGINE_CPU) {
       allOfSameType &= (typeOfFirstArr == input->dataType());
 
       if (input->rankOf() == 0) {
-        auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext(), 0, 0, 0);
+        std::vector<sd::LongType> dim = {1};
+        auto vec = new NDArray('c', dim, input->dataType(), block.launchContext());
         vec->assign(input);
         nonEmptyArrs.push_back(vec);
         arrsToDelete.push_back(index);

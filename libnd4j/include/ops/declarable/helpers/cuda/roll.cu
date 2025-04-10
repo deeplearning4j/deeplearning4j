@@ -292,7 +292,7 @@ static void SD_KERNEL rollKernelFullAnyDimensionStage2(void *vx, const LongType 
 template <typename T>
 static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<LongType> const &shifts,
                             std::vector<LongType> const &axes, bool inplace) {
- if (!inplace) output->assign(*input);
+ if (!inplace) output->assign(input);
 
  for (size_t i = 0; i < axes.size(); i++) {
    int axe = axes[i];
@@ -309,7 +309,7 @@ static void rollFunctorFull_(NDArray *input, NDArray *output, std::vector<LongTy
 
 template <typename T>
 static void rollFunctorLinear_(NDArray *input, NDArray *output, int shift, bool inplace) {
- if (!inplace) output->assign(*input);
+ if (!inplace) output->assign(input);
 
  dim3 launchDims = getLaunchDims("roll");
  auto fullLen = input->lengthOf();

@@ -53,7 +53,7 @@ static void _dynamicPartitionFunctor(NDArray * input, NDArray * indices, std::ve
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
         if ((*indices).e<sd::LongType>(e) == i) {
-          listOutForCurrent.at(outputs[i].second++)->assign(*listOfTensors.at(e));
+          listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
         }
     }
 
@@ -118,7 +118,7 @@ static sd::Status _dynamicStitchFunctor(std::vector<NDArray*> const& inputs, std
           return sd::Status::VALIDATION;
         }
 
-        listOfOutTensors.at(pos)->assign(*listOfTensors.at(i));
+        listOfOutTensors.at(pos)->assign(listOfTensors.at(i));
       }
     }
   }
@@ -169,7 +169,7 @@ static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
     samediff::Threads::parallel_tad(func, 0, gradsSize);
   }
 
-  outputList[1]->assign(*indices);
+  outputList[1]->assign(indices);
 }
 
 void dynamicPartitionFunctor(sd::LaunchContext* context, NDArray * input, NDArray * indices,

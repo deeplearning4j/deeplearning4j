@@ -84,7 +84,8 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, N
           "ops::helpers::JacobiSVD mulRotationOnLeft: second arguments is out of array row range !");
 
     auto temp = block({i, j + 1, j - i, 0, 0, 0}, true, true);
-    temp.assign(mmul(rotation, temp));
+    NDArray tempAssign = mmul(rotation, temp);
+    temp.assign(&tempAssign);
 
   } else {
     if (j + 1 > block.sizeAt(0) || i + 1 > block.sizeAt(0))
@@ -97,11 +98,12 @@ void JacobiSVD<T>::mulRotationOnLeft(const int i, const int j, NDArray& block, N
     auto row2 = block({j, j + 1, 0, 0}, true);
     auto rowTemp1 = temp({0, 1, 0, 0}, true);
     auto rowTemp2 = temp({1, 2, 0, 0}, true);
-    rowTemp1.assign(row1);
-    rowTemp2.assign(row2);
-    temp.assign(mmul(rotation, temp));
-    row1.assign(rowTemp1);
-    row2.assign(rowTemp2);
+    rowTemp1.assign(&row1);
+    rowTemp2.assign(&row2);
+    NDArray tempAssign = mmul(rotation, temp);
+    temp.assign(&tempAssign);
+    row1.assign(&rowTemp1);
+    row2.assign(&rowTemp2);
   }
 }
 
@@ -114,7 +116,8 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, 
           "ops::helpers::JacobiSVD mulRotationOnRight: second argument is out of array column range !");
 
     auto temp = block({0, 0, 0, i, j + 1, j - i}, true, true);
-    temp.assign(mmul(temp, rotation));
+    NDArray tempAssign = mmul(temp, rotation);
+    temp.assign(&tempAssign);
   } else {
     if (j + 1 > block.sizeAt(1) || i + 1 > block.sizeAt(1))
       THROW_EXCEPTION(
@@ -126,11 +129,12 @@ void JacobiSVD<T>::mulRotationOnRight(const int i, const int j, NDArray& block, 
     auto col2 = block({0, 0, j, j + 1}, true);
     auto colTemp1 = temp({0, 0, 0, 1}, true);
     auto colTemp2 = temp({0, 0, 1, 2}, true);
-    colTemp1.assign(col1);
-    colTemp2.assign(col2);
-    temp.assign(mmul(temp, rotation));
-    col1.assign(colTemp1);
-    col2.assign(colTemp2);
+    colTemp1.assign(&col1);
+    colTemp2.assign(&col2);
+    NDArray tempAssign = mmul(temp, rotation);
+    temp.assign(&tempAssign);
+    col1.assign(&colTemp1);
+    col2.assign(&colTemp2);
   }
 }
 
@@ -256,12 +260,13 @@ void JacobiSVD<T>::svd2x2(NDArray& block, int p, int q, NDArray& left, NDArray& 
     rotation.r<T>(0, 1) = (T)1.f / tmp;
     rotation.r<T>(1, 0) = -rotation.t<T>(0, 1);
   }
-
-  m.assign(mmul(rotation, m));
+  NDArray mAssign = mmul(rotation, m);
+  m.assign(&mAssign);
 
   createJacobiRotation(m.t<T>(0, 0), m.t<T>(0, 1), m.t<T>(1, 1), right);
   NDArray rightT = right.transpose();
-  left.assign(mmul(rotation, rightT));
+  NDArray leftAssign = mmul(rotation, rightT);
+  left.assign(&leftAssign);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -276,8 +281,8 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
   if (_rows > _cols) {
     NDArray scaled = matrix / scale;
     HHcolPivQR qr(scaled);
-
-    _m.assign(qr._qr({0, _cols, 0, _cols}));
+    NDArray mAssign = qr._qr({0, _cols, 0, _cols});
+    _m.assign(&mAssign);
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
 
     HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
@@ -290,11 +295,11 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
     }
 
 
-    if (_calcV) _v.assign(qr._permut);
+    if (_calcV) _v.assign(&qr._permut);
   } else if (_rows < _cols) {
     NDArray scaled = matrix.transpose() / scale;
     HHcolPivQR qr(scaled);
-    _m.assign(qr._qr({0, _rows, 0, _rows}));
+    _m.assign(&qr._qr({0, _rows, 0, _rows}));
     _m.fillAsTriangular<T>(0., 0, 0, _m, 'l',false);
     _m.transposei();
 
@@ -308,9 +313,10 @@ void JacobiSVD<T>::evalData(NDArray& matrix) {
     }
 
 
-    if (_calcU) _u.assign(qr._permut);
+    if (_calcU) _u.assign(&qr._permut);
   } else {
-    _m.assign(matrix({0, _diagSize, 0, _diagSize}) / scale);
+    NDArray mAssign = matrix({0, _diagSize, 0, _diagSize}) / scale;
+    _m.assign(&mAssign);
 
     if (_calcU) _u.setIdentity();
 

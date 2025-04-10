@@ -85,8 +85,8 @@ sd::Status dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* out
     mask->assign(assign);
 
     *mask += *chunk;
-
-    output->assign(*input * *mask);
+    NDArray assign5 = *input * *mask;
+    output->assign(&assign5);
   }
 
   return sd::Status::OK;

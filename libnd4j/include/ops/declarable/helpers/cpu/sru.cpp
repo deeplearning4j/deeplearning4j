@@ -67,11 +67,13 @@ void sruCell(sd::LaunchContext* context, NDArray* x, NDArray* c0, NDArray* w, ND
 
   // ◦ means element-wise product or so called Hadamard product
   // current sell state = f◦c0 + (1 - f)◦(x*Wc)
-  c->assign(f * (*c0) + (1.f - f) * z({0, 0, 0, inSize}));
+  auto assignOne = f * (*c0) + (1.f - f) * z({0, 0, 0, inSize});
+  c->assign(&assignOne);
   // *c = f*(*c0 - z({},{0, inSize})) + z({{},{0, inSize}});
 
   // current cell output = r◦activation(c) + (1 - r)◦x
-  h->assign(r * activation(*c) + (1.f - r) * (*x));
+  auto assign2 = r * activation(*c) + (1.f - r) * (*x);
+  h->assign(&assign2);
   // *h = r * (activation<T>(c) - *x) + *x;
 }
 
@@ -326,12 +328,12 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, NDArray* w, NDArray* b, NDA
 
 BUILD_SINGLE_TEMPLATE(template void sruBI_,
                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* mask,
-                       NDArray* ht, NDArray* ct),
+                          NDArray* ht, NDArray* ct),
                       SD_FLOAT_TYPES);
 BUILD_SINGLE_TEMPLATE(template void sruBIBP_,
                       (NDArray * x, NDArray* w, NDArray* b, NDArray* c0, NDArray* ct,
-                       NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
-                       NDArray* gradW, NDArray* gradB, NDArray* gradC0),
+                          NDArray* inGradC0, NDArray* inGradH, NDArray* mask, NDArray* gradI,
+                          NDArray* gradW, NDArray* gradB, NDArray* gradC0),
                       SD_FLOAT_TYPES);
 
 }  // namespace helpers

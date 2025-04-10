@@ -93,9 +93,9 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!condition->e<bool>(e))
-          tadsZ.at(e)->assign(*tadsY.at(e));
+          tadsZ.at(e)->assign(tadsY.at(e));
         else
-          tadsZ.at(e)->assign(*tadsX.at(e));
+          tadsZ.at(e)->assign(tadsX.at(e));
       }
 
       delete dims;
@@ -126,12 +126,9 @@ CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(where_np) {
   auto shapes = SHAPELIST();
-  LongType* newShape;
   if (block.width() == 3) {
     auto inShape = inputShape->at(1);
-    COPY_SHAPE(inShape, newShape);
-
-    shapes->push_back(CONSTANT(newShape));
+    shapes->push_back(CONSTANT(inShape));
   } else {
     auto condition = INPUT_VARIABLE(0);
 

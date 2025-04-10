@@ -143,7 +143,6 @@ CUSTOM_OP_IMPL(min_max_datatype, -2, 1, false, 0, 2) {
 
 DECLARE_SHAPE_FN(min_max_datatype) {
   DataType newType = DataTypeUtils::fromInt(INT_ARG(0));
-
   return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(newType));
 }
 

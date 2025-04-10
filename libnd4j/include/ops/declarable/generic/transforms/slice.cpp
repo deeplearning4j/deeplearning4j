@@ -235,17 +235,14 @@ CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -2) {
     indices[2 * e + 1] = start + size;
   }
   auto sub = (*output)(indices, true);
-  sub.assign(*epsNext);
+  sub.assign(epsNext);
 
   return Status::OK;
 }
 
 DECLARE_SHAPE_FN(slice_bp) {
   auto inShape = inputShape->at(0);
-  LongType* newShape;
-  COPY_SHAPE(inShape, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 }  // namespace ops
 }  // namespace sd
