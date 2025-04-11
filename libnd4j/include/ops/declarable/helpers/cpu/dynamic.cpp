@@ -151,7 +151,7 @@ static void _dynamicPartitionFunctorBP(NDArray * input, NDArray * indices,
       outputs[i].second = 0;
 
       for (sd::LongType e = 0; e < indices->lengthOf(); ++e)
-        if (indices->e<sd::LongType>(e) == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(*listOutForCurrent.at(outputs[i].second++));
+        if (indices->e<sd::LongType>(e) == static_cast<sd::LongType>(i)) listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
     }
   } else {  // one-dimensional case
     auto output = outputList[0];

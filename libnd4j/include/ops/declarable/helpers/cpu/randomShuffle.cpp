@@ -76,12 +76,12 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
   sd::LongType temp;
 
   if (input.lengthOf() == 1 || firstDim == 1) {
-    if (!isInplace) output.assign(input);
+    if (!isInplace) output.assign(&input);
   } else if (shape::isCommonVector(input.shapeInfo(), temp)) {
     NDArray* arr = &input;
 
     if (!isInplace) {
-      output.assign(input);
+      output.assign(&input);
       arr = &output;
     }
 

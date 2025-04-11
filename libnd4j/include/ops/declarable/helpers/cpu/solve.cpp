@@ -43,7 +43,7 @@ static void adjointMatrix_(sd::LaunchContext* context, NDArray * input, NDArray*
   auto inputPart = input->allTensorsAlongDimension({-2, -1});
   auto outputPart = output->allTensorsAlongDimension({-2, -1});
   auto rows = input->sizeAt(-2);
-  output->assign(*input);
+  output->assign(input);
 
   auto batchLoop = PRAGMA_THREADS_FOR {
     for (auto batch = start; batch < stop; batch++) {
