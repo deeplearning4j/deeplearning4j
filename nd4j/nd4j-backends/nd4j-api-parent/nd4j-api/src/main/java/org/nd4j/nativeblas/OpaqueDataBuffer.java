@@ -89,7 +89,7 @@ public class OpaqueDataBuffer extends Pointer {
         for (int t = 0; t < MAX_TRIES; t++) {
             try {
                 // try to allocate data buffer
-                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth).retainReference();
+                buffer = Nd4j.getNativeOps().allocateDataBuffer(numElements, dataType.toInt(), allocateBoth);
                 //when  using func trace we want to print allocation traces when deallocation is called. this is used to debug
                 //potential race condition and crashes. c++ prints the equivalent stack trace when func trace is enabled.
                 //This allows us to check where a deallocated buffer that caused an issue was allocated.
