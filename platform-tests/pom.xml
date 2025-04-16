@@ -72,7 +72,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-cuda-12.3</backend.artifactId>
+        <backend.artifactId>nd4j-native</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.30</lombok.version>
@@ -1040,7 +1040,6 @@
                     </properties>
                     <environmentVariables>
                         <CUDA_LAUNCH_BLOCKING>1</CUDA_LAUNCH_BLOCKING>
-                        <CUDA_VISIBLE_DEVICES>1</CUDA_VISIBLE_DEVICES>
                         <OPENBLAS_CORETYPE>Haswell</OPENBLAS_CORETYPE>
                         <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         <LD_PRELOAD>${preload}</LD_PRELOAD>

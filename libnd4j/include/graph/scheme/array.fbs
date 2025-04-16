@@ -58,11 +58,27 @@ enum LossReduce:byte {
 
 
 // this structure describe NDArray
+// Buffer chunk for large data
+table BufferChunk {
+    index:long;      // Position in the logical buffer
+    data:[byte];     // Chunk data (limited to <2GB per chunk)
+}
+
+// Extended FlatArray with support for both small and large buffers
+// as well as external storage for arrays larger than 2GB
 table FlatArray {
-    shape:[long]; // shape in Nd4j format
-    buffer:[byte]; // byte buffer with data
-    dtype:DType; // data type of actual data within buffer
-    byteOrder:ByteOrder; // byte order of buffer
+    shape:[long];
+    buffer:[byte];                     // Used for small buffers (<2GB)
+    dtype:DType;
+    byteOrder:ByteOrder;
+
+    // Fields for large buffer support via chunking
+    bufferChunks:[BufferChunk];        // Used for large buffers
+    totalBufferSize:long;              // Total size when using chunks
+    
+    // Fields for external file storage
+    externalDataFilename:[string];     // Filename for externally stored data
+    isExternal:bool = false;           // Flag indicating if data is stored externally
 }
 
 root_type FlatArray;

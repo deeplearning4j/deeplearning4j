@@ -222,6 +222,53 @@ public class SDVariable implements Serializable {
         return this.dataType;
     }
 
+
+    // Add this helper method inside the SDVariable class
+    private SDVariable handleRename(SDVariable resultVariable, String requestedName) {
+        // No rename needed if name is null or already matches
+        if (requestedName == null || requestedName.equals(resultVariable.name())) {
+            return resultVariable;
+        }
+
+        // Ensure the result variable and its metadata exist in the associated SameDiff instance
+        Variable resultVarMeta = this.sameDiff.getVariables().get(resultVariable.name());
+        if (resultVarMeta == null) {
+            // This might happen if the variable wasn't properly added to the map initially
+            log.warn("Internal metadata for result variable '{}' not found during potential rename to '{}'. " +
+                            "Returning variable with default name '{}'. Graph state might be inconsistent.",
+                    resultVariable.name(), requestedName, resultVariable.name());
+            return resultVariable;
+        }
+
+        // Find the operation that produced this result variable
+        String producingOpName = resultVarMeta.getOutputOfOp();
+        if (producingOpName == null) {
+            // Variables like placeholders or constants might not have a producing op
+            log.warn("Result variable '{}' does not have a producing op recorded. Cannot perform graph-aware rename to '{}'. " +
+                            "Returning variable with default name '{}'.",
+                    resultVariable.name(), requestedName, resultVariable.name());
+            // Attempting a basic rename without full context might be possible but risky.
+            // For safety, we return without renaming if the producing op isn't known.
+            return resultVariable;
+        }
+
+        // Get the SameDiffOp instance for the producer
+        SameDiffOp producingOp = this.sameDiff.getOps().get(producingOpName);
+        if (producingOp == null) {
+            // The op that supposedly produced the variable isn't in the ops map - inconsistency!
+            log.warn("Could not find the producing op instance '{}' (referenced by variable '{}') during potential rename to '{}'. " +
+                            "Returning variable with default name '{}'. Graph state might be inconsistent.",
+                    producingOpName, resultVariable.name(), requestedName, resultVariable.name());
+            return resultVariable;
+        }
+
+        // Perform the rename using the specific overload that takes the producing op
+        // The 'false' argument means 'exactName=false', allowing generation of unique names if 'requestedName' clashes
+        log.debug("Renaming variable '{}' produced by op '{}' to requested name '{}'", resultVariable.name(), producingOpName, requestedName);
+        return this.sameDiff.updateVariableNameAndReference(producingOp, resultVariable, requestedName, false);
+    }
+
+
     public LongShapeDescriptor getShapeDescriptor() {
         return LongShapeDescriptor.fromShape(getShape(), this.dataType());
     }

@@ -24,6 +24,7 @@ package org.nd4j.linalg.api.ndarray;
 import lombok.Getter;
 import lombok.Setter;
 import org.bytedeco.javacpp.LongPointer;
+import org.nd4j.autodiff.samediff.serde.SameDiffSerializer;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.shape.ReshapeNoCopy;
@@ -1601,6 +1602,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(long i, int value) {
         return putScalar(i, (double) value);
+    }
+
+    @Override
+    public INDArray putScalar(long i, boolean b) {
+        return putScalar(i,b  ? 1.0 : 0.0);
     }
 
     @Override
@@ -5992,33 +5998,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
-        if(isView()){
-            return dup(this.ordering()).toFlatArray(builder);
-        }
-        int shape = FlatArray.createShapeVector(builder, this.shapeInfoDataBuffer().asLong());
-        int buffer = this.isEmpty() ? 0 : this.dataType() == DataType.UTF8 ? stringBuffer(builder, this.data()) : FlatArray.createBufferVector(builder, this.data().asBytes());
-        val type = this.isEmpty() ? FlatBuffersMapper.getDataTypeAsByte(this.dataType()) : FlatBuffersMapper.getDataTypeAsByte(this.data().dataType());
-        int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
-
-        return array;
+      throw new IllegalStateException();
     }
 
-    protected static DataTypeEx convertType(DataType type) {
-        if (type == DataType.HALF) {
-            return DataTypeEx.FLOAT16;
-        } else if (type == DataType.FLOAT) {
-            return DataTypeEx.FLOAT;
-        } else if (type == DataType.DOUBLE) {
-            return DataTypeEx.DOUBLE;
-
-        } else if(type == DataType.INT) {
-            return DataTypeEx.INT8;
-        } else if(type == DataType.LONG) {
-            return DataTypeEx.INT16;
-
-        } else
-            throw new IllegalStateException("Unknown dataType: [" + type + "]");
-    }
 
     @Override
     public boolean isEmpty() {
@@ -6227,5 +6209,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public void assignNewId() {
         arrayId = arrayCounter.incrementAndGet();
+    }
+
+
+    public void setShapeInfoDataBuffer(DataBuffer shapeInformation) {
+        this.shapeInfoDataBuffer = shapeInformation;
     }
 }

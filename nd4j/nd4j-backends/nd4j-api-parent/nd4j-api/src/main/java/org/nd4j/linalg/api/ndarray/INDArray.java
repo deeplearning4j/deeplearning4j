@@ -265,6 +265,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray putScalar(long i, float value);
 
+    INDArray putScalar(long i, boolean b);
+
+
     /**
      * Insert a scalar int at the specified index
      *
@@ -2887,4 +2890,5 @@ public interface INDArray extends Serializable, AutoCloseable {
             return null;
         return data().getParentWorkspace();
     }
+
 }
