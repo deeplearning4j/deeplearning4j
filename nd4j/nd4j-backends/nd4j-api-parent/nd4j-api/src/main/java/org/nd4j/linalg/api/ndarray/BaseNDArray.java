@@ -6214,5 +6214,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     public void setShapeInfoDataBuffer(DataBuffer shapeInformation) {
         this.shapeInfoDataBuffer = shapeInformation;
+        this.jvmShapeInfo = new JvmShapeInfo(shapeInformation.asLong());
     }
 }

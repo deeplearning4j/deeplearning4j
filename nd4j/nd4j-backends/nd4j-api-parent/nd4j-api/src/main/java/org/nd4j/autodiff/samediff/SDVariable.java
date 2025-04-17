@@ -62,7 +62,6 @@ public class SDVariable implements Serializable {
 
     private DifferentialFunction creator;
 
-    // autogen_tag::sdvars::start
 
 
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType){

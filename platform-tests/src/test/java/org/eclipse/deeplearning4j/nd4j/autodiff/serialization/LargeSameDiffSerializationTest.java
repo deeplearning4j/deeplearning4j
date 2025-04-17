@@ -253,4 +253,279 @@ public class LargeSameDiffSerializationTest extends BaseND4JTest {
 
         System.out.println("Test completed successfully!");
     }
+
+
+    @Test
+    public void testMultipleDataTypeSerialization() throws IOException {
+        // Parameters for model with multiple data types
+        int numLayers = 3;
+        int layerSize = 1000;
+
+        // Configure memory
+        Nd4j.getEnvironment().setCudaDeviceLimit(Environment.CUDA_LIMIT_MALLOC_HEAP_SIZE, 9999999999L);
+        System.out.println("Current malloc heap size limit: " + Nd4j.getEnvironment().cudaMallocHeapSize());
+
+        // Set up temp file
+        File tempFile = new File("multi-datatype-samediff-model.bin");
+        log.info("Will save model to: {}", tempFile.getAbsolutePath());
+
+        // Create the model
+        SameDiff sd = SameDiff.create();
+
+        // Input layer - standard FLOAT
+        SDVariable input = sd.placeHolder("input", DataType.FLOAT, 1, layerSize);
+        SDVariable current = input;
+
+        // Define data types for each layer
+        DataType[] layerTypes = {
+                DataType.FLOAT,  // Layer 0: Standard floating point
+                DataType.DOUBLE, // Layer 1: Double precision
+                DataType.HALF,   // Layer 2: Half precision
+        };
+
+        // Define memory ordering for each layer
+        char[] layerOrders = {'c', 'f', 'c', 'f'};
+
+        // Store original arrays for verification
+        Map<String, INDArray> originalArrays = new HashMap<>();
+
+        System.out.println("Creating neural network with multiple data types...");
+
+        // Create network with layers of different data types
+        for (int i = 0; i < numLayers; i++) {
+            String layerName = "layer_" + i;
+            DataType dtype = layerTypes[i];
+            char order = layerOrders[i];
+
+            System.out.println("Creating layer " + i + " with data type " + dtype + " and order " + order);
+
+            // Create weights with appropriate dtype and ordering
+            INDArray weightArray;
+            INDArray biasArray;
+
+            if (dtype == DataType.FLOAT || dtype == DataType.DOUBLE) {
+                // For floating point types
+                weightArray = Nd4j.rand(dtype, layerSize, layerSize).dup(order);
+                biasArray = Nd4j.rand(dtype, 1, layerSize).dup(order);
+
+                // Scale the values
+                weightArray.muli(0.1);
+                biasArray.muli(0.01);
+            }
+            else if (dtype == DataType.HALF) {
+                // For half precision, create as float then cast
+                weightArray = Nd4j.rand(DataType.FLOAT, layerSize, layerSize).dup(order).muli(0.1).castTo(DataType.HALF);
+                biasArray = Nd4j.rand(DataType.FLOAT, 1, layerSize).dup(order).muli(0.01).castTo(DataType.HALF);
+            }
+            else {
+                // For integer types, initialize with specific values
+                weightArray = Nd4j.zeros(dtype, layerSize, layerSize).dup(order);
+                biasArray = Nd4j.zeros(dtype, 1, layerSize).dup(order);
+
+                // Fill with deterministic values
+                for (int j = 0; j < layerSize; j++) {
+                    for (int k = 0; k < layerSize; k++) {
+                        weightArray.putScalar(new int[]{j, k}, (j+k) % 10);
+                    }
+                    biasArray.putScalar(new int[]{0, j}, j % 5);
+                }
+            }
+
+            // Create variables in the graph
+            SDVariable weights = sd.var(layerName + "_w", weightArray);
+            SDVariable bias = sd.var(layerName + "_b", biasArray);
+
+            // Store original arrays for later verification
+            originalArrays.put(layerName + "_w", weightArray.dup());
+            originalArrays.put(layerName + "_b", biasArray.dup());
+
+            // Cast input to match current layer type if needed
+            SDVariable layerInput = current;
+            if (i > 0 && layerInput.dataType() != dtype) {
+                layerInput = layerInput.castTo(dtype);
+            }
+
+            // Create layer operations
+            SDVariable z = layerInput.mmul(weights).add(bias);
+
+            // Handle activation - for integer types, cast to float for activation, then back
+            if (dtype == DataType.INT) {
+                SDVariable floatActivation = sd.nn().relu(z.castTo(DataType.FLOAT), 0.0);
+                current = floatActivation.castTo(DataType.INT);
+            } else {
+                current = sd.nn().relu(z, 0.0);
+            }
+        }
+
+        // Output layer - always use FLOAT for final output
+        SDVariable outputWeights = sd.var("output_w", Nd4j.rand(DataType.FLOAT, layerSize, 10).muli(0.1));
+        SDVariable outputBias = sd.var("output_b", Nd4j.rand(DataType.FLOAT, 1, 10).muli(0.01));
+
+        originalArrays.put("output_w", outputWeights.getArr().dup());
+        originalArrays.put("output_b", outputBias.getArr().dup());
+
+        // Ensure output is float type
+        if (current.dataType() != DataType.FLOAT) {
+            current = current.castTo(DataType.FLOAT);
+        }
+
+        // Final output
+        SDVariable output = sd.nn().softmax(current.mmul(outputWeights).add(outputBias));
+        sd.setOutputs(output.name());
+
+        // Calculate estimated size
+        long estimatedBytes = 0;
+        for (int i = 0; i < numLayers; i++) {
+            long layerElements = (long)layerSize * layerSize + layerSize;
+            estimatedBytes += layerElements * layerTypes[i].width();
+        }
+        estimatedBytes += ((long)layerSize * 10 + 10) * 4; // output layer in FLOAT (4 bytes)
+
+        double estimatedGB = estimatedBytes / (1024.0 * 1024.0 * 1024.0);
+        System.out.println("Estimated model size: " + estimatedGB + " GB");
+
+        // Save the model
+        System.out.println("Saving model to disk...");
+        long startTime = System.currentTimeMillis();
+        SameDiffSerializer.saveAutoShard(sd, tempFile, true, Collections.emptyMap());
+        long endTime = System.currentTimeMillis();
+        System.out.println("Save completed in " + (endTime - startTime) + " ms");
+
+        // Verify file was created
+        assertTrue("Model file or shards should exist", tempFile.exists() || isSharded(tempFile));
+
+        // Check if file was sharded
+        boolean isSharded = isSharded(tempFile);
+        if (isSharded) {
+            System.out.println("Model was sharded into multiple files");
+        }
+
+        // Load the model back
+        System.out.println("Loading model from disk...");
+        startTime = System.currentTimeMillis();
+        SameDiff loadedModel;
+        if (isSharded) {
+            loadedModel = SameDiffSerializer.loadSharded(tempFile, true);
+        } else {
+            loadedModel = SameDiffSerializer.load(tempFile, true);
+        }
+        endTime = System.currentTimeMillis();
+        System.out.println("Load completed in " + (endTime - startTime) + " ms");
+
+        // Basic validation
+        assertNotNull("Loaded model should not be null", loadedModel);
+        assertEquals("Variable count mismatch", sd.variables().size(), loadedModel.variables().size());
+        assertEquals("Op count mismatch", sd.ops().length, loadedModel.ops().length);
+
+        // Verify all variable names were preserved
+        Set<String> originalVariableNames = new HashSet<>(sd.variableNames());
+        Set<String> loadedVariableNames = new HashSet<>(loadedModel.variableNames());
+        assertEquals("Variable names mismatch", originalVariableNames, loadedVariableNames);
+
+        // Verify all layers
+        for (int i = 0; i < numLayers; i++) {
+            String layerName = "layer_" + i;
+            DataType expectedType = layerTypes[i];
+            char expectedOrder = layerOrders[i];
+
+            verifyVariable(loadedModel, originalArrays, layerName + "_w", expectedType, expectedOrder, layerSize, layerSize);
+            verifyVariable(loadedModel, originalArrays, layerName + "_b", expectedType, expectedOrder, 1, layerSize);
+        }
+
+        // Verify output layer
+        verifyVariable(loadedModel, originalArrays, "output_w", DataType.FLOAT, 'c', layerSize, 10);
+        verifyVariable(loadedModel, originalArrays, "output_b", DataType.FLOAT, 'c', 1, 10);
+
+        // Clean up
+        if (isSharded) {
+            deleteShardFiles(tempFile);
+        } else {
+            tempFile.delete();
+        }
+
+        System.out.println("Multi-datatype serialization test completed successfully");
+    }
+
+    /**
+     * Helper to check if a model is stored as sharded files
+     */
+    private boolean isSharded(File baseFile) {
+        File parentDir = baseFile.getParentFile();
+        if (parentDir == null) parentDir = new File(".");
+        String baseName = baseFile.getName();
+        int dotIdx = baseName.lastIndexOf('.');
+        if (dotIdx > 0) baseName = baseName.substring(0, dotIdx);
+
+        String finalBaseName = baseName;
+        File[] shardFiles = parentDir.listFiles((dir, name) ->
+                name.startsWith(finalBaseName + ".shard") && name.endsWith(".sdnb"));
+
+        return shardFiles != null && shardFiles.length > 0;
+    }
+
+    /**
+     * Helper to delete all shard files
+     */
+    private void deleteShardFiles(File baseFile) {
+        File parentDir = baseFile.getParentFile();
+        if (parentDir == null) parentDir = new File(".");
+        String baseName = baseFile.getName();
+        int dotIdx = baseName.lastIndexOf('.');
+        if (dotIdx > 0) baseName = baseName.substring(0, dotIdx);
+
+        String finalBaseName = baseName;
+        File[] shardFiles = parentDir.listFiles((dir, name) ->
+                name.startsWith(finalBaseName + ".shard") && name.endsWith(".sdnb"));
+
+        if (shardFiles != null) {
+            for (File f : shardFiles) {
+                f.delete();
+            }
+        }
+    }
+
+    /**
+     * Helper to verify a variable's properties
+     */
+    private void verifyVariable(SameDiff loadedModel, Map<String, INDArray> originalArrays,
+                                String varName, DataType expectedType, char expectedOrder,
+                                int expectedRows, int expectedCols) {
+        // Check variable exists
+        assertTrue("Missing variable: " + varName, loadedModel.hasVariable(varName));
+
+        // Get arrays
+        INDArray originalArray = originalArrays.get(varName);
+        INDArray loadedArray = loadedModel.getVariable(varName).getArr();
+
+        assertNotNull("Original array should not be null for " + varName, originalArray);
+        assertNotNull("Loaded array should not be null for " + varName, loadedArray);
+
+        // Verify data type
+        assertEquals("Data type mismatch for " + varName, expectedType, loadedArray.dataType());
+
+        // Verify ordering
+        assertEquals("Ordering mismatch for " + varName, expectedOrder, loadedArray.ordering());
+
+        // Verify shape
+        assertEquals("Row count mismatch for " + varName, expectedRows, loadedArray.rows());
+        assertEquals("Column count mismatch for " + varName, expectedCols, loadedArray.columns());
+
+        // Verify content at key locations
+        assertEquals("First element mismatch for " + varName,
+                originalArray.getDouble(0, 0),
+                loadedArray.getDouble(0, 0), 1e-5);
+
+        if (expectedRows > 1 && expectedCols > 1) {
+            int midRow = expectedRows / 2;
+            int midCol = expectedCols / 2;
+
+            assertEquals("Middle element mismatch for " + varName,
+                    originalArray.getDouble(midRow, midCol),
+                    loadedArray.getDouble(midRow, midCol), 1e-5);
+        }
+
+        assertEquals("Last element mismatch for " + varName,
+                originalArray.getDouble(expectedRows-1, expectedCols-1),
+                loadedArray.getDouble(expectedRows-1, expectedCols-1), 1e-5);
+    }
 }

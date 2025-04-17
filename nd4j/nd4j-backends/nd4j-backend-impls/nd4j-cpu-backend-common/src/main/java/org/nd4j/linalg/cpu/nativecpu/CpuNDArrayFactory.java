@@ -59,7 +59,12 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray createFromDescriptor(DataBuffer shapeInformation) {
-        return null;
+        NDArray ret = new NDArray();
+        ret.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(ret.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,ret.length(),false);
+        ret.setData(buff);
+        return ret;
     }
 
     static {
