@@ -34,23 +34,28 @@ We have implemented a unified container format for SameDiff that encapsulates bo
    - Section-based container with header, metadata, graph, and arrays
    - Efficient memory mapping for large arrays
    - Optimized for performance with direct I/O
+   - Compatible with 32-bit FlatBuffers limitations
 
 3. **SDZ Format**:
    - Standard ZIP archive containing internal .sdnb files
    - Compressed storage to reduce file size
    - Standard tools compatibility for inspection and extraction
-   - Single file distribution for complex models
+   - Single file deployment for complex models
+   - Simplicity of implementation using standard ZIP libraries
 
 4. **Metadata Management**:
    - Standardized keys for common model attributes
    - Support for custom metadata
    - Versioning and provenance information
+   - Extensible metadata system similar to GGUF (General GPU Unified Format)
+   - Ability to add metadata later without reserializing model parameters
 
 5. **Sharding Support**:
    - Explicit first-class support for model sharding in both formats
    - Smart distribution of variables across shards
    - Automatic shard count determination based on model size
    - Consistent naming convention for shards
+   - Support for NDArrays of any size through intelligent sharding
 
 6. **Backward Compatibility**:
    - Automatic format detection between SDNB and SDZ formats
@@ -164,7 +169,28 @@ The SDZ format balances compression benefits against performance requirements:
    - Optimal balance between compression level and performance
    - Compression ratio varies based on parameter data patterns
 
-## Consequences
+## Trade-offs and Consequences
+
+### Design Trade-offs
+
+1. **FlatBuffers Compatibility vs. Unlimited Model Size**:
+   - We maintain compatibility with 32-bit FlatBuffers for graph structure
+   - We overcome FlatBuffers' 2GB size limitation through our sharding approach
+   - This allows us to leverage FlatBuffers' efficiency for small graph structures while supporting NDArrays of any size
+
+2. **Single File Format vs. Performance**:
+   - We chose ZIP for its ubiquity, tooling support, and single-file deployment benefits
+   - ZIP allows self-contained distribution while accepting some performance overhead during compression/decompression
+   - This trades some loading speed for better deployment experience and reduced operational complexity
+
+3. **Metadata Extensibility vs. Format Complexity**:
+   - We implement an extensible metadata system similar to GGUF
+   - This allows adding/updating metadata without reserializing the entire model
+   - The increased format complexity is justified by the flexibility to evolve models over time
+
+4. **Cross-Platform Support vs. Optimization**:
+   - We prioritize cross-platform compatibility over platform-specific optimizations
+   - This ensures models can be shared across environments but may not achieve maximum performance on specialized hardware
 
 ### Advantages
 
@@ -174,7 +200,7 @@ The SDZ format balances compression benefits against performance requirements:
    - Reduced risk of missing files or shard mismatches
 
 2. **Enhanced Model Storage**:
-   - Support for models of any size
+   - Support for NDArrays and models of any size
    - Efficient storage with ZIP compression
    - Selective loading of model components
 
@@ -182,6 +208,7 @@ The SDZ format balances compression benefits against performance requirements:
    - Standardized tracking of model attributes
    - Version management for compatibility
    - Custom metadata for specific requirements
+   - Post-training metadata additions without parameter reserializing
 
 4. **First-Class Sharding**:
    - Explicit support for very large models
