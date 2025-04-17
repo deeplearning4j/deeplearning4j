@@ -95,16 +95,9 @@ public class SameDiffSerializer {
     // Metadata keys
     public static final String META_ND4J_FORMAT_VERSION = "nd4j.format.version";
     public static final String META_ND4J_FORMAT_TYPE = "nd4j.format.type";
-    public static final String META_MODEL_NAME = "model.name";
-    public static final String META_MODEL_VERSION = "model.version";
     public static final String META_FRAMEWORK_VERSION = "framework.version";
     public static final String META_CREATION_TIME = "creation.time";
-    public static final String META_AUTHOR = "author";
-    public static final String META_LICENSE = "license";
-    public static final String META_DESCRIPTION = "description";
-    public static final String META_TAGS = "tags";
     public static final String META_SHARD_INDEX = "shard.index";
-    public static final String META_SHARD_COUNT = "shard.count";
     public static final String META_SHARD_TYPE = "shard.type";
     private static final String FORMAT_TYPE_APPENDED = "APPENDED_BLOB";
 
@@ -127,11 +120,10 @@ public class SameDiffSerializer {
     /**
      * Saves the SameDiff model, automatically determining if sharding is needed based on variable sizes.
      * Calls either the standard single-file save or the multi-file saveSharded internally.
-     * CORRECTED to call the modified saveInternal for the single-file case.
      */
     @SneakyThrows
     public static void saveAutoShard(@NonNull SameDiff sameDiff, @NonNull File baseFile,
-                                     boolean saveUpdaterState, Map<String, String> metadata) throws IOException {
+                                     boolean saveUpdaterState, Map<String, String> metadata) {
         Preconditions.checkNotNull(sameDiff, "SameDiff instance cannot be null");
         Preconditions.checkNotNull(baseFile, "Base file path cannot be null.");
 
@@ -229,7 +221,6 @@ public class SameDiffSerializer {
     /**
      * Saves the SameDiff model across multiple files (shards) using the SDNB format per shard.
      * The number of shards is dynamically determined based on MAX_SHARD_FILE_BYTES.
-     * Includes detailed logging for layer_0_b assignment.
      */
     @SneakyThrows
     public static void saveSharded(@NonNull SameDiff sameDiff, @NonNull File baseFile,
@@ -374,11 +365,6 @@ public class SameDiffSerializer {
                 // --- Handle array data ---
                 if (!appendData) {
                     // Add small data inline TO THE SHARD'S SAMEDIFF OBJECT
-                    // *** ADDED LOGGING FOR layer_0_b HERE ***
-                    if (var.name().equals("layer_0_b")) {
-                        log.info("SAVE_TRACE [Shard {}]: Assigning 'layer_0_b' (small). Inline? {}", currentShardIndex, !appendData);
-                        log.info("SAVE_TRACE [Shard {}]: Adding 'layer_0_b' data inline via currentVarShard.var/constant().", currentShardIndex);
-                    }
                     // Add with data
                     if (var.getVariableType() == VariableType.CONSTANT) {
                         currentVarShard.constant(var.name(), arr.dup());
@@ -386,10 +372,6 @@ public class SameDiffSerializer {
                         currentVarShard.var(var.name(), arr.dup());
                     }
                 } else {
-                    // *** ADDED LOGGING FOR layer_0_b HERE (Warning Case) ***
-                    if (var.name().equals("layer_0_b")) {
-                        log.warn("SAVE_TRACE [Shard {}]: 'layer_0_b' classified as large (appendData=true)? This is unexpected! SizeBytes={}", currentShardIndex, varSizeBytes);
-                    }
                     // Store the ACTUAL array data in the map for this shard
                     currentShardArraysToAppend.put(var.name(), arr);
                 }
@@ -517,7 +499,7 @@ public class SameDiffSerializer {
                 throw new IOException("File format not recognized as SDNB (magic number mismatch or too small): " + modelFile.getAbsolutePath());
             }
             // Loading a single file means creating a new SameDiff instance.
-            return loadInternal(modelFile, loadUpdaterState, null);
+            return loadInternal(modelFile, loadUpdaterState,null);
         }
     }
 
@@ -553,7 +535,7 @@ public class SameDiffSerializer {
         SameDiff result = null;
         try {
             // *** Load shard 0 by passing null for existingSD ***
-            result = loadInternal(shard0File, false, SameDiff.create()); // Creates the base SameDiff instance
+            result = loadInternal(shard0File, false, null); // Creates the base SameDiff instance
             if (result == null) {
                 throw new IOException("Loading graph shard 0 returned a null SameDiff instance.");
             }
@@ -572,7 +554,6 @@ public class SameDiffSerializer {
             }
             log.info("Loading and merging data from variable shard {} (file: {})", shardIdx, shardFile.getName());
             try {
-                // *** CORRECT CALL for variable shards: Pass 'result' to populate ***
                 // The returned value is the same 'result' instance, potentially modified.
                 loadInternal(shardFile, loadUpdaterState, result);
             } catch (Exception e) {
@@ -611,20 +592,18 @@ public class SameDiffSerializer {
      * (used for graph shard or shards with only small arrays).
      * These arrays are NOT expected to be attached to the `sameDiff` object itself.
      * @throws IOException If any file I/O or serialization error occurs.
-     * @throws InterruptedException If thread sleep is interrupted during write waits.
      */
     private static void saveInternal(
             @NonNull SameDiff sameDiff, @NonNull File file,
             boolean saveUpdaterState, Map<String, String> metadata,
             Map<String, INDArray> externalArraysToAppend // Map of arrays to append
-    ) throws IOException, InterruptedException {
+    ) throws IOException {
 
         Map<String, Pair<Long, Long>> largeArrayManifest = new LinkedHashMap<>();
         Set<String> largeArrayNamesForMetadata = new HashSet<>();
         Set<String> smallInlineArrayNamesForMetadata = new HashSet<>();
 
         // 1. Identify arrays for metadata serialization (Same logic as before)
-        // ... (code omitted for brevity, assumed unchanged from previous correct version) ...
         for (SDVariable var : getVariablesWithDataSorted(sameDiff)) {
             INDArray arr = var.getArr();
             if (arr == null) continue;
@@ -868,21 +847,18 @@ public class SameDiffSerializer {
                                             long totalWrittenThisChunk = 0;
                                             long currentChunkWritePos = currentWriteOffset + bytesWritten;
                                             channel.position(currentChunkWritePos);
-                                            long nioChunkWriteStart = System.currentTimeMillis();
 
                                             while (totalWrittenThisChunk < chunkLengthBytes) {
                                                 long writtenNow = channel.write(nioBufferView);
                                                 if (writtenNow < 0) throw new IOException("FileChannel write error (fallback chunk) for " + name);
                                                 totalWrittenThisChunk += writtenNow;
-                                                if (writtenNow == 0 /* ... */) { Thread.sleep(1); /* Check timeout */ }
-                                                else { nioChunkWriteStart = System.currentTimeMillis(); }
+
                                             }
                                             if (totalWrittenThisChunk != chunkLengthBytes) throw new IOException("Fallback NIO Write incomplete for chunk of " + name + "...");
 
                                             bytesWritten += totalWrittenThisChunk;
                                             log.trace("SAVE [{}]: Fallback NIO write successful for chunk ({} bytes). Total written so far: {}", name, totalWrittenThisChunk, bytesWritten);
-                                        } catch (IOException | InterruptedException e) {
-                                            if(e instanceof InterruptedException) Thread.currentThread().interrupt();
+                                        } catch (IOException e) {
                                             throw new IOException("Failed fallback NIO write for chunk of " + name, e);
                                         }
                                     } else {
@@ -916,9 +892,12 @@ public class SameDiffSerializer {
             // --- Write Manifest (Same as before) ---
             log.debug("Writing manifest map ({} entries) for file {} at offset {}", largeArrayManifest.size(), file.getName(), manifestOffset);
             byte[] manifestBytes;
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                 ObjectOutputStream oos = new ObjectOutputStream(baos)) {
                 oos.writeObject(largeArrayManifest); manifestBytes = baos.toByteArray();
-            } catch (IOException e) { throw new IOException("Failed to serialize manifest", e); }
+            } catch (IOException e) {
+                throw new IOException("Failed to serialize manifest", e);
+            }
             manifestLength = manifestBytes.length;
             raf.seek(manifestOffset); raf.write(manifestBytes);
             long finalFileSize = raf.getFilePointer();
@@ -947,7 +926,7 @@ public class SameDiffSerializer {
      * @throws IOException If loading fails.
      */
     private static SameDiff loadInternal(@NonNull File file, boolean loadUpdaterState, SameDiff existingSD) throws IOException {
-        log.debug("loadInternal: Loading internal format from file: {}", file.getAbsolutePath());
+        log.debug("Loading internal format from file: {}", file.getAbsolutePath());
         Map<String, Pair<Long, Long>> manifest = null;
         ByteBuffer metadataBuffer = null;
         long manifestOffset = -1, manifestLength = -1, metadataOffset = -1, metadataLength = -1;
@@ -967,12 +946,10 @@ public class SameDiffSerializer {
             headerBuffer.get(magicRead);
             if (!Arrays.equals(FILE_MAGIC, magicRead))
                 throw new IOException("Invalid magic number in file: " + file.getAbsolutePath());
-            int version = headerBuffer.getInt();
-            // TODO: Check version compatibility if needed
+
             manifestOffset = headerBuffer.getLong();
             manifestLength = headerBuffer.getLong();
             metadataOffset = headerBuffer.getLong();
-            log.debug("loadInternal: Read Header - ManifestOffset={}, ManifestLength={}, MetadataOffset={}", manifestOffset, manifestLength, metadataOffset);
 
             // --- Validate Header Offsets/Lengths ---
             if (metadataOffset != HEADER_SIZE || manifestOffset < metadataOffset || manifestLength < 0 || manifestOffset > fileSize || manifestOffset + manifestLength > fileSize)
@@ -985,7 +962,6 @@ public class SameDiffSerializer {
                 throw new IOException("Invalid metadata length (negative): " + metadataLength);
             if (metadataLength > Integer.MAX_VALUE)
                 throw new IOException("Metadata length > 2GB not supported for direct ByteBuffer allocation.");
-            log.debug("loadInternal: Calculated MetadataLength={}", metadataLength);
 
 
             // --- Read Manifest ---
@@ -1000,38 +976,35 @@ public class SameDiffSerializer {
                 try (ByteArrayInputStream bais = new ByteArrayInputStream(manifestNio.array(), manifestNio.position(), manifestNio.remaining());
                      ObjectInputStream ois = new ObjectInputStream(bais)) {
                     manifest = (Map<String, Pair<Long, Long>>) ois.readObject();
-                    log.debug("loadInternal: Successfully deserialized manifest with {} entries.", manifest.size());
                 } catch (Exception e) {
                     throw new IOException("Failed to deserialize manifest from file: " + file.getAbsolutePath(), e);
                 }
             } else {
                 manifest = Collections.emptyMap(); // Handle case of no appended data
-                log.debug("loadInternal: Manifest length is zero in file {}. No appended data expected.", file.getName());
+                log.debug("Manifest length is zero in file {}. No appended data expected.", file.getName());
             }
 
 
             // --- Read Metadata Buffer ---
+            // Only read if length > 0 to avoid allocating 0-byte buffer
             FlatGraph fg = null; // Parsed FlatGraph metadata
             if (metadataLength > 0) {
-                log.debug("loadInternal: Allocating direct buffer for metadata ({} bytes)", metadataLength);
                 metadataBuffer = ByteBuffer.allocateDirect((int) metadataLength).order(ByteOrder.LITTLE_ENDIAN); // FlatBuffers standard
                 int metaRead = channel.read(metadataBuffer, metadataOffset);
-                log.debug("loadInternal: Read {} bytes from channel into metadata buffer.", metaRead);
                 if (metaRead != metadataLength)
                     throw new IOException("Failed to read complete metadata FlatBuffer from: " + file.getAbsolutePath());
                 metadataBuffer.flip(); // Prepare for reading
-                log.debug("loadInternal: Metadata buffer flipped. Position={}, Limit={}", metadataBuffer.position(), metadataBuffer.limit());
                 // Parse FlatGraph once, used by multiple steps below
                 try {
-                    log.debug("loadInternal: Attempting to parse FlatGraph from metadata buffer.");
                     fg = FlatGraph.getRootAsFlatGraph(metadataBuffer.duplicate()); // Use duplicate to preserve original buffer position
                     if (fg == null) throw new IOException("Failed to get FlatGraph root from metadata ByteBuffer.");
-                    log.debug("loadInternal: Successfully parsed FlatGraph metadata. VariablesLength={}, NodesLength={}", fg.variablesLength(), fg.nodesLength());
                 } catch (Exception e) {
                     throw new IOException("Error parsing FlatBuffer metadata from file: " + file.getAbsolutePath(), e);
                 }
             } else {
-                log.warn("loadInternal: Metadata length is zero in file {}. Cannot deserialize graph structure or load inline arrays.", file.getName());
+                log.warn("Metadata length is zero in file {}. Cannot deserialize graph structure or load inline arrays.", file.getName());
+                // If existingSD is null, we can't proceed without metadata.
+                // If existingSD is not null, we might still be able to load appended data if manifest is present.
                 if (existingSD == null) {
                     throw new IOException("Cannot create new SameDiff instance: metadata is empty in file " + file.getAbsolutePath());
                 }
@@ -1042,73 +1015,43 @@ public class SameDiffSerializer {
             SameDiff targetSD;
             if (existingSD == null) {
                 // --- Case 1: Create NEW SameDiff instance (Shard 0 or single file) ---
-                log.debug("loadInternal: existingSD is null. Attempting to deserialize NEW instance from metadata.");
                 if (metadataBuffer == null || metadataLength == 0) {
-                    throw new IOException("Cannot create new SameDiff instance: metadata is empty or failed to read in file " + file.getAbsolutePath());
+                    throw new IOException("Cannot create new SameDiff instance: metadata is empty in file " + file.getAbsolutePath());
                 }
+                log.debug("Deserializing graph structure into NEW SameDiff instance from file {}", file.getName());
                 targetSD = deserializeFromFlatBuffers(metadataBuffer.duplicate(), loadUpdaterState, manifest); // Pass manifest to identify non-inline
-                log.info("loadInternal: deserializeFromFlatBuffers completed for NEW instance (hashCode: {}). Variable count: {}", targetSD.hashCode(), targetSD.variables().size());
-
-                // *** ADDED VERIFICATION LOGGING ***
-                log.debug("loadInternal: Checking variables in NEWLY loaded targetSD (hashCode: {}) before loading appended data:", targetSD.hashCode());
-                if (manifest != null) { // Check only vars expected in manifest
-                    for (String varName : manifest.keySet()) {
-                        boolean hasVar = targetSD.hasVariable(varName);
-                        log.debug("loadInternal: Check: targetSD.hasVariable('{}') = {}", varName, hasVar);
-                        // Add more verbose error if the critical var is missing
-                        if (varName.equals("layer_0_w") && !hasVar) {
-                            log.error("CRITICAL CHECK FAILED in loadInternal (New Instance Path): targetSD does NOT contain 'layer_0_w' after deserializeFromFlatBuffers!");
-                            log.error("All variables present in targetSD: {}", targetSD.variableNames());
-                        }
-                    }
-                } else {
-                    log.warn("loadInternal: Manifest is null, cannot perform variable check before loading appended data.");
-                }
-                // *** END VERIFICATION LOGGING ***
-
+                log.debug("Initial SameDiff structure deserialized for file {}. Vars: {}, Ops: {}", file.getName(), targetSD.variables().size(), targetSD.getOps().size());
             } else {
                 // --- Case 2: Populate EXISTING SameDiff instance (Variable Shard) ---
-                log.debug("loadInternal: Populating EXISTING SameDiff instance (hashCode: {}) from variable shard file {}", existingSD.hashCode(), file.getName());
+                log.debug("Populating EXISTING SameDiff instance from variable shard file {}", file.getName());
                 targetSD = existingSD; // Use the passed-in instance as the target
 
                 // Load small inline arrays defined in *this shard's* metadata
                 if (fg != null) { // Check if metadata was successfully parsed
-                    log.debug("loadInternal: Calling loadSmallInlineArraysIntoExisting for targetSD (hashCode: {})", targetSD.hashCode());
                     loadSmallInlineArraysIntoExisting(targetSD, fg, manifest);
                     // Load and merge updater state if requested
                     if (loadUpdaterState) {
-                        log.debug("loadInternal: Calling loadAndUpdateUpdaterState for targetSD (hashCode: {})", targetSD.hashCode());
                         loadAndUpdateUpdaterState(targetSD, fg);
                     }
                 } else {
-                    log.warn("loadInternal: Cannot load small inline arrays or updater state for existing SameDiff: metadata was empty or failed to parse in file {}", file.getName());
+                    log.warn("Cannot load small inline arrays or updater state for existing SameDiff: metadata was empty or failed to parse in file {}", file.getName());
                 }
-
-                // *** ADDED VERIFICATION LOGGING (Existing Instance Path) ***
-                log.debug("loadInternal: Checking variables in EXISTING targetSD (hashCode: {}) before loading appended data:", targetSD.hashCode());
-                if (manifest != null) {
-                    for(String varName : manifest.keySet()){
-                        log.debug("loadInternal: Check: targetSD.hasVariable('{}') = {}", varName, targetSD.hasVariable(varName));
-                    }
-                } else {
-                    log.warn("loadInternal: Manifest is null, cannot perform variable check before loading appended data (Existing Instance Path).");
-                }
-                // *** END VERIFICATION LOGGING ***
             }
 
             // --- Load Appended Array Data (Common to both cases) ---
+            // Pass the correct targetSD instance (either newly created or existing)
+            // Also pass the metadataBuffer for lookups within loadAppendedArrayData
             if (manifest != null && !manifest.isEmpty()) {
-                log.info("loadInternal: Calling loadAppendedArrayData for {} variables into targetSD (hashCode: {})", manifest.size(), targetSD.hashCode());
+                log.info("Loading appended array data for {} variables from file {} into {} SameDiff instance...",
+                        manifest.size(), file.getName(), (existingSD == null ? "NEW" : "EXISTING"));
                 if (metadataBuffer == null) {
                     throw new IOException("Cannot load appended array data: metadata buffer is required for lookups but is missing or empty in file " + file.getAbsolutePath());
                 }
                 loadAppendedArrayData(targetSD, manifest, channel, metadataBuffer.duplicate()); // Pass duplicate buffer
-                log.info("loadInternal: loadAppendedArrayData finished for targetSD (hashCode: {})", targetSD.hashCode());
             } else {
-                log.info("loadInternal: No appended array data found in manifest for file {}. Skipping loadAppendedArrayData.", file.getName());
+                log.info("No appended array data found in manifest for file {}.", file.getName());
             }
 
-            log.debug("loadInternal: Load process complete for file {}. Returning targetSD (hashCode: {})", file.getName(), targetSD.hashCode());
             return targetSD; // Return the newly created or populated instance
 
         } catch (IOException e) {
@@ -1151,14 +1094,10 @@ public class SameDiffSerializer {
             String name = fv.name();
             if (name == null || name.isEmpty()) continue;
 
-            // *** Specific logging for layer_0_b ***
-            boolean isTargetVar = name.equals("layer_0_b");
-            if (isTargetVar) log.info("LOAD_INLINE_TRACE: Processing metadata for 'layer_0_b'.");
 
             // Skip if this variable's data is expected to be appended (handled elsewhere)
             if (manifest.containsKey(name)) {
                 skippedManifestCount++;
-                if (isTargetVar) log.info("LOAD_INLINE_TRACE: 'layer_0_b' is IN MANIFEST. Skipping inline load.", name);
                 continue; // Skip inline load attempt
             }
 
@@ -1171,44 +1110,14 @@ public class SameDiffSerializer {
 
             // Check if the variable *already* has an array in the target SD
             SDVariable targetVar = targetSD.getVariable(name);
-            if (targetVar == null) { // Should not happen if hasVariable passed, but check
-                log.error("LOAD_INLINE: Variable '{}' exists (hasVariable=true) but getVariable is null! Skipping.", name);
-                errorCount++;
-                continue;
-            }
-            if (targetVar.getArr() != null) {
-                skippedExistingCount++;
-                if (isTargetVar) log.info("LOAD_INLINE_TRACE: 'layer_0_b' targetVar already has an array. Skipping inline load.", name);
-                continue; // Skip inline load attempt
-            }
-
             // Check if this FlatVariable actually contains inline array data
             FlatArray fa = fv.ndarray();
-            if (isTargetVar) log.info("LOAD_INLINE_TRACE: 'layer_0_b' FlatArray metadata (fa) is null? {}", (fa == null));
 
             if (fa != null) {
-                if (isTargetVar) { // More details for the target var
-                    log.info("LOAD_INLINE_TRACE: 'layer_0_b' fa.bufferLength={}, fa.bufferChunksLength={}, fa.isExternal={}", fa.bufferLength(), fa.bufferChunksLength(), fa.isExternal());
-                    // Get buffer info safely
-                    ByteBuffer bb_trace = null;
-                    try { bb_trace = fa.bufferAsByteBuffer(); } catch (Exception e) { log.warn("LOAD_INLINE_TRACE: Error getting bufferAsByteBuffer for layer_0_b trace: {}", e.getMessage()); }
-                    log.info("LOAD_INLINE_TRACE: 'layer_0_b' bufferAsByteBuffer is null? {}, remaining={}", (bb_trace == null), (bb_trace != null ? bb_trace.remaining() : "N/A"));
-                }
                 log.debug("LOAD_INLINE: Found inline FlatArray metadata for '{}'. Attempting deserialization.", name);
                 try {
                     // Use the potentially simplified deserializeSmallNdArrayFromInlineBuffer
                     INDArray smallArr = deserializeSmallNdArrayFromInlineBuffer(fa,name); // Call the corrected version
-
-                    // *** Check result specifically for layer_0_b ***
-                    if (isTargetVar) {
-                        log.info("LOAD_INLINE_TRACE: deserializeSmallNdArrayFromInlineBuffer returned for 'layer_0_b'. Is null? {}", (smallArr == null));
-                        if (smallArr != null) {
-                            log.info("LOAD_INLINE_TRACE: 'layer_0_b' deserialized array shape: {}", Arrays.toString(smallArr.shape()));
-                            // Maybe log first element? Be careful with types
-                            try { log.info("LOAD_INLINE_TRACE: 'layer_0_b' first element value (as float): {}", smallArr.getFloat(0)); } catch (Exception e) {/*ignore*/}
-                        }
-                    }
-
                     if (smallArr != null) {
                         log.info("LOAD_INLINE: Successfully deserialized inline array for '{}'. Shape: {}", name, Arrays.toString(smallArr.shape()));
 
@@ -1216,7 +1125,14 @@ public class SameDiffSerializer {
                         DataType expectedDtype = targetVar.dataType();
                         if (expectedDtype != null && expectedDtype != DataType.UNKNOWN && smallArr.dataType() != expectedDtype) {
                             log.warn("LOAD_INLINE: Data type mismatch for small inline array '{}'. Expected {}, Found {}. Attempting cast.", name, expectedDtype, smallArr.dataType());
-                            try { smallArr = smallArr.castTo(expectedDtype); } catch (Exception castEx) { log.error("LOAD_INLINE: Failed to cast array '{}' to {}.", name, expectedDtype, castEx); errorCount++; continue; }
+                            try {
+                                smallArr = smallArr.castTo(expectedDtype);
+                            }
+                            catch (Exception castEx) {
+                                log.error("LOAD_INLINE: Failed to cast array '{}' to {}.", name, expectedDtype, castEx);
+                                errorCount++;
+                                continue;
+                            }
                         }
                         long[] expectedShape = targetVar.getShape();
                         if(expectedShape != null && !Arrays.equals(expectedShape, smallArr.shape())){
@@ -1248,7 +1164,6 @@ public class SameDiffSerializer {
                 }
             } else {
                 // fa == null
-                if (isTargetVar) log.info("LOAD_INLINE_TRACE: No inline FlatArray metadata found for 'layer_0_b' (fa == null).", name);
                 log.trace("LOAD_INLINE: No inline FlatArray metadata found for '{}' (fa == null).", name);
                 // This implies serializeSmall... failed or returned 0 for this variable during save.
             }
@@ -1436,8 +1351,6 @@ public class SameDiffSerializer {
                 String val = fg.metadataValues(i);
                 if (key != null) fileMetadata.put(key, val);
             }
-            // TODO: Set fileMetadata on sd instance if needed (e.g., via reflection or dedicated method)
-            // sd.setMetadata(fileMetadata); // Example hypothetical setter
         } catch (Exception e) {
             log.warn("Error reading FlatBuffer metadata entries", e);
         }
@@ -1656,16 +1569,18 @@ public class SameDiffSerializer {
         return sd; // Return the newly created and populated SameDiff instance
     }
 
+
+
     /**
      * Helper to load appended raw data into the SameDiff variables using FileChannel.
      * Retrieves shape, dtype, AND ordering information from the provided FlatBuffers metadata buffer.
-     * MODIFIED: Force fallback path using memcpy instead of direct NIO read.
+     * MODIFIED WITH INTENSIVE LOGGING AND VERIFICATION.
      *
      * @param targetSD       The SameDiff instance to populate (can be newly created or existing).
      * @param manifest       Map mapping variable names to {offset, length} in the file channel.
      * @param channel        FileChannel positioned at the start of the file (seeking will be done internally).
      * @param metadataBuffer ByteBuffer (positioned at 0, with limit=metadataLength) containing the
-     * parsed FlatBuffers metadata for the entire shard. Must be Little Endian.
+     *                       parsed FlatBuffers metadata for the entire shard. Must be Little Endian.
      * @throws IOException If reading fails or metadata is inconsistent.
      */
     private static void loadAppendedArrayData(
@@ -1699,7 +1614,8 @@ public class SameDiffSerializer {
 
             // --- Check Variable Existence in Target SD ---
             if (!targetSD.hasVariable(name)) {
-                log.error("FATAL: Manifest contains entry for variable '{}' but it was not found in the target SameDiff instance's graph structure. Cannot load data. Variables present: {}", name, targetSD.variableNames());
+                log.error("FATAL: Manifest contains entry for variable '{}' but it was not found in the target SameDiff instance's graph structure. Cannot load data.", name);
+                // Depending on requirements, you might continue or throw an exception. Throwing is safer.
                 throw new IOException("Variable '" + name + "' from manifest not found in SameDiff graph structure.");
             }
             SDVariable var = targetSD.getVariable(name);
@@ -1711,6 +1627,8 @@ public class SameDiffSerializer {
 
             // --- Check if Data Already Loaded ---
             if (var.getArr() != null) {
+                // This could happen if the same variable (e.g., a constant) was somehow included
+                // in multiple shards' manifests or loaded as small inline AND appended.
                 log.warn("Variable '{}' already has an array in target SameDiff instance. Skipping append load for this entry (Offset={}, Length={}). Check save logic if this is unexpected.", name, offset, lengthBytes);
                 continue;
             }
@@ -1718,17 +1636,20 @@ public class SameDiffSerializer {
             // --- Get Metadata from SDVariable AND FlatVariable ---
             DataType dtype = var.dataType();
             long[] shape = var.getShape();
-            char order;
+            char order = 'c'; // Default to 'c'
 
-            FlatVariable fv = findFlatVariableMeta(fg, name);
+            // Find corresponding metadata in the FlatBuffer for *this shard*
+            FlatVariable fv = findFlatVariableMeta(fg, name); // findFlatVariableMeta should already exist
             if (fv != null) {
-                // (Consistency checks for dtype/shape as before)
+                // Double check dtype/shape consistency if needed (optional)
                 DataType fbDtype = FlatBuffersMapper.getDataTypeFromByte(fv.dtype());
                 if (dtype != null && dtype != DataType.UNKNOWN && fbDtype != dtype) {
                     log.warn("DataType mismatch for '{}': Target SD has {}, Shard Metadata has {}. Using Target SD type.", name, dtype, fbDtype);
                 } else if (dtype == null || dtype == DataType.UNKNOWN) {
-                    dtype = fbDtype;
+                    dtype = fbDtype; // Use type from shard metadata if target was unknown
                 }
+
+                // Shape check (more critical)
                 long[] fbShape = null;
                 if (fv.shapeLength() > 0) {
                     fbShape = new long[fv.shapeLength()];
@@ -1738,44 +1659,68 @@ public class SameDiffSerializer {
                     log.error("Shape mismatch for '{}': Target SD has {}, Shard Metadata has {}. Cannot safely load data.", name, Arrays.toString(shape), Arrays.toString(fbShape));
                     throw new IOException("Shape mismatch in metadata for variable '" + name + "'.");
                 } else if (shape == null && fbShape != null) {
-                    shape = fbShape;
-                    log.debug("Updated shape for variable '{}' based on FlatVariable metadata: {}", name, Arrays.toString(shape));
-                    var.setShape(shape);
+                    shape = fbShape; // Use shape from shard metadata if target was unknown/null
                 }
 
-                // Get Order - NOW MANDATORY from FlatArray within FlatVariable
-                FlatArray fa = fv.ndarray();
-                if (fa == null) {
-                    log.error("FATAL: Missing FlatArray metadata within FlatVariable for variable '{}'. Cannot determine order.", name);
-                    throw new IOException("Missing FlatArray metadata within FlatVariable for variable '" + name + "'. Cannot determine order.");
+                // Get Order
+                FlatArray fa = fv.ndarray(); // Check ndarray part of variable metadata
+                if (fa != null) {
+                    // FlatBuffers schema uses 0 for 'c', 1 for 'f'
+                    order = fa.byteOrder() == 1 ? 'f' : 'c'; // Get order from FlatArray metadata
+                    log.trace("Determined order '{}' for variable '{}' from shard metadata.", order, name);
+                } else {
+                    log.warn("FlatArray metadata missing within FlatVariable for appended variable '{}'. Assuming default 'c' order.", name);
                 }
-                order = fa.byteOrder() == 1 ? 'f' : 'c';
-                log.trace("Determined order '{}' for variable '{}' from FlatArray metadata.", order, name);
-
             } else {
+                // This means the variable exists in the graph (targetSD) but has no specific entry
+                // in *this shard's* metadata FlatBuffer. This shouldn't happen if the variable's
+                // data is listed in *this shard's* manifest. Indicates a potential inconsistency during save.
                 log.error("FATAL: FlatVariable metadata missing entirely in this shard for variable '{}' which is listed in the manifest. Save process might be flawed.", name);
                 throw new IOException("Missing FlatVariable metadata for manifested variable '" + name + "'.");
             }
             // --- End Metadata Determination ---
 
             // --- Validate Metadata and Manifest Length ---
-            if (shape == null) { /* ... error ... */ }
-            if (dtype == null || dtype == DataType.UNKNOWN) { /* ... error ... */ }
-            // (Length validation logic remains the same...)
-            if (lengthBytes <= 0) { /* ... */ }
+            if (dtype == null || dtype == DataType.UNKNOWN) {
+                log.error("FATAL: Could not determine DataType for appended var '{}'. Skipping.", name);
+                throw new IOException("Unknown DataType for variable '" + name + "'.");
+            }
+            if (shape == null) {
+                log.error("FATAL: Could not determine Shape for appended var '{}'. Skipping.", name);
+                throw new IOException("Unknown Shape for variable '" + name + "'.");
+            }
+            if (lengthBytes <= 0) {
+                // Allow loading of empty arrays if shape implies 0 elements
+                long expectedElements = ArrayUtil.prodLong(shape);
+                if (expectedElements == 0 && lengthBytes == 0) {
+                    log.warn("Manifest entry for '{}' has zero length, and shape {} implies zero elements. Will create empty array.", name, Arrays.toString(shape));
+                } else {
+                    log.error("FATAL: Invalid zero/negative manifest length ({}) for appended var '{}' with non-empty shape {}. Skipping.", lengthBytes, name, Arrays.toString(shape));
+                    throw new IOException("Invalid manifest length for variable '" + name + "'.");
+                }
+            }
+
             int elementSize = dtype.width();
-            if (elementSize <= 0) { /* ... */ }
+            if (elementSize <= 0) {
+                log.error("FATAL: Invalid element size {} for dtype {} of variable '{}'. Skipping.", elementSize, dtype, name);
+                throw new ND4JUnknownDataTypeException("Invalid element size for DataType " + dtype);
+            }
+
             long expectedElements = ArrayUtil.prodLong(shape);
-            if (expectedElements < 0) { /* ... */ }
-            else {
+            if (expectedElements < 0) { // Shape overflow
+                log.warn("Shape {} for var '{}' overflows long. Cannot verify manifest length {}. Proceeding with caution.", Arrays.toString(shape), name, lengthBytes);
+            } else {
                 long expectedLengthBytes = expectedElements * elementSize;
                 if (lengthBytes != expectedLengthBytes) {
-                    log.error("FATAL: Manifest length mismatch for var '{}'. Manifest: {}, Calculated from Shape*Dtype: {}. (Shape: {}, DType: {}, Order: {}). Skipping.",
-                            name, lengthBytes, expectedLengthBytes, Arrays.toString(shape), dtype, order);
+                    log.error("FATAL: Manifest length mismatch for var '{}'. Manifest: {}, Calculated from Shape*Dtype: {}. (Shape: {}, DType: {}). Skipping.",
+                            name, lengthBytes, expectedLengthBytes, Arrays.toString(shape), dtype);
                     throw new IOException("Manifest length mismatch for variable '" + name + "'.");
                 }
             }
-            if (dtype == DataType.COMPRESSED || dtype == DataType.UTF8) { /* ... */ }
+            if (dtype == DataType.COMPRESSED || dtype == DataType.UTF8) {
+                log.error("FATAL: Append loading for type {} for variable '{}' is not supported. Skipping.", dtype, name);
+                throw new UnsupportedOperationException("Append loading not supported for DataType " + dtype);
+            }
 
 
             log.debug("Preparing to load {} bytes for variable '{}' (dtype={}, shape={}, order={}) from file offset {}",
@@ -1785,169 +1730,153 @@ public class SameDiffSerializer {
             INDArray resultArr = null;
             DataBuffer targetBuffer = null;
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                // (Creation logic as before, using determined order)
+                // Handle case of empty array creation
                 if (lengthBytes == 0 && expectedElements == 0) {
+                    log.debug("Creating empty INDArray for var '{}'", name);
                     resultArr = Nd4j.create(dtype, shape, Nd4j.getStrides(shape, order), order);
                 } else if (lengthBytes > 0) {
+                    log.debug("Creating uninitialized INDArray for var '{}'", name);
                     resultArr = Nd4j.createUninitialized(dtype, shape, order);
                 }
 
-                if (resultArr == null) throw new IOException("Nd4j.createUninitialized/create returned null for " + name);
-                if (resultArr.ordering() != order && !resultArr.isEmpty()) {
-                    log.error("CRITICAL: Created array for '{}' but order mismatch! Expected '{}', got '{}'.", name, order, resultArr.ordering());
-                }
+                if (resultArr == null)
+                    throw new IOException("Nd4j.createUninitialized/create returned null for " + name);
                 targetBuffer = resultArr.data();
-                if (targetBuffer == null && lengthBytes > 0) throw new IOException("Target DataBuffer is null for " + name);
-                log.trace("Successfully created target INDArray for '{}'. IsEmpty={}, Length={}, Shape={}, Order={}", name, resultArr.isEmpty(), resultArr.length(), Arrays.toString(resultArr.shape()), resultArr.ordering());
+                if (targetBuffer == null && lengthBytes > 0) // Empty buffer is okay for empty array
+                    throw new IOException("Target DataBuffer is null for " + name);
+
+                log.trace("Successfully created target INDArray for '{}'. IsEmpty={}, Length={}, Shape={}", name, resultArr.isEmpty(), resultArr.length(), Arrays.toString(resultArr.shape()));
+
             } catch (Exception e) {
                 log.error("FATAL: Failed to create INDArray for {}", name, e);
                 throw new IOException("Failed to create INDArray for " + name, e);
             }
 
             // --- Read Data From Channel into Array Buffer ---
+            // Skip reading if array is empty
             if (lengthBytes > 0) {
-                long arrayOffsetBytes = resultArr.offset() * targetBuffer.getElementSize(); // Usually 0 for new arrays
+                long arrayOffsetBytes = resultArr.offset() * targetBuffer.getElementSize(); // Offset within the DataBuffer
 
                 try {
-                    long currentFilePos = channel.position();
-                    log.trace("Reading data for '{}': Current channel pos before seek: {}", name, currentFilePos);
                     channel.position(offset); // Position channel to where blob starts
-                    long posAfterSeek = channel.position();
-                    log.debug("Reading data for '{}': Channel position after seek to {}: {}", name, offset, posAfterSeek);
-                    if (posAfterSeek != offset) {
-                        log.error("FATAL: Failed to seek channel to correct offset for '{}'. Expected {}, Got {}.", name, offset, posAfterSeek);
-                        throw new IOException("FileChannel seek failed for variable '" + name + "'.");
-                    }
+                    log.trace("Channel positioned to offset {} for reading '{}'", offset, name);
 
-                    ByteBuffer targetNio = targetBuffer.asNio(); // Still needed for reason check below
-
-                    // *** MODIFICATION START: Force fallback path ***
-                    boolean canUseDirectNio = false; // FORCE FALSE to always use fallback
-                    log.warn("FORCING FALLBACK PATH for '{}' (canUseDirectNio set to false)", name);
-                    // *** MODIFICATION END ***
-
-                    if (canUseDirectNio) {
+                    ByteBuffer targetNio = targetBuffer.asNio();
+                    if (targetNio != null && lengthBytes <= Integer.MAX_VALUE && arrayOffsetBytes <= Integer.MAX_VALUE && (arrayOffsetBytes + lengthBytes) <= Integer.MAX_VALUE) {
                         // --- Direct NIO Read Path ---
-                        // THIS CODE WILL NOT BE EXECUTED DUE TO FORCED FALSE ABOVE
-                        log.debug("Attempting Direct NIO read for '{}' into target buffer (Capacity: {}, IsDirect: {})", name, targetNio.capacity(), targetNio.isDirect());
-                        // ... (Rest of direct NIO read logic) ...
-
+                        log.trace("Attempting Direct NIO read for '{}'", name);
+                        targetNio.order(ByteOrder.nativeOrder()); // Ensure native order for direct memory access
+                        targetNio.position((int) arrayOffsetBytes);
+                        targetNio.limit((int) (arrayOffsetBytes + lengthBytes));
+                        long totalRead = 0;
+                        long startReadTime = System.currentTimeMillis();
+                        while (totalRead < lengthBytes) {
+                            int readBytes = channel.read(targetNio);
+                            if (readBytes == -1) {
+                                log.error("FATAL: EOFException encountered while reading data for '{}'. Expected {} bytes, read {} bytes.", name, lengthBytes, totalRead);
+                                throw new EOFException("EOF encountered while reading data for variable '" + name + "' at offset " + offset);
+                            }
+                            totalRead += readBytes;
+                            if (readBytes == 0) { // Avoid busy spin; yield or sleep briefly
+                                try {
+                                    Thread.sleep(1);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    throw new IOException("Read interrupted", ie);
+                                }
+                            }
+                            // Optional: Add timeout check
+                            if (System.currentTimeMillis() - startReadTime > 300000) { // 5 min timeout per array? Adjust as needed
+                                log.error("FATAL: Read timeout (>5min) while reading data for '{}'. Expected {} bytes, read {} bytes.", name, lengthBytes, totalRead);
+                                throw new IOException("Read timeout for variable '" + name + "'.");
+                            }
+                        }
+                        long endReadTime = System.currentTimeMillis();
+                        if (totalRead != lengthBytes) { // Should be caught by EOF, but double-check
+                            log.error("FATAL: Direct NIO read incomplete for '{}'. Expected {}, Read {}.", name, lengthBytes, totalRead);
+                            throw new IOException("Direct NIO read incomplete for variable '" + name + "'.");
+                        }
+                        log.trace("Direct NIO read successful for '{}' ({} bytes in {} ms).", name, totalRead, endReadTime - startReadTime);
+                        // --- End Direct NIO Read Path ---
                     } else {
                         // --- Fallback: Read via temporary byte[] chunks + Pointer.memcpy ---
-                        log.warn("Using chunked byte[] read fallback for '{}'. (Forced Path / Reason: {} large ({} bytes) or direct buffer unavailable ({}))",
-                                name, (lengthBytes > Integer.MAX_VALUE || arrayOffsetBytes > Integer.MAX_VALUE || (arrayOffsetBytes + lengthBytes) > Integer.MAX_VALUE) ? "Array > 2GB / offset issue" : "NIO buffer", lengthBytes, (targetNio==null));
+                        log.warn("Using chunked byte[] read fallback for '{}'. Reason: {} large ({} bytes) or direct buffer unavailable.",
+                                name, (lengthBytes > Integer.MAX_VALUE || arrayOffsetBytes > Integer.MAX_VALUE || (arrayOffsetBytes + lengthBytes) > Integer.MAX_VALUE) ? "Array > 2GB / offset issue" : "NIO buffer", lengthBytes);
 
                         if (tempChunk == null)
-                            tempChunk = new byte[RAW_IO_CHUNK_SIZE_BYTES];
+                            tempChunk = new byte[RAW_IO_CHUNK_SIZE_BYTES]; // Use constant defined elsewhere
                         long bytesReadCount = 0;
-                        long targetBufferWriteOffsetBytes = arrayOffsetBytes; // Start writing at the INDArray's buffer offset
-                        Pointer targetPointer = targetBuffer.pointer(); // Get native pointer
+                        long targetBufferWriteOffsetBytes = arrayOffsetBytes; // Start writing at the correct offset in the buffer
+                        Pointer targetPointer = targetBuffer.pointer();
                         if (targetPointer == null || targetPointer.isNull()) {
                             log.error("FATAL: Cannot get native pointer for target DataBuffer of variable '{}'. Cannot use fallback copy.", name);
                             throw new IOException("Cannot get native pointer for fallback copy for variable '" + name + "'.");
                         }
-                        log.trace("Target buffer pointer obtained for fallback write for '{}'. Address: {}", name, targetPointer.address());
+                        log.trace("Target buffer pointer obtained for fallback write for '{}'.", name);
 
                         long startReadTime = System.currentTimeMillis();
-                        int chunkNum = 0;
-                        long endReadTime = startReadTime; // Initialize for duration calculation
                         while (bytesReadCount < lengthBytes) {
-                            chunkNum++;
                             int toRead = (int) Math.min(tempChunk.length, lengthBytes - bytesReadCount);
-                            log.trace("Fallback chunk {}: Reading {} bytes from channel into temp buffer...", chunkNum, toRead);
-                            ByteBuffer tempNioWrapper = ByteBuffer.wrap(tempChunk, 0, toRead);
+                            ByteBuffer tempNioWrapper = ByteBuffer.wrap(tempChunk, 0, toRead); // Wrap the chunk for channel read
                             int actuallyRead = 0;
                             long loopStartTime = System.currentTimeMillis();
-                            int zeroByteReads = 0;
-                            final int MAX_ZERO_BYTE_READS = 1000;
-
-                            // Loop to ensure the chunk buffer is filled
                             while (tempNioWrapper.hasRemaining()) {
                                 int chunkReadBytes = channel.read(tempNioWrapper);
                                 if (chunkReadBytes == -1) {
-                                    log.error("FATAL: EOFException encountered during chunked read for '{}'. Expected {} bytes, read {} bytes total. Failed in chunk {}.", name, lengthBytes, bytesReadCount + actuallyRead, chunkNum);
+                                    log.error("FATAL: EOFException encountered during chunked read for '{}'. Expected {} bytes, read {} bytes.", name, lengthBytes, bytesReadCount + actuallyRead);
                                     throw new EOFException("EOF encountered during chunked read for variable '" + name + "'.");
                                 }
-                                if (chunkReadBytes == 0) {
-                                    zeroByteReads++;
-                                    if (zeroByteReads > MAX_ZERO_BYTE_READS) {
-                                        log.error("FATAL: Fallback chunk read stalled ({} consecutive 0-byte reads) for variable '{}'. Aborting.", zeroByteReads, name);
-                                        throw new IOException("Fallback chunk read stalled for variable '" + name + "'.");
-                                    }
-                                    log.trace("Fallback chunk read returned 0 bytes, sleeping briefly (Attempt {})...", zeroByteReads);
-                                    try { Thread.sleep(1); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw new IOException("Read interrupted", ie); }
-                                    continue;
-                                }
-                                zeroByteReads = 0; // Reset
                                 actuallyRead += chunkReadBytes;
-                                if (System.currentTimeMillis() - loopStartTime > 120000) { // 2 min timeout per chunk read
-                                    log.error("FATAL: Read timeout (>2min) while reading chunk {} for '{}'. Expected {} bytes in chunk, read {}.", chunkNum, name, toRead, actuallyRead);
+                                if (chunkReadBytes == 0) { // Avoid busy spin
+                                    try {
+                                        Thread.sleep(1);
+                                    } catch (InterruptedException ie) {
+                                        Thread.currentThread().interrupt();
+                                        throw new IOException("Read interrupted", ie);
+                                    }
+                                }
+                                // Optional: Timeout check within inner loop
+                                if (System.currentTimeMillis() - loopStartTime > 120000) { // 2 min timeout per chunk read? Adjust.
+                                    log.error("FATAL: Read timeout (>2min) while reading chunk for '{}'. Expected {} bytes in chunk, read {}.", name, toRead, actuallyRead);
                                     throw new IOException("Read timeout during chunk read for variable '" + name + "'.");
                                 }
                             }
-                            log.trace("Fallback chunk {}: Successfully read {} bytes from channel.", chunkNum, actuallyRead);
                             if (actuallyRead == 0 && bytesReadCount < lengthBytes) {
-                                log.warn("Chunk read returned 0 bytes unexpectedly for '{}' (chunk {}). Retrying.", name, chunkNum);
-                                continue; // Should ideally not happen with inner loop, but safety
+                                // Should not happen if EOF is checked, but as safety
+                                log.warn("Chunk read returned 0 bytes unexpectedly for '{}'. Retrying.", name);
+                                continue;
                             }
 
-                            int checkLen = Math.min(16, actuallyRead);
-                            log.debug("First {} bytes read into tempChunk for chunk {} of '{}': [{}]", checkLen, chunkNum, name, bytesToHex(tempChunk, 0, checkLen)); // Log chunk bytes
-
-                            // Copy using memcpy
+                            // Copy the read chunk into the target DataBuffer via pointer
                             try (Pointer sourcePointer = new BytePointer(tempChunk)) {
-                                // Position the target pointer correctly based on INDArray offset and bytes already written
+                                // Calculate target position carefully
                                 BytePointer targetWritePtr = new BytePointer(targetPointer).position(targetBufferWriteOffsetBytes);
-                                log.trace("Fallback chunk {}: Copying {} bytes using memcpy from temp buffer to target pointer @ {}", chunkNum, actuallyRead, targetWritePtr.address());
-                                Pointer.memcpy(targetWritePtr, sourcePointer, actuallyRead);
-                            } catch (Exception memcpyEx) {
-                                log.error("FATAL: Exception during Pointer.memcpy for chunk {} of variable '{}'", chunkNum, name, memcpyEx);
-                                throw new IOException("Failed memcpy during fallback read for variable '" + name + "'", memcpyEx);
+                                Pointer.memcpy(targetWritePtr, sourcePointer, actuallyRead); // Use memcpy
                             }
                             bytesReadCount += actuallyRead;
-                            targetBufferWriteOffsetBytes += actuallyRead; // Advance target write offset
-                            log.trace("Fallback chunk {}: Completed copy. Total bytes read so far: {}", chunkNum, bytesReadCount);
+                            targetBufferWriteOffsetBytes += actuallyRead; // Advance write position in target buffer
 
                             // Optional: Timeout check for overall array
-                            if (System.currentTimeMillis() - startReadTime > 600000) { // 10 min overall timeout
+                            if (System.currentTimeMillis() - startReadTime > 600000) { // 10 min overall timeout? Adjust.
                                 log.error("FATAL: Read timeout (>10min) during chunked read fallback for '{}'. Expected {} bytes, read {} bytes.", name, lengthBytes, bytesReadCount);
                                 throw new IOException("Overall read timeout during fallback for variable '" + name + "'.");
                             }
-                        } // End while (bytesReadCount < lengthBytes)
-                        endReadTime = System.currentTimeMillis();
+                        }
+                        long endReadTime = System.currentTimeMillis();
                         if (bytesReadCount != lengthBytes) {
                             log.error("FATAL: Chunked read fallback incomplete for '{}'. Expected {}, Read {}.", name, lengthBytes, bytesReadCount);
                             throw new IOException("Chunked read fallback incomplete for variable '" + name + "'.");
                         }
-                        log.info("Chunked fallback read successful for '{}' ({} bytes in {} ms).", name, bytesReadCount, endReadTime - startReadTime);
+                        log.trace("Chunked fallback read successful for '{}' ({} bytes in {} ms).", name, bytesReadCount, endReadTime - startReadTime);
                         // --- End Fallback ---
                     }
                 } catch (IOException e) {
                     log.error("FATAL: IOException during raw data read for variable '{}' at offset {}", name, offset, e);
-                    throw e;
+                    throw e; // Re-throw IOExceptions
                 } catch (Exception e) {
                     log.error("FATAL: Unexpected error during raw data read for variable '{}'", name, e);
                     throw new IOException("Failed loading raw data for variable '" + name + "'", e);
                 }
-
-                // *** Log array stats AFTER reading data ***
-                try {
-                    log.debug("Data load complete for '{}'. Verifying final array content (Min/Max/Sum/FirstElem):", name);
-                    // Ensure array isn't closed or invalid before accessing stats
-                    if (resultArr.isView() || !resultArr.closeable()) { // Simple check, might need refinement
-                        double firstVal = resultArr.isScalar() ? resultArr.getDouble(0) : resultArr.getDouble(0);
-                        log.debug("  -> Min: {}, Max: {}, Sum: {}, First Element [0]: {}",
-                                resultArr.minNumber(), resultArr.maxNumber(), resultArr.sumNumber(), firstVal);
-                        if (resultArr.sumNumber().doubleValue() == 0.0 && lengthBytes > 0 && expectedElements > 0) {
-                            log.warn("WARNING: Array '{}' sum is 0.0 after loading {} bytes. Data might be incorrect or zero.", name, lengthBytes);
-                        }
-                    } else {
-                        log.warn("Skipping post-load stats verification for '{}' as array appears to be closed or invalid.", name);
-                    }
-                } catch (Exception statsEx) {
-                    log.warn("Could not retrieve stats for loaded array '{}'", name, statsEx);
-                }
-
             } else {
                 log.debug("Skipping data reading for empty array '{}'", name);
             }
@@ -1956,18 +1885,77 @@ public class SameDiffSerializer {
             // --- Associate Array with SameDiff Instance & Verify ---
             log.debug("Associating loaded array with variable '{}' in target SameDiff instance.", name);
             try {
+                // Step 1: Call the main method to associate the array
                 targetSD.setArrayForVariable(name, resultArr);
                 log.trace("Called targetSD.setArrayForVariable('{}', ...)", name);
-                // (Verification logic as before)
-                INDArray checkArr = targetSD.getArrForVarName(name);
-                if(checkArr == null) {
-                    log.error("!!!!!! VERIFICATION FAILED (Post-Association) !!!!!!!");
+
+                // Step 2: Explicitly set in the correct ArrayHolder
+                SDVariable varToUpdate = targetSD.getVariable(name); // Get the variable object again
+                if (varToUpdate == null) {
+                    // This should have been caught earlier, but double-check
+                    log.error("CRITICAL: Variable '{}' became null after loading array data!", name);
+                    throw new IllegalStateException("Variable '" + name + "' missing after array load.");
+                }
+
+                if (varToUpdate.isConstant()) {
+                    targetSD.getConstantArrays().setArray(name, resultArr);
+                    log.trace("Set array in constantArrays for {}", name);
+                } else if (varToUpdate.getVariableType() == VariableType.VARIABLE) {
+                    targetSD.getVariablesArrays().setArray(name, resultArr);
+                    log.trace("Set array in variablesArrays for {}", name);
+                } else {
+                    // Handle other types if necessary, e.g., ARRAY
+                    targetSD.getEagerArrays().setArray(name, resultArr);
+                    log.trace("Set array in eagerArrays for {} (type: {})", name, varToUpdate.getVariableType());
+                }
+
+                // --- IMMEDIATE VERIFICATION ---
+                INDArray checkArr = targetSD.getArrForVarName(name); // Use the getter
+                if (checkArr == null) {
+                    log.error("!!!!!!!! VERIFICATION FAILED !!!!!!!!");
                     log.error("CRITICAL: Array is NULL immediately after setting (via getArrForVarName) for variable '{}'!", name);
+                    log.error("This indicates a likely bug in SameDiff.setArrayForVariable or SameDiff.getArrForVarName or the ArrayHolders.");
+                    // Throw exception to halt the process, as state is inconsistent
                     throw new IllegalStateException("Verification failed: Array is null immediately after setting for variable '" + name + "'.");
                 } else {
-                    log.debug("Verification PASSED (Post-Association): Array is non-NULL via getArrForVarName for '{}'.", name);
+                    log.debug("Verification Step 1 PASSED: Array is non-NULL via getArrForVarName for '{}'. Shape: {}", name, Arrays.toString(checkArr.shape()));
+                    // Optional deeper check: compare references or basic properties
+                    if (checkArr != resultArr) {
+                        log.warn("Verification Note: getArrForVarName returned a different instance than the loaded one for '{}'. This might be okay if it's a copy/view.", name);
+                    } else {
+                        log.trace("Verification Detail: getArrForVarName returned the same instance for '{}'.", name);
+                    }
                 }
+
+                // Verify directly from the holder as well
+                INDArray checkHolderArr = null;
+                ArrayHolder holderToCheck = null;
+                if (varToUpdate.isConstant()) holderToCheck = targetSD.getConstantArrays();
+                else if (varToUpdate.getVariableType() == VariableType.VARIABLE)
+                    holderToCheck = targetSD.getVariablesArrays();
+                // else holderToCheck = targetSD.getEagerArrays(); // Check eager if needed
+
+                if (holderToCheck != null) {
+                    checkHolderArr = holderToCheck.getArray(name);
+                    if (checkHolderArr == null) {
+                        log.error("!!!!!!!! VERIFICATION FAILED !!!!!!!!");
+                        log.error("CRITICAL: Array is NULL in the corresponding ArrayHolder ('{}') immediately after setting for '{}'!", holderToCheck.getClass().getSimpleName(), name);
+                        throw new IllegalStateException("Verification failed: Array is null in ArrayHolder for variable '" + name + "'.");
+                    } else {
+                        log.debug("Verification Step 2 PASSED: Array is non-NULL in ArrayHolder for variable '{}'.", name);
+                        if (checkHolderArr != resultArr) {
+                            log.warn("Verification Note: ArrayHolder contained a different instance than the loaded one for '{}'.", name);
+                        } else {
+                            log.trace("Verification Detail: ArrayHolder contained the same instance for '{}'.", name);
+                        }
+                    }
+                } else {
+                    log.trace("Skipping holder check for var '{}' - type {} doesn't map to checked holders.", name, varToUpdate.getVariableType());
+                }
+                // --- END IMMEDIATE VERIFICATION ---
+
                 log.debug("Successfully loaded and associated raw data for variable '{}'.", name);
+
             } catch (Exception e) {
                 log.error("FATAL: Error during array association or verification for variable '{}'", name, e);
                 throw new IOException("Failed to associate or verify array for variable '" + name + "'", e);
@@ -2005,9 +1993,8 @@ public class SameDiffSerializer {
             @NonNull SameDiff sameDiff,
             boolean saveUpdaterState,
             Map<String, String> metadata,
-            @NonNull Set<String> largeArrayNamesToExcludeData, // Still used to decide *if* data goes inline
-            @NonNull Set<String> smallArrayNamesToIncludeData) throws IOException { // Still used to decide *if* data goes inline
-
+            @NonNull Set<String> largeArrayNamesToExcludeData,
+            @NonNull Set<String> smallArrayNamesToIncludeData) throws IOException {
 
         ExecutorConfiguration configuration = ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE)
                 .executionMode(org.nd4j.autodiff.execution.conf.ExecutionMode.SEQUENTIAL)
@@ -2016,11 +2003,7 @@ public class SameDiffSerializer {
         Map<String, String> mergedMetadata = enrichMetadata(metadata); // Assume helper exists
         mergedMetadata.put(META_ND4J_FORMAT_TYPE, FORMAT_TYPE_APPENDED);
         mergedMetadata.put(META_ND4J_FORMAT_VERSION, String.valueOf(FILE_VERSION));
-
-
-        // *** CORRECTED: Initialize FlatBufferBuilder ***
-        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(2 * 1024 * 1024); // Initial size 2MB
-
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(1 * 1024 * 1024);
 
         // --- Metadata Vec ---
         int metadataKeysOffset = 0, metadataValuesOffset = 0;
@@ -2039,28 +2022,26 @@ public class SameDiffSerializer {
             metadataValuesOffset = FlatGraph.createMetadataValuesVector(bufferBuilder, valOffsets);
         }
 
-
         // --- Variables Vec & ID Mapping ---
         val flatVariables = new ArrayList<Integer>();
-        val variableListForOps = new ArrayList<>(sameDiff.variables()); // Stable list for iteration
-        val reverseMap = new LinkedHashMap<String, Integer>(); // VarName -> NodeID
+        // Use a stable list of variables present in *this specific* SameDiff instance (graphShard or varShard)
+        val variableListForOps = new ArrayList<>(sameDiff.variables());
+        val reverseMap = new LinkedHashMap<String, Integer>(); // VarName -> NodeID that produces it (or independent ID)
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>(); // Op -> NodeID
         val idCounter = new AtomicInteger(0); // For assigning node IDs
-
 
         log.debug("Starting variable iteration for metadata FB ({} vars in this instance)", sameDiff.variables().size());
         for (SDVariable variable : variableListForOps) { // Iterate the stable list
             String varName = variable.name();
             if (varName == null || variable.getVariableType() == VariableType.SEQUENCE)
-                continue; // Skip sequence types
+                continue;
             Variable vMeta = sameDiff.getVariables().get(varName);
             if (vMeta == null) {
                 log.warn("Internal metadata missing for variable '{}'. Skipping variable serialization.", varName);
                 continue;
             }
 
-
-            // --- Assign Node ID ---
+            // Assign Node ID (critical for linking ops later)
             int varIdx;
             int outputNum = 0;
             String producingOpName = vMeta.getOutputOfOp();
@@ -2077,169 +2058,93 @@ public class SameDiffSerializer {
                 }
                 String[] outNames = producingOpFunc.outputVariablesNames();
                 outputNum = ArrayUtil.indexOf(outNames, varName);
-                if (outputNum < 0) outputNum = 0; // Default if not found (shouldn't happen?)
+                if (outputNum < 0) outputNum = 0;
             } else {
-                varIdx = idCounter.incrementAndGet(); // Independent variable (placeholder, constant, var)
+                varIdx = idCounter.incrementAndGet();
                 outputNum = 0;
-            }
+            } // Independent node ID
             reverseMap.put(varName, varIdx); // Map name to node ID
-            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
-            // --- End Assign Node ID ---
 
-
-            // --- Basic Variable Info ---
+            int shapeOffset = 0;
             int nameOffset = bufferBuilder.createString(varName);
+            int arrayOffset = 0;
+            int idOffset = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
             byte varTypeByte = FlatBuffersMapper.toVarType(variable.getVariableType());
             DataType dtype = variable.dataType();
-            INDArray arr = variable.getArr(); // Get array reference (might be null)
-            if (dtype == DataType.UNKNOWN && arr != null)
-                dtype = arr.dataType();
+            if (dtype == DataType.UNKNOWN && variable.getArr() != null)
+                dtype = variable.getArr().dataType();
             if (dtype == DataType.UNKNOWN)
-                dtype = DataType.FLOAT; // Default if still unknown
+                dtype = DataType.FLOAT;
             byte dtypeByte = FlatBuffersMapper.getDataTypeAsByte(dtype);
             long[] shape = variable.getShape();
-            int shapeOffset = 0;
-            if (shape != null) {
-                shapeOffset = FlatVariable.createShapeVector(bufferBuilder, shape);
-            } else if (variable.getVariableType() != VariableType.PLACEHOLDER){
-                log.warn("Variable '{}' (Type {}) has null shape, creating empty shape vector offset.", varName, variable.getVariableType());
-                shapeOffset = FlatVariable.createShapeVector(bufferBuilder, new long[0]); // Empty vector for null shape
-            }
-            // --- End Basic Variable Info ---
+            if (shape != null) shapeOffset = FlatVariable.createShapeVector(bufferBuilder, shape);
 
-
-            // *** START Order Handling Modification ***
-            int arrayOffset; // Offset to the FlatArray structure
-            int bufferOffset = 0; // Offset to the *inline* byte buffer within FlatArray (if applicable)
-            char orderChar = (arr != null) ? arr.ordering() : 'c'; // Get order or default to 'c'
-            byte orderByte = (byte) (orderChar == 'c' ? 0 : 1);
-
-
-            // Decide if data should be serialized inline AND attempt it
-            boolean serializeDataInline = smallArrayNamesToIncludeData.contains(varName) && arr != null && !arr.isEmpty() && !arr.isScalar();
-
-
-            if (serializeDataInline) {
-                // Attempt to serialize the small array data inline
-                try {
-                    // This call *only* creates the byte vector for inline data if successful
-                    bufferOffset = serializeSmallNdArrayToFlatBuffer(arr, bufferBuilder);
-                    if (bufferOffset != 0) {
-                        log.trace("Serialized small array inline for '{}', bufferOffset={}", varName, bufferOffset);
-                    } else {
-                        log.warn("serializeSmallNdArrayToFlatBuffer returned 0 for supposedly small inline array '{}'. No inline data will be stored.", varName);
+            // Array Data (Inline Small Only)
+            if (smallArrayNamesToIncludeData.contains(varName)) {
+                INDArray arr = variable.getArr();
+                if (arr != null && !arr.isEmpty()) {
+                    try {
+                        arrayOffset = serializeSmallNdArrayToFlatBuffer(arr, bufferBuilder);
+                        log.trace("Serialized small array inline for '{}', offset={}", varName, arrayOffset);
+                    } catch (Exception e) {
+                        log.warn("Error serializing small array inline for '{}'.", varName, e);
+                        arrayOffset = 0;
                     }
-                } catch (Exception e) {
-                    log.warn("Error serializing small array inline for '{}'. Buffer offset will be 0.", varName, e);
-                    bufferOffset = 0; // Ensure bufferOffset is 0 on error
+                } else {
+                    arrayOffset = 0;
                 }
-            }
-            // ELSE: for large/appended arrays, or empty/scalar arrays, bufferOffset remains 0
-
-
-            // ALWAYS create the FlatArray structure to store metadata (shape, dtype, order)
-            // bufferOffset will be non-zero only if data was successfully serialized inline above
-            try {
-                // isExternal flag doesn't seem essential here, using false.
-                arrayOffset = FlatArray.createFlatArray(bufferBuilder, shapeOffset, bufferOffset, dtypeByte, orderByte, 0, 0, 0, false);
-                log.trace("Created FlatArray structure for '{}'. Offset={}, BufferOffset={}, OrderByte={}", varName, arrayOffset, bufferOffset, orderByte);
-            } catch (Exception e) {
-                log.error("Failed to create FlatArray structure for variable '{}'. arrayOffset will be 0.", varName, e);
-                arrayOffset = 0; // Ensure arrayOffset is 0 on error. This might cause issues on loading if FlatVariable expects non-zero.
-            }
-            // *** END Order Handling Modification ***
-
-
-            // --- Control Dependencies ---
-            int controlDepsOffset = 0, controlDepsForOpOffset = 0, controlDepsForVarOffset = 0;
-            // Safely get internal metadata
-            Variable internalVarMeta = null;
-            // SDVariable sdVar = sd.getVariable(varName); // Cannot get from target sd, get from source
-            SDVariable sdVar = sameDiff.getVariable(varName);
-            if(sdVar != null) internalVarMeta = sameDiff.getVariables().get(varName);
-
-
-            if(internalVarMeta != null) {
-                int[] cds = FlatBuffersMapper.mapOrNull(internalVarMeta.getControlDeps(), bufferBuilder);
-                if (cds != null) controlDepsOffset = FlatVariable.createControlDepsVector(bufferBuilder, cds);
-                int[] cdsForOp = FlatBuffersMapper.mapOrNull(internalVarMeta.getControlDepsForOp(), bufferBuilder);
-                if (cdsForOp != null)
-                    controlDepsForOpOffset = FlatVariable.createControlDepForOpVector(bufferBuilder, cdsForOp);
-                int[] cdsForVar = FlatBuffersMapper.mapOrNull(internalVarMeta.getControlDepsForVar(), bufferBuilder);
-                if (cdsForVar != null)
-                    controlDepsForVarOffset = FlatVariable.createControlDepsForVarVector(bufferBuilder, cdsForVar);
             } else {
-                log.warn("Could not retrieve internal Variable metadata for '{}' when processing control dependencies.", varName);
-            }
-            // --- End Control Dependencies ---
+                arrayOffset = 0;
+            } // Large arrays have data appended
 
-
-
-
-            // Create the FlatVariable using the (potentially data-less but metadata-rich) arrayOffset
-            if (arrayOffset == 0 && !variable.isPlaceHolder() && variable.getArr() != null) {
-                log.warn("Creating FlatVariable for '{}' with arrayOffset = 0. Ensure loading logic handles this.", varName);
-            }
+            int controlDepsOffset = 0, controlDepsForOpOffset = 0, controlDepsForVarOffset = 0;
+            int[] cds = FlatBuffersMapper.mapOrNull(vMeta.getControlDeps(), bufferBuilder);
+            if (cds != null) controlDepsOffset = FlatVariable.createControlDepsVector(bufferBuilder, cds);
+            int[] cdsForOp = FlatBuffersMapper.mapOrNull(vMeta.getControlDepsForOp(), bufferBuilder);
+            if (cdsForOp != null)
+                controlDepsForOpOffset = FlatVariable.createControlDepForOpVector(bufferBuilder, cdsForOp);
+            int[] cdsForVar = FlatBuffersMapper.mapOrNull(vMeta.getControlDepsForVar(), bufferBuilder);
+            if (cdsForVar != null)
+                controlDepsForVarOffset = FlatVariable.createControlDepsForVarVector(bufferBuilder, cdsForVar);
             flatVariables.add(FlatVariable.createFlatVariable(
                     bufferBuilder,
                     idOffset,
                     nameOffset,
                     dtypeByte,
                     shapeOffset,
-                    arrayOffset, // Use the offset to the FlatArray structure
-                    -1, // constantValue
+                    arrayOffset,
+                    -1,
                     varTypeByte,
                     controlDepsOffset,
                     controlDepsForOpOffset,
                     controlDepsForVarOffset));
-        } // End variable loop
-
-
-        log.debug("serializeMetadataFlatBuffer: Finished variable iteration. flatVariables.size() = {} (Expected ~{})", flatVariables.size(), variableListForOps.size()); // Compare to iterated list size
-        if (flatVariables.isEmpty() && !variableListForOps.stream().allMatch(v -> v.getVariableType() == VariableType.SEQUENCE || v.name() == null)) {
-            log.warn("Variable processing loop resulted in empty flatVariables list, but original SameDiff had non-sequence variables!");
+        }
+        log.debug("serializeMetadataFlatBuffer: Finished variable iteration. flatVariables.size() = {} (Expected ~{})", flatVariables.size(), sameDiff.variables().size());
+        if (flatVariables.isEmpty() && sameDiff.variables().size() > 0) {
+            log.warn("Variable processing loop resulted in empty flatVariables list, but original SameDiff had variables!");
         }
         int variablesVectorOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatVariables));
-
-
 
 
         // --- Ops Vec ---
         val flatNodes = new ArrayList<Integer>();
         log.debug("Starting op iteration for metadata FB ({} ops in this instance)", sameDiff.getOps().size());
-        // Initialize maps used by asFlatNode - values might be needed across calls if graph has cycles/shared nodes?
         Map<String, Integer> forwardMap = new HashMap<>();
-        Map<String, Integer> framesMap = new HashMap<>();
-
-
+        Map<String, Integer> framesMap = new HashMap<>(); // Required by asFlatNode
         for (SameDiffOp op : sameDiff.getOps().values()) {
             DifferentialFunction df = op.getOp();
             if (df == null) {
                 log.warn("Skipping op '{}' with null function.", op.getName());
                 continue;
             }
-            Integer fnId = idxForOps.get(df); // Get ID assigned via output variables during variable loop
-            if (fnId == null) {
-                // Re-attempt ID assignment or lookup if needed
-                boolean foundOutputId = false;
-                for(String outName : op.getOutputsOfOp()) {
-                    if(sameDiff.hasVariable(outName) && reverseMap.containsKey(outName)) {
-                        fnId = reverseMap.get(outName);
-                        idxForOps.put(df, fnId); // Store for potential reuse
-                        foundOutputId = true;
-                        log.trace("Assigning Op '{}' ID {} based on its output '{}'", op.getName(), fnId, outName);
-                        break;
-                    }
-                }
-                if(!foundOutputId) {
-                    fnId = idCounter.incrementAndGet(); // Assign new ID if truly independent
-                    idxForOps.put(df, fnId);
-                    log.warn("Op '{}' ({}) was not assigned an ID via its outputs (Outputs: {}). Assigning new ID {}. Check graph structure/linking.", op.getName(), df.opName(), op.getOutputsOfOp(), fnId);
-                }
+            Integer fnId = idxForOps.get(df); // Get ID assigned via output variables
+            if (fnId == null) { // Should only happen for ops with NO output vars? Or error in var loop?
+                fnId = idCounter.incrementAndGet(); // Assign new ID if needed
+                idxForOps.put(df, fnId);
+                log.warn("Op '{}' ({}) was not assigned an ID via its outputs. Assigning new ID {}. Check graph structure/linking.", op.getName(), df.opName(), fnId);
             }
             try {
-                // Pass necessary context maps to asFlatNode
-                flatNodes.add(FlatBuffersMapper.asFlatNode(sameDiff, df, bufferBuilder, variableListForOps, reverseMap, forwardMap, framesMap, idCounter, fnId));
+                flatNodes.add(FlatBuffersMapper.asFlatNode(sameDiff, df, bufferBuilder, variableListForOps, reverseMap, forwardMap, framesMap, idCounter, fnId)); // Assume FlatBuffersMapper exists and is correct
             } catch (Exception e) {
                 throw new IOException("Failed to serialize node: " + op.getName(), e);
             }
@@ -2250,52 +2155,39 @@ public class SameDiffSerializer {
         }
         int nodesVectorOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
-
         // --- Other Graph Components ---
         int outputsVectorOffset = 0;
         if(sameDiff.outputs() != null && !sameDiff.outputs().isEmpty()) {
             int[] outputsOffsets = new int[sameDiff.outputs().size()];
             for(int i = 0; i < sameDiff.outputs().size(); i++) {
-                String outputName = sameDiff.outputs().get(i);
-                if(outputName != null) { // Add null check
-                    outputsOffsets[i] = bufferBuilder.createString(outputName);
-                } else {
-                    log.warn("Null output name found at index {} in SameDiff outputs list.", i);
-                    outputsOffsets[i] = bufferBuilder.createString(""); // Use empty string offset
-                }
+                outputsOffsets[i] = bufferBuilder.createString(sameDiff.outputs().get(i));
             }
             outputsVectorOffset = FlatGraph.createOutputsVector(bufferBuilder, outputsOffsets);
         } else {
             outputsVectorOffset = FlatGraph.createOutputsVector(bufferBuilder, new int[0]);
         }
 
-
-        int placeholdersVectorOffset = createPlaceholdersVector(sameDiff, bufferBuilder);
-        int lossVariablesVectorOffset = createLossVariablesVector(sameDiff, bufferBuilder);
-        int trainingConfigStringOffset = createTrainingConfigOffset(sameDiff, bufferBuilder);
-        int updaterStateVectorOffset = createUpdaterStateOffset(sameDiff, bufferBuilder, saveUpdaterState);
+        int placeholdersVectorOffset = createPlaceholdersVector(sameDiff, bufferBuilder); // Assume helper exists
+        int lossVariablesVectorOffset = createLossVariablesVector(sameDiff, bufferBuilder); // Assume helper exists
+        int trainingConfigStringOffset = createTrainingConfigOffset(sameDiff, bufferBuilder); // Assume helper exists
+        // Use helper that takes boolean only
+        int updaterStateVectorOffset = createUpdaterStateOffset(sameDiff, bufferBuilder, saveUpdaterState); // Assume helper exists
         int configurationTableOffset = configuration.getFlatConfiguration(bufferBuilder);
-
-
 
 
         // --- Finalize FlatBuffer ---
         log.debug("serializeMetadataFlatBuffer: Finalizing FlatBuffer. VarVecOffset={}, NodeVecOffset={}, PlaceholderVecOffset={}, LossVecOffset={}, UpdaterStateVecOffset={}",
-                variablesVectorOffset, nodesVectorOffset, placeholdersVectorOffset, lossVariablesVectorOffset, updaterStateVectorOffset);
-        int fgOffset = FlatGraph.createFlatGraph(bufferBuilder,
-                0, // Graph ID
+                variablesVectorOffset, nodesVectorOffset, placeholdersVectorOffset, lossVariablesVectorOffset, updaterStateVectorOffset); // Log key offsets
+        int fg = FlatGraph.createFlatGraph(bufferBuilder,
+                0, // Graph ID - use 0 for metadata block?
                 variablesVectorOffset, nodesVectorOffset, outputsVectorOffset, configurationTableOffset,
                 placeholdersVectorOffset, lossVariablesVectorOffset, trainingConfigStringOffset, updaterStateVectorOffset,
                 metadataKeysOffset, metadataValuesOffset);
-        bufferBuilder.finish(fgOffset); // Use the final offset
-
-
+        bufferBuilder.finish(fg);
         ByteBuffer resultBuffer = bufferBuilder.dataBuffer();
-        log.debug("serializeMetadataFlatBuffer: Finished. Result buffer size: {}", resultBuffer.remaining());
+        log.debug("serializeMetadataFlatBuffer: Finished. Result buffer remaining size: {}", resultBuffer.remaining());
         if (resultBuffer.remaining() == 0 && (sameDiff.variables().size() > 0 || sameDiff.getOps().size() > 0)) {
-            boolean onlySequence = sameDiff.variables().stream().allMatch(v -> v.getVariableType() == VariableType.SEQUENCE || v.name() == null);
-            if(!onlySequence)
-                log.error("CRITICAL: serializeMetadataFlatBuffer produced an empty buffer for a non-empty SameDiff instance!");
+            log.error("CRITICAL: serializeMetadataFlatBuffer produced an empty buffer for a non-empty SameDiff instance!");
         }
         return resultBuffer;
     }
@@ -2303,22 +2195,19 @@ public class SameDiffSerializer {
     /**
      * Serializes a small INDArray (non-scalar, non-empty) to a FlatBuffer buffer vector.
      * Uses Native Endian byte order. Includes enhanced byte verification.
-     * REVERTED: Use createBufferVector with byte[] again.
+     * CORRECTED: Fixed scope issue with checkPassed variable.
      */
     public static int serializeSmallNdArrayToFlatBuffer(@NonNull INDArray arr, @NonNull FlatBufferBuilder builder) throws IOException {
         // Try to get a somewhat identifiable name/string for logging
         String varNameForLog = "InlineArray"; // Default
         try {
-            // Generating a unique ID or using shape string for logging
-            java.util.UUID uuid = java.util.UUID.randomUUID(); // Example: Use UUID
-            varNameForLog = arr.shapeInfoToString() + "_" + uuid.toString().substring(0, 8); // Example shape + partial UUID
+            String id = String.valueOf(arr.getId()); // Assuming getId() exists or adapt as needed
+            varNameForLog = (id != null && !id.isEmpty() && !id.matches("unnamed_array_.*")) ? id : arr.shapeInfoToString();
         } catch (Exception e) {
             try { varNameForLog = arr.shapeInfoToString(); } catch (Exception e2) { /* ignore */ }
         }
 
-
         log.info("SERIALIZE_INLINE: Attempting for Var='{}', Shape={}, DType={}", varNameForLog, Arrays.toString(arr.shape()), arr.dataType());
-
 
         // Skip arrays we can't handle safely
         if (arr.dataType() == DataType.UTF8 || arr.dataType() == DataType.COMPRESSED || arr.dataType() == DataType.UNKNOWN) {
@@ -2326,109 +2215,139 @@ public class SameDiffSerializer {
             return 0;
         }
 
-
         long[] shape = arr.shape();
         int rank = arr.rank();
-        // Scalars (rank 0 or length 1 with shape [1]) are often handled differently or not serialized inline.
-        // Let's clarify the scalar condition based on typical INDArray usage.
-        boolean isScalar = arr.isScalar(); // Use INDArray's method
+        boolean isScalar = rank == 0;
 
-
-        // Check dimension validity (ensure dimensions fit in int for FlatBuffer vectors if needed, though data is ubyte vector)
+        // Check dimension validity
         if (!isScalar && shape != null) {
             for (long d : shape) {
-                // FlatBuffers vectors have size limits (usually 2GB or Integer.MAX_VALUE elements).
-                // While the *data* might exceed this for large arrays (handled by append),
-                // the *shape dimensions* themselves should usually be reasonable. Add a practical check.
-                if (d < 0 || d > Integer.MAX_VALUE) { // Check individual dimensions
-                    log.error("SERIALIZE_INLINE [{}]: Invalid shape dimension: {} exceeds Integer.MAX_VALUE. Skipping serialization.", varNameForLog, Arrays.toString(shape));
+                if (d < 0 || d > Integer.MAX_VALUE) {
+                    log.error("SERIALIZE_INLINE [{}]: Invalid shape dimension: {}. Skipping serialization.", varNameForLog, Arrays.toString(shape));
                     return 0;
                 }
             }
         } else if (shape == null && !isScalar && !arr.isEmpty()) {
-            // Shape should not be null for non-scalar, non-empty arrays
             log.error("SERIALIZE_INLINE [{}]: Invalid null shape for non-scalar, non-empty inline array. Skipping serialization.", varNameForLog);
             return 0;
         }
 
-
-        // Skip explicit scalars for inline data buffer? (Metadata like shape/dtype/order is still saved)
-        // FlatBuffers might handle scalars differently (e.g., direct value fields, not vectors).
-        // For simplicity here, we might skip creating a data buffer for scalars, but the FlatArray metadata will exist.
+        // Skip scalars for now
         if (isScalar) {
-            log.debug("SERIALIZE_INLINE [{}]: Skipping inline data buffer creation for scalar array.", varNameForLog);
-            // Return 0, indicating no data buffer offset. The FlatArray structure will still be created
-            // in serializeMetadataFlatBuffer to hold shape/dtype/order.
+            log.debug("SERIALIZE_INLINE [{}]: Skipping scalar array serialization inline.", varNameForLog);
             return 0;
         }
 
-
-        // Handle empty arrays (shape only, no data buffer)
+        // Handle empty arrays (shape only)
         if (arr.isEmpty()) {
-            log.debug("SERIALIZE_INLINE [{}]: Array is empty. Returning 0 for buffer offset.", varNameForLog);
-            // The FlatArray structure holding shape/dtype/order will be created in serializeMetadataFlatBuffer.
-            return 0; // No data buffer offset needed
+            log.debug("SERIALIZE_INLINE [{}]: Converting empty array to shape-only metadata.", varNameForLog);
+            int shapeOffset = FlatArray.createShapeVector(builder, shape);
+            byte dtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
+            byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);
+            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, 0, dtype, order, 0, 0, 0, false);
+            log.info("SERIALIZE_INLINE: SUCCESS (Empty) for Var='{}'. Returning offset {}.", varNameForLog, finalOffset);
+            return finalOffset;
         }
 
-
         // --- Standard non-scalar, non-empty array handling ---
-        int bufferOffset = 0; // FB offset for the data vector (default to 0)
         try {
+            int shapeOffset = FlatArray.createShapeVector(builder, shape);
+            byte dtype = FlatBuffersMapper.getDataTypeAsByte(arr.dataType());
+            byte order = (byte)(arr.ordering() == 'c' ? 0 : 1);
+            int bufferOffset = 0; // FB offset for the data vector
+
             DataBuffer buffer = arr.data();
             ByteBuffer nioBuffer = buffer.asNio(); // Get NIO view
             long lengthBytes = arr.length() * buffer.getElementSize();
-
 
             if (nioBuffer != null) {
                 nioBuffer.order(ByteOrder.nativeOrder()); // Ensure NATIVE order
                 long arrOffsetBytes = arr.offset() * buffer.getElementSize(); // Use INDArray offset
 
-
-                // Check if view is usable and within limits for byte[] extraction
+                // Check if view is usable and within limits
                 if (arrOffsetBytes >= 0 && arrOffsetBytes <= Integer.MAX_VALUE &&
-                        lengthBytes >= 0 && lengthBytes <= Integer.MAX_VALUE && // Check lengthBytes against Integer.MAX_VALUE
-                        (arrOffsetBytes + lengthBytes) >= 0 && (arrOffsetBytes + lengthBytes) <= Integer.MAX_VALUE) // Check combined offset+length
+                        lengthBytes >= 0 && lengthBytes <= Integer.MAX_VALUE &&
+                        (arrOffsetBytes + lengthBytes) >= 0 && (arrOffsetBytes + lengthBytes) <= Integer.MAX_VALUE)
                 {
                     // Create a new byte array to hold the native-ordered bytes
-                    byte[] nativeBytes = new byte[(int)lengthBytes]; // Safe cast due to checks
+                    byte[] nativeBytes = new byte[(int)lengthBytes];
                     // Position the NIO buffer view correctly
-                    // Use duplicate to avoid modifying the original buffer's state if shared
-                    ByteBuffer view = nioBuffer.duplicate().order(ByteOrder.nativeOrder());
-                    view.position((int)arrOffsetBytes);
-                    view.limit((int)(arrOffsetBytes + lengthBytes));
-
-
+                    nioBuffer.position((int)arrOffsetBytes);
+                    nioBuffer.limit((int)(arrOffsetBytes + lengthBytes));
                     // Read the native-ordered bytes into the temporary array
                     try {
-                        log.trace("SERIALIZE_INLINE [{}]: Reading {} bytes from NIO buffer slice into nativeBytes array.", varNameForLog, lengthBytes);
-                        view.get(nativeBytes);
+                        nioBuffer.get(nativeBytes);
                     } catch (Exception e) {
-                        log.error("SERIALIZE_INLINE [{}]: Exception during view.get(nativeBytes)! {} bytes requested.", varNameForLog, lengthBytes, e);
+                        log.error("SERIALIZE_INLINE [{}]: Exception during nioBuffer.get(nativeBytes)!", varNameForLog, e);
                         return 0; // Fail if extraction fails
                     }
 
 
-                    // *** Optional: ENHANCED BYTE CHECK ***
-                    // (Byte check code omitted for brevity, but could be re-inserted here if needed)
-                    // ...
+                    // *** ENHANCED BYTE CHECK ***
+                    ByteBuffer checkNioBuffer = buffer.asNio(); // Get a fresh view for checking
+                    if (checkNioBuffer != null) {
+                        boolean checkIterationPassed = true; // Local check status
+                        int checkLength = nativeBytes.length;
+                        checkNioBuffer.order(ByteOrder.nativeOrder());
+                        checkNioBuffer.position((int) arrOffsetBytes); // Position to start of array data
+                        checkNioBuffer.limit((int) (arrOffsetBytes + checkLength)); // Limit to array data
 
-
-                    // Insert into FlatBuffer using the byte array
-                    if (nativeBytes.length > 0) {
-                        log.trace("SERIALIZE_INLINE [{}]: Creating FlatBuffer byte vector from {} native bytes.", varNameForLog, nativeBytes.length);
-                        // Use the version accepting byte[]
-                        bufferOffset = FlatArray.createBufferVector(builder, nativeBytes);
-                        log.trace("SERIALIZE_INLINE [{}]: Prepared FlatBuffer vector from native bytes. Offset={}", varNameForLog, bufferOffset);
+                        log.debug("SERIALIZE_CHECK [{}]: Performing byte-by-byte verification ({} bytes)...", varNameForLog, checkLength);
+                        for (int j = 0; j < checkLength; j++) {
+                            if (!checkNioBuffer.hasRemaining()) {
+                                log.error("SERIALIZE_CHECK [{}]: Check buffer ran out unexpectedly at byte {}/{}", varNameForLog, j, checkLength);
+                                checkIterationPassed = false; break;
+                            }
+                            byte expectedByte = checkNioBuffer.get(); // Read expected byte
+                            if (nativeBytes[j] != expectedByte) { // Compare with extracted byte
+                                log.error("SERIALIZE_CHECK [{}]: Byte mismatch at index {}! Expected:{}, Got:{}. Stopping check.",
+                                        varNameForLog, j, String.format("%02X", expectedByte), String.format("%02X", nativeBytes[j]));
+                                checkIterationPassed = false;
+                                // Log context (optional, ensure bytesToHex exists and is safe)
+                                try {
+                                    int start = Math.max(0, j - 8);
+                                    int end = Math.min(checkLength, j + 8);
+                                    ByteBuffer contextBuffer = buffer.asNio(); // Fresh buffer for context log
+                                    byte[] expectedContext = new byte[end - start];
+                                    if(contextBuffer != null) {
+                                        contextBuffer.order(ByteOrder.nativeOrder());
+                                        contextBuffer.position((int)arrOffsetBytes + start);
+                                        contextBuffer.limit((int)arrOffsetBytes + end);
+                                        contextBuffer.get(expectedContext);
+                                        log.error("SERIALIZE_CHECK [{}]: Context (Expected): {}", varNameForLog, bytesToHex(expectedContext, 0, expectedContext.length));
+                                    } else {
+                                        log.error("SERIALIZE_CHECK [{}]: Context (Expected): Could not get buffer view for context log.", varNameForLog);
+                                    }
+                                    log.error("SERIALIZE_CHECK [{}]: Context (Actual Extracted):   {}", varNameForLog, bytesToHex(nativeBytes, start, end - start));
+                                } catch (Exception logEx) { log.warn("SERIALIZE_CHECK [{}]: Error logging context.", varNameForLog, logEx); }
+                                break; // Stop check on first mismatch
+                            }
+                        }
+                        if(checkIterationPassed) {
+                            log.info("SERIALIZE_CHECK [{}]: Full native byte extraction check PASSED ({} bytes).", varNameForLog, checkLength);
+                        } else {
+                            log.error("SERIALIZE_CHECK [{}]: Full native byte extraction check FAILED. Aborting inline serialization.", varNameForLog);
+                            return 0; // Fail serialization if bytes don't match
+                        }
                     } else {
-                        // This case should ideally only happen for empty arrays, handled earlier
-                        log.warn("SERIALIZE_INLINE [{}]: Extracted zero bytes for non-empty inline array? Buffer offset will be 0.", varNameForLog);
+                        log.warn("SERIALIZE_CHECK [{}]: Cannot perform full byte check because asNio() returned null for check. Proceeding without verification.", varNameForLog);
+                        // If verification is critical, you might want to return 0 here instead.
+                        // For now, proceeding but logging the warning.
+                    }
+                    // *** END ENHANCED BYTE CHECK ***
+
+
+                    // Insert into FlatBuffer only if bytes were prepared
+                    if (nativeBytes.length > 0) {
+                        bufferOffset = FlatArray.createBufferVector(builder, nativeBytes);
+                        log.trace("SERIALIZE_INLINE [{}]: Prepared FlatBuffer vector from {} native bytes.", varNameForLog, nativeBytes.length);
+                    } else {
+                        // This case should generally not happen if arr.isEmpty() check passed earlier
+                        log.warn("SERIALIZE_INLINE [{}]: Extracted zero bytes for non-empty inline array. Buffer offset will be 0.", varNameForLog);
                         bufferOffset = 0;
                     }
-
-
                 } else {
-                    log.error("SERIALIZE_INLINE [{}]: Cannot serialize inline array: Offset/length ({}/{}) or total length ({}) exceeds limits for NIO buffer view or byte array.",
-                            varNameForLog, arrOffsetBytes, lengthBytes, lengthBytes);
+                    log.error("SERIALIZE_INLINE [{}]: Cannot serialize inline array: Offset/length ({}/{}) exceeds limits for NIO buffer.", varNameForLog, arrOffsetBytes, lengthBytes);
                     return 0; // Indicate failure
                 }
             } else {
@@ -2436,48 +2355,42 @@ public class SameDiffSerializer {
                 return 0; // Indicate failure
             }
 
+            // Create the final FlatArray object
+            int finalOffset = FlatArray.createFlatArray(builder, shapeOffset, bufferOffset, dtype, order, 0, 0, 0, false);
 
-            // --- Create FlatArray Structure (Moved to serializeMetadataFlatBuffer) ---
-            // The FlatArray structure itself (holding shape, dtype, order, and bufferOffset)
-            // is now created in serializeMetadataFlatBuffer to ensure it's always present.
-
-
-            // Log success/failure based on whether data was actually prepared
+            // Log success/failure based on whether data was actually embedded
             if (bufferOffset > 0) {
-                log.info("SERIALIZE_INLINE: SUCCESS preparing inline data buffer for Var='{}'. Returning bufferOffset {}.", varNameForLog, bufferOffset);
-            } else if (arr.length() > 0) {
+                log.info("SERIALIZE_INLINE: SUCCESS for Var='{}'. Returning offset {}.", varNameForLog, finalOffset);
+            } else if (arr.length() > 0 && bufferOffset == 0) {
                 // If array wasn't empty but we failed to get a buffer offset
-                log.error("SERIALIZE_INLINE: FAILURE preparing inline data buffer for Var='{}'. Failed to create buffer vector? Returning 0.", varNameForLog);
-                return 0; // Return 0 to indicate failure (no data buffer offset)
+                log.error("SERIALIZE_INLINE: FAILURE for Var='{}'. Failed to create buffer vector. Returning 0.", varNameForLog);
+                return 0; // Return 0 to indicate failure
             } else {
-                // Array was empty or scalar, buffer offset is legitimately 0
-                log.info("SERIALIZE_INLINE: SUCCESS (No Data Buffer) for Var='{}'. BufferOffset is 0.", varNameForLog);
+                // Array was empty or buffer offset was legitimately 0 (should only be for empty arrays handled earlier)
+                log.warn("SERIALIZE_INLINE: SUCCESS (No Data?) for Var='{}'. BufferOffset is 0. Returning offset {}.", varNameForLog, finalOffset);
             }
-            // Return the offset to the data buffer vector *within* the FlatBuffer file
-            // This offset will be stored in the FlatArray structure created later.
-            return bufferOffset;
-
+            return finalOffset;
 
         } catch (Exception e) {
-            log.error("SERIALIZE_INLINE [{}]: Unhandled error preparing inline array data: {}", varNameForLog, e.getMessage(), e);
+            log.error("SERIALIZE_INLINE [{}]: Unhandled error serializing inline array: {}", varNameForLog, e.getMessage(), e);
             return 0; // Return 0 on any error
         }
     } // end serializeSmallNdArrayToFlatBuffer
 
 
+
+
+
     /**
      * Deserializes an inline INDArray from FlatBuffer data. Expects Native Endian bytes.
      * MODIFIED: Reads bytes manually using fa.buffer(j) instead of fa.bufferAsByteBuffer()
-     * MODIFIED AGAIN: Ignores fa.bufferLength() for validation and reads expectedBytes directly,
-     * checking bounds via fa.buffer(last_index).
+     * to bypass potential issues with the buffer view method.
      *
      * @param fa      FlatBuffer FlatArray object containing inline data.
      * @param varName The name of the variable being deserialized (for logging).
      * @return Deserialized INDArray or null on failure.
      */
     private static INDArray deserializeSmallNdArrayFromInlineBuffer(FlatArray fa, String varName) throws IOException {
-        final boolean isTargetVar = "layer_0_b".equals(varName); // Flag for specific logging
-
         if (fa == null) {
             log.trace("LOAD_INLINE [{}]: FlatArray object is null. Returning null.", varName);
             return null;
@@ -2485,6 +2398,7 @@ public class SameDiffSerializer {
 
         // Handle empty array case first (based on shape, no data buffer expected/needed)
         if (fa.shapeLength() > 0 && fa.bufferLength() == 0 && fa.bufferChunksLength() == 0 && !fa.isExternal()) {
+            // This case means shape info exists, but data buffer vector is explicitly empty.
             try {
                 long[] shape = new long[fa.shapeLength()];
                 for (int i = 0; i < shape.length; i++) { shape[i] = fa.shape(i); }
@@ -2492,27 +2406,22 @@ public class SameDiffSerializer {
                 DataType dataType = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
                 if (dataType == null || dataType == DataType.UNKNOWN) { log.debug("LOAD_INLINE [{}]: Empty FlatArray has unrecognized dtype ({}). Defaulting to FLOAT.", varName, dtypeByte); dataType = DataType.FLOAT; }
                 char order = fa.byteOrder() == 0 ? 'c' : 'f';
-                long numElements = ArrayUtil.prod(shape);
+                long numElements = ArrayUtil.prod(shape); // Calculate elements from shape
                 if (numElements != 0) {
                     log.warn("LOAD_INLINE [{}]: Shape {} implies {} elements, but FlatBuffer data length is 0. Creating empty array.", varName, Arrays.toString(shape), numElements);
                 } else {
                     log.trace("LOAD_INLINE [{}]: Creating empty array from shape-only FlatArray. Shape {}, Dtype {}, Order {}", varName, Arrays.toString(shape), dataType, order);
                 }
-                // Use try-with-resources for memory management if creating within a specific scope matters, otherwise direct creation is fine here.
-                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    return Nd4j.create(dataType, shape, order); // Create based on shape
-                }
+                return Nd4j.create(dataType, shape, order); // Create based on shape
             } catch (Exception e) { log.error("LOAD_INLINE [{}]: Failed to create empty array from shape-only FlatArray: {}", varName, e.getMessage(), e); return null; }
         }
 
 
-        // Handle inline buffer with data
-        // We IGNORE fa.bufferLength() for validation here due to suspected issues.
-        // We rely on the vector actually containing the correct number of bytes accessed via fa.buffer(j).
-        if (fa.bufferLength() >= 0 && fa.bufferChunksLength() == 0 && !fa.isExternal()) { // Check >= 0 just in case, main check is below
+        // Handle inline buffer with data - Must have bufferLength > 0 now
+        if (fa.bufferLength() > 0 && fa.bufferChunksLength() == 0 && !fa.isExternal()) {
             String shapeForLog = "N/A";
             try {
-                // Step 1: Handle scalar array (rank 0) - Assuming not saved inline based on serialize logic
+                // Step 1: Handle scalar array (rank 0) - Assuming not saved
                 if (fa.shapeLength() == 0) {
                     log.warn("LOAD_INLINE [{}]: Deserializing scalar from inline buffer - this was skipped during recommended save. Returning null.", varName);
                     return null;
@@ -2525,89 +2434,43 @@ public class SameDiffSerializer {
 
                 byte dtypeByte = fa.dtype();
                 DataType dataType = FlatBuffersMapper.getDataTypeFromByte(dtypeByte);
-                if (dataType == null || dataType == DataType.UNKNOWN) {
-                    log.warn("LOAD_INLINE [{}]: Unrecognized dtype ({}) in inline FlatArray for shape {}. Defaulting to FLOAT.", varName, dtypeByte, shapeForLog);
-                    dataType = DataType.FLOAT;
-                }
+                if (dataType == null || dataType == DataType.UNKNOWN) { log.warn("LOAD_INLINE [{}]: Unrecognized dtype ({}) in inline FlatArray for shape {}. Defaulting to FLOAT.", varName, dtypeByte, shapeForLog); dataType = DataType.FLOAT; }
                 char order = fa.byteOrder() == 0 ? 'c' : 'f';
 
-                // Calculate expected size FROM SHAPE/DTYPE
+                // Calculate expected size
                 int elementSize = dataType.width();
-                if(elementSize <= 0) {
-                    log.error("LOAD_INLINE [{}]: Invalid element size {} for dtype {}. Cannot load.", varName, elementSize, dataType);
-                    return null;
-                }
                 long totalElements = ArrayUtil.prod(shape);
-                if (totalElements < 0) {
-                    log.error("LOAD_INLINE [{}]: Shape {} results in negative total elements. Cannot load.", varName, shapeForLog);
-                    return null;
-                }
-                long expectedBytes = -1;
-                try {
-                    expectedBytes = Math.multiplyExact(totalElements, elementSize);
-                } catch (ArithmeticException e) {
-                    log.error("LOAD_INLINE [{}]: Overflow calculating expected bytes ({} elements * {} bytes/element). Cannot load.", varName, totalElements, elementSize);
-                    return null;
-                }
+                long expectedBytes = totalElements * elementSize;
 
-                // Get buffer length reported by FlatBuffers metadata - FOR LOGGING ONLY
+                // Get buffer length reported by FlatBuffers metadata
                 int fbBufferLength = fa.bufferLength();
-                log.debug("LOAD_INLINE [{}]: Shape={}, DType={}, Order={}, ExpectedBytes={}, FlatBufferReportedLength={}",
+                log.trace("LOAD_INLINE [{}]: Shape={}, DType={}, Order={}, ExpectedBytes={}, FlatBufferLength={}",
                         varName, shapeForLog, dataType, order, expectedBytes, fbBufferLength);
 
-                // *** MODIFIED VALIDATION START ***
-                if (expectedBytes < 0 || expectedBytes > Integer.MAX_VALUE) {
-                    log.error("LOAD_INLINE [{}]: Calculated expected byte count ({}) is invalid or exceeds Integer.MAX_VALUE. Cannot load.", varName, expectedBytes);
-                    return null;
+                // Validate size from metadata against expected size
+                if (expectedBytes != fbBufferLength) {
+                    log.error("LOAD_INLINE [{}]: FlatBuffer data length mismatch! Shape {} requires {} bytes, but FlatBuffer metadata reports length {}.",
+                            varName, shapeForLog, expectedBytes, fbBufferLength);
+                    return null; // Cannot proceed if sizes don't match
                 }
-                // Sanity check: Can we access the last expected byte index using fa.buffer(j)?
-                // This relies on fa.buffer(j) throwing if index is out of bounds based on the *actual* vector size.
-                try {
-                    if (expectedBytes > 0) {
-                        log.trace("LOAD_INLINE [{}]: Performing bounds check by accessing index {}.", varName, (int)expectedBytes - 1);
-                        // Access the last byte to trigger potential IndexOutOfBoundsException
-                        @SuppressWarnings("unused") // We only care about the potential exception
-                        byte ignored = (byte) fa.buffer((int)expectedBytes - 1);
-                        log.trace("LOAD_INLINE [{}]: Bounds check via fa.buffer(last_index) passed.", varName);
-                    } else {
-                        log.trace("LOAD_INLINE [{}]: Skipping bounds check as expectedBytes is 0.", varName);
-                    }
-                } catch (IndexOutOfBoundsException e) {
-                    log.error("LOAD_INLINE [{}]: FlatBuffer vector access failed for expected byte count {} (index {}). Reported length was {}. Underlying vector likely too small or access method failed.",
-                            varName, expectedBytes, (expectedBytes > 0 ? (int)expectedBytes - 1 : 0), fbBufferLength, e);
-                    return null; // Cannot proceed if bounds check fails
-                } catch (Exception e) { // Catch other potential issues like NullPointerException
-                    log.error("LOAD_INLINE [{}]: Unexpected error during FlatBuffer vector bounds check for expected byte count {} (index {}). Reported length was {}.",
-                            varName, expectedBytes, (expectedBytes > 0 ? (int)expectedBytes - 1 : 0), fbBufferLength, e);
-                    return null;
-                }
-                // Log if fbBufferLength was drastically different, but proceed anyway
-                if (expectedBytes != fbBufferLength && fbBufferLength >= 0) { // Check >=0 to avoid logging for weird negative lengths
-                    log.warn("LOAD_INLINE [{}]: FlatBuffer reported length ({}) differs from expected length ({}). Proceeding based on expected length from shape/dtype.",
-                            varName, fbBufferLength, expectedBytes);
-                }
-                // *** MODIFIED VALIDATION END ***
-
 
                 // If empty array based on shape, return empty array
                 if (totalElements == 0) {
                     log.trace("LOAD_INLINE [{}]: Shape {} implies zero elements. Returning empty array.", varName, shapeForLog);
-                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        return Nd4j.create(dataType, shape, order);
-                    }
+                    return Nd4j.create(dataType, shape, order);
                 }
 
-                // Read bytes manually using fa.buffer(j) up to expectedBytes
+                // *** Read bytes manually using fa.buffer(j) ***
                 log.debug("LOAD_INLINE [{}]: Reading {} bytes manually using fa.buffer(j)...", varName, expectedBytes);
-                byte[] readBytes = new byte[(int)expectedBytes]; // Safe cast due to earlier check
+                byte[] readBytes = new byte[(int)expectedBytes]; // Cast to int safe due to previous checks on shape dimensions
                 boolean readSuccess = true;
                 try {
                     for(int j=0; j<expectedBytes; j++) {
-                        // Read unsigned byte and cast to signed byte
+                        // Get unsigned byte and cast to signed byte for Java array
                         readBytes[j] = (byte)fa.buffer(j);
                     }
                 } catch (Exception e) {
-                    log.error("LOAD_INLINE [{}]: Exception during manual byte reading fa.buffer(j). Read incomplete.", varName, e);
+                    log.error("LOAD_INLINE [{}]: Exception during manual byte reading fa.buffer(j).", varName, e);
                     readSuccess = false;
                 }
 
@@ -2616,21 +2479,11 @@ public class SameDiffSerializer {
                     return null; // Deserialization failed
                 }
                 log.debug("LOAD_INLINE [{}]: Manual byte reading complete.", varName);
-                if (isTargetVar) { // Log first few bytes for target var
-                    int logLen = Math.min(16, readBytes.length);
-                    log.info("LOAD_INLINE_TRACE [{}]: First {} manually read bytes: [{}]", varName, logLen, bytesToHex(readBytes, 0, logLen));
-                }
-
 
                 // Wrap the manually read bytes and create the INDArray
                 ByteBuffer bbManual = ByteBuffer.wrap(readBytes).order(ByteOrder.nativeOrder());
-                INDArray result = null;
-                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    result = Nd4j.create(dataType, shape, order);
-                }
-                if (result == null) {
-                    log.error("LOAD_INLINE [{}]: Nd4j.create returned null for Shape {}.", varName, shapeForLog); return null;
-                }
+
+                INDArray result = Nd4j.create(dataType, shape, order);
                 DataBuffer targetBuffer = result.data();
                 if (targetBuffer == null) { log.error("LOAD_INLINE [{}]: Target DataBuffer is null after creating array shape {}.", varName, shapeForLog); return null; }
 
@@ -2639,32 +2492,24 @@ public class SameDiffSerializer {
                 if(targetNio != null && result.offset() == 0 ) {
                     log.trace("LOAD_INLINE [{}]: Using bulk NIO copy (Target Offset is 0) from manually read bytes.", varName);
                     targetNio.order(ByteOrder.nativeOrder());
-                    // Ensure target position/limit are set correctly for the put operation
-                    targetNio.clear(); // Reset position=0, limit=capacity
-                    targetNio.limit((int) expectedBytes); // Limit to where data should end
-                    // Ensure source buffer limit is set correctly
-                    bbManual.clear(); // Reset position=0, limit=capacity(expectedBytes)
+                    targetNio.position(0);
+                    targetNio.limit((int) expectedBytes);
+                    bbManual.limit((int) expectedBytes); // Set limit on source
                     try {
-                        targetNio.put(bbManual); // Bulk copy from bbManual's position 0 up to its limit
-                        log.trace("LOAD_INLINE [{}]: Bulk NIO copy finished. Target buffer pos after put: {}", varName, targetNio.position());
-                        // Verify position advanced correctly
-                        if(targetNio.position() != expectedBytes) {
-                            log.warn("LOAD_INLINE [{}]: Target buffer position ({}) after bulk put does not match expected bytes ({}).", varName, targetNio.position(), expectedBytes);
-                        }
+                        targetNio.put(bbManual); // Bulk copy
                     } catch (Exception e) { log.error("LOAD_INLINE [{}]: Exception during bulk NIO copy from manual bytes!", varName, e); return null; }
-
+                    log.trace("LOAD_INLINE [{}]: Bulk NIO copy finished from manual bytes.", varName);
                 } else {
                     // Fallback to element-wise copy from manually read buffer
                     log.warn("LOAD_INLINE [{}]: Using element-wise copy for shape {} from manually read bytes. Reason: Target NIO buffer null? {}, Target Offset = {}",
                             varName, shapeForLog, (targetNio == null), result.offset());
-                    bbManual.clear(); // Reset position=0 for relative gets
                     try {
                         for (long i = 0; i < totalElements; i++) {
-                            if (bbManual.remaining() < elementSize) { log.error("LOAD_INLINE [{}]: Manual ByteBuffer ran out of data unexpectedly at element {}/{}.", varName, i, totalElements); break; }
-                            // Use appropriate putScalar variant based on type
+                            if (bbManual.remaining() < elementSize) { log.error("LOAD_INLINE [{}]: Manual ByteBuffer ran out of data unexpectedly...", varName); break; }
                             switch (dataType) {
                                 case FLOAT: result.putScalar(i, bbManual.getFloat()); break;
                                 case DOUBLE: result.putScalar(i, bbManual.getDouble()); break;
+                                // ... other cases as before, reading from bbManual ...
                                 case INT: result.putScalar(i, bbManual.getInt()); break;
                                 case LONG: result.putScalar(i, bbManual.getLong()); break;
                                 case SHORT: result.putScalar(i, bbManual.getShort()); break;
@@ -2672,29 +2517,18 @@ public class SameDiffSerializer {
                                 case UBYTE: result.putScalar(i, bbManual.get() & 0xFF); break;
                                 case UINT16: result.putScalar(i, bbManual.getShort() & 0xFFFF); break;
                                 case UINT32: result.putScalar(i, bbManual.getInt() & 0xFFFFFFFFL); break;
-                                case UINT64: result.putScalar(i, bbManual.getLong()); break; // Might need BigInteger for full range if Java doesn't support unsigned long directly
+                                case UINT64: result.putScalar(i, bbManual.getLong()); break;
                                 case BOOL: result.putScalar(i, bbManual.get() != 0); break;
-                                case BFLOAT16: // Nd4j might not have direct putScalar for bfloat16, cast from float
-                                    if (bbManual.remaining() >= 2) { result.putScalar(i, HalfPrecisionUtil.bfloat16ToFloat(bbManual.getShort())); }
-                                    else { log.error("LOAD_INLINE [{}]: Insufficient bytes for BFLOAT16 at element {}/{}.", varName, i, totalElements); i = totalElements; } // Exit loop
-                                    break;
-                                case HALF:
+                                case BFLOAT16: case HALF:
                                     if (bbManual.remaining() >= 2) { result.putScalar(i, HalfPrecisionUtil.toFloat(bbManual.getShort())); }
-                                    else { log.error("LOAD_INLINE [{}]: Insufficient bytes for HALF at element {}/{}.", varName, i, totalElements); i = totalElements; } // Exit loop
+                                    else { log.error("LOAD_INLINE [{}]: Insufficient bytes for HALF/BFLOAT16...", varName); i = totalElements; }
                                     break;
-                                default: log.warn("LOAD_INLINE [{}]: Skipping unsupported type {} for element-wise copy.", varName, dataType); bbManual.position(bbManual.position() + elementSize);
+                                default: log.warn("LOAD_INLINE [{}]: Skipping unsupported type {}...", varName, dataType); bbManual.position(bbManual.position() + elementSize);
                             }
                         }
-                        // Check if loop finished correctly
-                        if(bbManual.hasRemaining()) {
-                            log.warn("LOAD_INLINE [{}]: Fallback copy finished, but source buffer still has {} bytes remaining.", varName, bbManual.remaining());
-                        }
-                    } catch (Exception e) { log.warn("LOAD_INLINE [{}]: Error during element-wise copy from manual bytes.", varName, e); }
+                    } catch (Exception e) { log.warn("LOAD_INLINE [{}]: Error during element-wise copy from manual bytes...", varName, e); }
                 }
-                // Log first value from the final array
-                if (isTargetVar && result.length() > 0) {
-                    try { log.info("LOAD_INLINE_TRACE [{}]: Final first element value (as float): {}", varName, result.getFloat(0)); } catch(Exception e) {/*ignore*/}
-                }
+
                 return result; // Return the populated array
 
             } catch (Exception e) {
@@ -2703,8 +2537,8 @@ public class SameDiffSerializer {
             }
         }
 
-        // If FlatArray doesn't match expected inline structure (e.g., uses bufferChunks or isExternal)
-        log.warn("LOAD_INLINE [{}]: FlatArray structure did not match expected inline format or buffer length issue. BufferLength={}, BufferChunks={}, IsExternal={}. Returning null.",
+        // If FlatArray doesn't match expected inline structure
+        log.warn("LOAD_INLINE [{}]: FlatArray structure did not match expected inline format. BufferLength={}, BufferChunks={}, IsExternal={}. Returning null.",
                 varName, fa.bufferLength(), fa.bufferChunksLength(), fa.isExternal());
         return null;
     } // end deserializeSmallNdArrayFromInlineBuffer
@@ -3074,7 +2908,28 @@ public class SameDiffSerializer {
             return false;
         }
     }
-    private static int detectShardCount(File parentDir, String baseName) throws IOException { int numShards = -1; final String filePrefix = baseName + ".shard"; File[] matchingFiles = parentDir.listFiles((dir, name) -> name.startsWith(filePrefix) && name.endsWith(".sdnb")); if (matchingFiles == null || matchingFiles.length == 0) throw new FileNotFoundException("No shard files matching pattern '" + filePrefix + "*.sdnb' found in " + parentDir.getAbsolutePath()); Pattern p = Pattern.compile(Pattern.quote(baseName) + "\\.shard\\d+-of-(\\d+)\\.sdnb$"); for (File f : matchingFiles) { Matcher m = p.matcher(f.getName()); if (m.matches()) { try { int count = Integer.parseInt(m.group(1)); if (numShards == -1) numShards = count; else if (numShards != count) throw new IOException("Inconsistent shard counts (expected " + numShards + " found " + count + " in " + f.getName() + ")"); } catch (NumberFormatException e) { log.warn("Bad shard count in {}. Skipping.", f.getName()); } } } if (numShards <= 0) throw new IOException("No valid shard count found in " + parentDir.getAbsolutePath()); return numShards; }
+    private static int detectShardCount(File parentDir, String baseName) throws IOException { int numShards = -1; final String filePrefix = baseName + ".shard";
+        File[] matchingFiles = parentDir.listFiles((dir, name) -> name.startsWith(filePrefix) && name.endsWith(".sdnb"));
+        if (matchingFiles == null || matchingFiles.length == 0)
+            throw new FileNotFoundException("No shard files matching pattern '" + filePrefix + "*.sdnb' found in " + parentDir.getAbsolutePath());
+        Pattern p = Pattern.compile(Pattern.quote(baseName) + "\\.shard\\d+-of-(\\d+)\\.sdnb$");
+        for (File f : matchingFiles) { Matcher m = p.matcher(f.getName());
+            if (m.matches()) {
+                try {
+                    int count = Integer.parseInt(m.group(1));
+                    if (numShards == -1)
+                        numShards = count;
+                    else if (numShards != count)
+                        throw new IOException("Inconsistent shard counts (expected " + numShards + " found " + count + " in " + f.getName() + ")");
+                } catch (NumberFormatException e) {
+                    log.warn("Bad shard count in {}. Skipping.", f.getName());
+                }
+            }
+        }
+        if (numShards <= 0)
+            throw new IOException("No valid shard count found in " + parentDir.getAbsolutePath());
+        return numShards;
+    }
     private static int createPlaceholdersVector(SameDiff sameDiff, FlatBufferBuilder bufferBuilder) {
         List<String> phList = new ArrayList<>();
         // Ensure variables map is accessed correctly

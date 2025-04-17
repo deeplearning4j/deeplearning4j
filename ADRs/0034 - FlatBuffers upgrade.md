@@ -5,7 +5,7 @@
 Implemented
 
 Proposed by: Assistant (14-04-2025)
-Discussed with: Adam Gibson
+Discussed with: Paul Dubs
 
 ## Context
 
