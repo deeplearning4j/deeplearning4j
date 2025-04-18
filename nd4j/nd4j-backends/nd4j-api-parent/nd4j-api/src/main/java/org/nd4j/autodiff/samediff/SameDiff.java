@@ -42,6 +42,7 @@ import org.nd4j.autodiff.samediff.config.*;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
+import org.nd4j.autodiff.samediff.serde.SDZSerializer;
 import org.nd4j.autodiff.samediff.serde.SameDiffSerializer;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.AtomicBoolean;
@@ -6442,6 +6443,37 @@ public class SameDiff extends SDBaseOps {
                 .build();
 
         return asFlatBuffers(configuration, includeUpdaterState);
+    }
+
+
+    /**
+     * Loads a sharded model using {@link SDZSerializer}
+     * @param outputZipFile
+     * @return
+     */
+    public static SameDiff loadSharded(File outputZipFile) throws IOException {
+        return SDZSerializer.load(outputZipFile,true);
+    }
+
+    /**
+     * Save a samediff instance (used for bigger models)
+     * as a zip file.
+     * @param file the file to save to
+     * @param saveUpdaterState whether to save updater state
+     * @param metaData  the metaData to save
+     */
+    public void saveSharded(File file,boolean saveUpdaterState,Map<String,String> metaData) throws IOException {
+        SDZSerializer.save(this,file,saveUpdaterState,metaData);
+    }
+
+    /**
+     * Save a samediff instance (used for bigger models)
+     * as a zip file.
+     * @param file the file to save to
+     * @param saveUpdaterState whether to save updater state
+     */
+    public void saveSharded(File file,boolean saveUpdaterState) throws IOException {
+       saveSharded(file,saveUpdaterState,Collections.emptyMap());
     }
 
     /**
