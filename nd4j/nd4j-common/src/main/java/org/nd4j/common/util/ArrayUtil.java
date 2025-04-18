@@ -20,6 +20,7 @@
 
 package org.nd4j.common.util;
 
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.val;
@@ -42,6 +43,113 @@ public class ArrayUtil {
 
     private ArrayUtil() {}
 
+
+
+    /**
+     * Flattens a potentially multi-dimensional primitive array into a 1D primitive array
+     * and returns it along with the original shape. Assumes a regular (non-jagged) array.
+     *
+     * @param multiDimArray The input array (e.g., int[][], double[][][]). Must not be null
+     * and must be an array with a primitive component type.
+     * @return A Pair where:
+     * - First element: int[] representing the original shape of the input array.
+     * - Second element: Object representing the flattened 1D primitive array
+     * (e.g., int[], double[], boolean[]). The caller needs to cast this.
+     * @throws IllegalArgumentException if the input is not a supported array type or is jagged.
+     */
+    public static Pair<int[], Object> flattenDeep(Object multiDimArray) {
+        Preconditions.checkNotNull(multiDimArray, "Input array cannot be null");
+        Preconditions.checkArgument(multiDimArray.getClass().isArray(), "Input must be an array");
+
+        List<Integer> shapeList = new ArrayList<>();
+        Object currentLevel = multiDimArray;
+        Class<?> componentType = null;
+
+        // 1. Determine shape and component type
+        while (currentLevel.getClass().isArray()) {
+            int length = Array.getLength(currentLevel);
+            shapeList.add(length);
+            if (length == 0) {
+                // Handle empty dimension - find component type and stop dimension search
+                componentType = currentLevel.getClass().getComponentType();
+                while(componentType.isArray()){
+                    shapeList.add(0); // Add zero for remaining dimensions
+                    componentType = componentType.getComponentType();
+                }
+                break; // Shape determined
+            }
+            currentLevel = Array.get(currentLevel, 0); // Get first element to descend
+            if (currentLevel == null) {
+                // Handle null elements if necessary, assume non-jagged for now
+                throw new IllegalArgumentException("Array contains null elements, cannot determine shape reliably.");
+            }
+            componentType = currentLevel.getClass(); // Update component type guess
+        }
+
+        // Final component type check
+        if(componentType.isArray()) {
+            // This happens for things like int[2][0][] - needs careful handling
+            // For simplicity, let's assume regular arrays for now
+            throw new IllegalArgumentException("Deep component type determination failed or jagged array encountered.");
+        }
+        if (!componentType.isPrimitive()) {
+            throw new IllegalArgumentException("Only arrays with primitive component types are supported (e.g., int, double, boolean). Found: " + componentType);
+        }
+
+        int[] shape = Ints.toArray(shapeList); // Convert List<Integer> to int[]
+        long totalElementsLong = 1;
+        for (int dim : shape) {
+            try { totalElementsLong = Math.multiplyExact(totalElementsLong, dim); }
+            catch (ArithmeticException e) { throw new IllegalArgumentException("Array size exceeds Long.MAX_VALUE"); }
+        }
+
+        if (totalElementsLong > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("Flattened array size exceeds Integer.MAX_VALUE, not supported by standard Java array indexing.");
+        }
+        int totalElements = (int) totalElementsLong;
+
+
+        // 2. Create flattened array
+        Object flattenedArray = Array.newInstance(componentType, totalElements);
+
+        // 3. Flatten data (recursive helper)
+        if (totalElements > 0) { // Avoid recursion if array is empty
+            flattenRecursive(multiDimArray, shape, new int[shape.length], flattenedArray, 0);
+        }
+
+        // 4. Return shape and flattened data
+        return Pair.create(shape, flattenedArray);
+    }
+
+    // Recursive helper to copy elements in C-order
+    private static int flattenRecursive(Object sourceArray, int[] shape, int[] indices, Object flatArray, int flatIndex) {
+        if (indices.length == shape.length) { // Base case: reached individual element
+            Array.set(flatArray, flatIndex, sourceArray);
+            return flatIndex + 1;
+        }
+
+        int currentDim = indices.length; // The dimension we are currently iterating over
+        int dimSize = shape[currentDim];
+
+        for (int i = 0; i < dimSize; i++) {
+            indices[currentDim] = i; // Set index for current dimension
+            Object subArray = Array.get(sourceArray, i); // Get sub-array or element
+
+            // Create a copy of indices for recursive call if needed (or manage index restoration)
+            // For simplicity, we can pass indices down and rely on the loop structure.
+            // However, passing a copy might be safer if modifications were complex.
+            // Let's assume direct passing works here.
+
+            // Recurse to the next dimension
+            flatIndex = flattenRecursive(subArray, shape, Arrays.copyOf(indices, currentDim + 1), flatArray, flatIndex);
+        }
+        return flatIndex;
+    }
+
+    // Overload for initial call without indices array needed externally
+    private static int flattenRecursive(Object sourceArray, int[] shape, Object flatArray, int flatIndex) {
+        return flattenRecursive(sourceArray, shape, new int[0], flatArray, flatIndex);
+    }
 
     /**
      * Converts a byte array to a boolean array.
@@ -4566,7 +4674,7 @@ public class ArrayUtil {
      * @param shape Shape to check
      * @return True if shape contains zeros
      */
-    public static boolean isEmptyShape(long[] shape){
+    public static boolean isEmptyShape(long[] shape) {
         for( long l : shape){
             if(l == 0)
                 return true;
@@ -4581,7 +4689,7 @@ public class ArrayUtil {
      * @param shape Shape to check
      * @return True if shape contains zeros
      */
-    public static boolean isEmptyShape(int[] shape){
+    public static boolean isEmptyShape(int[] shape) {
         for( int i : shape){
             if(i == 0)
                 return true;
@@ -4589,19 +4697,65 @@ public class ArrayUtil {
         return false;
     }
 
-    public static <T> T[] filterNull(T... in){
+    public static <T> T[] filterNull(T... in) {
         int count = 0;
         for( int i=0; i<in.length; i++ ) {
             if (in[i] != null) count++;
         }
         T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
         int j=0;
-        for( int i=0; i<in.length; i++ ){
-            if(in[i] != null){
+        for( int i=0; i<in.length; i++) {
+            if(in[i] != null) {
                 out[j++] = in[i];
             }
         }
         return out;
     }
 
+    public static int indexOf(String[] outNames, String varName) {
+        int ret = -1;
+        for(int i = 0; i < outNames.length; i++) {
+            if(outNames[i].equals(varName)) {
+                ret = i;
+                break;
+            }
+        }
+        return ret;
+    }
+
+    public static int[] toInt(short[] v) {
+        int[] ret = new int[v.length];
+        for(int i = 0; i < v.length; i++) {
+            ret[i] = v[i];
+        }
+
+        return ret;
+    }
+
+    public static int[] toInt(byte[] v) {
+        int[] ret = new int[v.length];
+        for(int i = 0; i < v.length; i++) {
+            ret[i] = v[i];
+        }
+
+        return ret;
+    }
+
+    public static int[] toInt(char[] v) {
+        int[] ret = new int[v.length];
+        for(int i = 0; i < v.length; i++) {
+            ret[i] = v[i];
+        }
+
+        return ret;
+    }
+
+    public static double[] toDouble(float[] v) {
+        double[] ret = new double[v.length];
+        for(int i = 0; i < v.length; i++) {
+            ret[i] = v[i];
+        }
+
+        return ret;
+    }
 }

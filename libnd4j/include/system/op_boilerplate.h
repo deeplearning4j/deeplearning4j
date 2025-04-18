@@ -2624,7 +2624,7 @@
   if (WORKSPACE == nullptr) {                                                                                         \
                                                                                           \
     /* Calculate allocation size */                                                                                   \
-    size_t allocSize = LENGTH * sizeof(TT);                                                                       \
+    size_t allocSize = LENGTH * sizeof(TT) + 8;                                                                       \
                                                                                                                       \
     /* Allocation with proper error handling */                                                                       \
     checkCudaErrors(cudaMalloc(reinterpret_cast<void**>(&VARIABLE), allocSize));                          \

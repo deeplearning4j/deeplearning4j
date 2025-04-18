@@ -1,5 +1,3 @@
-
-
 /*
  *  ******************************************************************************
  *  *
@@ -34,6 +32,15 @@ package org.nd4j.linalg.factory;
  */
 public interface Environment {
 
+    // CUDA limit type definitions
+    public static final int
+        CUDA_LIMIT_STACK_SIZE = 0,
+        CUDA_LIMIT_MALLOC_HEAP_SIZE = 1,
+        CUDA_LIMIT_PRINTF_FIFO_SIZE = 2,
+        CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH = 3,
+        CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT = 4,
+        CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY = 5,
+        CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE = 6;
 
     /**
      * Whether to enable blas library or not.
@@ -322,6 +329,173 @@ public interface Environment {
      * @param reallyDelete
      */
     void setDeleteSpecial(boolean reallyDelete);
-
-
+    
+    // CUDA specific methods
+    
+    /** Returns the number of CUDA devices available */
+    int cudaDeviceCount();
+    
+    /** Returns the current CUDA device */
+    int cudaCurrentDevice();
+    
+    /** Set the current CUDA device */
+    void setCudaCurrentDevice(int device);
+    
+    /** Returns whether pinned memory is used */
+    boolean cudaMemoryPinned();
+    
+    /** Set whether to use pinned memory */
+    void setCudaMemoryPinned(boolean pinned);
+    
+    /** Returns whether managed memory is used */
+    boolean cudaUseManagedMemory();
+    
+    /** Set whether to use managed memory */
+    void setCudaUseManagedMemory(boolean managed);
+    
+    /** Returns the memory pool size in MB */
+    int cudaMemoryPoolSize();
+    
+    /** Set the memory pool size in MB */
+    void setCudaMemoryPoolSize(int sizeInMB);
+    
+    /** Returns whether P2P memory access is forced */
+    boolean cudaForceP2P();
+    
+    /** Set whether to force P2P memory access */
+    void setCudaForceP2P(boolean forceP2P);
+    
+    /** Returns whether the CUDA allocator is enabled */
+    boolean cudaAllocatorEnabled();
+    
+    /** Set whether the CUDA allocator is enabled */
+    void setCudaAllocatorEnabled(boolean enabled);
+    
+    /** Returns the maximum number of CUDA blocks */
+    int cudaMaxBlocks();
+    
+    /** Set the maximum number of CUDA blocks */
+    void setCudaMaxBlocks(int blocks);
+    
+    /** Returns the maximum threads per block */
+    int cudaMaxThreadsPerBlock();
+    
+    /** Set the maximum threads per block */
+    void setCudaMaxThreadsPerBlock(int threads);
+    
+    /** Returns whether async execution is enabled */
+    boolean cudaAsyncExecution();
+    
+    /** Set whether to use async execution */
+    void setCudaAsyncExecution(boolean async);
+    
+    /** Returns the stream limit */
+    int cudaStreamLimit();
+    
+    /** Set the stream limit */
+    void setCudaStreamLimit(int limit);
+    
+    /** Returns whether device host is used */
+    boolean cudaUseDeviceHost();
+    
+    /** Set whether to use device host */
+    void setCudaUseDeviceHost(boolean useDeviceHost);
+    
+    /** Returns the event limit */
+    int cudaEventLimit();
+    
+    /** Set the event limit */
+    void setCudaEventLimit(int limit);
+    
+    /** Returns the caching allocator limit in MB */
+    int cudaCachingAllocatorLimit();
+    
+    /** Set the caching allocator limit in MB */
+    void setCudaCachingAllocatorLimit(int limitInMB);
+    
+    /** Returns whether unified memory is used */
+    boolean cudaUseUnifiedMemory();
+    
+    /** Set whether to use unified memory */
+    void setCudaUseUnifiedMemory(boolean unified);
+    
+    /** Returns the prefetch size in MB */
+    int cudaPrefetchSize();
+    
+    /** Set the prefetch size in MB */
+    void setCudaPrefetchSize(int sizeInMB);
+    
+    /** Returns whether graph optimization is enabled */
+    boolean cudaGraphOptimization();
+    
+    /** Set whether to use graph optimization */
+    void setCudaGraphOptimization(boolean enabled);
+    
+    /** Returns whether tensor core is enabled */
+    boolean cudaTensorCoreEnabled();
+    
+    /** Set whether to use tensor core */
+    void setCudaTensorCoreEnabled(boolean enabled);
+    
+    /** Returns the blocking sync mode */
+    int cudaBlockingSync();
+    
+    /** Set the blocking sync mode */
+    void setCudaBlockingSync(int mode);
+    
+    /** Returns the device schedule mode */
+    int cudaDeviceSchedule();
+    
+    /** Set the device schedule mode */
+    void setCudaDeviceSchedule(int schedule);
+    
+    /** Returns the stack size */
+    long cudaStackSize();
+    
+    /** Set the stack size */
+    void setCudaStackSize(long size);
+    
+    /** Returns the malloc heap size */
+    long cudaMallocHeapSize();
+    
+    /** Set the malloc heap size */
+    void setCudaMallocHeapSize(long size);
+    
+    /** Returns the printf fifo size */
+    long cudaPrintfFifoSize();
+    
+    /** Set the printf fifo size */
+    void setCudaPrintfFifoSize(long size);
+    
+    /** Returns the device runtime sync depth */
+    long cudaDevRuntimeSyncDepth();
+    
+    /** Set the device runtime sync depth */
+    void setCudaDevRuntimeSyncDepth(long depth);
+    
+    /** Returns the device runtime pending launch count */
+    long cudaDevRuntimePendingLaunchCount();
+    
+    /** Set the device runtime pending launch count */
+    void setCudaDevRuntimePendingLaunchCount(long count);
+    
+    /** Returns the maximum L2 fetch granularity */
+    long cudaMaxL2FetchGranularity();
+    
+    /** Set the maximum L2 fetch granularity */
+    void setCudaMaxL2FetchGranularity(long size);
+    
+    /** Returns the persisting L2 cache size */
+    long cudaPersistingL2CacheSize();
+    
+    /** Set the persisting L2 cache size */
+    void setCudaPersistingL2CacheSize(long size);
+    
+    /**
+     * Sets a CUDA device limit
+     * @param limitType the limit type (use CUDA_LIMIT_* constants)
+     * @param value the limit value
+     * @return status code (0 for success, non-zero for failure)
+     */
+    int setCudaDeviceLimit(int limitType, long value);
 }

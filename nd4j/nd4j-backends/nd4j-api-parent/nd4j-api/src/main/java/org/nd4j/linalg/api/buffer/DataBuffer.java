@@ -31,6 +31,8 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 
 public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
+
+
     enum TypeEx {
 
     }
@@ -147,6 +149,9 @@ public interface DataBuffer extends Serializable, AutoCloseable, Deallocatable {
      * @return a view of this as an nio byte buffer
      */
     ByteBuffer asNio();
+
+    boolean[] asBoolean();
+
 
     void put(float[] element);
 

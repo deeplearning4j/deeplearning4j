@@ -30,6 +30,12 @@
 #include <vector>
 #include <config.h>
 
+#ifdef __CUDABLAS__
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#include "CudaLimitType.h"
+#endif
 
 namespace sd {
 class SD_LIB_EXPORT Environment {
@@ -68,11 +74,39 @@ class SD_LIB_EXPORT Environment {
   const bool _experimental = false;
 #endif
 
-
-
-
   // device compute capability for CUDA
   std::vector<Pair> _capabilities;
+
+  // CUDA specific environment configurations
+  std::atomic<int> _cudaDeviceCount{0};
+  std::atomic<int> _cudaCurrentDevice{0};
+  std::atomic<bool> _cudaMemoryPinned{false};
+  std::atomic<bool> _cudaUseManagedMemory{false};
+  std::atomic<int> _cudaMemoryPoolSize{0};  // in MB
+  std::atomic<bool> _cudaForceP2P{false};
+  std::atomic<bool> _cudaAllocatorEnabled{true};
+  std::atomic<int> _cudaMaxBlocks{0};
+  std::atomic<int> _cudaMaxThreadsPerBlock{0};
+  std::atomic<bool> _cudaAsyncExecution{true};
+  std::atomic<int> _cudaStreamLimit{4};
+  std::atomic<bool> _cudaUseDeviceHost{false};
+  std::atomic<int> _cudaEventLimit{4};
+  std::atomic<int> _cudaCachingAllocatorLimit{0}; // in MB
+  std::atomic<bool> _cudaUseUnifiedMemory{false};
+  std::atomic<int> _cudaPrefetchSize{0}; // in MB
+  std::atomic<bool> _cudaGraphOptimization{false};
+  std::atomic<bool> _cudaTensorCoreEnabled{true};
+  std::atomic<int> _cudaBlockingSync{0};
+  std::atomic<int> _cudaDeviceSchedule{0}; // 0: default, 1: spin, 2: yield, 3: block
+
+  // CUDA Device Limit configurations
+  std::atomic<size_t> _cudaStackSize{0};            // cudaLimitStackSize
+  std::atomic<size_t> _cudaMallocHeapSize{0};       // cudaLimitMallocHeapSize
+  std::atomic<size_t> _cudaPrintfFifoSize{0};       // cudaLimitPrintfFifoSize
+  std::atomic<size_t> _cudaDevRuntimeSyncDepth{0};  // cudaLimitDevRuntimeSyncDepth
+  std::atomic<size_t> _cudaDevRuntimePendingLaunchCount{0}; // cudaLimitDevRuntimePendingLaunchCount
+  std::atomic<size_t> _cudaMaxL2FetchGranularity{0}; // cudaLimitMaxL2FetchGranularity
+  std::atomic<size_t> _cudaPersistingL2CacheSize{0}; // cudaLimitPersistingL2CacheSize
 
   Environment();
 
@@ -227,6 +261,72 @@ class SD_LIB_EXPORT Environment {
 
   bool isDeleteShapeInfo();
   void setDeleteShapeInfo(bool deleteShapeInfo);
+
+  // CUDA specific getters/setters
+  int cudaDeviceCount() { return _cudaDeviceCount.load(); }
+  int cudaCurrentDevice() { return _cudaCurrentDevice.load(); }
+  void setCudaCurrentDevice(int device);
+  bool cudaMemoryPinned() { return _cudaMemoryPinned.load(); }
+  void setCudaMemoryPinned(bool pinned);
+  bool cudaUseManagedMemory() { return _cudaUseManagedMemory.load(); }
+  void setCudaUseManagedMemory(bool managed);
+  int cudaMemoryPoolSize() { return _cudaMemoryPoolSize.load(); }
+  void setCudaMemoryPoolSize(int sizeInMB);
+  bool cudaForceP2P() { return _cudaForceP2P.load(); }
+  void setCudaForceP2P(bool forceP2P);
+  bool cudaAllocatorEnabled() { return _cudaAllocatorEnabled.load(); }
+  void setCudaAllocatorEnabled(bool enabled);
+  int cudaMaxBlocks() { return _cudaMaxBlocks.load(); }
+  void setCudaMaxBlocks(int blocks);
+  int cudaMaxThreadsPerBlock() { return _cudaMaxThreadsPerBlock.load(); }
+  void setCudaMaxThreadsPerBlock(int threads);
+  bool cudaAsyncExecution() { return _cudaAsyncExecution.load(); }
+  void setCudaAsyncExecution(bool async);
+  int cudaStreamLimit() { return _cudaStreamLimit.load(); }
+  void setCudaStreamLimit(int limit);
+  bool cudaUseDeviceHost() { return _cudaUseDeviceHost.load(); }
+  void setCudaUseDeviceHost(bool useDeviceHost);
+  int cudaEventLimit() { return _cudaEventLimit.load(); }
+  void setCudaEventLimit(int limit);
+  int cudaCachingAllocatorLimit() { return _cudaCachingAllocatorLimit.load(); }
+  void setCudaCachingAllocatorLimit(int limitInMB);
+  bool cudaUseUnifiedMemory() { return _cudaUseUnifiedMemory.load(); }
+  void setCudaUseUnifiedMemory(bool unified);
+  int cudaPrefetchSize() { return _cudaPrefetchSize.load(); }
+  void setCudaPrefetchSize(int sizeInMB);
+  bool cudaGraphOptimization() { return _cudaGraphOptimization.load(); }
+  void setCudaGraphOptimization(bool enabled);
+  bool cudaTensorCoreEnabled() { return _cudaTensorCoreEnabled.load(); }
+  void setCudaTensorCoreEnabled(bool enabled);
+  int cudaBlockingSync() { return _cudaBlockingSync.load(); }
+  void setCudaBlockingSync(int mode);
+  int cudaDeviceSchedule() { return _cudaDeviceSchedule.load(); }
+  void setCudaDeviceSchedule(int schedule);
+
+  // CUDA Device Limit getters/setters
+  size_t cudaStackSize() { return _cudaStackSize.load(); }
+  void setCudaStackSize(size_t size);
+  size_t cudaMallocHeapSize() { return _cudaMallocHeapSize.load(); }
+  void setCudaMallocHeapSize(size_t size);
+  size_t cudaPrintfFifoSize() { return _cudaPrintfFifoSize.load(); }
+  void setCudaPrintfFifoSize(size_t size);
+  size_t cudaDevRuntimeSyncDepth() { return _cudaDevRuntimeSyncDepth.load(); }
+  void setCudaDevRuntimeSyncDepth(size_t depth);
+  size_t cudaDevRuntimePendingLaunchCount() { return _cudaDevRuntimePendingLaunchCount.load(); }
+  void setCudaDevRuntimePendingLaunchCount(size_t count);
+  size_t cudaMaxL2FetchGranularity() { return _cudaMaxL2FetchGranularity.load(); }
+  void setCudaMaxL2FetchGranularity(size_t size);
+  size_t cudaPersistingL2CacheSize() { return _cudaPersistingL2CacheSize.load(); }
+  void setCudaPersistingL2CacheSize(size_t size);
+
+  bool setCudaDeviceLimit(int limitType, size_t value);
+
+
+  // Initialize CUDA environment settings from environment variables
+  void initCudaEnvironment();
+
+  // Initialize CUDA device limits from environment variables
+  void initCudaDeviceLimits();
 };
 }  // namespace sd
 

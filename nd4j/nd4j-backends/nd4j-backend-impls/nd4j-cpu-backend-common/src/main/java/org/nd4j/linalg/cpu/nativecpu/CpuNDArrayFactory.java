@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
@@ -55,6 +56,16 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     protected ThreadLocal<Integer> extrazSize = new ThreadLocal<>();
 
     public CpuNDArrayFactory() {}
+
+    @Override
+    public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        NDArray ret = new NDArray();
+        ret.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(ret.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,ret.length(),false);
+        ret.setData(buff);
+        return ret;
+    }
 
     static {
         //invoke the override
@@ -898,6 +909,15 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray createUninitialized(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace currentWorkspace) {
         return new NDArray(dataType,shape,strides,0,ordering,currentWorkspace);
+    }
+
+    @Override
+    public INDArray create(DataBuffer dataBuffer, DataBuffer descriptor) {
+        NDArray jCublasNDArray = new NDArray();
+        jCublasNDArray.setShapeInfoDataBuffer(descriptor);
+        DataType dt = Shape.dataType(jCublasNDArray.shapeInfoJava());
+        jCublasNDArray.setData(dataBuffer);
+        return jCublasNDArray;
     }
 
     @Override
