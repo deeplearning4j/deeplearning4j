@@ -318,14 +318,10 @@ SD_HOST sd::LongType ArrayOptions::numDataTypesSet(sd::LongType property) {
   const sd::LongType dataTypeFlags[] = DATA_TYPE_FLAGS;
   const size_t numDataTypeFlags = sizeof(dataTypeFlags) / sizeof(sd::LongType);
 
-  LongType flagIndices[numDataTypeFlags];
   sd::LongType numFlagsSet = 0;
   for (size_t i = 0; i < numDataTypeFlags; ++i) {
     if (hasPropertyBitSetForFlags(property, dataTypeFlags[i])) {
-      flagIndices[i] = 1;
       numFlagsSet++;
-    } else {
-      flagIndices[i] = 0;
     }
   }
 

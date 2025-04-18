@@ -24,6 +24,15 @@ import org.nd4j.linalg.factory.Environment;
 
 public class CpuEnvironment implements Environment {
 
+    // CUDA limit type definitions
+    public static final int
+        CUDA_LIMIT_STACK_SIZE = 0,
+        CUDA_LIMIT_MALLOC_HEAP_SIZE = 1,
+        CUDA_LIMIT_PRINTF_FIFO_SIZE = 2,
+        CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH = 3,
+        CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT = 4,
+        CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY = 5,
+        CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE = 6;
 
     private static final CpuEnvironment INSTANCE = new CpuEnvironment(Nd4jCpu.Environment.getInstance());
     protected boolean funcTracePrintJavaOnly = false;
@@ -332,6 +341,278 @@ public class CpuEnvironment implements Environment {
     @Override
     public void setDeleteSpecial(boolean reallyDelete) {
         e.setDeleteSpecial(reallyDelete);
+    }
+    
+    // CUDA specific methods implementation (no-op for CPU)
+    
+    @Override
+    public int cudaDeviceCount() {
+        return -1;
+    }
 
+    @Override
+    public int cudaCurrentDevice() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaCurrentDevice(int device) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaMemoryPinned() {
+        return false;
+    }
+
+    @Override
+    public void setCudaMemoryPinned(boolean pinned) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaUseManagedMemory() {
+        return false;
+    }
+
+    @Override
+    public void setCudaUseManagedMemory(boolean managed) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaMemoryPoolSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaMemoryPoolSize(int sizeInMB) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaForceP2P() {
+        return false;
+    }
+
+    @Override
+    public void setCudaForceP2P(boolean forceP2P) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaAllocatorEnabled() {
+        return false;
+    }
+
+    @Override
+    public void setCudaAllocatorEnabled(boolean enabled) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaMaxBlocks() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaMaxBlocks(int blocks) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaMaxThreadsPerBlock() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaMaxThreadsPerBlock(int threads) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaAsyncExecution() {
+        return false;
+    }
+
+    @Override
+    public void setCudaAsyncExecution(boolean async) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaStreamLimit() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaStreamLimit(int limit) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaUseDeviceHost() {
+        return false;
+    }
+
+    @Override
+    public void setCudaUseDeviceHost(boolean useDeviceHost) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaEventLimit() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaEventLimit(int limit) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaCachingAllocatorLimit() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaCachingAllocatorLimit(int limitInMB) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaUseUnifiedMemory() {
+        return false;
+    }
+
+    @Override
+    public void setCudaUseUnifiedMemory(boolean unified) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaPrefetchSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaPrefetchSize(int sizeInMB) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaGraphOptimization() {
+        return false;
+    }
+
+    @Override
+    public void setCudaGraphOptimization(boolean enabled) {
+        // No-op for CPU
+    }
+
+    @Override
+    public boolean cudaTensorCoreEnabled() {
+        return false;
+    }
+
+    @Override
+    public void setCudaTensorCoreEnabled(boolean enabled) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaBlockingSync() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaBlockingSync(int mode) {
+        // No-op for CPU
+    }
+
+    @Override
+    public int cudaDeviceSchedule() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaDeviceSchedule(int schedule) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaStackSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaStackSize(long size) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaMallocHeapSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaMallocHeapSize(long size) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaPrintfFifoSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaPrintfFifoSize(long size) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaDevRuntimeSyncDepth() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaDevRuntimeSyncDepth(long depth) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaDevRuntimePendingLaunchCount() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaDevRuntimePendingLaunchCount(long count) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaMaxL2FetchGranularity() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaMaxL2FetchGranularity(long size) {
+        // No-op for CPU
+    }
+
+    @Override
+    public long cudaPersistingL2CacheSize() {
+        return -1;
+    }
+
+    @Override
+    public void setCudaPersistingL2CacheSize(long size) {
+        // No-op for CPU
+    }
+    
+    @Override
+    public int setCudaDeviceLimit(int limitType, long value) {
+        // No-op for CPU
+        return 0; // Return 0 to indicate operation not supported in CPU mode
     }
 }

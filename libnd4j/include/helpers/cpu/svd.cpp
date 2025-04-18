@@ -635,19 +635,19 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
     JacobiSVD<T> jac(_m({col1, col1 + n + 1, col1, col1 + n}, true), _calcU, _calcV, _fullUV);
 
     if (_calcU)
-      _u({col1, col1 + n + 1, col1, col1 + n + 1}, true).assign(jac._u);
+      _u({col1, col1 + n + 1, col1, col1 + n + 1}, true).assign(&jac._u);
     else {
-      _u({0, 1, col1, col1 + n + 1}, true).assign(jac._u({0, 1, 0, 0}, true));
-      _u({1, 2, col1, col1 + n + 1}, true).assign(jac._u({n, n + 1, 0, 0}, true));
+      _u({0, 1, col1, col1 + n + 1}, true).assign(&jac._u({0, 1, 0, 0}, true));
+      _u({1, 2, col1, col1 + n + 1}, true).assign(&jac._u({n, n + 1, 0, 0}, true));
     }
 
-    if (_calcV) _v({row1W, row1W + n, col1W, col1W + n}, true).assign(jac._v);
+    if (_calcV) _v({row1W, row1W + n, col1W, col1W + n}, true).assign(&jac._v);
 
     _m({col1 + shift, col1 + shift + n + 1, col1 + shift, col1 + shift + n}, true).nullify();
     auto diag = _m.diagonal('c');
     NDArray first =  diag({col1 + shift, col1 + shift + n, 0, 0}, true);
     NDArray second = jac._s({0, n, 0, 0}, true);
-    first.assign(second);
+    first.assign(&second);
 
     return;
   }
@@ -671,11 +671,11 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
                            math::sd_abs<T,T>(betaK * phi) * math::sd_abs<T,T>(betaK * phi));
 
   if (_calcU) {
-    l.assign(_u({col1 + k, col1 + k + 1, col1, col1 + k}, true));
-    f.assign(_u({col1 + k + 1, col1 + k + 2, col1 + k + 1, col1 + n}, true));
+    l.assign(&_u({col1 + k, col1 + k + 1, col1, col1 + k}, true));
+    f.assign(&_u({col1 + k + 1, col1 + k + 2, col1 + k + 1, col1 + n}, true));
   } else {
-    l.assign(_u({1, 2, col1, col1 + k}, true));
-    f.assign(_u({0, 1, col1 + k + 1, col1 + n}, true));
+    l.assign(&_u({1, 2, col1, col1 + k}, true));
+    f.assign(&_u({0, 1, col1 + k + 1, col1 + n}, true));
   }
 
 
@@ -692,15 +692,19 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
   if (_calcU) {
     NDArray q1 = _u({col1, col1 + k + 1, col1 + k, col1 + k + 1}, true).dup();
-
+    NDArray *q1Ref = &q1;
+    NDArray uAssignOne = q1 * c0;
+    NDArray uAssignTwo = q1 * (-s0);
     for (int i = col1 + k - 1; i >= col1; --i)
-      _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(_u({col1, col1 + k + 1, i, i + 1}, true));
+      _u({col1, col1 + k + 1, i + 1, i + 2}, true).assign(&_u({col1, col1 + k + 1, i, i + 1}, true));
 
     NDArray temp1 = _u({col1 + k + 1, col1 + n + 1, col2 + 1, col2 + 2}, true);
+    NDArray uAssignThree = temp1 * s0;
 
-    _u({col1, col1 + k + 1, col1, col1 + 1}, true).assign(q1 * c0);
-    _u({col1, col1 + k + 1, col2 + 1, col2 + 2}, true).assign(q1 * (-s0));
-    _u({col1 + k + 1, col1 + n + 1, col1, col1 + 1}, true).assign(temp1 * s0);
+
+    _u({col1, col1 + k + 1, col1, col1 + 1}, true).assign(&uAssignOne);
+    _u({col1, col1 + k + 1, col2 + 1, col2 + 2}, true).assign(&uAssignTwo);
+    _u({col1 + k + 1, col1 + n + 1, col1, col1 + 1}, true).assign(&uAssignThree);
 
     temp1 *= c0;
   } else {
@@ -719,8 +723,10 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
 
   _m.template r<T>(col1 + shift, col1 + shift) = r0;
 
-  _m({col1 + shift + 1, col1 + shift + k + 1, col1 + shift, col1 + shift + 1}, true).assign(l * alphaK);
-  _m({col1 + shift + k + 1, col1 + shift + n, col1 + shift, col1 + shift + 1}, true).assign(f * betaK);
+  NDArray assignOne = l * alphaK;
+  NDArray assignTwo = f * betaK;
+  _m({col1 + shift + 1, col1 + shift + k + 1, col1 + shift, col1 + shift + 1}, true).assign(&assignOne);
+  _m({col1 + shift + k + 1, col1 + shift + n, col1 + shift, col1 + shift + 1}, true).assign(&assignTwo);
 
   deflation(col1, col2, k, row1W, col1W, shift);
 
@@ -729,22 +735,25 @@ void SVD<T>::DivideAndConquer(int col1, int col2, int row1W, int col1W, int shif
   calcBlockSVD(col1 + shift, n, UofSVD, singVals, VofSVD);
   if (_calcU) {
     auto temp = _u({col1, col1 + n + 1, col1, col1 + n + 1}, true);
-    temp.assign(mmul(temp, UofSVD));
+    NDArray assign2 = mmul(temp, UofSVD);
+    temp.assign(&assign2);
   } else {
     auto temp = _u({0, 0, col1, col1 + n + 1}, true);
-    temp.assign(mmul(temp, UofSVD));
+    NDArray assign2 = mmul(temp, UofSVD);
+    temp.assign(&assign2);
   }
 
   if (_calcV) {
     auto temp = _v({row1W, row1W + n, row1W, row1W + n}, true);
-    temp.assign(mmul(temp, VofSVD));
+    NDArray assign2 = mmul(temp, VofSVD);
+    temp.assign(&assign2);
   }
 
 
   auto blockM = _m({col1 + shift, col1 + shift + n, col1 + shift, col1 + shift + n}, true);
   blockM.nullify();
 
-  blockM.diagonal('c').assign(singVals);
+  blockM.diagonal('c').assign(&singVals);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -757,7 +766,7 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     temp1.setIdentity();
     _u = temp1;
 
-    _u({0, _diagSize, 0, _diagSize}, true).assign(V({0, _diagSize, 0, _diagSize}, true));
+    _u({0, _diagSize, 0, _diagSize}, true).assign(&V({0, _diagSize, 0, _diagSize}, true));
     const_cast<HHsequence&>(hhU).mulLeft(_u);
   }
 
@@ -768,7 +777,8 @@ void SVD<T>::exchangeUV(HHsequence& hhU, HHsequence& hhV, NDArray& U, NDArray& V
     temp1.setIdentity();
     _v = temp1;
 
-    _v({0, _diagSize, 0, _diagSize}, true).assign(U({0, _diagSize, 0, _diagSize}, true));
+    NDArray assign = U({0, _diagSize, 0, _diagSize}, true);
+    _v({0, _diagSize, 0, _diagSize}, true).assign(&assign);
     const_cast<HHsequence&>(hhV).mulLeft(_v);
   }
 }
@@ -783,7 +793,7 @@ void SVD<T>::evalData(NDArray& matrix) {
 
     if (_calcU) _u = jac._u;
     if (_calcV) _v = jac._v;
-    _s.assign(jac._s);
+    _s.assign(&jac._s);
 
     return;
   }
@@ -797,7 +807,8 @@ void SVD<T>::evalData(NDArray& matrix) {
   _u.nullify();
   _v.nullify();
 
-  _m({0, _diagSize, 0, 0}, true).assign(biDiag._HHbidiag.transpose());
+  NDArray assign1 = biDiag._HHbidiag.transpose();
+  _m({0, _diagSize, 0, 0}, true).assign(&assign1);
 
   _m({_m.sizeAt(0) - 1, _m.sizeAt(0), 0, 0}).nullify();
 

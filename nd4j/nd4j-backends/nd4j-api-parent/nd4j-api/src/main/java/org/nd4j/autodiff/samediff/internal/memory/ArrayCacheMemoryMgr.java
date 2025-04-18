@@ -70,7 +70,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
     private static ThreadLocal<Table<DataType, String, List<INDArray>>> arrays = new ThreadLocal<>();
 
     private static boolean enableCache = Boolean
-            .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "true"));
+            .parseBoolean(System.getProperty(ND4JSystemProperties.SAMEDIFF_MEMORY_CACHE_ENABLE, "false"));
 
     static {
         setCacheDefaults();

@@ -38,10 +38,14 @@ table FlatGraph {
     nodes:[FlatNode]; 					// list of nodes
     outputs:[IntPair]; 					// list of output variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     configuration:FlatConfiguration; 	// optional execution configuration
-	placeholders:[string];				//Placeholders. Used for SameDiff serialization/deserialization
-	lossVariables:[string];				//Variables that are marked as losses. Used for training.
-	trainingConfig:string;				//JSON representation of training configuration. JSON used for custom functionality
-	updaterState:[UpdaterState];		//Updater state
+	placeholders:[string];				// Placeholders. Used for SameDiff serialization/deserialization
+	lossVariables:[string];				// Variables that are marked as losses. Used for training.
+	trainingConfig:string;				// JSON representation of training configuration. JSON used for custom functionality
+	updaterState:[UpdaterState];		// Updater state
+	
+	// New fields for metadata
+	metadataKeys:[string];              // Keys for metadata
+	metadataValues:[string];            // Values for metadata (indexed same as keys)
 }
 
 

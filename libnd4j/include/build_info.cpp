@@ -70,9 +70,7 @@ const char *buildInfo() {
 #if defined(HAVE_ONEDNN)
   ret +=   "\nHAVE_ONEDNN";
 #endif
-#if defined(HAVE_VEDNN)
-  ret +=     "\nHAVE_VEDNN";
-#endif
+
 #if defined(__EXTERNAL_BLAS__)
   ret +=      "\nHAVE_EXTERNAL_BLAS";
 #endif

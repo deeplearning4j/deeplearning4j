@@ -83,7 +83,6 @@ if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; t
 
     echo "running with cuda compute-sanitizer"
 fi
-export CUDA_VISIBLE_DEVICES=1
 # print the final command
 echo "$TEST_RUNNER_PREFIX $java_call $@"
 $TEST_RUNNER_PREFIX $java_call "$@"
