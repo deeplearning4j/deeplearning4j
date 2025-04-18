@@ -85,6 +85,7 @@ import org.nd4j.presets.OpExclusionUtils;
                 "helpers/shape.h",
                 "array/ShapeList.h",
                 "system/op_boilerplate.h",
+                "system/CudaLimitType.h",
                 "ops/InputType.h",
                 "ops/declarable/OpDescriptor.h",
                 "ops/declarable/PlatformHelper.h",
@@ -210,6 +211,8 @@ public class Nd4jCudaPresets implements LoadEnabled, BuildEnabled,InfoMapper {
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",
                         "@Cast(\"char*\") String"))
                 .put(new Info("sd::Pointer").cast().valueTypes("Pointer").pointerTypes("PointerPointer"))
+                .put(new Info("CudaLimitType","sd::CudaLimitType").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",
+                        "int[]"))
                 .put(new Info("sd::LongType").cast().valueTypes("long").pointerTypes("LongPointer", "LongBuffer",
                         "long[]"))
                 .put(new Info("sd::Status").cast().valueTypes("int").pointerTypes("IntPointer", "IntBuffer",

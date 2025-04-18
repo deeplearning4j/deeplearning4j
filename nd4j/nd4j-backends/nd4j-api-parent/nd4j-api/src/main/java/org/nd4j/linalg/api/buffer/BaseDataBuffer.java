@@ -484,9 +484,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         val dataType = dataType();
         switch (dataType) {
             case DOUBLE:
+                double[] data = asDouble();
                 try {
                     for (int i = 0; i < length(); i++) {
-                        dos.writeDouble(getDouble(i));
+                        dos.writeDouble(data[i]);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -494,8 +495,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case FLOAT:
                 try {
+                    float[] dataFloat = asFloat();
                     for (int i = 0; i < length(); i++) {
-                        dos.writeFloat(getFloat(i));
+                        dos.writeFloat(dataFloat[i]);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -503,8 +505,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case HALF:
                 try {
+                    float[] dataFloat = asFloat();
+
                     for (int i = 0; i < length(); i++) {
-                        dos.writeShort(HalfIndexer.fromFloat(getFloat(i)));
+                        dos.writeShort(HalfIndexer.fromFloat(dataFloat[i]));
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -512,8 +516,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 break;
             case BOOL:
                 try {
+                    int[] ints = asInt();
                     for (int i = 0; i < length(); i++) {
-                        dos.writeByte(getInt(i) == 0 ? (byte) 0 : (byte) 1);
+                        dos.writeByte(ints[i] == 0 ? (byte) 0 : (byte) 1);
                     }
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -638,6 +643,19 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 throw new UnsupportedOperationException("Unknown data type: [" + dataType + "]");
         }
         return bos.toByteArray();
+    }
+
+    @Override
+    public boolean[] asBoolean() {
+        if(length >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Unable to create array of length " + length);
+        boolean[] ret = new boolean[(int) length];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getIntUnsynced(i) > 0;
+        }
+
+        return ret;
+
     }
 
     @Override

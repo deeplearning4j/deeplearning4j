@@ -255,6 +255,8 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return op;
     }
 
+    public abstract INDArray createFromDescriptor(DataBuffer shapeInformation);
+
     @Override
     public INDArray[] exec(CustomOp op) {
         return execAndReturn(op).outputArguments().toArray(new INDArray[0]);

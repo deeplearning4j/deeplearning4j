@@ -2656,13 +2656,6 @@ public class Nd4j {
         }
     }
 
-    private static int[] toIntArray(int length, DataBuffer buffer) {
-        int[] ret = new int[length];
-        for (int i = 0; i < length; i++) {
-            ret[i] = buffer.getInt(i);
-        }
-        return ret;
-    }
 
 
     /**
@@ -5900,152 +5893,165 @@ public class Nd4j {
     }
 
 
+
     /**
-     * Create an {@link INDArray} from a flatbuffers {@link FlatArray}
-     * @param array the array to create the {@link INDArray} from
+     * FIXED: Create an {@link INDArray} from a flatbuffers {@link FlatArray}.
+     * Corrects rank detection, shape info construction, extras calculation,
+     * and bypasses native shape buffer creation for scalars.
+     *
+     * @param array the FlatArray to create the {@link INDArray} from
      * @return the created {@link INDArray}
      */
     public static INDArray createFromFlatArray(FlatArray array) {
-        val dtype = array.dtype();
-        val order = array.byteOrder();
-        val rank = (int) array.shape(0);
-        val shapeInfo = new long[Shape.shapeInfoLength(rank)];
-        for (int e = 0; e < shapeInfo.length; e++)
-            shapeInfo[e] = array.shape(e);
+        if (array == null) {
+            log.warn("Input FlatArray is null, returning null.");
+            return null;
+        }
 
-        val shapeOf = Shape.shapeOf(shapeInfo);
-        DataType _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
-        if (Shape.isEmpty(shapeInfo)) {
-            if(Shape.rank(shapeInfo) == 0) {
-                return Nd4j.empty();
-            } else {
-                return Nd4j.create(_dtype, shapeOf);
+        // --- 1. Extract and Validate DataType ---
+        byte faDtype = array.dtype();
+        DataType dtype;
+        try {
+            dtype = FlatBuffersMapper.getDataTypeFromByte(faDtype);
+        } catch (Exception e) {
+            log.error("Failed to map DataType from FlatArray dtype byte: {}", faDtype, e);
+            throw new RuntimeException("Invalid DataType encountered in FlatArray during deserialization", e);
+        }
+        Preconditions.checkNotNull(dtype, "DataType resolved to null from FlatArray byte: %s", faDtype);
+        Preconditions.checkState(dtype != DataType.UNKNOWN && dtype != DataType.COMPRESSED,
+                "Cannot create INDArray from FlatArray with UNKNOWN or COMPRESSED DataType: %s", dtype);
+
+
+        // --- 2. Extract Rank and Shape ---
+        int rank = array.shapeLength();
+        Preconditions.checkState(rank >= 0 && rank <= Shape.MAX_RANK, // Check lower bound too
+                "Rank from FlatArray (%s) is invalid or exceeds maximum allowed rank (%s)", rank, Shape.MAX_RANK);
+
+        long[] shape = new long[rank];
+        for (int i = 0; i < rank; i++) {
+            shape[i] = array.shape(i);
+            Preconditions.checkState(shape[i] >= 0, "Invalid shape dimension size: shape[%s] = %s", i, shape[i]);
+        }
+
+        // --- 3. Determine isEmpty based on shape ---
+        boolean isEmpty = false;
+        if (rank > 0) { // Scalars (rank 0) have length 1, not empty by shape check
+            for (long dim : shape) {
+                if (dim == 0) {
+                    isEmpty = true;
+                    break;
+                }
+            }
+        }
+        long length = isEmpty ? 0 : ArrayUtil.prodLong(shape); // Correct length calculation
+        if (rank == 0) length = 1; // Scalar length is 1
+
+
+        // --- 4. Handle Empty Array Case ---
+        if (isEmpty) {
+            // Return an empty INDArray with the correct shape and dtype
+            return Nd4j.empty(dtype).reshape(shape);
+        }
+
+        // --- 5. Determine Order, Calculate Strides & EWS ---
+        char ordering = 'c'; // Default C order, as FlatArray doesn't store layout order
+        long[] strides = Nd4j.getStrides(shape, ordering); // Empty for rank 0
+        long ews = (rank == 0) ? 1 : Shape.elementWiseStride(shape, strides, ordering == 'f');
+
+        // --- 6. Calculate Extras ---
+        long extras = 0L;
+        extras = ArrayOptionsHelper.setDataType(extras, dtype); // Set ONLY data type bits initially
+        // Set other flags to false defaults for a new array from buffer
+        // extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.IS_VIEW, false); // Example if needed
+
+        // --- 7. Create ND4J Shape Info Buffer ---
+        DataBuffer shapeInfoBuffer;
+        int shapeInfoLength = Shape.shapeInfoLength(rank);
+
+        if (rank == 0) {
+            // ** Manual creation for scalar (rank 0) **
+            shapeInfoBuffer = Nd4j.getDataBufferFactory().createLong(shapeInfoLength); // Length is 4
+            shapeInfoBuffer.put(0, 0);   // Rank
+            shapeInfoBuffer.put(1, ews); // EWS (1 for scalar)
+            shapeInfoBuffer.put(2, (int)ordering); // Order ('c')
+            shapeInfoBuffer.put(3, extras); // Set calculated extras
+        } else {
+            // ** Standard creation for non-scalars **
+            long[] shapeInfoArray = new long[shapeInfoLength];
+            shapeInfoArray[0] = rank;
+            System.arraycopy(shape, 0, shapeInfoArray, 1, rank);
+            System.arraycopy(strides, 0, shapeInfoArray, 1 + rank, rank);
+            shapeInfoArray[shapeInfoLength - 3] = ews;
+            shapeInfoArray[shapeInfoLength - 2] = (int) ordering;
+            shapeInfoArray[shapeInfoLength - 1] = extras;
+
+            try {
+                Pair<DataBuffer, long[]> siPair = Nd4j.getShapeInfoProvider().createShapeInformation(shapeInfoArray);
+                shapeInfoBuffer = siPair.getFirst();
+            } catch (Exception e) {
+                log.error("Error during ShapeInfoProvider creation for rank {}. Calculated shapeInfoArray: {}", rank, Arrays.toString(shapeInfoArray), e);
+                throw new RuntimeException("Failed to create shape information buffer for rank " + rank, e);
             }
         }
 
-        char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
-
-
-        val stridesOf = Shape.stridesOf(shapeInfo);
-
-
-        val _order = FlatBuffersMapper.getOrderFromByte(order);
-        val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
-
-        val bb = array.bufferAsByteBuffer();
-        switch (_dtype) {
-            case DOUBLE: {
-                val doubles = new double[prod];
-                if(bb != null) {
-                    val db = bb.order(_order).asDoubleBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = db.get(e);
-
-                }
-
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.DOUBLE);
+        // --- 8. Sanity check the created shape info buffer's extras/dataType ---
+        long extrasFromBuffer = shapeInfoBuffer.getLong(shapeInfoLength - 1);
+        DataType dtFromBuffer = DataType.UNKNOWN;
+        boolean checkFailed = false;
+        try {
+            dtFromBuffer = ArrayOptionsHelper.dataType(extrasFromBuffer);
+            if (dtFromBuffer != dtype) {
+                log.error("POST ShapeInfoBuffer Creation: DataType MISMATCH. Expected: {}, From Buffer Extras ({}): {}. ShapeInfoBuffer content: {}",
+                        dtype, extrasFromBuffer, dtFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()));
+                checkFailed = true;
             }
-            case FLOAT: {
-                val doubles = new float[prod];
-                if(bb != null) {
-                    val fb = bb.order(_order).asFloatBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = fb.get(e);
-                }
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.FLOAT);
-            }
-            case HALF: {
-                val doubles = new float[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asShortBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = HalfIndexer.toFloat((int) sb.get(e));
-                }
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.HALF);
-            }
-            case INT: {
-                val doubles = new int[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asIntBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = sb.get(e);
-
-                }
-
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.INT);
-            }
-            case LONG: {
-                val doubles = new long[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asLongBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = sb.get(e);
-                }
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.LONG);
-            }
-            case SHORT: {
-                val doubles = new short[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asShortBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = sb.get(e);
-                }
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.SHORT);
-            }
-            case BYTE: {
-                val bytes = new byte[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asReadOnlyBuffer();
-                    for (int e = 0; e < prod; e++)
-                        bytes[e] = sb.get(e + sb.position());
-                }
-                return Nd4j.create(bytes, shapeOf, stridesOf, ordering, DataType.BYTE);
-            }
-            case BOOL: {
-                val doubles = new boolean[prod];
-                if(bb != null) {
-                    val sb = bb.order(_order).asReadOnlyBuffer();
-                    for (int e = 0; e < prod; e++)
-                        doubles[e] = sb.get(e + sb.position()) == 1;
-                }
-                return Nd4j.create(doubles, shapeOf, stridesOf, ordering, DataType.BOOL);
-            }
-            case UTF8: {
-                try {
-
-                    val sb = bb.order(_order);
-                    val pos = sb.position();
-                    val arr = new byte[sb.limit() - pos];
-
-                    for (int e = 0; e < arr.length; e++) {
-                        arr[e] = sb.get(e + pos);
-                    }
-
-                    val buffer = DATA_BUFFER_FACTORY_INSTANCE.createUtf8Buffer(arr, prod);
-                    return Nd4j.create(buffer, shapeOf);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            case UBYTE:
-            case BFLOAT16:
-            case UINT16:
-                INDArray arr = Nd4j.createUninitialized(_dtype, shapeOf);
-                ByteBuffer obb = bb.order(_order);
-                int pos = obb.position();
-                byte[] bArr = new byte[obb.limit() - pos];
-
-                for (int e = 0; e < bArr.length; e++) {
-                    bArr[e] = obb.get(e + pos);
-                }
-                arr.data().asNio().put(bArr);
-                return arr;
-            default:
-                throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
+        } catch (ND4JUnknownDataTypeException e) {
+            log.error("POST ShapeInfoBuffer Creation: ND4JUnknownDataTypeException reading DataType. Extras value read from buffer: {}. ShapeInfoBuffer content: {}",
+                    extrasFromBuffer, Arrays.toString(shapeInfoBuffer.asLong()), e);
+            checkFailed = true;
+        }
+        if(checkFailed){
+            // This indicates a deeper issue, likely in the native layer or buffer provider if the manual creation path was used.
+            throw new IllegalStateException("Failed to create or validate INDArray shape information buffer. Extras value mismatch or unreadable.");
         }
 
+        // --- 9. Get and Process Data Buffer ---
+        java.nio.ByteBuffer bb = array.bufferAsByteBuffer();
+        DataBuffer dataBuffer;
+
+        if (bb == null) {
+            log.warn("FlatArray data buffer is null for non-empty shape {}. Creating uninitialized buffer.", Arrays.toString(shape));
+            dataBuffer = Nd4j.createBuffer(dtype, length, false);
+        } else {
+            java.nio.ByteOrder dataByteBufferOrder = FlatBuffersMapper.getOrderFromByte(array.byteOrder());
+            int bytesPerElement = Nd4j.sizeOfDataType(dtype);
+            long expectedBytes = (bytesPerElement > 0) ? length * bytesPerElement : bb.remaining();
+
+            if (bb.remaining() < expectedBytes) {
+                log.warn("FlatArray buffer remaining bytes ({}) is less than expected ({}) for shape {} and dtype {}. Data may be incomplete.",
+                        bb.remaining(), expectedBytes, Arrays.toString(shape), dtype);
+            }
+
+            // Ensure we read from the beginning of the buffer content
+            bb.order(dataByteBufferOrder);
+            if(bb.position() != 0) bb.position(0); // Reset position
+
+            // Create DataBuffer by copying data
+            try {
+                dataBuffer = Nd4j.createBuffer(bb, dtype, (int) length); // Use createBuffer(ByteBuffer, ...)
+            } catch (Exception e) {
+                log.error("Error creating DataBuffer from ByteBuffer for dtype {} shape {}", dtype, Arrays.toString(shape), e);
+                throw new RuntimeException("Failed to create data buffer from FlatArray ByteBuffer", e);
+            }
+        }
+
+        // --- 10. Create final INDArray ---
+        // Use the validated shapeInfoBuffer and the created dataBuffer.
+        // Offset within the new dataBuffer is 0.
+        INDArray result = Nd4j.createArrayFromShapeBuffer(dataBuffer, shapeInfoBuffer);
+
+        return result;
     }
-
     public static DataType defaultFloatingPointType() {
         return defaultFloatingPointDataType.get();
     }

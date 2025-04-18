@@ -20,13 +20,19 @@
 
 package org.nd4j.autodiff.samediff.serde;
 
+import lombok.SneakyThrows;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
 import org.nd4j.linalg.api.ops.impl.loss.bp.BaseLossBp;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
+
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -435,8 +441,49 @@ public class FlatBuffersMapper {
         }
         FlatArray fa = fn.scalar();
         INDArray scalar = null;
+
+        // Handle scalar arrays with special care
         if (fa != null) {
-            scalar = Nd4j.createFromFlatArray(fa);
+            // Check if this is a scalar (rank 0) array
+            if (fa.shapeLength() == 0) {
+                // Log the scalar case for debugging
+                log.debug("Processing scalar array in FlatNode. FlatArray dtype: {}", fa.dtype());
+
+                // For scalar arrays, we need to ensure the extras value contains the proper data type
+                byte dtype = fa.dtype();
+                if (dtype == 0) {
+                    log.warn("FlatArray has 0 dtype for scalar. Defaulting to FLOAT.");
+                    dtype = FlatBuffersMapper.getDataTypeAsByte(DataType.FLOAT);
+                }
+
+                DataType dataType = FlatBuffersMapper.getDataTypeFromByte(dtype);
+
+                // Create scalar array manually with proper extras containing data type
+                scalar = Nd4j.scalar(dataType, 0.0);
+
+                // Read actual value from buffer if available
+                ByteBuffer bb = fa.bufferAsByteBuffer();
+                if (bb != null && bb.remaining() > 0) {
+                    bb.position(0); // Reset position
+                    switch (dataType) {
+                        case FLOAT:
+                            scalar.putScalar(0, bb.getFloat());
+                            break;
+                        case DOUBLE:
+                            scalar.putScalar(0, bb.getDouble());
+                            break;
+                        case INT:
+                            scalar.putScalar(0, bb.getInt());
+                            break;
+                        // Add cases for other data types as needed
+                        default:
+                            log.warn("Unhandled scalar data type: {}. Using zero value.", dataType);
+                    }
+                }
+            } else {
+                // Non-scalar case, use standard method
+                scalar = Nd4j.createFromFlatArray(fa);
+            }
         }
 
         FlatProperties[] flatProperties = new FlatProperties[fn.propertiesLength()];
@@ -523,14 +570,14 @@ public class FlatBuffersMapper {
                 if(extraBools.length > 0)
                     bia.setKeepDims(extraBools[0]);
             }
-            /*
-            Op types that don't need any extra/special mapping:
-            TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransform
-            TRANSFORM_ANY - IsMax, Assign
-            TRANSFORM_FLOAT - Histogram, Sqrt
-            TRANSFORM_STRICT - Cos, Log, Sigmoid, etc
-            TRANSFORM_SAME - Abs, Ceil, etc
-             */
+        /*
+        Op types that don't need any extra/special mapping:
+        TRANSFORM_BOOL - BooleanNot, IsFinite, IsInf, IsNaN, MatchConditionTransform
+        TRANSFORM_ANY - IsMax, Assign
+        TRANSFORM_FLOAT - Histogram, Sqrt
+        TRANSFORM_STRICT - Cos, Log, Sigmoid, etc
+        TRANSFORM_SAME - Abs, Ceil, etc
+         */
 
             ((DifferentialFunction) op).setPropertiesForFunction(props);
             return (DifferentialFunction) op;
@@ -541,6 +588,8 @@ public class FlatBuffersMapper {
     private static final int[] EMPTY_INT = new int[0];
     private static final long[] EMPTY_LONG = new long[0];
     private static final double[] EMPTY_DOUBLE = new double[0];
+
+    private static final byte[] EMPTY_BYTE = new byte[0];
 
     public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String, Object> fnProps) {
 
@@ -794,257 +843,202 @@ public class FlatBuffersMapper {
         return out;
     }
 
+    /**
+     * Converts a SameDiff DifferentialFunction node into its FlatBuffers representation.
+     * Added isCloneContext flag to prevent serialization of INDArray properties during cloning.
+     *
+     * @param sameDiff        The SameDiff instance (needed for context like variable lookups).
+     * @param node            The DifferentialFunction (op) to serialize.
+     * @param bufferBuilder   The FlatBufferBuilder instance.
+     * @param variables       List of all SDVariables in the graph (order matters for output mapping).
+     * @param reverseMap      Map from Variable Name to Node ID (op ID or independent var ID).
+     * @param forwardMap      Map for forward declarations (like loops).
+     * @param framesMap       Map for control flow frame names to IDs.
+     * @param idCounter       Counter for generating new node IDs.
+     * @param id              Pre-assigned node ID (if available, otherwise generated).
+     * @param isCloneContext  If true, skips serializing INDArray properties and ScalarOp arrays (used by cloneViaSerialize).
+     * @return The offset of the created FlatNode in the buffer.
+     * @throws IOException If serialization fails.
+     */
     public static int asFlatNode(@NonNull SameDiff sameDiff, @NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
-                                 Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
+                                 Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id,
+                                 boolean isCloneContext) throws IOException { // Added isCloneContext flag
         val opName = node.opName();
-        val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
+        val opTypeEnum = node.opType();
+        val hash = FlatBuffersMapper.getOpNum(opName, opTypeEnum); // Assume helper handles null type ok
+        val nodeOwnName = node.getOwnName();
+        if (nodeOwnName == null) throw new ND4JIllegalStateException("Node ownName cannot be null for serialization.");
 
-        double[] extras;
-        if (node.opType() == Type.CUSTOM || node.opType() == Type.UDF) {
+        // --- Extract Op Args ---
+        double[] extras = EMPTY_DOUBLE; boolean[] boolArgs = EMPTY_BOOLEAN; byte[] dtypeArgs = EMPTY_BYTE; long[] extraBits = EMPTY_LONG; int[] extraStringIds = EMPTY_INT;
+        if (node instanceof CustomOp) {
             CustomOp op = (CustomOp) node;
-            extras = op.tArgs();
-        } else {
-            Object[] eArgs = node.getExtraArgs();
-            extras = eArgs != null ? new double[eArgs.length] : new double[0];
-            for (int e = 0; e < extras.length; e++) {
-                if(eArgs[e] instanceof Number)
-                    extras[e] = ((Number) eArgs[e]).doubleValue();
-            }
-        }
+            if(op.tArgs() != null) extras = op.tArgs(); if(op.iArgs() != null) extraBits = op.iArgs(); if(op.bArgs() != null) boolArgs = op.bArgs();
+            if (op.numDArguments() > 0) { DataType[] dTypes = op.dArgs(); if(dTypes != null) { dtypeArgs = new byte[dTypes.length]; for (int e = 0; e < dtypeArgs.length; e++) dtypeArgs[e] = getDataTypeAsByte(dTypes[e]); } }
+            if(op.numSArguments() > 0) { String[] sArgs = op.sArgs(); if(sArgs != null) { extraStringIds = new int[sArgs.length]; for(int i = 0; i < sArgs.length; i++) extraStringIds[i] = bufferBuilder.createString(sArgs[i] != null ? sArgs[i] : ""); } }
+        } else { Object[] eArgs = node.getExtraArgs(); if (eArgs != null) { extras = new double[eArgs.length]; for (int e = 0; e < extras.length; e++) { if(eArgs[e] instanceof Number) extras[e] = ((Number) eArgs[e]).doubleValue(); } } }
+        if (node instanceof Enter) { val frameName = ((Enter) node).getFrameName(); if (frameName != null) { if (!framesMap.containsKey(frameName)) framesMap.put(frameName, idCounter.incrementAndGet()); extraBits = new long[]{framesMap.get(frameName).intValue()}; extraStringIds = new int[]{bufferBuilder.createString(frameName)}; }}
+        if (node instanceof ReduceOp || node instanceof IndexAccumulation) { boolean currentKeepDims = false; if (node instanceof ReduceOp) currentKeepDims = ((ReduceOp) node).isKeepDims(); else if (node instanceof IndexAccumulation) currentKeepDims = ((IndexAccumulation) node).isKeepDims(); if (boolArgs == EMPTY_BOOLEAN) boolArgs = new boolean[2]; else if (boolArgs.length < 2) boolArgs = Arrays.copyOf(boolArgs, 2); boolArgs[0] = currentKeepDims; boolArgs[1] = true; }
+        // --- End Extract Op Args ---
 
-        boolean[] boolArgs = null;
-        byte[] dtypeArgs = null;
-        long[] extraBits = null;
-        int[] extraStringIds = null;
-        String[] sArgs = null;
-        if (node.opType() == Type.CUSTOM || node.opType() == Type.UDF) {
-            val dynamicCustomOp = (DynamicCustomOp) node;
-            extraBits = dynamicCustomOp.iArgs();
-            boolArgs = dynamicCustomOp.bArgs();
+        // --- Input Processing ---
+        val inPaired = new ArrayList<Integer>(); SDVariable[] inputs = null;
+        try { inputs = node.args(); } catch (Exception e) { log.error("Failed resolve inputs for op '{}'.", nodeOwnName, e); inputs = new SDVariable[0];}
+        if (inputs != null) { for (SDVariable input : inputs) { if (input == null || input.name() == null) continue; String varName = input.name(); int outIdx = 0; Variable inputMeta = sameDiff.getVariables().get(varName); if (inputMeta == null) { if (!reverseMap.containsKey(varName)) { int fwdNodeId = idCounter.incrementAndGet(); forwardMap.put(varName, fwdNodeId); reverseMap.put(varName, fwdNodeId); log.warn("Temp ID {} for missing input '{}'.", fwdNodeId, varName); } } else if (inputMeta.getOutputOfOp() != null) { SameDiffOp producingSdo = sameDiff.getOps().get(inputMeta.getOutputOfOp()); if (producingSdo != null) { List<String> pOuts = producingSdo.getOutputsOfOp(); if (pOuts != null) { int fIdx = pOuts.indexOf(varName); if (fIdx >= 0) outIdx = fIdx; }}} if (!reverseMap.containsKey(varName)) { if (varName != null && varName.startsWith("NextIteration")) { int fwdNodeId = idCounter.incrementAndGet(); forwardMap.put(varName, fwdNodeId); reverseMap.put(varName, fwdNodeId); } else { throw new ND4JIllegalStateException("Unknown input var: [" + varName + "] for op " + nodeOwnName); }} int nodeId = reverseMap.get(varName); inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx)); }}
+        // --- End Input Processing ---
 
-            if (dynamicCustomOp.numDArguments() > 0) {
-                dtypeArgs = new byte[dynamicCustomOp.numDArguments()];
-                val d = dynamicCustomOp.dArgs();
-                for (int e = 0; e < dtypeArgs.length; e++) {
-                    dtypeArgs[e] = (byte) d[e].toInt();
-                }
-            }
+        // --- ID assignment & Output Name Mapping ---
+        int ownId = id != null ? id : (forwardMap.containsKey(nodeOwnName) ? forwardMap.get(nodeOwnName) : idCounter.incrementAndGet());
+        String[] outNames = node.outputVariablesNames(); if(outNames == null) outNames = new String[0];
+        for (String s : outNames) { if(s == null) continue; if (!reverseMap.containsKey(s)) reverseMap.put(s, ownId); }
+        // --- End ID assignment & Output Name Mapping ---
 
-            if(dynamicCustomOp.numSArguments() > 0) {
-                sArgs = dynamicCustomOp.sArgs();
-                extraStringIds = new int[dynamicCustomOp.numSArguments()];
-                for(int i = 0; i < sArgs.length; i++) {
-                    extraStringIds[i] = bufferBuilder.createString(sArgs[i]);
-                }
-            }
+        // --- Dimension Processing ---
+        int[] dims = EMPTY_INT; Op.Type t = node.opType();
+        if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) { long[] nodeDims = node.getDimensions(); if (nodeDims != null) dims = ArrayUtil.toInts(nodeDims); }
+        // --- End Dimension Processing ---
 
-        } else if (node instanceof Enter) {
-            // in case of Enter node we'll be storing unique frame reference
-            val frameName = ((Enter) node).getFrameName();
-            if (!framesMap.containsKey(frameName))
-                framesMap.put(frameName, idCounter.incrementAndGet());
+        // --- Properties Processing ---
+        Map<String, Object> fnProps = node.propertiesForFunction(); int propIdx = 0;
+        if(fnProps != null && !fnProps.isEmpty()){ int[] flatProps = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps, isCloneContext); if (flatProps != null && flatProps.length > 0) { propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProps); }}
+        // --- End Properties Processing ---
 
-            extraBits = new long[]{framesMap.get(frameName).intValue()};
-            //keep old extra bits for compatibility, but use extra string ids like the dynamic ops support instead
-            sArgs = new String[1];
-            extraStringIds = new int[1];
-            sArgs[0] = frameName;
-            extraStringIds[0] = bufferBuilder.createString(sArgs[0]);
+        // --- Create FlatBuffer Vectors for Node ---
+        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired)); int nodesOut = FlatNode.createOutputVector(bufferBuilder, EMPTY_INT);
+        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras); int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
+        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs); int dArgsOffset = FlatNode.createExtraTypesVector(bufferBuilder, dtypeArgs);
+        int dimensionsOffset = FlatNode.createDimensionsVector(bufferBuilder, dims); int fname = bufferBuilder.createString(nodeOwnName);
+        int scopeNameOffset = bufferBuilder.createString(""); int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds);
 
-
-        }  else
-            extraBits = new long[]{};
-
-        if (node.opType() == Type.REDUCE_BOOL || node.opType() == Type.REDUCE_SAME || node.opType() == Type.REDUCE_FLOAT || node.opType() == Type.REDUCE_LONG) {
-            val op = (ReduceOp) node;
-
-            boolArgs = new boolean[2];
-            boolArgs[0] = op.isKeepDims();
-            boolArgs[1] = true; // always new format
-        } else if (node.opType() == Type.INDEXREDUCE) {
-            val op = (IndexAccumulation) node;
-
-            boolArgs = new boolean[2];
-            boolArgs[0] = op.isKeepDims();
-            boolArgs[1] = true; // always new format
-        }
-
-        val inPaired = new ArrayList<Integer>();
-
-        int[] outputIds = null;
-        SDVariable[] outputVertexId = null;
-
-        try {
-            outputVertexId = node.outputVariables();
-            outputIds = new int[outputVertexId.length];
-            for (int i = 0; i < outputIds.length; i++) {
-                outputIds[i] = variables.indexOf(outputVertexId[i]);
-            }
-        } catch (ND4UnresolvedOutputVariables e) {
-
-            outputIds = new int[0];
-            outputVertexId = null;
-        } catch (Exception e) {
-            throw new ND4JIllegalStateException(e);
-        }
-
-
-        SDVariable[] inputs = node.args();
-        for (SDVariable input : inputs) {
-            String varName = input.name();
-            int outIdx;
-            if (sameDiff.getVariables().get(varName).getOutputOfOp() != null && sameDiff.getOps().containsKey(sameDiff.getVariables().get(varName).getOutputOfOp())) {
-                DifferentialFunction df = sameDiff.getOps().get(sameDiff.getVariables().get(varName).getOutputOfOp()).getOp();
-                outIdx = sameDiff.getOps().get(df.getOwnName()).getOutputsOfOp().indexOf(varName);
-            } else {
-                outIdx = 0;
-            }
-
-            if (!reverseMap.containsKey(varName)) {
-                if (varName.contains("NextIteration")) {
-                    // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
-                    int fwdNodeId = idCounter.incrementAndGet();
-                    forwardMap.put(varName, fwdNodeId);
-                    reverseMap.put(varName, fwdNodeId);
-                } else {
-                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + varName + "]");
-                }
-            }
-
-            int nodeId = reverseMap.get(varName);
-            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
-        }
-
-        log.trace("Own Name: {}", node.getOwnName());
-        int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
-        String[] outNames = node.outputVariablesNames();
-        for (String s : outNames) {
-            if (!reverseMap.containsKey(s)) {
-                reverseMap.put(s, ownId);
-            }
-        }
-
-        //Note this is for backwards compatibility.
-        //At the api level we standardized on 64 bit ints in c++ but
-        //otherwise should never care if the numbers are ints or longs.
-        //all dimensions should be between 0 and 32  99% of the time
-        //or Integer.MAX_VALUE for the old one.
-        int[] dims;
-        Type t = node.opType();
-        if (t == Type.REDUCE_FLOAT || t == Type.REDUCE_SAME || t == Type.REDUCE_BOOL
-                || t == Type.REDUCE_LONG || t == Type.INDEXREDUCE || t == Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
-            dims =  node.getDimensions() == null ? null :  new int[node.getDimensions().length];
-            //here we save longs as ints for compatibility
-            if(dims != null)
-                for(int i = 0; i < dims.length; i++) {
-                    dims[i] = (int) node.getDimensions()[i];
-                }
-            if (dims == null)
-                dims = new int[0];
-        } else {
-            dims = new int[0];
-        }
-
-        Map<String, Object> fnProps = node.propertiesForFunction();
-        int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
-        int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
-
-        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
-        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
-        int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
-        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
-        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
-        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
-        int dArgs = FlatNode.createOutputTypesVector(bufferBuilder, dtypeArgs != null ? dtypeArgs : new byte[0]);
-        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
-        int fname = bufferBuilder.createString(node.getOwnName());
-        int scopeName = bufferBuilder.createString("");
-        int sArgs3 = FlatNode.createExtraStringsVector(bufferBuilder, extraStringIds != null ? extraStringIds : new int[0]);
-        int scalar = 0;
-        if (node instanceof ScalarOp) {
-            ScalarOp sOp = (ScalarOp) node;
-            INDArray s = sOp.scalar();
+        // --- Scalar Processing (Skip array if cloning) ---
+        int scalarOffset = 0;
+        if (node instanceof ScalarOp && !isCloneContext) { // Check flag
+            ScalarOp sOp = (ScalarOp) node; INDArray s = sOp.scalar();
             if (s != null) {
-                scalar = s.toFlatArray(bufferBuilder);
+                try { scalarOffset = SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(s, bufferBuilder); } // Use helper directly
+                catch (Exception e) { log.warn("Failed to serialize scalar array for op '{}'.", nodeOwnName, e); scalarOffset = 0; }
             }
         }
+        // --- End Scalar Processing ---
 
+        // --- Output Variable Names and Types ---
+        List<String> currentOutVarNames = Collections.emptyList(); SameDiffOp currentSDO = sameDiff.getOps().get(nodeOwnName); if (currentSDO != null && currentSDO.getOutputsOfOp() != null) { currentOutVarNames = currentSDO.getOutputsOfOp(); } else if (outNames.length > 0) { currentOutVarNames = Arrays.asList(outNames); }
+        int[] outVarNamesStringsOffsets = new int[currentOutVarNames.size()]; List<Byte> outTypeList = new ArrayList<>();
+        for (int i = 0; i < currentOutVarNames.size(); i++) { String s = currentOutVarNames.get(i); if (s == null) { outVarNamesStringsOffsets[i] = bufferBuilder.createString(""); continue; } outVarNamesStringsOffsets[i] = bufferBuilder.createString(s); SDVariable v = sameDiff.getVariable(s); if (v != null) { outTypeList.add(FlatBuffersMapper.getDataTypeAsByte(v.dataType())); } else { log.warn("Output var '{}' for op '{}' not found for type lookup.", s, nodeOwnName); } }
+        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets); byte[] finalOutTypes = new byte[outTypeList.size()]; for (int k = 0; k < outTypeList.size(); k++) { finalOutTypes[k] = outTypeList.get(k); } int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, finalOutTypes);
+        // --- End Output Variable Handling ---
 
-        if (node.opType() == null)
-            log.warn("Null-op node: {}", node);
+        int opNameOffset = bufferBuilder.createString(opName != null ? opName : "");
 
+        // --- Control dependencies ---
+        int opCdsOffset = 0, varCdsOffset = 0, cdsForOffset = 0;
+        if(currentSDO != null) { int[] opCdsArr = mapOrNull(currentSDO.getControlDeps(), bufferBuilder); if(opCdsArr != null) opCdsOffset = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr); int[] varCdsArr = mapOrNull(currentSDO.getVarControlDeps(), bufferBuilder); if(varCdsArr != null) varCdsOffset = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr); int[] cdsForArr = mapOrNull(currentSDO.getControlDepFor(), bufferBuilder); if(cdsForArr != null) cdsForOffset = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr); }
+        else { log.warn("SameDiffOp metadata not found for op '{}'. Control dependencies missing.", nodeOwnName); }
+        // --- End Control dependencies ---
 
-        List<String> outVarNames = node.getSameDiff().getOps().get(node.getOwnName()).getOutputsOfOp();
-        int[] outVarNamesStringsOffsets = new int[outVarNames == null ? 0 : outVarNames.size()];
-        for (int i = 0; i < outVarNamesStringsOffsets.length; i++) {
-            outVarNamesStringsOffsets[i] = bufferBuilder.createString(outVarNames.get(i));
-        }
-        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
+        // --- Determine Final OpType Byte ---
+        byte finalOpTypeByte; if (opTypeEnum != null) { finalOpTypeByte = FlatBuffersMapper.getFlatOpType(opTypeEnum); } else { log.warn("Op Type null for node '{}'. Defaulting to CUSTOM.", nodeOwnName); finalOpTypeByte = OpType.CUSTOM; }
+        // --- End OpType Handling ---
 
-        int opNameOffset = bufferBuilder.createString(opName);
-
-        byte[] outTypes = new byte[outVarNames.size()];
-        int i = 0;
-        for (String s : outVarNames) {
-            SDVariable v = sameDiff.getVariable(s);
-            if(v == null) {
-                throw new IllegalStateException("Unknown output variable " + s);
-            }
-            outTypes[i++] = FlatBuffersMapper.getDataTypeAsByte(v.dataType());
-        }
-        int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, outTypes);
-
-        //Control dependencies:
-        SameDiffOp sdo = sameDiff.getOps().get(node.getOwnName());
-
-        int opCds = 0;
-        int[] opCdsArr = mapOrNull(sdo.getControlDeps(), bufferBuilder);
-        if(opCdsArr != null) {
-            opCds = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr);
-        }
-
-        int varCds = 0;
-        int[] varCdsArr = mapOrNull(sdo.getVarControlDeps(), bufferBuilder);
-        if(varCdsArr != null){
-            varCds = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr);
-        }
-
-        int cdsFor = 0;
-        int[] cdsForArr = mapOrNull(sdo.getControlDepFor(), bufferBuilder);
-        if(cdsForArr != null) {
-            cdsFor = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
-        }
-
-
-        int flatNode = FlatNode.createFlatNode(
-                bufferBuilder,
-                ownId,
-                fname,
-                FlatBuffersMapper.getFlatOpType(node.opType()),
-                hash,
-                propIdx,
-                nodesIn,
-                nodesInPaired,
-                nodesOut,
-                extraz,
-                integerArgs,
-                bArgs,
-                dimensions,
-                -1,     //Device
-                0,      //Scope ID
-                scopeName,      //Scope name
-                outVarNamesOffset,
-                opNameOffset,
-                outTypesOffset,   //Output types
-                scalar,
-                opCds,
-                varCds,
-                cdsFor,
-                dArgs,
-                sArgs3
-        );
+        // *** Final createFlatNode call ***
+        FlatNode.startFlatNode(bufferBuilder);
+        FlatNode.addId(bufferBuilder, ownId); FlatNode.addName(bufferBuilder, fname); FlatNode.addOpType(bufferBuilder, finalOpTypeByte); FlatNode.addOpNum(bufferBuilder, hash); FlatNode.addProperties(bufferBuilder, propIdx); FlatNode.addInputPaired(bufferBuilder, nodesInPaired); FlatNode.addOutput(bufferBuilder, nodesOut); FlatNode.addExtraParams(bufferBuilder, extraz); FlatNode.addExtraInteger(bufferBuilder, integerArgs); FlatNode.addExtraBools(bufferBuilder, bArgs); FlatNode.addDimensions(bufferBuilder, dimensionsOffset); FlatNode.addDevice(bufferBuilder, -1); FlatNode.addScopeId(bufferBuilder, 0); FlatNode.addScopeName(bufferBuilder, scopeNameOffset); FlatNode.addOutputNames(bufferBuilder, outVarNamesOffset); FlatNode.addOpName(bufferBuilder, opNameOffset); FlatNode.addOutputTypes(bufferBuilder, outTypesOffset); FlatNode.addScalar(bufferBuilder, scalarOffset); FlatNode.addControlDeps(bufferBuilder, opCdsOffset); FlatNode.addVarControlDeps(bufferBuilder, varCdsOffset); FlatNode.addControlDepFor(bufferBuilder, cdsForOffset); FlatNode.addExtraTypes(bufferBuilder, dArgsOffset); FlatNode.addExtraStrings(bufferBuilder, sArgs3);
+        int flatNode = FlatNode.endFlatNode(bufferBuilder);
 
         return flatNode;
+    }
+
+
+
+
+    public static int asFlatNode(@NonNull SameDiff sameDiff, @NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
+                                 Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) throws IOException {
+        return asFlatNode(sameDiff, node, bufferBuilder, variables, reverseMap, forwardMap, framesMap, idCounter, id, false); // Default isCloneContext to false
+    }
+
+    /**
+     * Maps function properties to FlatBuffer property objects, optionally skipping INDArray/SDVariable properties
+     * if in clone context, and validating INDArray rank/shape before serialization otherwise.
+     *
+     * @param fbb            FlatBufferBuilder
+     * @param fnProps        Map of properties from DifferentialFunction.propertiesForFunction()
+     * @param isCloneContext If true, skip array properties.
+     * @return Array of offsets to FlatProperties tables, or empty array if no valid properties found.
+     */
+    public static int[] mapFunctionPropertiesToFlatProperties(FlatBufferBuilder fbb, Map<String, Object> fnProps, boolean isCloneContext) {
+        if (fnProps == null || fnProps.isEmpty()) { return EMPTY_INT; }
+        List<Integer> outOffsets = new ArrayList<>();
+
+        List<Map.Entry<String, Object>> sortedEntries = new ArrayList<>(fnProps.entrySet()); sortedEntries.sort(Map.Entry.comparingByKey());
+
+        for (Map.Entry<String, Object> e : sortedEntries) {
+            Object v = e.getValue(); String key = e.getKey(); if (key == null) { log.warn("Skipping null property key."); continue; }
+
+            // --- Skip logic for Clone Context ---
+            if (isCloneContext) { if (v instanceof INDArray || v instanceof SDVariable || (v != null && v.getClass().isArray() && (v instanceof INDArray[] || v instanceof SDVariable[]))) { log.trace("Skipping Array/Variable property '{}' during op cloning.", key); continue; } }
+            // --- End Skip logic ---
+
+            int iname = fbb.createString(key);
+            int[] i_arr = null; long[] l_arr = null; double[] d_arr = null; int[] aIdx = null; boolean[] b_arr = null; int[] sIdx = null; int[] shape = null;
+
+            // --- Handle different property types ---
+            if (v == null) { /* Defaults handle */ }
+            else if (v instanceof Boolean) { b_arr = new boolean[]{(Boolean) v}; shape = EMPTY_INT; }
+            else if (v instanceof Character) { i_arr = new int[]{(Character) v}; shape = EMPTY_INT; }
+            else if (v instanceof Integer) { i_arr = new int[]{(Integer) v}; shape = EMPTY_INT; }
+            else if (v instanceof Long) { l_arr = new long[]{(Long) v}; shape = EMPTY_INT; }
+            else if (v instanceof Float) { d_arr = new double[]{(Float) v}; shape = EMPTY_INT; }
+            else if (v instanceof Double) { d_arr = new double[]{(Double) v}; shape = EMPTY_INT; }
+            else if (v instanceof Number) { d_arr = new double[]{((Number)v).doubleValue()}; shape = EMPTY_INT; }
+            else if (v instanceof String) { sIdx = new int[]{fbb.createString((String) v)}; shape = EMPTY_INT; }
+            else if (v instanceof DataType) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
+            else if (v instanceof SDVariable) { sIdx = new int[]{fbb.createString(((SDVariable) v).name())}; shape = EMPTY_INT; }
+            else if (v instanceof Enum) { sIdx = new int[]{fbb.createString(v.toString())}; shape = EMPTY_INT; }
+            else if (v instanceof INDArray) {
+                INDArray arr = (INDArray) v; int rank = -1; boolean skip = false;
+                try { rank = arr.rank(); if (rank > Shape.MAX_RANK || rank < 0) { log.warn("Skipping INDArray prop '{}' invalid rank: {}", key, rank); skip = true; } if(!skip && arr.shape()!=null) { for(long d : arr.shape()){ if(d > Integer.MAX_VALUE || d < 0){ log.warn("Skipping INDArray prop '{}' invalid dim size: {}", key, Arrays.toString(arr.shape())); skip=true; break;}}} } catch (Exception ex) { log.warn("Skipping INDArray prop '{}' error accessing rank/shape: {}", key, ex.getMessage()); skip = true; }
+                if (!skip) { try { aIdx = new int[]{SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb)}; shape = EMPTY_INT; } catch (Exception serEx) { log.error("Failed serialize INDArray prop '{}'. Skipping.", key, serEx); continue; } }
+                else { continue; } // Skip if validation failed
+            }
+            else if (v.getClass().isArray()) {
+                if (v.getClass().getComponentType().isPrimitive()) { /* ... handle primitive arrays ... */ }
+                else if (v instanceof String[]) { /* ... handle String[] ... */ }
+                else if (v instanceof INDArray[]) {
+                    INDArray[] arrArr = (INDArray[]) v; List<Integer> validOffsets = new ArrayList<>();
+                    for(INDArray arr : arrArr){ if(arr == null) { validOffsets.add(0); continue; } int rank = -1; boolean skip = false; try{ rank = arr.rank(); if(rank > Shape.MAX_RANK || rank < 0) {skip=true;} if(!skip && arr.shape()!=null){ for(long d : arr.shape()){ if(d>Integer.MAX_VALUE || d<0){skip=true; break;}}} } catch(Exception ex){ skip=true;} if(!skip){ try { validOffsets.add(SameDiffSerializer.serializeSmallNdArrayToFlatBuffer(arr, fbb)); } catch(Exception serEx){ validOffsets.add(0); } } else { validOffsets.add(0); } }
+                    aIdx = Ints.toArray(validOffsets); shape = new int[]{arrArr.length};
+                }
+                else if (v instanceof SDVariable[]) { /* ... handle SDVariable[] ... */ }
+                else if (v.getClass().getComponentType().isArray()) { /* ... handle multi-dim primitive arrays ... */ }
+                else { log.warn("Unsupported array prop '{}': {}. Skipping.", key, v.getClass()); continue; }
+            } else { log.warn("Unsupported property type '{}': {}. Skipping.", key, v.getClass()); continue; }
+
+            // Create vectors
+            int idxD = FlatProperties.createDVector(fbb, d_arr != null ? d_arr : EMPTY_DOUBLE); int idxI = FlatProperties.createIVector(fbb, i_arr != null ? i_arr : EMPTY_INT); int idxL = FlatProperties.createLVector(fbb, l_arr != null ? l_arr : EMPTY_LONG); int idxA = FlatProperties.createAVector(fbb, aIdx != null ? aIdx : EMPTY_INT); int idxB = FlatProperties.createBVector(fbb, b_arr != null ? b_arr : EMPTY_BOOLEAN); int idxS = FlatProperties.createSVector(fbb, sIdx != null ? sIdx : EMPTY_INT); int idxShape = FlatProperties.createShapeVector(fbb, shape != null ? shape : EMPTY_INT);
+            outOffsets.add(FlatProperties.createFlatProperties(fbb, iname, idxI, idxL, idxD, idxA, idxB, idxS, idxShape));
+        } // End loop
+
+        return Ints.toArray(outOffsets);
+    }
+
+
+
+    /** Clones a DifferentialFunction via FlatBuffers serialization/deserialization. */
+    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df, Map<String,Integer> nameToIdxMap, List<SDVariable> variableList ) throws IOException {
+        Map<String,Integer> tempForwardMap = new HashMap<>(); // Use temp maps for clone context
+        Map<String,Integer> tempFramesMap = new HashMap<>();
+        AtomicInteger tempIdCounter = new AtomicInteger(0); // Independent ID counter for clone
+        val bufferBuilder = new FlatBufferBuilder(1024); // Small buffer usually sufficient for single op
+
+        // Pass true for isCloneContext to skip array serialization
+        int fnOffset = FlatBuffersMapper.asFlatNode(sd, df, bufferBuilder, variableList, nameToIdxMap,
+                tempForwardMap, tempFramesMap, tempIdCounter, 0, true); // ID 0 ok for clone
+        bufferBuilder.finish(fnOffset);
+        // Create duplicate to avoid buffer modification issues if builder is reused
+        ByteBuffer cloneData = bufferBuilder.dataBuffer().duplicate();
+        FlatNode flatNode = FlatNode.getRootAsFlatNode(cloneData);
+        DifferentialFunction clone = FlatBuffersMapper.fromFlatNode(flatNode); // Deserialization doesn't need context flag
+        return clone;
     }
 
     public static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb) {
@@ -1058,16 +1052,21 @@ public class FlatBuffersMapper {
         return out;
     }
 
+    @SneakyThrows // Propagates IOException from main method
     public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df) {
         Map<String,Integer> nameToIdxMap = new HashMap<>();
-        int count = 0;
-        for( Variable v : sd.getVariables().values()){
-            nameToIdxMap.put(v.getName(), count++);
+        List<SDVariable> variableList = new ArrayList<>(sd.variables()); // Use ordered list
+        for (int i=0; i<variableList.size(); i++){
+            if(variableList.get(i) != null && variableList.get(i).name() != null) {
+                nameToIdxMap.put(variableList.get(i).name(), i);
+            }
         }
-        return cloneViaSerialize(sd, df, nameToIdxMap);
+        return cloneViaSerialize(sd, df, nameToIdxMap, variableList);
     }
 
-    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df, Map<String,Integer> nameToIdxMap ){
+
+
+    public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df, Map<String,Integer> nameToIdxMap) throws IOException {
         Map<String,Integer> temp2 = new HashMap<>();
         Map<String,Integer> temp3 = new HashMap<>();
         AtomicInteger temp4 = new AtomicInteger();

@@ -45,6 +45,8 @@ import java.util.*;
 public class Shape {
 
 
+    public static final int MAX_RANK = 32;
+
     private Shape() {}
 
 
