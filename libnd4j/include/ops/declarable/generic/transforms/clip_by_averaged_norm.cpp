@@ -74,10 +74,7 @@ CUSTOM_OP_IMPL(clipbyavgnorm_bp, -2, 1, false, -1, 0) {
 
 //////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(clipbyavgnorm_bp) {
-  sd::LongType *newShape = nullptr;
-  COPY_SHAPE(inputShape->at(1), newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inputShape->at(1)));
 }
 
 DECLARE_TYPES(clipbyavgnorm_bp) {

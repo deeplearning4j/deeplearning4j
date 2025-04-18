@@ -106,7 +106,7 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
   if (isInplace) {
     z = input;
   } else {
-    output->assign(*input);
+    output->assign(input);
     z = output;
   }
 
@@ -267,7 +267,7 @@ void clipByNormBp_(LaunchContext* context, NDArray* input, NDArray* gradO, NDArr
       input->applyPairwiseLambda(gradO, lambda, gradI);
       const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray*>(gradO), lambda, gradI);
     } else
-      gradI->assign(*gradO);
+      gradI->assign(gradO);
   } else {
     NDArray actualNorms = input->reduceAlongDimension(reduce::Norm2, &dims);
     NDArray sums = input->reduceAlongDimension(reduce::Sum, &dims);
@@ -329,7 +329,7 @@ void clipByGlobalNorm_(LaunchContext* context, std::vector<NDArray*>& inputs, do
     auto output = outputs[e];
 
     if (static_cast<double>(globalNorm) <= clipNorm) {
-      output->assign(*input);
+      output->assign(input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; });
       input->applyLambda(lambda, output);

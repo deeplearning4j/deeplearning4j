@@ -348,10 +348,10 @@ class SD_LIB_EXPORT NDArray {
 
 
   // Static helper methods
-  SD_LIB_EXPORT static sd::LongType* reshapeShapeInfo( NDArray& array, char order, const std::vector<sd::LongType>& newShape);
-  SD_LIB_EXPORT static const sd::LongType* modifyShapeForAssign( NDArray& thisArray,  NDArray& other);
-  SD_LIB_EXPORT static void copyDataForAssign(NDArray& thisArray,  NDArray& other, const sd::LongType* otherShapeInfo, bool allowParallelism);
-  SD_LIB_EXPORT static void validateAssign( NDArray& thisArray,  NDArray& other);
+  SD_LIB_EXPORT static LongType *reshapeShapeInfo( NDArray *array, char order, const std::vector<sd::LongType>& newShape);
+  SD_LIB_EXPORT static const LongType *modifyShapeForAssign( NDArray *thisArray,  NDArray *other);
+  SD_LIB_EXPORT static void copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism);
+  SD_LIB_EXPORT static void validateAssign( NDArray *thisArray,  NDArray *other);
 
 
 
@@ -606,15 +606,6 @@ class SD_LIB_EXPORT NDArray {
   void printShapeInfo(const char *msg = nullptr);
 
   /**
-   *  prints buffer elements raw without using
-   *  shape information but instead just the databuffer itself.
-   *  msg - message to print out
-   *  limit - number of array elements to print out
-   *  sync - if true check whether host buffer is actual, if it is not then make it so
-   */
-  void printBufferRaw(const char *msg = nullptr, sd::LongType limit = -1, const bool sync = true);
-
-  /**
    *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking
    * buffer status
    */
@@ -634,7 +625,7 @@ class SD_LIB_EXPORT NDArray {
   /**
    *  this method assigns values of given array to this one
    */
-  void assign(NDArray other, bool allowParallelism = true);
+  void assign(NDArray *other, bool allowParallelism = true);
 
 
 
@@ -1589,7 +1580,9 @@ class SD_LIB_EXPORT NDArray {
   NDArray(DataBuffer *  buffer, const char order, const std::vector<LongType> &shape, DataType dtype,
           LaunchContext *context, const bool isBuffAlloc, const bool isView, LongType offset);
 #endif
-
+#ifndef __JAVACPP_HACK__
+  void printBufferDebug(const char *msg, LongType offset, LongType limit);
+#endif
 };
 
 //////////////////////////////////////////////////////////////////////////

@@ -308,14 +308,23 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CUDA) {
   std::unique_ptr<NDArray> tmpWeight = {}, tmpInput = {};
   NDArray* newWeights = weights;  // cudnn support only one format {oC,iC,kD,kH,kW}
   if (1 != wFormat) {
-    tmpWeight.reset(new NDArray(weights->ordering(), {oC, iC, kD, kH, kW}, weights->dataType(), weights->getContext()));
+    // Create the tmpWeight object - this syntax is already valid
+    std::vector<LongType> weightShape = {oC, iC, kD, kH, kW};
+
+    // Use the vector for the NDArray constructor
+    tmpWeight.reset(new NDArray(weights->ordering(), weightShape, weights->dataType(), weights->getContext()));
     newWeights = tmpWeight.get();
-    newWeights->assign(weights->permute(
-        0 == wFormat
-            ? std::vector<LongType>({4, 3, 0, 1, 2})
-            : std::vector<LongType>(
-                  {0, 4, 1, 2,
-                   3})));  // kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW   or oC, kD, kH, kW, iC  --> oC, iC, kD, kH, kW
+
+    // Create named vectors as lvalues for the permute call
+    std::vector<LongType> format0Permute = {4, 3, 0, 1, 2};
+    std::vector<LongType> format1Permute = {0, 4, 1, 2, 3};
+
+    NDArray assign = weights->permute(
+                                0 == wFormat ? format0Permute : format1Permute,
+                                true,   // copyToNewBuff
+                                true);
+    // Use the appropriate one in the permute call
+    newWeights->assign(&assign); // resetStrides
   }
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -427,19 +436,39 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
   NDArray *newWeights = weights,
           *newGradW = gradW;  // cudnn support only two formats {oC,iC,kD,kH,kW} and {oC,kD,kH,kW,iC}
   if (0 == wFormat) {
+    // Create named vectors as lvalues for the NDArray constructor
+    std::vector<LongType> ncdhwGradShape = {oC, iC, kD, kH, kW};
+    std::vector<LongType> ndhwcGradShape = {oC, kD, kH, kW, iC};
+
+    // Use the appropriate one for the gradW reset
     tmpGradW.reset(new NDArray(
         gradW->ordering(),
-        isNCDHW ? std::vector<LongType>({oC, iC, kD, kH, kW}) : std::vector<LongType>({oC, kD, kH, kW, iC}),
+        isNCDHW ? ncdhwGradShape : ndhwcGradShape,
         gradW->dataType(), gradW->getContext()));
+    // Create named vectors as lvalues for the NDArray constructor
+    std::vector<LongType> ncdhwShape = {oC, iC, kD, kH, kW};
+    std::vector<LongType> ndhwcShape = {oC, kD, kH, kW, iC};
+
+    // Use the appropriate one for the weights reset
     tmpWeights.reset(new NDArray(
         weights->ordering(),
-        isNCDHW ? std::vector<LongType>({oC, iC, kD, kH, kW}) : std::vector<LongType>({oC, kD, kH, kW, iC}),
+        isNCDHW ? ncdhwShape : ndhwcShape,
         weights->dataType(), weights->getContext()));
+
+    // Create named vectors as lvalues for the permute call
+    std::vector<LongType> ncdhwPermute = {4, 3, 0, 1, 2};
+    std::vector<LongType> ndhwcPermute = {4, 0, 1, 2, 3};
+
+    // Set the pointer variables
     newGradW = tmpGradW.get();
     newWeights = tmpWeights.get();
-    newWeights->assign(weights->permute(
-        isNCDHW ? std::vector<LongType>({4, 3, 0, 1, 2})
-                : std::vector<LongType>({4, 0, 1, 2, 3})));  // (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
+
+    NDArray assign = weights->permute(
+                                isNCDHW ? ncdhwPermute : ndhwcPermute,
+                                true,   // copyToNewBuff
+                                true);
+    // Use the appropriate one in the permute call
+    newWeights->assign(&assign); // resetStrides (kD, kH, kW, iC, oC  --> oC, iC, kD, kH, kW) or (kD, kH, kW,
                                                         // iC, oC  --> oC, kD, kH, kW, iC)
   }
 
@@ -457,19 +486,24 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CUDA) {
                 pD, pH, pW, dD, dH, dW, paddingMode, isNCDHW, wFormat);
 
   if (0 == wFormat) {
-    newGradW->permutei(isNCDHW ? std::vector<LongType>({2, 3, 4, 1, 0})
-                               : std::vector<LongType>({1, 2, 3, 4, 0}));  // (oC, iC, kD, kH, kW --> kD, kH, kW, iC, oC) or
-                                                                      // (oC, kD, kH, kW, iC --> kD, kH, kW, iC, oC)
-    gradW->assign(newGradW);
+    // Create named vectors as lvalues for the permutei call
+    std::vector<LongType> ncdhwPermutei = {2, 3, 4, 1, 0};
+    std::vector<LongType> ndhwcPermutei = {1, 2, 3, 4, 0};
+
+    // Use the appropriate one in the permutei call
+    newGradW->permutei(
+        isNCDHW ? ncdhwPermutei : ndhwcPermutei,false,false);  // (oC, iC, kD, kH, kW --> kD, kH, kW, iC, oC) or (oC, kD, kH, kW, iC --> kD, kH, kW, iC, oC)    gradW->assign(newGradW);
   }
 
   if (newInput != input) {
-    if (isNCDHW)
-      gradI->assign((*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)}));
-    else
-      gradI->assign((*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0}));
+    if (isNCDHW) {
+      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, gradI->sizeAt(4)});
+      gradI->assign(&assign);
+    } else {
+      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, gradI->sizeAt(3), 0, 0});
+      gradI->assign(&assign);
+    }
   }
-
   return Status::OK;
 }
 

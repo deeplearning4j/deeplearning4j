@@ -1116,7 +1116,7 @@ sd::Status execCustomOpWithScope_(sd::Pointer *extraPointers, sd::graph::GraphSt
     // varSpace->putVariable(0, e, array);
 
     auto t = varSpace->getVariable(0, e)->getNDArray();
-    array.assign(*t);
+    array.assign(t);
   }
 
   // removing input variables
@@ -1759,7 +1759,7 @@ sd::Pointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
   if(dataBuffer == nullptr)
     THROW_EXCEPTION("dbPrimaryBuffer: dataBuffer is null");
-  //delete dataBuffer;
+  delete dataBuffer;
 }
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, sd::Pointer primaryBuffer, sd::LongType numBytes) {

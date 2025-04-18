@@ -54,7 +54,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
       sd::LongType thisIndex = (*indices).e<sd::LongType>(e);
       input = INPUT_VARIABLE(thisIndex);  // lookup param
 
-      outputView.at(e)->assign(*input);
+      outputView.at(e)->assign(input);
     }
   } else {
     int indexRank = indices->rankOf();
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     auto result(op.evaluate({input, indices}, {0}));
     REQUIRE_TRUE(result.status() == sd::Status::OK, 0, "embedding_lookup: cannot retrieve results from gather op.");
     REQUIRE_TRUE(result.at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
-    output->assign(*result.at(0));
+    output->assign(result.at(0));
   }
   return sd::Status::OK;
 }

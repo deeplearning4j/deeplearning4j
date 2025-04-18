@@ -414,7 +414,8 @@ CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
     NDArray::registerSpecialUse({z}, {x});
 
   } else if (!z->isEmpty()) {
-    z->assign(x->e(0));
+    NDArray get = x->e(0);
+    z->assign(&get);
   }
 
   delete indices;
@@ -628,7 +629,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
     output->p(indices[0], epsNext);
   } else {  // else for other cases
     auto sub = (*output)(indices, true, true);
-    sub.assign(*epsNext);
+    sub.assign(epsNext);
   }
 
   return Status::OK;
@@ -636,10 +637,7 @@ CUSTOM_OP_IMPL(strided_slice_bp, 2, 1, false, 0, 5) {
 
 DECLARE_SHAPE_FN(strided_slice_bp) {
   auto inShape = inputShape->at(0);
-  LongType* newShape;
-  COPY_SHAPE(inShape, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 
 DECLARE_TYPES(strided_slice) { getOpDescriptor()->setAllowedInputTypes(ANY); }

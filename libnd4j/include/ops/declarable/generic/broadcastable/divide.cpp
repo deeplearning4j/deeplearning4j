@@ -71,9 +71,12 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    gradX->assign((*epsNext) / (*y));
+    NDArray gradXTemp = (*epsNext) / (*y);
+    gradX->assign(&gradXTemp);
+
     // Y gradient
-    gradY->assign((*epsNext) * (*x) / ((*y) * (*y)));
+    NDArray gradYTemp = (*epsNext) * (*x) / ((*y) * (*y));
+    gradY->assign(&gradYTemp);
     gradY->applyTransform(transform::Neg, gradY);
 
   } else if (y->isScalar()) {
@@ -81,7 +84,9 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
-    gradY->assign(tmp * tmpX / ((*y) * (*y)));
+
+    NDArray gradYTemp = tmp * tmpX / ((*y) * (*y));
+    gradY->assign(&gradYTemp);
     gradY->applyTransform(transform::Neg, gradY);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
@@ -99,15 +104,21 @@ CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
-    } else
-      gradX->assign(preX);
+      NDArray gradXTemp = sum;
+      gradX->assign(&gradXTemp);
+    } else {
+      NDArray gradXTemp = preX;
+      gradX->assign(&gradXTemp);
+    }
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
-    } else
-      gradY->assign(preY);
+      NDArray gradYTemp = sum;
+      gradY->assign(&gradYTemp);
+    } else {
+      NDArray gradYTemp = preY;
+      gradY->assign(&gradYTemp);
+    }
   }
 
   return Status::OK;
@@ -120,14 +131,7 @@ DECLARE_SHAPE_FN(divide_bp) {
 
   // eps always has shape of x
   // grad always has shape of y
-
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  return SHAPELIST(CONSTANT(x), CONSTANT(y));
 }
 }  // namespace ops
 }  // namespace sd

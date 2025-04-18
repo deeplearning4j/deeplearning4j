@@ -91,7 +91,7 @@ void lstmCell(sd::LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* c
   // current sell state = ft*ct_1 + it*tanh(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
   NDArray zftPlusBias = zft + forgetBias;
   NDArray sigmoidOut = sigmoid(zftPlusBias) * (*ct_1) + sigmoid(zit) * tanh(zct);
-  ct->assign(sigmoidOut);
+  ct->assign(&sigmoidOut);
 
   // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
   if (clippingCellValue > 0.0) ct->applyScalar(scalar::LstmClip, clippingCellValue, ct);
@@ -103,11 +103,12 @@ void lstmCell(sd::LaunchContext* context, NDArray* xt, NDArray* ht_1, NDArray* c
 
   // apply projection
   if (projection) {
-    ht->assign(mmul(htNoPeepHole, *Wp));  // [bS x nOut] * [ nOut x numProj] = [bS x numProj]
+    NDArray assign = mmul(htNoPeepHole, *Wp);
+    ht->assign(&assign);  // [bS x nOut] * [ nOut x numProj] = [bS x numProj]
     // if clipping projection is provided then projected cell output state is clipped by this value
     if (clippingProjValue != 0.) ht->applyScalar(scalar::LstmClip, clippingProjValue, ht);
   } else
-    ht->assign(htNoPeepHole);
+    ht->assign(&htNoPeepHole);
 }
 
 template <typename T>

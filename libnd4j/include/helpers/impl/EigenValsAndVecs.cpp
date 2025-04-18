@@ -111,8 +111,8 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
   T norm = 0;
   for (int j = 0; j < numOfCols; ++j)
     norm += schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols})
-                .reduceNumber(reduce::ASum)
-                .template t<T>(0);
+        .reduceNumber(reduce::ASum)
+        .template t<T>(0);
 
   if (norm == T(0)) return;
 
@@ -130,7 +130,7 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
       for (int i = n - 1; i >= 0; i--) {
         T w = schurMatrixT.t<T>(i, i) - p;
         T r = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n, n + 1}, true))
-                  .template t<T>(0);  // dot
+            .template t<T>(0);  // dot
 
         if (_Vals.t<T>(i, 1) < T(0)) {
           lastw = w;
@@ -178,9 +178,9 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
 
       for (int i = n - 2; i >= 0; i--) {
         T ra = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n - 1, n}, true))
-                   .template t<T>(0);  // dot
+            .template t<T>(0);  // dot
         T sa = mmul(schurMatrixT({i, i + 1, l, n + 1}, true), schurMatrixT({l, n + 1, n, n + 1}, true))
-                   .template t<T>(0);  // dot
+            .template t<T>(0);  // dot
 
         T w = schurMatrixT.t<T>(i, i) - p;
 
@@ -227,9 +227,10 @@ void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray&
       THROW_EXCEPTION("ops::helpers::EigenValsAndVecs::calcEigenVecs: internal bug !");
   }
 
-  for (int j = numOfCols - 1; j >= 0; j--)
-    schurMatrixU({0, 0, j, j + 1}, true)
-        .assign(mmul(schurMatrixU({0, 0, 0, j + 1}, true), schurMatrixT({0, j + 1, j, j + 1}, true)));
+  for (int j = numOfCols - 1; j >= 0; j--) {
+    NDArray assign = mmul(schurMatrixU({0, 0, 0, j + 1}, true), schurMatrixT({0, j + 1, j, j + 1}, true));
+    schurMatrixU({0, 0, j, j + 1}, true).assign(&assign);
+  }
 }
 
 template <typename T>
@@ -249,7 +250,8 @@ void calcEigenVecs_(NDArray& schurMatrixU, NDArray& _Vals, NDArray& _Vecs) {
         j + 1 == numOfCols) {  // real
 
       _Vecs.syncToDevice();
-      _Vecs({0, 0, j, j + 1, 0, 1}).assign(schurMatrixU({0, 0, j, j + 1}));
+      NDArray assign = schurMatrixU({0, 0, j, j + 1});
+      _Vecs({0, 0, j, j + 1, 0, 1}).assign(&assign);
       _Vecs({0, 0, j, j + 1, 1, 2}) = (T)0;
 
       // normalize

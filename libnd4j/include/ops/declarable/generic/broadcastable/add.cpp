@@ -56,19 +56,18 @@ CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
   auto x = INPUT_VARIABLE(0);
   auto y = INPUT_VARIABLE(1);
   auto epsNext = INPUT_VARIABLE(2);
-
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
 
   if (x->isSameShape(y)) {
     // PWT case case
-    gradY->assign(*epsNext);
-    gradX->assign(*epsNext);
+    gradY->assign(epsNext);
+    gradX->assign(epsNext);
   } else if (y->isScalar()) {
     // scalar case
     auto tmp = epsNext->reduceNumber(reduce::Sum);
-    gradY->assign(tmp);
-    gradX->assign(*epsNext);
+    gradY->assign(&tmp);
+    gradX->assign(epsNext);
   } else {
     // broadcast case
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -76,15 +75,15 @@ CUSTOM_OP_IMPL(add_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(*epsNext);
+      gradX->assign(epsNext);
 
     if (axisY.size() > 0) {
       auto sum = epsNext->reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(*epsNext);
+      gradY->assign(epsNext);
   }
 
 
@@ -99,14 +98,7 @@ DECLARE_SHAPE_FN(add_bp) {
 
   // eps always has shape of x
   // grad always has shape of y
-
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  return SHAPELIST(CONSTANT(x), CONSTANT(y));
 }
 }  // namespace ops
 }  // namespace sd

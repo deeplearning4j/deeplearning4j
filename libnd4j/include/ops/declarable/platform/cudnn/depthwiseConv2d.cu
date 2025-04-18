@@ -294,11 +294,11 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 0-NCHW,  1-NHWC
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
-                                       // iC*mC), output channels, output height/width
+  // iC*mC), output channels, output height/width
   LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
@@ -315,13 +315,13 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
       "DEPTHWISECONV2D CUDNN OP: the output_channels must be equal to input_channels * channels_multiplier = %i !",
       iC * mC);
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "DEPTHWISECONV2D CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got "
-                 "%i, %i instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "DEPTHWISECONV2D CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got "
+               "%i, %i instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   std::vector<LongType> wPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC (groupCount ==
-                             // iC) that is {iC, mC, kH, kW} in our case
+  // iC) that is {iC, mC, kH, kW} in our case
   if (0 == wFormat)
     wPermut = {2, 3, 0, 1};  // kH, kW, iC, mC -> iC, mC, kH, kW
   else if (1 == wFormat)
@@ -329,9 +329,11 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
   else
     wPermut = {3, 0, 1, 2};  // mC, kH, kW, iC -> iC, mC, kH, kW
 
-  std::unique_ptr<NDArray> uNewWeights(
-      new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext()));
-  uNewWeights->assign(weights->permute(wPermut));
+  std::vector<sd::LongType > perm =  {iC, mC, kH, kW};
+  NDArray * uNewWeights =  new NDArray(weights->ordering(),perm, weights->dataType(), weights->getContext());
+
+  NDArray assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(&assign);
   std::unique_ptr<NDArray> tmpInput = {};
 
   if (paddingMode == 1) {  // in same paddingMode cudnn doesn't support asymmetric left/right top/bottopm paddings
@@ -339,7 +341,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
     tmpInput = std::move(std::get<0>(ret));
     if (tmpInput) input = tmpInput.get();
   }
-  depthwiseConv2dCUDNN(block.launchContext(), input, uNewWeights.get(), bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
+  depthwiseConv2dCUDNN(block.launchContext(), input, uNewWeights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW,
                        paddingMode, isNCHW);
 
   return Status::OK;
@@ -353,16 +355,16 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CUDA) {
 
   const int paddingMode = INT_ARG(8);  // 0-VALID, 1-SAME, 2-CAUSAL
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   Requirements req("CUDNN DEPTHWISE_CONV2d OP");
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"), 2) &&
-      req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0), "weights#mC"), 1) &&
-      req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {HALF, FLOAT32, DOUBLE}) &&
-      req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                   {HALF, FLOAT32, DOUBLE});
+  req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0), "weights#mC"), 1) &&
+  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+               {HALF, FLOAT32, DOUBLE}) &&
+  req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
+               {HALF, FLOAT32, DOUBLE});
   if (bias) {
     req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"),
                  {HALF, FLOAT32, DOUBLE});
@@ -377,8 +379,8 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC] = [iC*mC]
   auto gradO = block.width() > 3
-                   ? INPUT_VARIABLE(3)
-                   : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+               ? INPUT_VARIABLE(3)
+               : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
   auto gradI = OUTPUT_VARIABLE(0);  // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), epsilon
   auto gradW = OUTPUT_VARIABLE(1);  // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
@@ -406,11 +408,11 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
   int paddingMode = INT_ARG(8);                                                 // 0-VALID, 1-SAME
   int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;             // INT_ARG(9): 1-NHWC, 0-NCHW
   int wFormat = block.getIArguments()->size() > 10
-                    ? INT_ARG(10)
-                    : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                ? INT_ARG(10)
+                : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   LongType bS, iC, iH, iW, mC, oC, oH, oW;  // batch size, input channels, input height/width, channels multiplier(oC =
-                                       // iC*mC), output channels, output height/width
+  // iC*mC), output channels, output height/width
   LongType indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWmC, indWkH, indOoH);
@@ -432,13 +434,13 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
                "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of weights array, expected is %s, but got %s instead !",
                ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
   if (bias)
-    REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
-                 "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but "
-                 "got %i, %i instead !",
-                 oC, bias->rankOf(), bias->lengthOf());
+  REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0,
+               "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but "
+               "got %i, %i instead !",
+               oC, bias->rankOf(), bias->lengthOf());
 
   std::vector<LongType> wPermut, gradWPermut;  // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC
-                                          // (groupCount == iC) that is {iC, mC, kH, kW}
+  // (groupCount == iC) that is {iC, mC, kH, kW}
   if (0 == wFormat) {
     wPermut = {2, 3, 0, 1};      // kH, kW, iC, mC -> iC, mC, kH, kW
     gradWPermut = {2, 3, 0, 1};  // iC, mC, kH, kW -> kH, kW, iC, mC
@@ -451,12 +453,14 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
   }
 
   std::unique_ptr<NDArray> tmpGradI = {}, tmpInput = {};
-  std::unique_ptr<NDArray> uNewGradW(
-      new NDArray(gradW->ordering(), {iC, mC, kH, kW}, gradW->dataType(), gradW->getContext()));
-  std::unique_ptr<NDArray> uNewWeights(
-      new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext()));
+  std::vector<sd::LongType> shape =  {iC, mC, kH, kW};
+  NDArray * uNewGradW  =
+      new NDArray(gradW->ordering(),shape, gradW->dataType(), gradW->getContext());
+  NDArray * uNewWeights =
+      new NDArray(weights->ordering(),shape, weights->dataType(), weights->getContext());
 
-  uNewWeights->assign(weights->permute(wPermut));
+  NDArray assign = weights->permute(wPermut,false,false);
+  uNewWeights->assign(&assign);
 
   NDArray* newInput = input;
   NDArray* newGradI = gradI;
@@ -467,17 +471,20 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
     if (tmpInput) newInput = tmpInput.get();
     if (tmpGradI) newGradI = tmpGradI.get();
   }
-  depthwiseConv2dBpCUDNN(block.launchContext(), newInput, uNewWeights.get(), gradO, newGradI, uNewGradW.get(), gradB,
+  depthwiseConv2dBpCUDNN(block.launchContext(), newInput, uNewWeights, gradO, newGradI, uNewGradW, gradB,
                          kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW);
 
-  uNewGradW->permutei(gradWPermut);
-  gradW->assign(uNewGradW.get());
+  uNewGradW->permutei(gradWPermut,false,false);
+  gradW->assign(uNewGradW);
 
   if (newInput != input) {
-    if (isNCHW)
-      gradI->assign((*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)}));
-    else
-      gradI->assign((*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0}));
+    if (isNCHW) {
+      NDArray assign = (*newGradI)({0, 0, 0, 0, 0, gradI->sizeAt(2), 0, gradI->sizeAt(3)});
+      gradI->assign(&assign);
+    } else {
+      NDArray assign = (*newGradI)({0, 0, 0, gradI->sizeAt(1), 0, gradI->sizeAt(2), 0, 0});
+      gradI->assign(&assign);
+    }
   }
 
   return Status::OK;
@@ -488,31 +495,31 @@ PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CUDA) {
   auto weights = INPUT_VARIABLE(1);                             // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
   auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;  // [oC] = [iC*mC]
   auto gradO = block.width() > 3
-                   ? INPUT_VARIABLE(3)
-                   : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+               ? INPUT_VARIABLE(3)
+               : INPUT_VARIABLE(2);  // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
   const int paddingMode = INT_ARG(8);                                      // 0-VALID, 1-SAME, 2-CAUSAL
   const int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;  // INT_ARG(9): 0-NCHW, 1-NHWC
   const int wFormat = block.getIArguments()->size() > 10
-                          ? INT_ARG(10)
-                          : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
+                      ? INT_ARG(10)
+                      : 0;  // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
   Requirements req("CUDNN DEPTHWISE_CONV2d_BP OP");
   const auto inType = input->dataType();
   const auto wType = weights->dataType();
   const auto gType = gradO->dataType();
   req.expectNotEq(makeInfoVariable(paddingMode, "paddingMode"), 2) &&
-      req.expectTrue(makeInfoVariable(isNCHW, "isNCHW")) &&
-      req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0), "weights#mC"), 1) &&
-      req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
-                   {HALF, FLOAT32, DOUBLE}) &&
-      req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
-                   {HALF, FLOAT32, DOUBLE});
+  req.expectTrue(makeInfoVariable(isNCHW, "isNCHW")) &&
+  req.expectEq(makeInfoVariable(weights->sizeAt(0 == wFormat ? 3 : 0), "weights#mC"), 1) &&
+  req.expectIn(makeInfoVariable(input->dataType(), TYPE_MSG_INPUT0),
+               {HALF, FLOAT32, DOUBLE}) &&
+  req.expectIn(makeInfoVariable(weights->dataType(), TYPE_MSG_INPUT1),
+               {HALF, FLOAT32, DOUBLE});
   if (bias) {
     req.expectIn(makeInfoVariable(bias->dataType(), TYPE_MSG_INPUT_ "#bias"),
                  {HALF, FLOAT32, DOUBLE}) &&
-        req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3),
-                     {HALF, FLOAT32, DOUBLE});
+    req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT3),
+                 {HALF, FLOAT32, DOUBLE});
   } else {
     req.expectIn(makeInfoVariable(gradO->dataType(), TYPE_MSG_INPUT2),
                  {HALF, FLOAT32, DOUBLE});

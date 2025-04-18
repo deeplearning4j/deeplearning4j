@@ -48,8 +48,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
     auto shapesBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(sPtr->pointerAsT<LongType>());
 
     // Create offsets buffer
-    _tadOffsets = ConstantOffsetsBuffer(oPtr);
-    _tadShape = *shapesBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr);
+    _tadShape = shapesBuffer;
     _numTads = numOfSubArrs;
   } else {
     // Base case: number of sub arrays is zero, use original shape
@@ -71,8 +71,8 @@ void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
 
     // Create buffers
     auto shapesBuffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(sPtr->pointerAsT<LongType>());
-    _tadOffsets = ConstantOffsetsBuffer(oPtr);
-    _tadShape = *shapesBuffer;
+    _tadOffsets = new ConstantOffsetsBuffer(oPtr);
+    _tadShape = shapesBuffer;
     _numTads = 1;
   }
 

@@ -33,22 +33,22 @@ namespace functions {
 namespace summarystats {
 
 template <typename X, typename Y>
-Y SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected, const void *x,
-                                      const sd::LongType *xShapeInfo, void *extraParams) {
+Y SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected,  void *x,
+                                       sd::LongType *xShapeInfo, void *extraParams) {
  RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
 }
 
 template <typename X, typename Y>
-void SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected, const void *x,
-                                         const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                                         const sd::LongType *zShapeInfo) {
+void SummaryStatsReduce<X, Y>::execScalar(const int opNum, const bool biasCorrected,  void *x,
+                                          sd::LongType *xShapeInfo, void *extraParams, void *z,
+                                          sd::LongType *zShapeInfo) {
  DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo), SUMMARY_STATS_OPS);
 }
 
 template <typename X, typename Y>
-void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected, const void *x,
-                                   const sd::LongType *xShapeInfo, void *extraParams, void *z,
-                                   const sd::LongType *zShapeInfo,
+void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected,  void *x,
+                                    sd::LongType *xShapeInfo, void *extraParams, void *z,
+                                    sd::LongType *zShapeInfo,
                                    sd::LongType *dimension, sd::LongType dimensionLength) {
  DISPATCH_BY_OPNUM_TT(exec,
                       PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength),
@@ -57,15 +57,15 @@ void SummaryStatsReduce<X, Y>::exec(int opNum, bool biasCorrected, const void *x
 
 template <typename X, typename Z>
 template <typename OpType>
-void SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
-                                         void *vextraParams, void *vz, const sd::LongType *zShapeInfo) {
+void SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected,  void *vx,  sd::LongType *xShapeInfo,
+                                         void *vextraParams, void *vz,  sd::LongType *zShapeInfo) {
  auto z = reinterpret_cast<Z *>(vz);
  z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
 }
 
 template <typename X, typename Z>
 template <typename OpType>
-Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
+Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected,  void *vx,  sd::LongType *xShapeInfo,
                                       void *vextraParams) {
  auto x = reinterpret_cast<const X *>(vx);
  auto extraParams = reinterpret_cast<Z *>(vextraParams);
@@ -95,10 +95,10 @@ Z SummaryStatsReduce<X, Z>::execScalar(const bool biasCorrected, const void *vx,
 
 template <typename X, typename Z>
 template <typename OpType>
-void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd::LongType *xShapeInfo,
-                                   void *vextraParams, void *vz, const sd::LongType *zShapeInfo,
+void SummaryStatsReduce<X, Z>::exec(bool biasCorrected,  void *vx,  sd::LongType *xShapeInfo,
+                                   void *vextraParams, void *vz,  sd::LongType *zShapeInfo,
                                    sd::LongType *dimension, sd::LongType dimensionLength) {
- auto x = reinterpret_cast<const X *>(vx);
+ auto x = reinterpret_cast< X *>(vx);
  auto z = reinterpret_cast<Z *>(vz);
  auto extraParams = reinterpret_cast<Z *>(vextraParams);
  auto resultLength = shape::length(zShapeInfo);
@@ -113,7 +113,7 @@ void SummaryStatsReduce<X, Z>::exec(bool biasCorrected, const void *vx, const sd
  }
 
  if (shape::isScalar(zShapeInfo)) {
-   z[0] = execScalar<OpType>(biasCorrected, x, xShapeInfo, extraParams);
+   z[0] = execScalar<OpType>(biasCorrected, (void *)x, xShapeInfo, extraParams);
    return;
  }
 

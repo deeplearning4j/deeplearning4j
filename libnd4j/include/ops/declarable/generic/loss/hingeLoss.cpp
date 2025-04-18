@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 
   switch (reductionMode) {
     case 0: {  // 0 - "none", un-reduced weighted losses with the same shape as labels.
-      output->assign(E);
+      output->assign(&E);
       break;
     }
     case 1: {  // 1 - "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -91,8 +91,10 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 
       if (sum.e<double>(0) == 0.)
         *output = 0.;
-      else
-        output->assign(E.reduceNumber(reduce::Sum) / sum);
+      else {
+        NDArray assign = E.reduceNumber(reduce::Sum) / sum;
+        output->assign(&assign);
+      }
       break;
     }
     case 3: {  // 3 - "weighted_sum_by_nonzero_weights", output is scalar and equal to scalar sum of all elements of E
@@ -106,8 +108,10 @@ CUSTOM_OP_IMPL(hinge_loss, 3, 1, false, 0, 1) {
 
       if (numOfNonZeroWeights == 0)
         (*output) = 0.;
-      else
-        output->assign(E.reduceNumber(reduce::Sum) / numOfNonZeroWeights);
+      else {
+        NDArray assign = E.reduceNumber(reduce::Sum) / numOfNonZeroWeights;
+        output->assign(&assign);
+      }
       break;
     }
   }
@@ -208,9 +212,13 @@ CUSTOM_OP_IMPL(hinge_loss_grad, 3, 3, false, 0, 1) {
 
   NDArray gradientMask(E.shapeInfo(), block.getWorkspace());
   E.applyTransform(transform::Sign, &gradientMask);
+  // For dLdp
+  NDArray dLdpTemp = -z * gradientMask;
+  dLdp->assign(&dLdpTemp);
 
-  dLdp->assign(-z * gradientMask);
-  dLdl->assign(-2.f * (*logits) * gradientMask);
+  // For dLdl
+  NDArray dLdlTemp = -2.f * (*logits) * gradientMask;
+  dLdl->assign(&dLdlTemp);
 
   switch (reductionMode) {
     case 1: {  // 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -218,14 +226,15 @@ CUSTOM_OP_IMPL(hinge_loss_grad, 3, 3, false, 0, 1) {
       *dLdp *= *weightsBroad;
       *dLdl *= *weightsBroad;
 
-      if (weights->isScalar())
-        dLdw->assign(E.reduceNumber(reduce::Sum));
-      else if (weights != weightsBroad) {
+      if (weights->isScalar()) {
+        NDArray assign5 = E.reduceNumber(reduce::Sum);
+        dLdw->assign(&assign5);
+      } else if (weights != weightsBroad) {
         std::vector<LongType> axesToReduceAlong =
             ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
         E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
       } else
-        dLdw->assign(E);
+        dLdw->assign(&E);
       break;
     }
     case 2: {  // 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of
@@ -253,8 +262,10 @@ CUSTOM_OP_IMPL(hinge_loss_grad, 3, 3, false, 0, 1) {
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum))
               .reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
-        } else
-          dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum));
+        } else {
+          NDArray assign = (E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum * sum);
+          dLdw->assign(&assign);
+        }
       }
       break;
     }
@@ -275,16 +286,18 @@ CUSTOM_OP_IMPL(hinge_loss_grad, 3, 3, false, 0, 1) {
         auto numOfNonZeroWeightsScalar =
             NDArrayFactory::create(dLdw->dataType(), numOfNonZeroWeights, block.launchContext());
 
-        if (weights->isScalar())
-          dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
-        else if (weights != weightsBroad) {
+        if (weights->isScalar()) {
+          NDArray assign = E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights);
+          dLdw->assign(&assign);
+        } else if (weights != weightsBroad) {
           std::vector<LongType> axesToReduceAlong =
               ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
           E.reduceAlongDimension(reduce::Sum, dLdw, &axesToReduceAlong, true);
           *dLdw /= numOfNonZeroWeightsScalar;
-        } else
-          dLdw->assign(E / numOfNonZeroWeightsScalar);
-
+        } else {
+          NDArray assign = E / numOfNonZeroWeightsScalar;
+          dLdw->assign(&assign);
+        }
         NDArray temp = *weightsBroad / numOfNonZeroWeightsScalar;
         *dLdp *= temp;
         *dLdl *= temp;

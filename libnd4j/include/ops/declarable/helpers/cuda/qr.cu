@@ -58,7 +58,8 @@ NDArray matrixMinor(LaunchContext* context, NDArray& in, LongType col) {
   NDArray *m = in.ulike();
   m->setIdentity();
   NDArray view = *m;
-  view({col, m->rows(), col, m->columns()}).assign(in({col, m->rows(), col, m->columns()}));
+  NDArray assign = in({col, m->rows(), col, m->columns()});
+  view({col, m->rows(), col, m->columns()}).assign(&assign);
 
   m->tickWriteDevice();
   return *m;
@@ -135,7 +136,7 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
     MmulHelper::matmul(&q[k], &z, qQ, false, false,1.0,0.0,qQ);
     z = std::move(*qQ);
   }
-  resQ.assign(q[0]);
+  resQ.assign(&q[0]);
 
   for (int i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
@@ -147,12 +148,14 @@ void qrSingle(LaunchContext* context, NDArray* matrix, NDArray* Q, NDArray* R, b
   resQ.transposei();
 
   if (fullMatrices) {
-    Q->assign(resQ);
-    R->assign(*resR);
+    Q->assign(&resQ);
+    R->assign(resR);
   } else {
     NDArray resRRef = *resR;
-    Q->assign(resQ({0, 0, 0, N}));
-    R->assign(resRRef({0, N, 0, 0}));
+    NDArray qAssign = resQ({0, 0, 0, N});
+    Q->assign(&qAssign);
+    NDArray rAssign = resRRef({0, N, 0, 0});
+    R->assign(&rAssign);
   }
 }
 

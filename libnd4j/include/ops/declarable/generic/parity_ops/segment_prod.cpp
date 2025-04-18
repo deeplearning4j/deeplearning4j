@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(segment_prod_bp, 3, 2, false, 0, 0) {
   auto gradOut = INPUT_VARIABLE(2);
   auto output = OUTPUT_NULLIFIED(0);
   auto outIndices = OUTPUT_NULLIFIED(1);
-  outIndices->assign(*indices);
+  outIndices->assign(indices);
   helpers::segmentProdFunctorBP(block.launchContext(), input, indices, gradOut, output);
 
   return Status::OK;
@@ -92,12 +92,7 @@ DECLARE_TYPES(segment_prod) {
 DECLARE_SHAPE_FN(segment_prod_bp) {
   auto in = inputShape->at(0);
   auto inIdx = inputShape->at(1);
-
-  LongType* outShape;
-  LongType* outIndex;
-  COPY_SHAPE(in, outShape);
-  COPY_SHAPE(inIdx, outIndex);
-  return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
+  return SHAPELIST(CONSTANT(inIdx), CONSTANT(inIdx));
 }
 
 DECLARE_TYPES(segment_prod_bp) {

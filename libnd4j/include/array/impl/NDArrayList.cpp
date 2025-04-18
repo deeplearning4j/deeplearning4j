@@ -237,7 +237,7 @@ NDArray* NDArrayList::pick(std::vector<LongType>& indices) {
 
   if (tads.size() != indicesSize) THROW_EXCEPTION("Number of TADs should match number of indices");
 
-  for (int e = 0; e < indicesSize; e++) tads.at(e)->assign(*_chunks[indices[e]]);
+  for (int e = 0; e < indicesSize; e++) tads.at(e)->assign(_chunks[indices[e]]);
 
   delete axis;
   return array;

@@ -38,7 +38,7 @@ void clipByNorm(LaunchContext* context, NDArray* input, NDArray* output, const s
   if (isInplace) {
     z = input;
   } else {
-    output->assign(*input);
+    output->assign(input);
     z = output;
   }
 
@@ -90,7 +90,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
       input->applyPairwiseLambda<T>(gradO, lambda, gradI);
     } else
-      gradI->assign(*gradO);
+      gradI->assign(gradO);
   } else {
     auto gradISubArrs = gradI->allTensorsAlongDimension({dimensions});
     auto gradOSubArrs = gradO->allTensorsAlongDimension({dimensions});
@@ -118,7 +118,7 @@ static void clipByNormBp_(NDArray *input, NDArray *gradO, NDArray *gradI,
 
           inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
         } else
-          gradISubArr->assign(*gradOSubArr);
+          gradISubArr->assign(gradOSubArr);
       }
     };
     samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
@@ -157,7 +157,7 @@ static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd
     auto output = outputs[e];
 
     if (normS <= clipNorm) {
-      output->assign(*input);
+      output->assign(input);
     } else {
       auto lambda = LAMBDA_T(_x, factor) { return _x * factor; });
       input->applyLambda<T>(lambda, output);

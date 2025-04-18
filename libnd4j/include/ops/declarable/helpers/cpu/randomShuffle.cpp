@@ -76,12 +76,12 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
   sd::LongType temp;
 
   if (input.lengthOf() == 1 || firstDim == 1) {
-    if (!isInplace) output.assign(input);
+    if (!isInplace) output.assign(&input);
   } else if (shape::isCommonVector(input.shapeInfo(), temp)) {
     NDArray* arr = &input;
 
     if (!isInplace) {
-      output.assign(input);
+      output.assign(&input);
       arr = &output;
     }
 
@@ -140,7 +140,7 @@ static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGen
       fisherYates<int>(rng, indices.data(), firstDim, 1, 0);
 
       auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; ++i) subArrsListOut.at(i)->assign(*subArrsListIn.at(indices[i]));
+        for (auto i = start; i < stop; ++i) subArrsListOut.at(i)->assign(subArrsListIn.at(indices[i]));
       };
 
       samediff::Threads::parallel_for(func, 0, firstDim);

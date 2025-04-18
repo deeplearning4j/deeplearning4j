@@ -139,16 +139,10 @@ DECLARE_TYPES(layer_norm_bp) {
 }
 
 DECLARE_SHAPE_FN(layer_norm_bp) {
-  sd::LongType *dLdx_shape;
-  COPY_SHAPE(inputShape->at(0), dLdx_shape);
-  sd::LongType *dLdg_shape;
-  COPY_SHAPE(inputShape->at(1), dLdg_shape);
   if (inputShape->size() > 3) {
-    sd::LongType *dLdb_shape;
-    COPY_SHAPE(inputShape->at(2), dLdb_shape);
-    return SHAPELIST(CONSTANT(dLdx_shape), CONSTANT(dLdg_shape), CONSTANT(dLdb_shape));
+    return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)), CONSTANT(inputShape->at(2)));
   }
-  return SHAPELIST(CONSTANT(dLdx_shape), CONSTANT(dLdg_shape));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)));
 }
 
 }  // namespace ops

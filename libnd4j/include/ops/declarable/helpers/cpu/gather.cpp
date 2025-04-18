@@ -48,10 +48,10 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
         // we want to get a scalar
         auto idx = indices->e<sd::LongType>(0);
         auto scalarNDArray = input->e(idx);
-        output->assign(scalarNDArray);
+        output->assign(&scalarNDArray);
       } else {
         NDArray inSubArr = (*input)(indices->e<sd::LongType>(0), {axis});
-        output->assign(inSubArr);
+        output->assign(&inSubArr);
       }
     } else {
       if (input->rankOf() == 1 && output->rankOf() == 1) {
@@ -113,7 +113,8 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
   } else {
     // we only allow scalar/vector case here
     if (numOfIntArgs == 2) {  // scalar case
-      output->assign((*input)(intArgs[1], {axis}));
+      NDArray assign = (*input)(intArgs[1], {axis});
+      output->assign(&assign);
     } else {  // vector case
       const sd::LongType numOfSubArrs = intArgs.size() - 1;
 

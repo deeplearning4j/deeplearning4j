@@ -138,7 +138,7 @@ static sd::Status resizeBilinearFunctor_(NDArray * images, int const width, int 
 
   // Handle no-op resizes efficiently.
   if (outHeight == inHeight && outWidth == inWidth) {
-    output->assign(*images);
+    output->assign(images);
     return sd::Status::OK;
   }
 
@@ -231,7 +231,7 @@ sd::Status resizeNeighborFunctor_(NDArray * images, int const width, int const h
 
   // Handle no-op resizes efficiently.
   if (output->sizeAt(1) == images->sizeAt(1) && output->sizeAt(2) == images->sizeAt(2)) {
-    output->assign(*images);
+    output->assign(images);
     return sd::Status::OK;
   }
 

@@ -178,7 +178,7 @@ Status GraphExecutioner::executeFlatNode(Graph *graph, Node *node, VariableSpace
       for (auto v : *node->output()) {
         if (variableSpace->hasExternalVariable(v.first)) {
           variableSpace->getVariable(v.first)->getNDArray()->assign(
-              *variableSpace->getVariable(node->id())->getNDArray());
+              variableSpace->getVariable(node->id())->getNDArray());
         }
       }
     }

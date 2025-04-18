@@ -180,7 +180,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
     determinant *= compoundMatrix.e<T>(e, e);
   }
   if (swapCount % 2) determinant = -determinant;
-  if (compound != nullptr) compound->assign(compoundMatrix);
+  if (compound != nullptr) compound->assign(&compoundMatrix);
   if (permutation != nullptr) {
     auto permutaionVector = NDArrayFactory::create('c', {rowNum}, DataTypeUtils::fromT<I>(), input->getContext());
     for (auto i = 0; i < rowNum; i++) {
@@ -191,9 +191,9 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
       }
     }
     if (permutationMatrix.isSameShape(permutation))
-      permutation->assign(permutationMatrix);
+      permutation->assign(&permutationMatrix);
     else if (permutation->isSameShape(permutaionVector)) {
-      permutation->assign(permutaionVector);
+      permutation->assign(&permutaionVector);
     }
   }
   return determinant;
@@ -335,7 +335,7 @@ template <typename T, typename I>
 static void lu_(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
   auto n = input->sizeAt(-1);
 
-  output->assign(*input);  // fill up output tensor with zeros
+  output->assign(input);  // fill up output tensor with zeros
   ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
   ResultSet permutations;
   if (permutationVectors) permutations = permutationVectors->allTensorsAlongDimension({-1});

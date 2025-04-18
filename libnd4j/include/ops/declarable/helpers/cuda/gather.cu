@@ -199,16 +199,17 @@ void gather(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* o
   if (axis < 0) axis += inputRank;
 
   if (indices == nullptr && numOfIntArgs == 2) {  // scalar case
-    output->assign((*input)(intArgs[1], {axis}));
+    NDArray scalar = (*input)(intArgs[1], {axis});
+    output->assign(&scalar);
   } else if (indices != nullptr && indices->isScalar()) {
     if (input->rankOf() <= 1) {  // For scalar indices, rank 0 or 1 input: can't do tensor along dimension 0 as this is
                                  // whole array... instead, we want to get a scalar
       auto idx = indices->e<LongType>(0);
       auto scalarNDArray = input->e(idx);
-      output->assign(scalarNDArray);
+      output->assign(&scalarNDArray);
     } else {
       NDArray inSubArr = (*input)(indices->e<LongType>(0), {axis});
-      output->assign(inSubArr);
+      output->assign(&inSubArr);
     }
   } else {
     NDArray* pIndices = const_cast<NDArray*>(indices);

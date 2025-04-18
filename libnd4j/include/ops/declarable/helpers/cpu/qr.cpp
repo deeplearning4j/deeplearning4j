@@ -36,7 +36,7 @@ NDArray matrixMinor(NDArray& in, sd::LongType col) {
   m->setIdentity();
   auto mRef = *m;
   auto view =  mRef({col, m->rows(), col, m->columns()});
-  view.assign(in({col, m->rows(), col, m->columns()}));
+  view.assign(&in({col, m->rows(), col, m->columns()}));
 
   return mRef;
 }
@@ -89,7 +89,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     MmulHelper::matmul(&q[k], &z, qQ, false, false, 0, 0, qQ);
     z = std::move(*qQ);
   }
-  resQ->assign(q[0]);  //
+  resQ->assign(&q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;
@@ -100,14 +100,14 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
   // resR *= -1.f;
   resQ->transposei();
   if (fullMatricies) {
-    Q->assign(*resQ);
-    R->assign(*resR);
+    Q->assign(resQ);
+    R->assign(resR);
   } else {
     auto resQRef = *resQ;
     auto resRRef = *resR;
     auto resQView = resQRef({0, 0, 0, N});
-    Q->assign(resQRef({0, 0, 0, N}));
-    R->assign(resRRef({0, N, 0, 0}));
+    Q->assign(&resQRef({0, 0, 0, N}));
+    R->assign(&resRRef({0, N, 0, 0}));
   }
 
   delete resQ;

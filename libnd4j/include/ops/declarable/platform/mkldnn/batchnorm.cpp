@@ -548,8 +548,14 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
   *dLdV = 0;
 
   if (applyScale || applyOffset) {
-    if (applyScale) dLdG->assign((*dLdW)({0, 1, 0, 0}));
-    if (applyOffset) dLdB->assign((*dLdW)({1, 2, 0, 0}));
+    if (applyScale) {
+      NDArray assign = (*dLdW)({0, 1, 0, 0});
+      dLdG->assign(&assign);
+    }
+    if (applyOffset)  {
+      NDArray assign = (*dLdW)({1, 2, 0, 0});
+      dLdB->assign(&assign);
+    }
 
     delete weights;
     delete dLdW;

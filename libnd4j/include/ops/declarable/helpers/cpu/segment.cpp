@@ -61,7 +61,7 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
     auto maxT = listOfOutTensors.at(idx);
 
     // int pos = 0;
-    maxT->assign(*listOfTensors.at(0));
+    maxT->assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<int>(i) == idx) {
@@ -71,7 +71,7 @@ static void segmentMaxFunctor_(NDArray* input, NDArray* indices, NDArray* output
       } else {
         idx = indices->e<sd::LongType>(i);
         maxT = listOfOutTensors.at(idx);
-        maxT->assign(*listOfTensors.at(i));
+        maxT->assign(listOfTensors.at(i));
       }
     }
   }
@@ -106,7 +106,7 @@ static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output
     auto minT = listOfOutTensors.at(idx);
 
     int pos = 0;
-    minT->assign(*listOfTensors.at(0));
+    minT->assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
@@ -116,7 +116,7 @@ static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output
       } else {
         idx = indices->e<sd::LongType>(i);
         minT = listOfOutTensors.at(idx);
-        minT->assign(*listOfTensors.at(i));
+        minT->assign(listOfTensors.at(i));
       }
     }
   }
@@ -156,7 +156,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto meanT = listOfOutTensors.at(idx);
     int count = 1;
     auto meanV = meanT->dup();
-    meanV.assign(*listOfTensors.at(0));
+    meanV.assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
@@ -172,7 +172,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
         meanV.applyScalar(scalar::Divide, count, meanT);
         idx = indices->e<sd::LongType>(i);
         meanT = listOfOutTensors.at(idx);
-        meanV.assign(*listOfTensors.at(i));
+        meanV.assign(listOfTensors.at(i));
         count = 1;
       }
       meanV.applyScalar(scalar::Divide, count, meanT);
@@ -219,7 +219,7 @@ static void segmentSumFunctor_(NDArray* input, NDArray* indices, NDArray* output
       } else {
         idx = indices->e<sd::LongType>(i);
         sumT = listOfOutTensors.at(idx);
-        sumT->assign(*listOfTensors.at(i));
+        sumT->assign(listOfTensors.at(i));
       }
     }
   }
@@ -253,7 +253,7 @@ static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     delete restDims;
     int numOfClasses = output->sizeAt(0);  // number of classes
     auto sumT = listOfOutTensors.at(idx);
-    sumT->assign(*listOfTensors.at(0));
+    sumT->assign(listOfTensors.at(0));
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
         auto func = PRAGMA_THREADS_FOR {
@@ -265,7 +265,7 @@ static void segmentProdFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
       } else {
         idx = indices->e<int>(i);
         sumT = listOfOutTensors.at(idx);
-        sumT->assign(*listOfTensors.at(i));
+        sumT->assign(listOfTensors.at(i));
       }
     }
   }
@@ -361,7 +361,7 @@ static void unsortedSegmentMaxFunctor_(NDArray* input, NDArray* indices, sd::Lon
 
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       for (sd::LongType idx = 0; idx < listOfTensors.size(); ++idx) {
         if (static_cast<size_t>(idx) >= fi->second.size() || fi->second.size() < 2 || fi->second.at(idx) >= listOfTensors.size()) {
           continue;
@@ -417,7 +417,7 @@ static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, sd::Lon
 
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       for (size_t idx = 1; idx < fi->second.size(); ++idx) {
         auto minT = listOfTensors.at(fi->second.at(idx));
 
@@ -466,7 +466,7 @@ void unsortedSegmentMeanFunctor(sd::LaunchContext* context, NDArray* input, NDAr
     // FIXME: parallelism here?
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       sd::LongType loopSize = fi->second.size();
 
       for (sd::LongType idx = 1; idx < loopSize; ++idx) {
@@ -503,7 +503,7 @@ void unsortedSegmentSumFunctor(sd::LaunchContext* context, NDArray* input, NDArr
     delete restDims;
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       sd::LongType loop_size = fi->second.size();
 
       // FIXME: parallelism here?
@@ -538,7 +538,7 @@ void unsortedSegmentProdFunctor_(NDArray* input, NDArray* indices, sd::LongType 
     delete restDims;
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       for (size_t idx = 1; idx < fi->second.size(); ++idx) {
         auto current = listOfTensors.at(fi->second.at(idx));
 
@@ -579,7 +579,7 @@ void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context, NDArray* input, NDA
     delete restDims;
     for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
       auto outputT = listOfOutTensors.at(fi->first);
-      outputT->assign(*listOfTensors.at(fi->second.at(0)));
+      outputT->assign(listOfTensors.at(fi->second.at(0)));
       for (size_t idx = 1; idx < fi->second.size(); ++idx) {
         auto current = listOfTensors.at(fi->second.at(idx));
         *outputT += *current;
@@ -763,7 +763,7 @@ sd::Status segmentSumFunctorBP(sd::LaunchContext* context, NDArray* input, NDArr
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
 
-      currentOut->assign(*currentGradOut);
+      currentOut->assign(currentGradOut);
     }
   }
   return sd::Status::OK;
@@ -793,8 +793,8 @@ sd::Status segmentProdFunctorBP(sd::LaunchContext* context, NDArray* input, NDAr
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-
-      currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
+      auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
+      currentOut->assign(&assign);
     }
 
   }
@@ -934,7 +934,8 @@ sd::Status unsortedSegmentMeanFunctorBP(sd::LaunchContext* context, NDArray* inp
       NDArray* current = listOfTensors.at(i);
       NDArray* currentOut = listOfOutTensors.at(i);
       NDArray* currentGradOut = listOfGradOuts.at(classNum);
-      currentOut->assign(*currentGradOut / double(classCount[classNum]));
+      auto assign = *currentGradOut / double(classCount[classNum]);
+      currentOut->assign(&assign);
     }
 
     delete restDims;
@@ -963,7 +964,7 @@ sd::Status unsortedSegmentSumFunctorBP(sd::LaunchContext* context, NDArray* inpu
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
 
-      currentOut->assign(*currentGradOut);
+      currentOut->assign(currentGradOut);
     }
 
     delete restDims;
@@ -999,8 +1000,8 @@ sd::Status unsortedSegmentProdFunctorBP(sd::LaunchContext* context, NDArray* inp
       auto currentOut = listOfOutTensors.at(i);
       auto currentGradOut = listOfGradOuts.at(classNum);
       auto currentFFOut = listOfBPTensors.at(classNum);
-
-      currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
+     auto assign = (*currentFFOut) * (*currentGradOut) / (*current);
+      currentOut->assign(&assign);
     }
 
   }

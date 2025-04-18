@@ -73,14 +73,18 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
     // Y gradient
 
-    gradY->assign((*epsNext) * -(*x) / ((*y) * (*y)));
+    // First case
+    NDArray gradYTemp = (*epsNext) * -(*x) / ((*y) * (*y));
+    gradY->assign(&gradYTemp);
 
   } else if (y->isScalar()) {
     // scalar case
 
     auto tmp = epsNext->reduceNumber(reduce::Sum);
     auto tmpX = x->reduceNumber(reduce::Sum);
-    gradY->assign(tmp * -tmpX / ((*y) * (*y)));
+
+    NDArray gradYTemp = tmp * -tmpX / ((*y) * (*y));
+    gradY->assign(&gradYTemp);
 
     epsNext->applyScalarArr(scalar::Divide, y, gradX);
   } else {
@@ -97,15 +101,15 @@ CUSTOM_OP_IMPL(realdiv_bp, 3, 2, false, 0, 0) {
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(preX);
+      gradX->assign(&preX);
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(preY);
+      gradY->assign(&preY);
   }
 
   return Status::OK;
@@ -119,13 +123,7 @@ DECLARE_SHAPE_FN(realdiv_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  auto shapeList = SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  auto shapeList = SHAPELIST(CONSTANT(x), CONSTANT(y));
 
   return shapeList;
 }

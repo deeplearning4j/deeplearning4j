@@ -14,11 +14,9 @@ CUSTOM_OP_IMPL(reshape_no_copy, -2, 1, false, 0, -2) {
   //note that the calculate output shape that sets this flag does not have access to the data buffer
   if (ArrayOptions::arrayNeedsCopy(const_cast<LongType *>(output->shapeInfo()))
       || output->dataBuffer() != input->dataBuffer()) {
-    NDArray &inputRef = *input;
-    NDArray &outputRef = *output;
     //immitate a reshape operation but without triggering a copy. These helpers are to prevent stack overflows with reshape -> assign -> reshape which used to exist
-    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(outputRef, output->ordering(), input->getShapeAsVector());
-    NDArray::copyDataForAssign(inputRef, outputRef, shapeInfo, false);
+    sd::LongType  *shapeInfo = NDArray::reshapeShapeInfo(output, output->ordering(), input->getShapeAsVector());
+    NDArray::copyDataForAssign(input, output, shapeInfo, false);
   }
   // the rest is no op, we don't need to copy we just needed the new shape
 

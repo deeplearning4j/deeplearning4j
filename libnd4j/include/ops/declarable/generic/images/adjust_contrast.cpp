@@ -60,7 +60,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
   auto part2 = part1 * *factor;
   auto part3 = part2 + mean;
   // this is contrast calculation
-  output->assign(part3);
+  output->assign(&part3);
 
 
   return Status::OK;
@@ -107,7 +107,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
   input3D.applyBroadcast(broadcast::Subtract,&zeroTwo, &mean, temp);
   temp->applyScalarArr(scalar::Multiply, factor, temp);
   temp->applyBroadcast(broadcast::Add, &zeroTwo, &mean, &output3D);
-  output->assign(output3D);
+  output->assign(&output3D);
   return Status::OK;
 }
 

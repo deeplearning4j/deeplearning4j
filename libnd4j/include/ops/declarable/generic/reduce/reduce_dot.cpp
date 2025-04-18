@@ -46,8 +46,10 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
                ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
   if (gradO->lengthOf() == 1) {  // scalar of reduced to scalar with keep dimensions
-    gradX->assign((*y) * (*gradO));
-    gradY->assign((*x) * (*gradO));
+    NDArray assign1 = (*y) * (*gradO);
+    gradX->assign(&assign1);
+    NDArray assign2 = (*x) * (*gradO);
+    gradY->assign(&assign2);
   } else {
     bool keepDims = false;
     auto dimensions = *block.getIArguments();
@@ -81,11 +83,22 @@ CUSTOM_OP_IMPL(reduce_dot_bp, -1, 2, false, 0, 0) {
       auto r = gradO->reshape(gradO->ordering(),
                               shape);  // for example could be something like [a,b] -> [1,a,1,b]
 
-      gradX->assign((*y) * r);
-      gradY->assign((*x) * r);
+      // First case - for gradX
+      NDArray gradXTemp1 = (*y) * r;
+      gradX->assign(&gradXTemp1);
+
+      // First case - for gradY
+      NDArray gradYTemp1 = (*x) * r;
+      gradY->assign(&gradYTemp1);
+
     } else {
-      gradX->assign((*y) * (*gradO));
-      gradY->assign((*x) * (*gradO));
+      // Second case - for gradX
+      NDArray gradXTemp2 = (*y) * (*gradO);
+      gradX->assign(&gradXTemp2);
+
+      // Second case - for gradY
+      NDArray gradYTemp2 = (*x) * (*gradO);
+      gradY->assign(&gradYTemp2);
     }
   }
   return sd::Status::OK;
@@ -113,11 +126,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
           inputShape->at(0)[0], inputShape->at(0)[0], item);
   }
 
-  sd::LongType *outShapeInfo1, *outShapeInfo2;
-  COPY_SHAPE(inputShape->at(0), outShapeInfo1);
-  COPY_SHAPE(inputShape->at(1), outShapeInfo2);
-
-  return SHAPELIST(CONSTANT(outShapeInfo1), CONSTANT(outShapeInfo2));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)));
 }
 
 DECLARE_TYPES(reduce_dot_bp) {

@@ -32,6 +32,18 @@ namespace sd {
 TadCalculator::TadCalculator(LongType* originalShape)
     : _originalShape(originalShape), _numTads(0) {}
 
+TadCalculator::~TadCalculator() {
+  if (_tadOffsets) {
+    delete _tadOffsets;
+    _tadOffsets = nullptr;
+  }
+  if (_tadShape) {
+    delete _tadShape;
+    _tadShape = nullptr;
+  }
+}
+
+
 void TadCalculator::createTadPack(const std::vector<LongType>& dimensions) {
   // Validate input and create shape info from original shape
   if (!_originalShape) {

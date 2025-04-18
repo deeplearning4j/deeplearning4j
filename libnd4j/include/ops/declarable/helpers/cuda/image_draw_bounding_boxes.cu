@@ -183,7 +183,7 @@ void drawBoundingBoxesFunctor(LaunchContext* context, NDArray* images, NDArray* 
   // colors - colors for each box given
   // set up color for each box as frame
   NDArray::prepareSpecialUse({output}, {images, boxes, colors});
-  output->assign(*images);
+  output->assign(images);
   BUILD_SINGLE_SELECTOR(output->dataType(), drawBoundingBoxesH, (context, images, boxes, colors, output),
                         SD_FLOAT_TYPES);
   NDArray::registerSpecialUse({output}, {images, boxes, colors});

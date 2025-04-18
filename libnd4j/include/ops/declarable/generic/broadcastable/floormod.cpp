@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(floormod_bp, 3, 2, false, 0, 0) {
 
   auto gradX = OUTPUT_VARIABLE(0);
   auto gradY = OUTPUT_VARIABLE(1);
-  gradX->assign(*epsNext);
+  gradX->assign(epsNext);
 
   NDArray temp(*epsNext);
   BroadcastHelper::broadcastApply(BROADCAST(FloorMod), x, y, &temp);
@@ -90,14 +90,7 @@ DECLARE_SHAPE_FN(floormod_bp) {
 
   // eps always has shape of x
   // grad always has shape of y
-
-  LongType* shapeE;
-  LongType* shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  return SHAPELIST(CONSTANT(x), CONSTANT(y));
 }
 }  // namespace ops
 }  // namespace sd

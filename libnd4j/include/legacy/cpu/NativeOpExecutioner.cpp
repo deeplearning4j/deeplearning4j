@@ -971,7 +971,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
-                        ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
+                        ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -994,7 +994,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
-                        ::execScalar(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo),
+                        ::execScalar(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -1021,7 +1021,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
-      ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength),
+      ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 

@@ -169,9 +169,9 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
   manager.synchronize();
 }
 BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void NDArray::fillAsTriangular,
-(const float val, int lower, int upper, NDArray& target, const char direction,
-const bool includeEdges),
-SD_COMMON_TYPES);
+                      (const float val, int lower, int upper, NDArray& target, const char direction,
+                          const bool includeEdges),
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -239,9 +239,9 @@ static void identityMatrixCudaLauncher(const int blocksPerGrid, const int thread
 
 }
 BUILD_SINGLE_TEMPLATE(template void identityMatrixCudaLauncher,
-(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
-SD_COMMON_TYPES);
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                          const cudaStream_t* stream, void* vx, const sd::LongType* xShapeInfo, const float val),
+                      SD_COMMON_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
@@ -296,9 +296,45 @@ void NDArray::synchronize(const char* msg)  {
   }
 }
 
+
+// NDArray implementation for .cu file
+void NDArray::printBufferDebug(const char* msg, sd::LongType offset, sd::LongType limit) {
+  if (msg) sd_printf("%s:\n", msg);
+
+  if(limit < 0) limit = lengthOf();
+
+  // Print array info
+  sd_printf("NDArray: Shape=[", 0);
+  for (int i = 0; i < rankOf(); i++) {
+    sd_printf("%lld", (long long)sizeAt(i));
+    if (i < rankOf() - 1) sd_printf(",", 0);
+  }
+  sd_printf("], DataType=%s,  Order=%c\n",
+            DataTypeUtils::asString(dataType()).c_str(), ordering());
+
+#if defined(SD_GCC_FUNCTRACE)
+  printf("========================================================\n");
+  Printer p;
+  StackTrace st;
+  st.load_here();
+  p.print(st);
+  printf("========================================================\n");
+  fflush(stdout);
+#endif
+  // Print buffer state
+  if (_buffer != nullptr) {
+    _buffer->printBufferDebug("Buffer contents", offset, limit);
+  } else {
+    sd_printf("Buffer is nullptr\n", 0);
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////
 void NDArray::prepareSpecialUse(const std::vector<NDArray*>& writeList,
                                 const std::vector<NDArray*>& readList, bool synchronizeWritables) {
+
+
+
   for (const auto& a : readList)
     if (a != nullptr) a->syncToDevice();
 
@@ -313,11 +349,15 @@ void NDArray::prepareSpecialUse(const std::vector<NDArray*>& writeList,
 ////////////////////////////////////////////////////////////////////////
 void NDArray::registerSpecialUse(const std::vector<NDArray*>& writeList,
                                  const std::vector<NDArray*>& readList) {
+
+
   for (const auto& p : readList)
     if (p != nullptr) p->tickReadDevice();
 
   for (const auto& p : writeList)
     if (p != nullptr) p->tickWriteDevice();
+
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -342,6 +382,7 @@ void NDArray::registerPrimaryUse(const std::vector<NDArray*>& writeList,
 
   for (const auto& p : writeList)
     if (p != nullptr) p->tickWriteHost();
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -508,10 +549,10 @@ static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 
 }
 BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher,
-(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
-const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
-const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
-SD_COMMON_TYPES, SD_COMMON_TYPES);
+                      (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem,
+                          const cudaStream_t* stream, const void* vx, const sd::LongType* xShapeInfo, void* vz,
+                          const sd::LongType* zShapeInfo, const sd::LongType* repeats, const sd::LongType repSize, const sd::LongType axis),
+                      SD_COMMON_TYPES, SD_COMMON_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats

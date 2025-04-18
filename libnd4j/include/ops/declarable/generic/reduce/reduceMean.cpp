@@ -124,9 +124,11 @@ CUSTOM_OP_IMPL(reduce_mean_bp, -2, 1, false, 0, 0) {
 
   if (gradO->isScalar()) {
     if (dimensions.size() > 0) {
-      gradI->assign(gradO->e(0) / (static_cast<double>(dimLength)));
+      NDArray assign = gradO->e(0) / (static_cast<double>(dimLength));
+      gradI->assign(&assign);
     } else {
-      gradI->assign(gradO->e(0) / (static_cast<double>(input->lengthOf())));
+      NDArray assign = gradO->e(0) / (static_cast<double>(input->lengthOf()));
+      gradI->assign(&assign);
     }
 
   } else {

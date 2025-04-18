@@ -246,7 +246,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
   auto gSum = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes, keepUnitiesInShape);
 
   // dLdB
-  if (applyOffset) dLdB->assign(gSum);
+  if (applyOffset) dLdB->assign(&gSum);
 
   // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
   gSum *= Ninv;
@@ -258,7 +258,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
   // dLdG
   *dLdV *= stdInv;
-  if (applyScale) dLdG->assign(*dLdV);
+  if (applyScale) dLdG->assign(dLdV);
 
   // (2 / N) * dfdv (use dLdV as storage for dfdv)
   *dLdV *= stdInv * stdInv;  // dLdV*stdInv * stdInv^2

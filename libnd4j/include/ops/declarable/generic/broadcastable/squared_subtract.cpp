@@ -68,16 +68,21 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     // PWT case case
 
     // X gradient
-    gradX->assign((*epsNext) * ts * ((*x) - (*y)));
+    // X gradient
+    NDArray gradXTemp = (*epsNext) * ts * ((*x) - (*y));
+    gradX->assign(&gradXTemp);
 
     // Y gradient
-    gradY->assign((*epsNext) * ts * ((*y) - (*x)));
+    NDArray gradYTemp = (*epsNext) * ts * ((*y) - (*x));
+    gradY->assign(&gradYTemp);
 
   } else if (y->isScalar()) {
     // scalar case
     auto tmpX = x->reduceNumber(reduce::Sum);
-    gradY->assign(tmpX);
-    gradX->assign((*epsNext) * ts * ((*x) - (*y)));
+    gradY->assign(&tmpX);
+    // X gradient
+    NDArray gradXTemp = (*epsNext) * ts * ((*x) - (*y));
+    gradX->assign(&gradXTemp);
   } else {
     // broadcast case
 
@@ -90,24 +95,24 @@ CUSTOM_OP_IMPL(squaredsubtract_bp, 3, 2, false, 0, 0) {
     preY.tileToShape(targetShape, preY);
 
     auto resX = (*epsNext) * ts * ((*x) - (*y));
-    preX.assign(resX);
+    preX.assign(&resX);
     auto resY = (*epsNext) * ts * ((*y) - (*x));
-    preY.assign(resY);
+    preY.assign(&resY);
 
     auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
     if (axisX.size() > 0) {
       auto sum = preX.reduceAlongDimension(reduce::Sum, &axisX);
-      gradX->assign(sum);
+      gradX->assign(&sum);
     } else
-      gradX->assign(preX);
+      gradX->assign(&preX);
 
     if (axisY.size() > 0) {
       auto sum = preY.reduceAlongDimension(reduce::Sum, &axisY);
-      gradY->assign(sum);
+      gradY->assign(&sum);
     } else
-      gradY->assign(preY);
+      gradY->assign(&preY);
   }
 
   return Status::OK;
@@ -121,13 +126,7 @@ DECLARE_SHAPE_FN(squaredsubtract_bp) {
   // eps always has shape of x
   // grad always has shape of y
 
-  LongType *shapeE;
-  LongType *shapeG;
-
-  COPY_SHAPE(x, shapeE);
-  COPY_SHAPE(y, shapeG);
-
-  return SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
+  return SHAPELIST(CONSTANT(x), CONSTANT(y));
 }
 
 DECLARE_TYPES(squaredsubtract_bp) {

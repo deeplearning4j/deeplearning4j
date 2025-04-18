@@ -43,11 +43,7 @@ LegacyScalarBoolOp::LegacyScalarBoolOp(int opNum, NDArray &scalar) : LegacyOp(1,
 
 ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, Context &block) {
   auto inShape = inputShape->at(0);
-
-  LongType *newShape;
-  COPY_SHAPE(inShape, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(inShape));
 }
 
 Status LegacyScalarBoolOp::validateAndExecute(Context &block) {

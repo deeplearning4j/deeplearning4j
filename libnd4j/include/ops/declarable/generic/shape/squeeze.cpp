@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
   }
 
   if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
-    output->assign(*input);
+    output->assign(input);
     return Status::OK;
   }
 
@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
                                            input->offset());
     } else {
       auto tmp = input->reshape(input->ordering(), shape);
-      output->assign(tmp);
+      output->assign(&tmp);
     }
   }
 

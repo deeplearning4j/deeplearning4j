@@ -290,7 +290,7 @@ NDArray* MmulHelper::mmulMxM( NDArray* A,  NDArray* B, NDArray* C, const double 
     }
 
     if (pC != C) {
-      C->assign(*pC);
+      C->assign(pC);
     }
 
     for (auto* arr : toDelete) {

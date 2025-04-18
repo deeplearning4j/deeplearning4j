@@ -192,11 +192,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
         "REDUCE_STDEV_BP OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !",
         inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-  sd::LongType* gradIshapeInfo(nullptr);
-  COPY_SHAPE(in, gradIshapeInfo);
-
-  return SHAPELIST(CONSTANT(gradIshapeInfo));
-  //    return SHAPELIST(in);
+  return SHAPELIST(CONSTANT(in));
 }
 
 DECLARE_TYPES(reduce_stdev_bp) {

@@ -283,14 +283,7 @@ DECLARE_TYPES(dot_product_attention_v2_bp) {
 }
 
 DECLARE_SHAPE_FN(dot_product_attention_v2_bp) {
-  sd::LongType *dLdq_shape;
-  COPY_SHAPE(inputShape->at(0), dLdq_shape);
-  sd::LongType *dLdv_shape;
-  COPY_SHAPE(inputShape->at(1), dLdv_shape);
-  sd::LongType *dLdk_shape;
-  COPY_SHAPE(inputShape->at(2), dLdk_shape);
-
-  return SHAPELIST(CONSTANT(dLdq_shape), CONSTANT(dLdk_shape), CONSTANT(dLdv_shape));
+  return SHAPELIST(CONSTANT(inputShape->at(0)), CONSTANT(inputShape->at(1)), CONSTANT(inputShape->at(2)));
 }
 
 }  // namespace ops

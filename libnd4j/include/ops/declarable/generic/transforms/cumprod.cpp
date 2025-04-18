@@ -135,16 +135,10 @@ CUSTOM_OP_IMPL(cumprod_bp, 2, 1, false, 0, 2) {
 
 DECLARE_SHAPE_FN(cumprod_bp) {
   auto inp = inputShape->at(0);
-  sd::LongType *newShapeX = nullptr;
-  COPY_SHAPE(inp, newShapeX);
-
   if (block.width() == 2) {
-    return SHAPELIST(CONSTANT(newShapeX));
+    return SHAPELIST(CONSTANT(inp));
   } else {
-    sd::LongType *newShapeA = nullptr;
-    COPY_SHAPE(inputShape->at(1), newShapeA);
-
-    return SHAPELIST(CONSTANT(newShapeX), CONSTANT(newShapeA));
+    return SHAPELIST(CONSTANT(inp), CONSTANT(inputShape->at(1)));
   }
 }
 }  // namespace ops

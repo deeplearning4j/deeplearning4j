@@ -271,27 +271,8 @@ DECLARE_SHAPE_FN(gruCell_bp) {
                "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got "
                "%s instead !",
                ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdhShapeInfo).c_str());
-
-  LongType *dLdxShapeInfo = nullptr;
-  COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
-
-  LongType *dLdhiShapeInfo = nullptr;
-  COPY_SHAPE(hiShapeInfo, dLdhiShapeInfo);
-
-  LongType *dLdWShapeInfo = nullptr;
-  COPY_SHAPE(wShapeInfo, dLdWShapeInfo);
-
-  LongType *dLdWcShapeInfo = nullptr;
-  COPY_SHAPE(wcShapeInfo, dLdWcShapeInfo);
-
-  LongType *dLdbShapeInfo = nullptr;
-  COPY_SHAPE(bShapeInfo, dLdbShapeInfo);
-
-  LongType *dLdbcShapeInfo = nullptr;
-  COPY_SHAPE(bcShapeInfo, dLdbcShapeInfo);
-
-  return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdhiShapeInfo), CONSTANT(dLdWShapeInfo), CONSTANT(dLdWcShapeInfo),
-                   CONSTANT(dLdbShapeInfo), CONSTANT(dLdbcShapeInfo));
+  return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(hiShapeInfo), CONSTANT(wShapeInfo), CONSTANT(wcShapeInfo),
+                   CONSTANT(bShapeInfo), CONSTANT(bcShapeInfo));
 }
 
 }  // namespace ops

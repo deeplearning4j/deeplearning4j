@@ -211,7 +211,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   if (c != ret) {  // this means both permute and reshape have been performed on c, cP
     // always points on c->buffer()
     NDArray assign2 = ret->reshape(c->ordering(),requiredCshape);
-    c->assign(assign2);
+    c->assign(&assign2);
   }
 
 
@@ -302,7 +302,7 @@ void MmulHelper::tensorDot(NDArray* a, NDArray* b, NDArray* c,
   if (!whatToDoWithC.empty()) {
     for (int i = cArrs.size() - 1; i > 0; --i) {
       if (cArrs[i]->buffer() != cArrs[i - 1]->buffer() || cArrs[i]->specialBuffer() != cArrs[i - 1]->specialBuffer())
-        cArrs[i - 1]->assign(*cArrs[i]);
+        cArrs[i - 1]->assign(cArrs[i]);
       delete cArrs[i];
     }
   }

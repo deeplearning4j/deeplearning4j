@@ -65,9 +65,9 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
 
       for (int e = 0; e < tadsX.size(); e++) {
         if (!condition->e<bool>(e)) {
-          tadsZ.at(e)->assign(*tadsY.at(e));
+          tadsZ.at(e)->assign(tadsY.at(e));
         } else {
-          tadsZ.at(e)->assign(*tadsX.at(e));
+          tadsZ.at(e)->assign(tadsX.at(e));
         }
       }
 
@@ -95,10 +95,7 @@ CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(Where) {
   if (block.width() == 3) {
     auto inShape = inputShape->at(1);
-    LongType* newshape;
-    COPY_SHAPE(inShape, newshape);
-
-    return SHAPELIST(CONSTANT(newshape));
+    return SHAPELIST(CONSTANT(inShape));
   } else {
     // FIXME: we can't estimate result here in this case
     // output shape is the 2D tensor num_true x rankOf (inShape)

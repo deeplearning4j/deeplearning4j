@@ -196,9 +196,9 @@ static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
         sqrtmQuasiTrianAuxEq<T>(A, B, X, X);
 
         sqrtT.syncToDevice();
-        sqrtT({i, i + 2, j, j + 2}, true).assign(X);
+        sqrtT({i, i + 2, j, j + 2}, true).assign(&X);
       } else if (iBlockIs2x2 && !jBlockIs2x2) {
-        NDArray rhs = matrixT({i, i + 2, j, j + 1}, true);  //.dup();
+        NDArray rhs = matrixT({i, i + 2, j, j + 1}, true);
 
         if (j - i > 2) rhs -= mmul(sqrtT({i, i + 2, i + 2, j}, true), sqrtT({i + 2, j, j, j + 1}, true));
 
@@ -211,7 +211,7 @@ static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
         FullPivLU<T>::solve(A, rhs, rhs);
 
         // sqrtT.syncToDevice();
-        sqrtT({i, i + 2, j, j + 1}, true).assign(rhs);
+        sqrtT({i, i + 2, j, j + 1}, true).assign(&rhs);
       } else if (!iBlockIs2x2 && jBlockIs2x2) {
         NDArray rhs = matrixT({i, i + 1, j, j + 2}, true);
 
@@ -227,7 +227,7 @@ static void sqrtmQuasiTrianOffDiag(NDArray& matrixT, NDArray& sqrtT) {
         FullPivLU<T>::solve(A, rhsT, rhsT);
 
         // sqrtT.syncToDevice();
-        sqrtT({i, i + 1, j, j + 2}, true).assign(rhs);
+        sqrtT({i, i + 1, j, j + 2}, true).assign(&rhs);
       } else if (!iBlockIs2x2 && !jBlockIs2x2) {
         T temp = mmul(sqrtT({i, i + 1, i + 1, j}), sqrtT({i + 1, j, j, j + 1})).t<T>(0);  // dot
         sqrtT.r<T>(i, j) = (matrixT.t<T>(i, j) - temp) / (sqrtT.t<T>(i, i) + sqrtT.t<T>(j, j));

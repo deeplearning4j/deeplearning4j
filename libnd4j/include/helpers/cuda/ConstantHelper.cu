@@ -78,11 +78,11 @@ ConstantHelper::ConstantHelper() {
 }
 
 ConstantHelper::~ConstantHelper() {
-/*  for (const auto &v : _cache) {
+  for (const auto &v : _cache) {
     for (const auto &c : v) {
       delete c.second;
     }
-  }*/
+  }
 }
 
 ConstantHelper &ConstantHelper::getInstance() {

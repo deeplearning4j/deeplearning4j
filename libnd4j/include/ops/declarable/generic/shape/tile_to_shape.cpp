@@ -71,9 +71,9 @@ CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {
   // FIX ME: reduceAlongDimension should have a signature with result pass to avoid assigning twice
   if (!axisX.empty()) {
     auto tempRes = epsNext->reduceAlongDimension(reduce::Sum, &axisX);
-    gradX->assign(tempRes);
+    gradX->assign(&tempRes);
   } else
-    gradX->assign(*epsNext);
+    gradX->assign(epsNext);
 
   STORE_RESULT(gradX);
 
@@ -83,10 +83,7 @@ CUSTOM_OP_IMPL(tile_to_shape_bp, 2, 1, true, 0, -1) {
 DECLARE_SHAPE_FN(tile_to_shape_bp) {
   auto in = inputShape->at(0);
 
-  LongType *newShape;
-  COPY_SHAPE(in, newShape);
-
-  return SHAPELIST(CONSTANT(newShape));
+  return SHAPELIST(CONSTANT(in));
 }
 }  // namespace ops
 }  // namespace sd

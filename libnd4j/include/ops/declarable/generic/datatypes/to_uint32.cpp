@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(to_uint32, 1, 1, true, 0, 0) {
   auto input = INPUT_VARIABLE(0);
   auto output = OUTPUT_VARIABLE(0);
 
-  if (!block.isInplace()) output->assign(*input);
+  if (!block.isInplace()) output->assign(input);
 
   STORE_RESULT(output);
 
