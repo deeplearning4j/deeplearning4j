@@ -35,7 +35,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-10.15
+        default: macos-13-arm64
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -147,7 +147,7 @@ jobs:
             PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'

@@ -83,7 +83,7 @@ jobs:
         if: steps.cache-cmake.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
