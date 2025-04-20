@@ -37,7 +37,7 @@ jobs:
             experimental: true
             name: Extra maven flags
 
-          - runs_on: ubuntu-20.04
+          - runs_on: ubuntu-22.04
             experimental: true
             name: OS to run on
 
