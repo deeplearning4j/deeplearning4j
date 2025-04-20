@@ -219,22 +219,6 @@ jobs:
           cmake --version
           protoc --version
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
-          if [ -z "${EXTENSION}" ] || [ -n "${EXTENSION}" ]; then
-              export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/7.5.0/libgomp.so
-              echo "Extensions specified. This needs a newer version of gcc."
-              sudo apt-get install gcc-7 g++-7
-              echo "Using newer version of libgomp."
-              ls /usr/bin | grep gcc
-              ls /usr/bin | grep g++
-              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 90
-              sudo update-alternatives --install  /usr/bin/g++ g++ /usr/bin/g++-7  90
-              gcc --version
-          fi
-          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
-          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
-          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-          sudo cp "${LIBGOMP_PATH}" /usr/lib
           sudo apt-get -y autoremove
           sudo apt-get -y clean
           # download libnd4j from a url and set it up if LIBND4J_URL is defined

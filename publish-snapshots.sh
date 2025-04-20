@@ -11,12 +11,12 @@ gh workflow run build-deploy-cross-platform.yml
 gh workflow run build-deploy-linux-cuda-10.2-arm64.yml
 gh workflow run build-deploy-linux-arm32.yml
 gh workflow run build-deploy-linux-arm64.yml
-gh workflow run build-deploy-linux-cuda-11.4.yml
-gh workflow run build-deploy-linux-cuda-11.6.yml
+gh workflow run build-deploy-linux-cuda-12.1.yml
+gh workflow run build-deploy-linux-cuda-12.3.yml
 gh workflow run build-deploy-linux-x86_64.yml
 gh workflow run build-deploy-linux-x86_64-compat.yml
 gh workflow run build-deploy-mac-arm64.yml
 gh workflow run build-deploy-mac.yml
-gh workflow run build-deploy-windows-cuda-11.4.yml
-gh workflow run build-deploy-windows-cuda-11.6.yml
+gh workflow run build-deploy-windows-cuda-12.1.yml
+gh workflow run build-deploy-windows-cuda-12.3.yml
 gh workflow run build-deploy-windows.yml
