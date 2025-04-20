@@ -102,8 +102,8 @@ jobs:
         run: |
               mkdir "${GITHUB_WORKSPACE}/openblas_home"
               cd "${GITHUB_WORKSPACE}/openblas_home"
-              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-android-x86.jar
-              unzip openblas-0.3.19-1.5.7-android-x86.jar
+              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-android-x86.jar
+              unzip openblas-0.3.28-1.5.11-android-x86.jar
               cd ..
               echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/lib/x86" >> "$GITHUB_ENV"
               cp ${GITHUB_WORKSPACE}/openblas_home/lib/x86/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/lib/x86/libopenblas.so

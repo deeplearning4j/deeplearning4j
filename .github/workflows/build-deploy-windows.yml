@@ -174,8 +174,8 @@ jobs:
         run: |
             mkdir "%GITHUB_WORKSPACE%/openblas_home"
             cd "%GITHUB_WORKSPACE%/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar
-            unzip openblas-0.3.19-1.5.7-windows-x86_64.jar
+            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
+            unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
             cd ..
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}

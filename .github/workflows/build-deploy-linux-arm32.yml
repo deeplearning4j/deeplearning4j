@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-20.04
+        default: ubuntu-22.04-arm
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -99,8 +99,8 @@ jobs:
         run: |
             mkdir "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-linux-armhf.jar
-            unzip openblas-0.3.19-1.5.7-linux-armhf.jar
+            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-armhf.jar
+            unzip openblas-0.3.28-1.5.11-linux-armhf.jar
             cd ..
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-armhf" >> "$GITHUB_ENV"
             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-armhf/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-armhf/libopenblas.so
