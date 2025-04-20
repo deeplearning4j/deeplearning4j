@@ -150,7 +150,7 @@ jobs:
               echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
 
       - name: Cache cuda install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-123
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3

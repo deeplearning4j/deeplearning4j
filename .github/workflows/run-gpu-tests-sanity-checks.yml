@@ -12,14 +12,14 @@ jobs:
         env:
           cuda: 11.4.1
       - name: Cache cuda install windows cuda 11.4
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-114
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
           key: windows-2019-cuda-11.4
           restore-keys: windows-2019-cuda-11.4
       - name: Cache cuda install windows cuda 11.6
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-116
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6

@@ -10,7 +10,7 @@ jobs:
             cuda: 11.6.0
             GCC: 7
       - name: Cache cuda 11.6 install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-116
         with:
             path: /usr/local/cuda-11.6
@@ -21,7 +21,7 @@ jobs:
             cuda: 11.4
             GCC: 7
       - name: Cache cuda 11.4 install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-114
         with:
             path: /usr/local/cuda-11.4
