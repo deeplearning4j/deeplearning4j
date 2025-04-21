@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ /* ******************************************************************************
   ~  *
@@ -19,7 +18,6 @@
   ~  * SPDX-License-Identifier: Apache-2.0
   ~  ******************************************************************************/
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -32,10 +30,8 @@
     <packaging>pom</packaging>
 
     <name>deeplearning4j</name>
-    <description>Deeplearning4j Monorepo</description>
+    <description>Deeplearning4j Monorepo - Parent POM</description>
     <url>http://deeplearning4j.konduit.ai/</url>
-
-
 
     <licenses>
         <license>
@@ -47,11 +43,18 @@
 
     <developers>
         <developer>
-            <organization>Eclipse Foundation</organization>
-            <url>https://github.com/deeplearning4j/deeplearning4j</url>
-            <organizationUrl>https://eclipse.org/</organizationUrl>
+            <name>Deeplearning4j Contributors</name>
+            <organization>Eclipse Foundation / Konduit K.K.</organization>
+            <organizationUrl>https://github.com/deeplearning4j/deeplearning4j/graphs/contributors</organizationUrl>
         </developer>
     </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/deeplearning4j/deeplearning4j.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/deeplearning4j/deeplearning4j.git</developerConnection>
+        <url>https://github.com/deeplearning4j/deeplearning4j</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <modules>
         <module>nd4j</module>
@@ -63,16 +66,7 @@
         <module>codegen</module>
     </modules>
 
-    <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
-        </developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
-        <tag>HEAD</tag>
-    </scm>
-
     <repositories>
-        <!-- Mainly for dokka/kotlinx. Not used outside of releases for kotlin related modules-->
         <repository>
             <id>jetbrains-kotlinx</id>
             <url>https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven</url>
@@ -85,9 +79,8 @@
             </releases>
         </repository>
 
-
         <repository>
-            <id>ossrh</id>
+            <id>ossrh-snapshots</id>
             <name>Sonatype Nexus Snapshots</name>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
@@ -95,14 +88,14 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
+                <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
 
     <pluginRepositories>
         <pluginRepository>
-            <id>ossrh</id>
+            <id>ossrh-snapshots</id>
             <name>Sonatype Nexus Snapshots</name>
             <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
@@ -110,11 +103,18 @@
             </releases>
             <snapshots>
                 <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
+                <updatePolicy>daily</updatePolicy>
             </snapshots>
         </pluginRepository>
     </pluginRepositories>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>Sonatype Nexus snapshot repository</name>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 
     <properties>
@@ -130,7 +130,6 @@
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
-        <dl4j.release.server>ossrh</dl4j.release.server>
         <aspectj.version>1.9.7</aspectj.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
@@ -141,12 +140,9 @@
         <netty.version>4.1.74.Final</netty.version>
         <objenesis.version>2.6</objenesis.version>
         <paranamer.version>2.6</paranamer.version>
-        <ws.rs.version>2.0</ws.rs.version>
         <snakeyaml.version>1.26</snakeyaml.version>
-        <!-- FIXME: Might need be synced with all modules that uses spring-core plugin (nd4j-cuda-11.0, nd4j-tests, nd4j-common-tests) -->
         <spring.version>5.2.24.RELEASE</spring.version>
         <oshi.version>3.4.2</oshi.version>
-        <typesafe.config.version>1.3.0</typesafe.config.version>
         <jcommander.version>1.27</jcommander.version>
         <jodatime.version>2.2</jodatime.version>
         <protonpack.version>1.15</protonpack.version>
@@ -157,22 +153,14 @@
         <stream.analytics.version>2.9.8</stream.analytics.version>
         <opencsv.version>5.9</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
-        <jtransforms.version>3.1</jtransforms.version>
         <fastutil.version>6.5.7</fastutil.version>
-        <unirest.version>1.4.9</unirest.version>
-        <reflections.version>0.9.10</reflections.version>
-        <breeze.version>1.0</breeze.version>
-        <byteunits.version>0.9.1</byteunits.version>
 
-        <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
         <javacpp.parser.skip>false</javacpp.parser.skip>
-        <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
         <javacpp.compiler.skip>false</javacpp.compiler.skip>
-        <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
-        <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
-        <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
-        <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
-        <!-- Must not be empty. Otherwise the command line will fail. Put all arguments here needed for customization. If overridden, ensure not empty.-->
+        <javacpp.platform.root/>
+        <javacpp.platform.compiler/>
+        <javacpp.platform.sysroot/>
+        <javacpp.platform.extension/>
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
@@ -183,7 +171,6 @@
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
-        <!-- Used in nd4j-backend-impls for directory-maven-plugin to assist with finding native libs for tests -->
         <nd4j.native.basedir />
         <nd4j.cuda.basedir />
 
@@ -203,7 +190,6 @@
         <opencv.version>4.10.0</opencv.version>
         <hdf5.version>1.14.3</hdf5.version>
         <tensorflow.version>1.15.5</tensorflow.version>
-        <!--- Hardcoded since TF1 isn't updating anymore-->
         <tensorflow.javacpp.version>${tensorflow.version}-1.5.8</tensorflow.javacpp.version>
 
         <archunit.version>0.17</archunit.version>
@@ -223,8 +209,6 @@
         <commons-io.version>${commonsio.version}</commons-io.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-collections4.version>4.1</commons-collections4.version>
-        <spark.version>3.3.0</spark.version>
-        <spark.major.version>2</spark.major.version>
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>5.8.0-M1</junit.version>
@@ -238,13 +222,7 @@
         <lombok.version>1.18.36</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.21.7</google.protobuf.version>
-        <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
         <failIfNoTests>false</failIfNoTests>
-        <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
-        <hadoop.version>2.2.0</hadoop.version>
-        <camel.version>2.16.3</camel.version>
-        <zookeeper.version>3.4.6</zookeeper.version>
-        <agrona.version>1.16.0</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
@@ -260,41 +238,38 @@
         <javax.activation.version>1.1.1</javax.activation.version>
         <jaxb.version>2.3.0</jaxb.version>
 
-        <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
-        <maven-source-plugin.version>3.2.0</maven-source-plugin.version>
-        <maven-javadoc-plugin.version>3.2.0</maven-javadoc-plugin.version>
-        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
-        <maven-scala-plugin.version>4.5.4</maven-scala-plugin.version>
-        <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
+        <maven-central-publishing-plugin.version>0.4.0</maven-central-publishing-plugin.version>
+        <maven-gpg-plugin.version>3.2.4</maven-gpg-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.8.0</maven-javadoc-plugin.version>
+        <maven-deploy-plugin.version>3.1.2</maven-deploy-plugin.version>
+        <maven-release-plugin.version>3.1.0</maven-release-plugin.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0</sbt-compiler-maven-plugin.version>
-        <maven-git-commit-plugin.version>2.2.2</maven-git-commit-plugin.version>
-        <maven-git-commit-id-plugin.version>${maven-git-commit-plugin.version}
-        </maven-git-commit-id-plugin.version>
-        <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
-        <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
-        <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
+        <maven-git-commit-plugin.version>4.9.10</maven-git-commit-plugin.version>
+        <maven-git-commit-id-plugin.version>${maven-git-commit-plugin.version}</maven-git-commit-id-plugin.version>
+        <maven-build-helper-plugin.version>3.6.0</maven-build-helper-plugin.version>
+        <maven-surefire-plugin.version>3.3.0</maven-surefire-plugin.version>
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
-        <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
-        <maven-formatter-plugin.version>2.12.1</maven-formatter-plugin.version>
+        <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
+        <maven-formatter-plugin.version>2.23.0</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
-        <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}
-        </maven-lifecycle-mapping.version>
-        <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
-        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
-        <maven-dependency-plugin.version>3.0.0</maven-dependency-plugin.version>
-        <maven-invoker-plugin.version>2.2</maven-invoker-plugin.version>
-        <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
+        <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}</maven-lifecycle-mapping.version>
+        <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+        <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
+        <maven-dependency-plugin.version>3.7.1</maven-dependency-plugin.version>
+        <maven-invoker-plugin.version>3.7.0</maven-invoker-plugin.version>
+        <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
         <maven-replacer-plugin.version>1.5.3</maven-replacer-plugin.version>
         <protoc-jar-maven-plugin.version>3.11.4</protoc-jar-maven-plugin.version>
-        <mockito.version>3.8.0</mockito.version>
-        <mockito.jupter.version>3.8.0</mockito.jupter.version>
-        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+        <mockito.version>5.12.0</mockito.version>
+        <mockito.jupter.version>${mockito.version}</mockito.jupter.version>
+        <exec-maven-plugin.version>3.3.0</exec-maven-plugin.version>
         <jetspeed-mvn-maven-plugin.version>2.3.1</jetspeed-mvn-maven-plugin.version>
 
 
-        <lz4.version>1.7.0</lz4.version>
+        <lz4.version>1.8.0</lz4.version>
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
@@ -302,21 +277,20 @@
         <pydatavec.test.skip>false</pydatavec.test.skip>
         <pydl4j.test.skip>false</pydl4j.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
-        <!-- Test resource profile must be enabled unless using -DskipTests etc -->
         <skipTestResourceEnforcement>false</skipTestResourceEnforcement>
-        <findbugs-annotations.version>1.3.9-1</findbugs-annotations.version>
-        <netty.version>4.1.74.Final</netty.version>
         <log4j2.version>2.17.2</log4j2.version>
-        <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
-        <rxjava.version>2.2.0</rxjava.version>
-        <kotlin.version>1.7.20</kotlin.version>
+        <kotlin.version>1.9.24</kotlin.version>
         <javapoet.version>1.13.0</javapoet.version>
-        <kotlin-logging.version>2.1.21</kotlin-logging.version>
+        <kotlin-logging.version>3.0.5</kotlin-logging.version>
         <test.heap.size>8g</test.heap.size>
         <test.offheap.size>8g</test.offheap.size>
         <module.name></module.name>
-        <jdk9.exports>--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED</jdk9.exports>
+        <jdk9.exports>--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED</jdk9.exports>
+
+        <central.publishing.autoPublish>false</central.publishing.autoPublish>
+        <central.publishing.publishingRepositoryId>ossrh</central.publishing.publishingRepositoryId>
+
     </properties>
 
 
@@ -329,211 +303,52 @@
             </dependency>
 
             <dependency>
-                <groupId>org.lz4</groupId>
-                <artifactId>lz4-pure-java</artifactId>
-                <version>${lz4.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>net.jpountz.lz4</groupId>
-                <artifactId>lz4</artifactId>
-                <version>1.2.0</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.lz4</groupId>
-                <artifactId>lz4</artifactId>
-                <version>1.8.0</version>
-            </dependency>
-
-            <dependency>
                 <groupId>io.netty</groupId>
-                <artifactId>netty-all</artifactId>
+                <artifactId>netty-bom</artifactId>
                 <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-buffer</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
+                <artifactId>log4j-bom</artifactId>
                 <version>${log4j2.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
-            <!-- Parameterized Tests -->
+
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
                 <version>${junit.version}</version>
-                <scope>test</scope>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
-            <dependency><groupId>org.junit.platform</groupId>
-                <artifactId>junit-platform-launcher</artifactId>
-                <version>${junit.platform.launcher.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.vintage</groupId>
-                <artifactId>junit-vintage-engine</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-            </dependency>
+
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib</artifactId>
+                <artifactId>kotlin-bom</artifactId>
                 <version>${kotlin.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-reflect</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib-common</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib-jdk8</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-test</artifactId>
-                <version>${kotlin.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-all</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty</artifactId>
-                <version>3.9.9.Final</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-buffer</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-common</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-handler</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-epoll</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-resolver</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-transport-native-unix-common</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-http2</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-handler-proxy</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-socks</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-resolver-dns</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.netty</groupId>
-                <artifactId>netty-codec-dns</artifactId>
-                <version>${netty.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.walkmod</groupId>
-                <artifactId>junit4git</artifactId>
-                <version>${junit4git.version}</version>
-                <scope>test</scope>
-            </dependency>
+
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
             </dependency>
+
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -549,7 +364,6 @@
                         <outputDirectory>${project.build.directory}/modules</outputDirectory>
                         <overwriteExistingFiles>true</overwriteExistingFiles>
                         <modules>
-                            <!-- ND4J Core API -->
                             <module>
                                 <artifact>
                                     <groupId>org.nd4j</groupId>
@@ -571,7 +385,6 @@
                                 </moduleInfo>
                             </module>
 
-                            <!-- ND4J Common -->
                             <module>
                                 <artifact>
                                     <groupId>org.nd4j</groupId>
@@ -590,7 +403,6 @@
                                 </moduleInfo>
                             </module>
 
-                            <!-- CPU Backend -->
                             <module>
                                 <artifact>
                                     <groupId>org.nd4j</groupId>
@@ -612,7 +424,6 @@
                                 </moduleInfo>
                             </module>
 
-                            <!-- CUDA Backend -->
                             <module>
                                 <artifact>
                                     <groupId>org.nd4j</groupId>
@@ -637,7 +448,7 @@
                         <jdepsExtraArgs>
                             <arg>--ignore-missing-deps</arg>
                             <arg>--multi-release</arg>
-                            <arg>9</arg>
+                            <arg>11</arg>
                         </jdepsExtraArgs>
                     </configuration>
                     <executions>
@@ -668,8 +479,6 @@
                         </execution>
                     </executions>
                 </plugin>
-
-
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
@@ -683,27 +492,22 @@
                     </dependencies>
                     <configuration>
                         <trimStackTrace>false</trimStackTrace>
-                        <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                         <forkCount>1</forkCount>
                         <reuseForks>false</reuseForks>
                         <environmentVariables>
                             <OMP_NUM_THREADS>1</OMP_NUM_THREADS>
                         </environmentVariables>
                         <classpathDependencyExcludes>
-                            <classpathDependencyExclude>org.junit:junit</classpathDependencyExclude>
-                            <classpathDependencyExclude>com.google.android:android
-                            </classpathDependencyExclude>
+                            <classpathDependencyExclude>org.junit.vintage:junit-vintage-engine</classpathDependencyExclude>
+                            <classpathDependencyExclude>com.google.android:android</classpathDependencyExclude>
                         </classpathDependencyExcludes>
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine>--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size} </argLine>
-                        <forkedProcessTimeoutInSeconds>240</forkedProcessTimeoutInSeconds>
-                        <forkedProcessExitTimeoutInSeconds>240</forkedProcessExitTimeoutInSeconds>
-                        <parallelTestsTimeoutInSeconds>240</parallelTestsTimeoutInSeconds>
-                        <parallelTestsTimeoutForcedInSeconds>240</parallelTestsTimeoutForcedInSeconds>
-                        <forkCount>1</forkCount>
-                        <threadCount>1</threadCount>
-                        <perCoreThreadCount>false</perCoreThreadCount>
+                        <argLine>@{jdk9.exports} -Xmx${test.heap.size} -Dorg.bytedeco.javacpp.maxphysicalbytes=${test.offheap.size} -Dorg.bytedeco.javacpp.maxbytes=${test.offheap.size}</argLine>
+                        <forkedProcessTimeoutInSeconds>300</forkedProcessTimeoutInSeconds>
+                        <forkedProcessExitTimeoutInSeconds>300</forkedProcessExitTimeoutInSeconds>
+                        <parallelTestsTimeoutInSeconds>300</parallelTestsTimeoutInSeconds>
+                        <parallelTestsTimeoutForcedInSeconds>300</parallelTestsTimeoutForcedInSeconds>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -773,10 +577,6 @@
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
                         <compilerArgs>
-                            <arg>--add-exports</arg>
-                            <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                            <arg>--add-opens</arg>
-                            <arg>java.base/java.nio=ALL-UNNAMED</arg>
                         </compilerArgs>
                     </configuration>
                 </plugin>
@@ -816,11 +616,10 @@
                         </execution>
                     </executions>
                 </plugin>
-                <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
                     <artifactId>git-commit-id-plugin</artifactId>
-                    <version>${maven-git-commit-plugin.version}</version>
+                    <version>${maven-git-commit-id-plugin.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -832,15 +631,18 @@
                     <configuration>
                         <generateGitPropertiesFile>true</generateGitPropertiesFile>
                         <failOnNoGitDirectory>false</failOnNoGitDirectory>
-                        <generateGitPropertiesFilename>
-                            ${project.basedir}/target/generated-sources/src/main/resources/org/eclipse/${project.groupId}-${project.artifactId}-git.properties
-                        </generateGitPropertiesFilename>
+                        <generateGitPropertiesFilename>${project.build.outputDirectory}/META-INF/git.properties</generateGitPropertiesFilename>
+                        <includeOnlyProperties>
+                            <includeOnlyProperty>git.commit.id.abbrev</includeOnlyProperty>
+                            <includeOnlyProperty>git.commit.time</includeOnlyProperty>
+                            <includeOnlyProperty>git.branch</includeOnlyProperty>
+                        </includeOnlyProperties>
+                        <commitIdGenerationMode>flat</commitIdGenerationMode>
                         <gitDescribe>
                             <skip>true</skip>
                         </gitDescribe>
                     </configuration>
                 </plugin>
-                <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
@@ -876,7 +678,7 @@
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
-                    <version>1.0.0</version>
+                    <version>${maven-lifecycle-mapping.version}</version>
                     <configuration>
                         <lifecycleMappingMetadata>
                             <pluginExecutions>
@@ -902,97 +704,81 @@
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>${maven-formatter-plugin.version}</version>
                     <configuration>
-                        <!--suppress UnresolvedMavenProperty -->
                         <configFile>${session.executionRootDirectory}/../contrib/formatter.xml</configFile>
                     </configuration>
                 </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>${maven-javadoc-plugin.version}</version>
+                    <configuration>
+                        <minmemory>256m</minmemory>
+                        <maxmemory>2048m</maxmemory>
+                        <doclint>all,-missing</doclint>
+                        <quiet>true</quiet>
+                        <sourcepath>${project.basedir}/src/main/java:${project.basedir}/src/main/kotlin</sourcepath>
+                        <additionalOptions>
+                            <additionalOption>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</additionalOption>
+                        </additionalOptions>
+                        <failOnError>false</failOnError>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>${maven-source-plugin.version}</version>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>${maven-gpg-plugin.version}</version>
+                    <configuration>
+                        <gpgArguments>
+                            <arg>--pinentry-mode</arg>
+                            <arg>loopback</arg>
+                        </gpgArguments>
+                    </configuration>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-deploy-plugin</artifactId>
+                    <version>${maven-deploy-plugin.version}</version>
+                </plugin>
+
             </plugins>
         </pluginManagement>
 
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>${maven-source-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4.1</version>
             </plugin>
+
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.8.2</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.8</version>
-                <executions>
-                    <execution>
-                        <id>default-deploy</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>deploy</goal>
-                        </goals>
-                    </execution>
-                </executions>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>${maven-central-publishing-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <detail>true</detail>
-                    <serverId>${dl4j.release.server}</serverId>
-                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                    <keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
-                    <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
+                    <publishingRepositoryId>${central.publishing.publishingRepositoryId}</publishingRepositoryId>
+                    <autoPublish>${central.publishing.autoPublish}</autoPublish>
+                    <waitUntilStagingRepositoryIsClosed>true</waitUntilStagingRepositoryIsClosed>
+                    <failOnMissingGpgKey>true</failOnMissingGpgKey>
                 </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
-                <version>${kotlin.version}</version>
-                <executions>
-                    <execution>
-                        <id>compile</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>test-compile</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>test-compile</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <jvmTarget>11</jvmTarget>
-                </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <compilerArgs>
-                        <arg>--add-exports</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                        <arg>--add-opens</arg>
-                        <arg>java.base/java.nio=ALL-UNNAMED</arg>
-                    </compilerArgs>
-                </configuration>
                 <executions>
                     <execution>
                         <id>default-compile</id>
@@ -1003,33 +789,54 @@
                         <phase>none</phase>
                     </execution>
                     <execution>
-                        <id>compile</id>
+                        <id>java-compile</id>
                         <phase>compile</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
+                        <goals> <goal>compile</goal> </goals>
                     </execution>
                     <execution>
-                        <id>testCompile</id>
+                        <id>java-testCompile</id>
                         <phase>test-compile</phase>
+                        <goals> <goal>testCompile</goal> </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
                         <goals>
-                            <goal>testCompile</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 
     <profiles>
-
         <profile>
             <id>native-backend</id>
             <properties>
                 <backend.requires>,org.bytedeco.openblas,org.nd4j.cpu.api,nd4j.cpu.preset</backend.requires>
             </properties>
         </profile>
-
         <profile>
             <id>cuda-backend</id>
             <properties>
@@ -1038,12 +845,31 @@
         </profile>
         <profile>
             <id>parallel-tests</id>
-            <properties>
-                <junit.jupiter.execution.parallel.enabled>true</junit.jupiter.execution.parallel.enabled>
-                <junit.jupiter.execution.parallel.mode.default>concurrent</junit.jupiter.execution.parallel.mode.default>
-            </properties>
+            <activation>
+                <property>
+                    <name>parallelTests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <properties>
+                                <configurationParameters>
+                                    junit.jupiter.execution.parallel.enabled=true
+                                    junit.jupiter.execution.parallel.mode.default=concurrent
+                                    junit.jupiter.execution.parallel.config.strategy=fixed
+                                    junit.jupiter.execution.parallel.config.fixed.parallelism=${cpu.core.count}
+                                </configurationParameters>
+                            </properties>
+                            <forkCount>${cpu.core.count}</forkCount>
+                            <reuseForks>true</reuseForks>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
-
         <profile>
             <id>test-larger-heap-size</id>
             <properties>
@@ -1052,42 +878,30 @@
             </properties>
         </profile>
 
-
         <profile>
             <id>github</id>
             <distributionManagement>
                 <repository>
                     <id>github</id>
                     <name>GitHub Packages</name>
-                    <url>https://maven.pkg.github.com/eclipse/deeplearning4j</url>
+                    <url>https://maven.pkg.github.com/deeplearning4j/deeplearning4j</url>
                 </repository>
-
                 <snapshotRepository>
                     <id>github</id>
-                    <name>Github snapshots</name>
-                    <url>https://maven.pkg.github.com/eclipse/deeplearning4j</url>
+                    <name>GitHub Packages Snapshots</name>
+                    <url>https://maven.pkg.github.com/deeplearning4j/deeplearning4j</url>
                 </snapshotRepository>
             </distributionManagement>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
-        <profile>
-            <id>ossrh</id>
-            <distributionManagement>
-                <repository>
-                    <id>ossrh</id>
-                    <name>Nexus Release Repository</name>
-                    <url>http://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
-        </profile>
-
-        <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
             <id>skipTestCompileAndRun</id>
             <activation>
@@ -1119,11 +933,6 @@
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
         </profile>
-        <!--
-        testresources profile must be running when executing tests. However, maven enforcer plugin seems to be unable
-         to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
-         when -DskipTests or -Dmaven.test.skip=true is used
-         -->
 
         <profile>
             <id>qa</id>
@@ -1149,58 +958,19 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
-            <id>release</id>
+            <id>central-release</id>
             <properties>
                 <maven.test.skip>true</maven.test.skip>
-                <gpg.passphrase>${env.MAVEN_GPG_PASSPHRASE}</gpg.passphrase>
-                <gpg.keyname>${env.SONATYPE_GPG_KEY}</gpg.keyname>
             </properties>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
-                        <configuration>
-                            <minmemory>256m</minmemory>
-                            <maxmemory>2048m</maxmemory>
-                            <doclint>all,-missing</doclint>
-                            <quiet>true</quiet>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>${maven-gpg-plugin.version}</version>
-                        <configuration>
-                            <gpgArguments>
-                                <arg>--pinentry-mode</arg>
-                                <arg>loopback</arg>
-                            </gpgArguments>
-                        </configuration>
-
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
+
+
         <profile>
             <id>trimSnapshots</id>
             <build>
@@ -1218,7 +988,7 @@
                                 </goals>
                                 <configuration>
                                     <removeAll>true
-                                    </removeAll><!-- remove all versions of built artifacts including all versions.  Install phase will regenerate -->
+                                    </removeAll>
                                 </configuration>
                             </execution>
                             <execution>
@@ -1235,6 +1005,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>1.9build</id>
             <activation>
@@ -1275,16 +1046,12 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
-
         <profile>
             <id>platform-tests</id>
             <modules>
                 <module>platform-tests</module>
             </modules>
         </profile>
-
-
-        <!-- For Android: -Dplatform=android-arm -->
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
@@ -1296,7 +1063,6 @@
                 <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
             </properties>
         </profile>
-        <!-- Profiles to set the default javacpp.platform property: If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
             <activation>
@@ -1333,7 +1099,6 @@
                 <os.name>windows</os.name>
             </properties>
         </profile>
-
         <profile>
             <id>arm</id>
             <activation>
@@ -1345,7 +1110,6 @@
                 <os.arch>armhf</os.arch>
             </properties>
         </profile>
-
         <profile>
             <id>android</id>
             <activation>
@@ -1357,7 +1121,6 @@
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
-
         <profile>
             <id>aarch64</id>
             <activation>

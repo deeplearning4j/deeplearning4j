@@ -109,15 +109,7 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-        <!-- used to alleviate licensing issues with findbugs -->
-        <dependency>
-            <groupId>com.github.stephenc.findbugs</groupId>
-            <artifactId>findbugs-annotations</artifactId>
-            <version>${findbugs-annotations.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
+
 
     <build>
         <extensions>
