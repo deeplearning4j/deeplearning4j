@@ -67,7 +67,7 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
         topIndices.r<sd::LongType>(pos) = pos;
         topValues.r<T>(pos) = trial.t<T>(pos);
       }
-      sortedVals.assign(topValues);
+      sortedVals.assign(&topValues);
       SpecialMethods<T>::sortGeneric(&sortedVals, false);
       for (sd::LongType i = static_cast<sd::LongType>(k); i < width; ++i) {
         T val = trial.e<T>(i);
@@ -108,8 +108,8 @@ static sd::Status topKFunctor_(NDArray* input, NDArray* values, NDArray* indices
           topValues.r<T>(e) = it->second;
         }
       }
-      if (values) (*values)(e, dimsToExclude).assign(topValues);
-      if (indices) (*indices)(e, dimsToExclude).assign(topIndices);
+      if (values) (*values)(e, dimsToExclude).assign(&topValues);
+      if (indices) (*indices)(e, dimsToExclude).assign(&topIndices);
     }
   }
   return sd::Status::OK;

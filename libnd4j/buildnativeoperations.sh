@@ -853,13 +853,37 @@ else
     eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
 fi
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Determine script location
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Find the libnd4j directory
+if [[ "$SCRIPT_DIR" == */libnd4j* ]]; then
+    # Already in or under libnd4j directory
+    LIBND4J_DIR=$(echo "$SCRIPT_DIR" | sed 's/\(.*libnd4j\).*/\1/')
+else
+    # Check if we're in the parent deeplearning4j directory
+    if [ -d "$SCRIPT_DIR/libnd4j" ]; then
+        LIBND4J_DIR="$SCRIPT_DIR/libnd4j"
+    else
+        # Try going up one directory to see if libnd4j is there
+        if [ -d "$SCRIPT_DIR/../libnd4j" ]; then
+            LIBND4J_DIR="$SCRIPT_DIR/../libnd4j"
+        else
+            echo "Error: Could not locate libnd4j directory"
+            exit 1
+        fi
+    fi
+fi
+
+# cd to the directory containing this script
+DIR="$SCRIPT_DIR"
 cd "$DIR"
+
 
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
     # ensure proper flatc sources are in place
-    bash "$DIR/../../copy-flatc-java.sh"
+    bash "$LIBND4J_DIR/copy-flatc-java.sh"
 fi
 
 echo "Build process completed successfully."

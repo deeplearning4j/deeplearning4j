@@ -36,7 +36,7 @@ NDArray matrixMinor(NDArray& in, sd::LongType col) {
   m->setIdentity();
   auto mRef = *m;
   auto view =  mRef({col, m->rows(), col, m->columns()});
-  view.assign(in({col, m->rows(), col, m->columns()}));
+  view.assign(&in({col, m->rows(), col, m->columns()}));
 
   return mRef;
 }
@@ -89,7 +89,7 @@ void qrSingle(NDArray* matrix, NDArray* Q, NDArray* R, bool const fullMatricies)
     MmulHelper::matmul(&q[k], &z, qQ, false, false, 0, 0, qQ);
     z = std::move(*qQ);
   }
-  resQ->assign(q[0]);  //
+  resQ->assign(&q[0]);  //
 
   for (sd::LongType i = 1; i < N && i < M - 1; i++) {
     auto tempResQ = resQ;

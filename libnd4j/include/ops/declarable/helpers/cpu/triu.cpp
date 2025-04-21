@@ -33,7 +33,7 @@ static void triuBP_(sd::LaunchContext* context, NDArray& input, NDArray& gradO, 
                     const int diagonal) {
   if(gradO.isScalar()) {
     auto firstElement = gradO.e(0);
-    gradI.assign(firstElement);
+    gradI.assign(&firstElement);
   } else {
     auto dOdI = NDArray(&gradO);  // dO/dI
     char direction = diagonal <= 0  || diagonal > 0 ? 'l': 'u';
@@ -49,7 +49,8 @@ static void triuBP_(sd::LaunchContext* context, NDArray& input, NDArray& gradO, 
     samediff::Threads::parallel_for(func, 0, dLen);
 
     // FIXME: !!!
-    gradI.assign(dOdI * gradO);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
+    NDArray ref = dOdI * gradO;
+    gradI.assign(&ref);  // chain rule: dLoss/dI = dO/dI * dLoss/dO
   }
 
 

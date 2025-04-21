@@ -155,7 +155,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         for (auto i = start; i < stop; i++) {
           NDArray subArrOut = (*output)(i, dimsOut);
           NDArray subArrIn = (*input)(indices->e<sd::LongType>(i), {axis});
-          subArrOut.assign(subArrIn);
+          subArrOut.assign(&subArrIn);
         }
       };
 
@@ -178,7 +178,7 @@ static void gather_(NDArray* input, NDArray* indices, NDArray* output, const std
         for (auto i = start; i < stop; i++) {
           NDArray subArrOut = (*output)(i, {axis});
           NDArray subArrIn = (*input)(intArgs[i + 1], {axis});
-          subArrOut.assign(subArrIn);
+          subArrOut.assign(&subArrIn);
         }
       };
 

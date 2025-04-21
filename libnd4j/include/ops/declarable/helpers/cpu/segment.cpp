@@ -156,7 +156,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
     auto meanT = listOfOutTensors.at(idx);
     int count = 1;
     auto meanV = meanT->dup();
-    meanV.assign(*listOfTensors.at(0));
+    meanV.assign(listOfTensors.at(0));
 
     for (sd::LongType i = 1; i < indices->lengthOf(); i++) {
       if (indices->e<sd::LongType>(i) == idx) {
@@ -172,7 +172,7 @@ static void segmentMeanFunctor_(NDArray* input, NDArray* indices, NDArray* outpu
         meanV.applyScalar(scalar::Divide, count, meanT);
         idx = indices->e<sd::LongType>(i);
         meanT = listOfOutTensors.at(idx);
-        meanV.assign(*listOfTensors.at(i));
+        meanV.assign(listOfTensors.at(i));
         count = 1;
       }
       meanV.applyScalar(scalar::Divide, count, meanT);
