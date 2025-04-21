@@ -854,7 +854,7 @@ else
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cd "$DIR
+cd "$DIR"
 
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
