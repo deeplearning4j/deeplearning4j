@@ -853,6 +853,10 @@ else
     eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
 fi
 
-
+if [ "$GENERATE_FLATC" == "ON" ]; then
+    echo "Copying flatc generated for java"
+    # ensure proper flatc sources are in place
+    bash copy-flatc-java.sh
+fi
 
 echo "Build process completed successfully."
