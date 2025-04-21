@@ -259,7 +259,7 @@
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-jar-plugin.version>3.4.2</maven-jar-plugin.version>
         <maven-dependency-plugin.version>3.7.1</maven-dependency-plugin.version>
-        <maven-invoker-plugin.version>3.3.0</maven-invoker-plugin.version>
+        <maven-invoker-plugin.version>2.2</maven-invoker-plugin.version>
         <maven-antrun-plugin.version>3.1.0</maven-antrun-plugin.version>
         <maven-replacer-plugin.version>1.5.3</maven-replacer-plugin.version>
         <protoc-jar-maven-plugin.version>3.11.4</protoc-jar-maven-plugin.version>
