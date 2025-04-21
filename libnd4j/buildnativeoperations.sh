@@ -859,7 +859,7 @@ cd "$DIR"
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
     # ensure proper flatc sources are in place
-    "$DIR/copy-flatc-java.sh"
+    "$DIR/../../copy-flatc-java.sh"
 fi
 
 echo "Build process completed successfully."
