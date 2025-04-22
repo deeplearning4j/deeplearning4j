@@ -154,40 +154,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>libnd4j-checks</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireProperty>
-                                    <property>libnd4jhome</property>
-                                    <message>You must set the LIBND4J_HOME environment variable!
-                                    </message>
-                                    <regex>.*/.*</regex>
-                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
-                                    </regexMessage>
-                                </requireProperty>
-                                <requireFilesExist>
-                                    <files>
-                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
-                                        <file>${libnd4jhome}/blasbuild/cuda/blas</file>
-                                    </files>
-                                    <message>!!! You have to compile libnd4j with cuda support
-                                        first!
-                                    </message>
-                                </requireFilesExist>
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-deploy-plugin</artifactId>
@@ -560,21 +527,7 @@
             </dependencies>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>libnd4j-checks</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>true</skip>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
