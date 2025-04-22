@@ -1,3 +1,4 @@
+# .github/workflows/your-workflow.yml (Replace with your actual filename)
 on:
   workflow_dispatch:
     inputs:
@@ -37,9 +38,9 @@ on:
         default:
 
       libnd4jUrl:
-          description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
-          required: false
-          default:
+        description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        required: false
+        default:
 
 
       runsOn:
@@ -73,7 +74,7 @@ jobs:
 
           - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
-            name: OS to run on
+            name: OS to run on # Note: name seems incorrect here, should be 'Libnd4j download URL'
 
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
             experimental: true
@@ -110,33 +111,54 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+
+      - uses: actions/checkout@v2 # Consider updating to v3 or v4 for latest features/fixes
+
+      # <<< START DEBUG STEP 1 >>>
+      - name: Check for NativeOps.h after checkout
+        shell: bash
+        run: |
+          echo ">>> Checking for NativeOps.h in $(pwd)"
+          ls -lR libnd4j/include/legacy/ # List contents to see if NativeOps.h is there
+          if [ -f "libnd4j/include/legacy/NativeOps.h" ]; then
+            echo ">>> FOUND libnd4j/include/legacy/NativeOps.h after checkout."
+          else
+            echo ">>> ERROR: NativeOps.h NOT FOUND after checkout!"
+            # Optionally fail early: exit 1
+          fi
+          echo ">>> End NativeOps.h check"
+      # <<< END DEBUG STEP 1 >>>
+
       - uses: ./.github/actions/set-linux-distro-version
+
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 modules=':nd4j-native,:nd4j-native-preset'
-              else 
-               echo "Building libnd4j from source"
-               modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
-              fi
-              command="mvn  ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
-              if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
-              elif [ "${{ matrix.helper }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
-              elif [ "${{ matrix.extension }}" != '' ]; then
-                     mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
-               else
-                   mvn_ext=""
-              fi
-              if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
-                 echo "Adding libnd4j download"
-              fi
-              command="${command} ${mvn_ext}"
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
-              echo "COMMAND=${command}" >> $GITHUB_ENV
+          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+             modules=':nd4j-native,:nd4j-native-preset'
+          else
+           echo "Building libnd4j from source"
+           # If building from source, consider adding -Plibnd4j-assembly here if debugging doesn't help
+           # assembly_profile="-Plibnd4j-assembly" # Uncomment to test assembly profile
+           assembly_profile="" # Keep default for now
+           modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+          fi
+          command="mvn ${assembly_profile} ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+          if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}-${{matrix.extension}}"
+          elif [ "${{ matrix.helper }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.helper }}"
+          elif [ "${{ matrix.extension }}" != '' ]; then
+                 mvn_ext=" -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-${{ matrix.extension }}"
+           else
+               mvn_ext=""
+          fi
+          if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
+             echo "Adding libnd4j download"
+          fi
+          command="${command} ${mvn_ext}"
+          echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
+          echo "COMMAND=${command}" >> $GITHUB_ENV
 
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
@@ -144,19 +166,20 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-cmake-${{ env.LINUX_DISTRO_VERSION }} # Add distro version to key
+          restore-keys: ${{ runner.os }}-cmake-
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf-${{ env.LINUX_DISTRO_VERSION }} # Add distro version to key
+          restore-keys: ${{ runner.os }}-protobuf-
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
         with:
@@ -172,17 +195,31 @@ jobs:
       - name: Setup libnd4j home if a download url is specified
         shell: bash
         run: |
-              mkdir "${GITHUB_WORKSPACE}/openblas_home"
-              cd "${GITHUB_WORKSPACE}/openblas_home"
-              wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
-              unzip openblas-0.3.28-1.5.11-linux-x86_64.jar
-              cd ..
-              echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-              cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+          # Create a directory for OpenBLAS relative to GITHUB_WORKSPACE
+          mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
+          unzip -o openblas-0.3.28-1.5.11-linux-x86_64.jar # Use -o to overwrite without prompting
+          cd ..
+          OPENBLAS_EXTRACT_PATH="${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64"
+          echo "OPENBLAS_PATH=${OPENBLAS_EXTRACT_PATH}" >> "$GITHUB_ENV"
+          # Ensure the target .so exists before trying to copy
+          if [ -f "${OPENBLAS_EXTRACT_PATH}/libopenblas.so.0" ]; then
+            cp "${OPENBLAS_EXTRACT_PATH}/libopenblas.so.0" "${OPENBLAS_EXTRACT_PATH}/libopenblas.so"
+            echo "Copied libopenblas.so.0 to libopenblas.so"
+          else
+            echo "Warning: libopenblas.so.0 not found in extracted JAR at ${OPENBLAS_EXTRACT_PATH}"
+          fi
+          # Set LIBND4J_HOME when using downloaded libnd4j
+          bash ./bootstrap-libnd4j-from-url.sh linux x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
         if: ${{ github.event.inputs.libnd4jUrl != '' }}
 
-      - name: Build on  linux-x86_64
+      # <<< START MODIFIED BUILD STEP >>>
+      - name: Build on linux-x86_64
         shell: bash
+        # Set continue-on-error: true to allow the next step to run even if Maven fails
+        continue-on-error: true
+        id: maven_build # Give the step an ID to check its outcome
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
@@ -195,41 +232,103 @@ jobs:
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          MODULES: ${{ matrix.mvn_flags }}
+          MODULES: ${{ matrix.mvn_flags }} # Note: MODULES env var seems unused, command uses $modules variable
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
-          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-
-
+          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }} # Note: This seems unused, URL is in github.event.inputs.libnd4jUrl
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
           echo "release version ${{ matrix.release_version }}"
           echo "snapshot version ${{ matrix.snapshot_version }}"
           echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
+          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}" # Use correct input variable
+          echo "maven flags ${{ matrix.mvn_flags }}" # This refers to include matrix, use input for passed flags
+          echo "Extra input maven flags: ${{ github.event.inputs.mvnFlags }}"
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
+
+          # Set trap to list directory contents on error within this script block
+          # Using ; instead of && so trap defines even if previous commands fail
+          trap 'echo "--- Listing libnd4j contents on error ---"; ls -la libnd4j; echo "--- Listing blasbuild/cpu contents on error ---"; ls -la libnd4j/blasbuild/cpu; echo "--- End listing ---"' ERR
 
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+
+          # Update package lists and clean up (moved earlier, ensure it happens before potential errors)
+          # sudo apt-get update -y # Consider if an update is needed
           sudo apt-get -y autoremove
           sudo apt-get -y clean
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
-          bash ./bootstrap-libnd4j-from-url.sh linux x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
-          if [ "$PERFORM_RELEASE" == 1 ]; then
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
-                   else
-                       echo "Running build and deploying to snapshots"
-                       eval "${COMMAND}"
+
+          # Setup LD_LIBRARY_PATH for OpenBLAS *if* it was downloaded/extracted
+          # This check needs to happen only if libnd4jUrl was NOT used, as the other block handles it
+          if [ "${{ github.event.inputs.libnd4jUrl == '' }}" ]; then
+             # If building libnd4j from source, ensure OPENBLAS_PATH is set for the build script
+             # Assuming OpenBLAS is available system-wide or via Maven dependencies for javacpp plugin
+             echo "Building from source, assuming OpenBLAS available to buildnativeoperations.sh"
+             # Check if OPENBLAS_PATH was set by a previous step or needs default
+             if [ -z "$OPENBLAS_PATH" ]; then
+                # Attempt to find OpenBLAS from Maven cache if available
+                OPENBLAS_JAR_PATH=$(find ~/.m2/repository/org/bytedeco/openblas/ -name "openblas-*-linux-x86_64.jar" | head -n 1)
+                if [ -n "$OPENBLAS_JAR_PATH" ]; then
+                    echo "Found OpenBLAS jar: $OPENBLAS_JAR_PATH"
+                    mkdir -p "${GITHUB_WORKSPACE}/openblas_extracted"
+                    unzip -o "$OPENBLAS_JAR_PATH" -d "${GITHUB_WORKSPACE}/openblas_extracted"
+                    export OPENBLAS_PATH="${GITHUB_WORKSPACE}/openblas_extracted/org/bytedeco/openblas/linux-x86_64"
+                    echo "Extracted OpenBLAS to $OPENBLAS_PATH"
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+                    echo "Updated LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+                else
+                    echo "Warning: Building from source but OPENBLAS_PATH is not set and couldn't find cached jar."
+                fi
+             else
+                echo "OPENBLAS_PATH already set to: $OPENBLAS_PATH"
+                export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+                echo "Updated LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+             fi
+          else
+             # bootstrap script should handle setting LIBND4J_HOME and potentially LD_PATH
+             echo "Using downloaded libnd4j from URL. Assuming bootstrap script handles paths."
+             export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH" # Ensure path set earlier is used
           fi
 
+          # Execute the build/release command
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+            echo "Running release script..."
+            # Ensure the release script has execute permissions
+            chmod +x ${GITHUB_WORKSPACE}/release-specified-component.sh
+            bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
+          else
+            echo "Running build and deploying to snapshots using command:"
+            echo "${COMMAND}"
+            eval "${COMMAND}" # Run the constructed Maven command
+          fi
+          echo "Maven command execution finished."
+      # <<< END MODIFIED BUILD STEP >>>
 
-
+      # <<< START DEBUG STEP 2 >>>
+      - name: Check build outcome and artifacts
+        # Run this step regardless of the previous step's outcome
+        if: always()
+        shell: bash
+        run: |
+          echo ">>> Maven build step outcome: ${{ steps.maven_build.outcome }}"
+          echo ">>> --- Checking for files after Maven execution attempt ---"
+          echo ">>> Checking for NativeOps.h again:"
+          ls -l libnd4j/include/legacy/NativeOps.h || echo ">>> NativeOps.h not found after Maven run."
+          echo ">>> Checking for blasbuild/cpu directory:"
+          ls -ld libnd4j/blasbuild/cpu/ || echo ">>> blasbuild/cpu directory not found after Maven run."
+          echo ">>> Checking for blasbuild/cpu/blas file/directory:"
+          ls -l libnd4j/blasbuild/cpu/blas || echo ">>> blasbuild/cpu/blas not found after Maven run."
+          echo ">>> Full listing of blasbuild/cpu:"
+          ls -lR libnd4j/blasbuild/cpu/ || echo ">>> Cannot list blasbuild/cpu"
+          echo ">>> --- End check ---"
+          # Force fail the workflow if Maven failed
+          if [ "${{ steps.maven_build.outcome }}" == "failure" ]; then
+            echo ">>> Maven build failed, failing workflow."
+            exit 1
+          fi
+      # <<< END DEBUG STEP 2 >>>
