@@ -83,7 +83,7 @@ PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
   Requirements req("ONEDNN AVGPOOL2d OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
-  if (req) onednnUtils::checkPoolingONEDNN(req, block, *input, *output);
+  if (req) onednnUtils::checkPoolingONEDNN(req, block, input, output);
   req.logTheSuccess();
   return req;
 }
@@ -142,7 +142,7 @@ PLATFORM_CHECK(avgpool2d_bp, ENGINE_CPU) {
   Requirements req("ONEDNN AVGPOOL2d_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
-  if (req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
+  if (req) onednnUtils::checkPoolingONEDNN(req, block,input, gradO);
   req.logTheSuccess();
   return req;
 }

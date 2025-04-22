@@ -146,7 +146,7 @@ PLATFORM_CHECK(maxpool3dnew_bp, ENGINE_CPU) {
   Requirements req("ONEDNN MAXPOOL3d_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectTrue(sd::ONEDNNStream::isSupported({input, output}), ONEDNN_STREAM_NOT_SUPPORTED);
-  if (req) onednnUtils::checkPoolingONEDNN(req, block, *input, *gradO);
+  if (req) onednnUtils::checkPoolingONEDNN(req, block, input, gradO);
   req.logTheSuccess();
   return req;
 }
