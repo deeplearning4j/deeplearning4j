@@ -1,5 +1,5 @@
-# .github/workflows/your-workflow.yml (Replace with your actual filename)
-# Timestamp: Tuesday, April 22, 2025 at 5:07:07 PM JST (Tokyo)
+# .github/workflows/build-deploy-linux-x86_64.yml (Replace with your actual filename)
+# Corrected: Tuesday, April 22, 2025 at 5:16:01 PM JST (Tokyo)
 on:
   workflow_dispatch:
     inputs:
@@ -76,7 +76,7 @@ jobs:
           access_token: ${{ github.token }}
 
       - name: Checkout code
-        uses: actions/checkout@v4 # Updated checkout action version
+        uses: actions/checkout@v4
 
       # STEP 1: Check source file exists immediately after checkout
       - name: Check for NativeOps.h after checkout
@@ -98,8 +98,7 @@ jobs:
       - name: Set mvn build command based on matrix and inputs
         shell: bash
         id: set_command # Give step an ID
-        outputs: # Define outputs for use in later steps
-          command_string: ${{ steps.set_command.outputs.command_string }}
+        # <<< INVALID 'outputs:' block REMOVED from here >>>
         run: |
           assembly_profile="" # Initialize assembly profile flag
           if  [  "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
@@ -111,7 +110,6 @@ jobs:
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j' # Include :libnd4j
           fi
           # Base command - Uses inputs directly now for flags/threads etc.
-          # Note: matrix.mvn_ext from original example seemed incorrect usage, using input mvnFlags
           base_command="mvn ${assembly_profile} ${{ github.event.inputs.mvnFlags }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh  -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=linux-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
           # Append matrix-specific extensions (helper/extension)
           if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
@@ -126,7 +124,7 @@ jobs:
           final_command="${base_command} ${mvn_ext}"
           echo "Setting final command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to:"
           echo "${final_command}"
-          # Set step output
+          # Set step output correctly using GITHUB_OUTPUT
           echo "command_string=${final_command}" >> "$GITHUB_OUTPUT"
 
       - name: Update Dependencies (Linux)
@@ -354,6 +352,8 @@ jobs:
       - name: Check build outcome and artifacts
         if: always()
         shell: bash
+        env: # Make LIBND4J_HOME available if it was set
+          LIBND4J_HOME: ${{ env.LIBND4J_HOME }}
         run: |
           echo ">>> Maven build step outcome: ${{ steps.maven_build.outcome }}"
           echo ">>> --- Checking for files after Maven execution attempt ---"
@@ -370,6 +370,8 @@ jobs:
           else
             # If URL was used, check LIBND4J_HOME provided by bootstrap script
             echo ">>> Checking LIBND4J_HOME contents (used URL)."
+            # Need to get LIBND4J_HOME from the environment where bootstrap script set it
+            # Re-checking env var set by previous step
             if [ -n "$LIBND4J_HOME" ] && [ -d "$LIBND4J_HOME" ]; then
               echo "Listing contents of LIBND4J_HOME ($LIBND4J_HOME):"
               ls -lR "$LIBND4J_HOME" || echo "Could not list LIBND4J_HOME."
@@ -378,7 +380,7 @@ jobs:
               echo "Checking for blasbuild/cpu/blas in LIBND4J_HOME:"
               ls -l "$LIBND4J_HOME/blasbuild/cpu/blas" || echo "blasbuild/cpu/blas not found in LIBND4J_HOME."
             else
-              echo ">>> LIBND4J_HOME environment variable not set or not a directory."
+              echo ">>> LIBND4J_HOME environment variable not set or not a directory in this step's env."
             fi
           fi
           echo ">>> --- End check ---"
