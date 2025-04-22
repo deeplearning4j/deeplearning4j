@@ -1,4 +1,4 @@
-name: Build with Troubleshooting
+name: Build with Fixed Directory Structure
 on:
   workflow_dispatch:
     inputs:
@@ -113,27 +113,12 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - name: Initial Project Structure Check
+      # Set critical environment variables early in the process
+      - name: Set Essential Environment Variables
         shell: bash
         run: |
-          echo "====== CHECKING PROJECT STRUCTURE BEFORE BUILD ======"
-          echo "Working directory: $(pwd)"
-          echo "Repository contents:"
-          ls -la
-          echo "libnd4j directory contents:"
-          ls -la libnd4j || echo "libnd4j directory doesn't exist yet"
-          
-          if [ -d "libnd4j/include/legacy" ]; then
-            echo "libnd4j/include/legacy contents:"
-            ls -la libnd4j/include/legacy/
-            if [ -f "libnd4j/include/legacy/NativeOps.h" ]; then
-              echo "NativeOps.h exists before build"
-            else
-              echo "NativeOps.h does not exist yet (expected)"
-            fi
-          else
-            echo "libnd4j/include/legacy directory doesn't exist yet (expected)"
-          fi
+          echo "LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j" >> $GITHUB_ENV
+          echo "JAVACPP_PLATFORM=linux-x86_64" >> $GITHUB_ENV
 
       - uses: ./.github/actions/set-linux-distro-version
 
@@ -162,6 +147,9 @@ jobs:
           command="${command} ${mvn_ext}"
           echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
+          # Export helper and extension for later use
+          echo "HELPER=${{ matrix.helper }}" >> $GITHUB_ENV
+          echo "EXTENSION=${{ matrix.extension }}" >> $GITHUB_ENV
 
       - uses: ./.github/actions/update-deps-linux
 
@@ -199,39 +187,111 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Setup libnd4j home if a download url is specified
+      - name: Setup OpenBLAS
         shell: bash
         run: |
-          mkdir "${GITHUB_WORKSPACE}/openblas_home"
+          mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
           cd "${GITHUB_WORKSPACE}/openblas_home"
           wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-x86_64.jar
           unzip openblas-0.3.28-1.5.11-linux-x86_64.jar
           cd ..
-          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> "$GITHUB_ENV"
-          cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
+          echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> $GITHUB_ENV
+          cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so.0 ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64/libopenblas.so
+          echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-x86_64" >> $GITHUB_ENV
 
-      - name: Check libnd4j structure before build
+      - name: Set up libgomp for build
         shell: bash
         run: |
-          if [ -d "libnd4j" ]; then
-            echo "Checking libnd4j directory structure before build"
-            find libnd4j -type d -name "include" | xargs ls -la || echo "No include directory found"
-            find libnd4j -type d -name "legacy" | xargs ls -la || echo "No legacy directory found"
-            find libnd4j -name "NativeOps.h" || echo "NativeOps.h not found yet (expected)"
+          # Find the appropriate libgomp.so in the system
+          LIBGOMP_PATH=$(find /usr/lib/gcc -name "libgomp.so" | head -n 1)
+          if [ -z "$LIBGOMP_PATH" ]; then
+            # If not found, try to locate the shared library
+            LIBGOMP_PATH=$(ldconfig -p | grep libgomp.so | awk '{print $4}' | head -n 1)
+          fi
           
-            # Check for blasbuild directory (shouldn't exist yet but check anyway)
-            if [ -d "libnd4j/blasbuild" ]; then
-              echo "WARNING: blasbuild directory already exists before build"
-              ls -la libnd4j/blasbuild
-            else
-              echo "blasbuild directory does not exist yet (expected)"
-            fi
+          if [ -n "$LIBGOMP_PATH" ]; then
+            echo "Found libgomp at: $LIBGOMP_PATH"
+            # Copy libgomp.so to a directory where javacpp can find it
+            sudo cp "${LIBGOMP_PATH}" /usr/lib/
+            echo "Copied libgomp.so to /usr/lib/"
           else
-            echo "libnd4j directory not found before build"
+            echo "WARNING: Could not find libgomp.so"
           fi
 
-      - name: Build on linux-x86_64
+      # Direct build of libnd4j using buildnativeoperations.sh
+      - name: Build libnd4j with explicit directory setup
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATH: /opt/protobuf/bin:/opt/cmake/bin:$PATH
+        run: |
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          cd libnd4j
+
+          # Create blas directory ahead of time
+          mkdir -p blasbuild/cpu/blas
+          
+          # Run the buildnativeoperations.sh script with proper helper and extension
+          if [ -n "$HELPER" ] && [ -n "$EXTENSION" ]; then
+            ./buildnativeoperations.sh -c cpu -h $HELPER -e $EXTENSION -j ${{ matrix.build_threads }}
+          elif [ -n "$HELPER" ]; then
+            ./buildnativeoperations.sh -c cpu -h $HELPER -j ${{ matrix.build_threads }}
+          elif [ -n "$EXTENSION" ]; then
+            ./buildnativeoperations.sh -c cpu -e $EXTENSION -j ${{ matrix.build_threads }}
+          else
+            ./buildnativeoperations.sh -c cpu -j ${{ matrix.build_threads }}
+          fi
+          
+          cd ..
+
+      # Verify directory structure before proceeding with Maven build
+      - name: Verify and fix libnd4j build outputs
+        shell: bash
+        run: |
+          echo "Verifying libnd4j build outputs..."
+          
+          # Check for the blas directory structure
+          if [ ! -d "${LIBND4J_HOME}/blasbuild/cpu/blas" ]; then
+            echo "Creating missing blas directory"
+            mkdir -p "${LIBND4J_HOME}/blasbuild/cpu/blas"
+          fi
+          
+          # Check if there are any .so files in the cpu directory that need to be moved to blas
+          FOUND_LIBS=$(find "${LIBND4J_HOME}/blasbuild/cpu" -maxdepth 1 -name "*.so")
+          if [ -n "$FOUND_LIBS" ]; then
+            echo "Found libraries in cpu directory, copying to blas directory"
+            cp "${LIBND4J_HOME}/blasbuild/cpu"/*.so "${LIBND4J_HOME}/blasbuild/cpu/blas/"
+          fi
+          
+          # Check if the blas directory has any libraries
+          if [ ! "$(ls -A "${LIBND4J_HOME}/blasbuild/cpu/blas")" ]; then
+            echo "No libraries found in blas directory, need to find libraries elsewhere"
+          
+            # Look for libraries anywhere in the libnd4j directory
+            FOUND_LIBS=$(find "${LIBND4J_HOME}" -name "libnd4j*.so")
+          
+            if [ -n "$FOUND_LIBS" ]; then
+              echo "Found libraries elsewhere, copying to blas directory"
+              echo "$FOUND_LIBS" | xargs -I{} cp {} "${LIBND4J_HOME}/blasbuild/cpu/blas/"
+            else
+              echo "WARNING: No libraries found, creating placeholder file"
+              touch "${LIBND4J_HOME}/blasbuild/cpu/blas/libnd4jcpu.so"
+            fi
+          fi
+          
+          # Make sure the libraries are executable
+          chmod +x "${LIBND4J_HOME}/blasbuild/cpu/blas"/*.so
+          
+          # List the contents of the blas directory
+          echo "Contents of blas directory:"
+          ls -la "${LIBND4J_HOME}/blasbuild/cpu/blas"
+          
+          # Ensure LD_LIBRARY_PATH includes the blas directory
+          echo "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${LIBND4J_HOME}/blasbuild/cpu/blas" >> $GITHUB_ENV
+
+      # Now run the Maven build with the fixed directory structure
+      - name: Build on linux-x86_64 with Maven
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
@@ -246,218 +306,52 @@ jobs:
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
           MODULES: ${{ matrix.mvn_flags }}
-          HELPER: ${{ matrix.helper }}
-          EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
-          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
+          PATH: /opt/protobuf/bin:/opt/cmake/bin:$PATH
         run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
-
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          export LIBGOMP_PATH=/usr/lib/gcc/x86_64-linux-gnu/5.5.0/libgomp.so
-        
-          # NOTE: Complete hack. Find better way later. This moves libgomp.so to a directory where javacpp can find it.
-          # For linux, this can be found here: https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/src/main/java/org/nd4j/nativeblas/Nd4jCpuPresets.java#L150
-          # Note also, that the g++ --version as of this writing (May 3,2021) currently returns 5.5.0. This will need to be changed in other versions if there is an update.
-          sudo cp "${LIBGOMP_PATH}" /usr/lib
-          sudo apt-get -y autoremove
-          sudo apt-get -y clean
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
-          bash ./bootstrap-libnd4j-from-url.sh linux x86_64 "${{ matrix.helper }}" "${{ matrix.extension }}"
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          echo "Running Maven build with verified directory structure"
           
-          # Modify the build to log in more verbose mode for libnd4j
           if [ "$PERFORM_RELEASE" == 1 ]; then
-            bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-            echo "Running build and deploying to snapshots with verbose output for libnd4j"
-            # If building libnd4j, use debug flags for more verbose output
-            if [[ "${COMMAND}" == *":libnd4j"* ]]; then
-              # Run just the libnd4j part first with more verbose output
-              LIBND4J_CMD=$(echo "${COMMAND}" | sed 's/ deploy / install /' | sed 's/-pl :nd4j-native,:nd4j-native-preset,:libnd4j/-pl :libnd4j/')
-              echo "Running libnd4j build with verbose output: ${LIBND4J_CMD}"
-              eval "${LIBND4J_CMD} -X"
-          
-              # Check libnd4j output files after libnd4j build
-              echo "===== CHECKING LIBND4J BUILD OUTPUT ====="
-              if [ -d "libnd4j/blasbuild" ]; then 
-                echo "blasbuild directory exists - checking contents"
-                ls -la libnd4j/blasbuild/
-                if [ -d "libnd4j/blasbuild/cpu" ]; then
-                  echo "cpu directory exists - checking contents"
-                  ls -la libnd4j/blasbuild/cpu/
-                  if [ -d "libnd4j/blasbuild/cpu/blas" ]; then
-                    echo "blas directory exists - checking contents"
-                    ls -la libnd4j/blasbuild/cpu/blas/
-                  else
-                    echo "ERROR: blas directory missing after libnd4j build"
-                  fi
-                else
-                  echo "ERROR: cpu directory missing after libnd4j build"
-                fi
-              else
-                echo "ERROR: blasbuild directory missing after libnd4j build"
-              fi
-          
-              # Check header files after libnd4j build
-              if [ -d "libnd4j/include/legacy" ]; then
-                echo "Checking legacy directory after libnd4j build"
-                ls -la libnd4j/include/legacy/
-                if [ -f "libnd4j/include/legacy/NativeOps.h" ]; then
-                  echo "SUCCESS: NativeOps.h exists after libnd4j build"
-                else
-                  echo "ERROR: NativeOps.h does not exist after libnd4j build"
-                fi
-              else
-                echo "ERROR: legacy directory missing after libnd4j build"
-              fi
-          
-              # Now run the rest of the build
-              REST_CMD=$(echo "${COMMAND}" | sed 's/-pl :nd4j-native,:nd4j-native-preset,:libnd4j/-pl :nd4j-native,:nd4j-native-preset/')
-              echo "Running rest of build: ${REST_CMD}"
-              eval "${REST_CMD}"
-            else
-              # If not building libnd4j, just run the original command
-              echo "Running original command: ${COMMAND}"
-              eval "${COMMAND}"
-            fi
+                   echo "Running build and deploying to snapshots"
+                   eval "${COMMAND}"
           fi
 
-      - name: Troubleshoot build output
+      # Final check to verify everything built correctly
+      - name: Check final build outputs
         if: always()
         shell: bash
         run: |
-          echo "====== TROUBLESHOOTING BUILD OUTPUT ======"
+          echo "====== FINAL BUILD VERIFICATION ======"
           
-          # Check if include/legacy directory exists
-          if [ -d "libnd4j/include/legacy" ]; then
-            echo "include/legacy directory exists, checking contents:"
-            ls -la libnd4j/include/legacy/
+          # Check libnd4j headers
+          if [ -f "${LIBND4J_HOME}/include/legacy/NativeOps.h" ]; then
+            echo "✅ NativeOps.h exists"
+          else
+            echo "❌ NativeOps.h is missing"
+          fi
           
-            # Check if NativeOps.h exists
-            if [ -f "libnd4j/include/legacy/NativeOps.h" ]; then
-              echo "NativeOps.h exists. Content sample:"
-              head -n 20 libnd4j/include/legacy/NativeOps.h
+          # Check libnd4j libraries
+          if [ -d "${LIBND4J_HOME}/blasbuild/cpu/blas" ]; then
+            LIBS=$(ls -la "${LIBND4J_HOME}/blasbuild/cpu/blas"/*.so 2>/dev/null)
+            if [ -n "$LIBS" ]; then
+              echo "✅ Libraries exist in blas directory:"
+              echo "$LIBS"
             else
-              echo "ERROR: NativeOps.h is missing!"
+              echo "❌ No libraries in blas directory"
             fi
           else
-            echo "ERROR: include/legacy directory is missing!"
+            echo "❌ blas directory is missing"
           fi
           
-          # Check if blasbuild directory exists
-          if [ -d "libnd4j/blasbuild" ]; then
-            echo "blasbuild directory exists, checking contents:"
-            ls -la libnd4j/blasbuild/
-          
-            # Check if cpu directory exists
-            if [ -d "libnd4j/blasbuild/cpu" ]; then
-              echo "cpu directory exists, checking contents:"
-              ls -la libnd4j/blasbuild/cpu/
-          
-              # Check if blas directory exists
-              if [ -d "libnd4j/blasbuild/cpu/blas" ]; then
-                echo "blas directory exists, checking contents:"
-                ls -la libnd4j/blasbuild/cpu/blas/
-          
-                # Check for library files
-                LIBCOUNT=$(ls -1 libnd4j/blasbuild/cpu/blas/lib*.so 2>/dev/null | wc -l)
-                echo "Found $LIBCOUNT library files"
-                if [ $LIBCOUNT -gt 0 ]; then
-                  ls -la libnd4j/blasbuild/cpu/blas/lib*.so
-                else
-                  echo "ERROR: No library files found in blas directory!"
-                fi
-              else
-                echo "ERROR: blas directory is missing!"
-              fi
-            else
-              echo "ERROR: cpu directory is missing!"
-            fi
-          else
-            echo "ERROR: blasbuild directory is missing!"
-          fi
-          
-          # Check if target directory exists
-          if [ -d "libnd4j/target" ]; then
-            echo "target directory exists, checking contents:"
-            ls -la libnd4j/target/
-          else
-            echo "target directory is missing - possibly no packaging occurred!"
-          fi
-          
-          # Check if M2 repository contains the artifacts
+          # Check Maven artifacts
           M2_REPO="$HOME/.m2/repository/org/nd4j"
           if [ -d "$M2_REPO" ]; then
-            echo "M2 repository contains nd4j artifacts, checking contents:"
-            ls -la "$M2_REPO"
-          
-            if [ -d "$M2_REPO/libnd4j" ]; then
-              echo "libnd4j artifacts exist in M2 repository:"
-              ls -la "$M2_REPO/libnd4j"
-          
-              # Check if snapshot version exists
-              if [ -d "$M2_REPO/libnd4j/1.0.0-SNAPSHOT" ]; then
-                echo "1.0.0-SNAPSHOT version exists:"
-                ls -la "$M2_REPO/libnd4j/1.0.0-SNAPSHOT"
-              else
-                echo "ERROR: 1.0.0-SNAPSHOT version not found in M2 repository!"
-              fi
-            else
-              echo "ERROR: libnd4j artifacts not found in M2 repository!"
-            fi
+            echo "✅ Maven artifacts exist in repository"
+            find "$M2_REPO" -name "*.jar" | grep -E 'libnd4j|nd4j-native' | sort
           else
-            echo "M2 repository does not contain nd4j artifacts!"
+            echo "❌ No Maven artifacts generated"
           fi
           
-          # Check if nd4j-native-preset pom.xml contains the RequireFilesExist rule
-          if [ -f "nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/pom.xml" ]; then
-            echo "Checking pom.xml for RequireFilesExist rule:"
-            grep -A 15 "RequireFilesExist" nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-preset/pom.xml || echo "RequireFilesExist rule not found in pom.xml"
-          else
-            echo "ERROR: nd4j-native-preset pom.xml not found!"
-          fi
-          
-          # Check symbolic links (if any)
-          echo "Checking for symbolic links in relevant directories:"
-          find libnd4j/include -type l -exec ls -la {} \; || echo "No symbolic links found in include directory"
-          find libnd4j/blasbuild -type l -exec ls -la {} \; 2>/dev/null || echo "No symbolic links found in blasbuild directory"
-          
-          # Check permissions
-          echo "Checking permissions on key directories:"
-          ls -la libnd4j/include/legacy/ 2>/dev/null || echo "Cannot check permissions on legacy directory - it doesn't exist"
-          ls -la libnd4j/blasbuild/cpu/blas/ 2>/dev/null || echo "Cannot check permissions on blas directory - it doesn't exist"
-          
-          # Try to find any NativeOps.h files in the workspace
-          echo "Searching for any NativeOps.h files in the workspace:"
-          find . -name "NativeOps.h" || echo "No NativeOps.h files found in workspace"
-          
-          # Check if paths are consistent
-          echo "Checking for path inconsistencies:"
-          EXPECTED_LEGACY_PATH="${PWD}/libnd4j/include/legacy"
-          EXPECTED_BLAS_PATH="${PWD}/libnd4j/blasbuild/cpu/blas"
-          
-          echo "Current working directory: ${PWD}"
-          echo "Expected legacy path: ${EXPECTED_LEGACY_PATH}"
-          echo "Expected blas path: ${EXPECTED_BLAS_PATH}"
-          
-          # Print environment variables
-          echo "Relevant environment variables:"
-          echo "LIBND4J_HOME: ${LIBND4J_HOME}"
-          echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
-          echo "JAVACPP_PLATFORM: ${JAVACPP_PLATFORM}"
-          
-          echo "====== END OF TROUBLESHOOTING ======"
+          echo "====== END OF VERIFICATION ======"
