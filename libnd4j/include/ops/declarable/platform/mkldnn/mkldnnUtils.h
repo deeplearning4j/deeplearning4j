@@ -161,7 +161,7 @@ dnnl::memory loadDataToMklStream(NDArray& array, const dnnl::engine& engine, con
  * @param in in NDArray
  * @param out out NDArray
  */
-void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, const sd::NDArray& in, const sd::NDArray& out);
+void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, sd::NDArray* in, sd::NDArray* out);
 
 
 
