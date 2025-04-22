@@ -469,9 +469,9 @@
                                 <goal>run</goal>
                             </goals>
                             <configuration>
-                                <tasks>
+                                <target>
                                     <echoproperties />
-                                </tasks>
+                                </target>
                             </configuration>
                         </execution>
                     </executions>
