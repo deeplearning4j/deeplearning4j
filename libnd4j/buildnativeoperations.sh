@@ -875,15 +875,19 @@ else
     fi
 fi
 
-# cd to the directory containing this script
-DIR="$SCRIPT_DIR"
-cd "$DIR"
+# Save the original directory before potentially changing directories
+ORIGINAL_DIR=$(pwd)
 
+# cd to the script directory for the operations that need to be performed there
+cd "$SCRIPT_DIR"
 
 if [ "$GENERATE_FLATC" == "ON" ]; then
     echo "Copying flatc generated for java"
     # ensure proper flatc sources are in place
     bash "$LIBND4J_DIR/copy-flatc-java.sh"
 fi
+
+# Return to the original directory where the script was launched from
+cd "$ORIGINAL_DIR"
 
 echo "Build process completed successfully."
