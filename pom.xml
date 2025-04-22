@@ -273,9 +273,6 @@
 
         <libnd4j.tests>--tests</libnd4j.tests>
         <libnd4j.test.skip>false</libnd4j.test.skip>
-        <jumpy.test.skip>false</jumpy.test.skip>
-        <pydatavec.test.skip>false</pydatavec.test.skip>
-        <pydl4j.test.skip>false</pydl4j.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
         <skipTestResourceEnforcement>false</skipTestResourceEnforcement>
         <log4j2.version>2.17.2</log4j2.version>
