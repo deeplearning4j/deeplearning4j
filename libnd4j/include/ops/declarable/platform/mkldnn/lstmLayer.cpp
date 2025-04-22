@@ -232,7 +232,7 @@ static void lstmLayerMKLDNN(NDArray* x, NDArray* Wx, NDArray* Wr, NDArray* b, ND
   lstm_forward::primitive_desc lstm_prim_desc(lstm_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   // provide memory and check whether reorder is required
   // x
@@ -421,29 +421,34 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
   // permut x and h to tnc format if they have ntc format
   NDArray *xP(const_cast<NDArray*>(x)), *hP(h);
   if (dataFormat == 1) {
-    xP = new NDArray(x->permute({1, 0, 2}, 0, false, false));  // [bS, sL, nIn] -> [sL, bS, nIn]
-    hP = new NDArray(h->permute({1, 0, 2}, 0, false, false));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
+    std::vector<sd::LongType> permute = {1,0,2};
+    xP = new NDArray(x->permute(permute.data(), 3, false, false));  // [bS, sL, nIn] -> [sL, bS, nIn]
+    hP = new NDArray(h->permute(permute.data(), 3, false, false));  // [bS, sL, dirDim*nOn] -> [sL, bS, dirDim*nOn]
   }
 
   // reshape arrays in accordance to mkl allowed formats
   NDArray *WxR(nullptr), *WrR(nullptr), *bR(nullptr), *hIR(nullptr), *cIR(nullptr), *hLR(nullptr), *cLR(nullptr);
 
-  WxR = new NDArray(Wx->reshape(Wx->ordering(), {1, dirDim, nIn, 4, nOut}));
-  WrR = new NDArray(Wr->reshape(Wr->ordering(), {1, dirDim, nOut, 4, nOut}));
+  std::vector<sd::LongType> shapeOne = {1, dirDim, nIn, 4, nOut};
+  WxR = new NDArray(Wx->reshape(Wx->ordering(), shapeOne));
+  WrR = new NDArray(Wr->reshape(Wr->ordering(), shapeOne));
 
+  std::vector<sd::LongType> shapeTwo = {1, dirDim, 4, nOut};
   if (b)
-    bR = new NDArray(b->reshape(b->ordering(), {1, dirDim, 4, nOut}));
+    bR = new NDArray(b->reshape(b->ordering(), shapeTwo));
   else
     bR =
-        new NDArray(x->ordering(), {1, dirDim, 4, nOut}, x->dataType(), x->getContext(), 0, 0, 0);  // already nullified
+        new NDArray(x->ordering(), shapeTwo, x->dataType(), x->getContext());  // already nullified
 
-  if (hI) hIR = new NDArray(hI->reshape(hI->ordering(), {1, dirDim, bS, nOut}));
 
-  if (cI) cIR = new NDArray(cI->reshape(cI->ordering(), {1, dirDim, bS, nOut}));
+  std::vector<sd::LongType> shapeThree = {1, dirDim, bS, nOut};
+  if (hI) hIR = new NDArray(hI->reshape(hI->ordering(), shapeThree));
 
-  if (hL) hLR = new NDArray(hL->reshape(hL->ordering(), {1, dirDim, bS, nOut}, false));
+  if (cI) cIR = new NDArray(cI->reshape(cI->ordering(), shapeThree));
 
-  if (cL) cLR = new NDArray(cL->reshape(cL->ordering(), {1, dirDim, bS, nOut}, false));
+  if (hL) hLR = new NDArray(hL->reshape(hL->ordering(), shapeThree, false));
+
+  if (cL) cLR = new NDArray(cL->reshape(cL->ordering(), shapeThree, false));
 
   lstmLayerMKLDNN(xP, WxR, WrR, bR, hIR, cIR, params, hP, hLR, cLR);
 
@@ -527,8 +532,8 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
                          hType == DataType::HALF && hLType == DataType::HALF && cLType == DataType::HALF) ||
                         (xType == DataType::UINT8 && WxType == DataType::INT8 && WrType == DataType::INT8 &&
                          bType == DataType::FLOAT32 && hIType == DataType::UINT8 && cIType == DataType::UINT8 &&
-                         (hType == DataType::FLOAT32 && hLType == DataType::FLOAT32 && cLType == DataType::FLOAT32 ||
-                          hType == DataType::UINT8 && hLType == DataType::UINT8 && cLType == DataType::UINT8)));
+                         ((hType == DataType::FLOAT32 && hLType == DataType::FLOAT32 && cLType == DataType::FLOAT32) ||
+                          (hType == DataType::UINT8 && hLType == DataType::UINT8 && cLType == DataType::UINT8))));
               },
               TYPECHECK_MSG),
           NO_MSG);

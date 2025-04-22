@@ -341,12 +341,10 @@
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
 
-            <!-- AB 2019/08/24 This plugin is to be added TEMPORARILY due to a change in the filenames of the generated ONNX -->
-            <!-- Normal "mvn clean" etc won't delete these files, and any users who have built ND4J even once before the
-                 change will run into a compilation error. This can be removed after a few weeks.-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
                 <executions>
                     <execution>
                         <phase>generate-sources</phase>

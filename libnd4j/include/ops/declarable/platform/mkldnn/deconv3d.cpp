@@ -50,7 +50,7 @@ static void deconv3dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
                                   (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dD - 1, dH - 1, dW - 1};
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {3, 4, 0, 1, 2};  // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
   else if (1 == wFormat)
@@ -123,7 +123,7 @@ static void deconv3dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -176,7 +176,7 @@ static void deconv3dBackPropMKLDNN(NDArray* input, NDArray* weights, NDArray* gr
                                   (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dD - 1, dH - 1, dW - 1};
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {3, 4, 0, 1, 2};  // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
   else if (1 == wFormat)
@@ -264,7 +264,7 @@ static void deconv3dBackPropMKLDNN(NDArray* input, NDArray* weights, NDArray* gr
                                                                                op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 

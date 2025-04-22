@@ -48,7 +48,7 @@ static void deconv2dMKLDNN(NDArray* input, NDArray* weights, NDArray* bias, NDAr
   dnnl::memory::dims padding_r = {(iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {2, 3, 0, 1};  // [kH, kW, oC, iC] -> [oC, iC, kH, kW]
   else if (1 == wFormat)
@@ -173,7 +173,7 @@ static void deconv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, N
   dnnl::memory::dims padding_r = {(iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW};
   dnnl::memory::dims dilation = {dH - 1, dW - 1};
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {2, 3, 0, 1};  // [kH, kW, oC, iC] -> [oC, iC, kH, kW]
   else if (1 == wFormat)
@@ -261,7 +261,7 @@ static void deconv2dBpMKLDNN(NDArray* input, NDArray* weights, NDArray* gradO, N
                                                                                op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
