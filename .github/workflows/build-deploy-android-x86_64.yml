@@ -91,14 +91,6 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/set-linux-distro-version
-      - uses: ./.github/actions/update-deps-linux
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf

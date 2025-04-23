@@ -99,8 +99,7 @@ jobs:
           restore-keys: ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
-      - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
+
 
       - name: Set mvn build command based on matrix
         shell: bash
