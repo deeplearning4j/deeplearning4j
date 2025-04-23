@@ -141,13 +141,6 @@ jobs:
             command="${command} ${mvn_ext}"
             echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command}"
             echo "COMMAND=${command}" >> $GITHUB_ENV
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf

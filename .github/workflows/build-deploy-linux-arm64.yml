@@ -21,7 +21,6 @@ on:
         required: false
         default: ossrh
 
-
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
@@ -42,7 +41,6 @@ on:
         required: false
         default:
 
-
       runsOn:
         description: 'System to run on'
         required: false
@@ -56,6 +54,35 @@ on:
 jobs:
   linux-arm64:
     runs-on: ${{ github.event.inputs.runsOn }}
+    strategy:
+      fail-fast: false
+      matrix:
+        helper: [armcompute, ""]
+        include:
+          - mvn_ext: ${{ github.event.inputs.mvnFlags }}
+            experimental: true
+            name: Extra maven flags
+          - debug_enabled: ${{ github.event.inputs.debug_enabled }}
+            experimental: true
+            name: Debug enabled
+          - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
+            experimental: true
+            name: Whether to deploy to release staging or not
+          - release_version: ${{ github.event.inputs.releaseVersion }}
+            experimental: true
+            name: Release version
+          - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
+            experimental: true
+            name: Snapshot version
+          - server_id: ${{ github.event.inputs.serverId }}
+            experimental: true
+            name: Server id
+          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
+            experimental: true
+            name: The release repository to run on
+          - build_threads: ${{ github.event.inputs.buildThreads }}
+            experimental: true
+            name: The number of threads to build libnd4j with
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -83,83 +110,128 @@ jobs:
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
+      - name: Set mvn build command based on matrix
+        shell: bash
+        run: |
+          # Set constants for ARM64
+          LIBND4J_CLASSIFIER="linux-arm64"
+          OPENBLAS_JAR="openblas-0.3.28-1.5.11-linux-arm64.jar"
+          
+          echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
+          echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
+          echo "CURRENT_TARGET=arm64" >> $GITHUB_ENV
+          echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
+          
+          if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
+             modules=':nd4j-native,:nd4j-native-preset'
+          else 
+             echo "Building libnd4j from source"
+             modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
+          fi
+          
+          command="mvn ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
+          
+          if [ "${{ matrix.helper }}" != '' ]; then
+             mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
+          else
+             mvn_ext=""
+          fi
+          
+          command="${command} ${mvn_ext}"
+          echo "Setting command for helper ${{ matrix.helper }} to ${command}"
+          echo "COMMAND=${command}" >> $GITHUB_ENV
+
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id:  ${{ github.event.inputs.serverId }}
+          server-id: ${{ github.event.inputs.serverId }}
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-      - name: Setup libnd4j home if a download url is specified
+      - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
-             mkdir "${GITHUB_WORKSPACE}/openblas_home"
-             cd "${GITHUB_WORKSPACE}/openblas_home"
-             wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-linux-arm64.jar
-             unzip openblas-0.3.28-1.5.11-linux-arm64.jar
-             cd ..
-             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64" >> "$GITHUB_ENV"
-             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so.0  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64/libopenblas.so
-        if: ${{ github.event.inputs.libnd4jUrl != '' }}
-      - name: Build on  linux-arm64
-        shell: bash
-        env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          TARGET_OS: linux
-          CURRENT_TARGET: arm64
-          LIBND4J_CLASSIFIER: linux-arm64
-          PUBLISH_TO: ossrh
-          DEPLOY_TO: ossrh
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
-          PROTO_EXEC: /opt/protobuf/bin/protoc
-          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
-          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
-          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
-          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          LIBND4J_FILE_NAME: ${{ github.event.inputs.libnd4jUrl }}
+          # Setup OpenBLAS
+          mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
+          cd "${GITHUB_WORKSPACE}/openblas_home"
+          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}
+          unzip ${OPENBLAS_JAR}
+          
+          OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64"
+          
+          echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
+          cp ${OPENBLAS_DIR}/libopenblas.so.0 ${OPENBLAS_DIR}/libopenblas.so
+          
+          # Setup ARM Compute Library if selected
+          if [ "${{ matrix.helper }}" == "armcompute" ]; then
+              mkdir -p "${GITHUB_WORKSPACE}/armcompute_home"
+              cd "${GITHUB_WORKSPACE}/armcompute_home"
+          
+              # Download ARM64 Compute Library
+              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
+              tar -xzf arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
+          
+              echo "ARMCOMPUTE_ROOT=${GITHUB_WORKSPACE}/armcompute_home" >> "$GITHUB_ENV"
+          fi
 
+      - name: Debug Info
+        shell: bash
         run: |
           echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
           echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
           echo "release version ${{ github.event.inputs.releaseVersion }}"
           echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
           echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
+          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
           echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
           echo "server id ${{ github.event.inputs.serverId }}"
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-          echo "libnd4j file url ${{ github.event.inputs.libnd4jUrl }}"
-
+          echo "helper ${{ matrix.helper }}"
+          echo "ARMCOMPUTE_TARGET $ARMCOMPUTE_TARGET"
+          echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
+          
           sudo sysctl vm.overcommit_memory=2
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          echo "Executing bootstrap if exists"
-          bash ./bootstrap-libnd4j-from-url.sh linux arm64
-          if [ "${{  github.event.inputs.libnd4jUrl }}" != '' ]; then
-                  echo "Building only java modules using a pre existing libnd4j home"
-                  export MODULES="${MODULES} -pl :nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
-              else
-                  echo "Building all modules"
-                  export MODULES="${MODULES} -pl :libnd4j,:nd4j-native,:nd4j-native-preset --also-make -Dlibnd4jhome=${GITHUB_WORKSPACE}/libnd4j"
-          fi
+
+      - name: Build with Maven
+        shell: bash
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          DEPLOY_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
+          RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
+          SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
+          RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
+          MODULES: ${{ github.event.inputs.mvnFlags }}
+          HELPER: ${{ matrix.helper }}
+          MAVEN_OPTS: -Xmx2g
+          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
+          PROTO_EXEC: /opt/protobuf/bin/protoc
+          PATH: /opt/protobuf/bin:/opt/cmake/bin:$PATH
+          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
+
+        run: |
+          # download libnd4j from a url and set it up if LIBND4J_URL is defined
+          bash ./bootstrap-libnd4j-from-url.sh linux arm64 "${{ matrix.helper }}"
           
-          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
-
-
-
+          if [ "$PERFORM_RELEASE" == 1 ]; then
+              bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
+          else
+              echo "Running build and deploying to snapshots"
+              eval "${COMMAND}"
+          fi

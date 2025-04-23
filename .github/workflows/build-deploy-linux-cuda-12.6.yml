@@ -49,7 +49,7 @@ on:
       cudaVersion:
         description: 'Pick the cuda version'
         required: false
-        default: 12.1
+        default: 12.6
 
 jobs:
   linux-x86_64-cuda:
@@ -126,7 +126,7 @@ jobs:
                     echo "Building libnd4j from source"
                     modules=':nd4j-cuda-${{ matrix.cuda_version }},:nd4j-cuda-${{ matrix.cuda_version }}-preset,:libnd4j'
               fi
-              command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ${modules}  -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make  -pl ${modules}  -Dlibnd4j.compute='8.0 8.6 9.0' -Dlibnd4j.cpu.compile.skip=true  -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda  -Pcuda clean --batch-mode package deploy -DskipTests"
               libnd4j_download_file_url=""
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext= "-Pcuda -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-${{ matrix.cuda_version }}-${{ matrix.helper }}-${{matrix.extension}}"
@@ -144,13 +144,7 @@ jobs:
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ matrix.runs_on }}-cmake
-          restore-keys: ${{ matrix.runs_on }}-cmake
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf

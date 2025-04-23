@@ -78,7 +78,27 @@ endmacro()
 
 print_all_variables()
 
+# Define ARM Compute Library URLs based on architecture
+# For ARM 32-bit (Raspberry Pi)
+set(ARM_COMPUTE_URL_ARMV7 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-linux-armv7a-cpu-bin.tar.gz")
+# For ARM 64-bit (Raspberry Pi, Odroid N2)
+set(ARM_COMPUTE_URL_AARCH64 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz")
+# For ARM 64-bit Android
+set(ARM_COMPUTE_URL_ANDROID_AARCH64 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz")
 
+# Set the appropriate URL based on the architecture
+if(${SD_ARCH} MATCHES "armv7")
+    set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ARMV7})
+    message("Using ARM Compute Library for ARMv7 32-bit")
+elseif(${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64")
+    if(SD_ANDROID_BUILD)
+        set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ANDROID_AARCH64})
+        message("Using ARM Compute Library for Android ARM64")
+    else()
+        set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_AARCH64})
+        message("Using ARM Compute Library for ARM64")
+    endif()
+endif()
 
 if (SD_CUDA)
     message("Enabling cuda")
@@ -508,8 +528,6 @@ endfunction()
 
 
 # Define a function to generate individual CUDA files for each type combination
-# Define a function to generate individual CUDA files for each type combination
-# Define a function to generate individual CUDA files for each type combination
 function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     # Split the COMBINATION string into a list
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
@@ -682,13 +700,46 @@ if(${HELPERS_armcompute})
         include_directories(${ARMCOMPUTE_INCLUDE})
         message("----${ARMCOMPUTE_INCLUDE}---")
     endif()
+else()
+    # If ARM Compute Library is requested but not found via FindARMCOMPUTE.cmake
+    # Download and build it
+    if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
+        message("Downloading ARM Compute Library from: ${ARM_COMPUTE_URL}")
+        set(HAVE_ARMCOMPUTE 1)
 
+        # Configure the ARM Compute Library download
+        configure_file(./CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt)
 
+        # Execute the download step
+        execute_process(COMMAND ${CMAKE_COMMAND} "${CMAKE_GENERATOR}" .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download)
+        if(result)
+            message(FATAL_ERROR "CMake step for ARM Compute Library failed: ${result}")
+        endif()
+
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download)
+        if(result)
+            message(FATAL_ERROR "Build step for ARM Compute Library failed: ${result}")
+        endif()
+
+        # Set up the ARM Compute Library paths
+        set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
+
+        # Add preprocessor definition for ARM Compute NEON
+        add_definitions(-DARMCOMPUTENEON_ENABLED)
+        include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include)
+
+        # Set ARM Compute Library libraries
+        set(ARMCOMPUTE_LIBRARIES
+                "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so"
+                "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
+
+        message("ARM Compute Library configured at: ${ARMCOMPUTE_ROOT}")
+    endif()
 endif()
-
-
-
-
 
 
 if (${HELPERS_onednn})
@@ -848,8 +899,6 @@ if(SD_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests_cpu)
 endif()
-
-
 
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)

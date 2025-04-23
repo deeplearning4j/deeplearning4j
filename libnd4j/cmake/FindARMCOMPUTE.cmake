@@ -1,80 +1,66 @@
-################################################################################
+# FindARMCOMPUTE.cmake
+# Find ARM Compute Library includes and libraries
 #
+# Sets the following variables:
+#   ARMCOMPUTE_FOUND        - True if ARM Compute Library was found
+#   ARMCOMPUTE_INCLUDE      - Path to ARM Compute Library include directory
+#   ARMCOMPUTE_LIBRARIES    - ARM Compute Library libraries to link against
 #
-# This program and the accompanying materials are made available under the
-# terms of the Apache License, Version 2.0 which is available at
-# https://www.apache.org/licenses/LICENSE-2.0.
-#
-# See the NOTICE file distributed with this work for additional
-# information regarding copyright ownership.
+# This module will look for ARM Compute Library in standard locations and
+# in the directory specified by the ARMCOMPUTE_ROOT variable.
 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-################################################################################
-
-
-### Find ARM COMPUTE LIBRARY STATIC libraries
-
-if (NOT DEFINED ${ARMCOMPUTE_ROOT})
-    set(ARMCOMPUTE_ROOT "$ENV{ARMCOMPUTE_ROOT}")
-endif()
-
-SET (COMPUTE_INCLUDE_DIRS 
-    /usr/include
-    ${ARMCOMPUTE_ROOT}
-    ${ARMCOMPUTE_ROOT}/include
-    ${ARMCOMPUTE_ROOT}/applications 
-    ${ARMCOMPUTE_ROOT}/applications/arm_compute    
+# Find include directory
+find_path(ARMCOMPUTE_INCLUDE
+    NAMES arm_compute/core/CL/CLKernelLibrary.h
+    PATHS
+        ${ARMCOMPUTE_ROOT}
+        ${ARMCOMPUTE_ROOT}/include
+        ENV ARMCOMPUTE_ROOT
+        ENV ARMCOMPUTE_PATH
+        /usr/include
+        /usr/local/include
 )
 
-
-SET (COMPUTE_LIB_DIRS  
-     /lib
-     /usr/lib
-    ${ARMCOMPUTE_ROOT}
-    ${ARMCOMPUTE_ROOT}/lib 
-    ${ARMCOMPUTE_ROOT}/build
+# Find library files
+find_library(ARMCOMPUTE_CORE_LIBRARY
+    NAMES arm_compute_core-static arm_compute_core
+    PATHS
+        ${ARMCOMPUTE_ROOT}
+        ${ARMCOMPUTE_ROOT}/lib
+        ${ARMCOMPUTE_ROOT}/build
+        ENV ARMCOMPUTE_ROOT
+        ENV ARMCOMPUTE_PATH
+        /usr/lib
+        /usr/local/lib
 )
 
-find_path(ARMCOMPUTE_INCLUDE arm_compute/core/CL/ICLKernel.h
-            PATHS ${COMPUTE_INCLUDE_DIRS}
-            NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
+find_library(ARMCOMPUTE_LIBRARY
+    NAMES arm_compute-static arm_compute
+    PATHS
+        ${ARMCOMPUTE_ROOT}
+        ${ARMCOMPUTE_ROOT}/lib
+        ${ARMCOMPUTE_ROOT}/build
+        ENV ARMCOMPUTE_ROOT
+        ENV ARMCOMPUTE_PATH
+        /usr/lib
+        /usr/local/lib
+)
 
-find_path(ARMCOMPUTE_INCLUDE arm_compute/core/CL/ICLKernel.h)
+# Set libraries variable
+set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIBRARY} ${ARMCOMPUTE_CORE_LIBRARY})
 
-find_path(HALF_INCLUDE half/half.hpp)
-find_path(HALF_INCLUDE half/half.hpp
-              PATHS ${ARMCOMPUTE_ROOT}/include
-              NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-include_directories(SYSTEM ${HALF_INCLUDE})
+# Handle the QUIETLY and REQUIRED arguments
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(ARMCOMPUTE
+    DEFAULT_MSG
+    ARMCOMPUTE_INCLUDE
+    ARMCOMPUTE_LIBRARIES
+)
 
-# Find the Arm Compute libraries if not already specified 
-if (NOT DEFINED ARMCOMPUTE_LIBRARIES)
- 
-    find_library(ARMCOMPUTE_LIBRARY NAMES arm_compute-static
-                    PATHS ${COMPUTE_LIB_DIRS}
-                    PATH_SUFFIXES "Release"
-                    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-
-    find_library(ARMCOMPUTE_CORE_LIBRARY NAMES arm_compute_core-static
-                    PATHS ${COMPUTE_LIB_DIRS}
-                    PATH_SUFFIXES "Release"
-                    NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
-    # In case it wasn't there, try a default search (will work in cases where
-    # the library has been installed into a standard location) 
-    find_library(ARMCOMPUTE_LIBRARY NAMES arm_compute-static) 
-    find_library(ARMCOMPUTE_CORE_LIBRARY NAMES arm_compute_core-static)
-    
-    set(ARMCOMPUTE_LIBRARIES  ${ARMCOMPUTE_LIBRARY} ${ARMCOMPUTE_CORE_LIBRARY} )
-endif()
- 
- 
-INCLUDE(FindPackageHandleStandardArgs)
-
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(ARMCOMPUTE REQUIRED_VARS ARMCOMPUTE_INCLUDE ARMCOMPUTE_LIBRARIES)
-
+# Mark as advanced
+mark_as_advanced(
+    ARMCOMPUTE_INCLUDE
+    ARMCOMPUTE_LIBRARY
+    ARMCOMPUTE_CORE_LIBRARY
+    ARMCOMPUTE_LIBRARIES
+)
