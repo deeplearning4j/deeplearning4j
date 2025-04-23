@@ -205,11 +205,9 @@ jobs:
               ) else (
                   if "%PERFORM_RELEASE%"==1 (
                         echo "Running release"
-                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                          bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
                    ) else (
                       echo "Running snapshots"
-                      bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                       call "%GITHUB_WORKSPACE%\mvn-command.bat"
                    )
               )

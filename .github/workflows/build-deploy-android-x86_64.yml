@@ -235,9 +235,7 @@ jobs:
           echo "Setting up Android NDK environment variables"
           echo "ANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
           
-          # download libnd4j from a url and set it up if LIBND4J_URL is defined
-          bash ./bootstrap-libnd4j-from-url.sh android x86_64 "${{ matrix.helper }}"
-          
+        
           # Define CMake arguments for building libnd4j
           cmake_args="-DSD_ARCH=x86-64 -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
           
