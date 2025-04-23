@@ -219,7 +219,7 @@ jobs:
           HELPER: ${{ matrix.helper }}
           MAVEN_OPTS: -Xmx2g
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          PATH: /opt/protobuf/bin:/opt/cmake/bin:$PATH
+         
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
 
         run: |

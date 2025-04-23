@@ -213,7 +213,7 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          PATH: /opt/protobuf/bin:/opt/cmake/bin:$PATH
+         
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
 
         run: |
