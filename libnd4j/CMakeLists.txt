@@ -445,24 +445,39 @@ set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
 function(removeFileIfExcluded)
     cmake_parse_arguments(
             PARSED_ARGS # prefix of output variables
-            "" # list of names of the boolean arguments (only defined ones will be true)
+            ""          # list of names of the boolean arguments (only defined ones will be true)
             "FILE_ITEM" # list of names of mono-valued arguments
-            "LIST_ITEM" # list of names of multi-valued arguments (output variables are lists)
-            ${ARGN} # arguments of the function to parse, here we take the all original ones
+            "LIST_ITEM" # list of names of multi-valued arguments (expects list *name*)
+            ${ARGN}     # arguments of the function to parse, here we take the all original ones
     )
     file(READ ${PARSED_ARGS_FILE_ITEM} FILE_CONTENTS)
     string(FIND "${FILE_CONTENTS}" "NOT_EXCLUDED" NOT_EXCLUDED_IDX)
-    # found an exclusion, figure out if relevant
-    if(${NOT_EXCLUDED_IDX} GREATER_EQUAL 0)
-        foreach(OP ${SD_OPS_LIST})
-            string(FIND PARSED_ARGS_FILE_CONTENTS "NOT_EXCLUDED(OP_${OP})" NOT_EXCLUDED_OP_IDX)
-            # figure out if the exclusion contains the given op if not exclude the file
-            if(${NOT_EXCLUDED_OP_IDX} LESS 0)
-                list(REMOVE_ITEM "${PARSED_ARGS_LIST_ITEM}" "${PARSED_ARGS_FILE_ITEM}")
-            endif()
 
+    # Check if the "NOT_EXCLUDED" marker is present
+    if(${NOT_EXCLUDED_IDX} GREATER_EQUAL 0)
+        # Get the list content into a local variable for safe modification
+        set(local_list ${${PARSED_ARGS_LIST_ITEM}})
+        set(file_removed FALSE) # Flag to track if the file was removed
+
+        foreach(OP ${SD_OPS_LIST})
+            # *** FIX 1: Use correct variable FILE_CONTENTS ***
+            string(FIND "${FILE_CONTENTS}" "NOT_EXCLUDED(OP_${OP})" NOT_EXCLUDED_OP_IDX)
+
+            # If the specific OP exclusion is NOT found, it means the file *should* be removed (excluded)
+            if(${NOT_EXCLUDED_OP_IDX} LESS 0)
+                list(REMOVE_ITEM local_list "${PARSED_ARGS_FILE_ITEM}")
+                set(file_removed TRUE)
+                # Once removed for one missing OP exclusion, no need to check further for this file
+                break()
+            endif()
         endforeach()
+
+        # *** FIX 2: Propagate the modified list back to the parent scope IF it was changed ***
+        if(file_removed)
+            set(${PARSED_ARGS_LIST_ITEM} ${local_list} PARENT_SCOPE)
+        endif()
     endif()
+    # If "NOT_EXCLUDED" is not found at all, the file is included by default, do nothing.
 
 endfunction()
 

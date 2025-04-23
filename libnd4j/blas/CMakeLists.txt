@@ -623,14 +623,12 @@ elseif(SD_CPU)
         message("Not all SD OPS INCLUDED")
 
         foreach(category IN ITEMS PERF_SOURCES EXCEPTIONS_SOURCES EXEC_SOURCES TYPES_SOURCES ARRAY_SOURCES MEMORY_SOURCES GRAPH_SOURCES CUSTOMOPS_SOURCES OPS_SOURCES HELPERS_SOURCES INDEXING_SOURCES LOOPS_SOURCES LEGACY_SOURCES LOOPS_SOURCES_CUDA HELPERS_CPP)
-            list(GET ${category} SOURCES)
             foreach(SRC_FILE ${${category}})
                 message("Checking exclusion for: ${SRC_FILE}")
                 removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${category}")
             endforeach()
         endforeach()
     endif()
-
     # Generate Compilation Units
     foreach(FL_ITEM ${COMPILATION_UNITS})
         genCompilation(${FL_ITEM})
