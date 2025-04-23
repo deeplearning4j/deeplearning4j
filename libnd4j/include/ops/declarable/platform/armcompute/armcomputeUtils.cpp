@@ -141,10 +141,10 @@ Arm_TensorInfo getArmTensorInfo(NDArray& arr, arm_compute::DataLayout layout) {
   if (arr.hasPaddedBuffer()) {
     internal_printf("---has padded buffer %d\n", 0);
     total_size = arr.getDataBuffer()->getLenInBytes();
-    offset = arr.bufferOffset() * element_size;
+    offset = arr.offset() * element_size;
   }
   internal_printf(":: offset %d el size %d  arr.getDataBuffer()->getLenInBytes() %d lengthof %d \n",
-                  (int)arr.bufferOffset(), (int)element_size, (int)arr.getDataBuffer()->getLenInBytes(),
+                  (int)arr.offset(), (int)element_size, (int)arr.getDataBuffer()->getLenInBytes(),
                   (int)arr.lengthOf());
   Arm_TensorInfo info;
   info.init(shape, numChannels, dType, strides, offset, total_size);
