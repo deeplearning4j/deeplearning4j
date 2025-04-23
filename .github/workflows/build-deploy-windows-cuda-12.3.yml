@@ -153,15 +153,13 @@ jobs:
             mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
             mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
             mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
-          # pacboy key removed as it caused errors previously
+          # pacboy key removed
 
       - name: Install CUDA 12.3 (if not cached)
         uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         with:
-          # ***********************************************************
-          # ****** TRYING FULL PATCH VERSION AS INPUT *****************
-          # ***********************************************************
-          cuda_version: "12.3.2" # Trying full version from constants
+          # Use the version string that matches the keys in the install script's hashtables
+          cuda_version: "12.3"
         if: steps.cache-cuda-123.outputs.cache-hit != 'true'
 
       - name: Setup tmate session (if debug enabled)
@@ -169,7 +167,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' # Check input correctly
 
       - name: Set up Java and Maven cache/auth
-        uses: konduitai/setup-java@main # Assuming this action handles server auth and GPG setup internally now
+        uses: konduitai/setup-java@main
         with:
           java-version: 11
           distribution: 'temurin'
@@ -197,8 +195,10 @@ jobs:
             exit 1
           }
 
-      - name: Import GPG Key (Manual - if setup-java doesn't handle it)
-        if: ${{ secrets.SONATYPE_GPG_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
+      - name: Import GPG Key (Manual - if setup-java doesnt handle it)
+        # ***********************************************************
+        # ****** The 'if:' condition is REMOVED from this step ******
+        # ***********************************************************
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.SONATYPE_GPG_KEY }}
