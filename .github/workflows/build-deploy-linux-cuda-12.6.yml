@@ -144,8 +144,6 @@ jobs:
               echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to ${command} and libnd4j download file to ${libnd4j_download_file_url}"
               echo "COMMAND=${command}" >> $GITHUB_ENV
 
-      - uses: ./.github/actions/update-deps-linux
-      - uses: ./.github/actions/remove-unneeded-tools-linux
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
