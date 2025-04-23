@@ -101,7 +101,8 @@ jobs:
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
+        # Assuming cache step exists or is not strictly needed based on context
+        # if: steps.cache-cmake.outputs.cache-hit != 'true'
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
@@ -117,143 +118,216 @@ jobs:
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r21d
+          ndk-version: r21d # Matches the version used later
 
-      - name: Set mvn build command based on matrix
+      - name: Set mvn build command and environment variables
         shell: bash
         run: |
           # Set constants for Android X86_64
           LIBND4J_CLASSIFIER="android-x86_64"
+          # Define the specific OpenBLAS JAR for android-x86_64
           OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-x86_64.jar"
-          OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/lib/x86_64"
-          
+          # Define the expected directory structure *inside* the unzipped JAR content
+          OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home" # Base directory for download/unzip
+          OPENBLAS_LIB_DIR="${OPENBLAS_INSTALL_DIR}/lib/x86_64"    # Specific path to libs after unzip
+
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
-          echo "OPENBLAS_DIR=${OPENBLAS_DIR}" >> $GITHUB_ENV
+          echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV # For setup step
+          echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV           # For build steps (CMake/LD_LIBRARY_PATH)
           echo "CURRENT_TARGET=android-x86_64" >> $GITHUB_ENV
           echo "NDK_VERSION=r21d" >> $GITHUB_ENV
           echo "ANDROID_VERSION=21" >> $GITHUB_ENV
-          
+
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
-          else 
+          else
              echo "Building libnd4j from source"
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          
+
           command="mvn ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-          
+
           if [ "${{ matrix.helper }}" != '' ]; then
              mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
           else
              mvn_ext=""
           fi
-          
+
           command="${command} ${mvn_ext}"
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 
+      # --- NEW/UPDATED STEP ---
       - name: Setup OpenBLAS and Helper Libraries
         shell: bash
+        env:
+          OPENBLAS_INSTALL_DIR: ${{ env.OPENBLAS_INSTALL_DIR }}
+          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }} # Get the lib dir path
+          OPENBLAS_JAR: ${{ env.OPENBLAS_JAR }}   # Get the jar filename
         run: |
-          # Setup OpenBLAS
-          mkdir -p "${GITHUB_WORKSPACE}/openblas_home"
-          cd "${GITHUB_WORKSPACE}/openblas_home"
-          wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}
-          unzip ${OPENBLAS_JAR}
-          
-          echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          cp ${OPENBLAS_DIR}/libopenblas.so.0 ${OPENBLAS_DIR}/libopenblas.so
-          
+          echo "Setting up OpenBLAS..."
+          mkdir -p "${OPENBLAS_INSTALL_DIR}"
+          cd "${OPENBLAS_INSTALL_DIR}"
+          echo "Downloading ${OPENBLAS_JAR}..."
+          wget --quiet https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}
+          echo "Unzipping ${OPENBLAS_JAR}..."
+          unzip -q ${OPENBLAS_JAR}
+          if [ -f "${OPENBLAS_PATH}/libopenblas.so.0" ]; then
+             echo "Creating symlink for libopenblas.so"
+             cp ${OPENBLAS_PATH}/libopenblas.so.0 ${OPENBLAS_PATH}/libopenblas.so
+          else
+             echo "Warning: ${OPENBLAS_PATH}/libopenblas.so.0 not found after unzip."
+             echo "Listing contents of ${OPENBLAS_PATH}:"
+             ls -l "${OPENBLAS_PATH}"
+          fi
+          echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
+
           # Setup OneDNN if selected
           if [ "${{ matrix.helper }}" == "onednn" ]; then
-              mkdir -p "${GITHUB_WORKSPACE}/onednn_home"
-              cd "${GITHUB_WORKSPACE}/onednn_home"
-          
-              # Download OneDNN for Android x86_64
-              git clone --branch v2.6.1 --depth 1 https://github.com/oneapi-src/oneDNN.git
-          
-              echo "ONEDNN_ROOT=${GITHUB_WORKSPACE}/onednn_home/oneDNN" >> "$GITHUB_ENV"
+              echo "Setting up OneDNN..."
+              ONEDNN_INSTALL_DIR="${GITHUB_WORKSPACE}/onednn_home"
+              mkdir -p "${ONEDNN_INSTALL_DIR}"
+              cd "${ONEDNN_INSTALL_DIR}"
+
+              # Download OneDNN for Android x86_64 (using git clone as before)
+              echo "Cloning OneDNN..."
+              git clone --quiet --branch v2.6.1 --depth 1 https://github.com/oneapi-src/oneDNN.git
+
+              ONEDNN_ROOT_PATH="${ONEDNN_INSTALL_DIR}/oneDNN"
+              echo "ONEDNN_ROOT=${ONEDNN_ROOT_PATH}" >> "$GITHUB_ENV" # Set for subsequent steps
+              echo "OneDNN setup complete. ONEDNN_ROOT=${ONEDNN_ROOT_PATH}"
+          else
+              echo "Skipping OneDNN setup."
           fi
 
       - name: Debug Info
         shell: bash
         run: |
-          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
-          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "release version ${{ github.event.inputs.releaseVersion }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
-          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "server id ${{ github.event.inputs.serverId }}"
-          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-          echo "helper ${{ matrix.helper }}"
-          echo "NDK Path: ${{ steps.setup-ndk.outputs.ndk-path }}"
-          
+          echo "--- Workflow Inputs ---"
+          echo "libnd4j build threads: ${{ github.event.inputs.buildThreads }}"
+          echo "Deploy to release staging: ${{ github.event.inputs.deployToReleaseStaging }}"
+          echo "Release version: ${{ github.event.inputs.releaseVersion }}"
+          echo "Snapshot version: ${{ github.event.inputs.snapshotVersion }}"
+          echo "Debug enabled: ${{ github.event.inputs.debug_enabled }}"
+          echo "libnd4j URL: ${{ github.event.inputs.libnd4jUrl }}"
+          echo "Maven flags: ${{ github.event.inputs.mvnFlags }}"
+          echo "Server ID: ${{ github.event.inputs.serverId }}"
+          echo "Release Repo ID: ${{ github.event.inputs.releaseRepoId }}"
+          echo "Runs On: ${{ github.event.inputs.runsOn }}"
+          echo "--- Matrix Values ---"
+          echo "Helper: ${{ matrix.helper }}"
+          echo "--- Environment Variables ---"
+          echo "LIBND4J_CLASSIFIER: $LIBND4J_CLASSIFIER"
+          echo "OPENBLAS_JAR: $OPENBLAS_JAR"
+          echo "OPENBLAS_INSTALL_DIR: $OPENBLAS_INSTALL_DIR"
+          echo "OPENBLAS_PATH (set): $OPENBLAS_PATH"
+          echo "CURRENT_TARGET: $CURRENT_TARGET"
+          echo "NDK_VERSION: $NDK_VERSION"
+          echo "ANDROID_VERSION: $ANDROID_VERSION"
+          echo "ONEDNN_ROOT (set): $ONEDNN_ROOT"
+          echo "NDK Path (from step): ${{ steps.setup-ndk.outputs.ndk-path }}"
+          echo "COMMAND: $COMMAND"
+          echo "--- System Info ---"
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
+          echo "--- Dependency Paths ---"
+          echo "Checking OpenBLAS path contents ($OPENBLAS_PATH):"
+          ls -l "$OPENBLAS_PATH" || echo "OpenBLAS path not found or empty."
+          if [ -n "$ONEDNN_ROOT" ]; then
+            echo "Checking OneDNN path contents ($ONEDNN_ROOT):"
+            ls -l "$ONEDNN_ROOT" || echo "OneDNN path not found or empty."
+          fi
+
 
       - name: Build with Maven
         shell: bash
         env:
+          # Secrets and Credentials
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
-          DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          TARGET_OS: android
-          PUBLISH_TO: ossrh
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          DEPLOY_TO: ossrh
+
+          # Build Configuration from Inputs/Matrix
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
+          MODULES: ${{ github.event.inputs.mvnFlags }} # Note: MODULES env var seems unused in run script below, COMMAND has modules
           HELPER: ${{ matrix.helper }}
-          MAVEN_OPTS: -Xmx2g
+          LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
+
+          # Build Environment/Paths
+          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }} # NDK Path
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}      # Explicit NDK env var often needed
+          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}                  # Path to OpenBLAS libs
+          ONEDNN_ROOT: ${{ env.ONEDNN_ROOT }}                      # Path to OneDNN source/build
           PROTO_EXEC: /opt/protobuf/bin/protoc
-         
-          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
+          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_PATH }} # Add OpenBLAS to library path
+
+          # Build Flags/Options
+          DEBIAN_FRONTEND: noninteractive
+          DEPLOY: 1 # Hardcoded, seems intended
+          BUILD_USING_MAVEN: 1 # Hardcoded, seems intended
+          TARGET_OS: android   # Hardcoded, seems intended
+          PUBLISH_TO: ossrh    # Hardcoded, seems intended
+          DEPLOY_TO: ossrh     # Hardcoded, seems intended
+          MAVEN_OPTS: -Xmx2g
 
         run: |
-          # Manually configure the Android NDK environment
-          echo "Setting up Android NDK environment variables"
-          echo "ANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-          
-        
-          # Define CMake arguments for building libnd4j
-          cmake_args="-DSD_ARCH=x86-64 -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
-          
-          # Add helper-specific arguments
-          if [ "${{ matrix.helper }}" == "onednn" ]; then
-            cmake_args="${cmake_args} -DHELPERS_onednn=true -DONEDNN_PATH=${ONEDNN_ROOT}"
-          fi
-          
-          # Build libnd4j if not provided via URL
+          echo "--- Environment for Build Step ---"
+          printenv
+          echo "----------------------------------"
+
+          # Native build logic for libnd4j (if URL not provided)
           if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
+            echo "Building libnd4j natively as no URL was provided..."
             cd "${GITHUB_WORKSPACE}/libnd4j"
             mkdir -p blasbuild/android-x86_64
             cd blasbuild/android-x86_64
-          
-            # Configure with CMake
+
+            # Define CMake arguments for building libnd4j
+            # Use environment variables set previously (OPENBLAS_PATH, ONEDNN_ROOT)
+            cmake_args="-DSD_ARCH=x86_64 -DSD_ANDROID_BUILD=true -DANDROID_NDK=${ANDROID_NDK} -DANDROID_PLATFORM=android-${ANDROID_VERSION} -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64"
+
+            # Add OpenBLAS path if set
+            if [ -n "${OPENBLAS_PATH}" ]; then
+               cmake_args="${cmake_args} -DOPENBLAS_PATH=${OPENBLAS_PATH}"
+            else
+               echo "Warning: OPENBLAS_PATH is not set for CMake."
+            fi
+
+            # Add helper-specific arguments
+            if [ "${HELPER}" == "onednn" ]; then
+              if [ -n "${ONEDNN_ROOT}" ]; then
+                cmake_args="${cmake_args} -DHELPERS_onednn=true -DONEDNN_PATH=${ONEDNN_ROOT}"
+              else
+                 echo "Error: Helper is onednn but ONEDNN_ROOT is not set."
+                 exit 1
+              fi
+            fi
+
+            echo "Configuring libnd4j with CMake args: ${cmake_args}"
             cmake ${cmake_args} ../..
-          
-            # Build with specified number of threads
-            make -j${{ github.event.inputs.buildThreads }}
+
+            echo "Building libnd4j with make -j${LIBND4J_BUILD_THREADS}"
+            make -j${LIBND4J_BUILD_THREADS}
+            make install # Install to ensure headers/libs are found by Maven build
             cd ${GITHUB_WORKSPACE}
+          else
+             echo "Skipping native libnd4j build as libnd4jUrl is provided."
           fi
-          
-          # Run Maven build
+
+          # Run Maven build/deploy command constructed earlier
           if [ "$PERFORM_RELEASE" == 1 ]; then
+              echo "Executing release script..."
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-              echo "Running build and deploying to snapshots"
+              echo "Running build and deploying to snapshots..."
+              echo "Executing command: ${COMMAND}"
               eval "${COMMAND}"
           fi
