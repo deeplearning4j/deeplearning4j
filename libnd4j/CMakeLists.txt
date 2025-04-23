@@ -590,10 +590,43 @@ endfunction()
 set(MSVC_RT_LIB "MultiThreadedDLL")
 
 set(SD_X86_BUILD false)
+# Determine platform type more accurately
+set(SD_X86_BUILD false)
+set(SD_ARM_BUILD false) # Add similar flag for ARM if needed
 
-if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*")
-    set(SD_X86_BUILD true)
+if(SD_ANDROID_BUILD)
+    # For Android, trust ANDROID_ABI
+    if(ANDROID_ABI MATCHES "x86_64")
+        set(SD_X86_BUILD true)
+        set(SD_ARCH "x86-64") # Explicitly set SD_ARCH too
+    elseif(ANDROID_ABI MATCHES "x86")
+        set(SD_X86_BUILD true)
+        set(SD_ARCH "x86") # Explicitly set SD_ARCH too
+    elseif(ANDROID_ABI MATCHES "arm64-v8a")
+        set(SD_ARM_BUILD true)
+        set(SD_ARCH "arm64-v8a") # Explicitly set SD_ARCH too
+    elseif(ANDROID_ABI MATCHES "armeabi-v7a")
+        set(SD_ARM_BUILD true)
+        set(SD_ARCH "armv7-a") # Explicitly set SD_ARCH too
+    endif()
+elseif(NOT SD_IOS_BUILD)
+    # Non-Android, Non-iOS logic (can use CMAKE_SYSTEM_PROCESSOR or keep original checks)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
+        set(SD_X86_BUILD true)
+        # Potentially set SD_ARCH here too if not passed externally
+        if(NOT DEFINED SD_ARCH)
+            set(SD_ARCH "x86-64")
+        endif()
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm*|aarch64")
+        set(SD_ARM_BUILD true)
+        # Potentially set SD_ARCH here too if not passed externally
+        # Add other non-Android/iOS platforms (PowerPC, etc.) if needed
+    endif()
+    # Add iOS logic if necessary
 endif()
+
+message(STATUS "Build flags determined: SD_ANDROID_BUILD=${SD_ANDROID_BUILD}, SD_X86_BUILD=${SD_X86_BUILD}, SD_ARM_BUILD=${SD_ARM_BUILD}, SD_ARCH=${SD_ARCH}")
+
 
 # -fsanitize=address
 # -fsanitize=leak
