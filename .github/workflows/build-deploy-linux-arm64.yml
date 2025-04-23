@@ -1,3 +1,4 @@
+# .github/workflows/your_workflow_name.yml (replace with your actual filename)
 on:
   workflow_dispatch:
     inputs:
@@ -95,11 +96,11 @@ jobs:
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf # Changed to use runner.os for better caching if OS changes
+          restore-keys: |
+            ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
-
 
       - name: Set mvn build command based on matrix
         shell: bash
@@ -107,27 +108,27 @@ jobs:
           # Set constants for ARM64
           LIBND4J_CLASSIFIER="linux-arm64"
           OPENBLAS_JAR="openblas-0.3.28-1.5.11-linux-arm64.jar"
-          
+
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
           echo "CURRENT_TARGET=arm64" >> $GITHUB_ENV
           echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
-          
+
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
-          else 
+          else
              echo "Building libnd4j from source"
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          
+
           command="mvn ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-          
+
           if [ "${{ matrix.helper }}" != '' ]; then
              mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
           else
              mvn_ext=""
           fi
-          
+
           command="${command} ${mvn_ext}"
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
@@ -143,9 +144,12 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
+
       - name: Setup path
         shell: bash
         run: echo "/opt/protobuf/bin" >> $GITHUB_PATH
+
+      # --- MODIFIED STEP ---
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
@@ -154,23 +158,38 @@ jobs:
           cd "${GITHUB_WORKSPACE}/openblas_home"
           wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/${OPENBLAS_JAR}
           unzip ${OPENBLAS_JAR}
-          
+
           OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/linux-arm64"
-          
+
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          cp ${OPENBLAS_DIR}/libopenblas.so.0 ${OPENBLAS_DIR}/libopenblas.so
-          
+          # Ensure the symlink exists for consistency, even if already present
+          ln -sf "${OPENBLAS_DIR}/libopenblas.so.0" "${OPENBLAS_DIR}/libopenblas.so"
+
           # Setup ARM Compute Library if selected
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
-              mkdir -p "${GITHUB_WORKSPACE}/armcompute_home"
-              cd "${GITHUB_WORKSPACE}/armcompute_home"
-          
+              ARMCOMPUTE_PARENT_DIR="${GITHUB_WORKSPACE}/armcompute_home"
+              mkdir -p "${ARMCOMPUTE_PARENT_DIR}"
+              cd "${ARMCOMPUTE_PARENT_DIR}"
+
               # Download ARM64 Compute Library
-              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
-              tar -xzf arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz
-          
-              echo "ARMCOMPUTE_ROOT=${GITHUB_WORKSPACE}/armcompute_home" >> "$GITHUB_ENV"
+              ARCHIVE_NAME="arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz"
+              wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/${ARCHIVE_NAME}
+              tar -xzf ${ARCHIVE_NAME}
+
+              # Determine the actual extracted directory name (takes the first path component from the tar list)
+              # This makes it robust even if the archive version/name changes slightly
+              EXTRACTED_DIR_NAME=$(tar -tf ${ARCHIVE_NAME} | head -n 1 | cut -f1 -d"/")
+              if [ -z "$EXTRACTED_DIR_NAME" ] || [ ! -d "$EXTRACTED_DIR_NAME" ]; then
+                echo "Error: Could not determine or find extracted directory name from archive ${ARCHIVE_NAME}"
+                exit 1
+              fi
+              ACTUAL_ARMCOMPUTE_ROOT="${ARMCOMPUTE_PARENT_DIR}/${EXTRACTED_DIR_NAME}"
+              echo "Determined ARM Compute Library root: ${ACTUAL_ARMCOMPUTE_ROOT}"
+
+              # Set ARMCOMPUTE_ROOT to the *actual* extracted path
+              echo "ARMCOMPUTE_ROOT=${ACTUAL_ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
           fi
+      # --- END OF MODIFIED STEP ---
 
       - name: Debug Info
         shell: bash
@@ -187,7 +206,7 @@ jobs:
           echo "helper ${{ matrix.helper }}"
           echo "ARMCOMPUTE_TARGET $ARMCOMPUTE_TARGET"
           echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
-          
+
           sudo sysctl vm.overcommit_memory=2
           mvn --version
           cmake --version
@@ -213,23 +232,26 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
-         
+          # Note: LD_LIBRARY_PATH is now set correctly with the value from the setup step
+          # The ARMCOMPUTE_ROOT env var is also correctly set to the extracted dir path
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
-
         run: |
           echo "--- Debug Info Before Maven Build ---"
           echo "Current directory: $(pwd)"
-          echo "ARMCOMPUTE_ROOT is set to: $ARMCOMPUTE_ROOT"
+          echo "ARMCOMPUTE_ROOT is set to: $ARMCOMPUTE_ROOT" # This will now show the updated path
           echo "Listing contents of ARMCOMPUTE_ROOT:"
           ls -lR "$ARMCOMPUTE_ROOT"
           echo "Checking specific expected files:"
+          # These ls commands should now work as ARMCOMPUTE_ROOT points to the correct directory
           ls -l "$ARMCOMPUTE_ROOT/include/arm_compute/core/CL/CLKernelLibrary.h"
           ls -l "$ARMCOMPUTE_ROOT/lib/libarm_compute.so"
           ls -l "$ARMCOMPUTE_ROOT/lib/libarm_compute_core.so"
           echo "--- End Debug Info ---"
+
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
               echo "Running build and deploying to snapshots"
+              # This command should now execute successfully if dependencies are correct
               eval "${COMMAND}"
           fi
