@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-latest-arm64 # Using standard GitHub ARM runner
+        default: ubuntu-latest # Using standard GitHub ARM runner
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -52,7 +52,7 @@ on:
         default: false
 
 jobs:
-  android-arm64:
+  android-x86_64:
     strategy:
       fail-fast: false
       matrix:
@@ -133,11 +133,11 @@ jobs:
       - name: Set mvn build command and environment variables
         shell: bash
         run: |
-          # Set constants for Android ARM64
-          LIBND4J_CLASSIFIER="android-arm64"
-          # Define the specific OpenBLAS JAR for android-arm64 - UPDATED VERSION
+          # Set constants for Android X86_64
+          LIBND4J_CLASSIFIER="android-x86_64"
+          # Define the specific OpenBLAS JAR for android-x86_64 - UPDATED VERSION
           OPENBLAS_VERSION="0.3.28-1.5.11"
-          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-arm64.jar"
+          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-x86_64.jar"
           # Define base directory for download/unzip
           OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home"
           # Define the specific path to libs after unzip
@@ -152,7 +152,7 @@ jobs:
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
           echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV
           echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
-          echo "CURRENT_TARGET=android-arm64" >> $GITHUB_ENV
+          echo "CURRENT_TARGET=android-x86_64" >> $GITHUB_ENV
           echo "ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGET_ARCH}" >> $GITHUB_ENV
           echo "NDK_VERSION=${NDK_VERSION_ENV}" >> $GITHUB_ENV # Use updated NDK version
           echo "ANDROID_VERSION=21" >> $GITHUB_ENV # Keep API level 21 (compatible with NDK r26d)
@@ -300,8 +300,8 @@ jobs:
           if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
             echo "Building libnd4j natively as no URL was provided..."
             cd "${GITHUB_WORKSPACE}/libnd4j"
-            mkdir -p blasbuild/android-arm64
-            cd blasbuild/android-arm64
+            mkdir -p blasbuild/android-x86_64
+            cd blasbuild/android-x86_64
 
             # Define CMake arguments using updated NDK/versions
             cmake_args="-DSD_ARCH=${ARMCOMPUTE_TARGET} \
