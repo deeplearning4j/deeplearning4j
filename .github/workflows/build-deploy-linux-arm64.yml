@@ -236,18 +236,6 @@ jobs:
           # The ARMCOMPUTE_ROOT env var is also correctly set to the extracted dir path
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
         run: |
-          echo "--- Debug Info Before Maven Build ---"
-          echo "Current directory: $(pwd)"
-          echo "ARMCOMPUTE_ROOT is set to: $ARMCOMPUTE_ROOT" # This will now show the updated path
-          echo "Listing contents of ARMCOMPUTE_ROOT:"
-          ls -lR "$ARMCOMPUTE_ROOT"
-          echo "Checking specific expected files:"
-          # These ls commands should now work as ARMCOMPUTE_ROOT points to the correct directory
-          ls -l "$ARMCOMPUTE_ROOT/include/arm_compute/core/CL/CLKernelLibrary.h"
-          ls -l "$ARMCOMPUTE_ROOT/lib/libarm_compute.so"
-          ls -l "$ARMCOMPUTE_ROOT/lib/libarm_compute_core.so"
-          echo "--- End Debug Info ---"
-
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
