@@ -153,7 +153,9 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
-
+      - name: Setup path
+        shell: bash
+        run: echo "/opt/protobuf/bin" >> $GITHUB_PATH
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
@@ -197,7 +199,6 @@ jobs:
           echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
           
           sudo sysctl vm.overcommit_memory=2
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
           protoc --version
