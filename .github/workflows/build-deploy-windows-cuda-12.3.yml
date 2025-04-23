@@ -148,13 +148,9 @@ jobs:
             mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
             mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
 
-      # *************************************************************************
-      # ****** MODIFIED STEP: Directly download and run install script ******
-      # *************************************************************************
       - name: Install CUDA 12.3 (if not cached)
         shell: powershell
         env:
-          # Set the environment variable the script expects
           CUDA_VERSION: "12.3"
         run: |
           $scriptUrl = "https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1"
@@ -163,7 +159,6 @@ jobs:
           Invoke-WebRequest $scriptUrl -OutFile $scriptPath -UseBasicParsing
           if (Test-Path $scriptPath) {
             Write-Host "Download complete. Executing $scriptPath..."
-            # Execute the script. It will read $env:CUDA_VERSION which we set above.
             .\$scriptPath
           } else {
             Write-Error "Failed to download CUDA install script!"
@@ -181,10 +176,10 @@ jobs:
           java-version: 11
           distribution: 'temurin'
           server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          server-username: MAVEN_USERNAME # Provided via secrets usually
+          server-password: MAVEN_PASSWORD # Provided via secrets usually
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }} # Handles GPG setup
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # Handles GPG setup
           cache: 'maven'
 
       - name: Setup Windows PATH
@@ -199,19 +194,13 @@ jobs:
             echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
             echo "CUDNN_ROOT_DIR=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           } else {
-            # If CUDA wasn't cached and failed to install, this step might find the path missing.
             Write-Warning "CUDA Path '$cudaPath' not found. Build might fail if CUDA is required."
-            # Consider exiting if CUDA is absolutely essential:
-            # Write-Error "CUDA Path '$cudaPath' not found after install/cache step!"
-            # exit 1
+            # exit 1 # Optionally exit if CUDA is critical
           }
 
-      - name: Import GPG Key (Manual - if setup-java doesn't handle it)
-        if: ${{ secrets.SONATYPE_GPG_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
-        uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.SONATYPE_GPG_KEY }}
-          passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+      # *****************************************************************
+      # ****** REMOVED Redundant Manual GPG Import Step **************
+      # *****************************************************************
 
       - name: Run cuda build
         shell: cmd
