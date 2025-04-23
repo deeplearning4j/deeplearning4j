@@ -195,7 +195,6 @@ jobs:
           }
 
       - name: Import GPG Key (Manual - if setup-java doesn't handle it)
-        if: ${{ secrets.SONATYPE_GPG_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
           gpg_private_key: ${{ secrets.SONATYPE_GPG_KEY }}
