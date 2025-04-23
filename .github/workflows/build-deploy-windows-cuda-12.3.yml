@@ -148,12 +148,12 @@ jobs:
         with:
           msystem: MINGW64
           update: true
-          install: >-
+          install: >- # Installs via pacman
             base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch
             mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
             mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
             mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
-          pacboy: --noconfirm
+          # pacboy: --noconfirm # REMOVED THIS LINE - No packages specified for pacboy
 
       - name: Install CUDA 12.3 (if not cached)
         uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
@@ -195,7 +195,6 @@ jobs:
           }
 
       - name: Import GPG Key (Manual - if setup-java doesn't handle it)
-        # This is the critical line - ensure it's typed exactly or copied carefully
         if: ${{ secrets.SONATYPE_GPG_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
