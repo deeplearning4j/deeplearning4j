@@ -149,9 +149,6 @@ jobs:
           key: ${{ matrix.runs_on }}-protobuf
           restore-keys: ${{ matrix.runs_on }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
-        if: steps.cache-protobuf.outputs.cache-hit != 'true'
-      - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake.outputs.cache-hit != 'true'
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
         with:
@@ -167,7 +164,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 12.3.0
-          GCC:  7
+          GCC:  11
         if: steps.cache-cuda-123.outputs.cache-hit != 'true'
 
 
