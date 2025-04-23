@@ -90,7 +90,7 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v4 # Updated checkout version
+      - uses: actions/checkout@v4
 
       - name: Set mvn build command based on matrix
         shell: powershell
@@ -124,7 +124,7 @@ jobs:
               echo $libnd4j_url_to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
           Write-Host "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
-          echo $command2 | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 # No -Append needed, overwrite file
+          echo $command2 | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8
           echo $to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
@@ -134,28 +134,10 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
-            base-devel
-            git
-            tar
-            pkg-config
-            unzip
-            p7zip
-            zip
-            autoconf
-            autoconf-archive
-            automake
-            patch
-            mingw-w64-x86_64-make
-            mingw-w64-x86_64-gnupg
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-nasm
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-libtool
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-gcc-fortran
-            mingw-w64-x86_64-libwinpthread-git
-            mingw-w64-x86_64-SDL
-            mingw-w64-x86_64-ragel
+            base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch
+            mingw-w64-x86_64-make mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
           pacboy: --noconfirm
 
       - name: Cache cuda install
@@ -163,7 +145,7 @@ jobs:
         id: cache-cuda-126
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
-          key: ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }} # Added pom hash for better cache invalidation
+          key: ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}-
 
@@ -179,24 +161,26 @@ jobs:
           java-version: 11
           distribution: 'temurin'
           server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME # Provided via secrets usually
-          server-password: MAVEN_PASSWORD # Provided via secrets usually
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE # Provided via secrets usually
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
       - name: Setup Windows PATH
         shell: powershell
         run: |
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
-          $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin" # Ensure mingw64 is preferred
+          $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin"
           $newPath = "$($msysPath);$($cudaPath)\bin;$($cudaPath)\libnvvp;"
           Write-Host "Adding to PATH: $newPath"
           echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Import GPG Key
-        # FIX: Corrected 'if' condition syntax
+        # ***********************************************************
+        # ****** THIS IS THE CORRECTED LINE (Line 208 approx) *******
+        # ***********************************************************
         if: ${{ secrets.SONATYPE_GPG_KEY != '' && secrets.MAVEN_GPG_PASSPHRASE != '' }}
         uses: crazy-max/ghaction-import-gpg@v6
         with:
