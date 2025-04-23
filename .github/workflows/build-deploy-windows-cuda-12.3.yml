@@ -5,54 +5,45 @@ on:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
         default: 4
-
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
         default: 0
-
       releaseVersion:
         description: 'Release version target'
         required: false
         default: 1.0.0-M3
-
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
         default: 1.0.0-SNAPSHOT
-
       releaseRepoId:
         description: 'Release repository id'
         required: false
         default:
-
       serverId:
         description: 'Server id to publish to'
         required: false
         default: ossrh
-
       mvnFlags:
-        description: 'Extra maven flags (must escape input yourself if used)'
+        description: "Extra maven flags (must escape input yourself if used)"
         required: false
         default:
-
       libnd4jUrl:
-        description: 'Whether to download libnd4j using  https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
+        description: 'Whether to download libnd4j using https://github.com/KonduitAI/gh-actions-libnd4j-urls/ for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
         default:
-
       runsOn:
         description: 'System to run on'
         required: false
         default: windows-2019
-
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
 
 jobs:
-  windows-x86_64-cuda-12-3:
+  windows-x86_64-cuda-12-6:
     strategy:
       fail-fast: false
       matrix:
@@ -62,49 +53,36 @@ jobs:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
-
           - debug_enabled: ${{ github.event.inputs.debug_enabled }}
             experimental: true
             name: Debug enabled
-
           - runs_on: ${{ github.event.inputs.runsOn }}
             experimental: true
             name: OS to run on
-
           - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
             name: OS to run on
-
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
             experimental: true
             name: Whether to deploy to release staging or not
-
           - release_version: ${{ github.event.inputs.releaseVersion }}
             experimental: true
             name: Release version
-
           - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
             experimental: true
             name: Snapshot version
-
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
             experimental: true
             name: The release repository to run on
-
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags to use as part of the build
-
           - build_threads: ${{ github.event.inputs.buildThreads }}
             experimental: true
             name: The number of threads to build libnd4j with
-
-
-
 
     runs-on: ${{ matrix.runs_on }}
     steps:
@@ -112,148 +90,184 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2 # Consider updating to v3 or v4
+
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
-              if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
-                 $modules=" :nd4j-cuda-12.3-preset,:nd4j-cuda-12.3"
-              } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                 $modules=":nd4j-cuda-12.3-preset,:nd4j-cuda-12.3,libnd4j"
-              } elseif ( "${{ matrix.helper }}" -eq "" ) {
-                 $modules=":nd4j-cuda-12.3-preset,:nd4j-cuda-12.3,libnd4j,:nd4j-cuda-12.3-platform"
-              }
-              
-              $command="mvn ${{ matrix.mvn_ext }}  -Pcuda --also-make -pl  $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true  -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3  -Possrh  -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64    -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-              
-              
-              if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
-                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.3-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}   -Dlibnd4j.helper=${{ matrix.helper }}   -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-                   $libnd4j_download_file_url="windows-cuda-12-1-${{ matrix.extension }}-${{ matrix.helper }}"
-              } elseif ( "${{ matrix.helper }}" -ne "" ) {
-                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.3-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64  -Pcuda -Dlibnd4j.chip=cuda  deploy -DskipTests"
-                   $libnd4j_download_file_url="windows-cuda-12-3-${{ matrix.helper }}"
-              } else {
-                   $libnd4j_download_file_url="windows-cuda-12-3"
-                   $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.3"
-              }
-              $command2= -join("$($command)","$($mvn_ext)");
-              $to_write = -join("COMMAND=","$($command2)");
-              if  (  "${{ matrix.libnd4j_file_download }}" -ne  "")  {
-                 echo "Adding libnd4j download"
-                 $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
-                 echo $libnd4j_url_to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-              }
-              echo "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
-              echo $command2  | Out-File -FilePath  "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 -Append
-              echo $to_write  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
-              echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3"  | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
+          # FIX: Updated modules to 12.6
+          if ( "${{ matrix.libnd4j_file_download }}" -ne "" ) {
+              $modules=" :nd4j-cuda-12.6-preset,:nd4j-cuda-12.6"
+           } elseif ( "${{ matrix.helper }}" -ne "" ) {
+              $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j"
+          } elseif ( "${{ matrix.helper }}" -eq "" ) {
+            $modules=":nd4j-cuda-12.6-preset,:nd4j-cuda-12.6,libnd4j,:nd4j-cuda-12.6-platform"
+           }
+          
+          $command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+          
+          # FIX: Updated classifiers and download URLs to 12.6
+          if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+                $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
+           } elseif ( "${{ matrix.helper }}" -ne "" ) {
+                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
+                $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.helper }}"
+           } else {
+                  $libnd4j_download_file_url="windows-cuda-12.6"
+                  $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6"
+          }
+          
+          $command2= -join("$($command)","$($mvn_ext)");
+          $to_write = -join("COMMAND=","$($command2)");
+          if ( "${{ matrix.libnd4j_file_download }}" -ne "") {
+              Write-Host "Adding libnd4j download URL to GITHUB_ENV"
+              $libnd4j_url_to_write = -join("LIBND4J_FILE_NAME=","$(${{ matrix.libnd4j_file_download }}/$libnd4j_download_file_url)");
+              echo $libnd4j_url_to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+          Write-Host "Setting command for helper ${{ matrix.helper }} and extension ${{ matrix.extension }} to $($command2) and the libnd4j bootstrap file name to $($libnd4j_download_file_url)"
+          echo $command2 | Out-File -FilePath "$env:GITHUB_WORKSPACE/mvn-command.bat" -Encoding utf8 # No -Append needed, overwrite file
+          echo $to_write | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # FIX: Update CUDNN_ROOT_DIR default to 12.6
+          echo "CUDNN_ROOT_DIR=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Cache cuda install
-        uses: actions/cache@v4
-        id: cache-cuda-123
-        with:
-          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3
-          key: ${{ matrix.runs_on }}-cuda-12.3-${{ matrix.helper }}
-          restore-keys: ${{ matrix.runs_on }}-cuda-12.3-${{ matrix.helper }}
-
-      - name: Set up Java for publishing to GitHub Packages
+      - name: Install MSYS2 and dependencies
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
-          install: base-devel  git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake patch   mingw-w64-x86_64-make --noconfirm mingw-w64-x86_64-gnupg mingw-w64-x86_64-cmake mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc  mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-x86_64-ragel
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+          install: >-
+            base-devel
+            git
+            tar
+            pkg-config
+            unzip
+            p7zip
+            zip
+            autoconf
+            autoconf-archive
+            automake
+            patch
+            mingw-w64-x86_64-make
+            mingw-w64-x86_64-gnupg
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-nasm
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-libtool
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-libwinpthread-git
+            mingw-w64-x86_64-SDL
+            mingw-w64-x86_64-ragel
+          pacboy: --noconfirm
+
+      - name: Cache cuda install
+        uses: actions/cache@v4
+        # FIX: Update cache ID, path, and keys to 12.6
+        id: cache-cuda-126
+        with:
+          path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6
+          key: ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }} # Consider adding more factors if needed
+          restore-keys: |
+            ${{ matrix.runs_on }}-cuda-12.6-${{ matrix.helper }}
+
+      - name: Install CUDA 12.6 (if not cached)
+        # Using the specific action provided earlier
+        uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
-          cuda: 12.3.0
-        if: steps.cache-cuda-123.outputs.cache-hit != 'true'
+          # FIX: Use the exact version string expected by the install script's dictionaries
+          cuda: "12.6"
+        # FIX: Check the correct cache step ID
+        if: steps.cache-cuda-126.outputs.cache-hit != 'true'
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && matrix.debug_enabled  }}
-
-
-      - name: Set up Java for publishing to OSSRH
+      - name: Set up Java and Maven cache/auth
         uses: konduitai/setup-java@main
         with:
           java-version: 11
           distribution: 'temurin'
           server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+          server-username: MAVEN_USERNAME # Provided via secrets usually
+          server-password: MAVEN_PASSWORD # Provided via secrets usually
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # Provided via secrets usually
           cache: 'maven'
 
-      - name: Setup windows path
+      - name: Setup Windows PATH
         shell: powershell
-        run: echo "C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3\lib\x64;" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        run: |
+          # FIX: Update CUDA path to 12.6
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6"
+          $msysPath = "C:\msys64\mingw64\bin;C:\msys64\usr\bin" # Ensure mingw64 is preferred for build tools
+          $newPath = "$($msysPath);$($cudaPath)\bin;$($cudaPath)\libnvvp;" # Add other necessary CUDA paths if needed
+          Write-Host "Adding to PATH: $newPath"
+          echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # Also set CUDA_PATH which might be picked up by build tools directly
+          echo "CUDA_PATH=$cudaPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v1
-        env:
-            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-      - name:  Run cuda build
+        if: secrets.SONATYPE_GPG_KEY != null && secrets.MAVEN_GPG_PASSPHRASE != null
+        uses: crazy-max/ghaction-import-gpg@v6 # Use latest version
+        with:
+          gpg_private_key: ${{ secrets.SONATYPE_GPG_KEY }}
+          passphrase: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          # Use default fingerprint export (optional)
+          # export_keyring: false
+
+      - name: Run cuda build
         shell: cmd
         env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
+          # Secrets need to be configured in GitHub repository settings
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }} # Ensure this secret exists if needed for signing
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Built-in secret
+          # Variables from matrix/inputs
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3
-          CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.3
-          GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
-          GPG_SIGNING_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MODULES: ${{ matrix.mvn_flags }}
+          # Set via previous steps
+          # CUDA_PATH: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6 # Set via GITHUB_ENV
+          # CUDNN_ROOT_DIR: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6 # Set via GITHUB_ENV
+          # Derived variables
+          PUBLISH_TO: ossrh # Assuming this is constant
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-          MAVEN_OPTS: "-Xmx2g"
-          LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-
+          MAVEN_OPTS: "-Xmx2g" # Default, can be overridden by mvnFlags input potentially
 
         run: |
-          echo "libnd4j build threads ${{ matrix.build_threads }}"
-          echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
-          echo "release version ${{ matrix.release_version }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "debug enabled ${{ matrix.debug_enabled }}"
-          echo "libnd4j url ${{ matrix.libnd4j_file_download }}"
-          echo "maven flags ${{ matrix.mvn_flags }}"
-          echo "snapshot version ${{ matrix.snapshot_version }}"
-          echo "server id ${{ matrix.server_id }}"
-          echo "release repo id ${{ matrix.release_repo_id }}"
-          
+          echo "Libnd4j build threads: ${{ matrix.build_threads }}"
+          echo "Deploy to release staging: %PERFORM_RELEASE%"
+          echo "Release version: %RELEASE_VERSION%"
+          echo "Snapshot version: %SNAPSHOT_VERSION%"
+          echo "Debug enabled: ${{ matrix.debug_enabled }}"
+          echo "Libnd4j URL input: %LIBND4J_FILE_NAME%"
+          echo "Maven flags input: ${{ matrix.mvn_flags }}"
+          echo "Server id: ${{ matrix.server_id }}"
+          echo "Release repo id: %RELEASE_REPO_ID%"
+          echo "CUDA Path from env: %CUDA_PATH%"
+          echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
+
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
-          echo "Running cuda build"
-          echo "Command is %COMMAND%"
-          bash ./change-cuda-versions.sh 12.3
-          Rem Note: we need this for the cudnn helpers, our cmake can't find it otherwise.
-          Rem See here: https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/CMakeLists.txt#L298
-          set CUDNN_ROOT_DIR=%CUDA_PATH%
+          echo "Running cuda build..."
+          echo "Maven command from file:"
+          type "%GITHUB_WORKSPACE%\mvn-command.bat"
+
+          # FIX: Update version for change script
+          bash ./change-cuda-versions.sh 12.6
+
+          Rem Ensure CUDNN_ROOT_DIR is set if needed by cmake; often CUDA_PATH is sufficient
+          if not defined CUDNN_ROOT_DIR set CUDNN_ROOT_DIR=%CUDA_PATH%
+
+          # FIX: Update version for bootstrap and release scripts
           if "%PERFORM_RELEASE%"=="1" (
-              echo "Running release"
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.3 "${{ matrix.helper }}" "${{ matrix.extension }}"
+              echo "Running release build..."
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" "${{ matrix.extension }}"
               bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
           ) else (
-              if "%PERFORM_RELEASE%"==1 (
-                        echo "Running release"
-                        bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                        bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
-                    ) else (
-                        echo "Running snapshots"
-                        bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
-                        call "%GITHUB_WORKSPACE%\mvn-command.bat"
-              )
+              echo "Running snapshot build..."
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" "${{ matrix.extension }}"
+              call "%GITHUB_WORKSPACE%\mvn-command.bat"
           )
-
-
-
