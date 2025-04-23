@@ -87,17 +87,29 @@ set(ARM_COMPUTE_URL_AARCH64 "https://github.com/ARM-software/ComputeLibrary/rele
 set(ARM_COMPUTE_URL_ANDROID_AARCH64 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz")
 
 # Set the appropriate URL based on the architecture
+# Set the appropriate URL based on the architecture
 if(${SD_ARCH} MATCHES "armv7")
     set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ARMV7})
     message("Using ARM Compute Library for ARMv7 32-bit")
-elseif(${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64")
+    # Corrected block starts here
+elseif(${SD_ARCH} MATCHES "armv8-a") # First condition
     if(SD_ANDROID_BUILD)
         set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ANDROID_AARCH64})
-        message("Using ARM Compute Library for Android ARM64")
+        message("Using ARM Compute Library for Android ARM64 (matched armv8-a)")
     else()
         set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_AARCH64})
-        message("Using ARM Compute Library for ARM64")
+        message("Using ARM Compute Library for ARM64 (matched armv8-a)")
     endif()
+elseif(${SD_ARCH} MATCHES "arm64") # Second condition (separate elseif)
+    # Same logic as above
+    if(SD_ANDROID_BUILD)
+        set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ANDROID_AARCH64})
+        message("Using ARM Compute Library for Android ARM64 (matched arm64)")
+    else()
+        set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_AARCH64})
+        message("Using ARM Compute Library for ARM64 (matched arm64)")
+    endif()
+    # Original endif for the whole if/elseif chain
 endif()
 
 if (SD_CUDA)
