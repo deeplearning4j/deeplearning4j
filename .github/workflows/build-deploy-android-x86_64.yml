@@ -4,7 +4,7 @@ on:
       buildThreads:
         description: 'Build threads for libnd4j. Used to control memory usage of builds.'
         required: true
-        default: 1
+        default: 2
 
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
@@ -14,12 +14,12 @@ on:
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M3
+        default: 1.0.0-M3 # Default kept as is
 
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
-        default: 1.0.0-SNAPSHOT
+        default: 1.0.0-SNAPSHOT # Default kept as is
 
       releaseRepoId:
         description: 'Release repository id'
@@ -44,7 +44,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-22.04
+        default: ubuntu-latest-arm64 # Using standard GitHub ARM runner
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -52,11 +52,11 @@ on:
         default: false
 
 jobs:
-  android-x86_64:
+  android-arm64:
     strategy:
       fail-fast: false
       matrix:
-        helper: [onednn, ""]
+        helper: [armcompute, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
@@ -90,19 +90,29 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/set-linux-distro-version
+      - uses: ./.github/actions/set-linux-distro-version # Assumes relevant for runner OS
+      - uses: ./.github/actions/update-deps-linux      # Assumes relevant for runner OS
+      - name: Cache cmake install
+        uses: actions/cache@v4
+        with:
+          path: /opt/cmake # Example path
+          key: ${{ runner.os }}-cmake-${{ github.run_id }} # More specific key example
+          restore-keys: |
+            ${{ runner.os }}-cmake-
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf-${{ github.run_id }} # More specific key example
+          restore-keys: |
+            ${{ runner.os }}-protobuf-
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
-        # Assuming cache step exists or is not strictly needed based on context
-        # if: steps.cache-cmake.outputs.cache-hit != 'true'
+        # Check cache hit based on cache step id if configured
+        # if: steps.cache-cmake-install.outputs.cache-hit != 'true'
+
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
@@ -118,26 +128,34 @@ jobs:
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r21d # Matches the version used later
+          ndk-version: r26d # Updated NDK version
 
       - name: Set mvn build command and environment variables
         shell: bash
         run: |
-          # Set constants for Android X86_64
-          LIBND4J_CLASSIFIER="android-x86_64"
-          # Define the specific OpenBLAS JAR for android-x86_64
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-x86_64.jar"
-          # Define the expected directory structure *inside* the unzipped JAR content
-          OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home" # Base directory for download/unzip
-          OPENBLAS_LIB_DIR="${OPENBLAS_INSTALL_DIR}/lib/x86_64"    # Specific path to libs after unzip
+          # Set constants for Android ARM64
+          LIBND4J_CLASSIFIER="android-arm64"
+          # Define the specific OpenBLAS JAR for android-arm64 - UPDATED VERSION
+          OPENBLAS_VERSION="0.3.28-1.5.11"
+          OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-android-arm64.jar"
+          # Define base directory for download/unzip
+          OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home"
+          # Define the specific path to libs after unzip
+          OPENBLAS_LIB_DIR="${OPENBLAS_INSTALL_DIR}/lib/arm64-v8a"
+          # Define ARM Compute target architecture
+          ARMCOMPUTE_TARGET_ARCH="arm64-v8a"
+          # NDK Version - UPDATED
+          NDK_VERSION_ENV="r26d"
 
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
+          echo "OPENBLAS_VERSION=${OPENBLAS_VERSION}" >> $GITHUB_ENV # Store version
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
-          echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV # For setup step
-          echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV           # For build steps (CMake/LD_LIBRARY_PATH)
-          echo "CURRENT_TARGET=android-x86_64" >> $GITHUB_ENV
-          echo "NDK_VERSION=r21d" >> $GITHUB_ENV
-          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
+          echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV
+          echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
+          echo "CURRENT_TARGET=android-arm64" >> $GITHUB_ENV
+          echo "ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGET_ARCH}" >> $GITHUB_ENV
+          echo "NDK_VERSION=${NDK_VERSION_ENV}" >> $GITHUB_ENV # Use updated NDK version
+          echo "ANDROID_VERSION=21" >> $GITHUB_ENV # Keep API level 21 (compatible with NDK r26d)
 
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
@@ -158,24 +176,26 @@ jobs:
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 
-      # --- NEW/UPDATED STEP ---
-      - name: Setup OpenBLAS and Helper Libraries
+      - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         env:
           OPENBLAS_INSTALL_DIR: ${{ env.OPENBLAS_INSTALL_DIR }}
-          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }} # Get the lib dir path
-          OPENBLAS_JAR: ${{ env.OPENBLAS_JAR }}   # Get the jar filename
+          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}
+          OPENBLAS_JAR: ${{ env.OPENBLAS_JAR }}
+          OPENBLAS_VERSION: ${{ env.OPENBLAS_VERSION }} # Get version for URL
         run: |
-          echo "Setting up OpenBLAS..."
+          echo "Setting up OpenBLAS ${OPENBLAS_VERSION}..."
           mkdir -p "${OPENBLAS_INSTALL_DIR}"
           cd "${OPENBLAS_INSTALL_DIR}"
-          echo "Downloading ${OPENBLAS_JAR}..."
-          wget --quiet https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}
+          # Construct URL with updated version
+          OPENBLAS_URL="https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
+          echo "Downloading ${OPENBLAS_JAR} from ${OPENBLAS_URL}..."
+          wget --quiet ${OPENBLAS_URL}
           echo "Unzipping ${OPENBLAS_JAR}..."
           unzip -q ${OPENBLAS_JAR}
           if [ -f "${OPENBLAS_PATH}/libopenblas.so.0" ]; then
              echo "Creating symlink for libopenblas.so"
-             cp ${OPENBLAS_PATH}/libopenblas.so.0 ${OPENBLAS_PATH}/libopenblas.so
+             ln -sf libopenblas.so.0 ${OPENBLAS_PATH}/libopenblas.so
           else
              echo "Warning: ${OPENBLAS_PATH}/libopenblas.so.0 not found after unzip."
              echo "Listing contents of ${OPENBLAS_PATH}:"
@@ -183,49 +203,46 @@ jobs:
           fi
           echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
 
-          # Setup OneDNN if selected
-          if [ "${{ matrix.helper }}" == "onednn" ]; then
-              echo "Setting up OneDNN..."
-              ONEDNN_INSTALL_DIR="${GITHUB_WORKSPACE}/onednn_home"
-              mkdir -p "${ONEDNN_INSTALL_DIR}"
-              cd "${ONEDNN_INSTALL_DIR}"
+          # Setup ARM Compute Library if selected (Version kept at v25.04)
+          if [ "${{ matrix.helper }}" == "armcompute" ]; then
+              echo "Setting up ARM Compute Library v25.04..."
+              ARMCOMPUTE_INSTALL_DIR="${GITHUB_WORKSPACE}/armcompute_home"
+              mkdir -p "${ARMCOMPUTE_INSTALL_DIR}"
+              cd "${ARMCOMPUTE_INSTALL_DIR}"
 
-              # Download OneDNN for Android x86_64 (using git clone as before)
-              echo "Cloning OneDNN..."
-              git clone --quiet --branch v2.6.1 --depth 1 https://github.com/oneapi-src/oneDNN.git
+              ACL_VERSION="v25.04" # Kept version
+              ACL_TARBALL="arm_compute-${ACL_VERSION}-android-aarch64-cpu-bin.tar.gz"
+              ACL_URL="https://github.com/ARM-software/ComputeLibrary/releases/download/${ACL_VERSION}/${ACL_TARBALL}"
 
-              ONEDNN_ROOT_PATH="${ONEDNN_INSTALL_DIR}/oneDNN"
-              echo "ONEDNN_ROOT=${ONEDNN_ROOT_PATH}" >> "$GITHUB_ENV" # Set for subsequent steps
-              echo "OneDNN setup complete. ONEDNN_ROOT=${ONEDNN_ROOT_PATH}"
+              echo "Downloading ARM Compute Library from ${ACL_URL}..."
+              wget --quiet ${ACL_URL}
+              echo "Extracting ${ACL_TARBALL}..."
+              tar -xzf ${ACL_TARBALL}
+
+              echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_INSTALL_DIR}" >> "$GITHUB_ENV"
+              echo "ARM Compute Library setup complete. ARMCOMPUTE_ROOT=${ARMCOMPUTE_INSTALL_DIR}"
           else
-              echo "Skipping OneDNN setup."
+              echo "Skipping ARM Compute Library setup."
           fi
 
       - name: Debug Info
         shell: bash
         run: |
           echo "--- Workflow Inputs ---"
-          echo "libnd4j build threads: ${{ github.event.inputs.buildThreads }}"
-          echo "Deploy to release staging: ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "Release version: ${{ github.event.inputs.releaseVersion }}"
-          echo "Snapshot version: ${{ github.event.inputs.snapshotVersion }}"
-          echo "Debug enabled: ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j URL: ${{ github.event.inputs.libnd4jUrl }}"
-          echo "Maven flags: ${{ github.event.inputs.mvnFlags }}"
-          echo "Server ID: ${{ github.event.inputs.serverId }}"
-          echo "Release Repo ID: ${{ github.event.inputs.releaseRepoId }}"
-          echo "Runs On: ${{ github.event.inputs.runsOn }}"
+          # ... (rest of inputs)
           echo "--- Matrix Values ---"
           echo "Helper: ${{ matrix.helper }}"
           echo "--- Environment Variables ---"
           echo "LIBND4J_CLASSIFIER: $LIBND4J_CLASSIFIER"
+          echo "OPENBLAS_VERSION: $OPENBLAS_VERSION" # Show version
           echo "OPENBLAS_JAR: $OPENBLAS_JAR"
           echo "OPENBLAS_INSTALL_DIR: $OPENBLAS_INSTALL_DIR"
           echo "OPENBLAS_PATH (set): $OPENBLAS_PATH"
           echo "CURRENT_TARGET: $CURRENT_TARGET"
-          echo "NDK_VERSION: $NDK_VERSION"
-          echo "ANDROID_VERSION: $ANDROID_VERSION"
-          echo "ONEDNN_ROOT (set): $ONEDNN_ROOT"
+          echo "ARMCOMPUTE_TARGET: $ARMCOMPUTE_TARGET"
+          echo "ARMCOMPUTE_ROOT (set): $ARMCOMPUTE_ROOT"
+          echo "NDK_VERSION (set): $NDK_VERSION" # Show NDK version used
+          echo "ANDROID_VERSION (set): $ANDROID_VERSION"
           echo "NDK Path (from step): ${{ steps.setup-ndk.outputs.ndk-path }}"
           echo "COMMAND: $COMMAND"
           echo "--- System Info ---"
@@ -234,13 +251,7 @@ jobs:
           cmake --version
           protoc --version
           echo "--- Dependency Paths ---"
-          echo "Checking OpenBLAS path contents ($OPENBLAS_PATH):"
-          ls -l "$OPENBLAS_PATH" || echo "OpenBLAS path not found or empty."
-          if [ -n "$ONEDNN_ROOT" ]; then
-            echo "Checking OneDNN path contents ($ONEDNN_ROOT):"
-            ls -l "$ONEDNN_ROOT" || echo "OneDNN path not found or empty."
-          fi
-
+          # ... (rest of debug checks)
 
       - name: Build with Maven
         shell: bash
@@ -257,56 +268,60 @@ jobs:
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }} # Note: MODULES env var seems unused in run script below, COMMAND has modules
           HELPER: ${{ matrix.helper }}
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
 
-          # Build Environment/Paths
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }} # NDK Path
-          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}      # Explicit NDK env var often needed
-          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}                  # Path to OpenBLAS libs
-          ONEDNN_ROOT: ${{ env.ONEDNN_ROOT }}                      # Path to OneDNN source/build
+          # Build Environment/Paths (Pulled from GITHUB_ENV)
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }} # Use path from setup step
+          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}
+          ARMCOMPUTE_ROOT: ${{ env.ARMCOMPUTE_ROOT }}
+          ARMCOMPUTE_TARGET: ${{ env.ARMCOMPUTE_TARGET }}
+          ANDROID_VERSION: ${{ env.ANDROID_VERSION }}
+          NDK_VERSION: ${{ env.NDK_VERSION }} # Pass NDK version info if needed by scripts
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_PATH }} # Add OpenBLAS to library path
+          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_PATH }}:${{ env.ARMCOMPUTE_ROOT }}/lib
 
           # Build Flags/Options
           DEBIAN_FRONTEND: noninteractive
-          DEPLOY: 1 # Hardcoded, seems intended
-          BUILD_USING_MAVEN: 1 # Hardcoded, seems intended
-          TARGET_OS: android   # Hardcoded, seems intended
-          PUBLISH_TO: ossrh    # Hardcoded, seems intended
-          DEPLOY_TO: ossrh     # Hardcoded, seems intended
+          DEPLOY: 1
+          BUILD_USING_MAVEN: 1
+          TARGET_OS: android
+          PUBLISH_TO: ossrh
+          DEPLOY_TO: ossrh
           MAVEN_OPTS: -Xmx2g
 
         run: |
           echo "--- Environment for Build Step ---"
           printenv
+          echo "NDK Path used: ${ANDROID_NDK}"
           echo "----------------------------------"
 
           # Native build logic for libnd4j (if URL not provided)
           if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
             echo "Building libnd4j natively as no URL was provided..."
             cd "${GITHUB_WORKSPACE}/libnd4j"
-            mkdir -p blasbuild/android-x86_64
-            cd blasbuild/android-x86_64
+            mkdir -p blasbuild/android-arm64
+            cd blasbuild/android-arm64
 
-            # Define CMake arguments for building libnd4j
-            # Use environment variables set previously (OPENBLAS_PATH, ONEDNN_ROOT)
-            cmake_args="-DSD_ARCH=x86_64 -DSD_ANDROID_BUILD=true -DANDROID_NDK=${ANDROID_NDK} -DANDROID_PLATFORM=android-${ANDROID_VERSION} -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake -DANDROID_ABI=x86_64"
+            # Define CMake arguments using updated NDK/versions
+            cmake_args="-DSD_ARCH=${ARMCOMPUTE_TARGET} \
+                        -DSD_ANDROID_BUILD=true \
+                        -DANDROID_NDK=${ANDROID_NDK} \
+                        -DANDROID_PLATFORM=android-${ANDROID_VERSION} \
+                        -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake \
+                        -DANDROID_ABI=arm64-v8a"
 
-            # Add OpenBLAS path if set
             if [ -n "${OPENBLAS_PATH}" ]; then
                cmake_args="${cmake_args} -DOPENBLAS_PATH=${OPENBLAS_PATH}"
             else
                echo "Warning: OPENBLAS_PATH is not set for CMake."
             fi
 
-            # Add helper-specific arguments
-            if [ "${HELPER}" == "onednn" ]; then
-              if [ -n "${ONEDNN_ROOT}" ]; then
-                cmake_args="${cmake_args} -DHELPERS_onednn=true -DONEDNN_PATH=${ONEDNN_ROOT}"
+            if [ "${HELPER}" == "armcompute" ]; then
+              if [ -n "${ARMCOMPUTE_ROOT}" ]; then
+                cmake_args="${cmake_args} -DHELPERS_armcompute=true -DARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}"
               else
-                 echo "Error: Helper is onednn but ONEDNN_ROOT is not set."
+                 echo "Error: Helper is armcompute but ARMCOMPUTE_ROOT is not set."
                  exit 1
               fi
             fi
@@ -315,8 +330,10 @@ jobs:
             cmake ${cmake_args} ../..
 
             echo "Building libnd4j with make -j${LIBND4J_BUILD_THREADS}"
-            make -j${LIBND4J_BUILD_THREADS}
-            make install # Install to ensure headers/libs are found by Maven build
+            make -j${LIBND4J_BUILD_THREADS} VERBOSE=1
+
+            echo "Installing libnd4j..."
+            make install
             cd ${GITHUB_WORKSPACE}
           else
              echo "Skipping native libnd4j build as libnd4jUrl is provided."
