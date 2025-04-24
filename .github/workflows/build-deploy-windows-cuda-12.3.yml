@@ -248,8 +248,6 @@ jobs:
           java-version: 11
           distribution: 'temurin'
 
-
-
       - name: Setup Windows PATH
         shell: powershell
         run: |
@@ -298,9 +296,46 @@ jobs:
           echo "CUDA Path from env: %CUDA_PATH%"
           echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
           echo "---------------------------"
+          
+          echo "Checking for Visual Studio installations..."
+          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
+              echo "Found Visual Studio 2019 Enterprise"
+              set VS_PATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          ) else (
+              echo "Visual Studio 2019 Enterprise not found, checking for Visual Studio 2022..."
+              if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
+                  echo "Found Visual Studio 2022 Enterprise"
+                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+              ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat" (
+                  echo "Found Visual Studio 2022 Professional"
+                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat"
+              ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" (
+                  echo "Found Visual Studio 2022 Community"
+                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+              ) else (
+                  echo "ERROR: Could not find any Visual Studio installation with vcvars64.bat"
+                  echo "Searching for cl.exe in Program Files..."
+                  dir "C:\Program Files" /s /b | findstr cl.exe
+                  dir "C:\Program Files (x86)" /s /b | findstr cl.exe
+                  exit 1
+              )
+          )
+          
+          echo "Initializing Visual Studio environment using %VS_PATH%..."
+          call %VS_PATH%
+          
+          echo "Checking if cl.exe is available in PATH..."
+          where cl.exe
+          if %ERRORLEVEL% NEQ 0 (
+              echo "ERROR: cl.exe not found in PATH after initializing Visual Studio environment"
+              echo "Current PATH: %PATH%"
+              dir "C:\Program Files\Microsoft Visual Studio\" /s /b | findstr cl.exe
+              dir "C:\Program Files (x86)\Microsoft Visual Studio\" /s /b | findstr cl.exe
+              exit 1
+          ) else (
+              echo "cl.exe found in PATH"
+          )
 
-          echo "Initializing Visual Studio environment..."
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           echo "Setting MSYS environment..."
           set MSYSTEM=MINGW64
 
