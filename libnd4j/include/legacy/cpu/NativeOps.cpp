@@ -470,31 +470,7 @@ void tear(Pointer *extraPointers, OpaqueDataBuffer *dbX, LongType const *hXShape
   }
 }
 
-void average(Pointer *extras,
-             OpaqueNDArrayArr x,
-             OpaqueNDArray z,int n, LongType length, bool propagate) {
-  try {
-    auto xType = x[0]->dataType();
 
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::averageGeneric(x, z, n, length, propagate),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, LongType length) {
-  try {
-    auto xType = x[0]->dataType();
-
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::accumulateGeneric(x, z, n, length),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 void enableP2P(bool enable) {
   // no-op
