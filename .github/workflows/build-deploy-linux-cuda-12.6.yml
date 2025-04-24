@@ -137,7 +137,7 @@ jobs:
                  echo "Building libnd4j from source"
                  modules=':nd4j-cuda-12.6,:nd4j-cuda-12.6-preset,:libnd4j'
             fi
-            command="mvn ${{ matrix.mvn_ext }-Dlibnd4j.chip=cuda } -Pcuda --also-make  -pl ${modules} -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6 8.9' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
+            command="mvn ${{ matrix.mvn_ext } --Dlibnd4j.cuda.compile.skip=false Dlibnd4j.chip=cuda  -Pcuda --also-make  -pl ${modules} -Dlibnd4j.compute='3.7 5.0 5.2 6.0 6.1 7.0 7.5 8.0 8.6 8.9' -Dlibnd4j.cpu.compile.skip=true -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ matrix.build_threads }}  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cuda --also-make -Pcuda clean --batch-mode package deploy -DskipTests"
             libnd4j_download_file_url=""
             if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                mvn_ext=" -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Dlibnd4j.classifier=linux-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}}"
