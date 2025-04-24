@@ -179,7 +179,7 @@ jobs:
           server-password: MAVEN_PASSWORD # Secret must be named MAVEN_PASSWORD in repo
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }} # Secret must be named SONATYPE_GPG_KEY
           gpg-passphrase: MAVEN_GPG_PASSPHRASE # Secret must be named MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
+        
 
       - name: Setup Windows PATH
         shell: powershell

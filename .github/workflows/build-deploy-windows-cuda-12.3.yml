@@ -177,7 +177,7 @@ jobs:
           java-version: 11
           distribution: 'temurin'
         
-          cache: 'maven'
+        
 
       - name: Setup Windows PATH
         shell: powershell

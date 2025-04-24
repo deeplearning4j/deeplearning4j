@@ -83,7 +83,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
@@ -171,7 +171,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
 
       - uses: msys2/setup-msys2@v2
@@ -250,7 +250,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
 
       - name: Update path for gnu sed

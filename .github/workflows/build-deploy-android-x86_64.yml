@@ -123,7 +123,7 @@ jobs:
           java-version: 11
           distribution: 'temurin'
         
-          cache: 'maven'
+        
 
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
