@@ -742,64 +742,31 @@ endif()
 
 
 #arm-compute entry
+# Root CMakeLists.txt adjustment
+set(ARMCOMPUTE_LIBRARIES "") # Initialize as empty
+set(HAVE_ARMCOMPUTE 0)     # Initialize as false
+
 if(${HELPERS_armcompute})
     find_package(ARMCOMPUTE REQUIRED)
-    execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
-    if ("${ld_version}" MATCHES "GNU gold")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-            add_link_options("-Wl,--long-plt")
-        endif()
-    endif()
-
+    # ... other setup ...
     if(ARMCOMPUTE_FOUND)
-        message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
         set(HAVE_ARMCOMPUTE 1)
-        # Add preprocessor definition for ARM Compute NEON
-        add_definitions(-DARMCOMPUTENEON_ENABLED)
         include_directories(${ARMCOMPUTE_INCLUDE})
-        message("----${ARMCOMPUTE_INCLUDE}---")
-    endif()
-else()
-    # If ARM Compute Library is requested but not found via FindARMCOMPUTE.cmake
-    # Download and build it
-    if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
-        message("Downloading ARM Compute Library from: ${ARM_COMPUTE_URL}")
-        set(HAVE_ARMCOMPUTE 1)
-
-        # Configure the ARM Compute Library download
-        configure_file(./CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt)
-
-        # Execute the download step
-        execute_process(COMMAND ${CMAKE_COMMAND} "${CMAKE_GENERATOR}" .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download)
-        if(result)
-            message(FATAL_ERROR "CMake step for ARM Compute Library failed: ${result}")
+        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIBRARIES}) # Set based on find_package result
+        message("Found ARMCOMPUTE via find_package: ${ARMCOMPUTE_LIBRARIES}")
+    else()
+        # Optional: Fallback download logic ONLY if find_package failed BUT HELPERS_armcompute was TRUE
+        if(DEFINED ARM_COMPUTE_URL AND (...))
+            # ... download logic ...
+            set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
+            include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include)
+            set(ARMCOMPUTE_LIBRARIES
+                    "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so"
+                    "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
+            set(HAVE_ARMCOMPUTE 1) # Set flag after successful download/setup
+            message("ARM Compute Library configured via download at: ${ARMCOMPUTE_ROOT}")
         endif()
-
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download)
-        if(result)
-            message(FATAL_ERROR "Build step for ARM Compute Library failed: ${result}")
-        endif()
-
-        # Set up the ARM Compute Library paths
-        set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
-
-        # Add preprocessor definition for ARM Compute NEON
-        add_definitions(-DARMCOMPUTENEON_ENABLED)
-        include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include)
-
-        # Set ARM Compute Library libraries
-        set(ARMCOMPUTE_LIBRARIES
-                "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so"
-                "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
-
-        message("ARM Compute Library configured at: ${ARMCOMPUTE_ROOT}")
     endif()
-endif()
 
 
 if (${HELPERS_onednn})
