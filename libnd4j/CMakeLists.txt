@@ -743,30 +743,77 @@ endif()
 
 #arm-compute entry
 # Root CMakeLists.txt adjustment
-set(ARMCOMPUTE_LIBRARIES "") # Initialize as empty
-set(HAVE_ARMCOMPUTE 0)     # Initialize as false
 
+# Initialize variables to indicate ARM Compute is not yet configured
+set(ARMCOMPUTE_LIBRARIES "")
+set(HAVE_ARMCOMPUTE 0)
+
+# Only attempt ARM Compute configuration if the helper flag is set
 if(${HELPERS_armcompute})
-    find_package(ARMCOMPUTE REQUIRED)
-    # ... other setup ...
+    message(STATUS "ARM Compute helper is active, attempting configuration...")
+
+    # First, try to find an existing installation
+    find_package(ARMCOMPUTE QUIET) # Use QUIET to avoid messages if not found initially
+
     if(ARMCOMPUTE_FOUND)
+        # Found via find_package
         set(HAVE_ARMCOMPUTE 1)
-        include_directories(${ARMCOMPUTE_INCLUDE})
-        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIBRARIES}) # Set based on find_package result
-        message("Found ARMCOMPUTE via find_package: ${ARMCOMPUTE_LIBRARIES}")
+        include_directories(${ARMCOMPUTE_INCLUDE_DIRS}) # Use standard variable from FindARMCOMPUTE
+        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIBRARIES}) # Standard variable from FindARMCOMPUTE
+        message(STATUS "Found ARM Compute via find_package. Include: ${ARMCOMPUTE_INCLUDE_DIRS}, Libs: ${ARMCOMPUTE_LIBRARIES}")
     else()
-        # Optional: Fallback download logic ONLY if find_package failed BUT HELPERS_armcompute was TRUE
-        if(DEFINED ARM_COMPUTE_URL AND (...))
-            # ... download logic ...
-            set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
-            include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include)
-            set(ARMCOMPUTE_LIBRARIES
-                    "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so"
-                    "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
-            set(HAVE_ARMCOMPUTE 1) # Set flag after successful download/setup
-            message("ARM Compute Library configured via download at: ${ARMCOMPUTE_ROOT}")
+        # Not found via find_package, attempt download if URL is defined and arch matches
+        message(STATUS "ARM Compute not found via find_package. Checking download conditions.")
+        if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
+            message(STATUS "Attempting to download ARM Compute Library from: ${ARM_COMPUTE_URL}")
+
+            # Configure the download project
+            configure_file(./CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt @ONLY)
+
+            # Execute the CMake configure step for the download
+            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result_config
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
+                    OUTPUT_QUIET ERROR_QUIET)
+
+            if(NOT result_config EQUAL 0)
+                message(WARNING "CMake configuration step for ARM Compute Library download failed: ${result_config}")
+            else()
+                # Execute the CMake build step for the download
+                execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                        RESULT_VARIABLE result_build
+                        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
+                        OUTPUT_QUIET ERROR_QUIET)
+
+                if(NOT result_build EQUAL 0)
+                    message(WARNING "Build step for ARM Compute Library download failed: ${result_build}")
+                else()
+                    # Download and build successful, set up paths and variables
+                    set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src") # Set the root directory
+
+                    # Check if the expected library files exist after download/build
+                    set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so")
+                    set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
+
+                    if(EXISTS "${ARMCOMPUTE_LIB_PATH}" AND EXISTS "${ARMCOMPUTE_CORE_LIB_PATH}")
+                        add_definitions(-DARMCOMPUTENEON_ENABLED) # Add necessary definition
+                        include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include) # Include directories
+                        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIB_PATH} ${ARMCOMPUTE_CORE_LIB_PATH}) # Set the libraries variable
+                        set(HAVE_ARMCOMPUTE 1) # Mark ARM Compute as available
+                        message(STATUS "ARM Compute Library successfully configured via download at: ${ARMCOMPUTE_ROOT}")
+                    else()
+                        message(WARNING "ARM Compute download/build step completed, but library files not found at expected location: ${ARMCOMPUTE_ROOT}/lib")
+                    endif()
+                endif()
+            endif()
+        else()
+            message(STATUS "ARM Compute helper active, but library not found and download conditions not met (URL: ${ARM_COMPUTE_URL}, Arch: ${SD_ARCH}).")
         endif()
     endif()
+endif()
+
+# --- The rest of your root CMakeLists.txt continues below ---
+# Make sure the 'else' block that previously defined ARMCOMPUTE_LIBRARIES incorrectly is removed.
 
 
 if (${HELPERS_onednn})
