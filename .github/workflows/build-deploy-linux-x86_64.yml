@@ -111,6 +111,18 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - uses: ./.github/actions/set-linux-distro-version
       - name: Set mvn build command based on matrix
         shell: bash
@@ -228,6 +240,3 @@ jobs:
                        echo "Running build and deploying to snapshots"
                        eval "${COMMAND}"
           fi
-
-
-

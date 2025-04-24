@@ -90,10 +90,25 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/set-linux-distro-version
-      - uses: ./.github/actions/update-deps-linux
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          
       - name: Cache cmake install
         uses: actions/cache@v4
+        id: cache-cmake
+        with:
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake
+          restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf

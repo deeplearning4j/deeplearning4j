@@ -165,6 +165,65 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      
+      - name: Free Disk Space (Windows)
+        shell: powershell
+        run: |
+          # Show initial disk space
+          Write-Host "Initial disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+          
+          # Remove Windows Defender scan history
+          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Removed Windows Defender scan history"
+          
+          # Clear Windows temp folders
+          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows temp folders"
+          
+          # Clear Windows Update cache
+          Stop-Service -Name wuauserv -Force
+          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Start-Service -Name wuauserv
+          Write-Host "Cleared Windows Update cache"
+          
+          # Clean package manager caches
+          if (Test-Path -Path "C:\npm\cache") {
+              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared NPM cache"
+          }
+          
+          choco cache remove -y
+          Write-Host "Cleared Chocolatey cache"
+          
+          # Remove Docker images if Docker is installed
+          if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+              docker image prune -a -f
+              docker container prune -f
+              docker volume prune -f
+              Write-Host "Pruned Docker resources"
+          }
+          
+          # Remove .NET SDK/Runtime backup folders
+          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
+              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed .NET backup folders"
+          }
+          
+          # Clear Azure artifacts cache
+          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
+              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Azure artifacts cache"
+          }
+          
+          # Optimize Windows Component Store
+          Dism.exe /online /Cleanup-Image /StartComponentCleanup
+          Write-Host "Optimized Windows Component Store"
+          
+          # Show final disk space
+          Write-Host "Final disk space:"
+          Get-PSDrive C | Select-Object Used,Free
 
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
@@ -280,6 +339,3 @@ jobs:
                   mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
             fi
             cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
-
-
-

@@ -1,4 +1,4 @@
-# GitHub Actions Workflow Updated for android-x86_64 with OpenBLAS (external) and oneDNN (internal CMake build)
+# GitHub Actions Workflow for android-x86_64
 
 on:
   workflow_dispatch:
@@ -11,22 +11,22 @@ on:
       deployToReleaseStaging:
         description: 'Whether to deploy to release staging or not.'
         required: false
-        default: 0 # Changed to number
+        default: 0
 
       releaseVersion:
         description: 'Release version target'
         required: false
-        default: 1.0.0-M3 # Default kept as is
+        default: 1.0.0-M3
 
       snapshotVersion:
         description: 'Snapshot version target'
         required: false
-        default: 1.0.0-SNAPSHOT # Default kept as is
+        default: 1.0.0-SNAPSHOT
 
       releaseRepoId:
         description: 'Release repository id'
         required: false
-        default: "" # Use empty string
+        default: ""
 
       serverId:
         description: 'Server id to publish to'
@@ -36,17 +36,17 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default: "" # Use empty string
+        default: ""
 
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
-        default: "" # Use empty string
+        default: ""
 
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-latest # Kept default
+        default: ubuntu-latest
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -58,10 +58,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Updated helper matrix to use onednn instead of armcompute
         helper: [onednn, ""]
         include:
-          # --- Input mirroring (unchanged) ---
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
             experimental: true
             name: Extra maven flags
@@ -90,18 +88,30 @@ jobs:
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.8.0 # Consider updating if newer compatible version exists
+        uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-      - uses: actions/checkout@v4 # Updated checkout action version
-      - uses: ./.github/actions/set-linux-distro-version # Assumes relevant for runner OS
-      - uses: ./.github/actions/update-deps-linux      # Assumes relevant for runner OS
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+          
+      - uses: ./.github/actions/set-linux-distro-version
+      - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
         uses: actions/cache@v4
-        id: cache-cmake-install # Added id for conditional step
+        id: cache-cmake-install
         with:
-          path: /opt/cmake # Example path
-          key: ${{ runner.os }}-cmake-${{ github.run_id }} # More specific key example
+          path: /opt/cmake
+          key: ${{ runner.os }}-cmake-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-cmake-
       - name: Cache protobuf install
@@ -109,13 +119,13 @@ jobs:
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf-${{ github.run_id }} # More specific key example
+          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-protobuf-
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
-        if: steps.cache-cmake-install.outputs.cache-hit != 'true' # Run install only if cache wasn't hit
+        if: steps.cache-cmake-install.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
@@ -128,7 +138,7 @@ jobs:
       - uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r26d # Kept updated NDK version
+          ndk-version: r26d
 
       - name: Set mvn build command and environment variables
         shell: bash
@@ -136,28 +146,22 @@ jobs:
           # Set constants for Android X86_64
           LIBND4J_CLASSIFIER="android-x86_64"
 
-          # Define the specific OpenBLAS JAR for android-x86_64 - Kept version
+          # Define the specific OpenBLAS JAR for android-x86_64
           OPENBLAS_VERSION="0.3.28-1.5.11"
-          # Updated OPENBLAS_JAR classifier to match the target platform
           OPENBLAS_JAR="openblas-${OPENBLAS_VERSION}-${LIBND4J_CLASSIFIER}.jar"
-          # Define base directory for download/unzip
           OPENBLAS_INSTALL_DIR="${GITHUB_WORKSPACE}/openblas_home"
-          # Define the specific path to libs after unzip - UPDATED for x86_64 architecture
           OPENBLAS_LIB_DIR="${OPENBLAS_INSTALL_DIR}/lib/x86_64"
 
-          # NDK Version - Kept
           NDK_VERSION_ENV="r26d"
 
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "OPENBLAS_VERSION=${OPENBLAS_VERSION}" >> $GITHUB_ENV # Store version
+          echo "OPENBLAS_VERSION=${OPENBLAS_VERSION}" >> $GITHUB_ENV
           echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
           echo "OPENBLAS_INSTALL_DIR=${OPENBLAS_INSTALL_DIR}" >> $GITHUB_ENV
-          # Update OPENBLAS_PATH to the correct lib directory for x86_64
           echo "OPENBLAS_PATH=${OPENBLAS_LIB_DIR}" >> $GITHUB_ENV
-          # Removed oneDNN specific env vars (handled by CMake internally)
           echo "CURRENT_TARGET=android-x86_64" >> $GITHUB_ENV
           echo "NDK_VERSION=${NDK_VERSION_ENV}" >> $GITHUB_ENV
-          echo "ANDROID_VERSION=21" >> $GITHUB_ENV # Keep API level 21
+          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
 
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
@@ -169,7 +173,7 @@ jobs:
           # Base Maven command
           command="mvn ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
 
-          # Updated conditional flags for the helper library (onednn) - This affects Maven packaging/presets
+          # Updated conditional flags for the helper library
           if [ "${{ matrix.helper }}" != '' ]; then
              if [ "${{ matrix.helper }}" == "onednn" ]; then
                  mvn_ext=" -Dlibnd4j.helper=onednn -Djavacpp.platform.extension=-onednn -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-onednn"
@@ -185,27 +189,22 @@ jobs:
           echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
 
-      # Updated step name - Only setting up OpenBLAS externally
       - name: Setup OpenBLAS Library
         shell: bash
         env:
-          # OpenBLAS variables
           OPENBLAS_INSTALL_DIR: ${{ env.OPENBLAS_INSTALL_DIR }}
           OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}
           OPENBLAS_JAR: ${{ env.OPENBLAS_JAR }}
           OPENBLAS_VERSION: ${{ env.OPENBLAS_VERSION }}
-          # Removed oneDNN variables
         run: |
           echo "Setting up OpenBLAS ${OPENBLAS_VERSION} for android-x86_64..."
           mkdir -p "${OPENBLAS_INSTALL_DIR}"
           cd "${OPENBLAS_INSTALL_DIR}"
-          # Construct URL with updated version and classifier
           OPENBLAS_URL="https://repo1.maven.org/maven2/org/bytedeco/openblas/${OPENBLAS_VERSION}/${OPENBLAS_JAR}"
           echo "Downloading ${OPENBLAS_JAR} from ${OPENBLAS_URL}..."
           wget --quiet ${OPENBLAS_URL}
           echo "Unzipping ${OPENBLAS_JAR}..."
           unzip -q ${OPENBLAS_JAR}
-          # Check and create symlink in the correct x86_64 path
           if [ -f "${OPENBLAS_PATH}/libopenblas.so.0" ]; then
              echo "Creating symlink for libopenblas.so in ${OPENBLAS_PATH}"
              ln -sf libopenblas.so.0 ${OPENBLAS_PATH}/libopenblas.so
@@ -216,14 +215,20 @@ jobs:
           fi
           echo "OpenBLAS setup complete. OPENBLAS_PATH=${OPENBLAS_PATH}"
 
-          # Removed oneDNN setup block - handled by CMake
-
       - name: Debug Info
         shell: bash
         run: |
           echo "--- Workflow Inputs ---"
           echo "buildThreads: ${{ github.event.inputs.buildThreads }}"
-          # ... (rest of inputs)
+          echo "deployToReleaseStaging: ${{ github.event.inputs.deployToReleaseStaging }}"
+          echo "releaseVersion: ${{ github.event.inputs.releaseVersion }}"
+          echo "snapshotVersion: ${{ github.event.inputs.snapshotVersion }}"
+          echo "releaseRepoId: ${{ github.event.inputs.releaseRepoId }}"
+          echo "serverId: ${{ github.event.inputs.serverId }}"
+          echo "mvnFlags: ${{ github.event.inputs.mvnFlags }}"
+          echo "libnd4jUrl: ${{ github.event.inputs.libnd4jUrl }}"
+          echo "runsOn: ${{ github.event.inputs.runsOn }}"
+          echo "debug_enabled: ${{ github.event.inputs.debug_enabled }}"
           echo "--- Matrix Values ---"
           echo "Helper: ${{ matrix.helper }}"
           echo "--- Environment Variables ---"
@@ -232,7 +237,6 @@ jobs:
           echo "OPENBLAS_JAR: $OPENBLAS_JAR"
           echo "OPENBLAS_INSTALL_DIR: $OPENBLAS_INSTALL_DIR"
           echo "OPENBLAS_PATH (set): $OPENBLAS_PATH"
-          # Removed oneDNN env vars
           echo "CURRENT_TARGET: $CURRENT_TARGET"
           echo "NDK_VERSION (set): $NDK_VERSION"
           echo "ANDROID_VERSION (set): $ANDROID_VERSION"
@@ -246,37 +250,27 @@ jobs:
           echo "--- Dependency Paths ---"
           echo "OpenBLAS Lib Dir Contents:"
           ls -l $OPENBLAS_PATH || echo "Path $OPENBLAS_PATH not found or empty."
-          # Removed oneDNN path check
 
       - name: Build with Maven
         shell: bash
         env:
-          # Secrets and Credentials
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-
-          # Build Configuration from Inputs/Matrix
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          HELPER: ${{ matrix.helper }} # Used to conditionally add CMake flag
+          HELPER: ${{ matrix.helper }}
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
-
-          # Build Environment/Paths (Pulled from GITHUB_ENV)
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
-          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }} # Path to externally provided OpenBLAS
-          # Removed oneDNN paths - CMake handles its build internally
+          OPENBLAS_PATH: ${{ env.OPENBLAS_PATH }}
           ANDROID_VERSION: ${{ env.ANDROID_VERSION }}
           NDK_VERSION: ${{ env.NDK_VERSION }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          # Updated LD_LIBRARY_PATH - only needs OpenBLAS now
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:${{ env.OPENBLAS_PATH }}
-
-          # Build Flags/Options
           DEBIAN_FRONTEND: noninteractive
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
@@ -284,46 +278,37 @@ jobs:
           PUBLISH_TO: ossrh
           DEPLOY_TO: ossrh
           MAVEN_OPTS: -Xmx2g
-
         run: |
           echo "--- Environment for Build Step ---"
-          printenv
           echo "NDK Path used: ${ANDROID_NDK}"
           echo "OpenBLAS Path used: ${OPENBLAS_PATH}"
           echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
           echo "----------------------------------"
 
-          # Native build logic for libnd4j (if URL not provided)
           if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
             echo "Building libnd4j natively as no URL was provided..."
             cd "${GITHUB_WORKSPACE}/libnd4j"
             mkdir -p blasbuild/android-x86_64
             cd blasbuild/android-x86_64
 
-            # Define CMake arguments
-            # Base flags for Android x86_64 build
             cmake_args="-DSD_ANDROID_BUILD=true \
                         -DANDROID_NDK=${ANDROID_NDK} \
                         -DANDROID_PLATFORM=android-${ANDROID_VERSION} \
                         -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK}/build/cmake/android.toolchain.cmake \
-                        -DANDROID_ABI=x86_64" # Set correct ABI
+                        -DANDROID_ABI=x86_64"
 
-            # Add external OpenBLAS path if available
             if [ -n "${OPENBLAS_PATH}" ]; then
                cmake_args="${cmake_args} -DOPENBLAS_PATH=${OPENBLAS_PATH}"
             else
                echo "Warning: OPENBLAS_PATH is not set for CMake. Will attempt to find system BLAS."
             fi
 
-            # Add flag for oneDNN helper if selected in the matrix
-            # CMakeLists.txt will handle downloading/building oneDNN internally based on this flag
             if [ "${HELPER}" == "onednn" ]; then
               cmake_args="${cmake_args} -DHELPERS_onednn=true"
               echo "Enabled oneDNN helper via CMake flag (-DHELPERS_onednn=true)."
             fi
 
             echo "Configuring libnd4j with CMake args: ${cmake_args}"
-            # Add protobuf and cmake to path for native build
             export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
             cmake ${cmake_args} ../..
 
@@ -337,8 +322,6 @@ jobs:
              echo "Skipping native libnd4j build as libnd4jUrl is provided."
           fi
 
-          # Run Maven build/deploy command constructed earlier
-          # The COMMAND variable already includes the correct JavaCPP helper/classifier flags for Maven
           if [ "$PERFORM_RELEASE" == 1 ] || [ "$PERFORM_RELEASE" == "true" ]; then
               echo "Executing release script..."
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
