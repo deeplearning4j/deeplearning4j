@@ -108,11 +108,14 @@ jobs:
           Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Cleared Windows temp folders"
           
-          # Clear Windows Update cache
-          Stop-Service -Name wuauserv -Force
-          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Start-Service -Name wuauserv
-          Write-Host "Cleared Windows Update cache"
+          # Clear Windows Update cache safely (without stopping/starting service)
+          try {
+              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Windows Update download cache"
+          }
+          catch {
+              Write-Host "Could not clear Windows Update cache. Continuing..."
+          }
           
           # Clean package manager caches
           if (Test-Path -Path "C:\npm\cache") {
@@ -120,15 +123,20 @@ jobs:
               Write-Host "Cleared NPM cache"
           }
           
-          choco cache remove -y
+          choco cache remove -y -ErrorAction SilentlyContinue
           Write-Host "Cleared Chocolatey cache"
           
           # Remove Docker images if Docker is installed
-          if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-              docker image prune -a -f
-              docker container prune -f
-              docker volume prune -f
-              Write-Host "Pruned Docker resources"
+          try {
+              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+                  docker image prune -a -f
+                  docker container prune -f
+                  docker volume prune -f
+                  Write-Host "Pruned Docker resources"
+              }
+          }
+          catch {
+              Write-Host "Failed to prune Docker resources. Continuing..."
           }
           
           # Remove .NET SDK/Runtime backup folders
@@ -144,8 +152,13 @@ jobs:
           }
           
           # Optimize Windows Component Store
-          Dism.exe /online /Cleanup-Image /StartComponentCleanup
-          Write-Host "Optimized Windows Component Store"
+          try {
+              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+              Write-Host "Optimized Windows Component Store"
+          }
+          catch {
+              Write-Host "Failed to optimize Windows Component Store. Continuing..."
+          }
           
           # Show final disk space
           Write-Host "Final disk space:"
@@ -164,7 +177,7 @@ jobs:
           
           $command="mvn ${{ matrix.mvn_ext }} -Pcuda --also-make -pl $modules -Dlibnd4j.compute=`"8.6 9.0`" -Dlibnd4j.cpu.compile.skip=true -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64 -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
           
-          if ( "${{ matrix.helper }}" -ne "" -And "${{ matrix.extension }}" -ne "" ) {
+          if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                 $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-cuda-12.6-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }} -Dlibnd4j.helper=${{ matrix.helper }} -Pcuda -Dlibnd4j.chip=cuda deploy -DskipTests"
                 $libnd4j_download_file_url="windows-cuda-12.6-${{ matrix.extension }}-${{ matrix.helper }}"
            } elseif ( "${{ matrix.helper }}" -ne "" ) {
@@ -282,10 +295,10 @@ jobs:
 
           if "%PERFORM_RELEASE%"=="1" (
               echo "Running release build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" "${{ matrix.extension }}"
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
               bash "./release-specified-component.sh" "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%"
           ) else (
               echo "Running snapshot build..."
-              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "${{ matrix.helper }}" "${{ matrix.extension }}"
+              bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh" windows cuda 12.6 "%HELPER%" "%EXTENSION%"
               call "%GITHUB_WORKSPACE%\mvn-command.bat"
           )

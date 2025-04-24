@@ -128,11 +128,14 @@ jobs:
           Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Cleared Windows temp folders"
           
-          # Clear Windows Update cache
-          Stop-Service -Name wuauserv -Force
-          Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Start-Service -Name wuauserv
-          Write-Host "Cleared Windows Update cache"
+          # Clear Windows Update cache safely (without stopping/starting service)
+          try {
+              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Windows Update download cache"
+          }
+          catch {
+              Write-Host "Could not clear Windows Update cache. Continuing..."
+          }
           
           # Clean package manager caches
           if (Test-Path -Path "C:\npm\cache") {
@@ -140,15 +143,20 @@ jobs:
               Write-Host "Cleared NPM cache"
           }
           
-          choco cache remove -y
+          choco cache remove -y -ErrorAction SilentlyContinue
           Write-Host "Cleared Chocolatey cache"
           
           # Remove Docker images if Docker is installed
-          if (Get-Command "docker" -ErrorAction SilentlyContinue) {
-              docker image prune -a -f
-              docker container prune -f
-              docker volume prune -f
-              Write-Host "Pruned Docker resources"
+          try {
+              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+                  docker image prune -a -f
+                  docker container prune -f
+                  docker volume prune -f
+                  Write-Host "Pruned Docker resources"
+              }
+          }
+          catch {
+              Write-Host "Failed to prune Docker resources. Continuing..."
           }
           
           # Remove .NET SDK/Runtime backup folders
@@ -164,8 +172,13 @@ jobs:
           }
           
           # Optimize Windows Component Store
-          Dism.exe /online /Cleanup-Image /StartComponentCleanup
-          Write-Host "Optimized Windows Component Store"
+          try {
+              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+              Write-Host "Optimized Windows Component Store"
+          }
+          catch {
+              Write-Host "Failed to optimize Windows Component Store. Continuing..."
+          }
           
           # Show final disk space
           Write-Host "Final disk space:"
