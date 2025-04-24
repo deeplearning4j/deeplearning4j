@@ -168,7 +168,7 @@ jobs:
           $libnd4j_download_file_url_suffix = ""
           if ($env:HELPER_INPUT -ne "" -And $env:EXTENSION_INPUT -ne "") {
               $classifier = "windows-x86_64-cuda-$cudaVersion-$($env:HELPER_INPUT)-$($env:EXTENSION_INPUT)"
-              $mvn_ext = " -Dlibnd4j.classifier=$classifier -Dlibnd4j.extension=$($env:EXTENSION_INPUT) -Djavacpp.platform.extension=-$($env:HELPER_INPUT)-$($env:EXTENSION_INPUT) -Dlibnd4j.helper=$($env:HELPER_INPUT)"
+              $mvn_ext = " -Dlibnd4j.chip=cuda -Dlibnd4j.classifier=$classifier -Dlibnd4j.extension=$($env:EXTENSION_INPUT) -Djavacpp.platform.extension=-$($env:HELPER_INPUT)-$($env:EXTENSION_INPUT) -Dlibnd4j.helper=$($env:HELPER_INPUT)"
               $libnd4j_download_file_url_suffix = "-$($env:EXTENSION_INPUT)-$($env:HELPER_INPUT)"
           } elseif ($env:HELPER_INPUT -ne "") {
               $classifier = "windows-x86_64-cuda-$cudaVersion-$($env:HELPER_INPUT)"

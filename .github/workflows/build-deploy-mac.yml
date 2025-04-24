@@ -123,13 +123,13 @@ jobs:
               fi
               command="mvn ${{ matrix.mvn_ext }}  -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-x86_64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
+                  mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
+                  mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
               elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+                 mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-x86_64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
               else
-                  mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-x86_64"
+                  mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-x86_64"
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                 echo "Adding libnd4j download"
