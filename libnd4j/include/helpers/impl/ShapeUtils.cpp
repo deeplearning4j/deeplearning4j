@@ -30,6 +30,23 @@
 namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
+
+LongType* ShapeUtils::evalTransposeShapeInfo(NDArray& arr, memory::Workspace* workspace,
+                                             const bool setContigStrides) {
+  LongType rank = arr.rankOf();
+
+  // note we do this because of stack allocation crashes
+  //  if the stack is used a vector's data can cause crashes when it goes out of scope
+  LongType* dims = new LongType[rank];
+  for (LongType i = 0; i < rank; i++) {
+    dims[i] = rank - 1 - i;
+  }
+
+  auto ret = evalPermShapeInfo(dims, rank, &arr, workspace, setContigStrides);
+  delete[] dims;
+  return ret;
+}
+
 // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and dimensions permutations for
 // transposition of two input arrays
 std::vector<LongType> ShapeUtils::evalShapeForTensorDot( LongType* aShapeInfo,  LongType* bShapeInfo,

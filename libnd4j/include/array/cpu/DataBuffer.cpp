@@ -46,6 +46,27 @@ void DataBuffer::expand(const uint64_t size) {
   }
 }
 
+template <typename T>
+void DataBuffer::printHostBufferContent(void* buffer, sd::LongType offset, sd::LongType length) {
+  T* typedBuffer = reinterpret_cast<T*>(buffer);
+
+  sd_printf("[ ", 0);
+  for (sd::LongType i = offset; i < offset + length; i++) {
+    // For numeric types, cast to double for consistent formatting
+    if (std::is_arithmetic<T>::value) {
+      sd_printf("%g ", (double)typedBuffer[i]);
+    } else {
+      // For non-numeric types, print as hex
+      sd_printf("0x%x ", *reinterpret_cast<int*>(&typedBuffer[i]));
+    }
+  }
+  sd_printf("]", 0);
+}
+BUILD_SINGLE_TEMPLATE(template SD_LIB_EXPORT void DataBuffer::printHostBufferContent,(void* buffer, sd::LongType offset, sd::LongType length),SD_COMMON_TYPES);
+
+
+
+
 // DataBuffer implementation for .cpp file
 void DataBuffer::printBufferDebug(const char* msg, sd::LongType offset, sd::LongType limit) {
   if (msg) sd_printf("%s:\n", msg);

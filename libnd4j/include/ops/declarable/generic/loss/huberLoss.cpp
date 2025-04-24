@@ -219,7 +219,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
   NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic) * delta;
 
   NDArray lteMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::LessThanOrEqual, &delta, &lteMask);
+  absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
 
   NDArray gtMask(diff.shapeInfo(), BOOL, true, block.launchContext());
   absDiff.applyScalar(scalar::GreaterThan, &delta, &gtMask);

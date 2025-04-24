@@ -403,7 +403,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto func = PRAGMA_THREADS_FOR {
     BUILD_TRIPLE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
   };
 
 
