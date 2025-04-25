@@ -721,10 +721,9 @@
                 <version>${maven-central-publishing-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <publishingRepositoryId>${central.publishing.publishingRepositoryId}</publishingRepositoryId>
+                    <autoPublish>false</autoPublish>
+                    <failOnBuildFailure>true</failOnBuildFailure>
                     <autoPublish>${central.publishing.autoPublish}</autoPublish>
-                    <waitUntilStagingRepositoryIsClosed>true</waitUntilStagingRepositoryIsClosed>
-                    <failOnMissingGpgKey>true</failOnMissingGpgKey>
                 </configuration>
             </plugin>
 
@@ -767,6 +766,9 @@
                         <goals>
                             <goal>jar-no-fork</goal>
                         </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
