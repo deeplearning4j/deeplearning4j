@@ -121,7 +121,7 @@ jobs:
                  echo "Building libnd4j from source"
                  modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
               fi
-              command="mvn ${{ matrix.mvn_ext }} -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
                   mvn_ext="-Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then

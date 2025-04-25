@@ -171,7 +171,7 @@ jobs:
           fi
 
           # Base Maven command
-          command="mvn ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
+          command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
 
           # Updated conditional flags for the helper library
           if [ "${{ matrix.helper }}" != '' ]; then

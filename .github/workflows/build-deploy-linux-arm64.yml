@@ -133,7 +133,7 @@ jobs:
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
 
-          command="mvn ${{ matrix.mvn_ext }} -Posx-aarch64-protoc  -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
+          command="mvn ${{ matrix.mvn_ext }} -Posx-aarch64-protoc -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
 
           if [ "${{ matrix.helper }}" != '' ]; then
              mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
