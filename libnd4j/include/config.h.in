@@ -24,6 +24,6 @@
 
 #cmakedefine HAVE_CUDNN
 
-#cmakedefine DEFAULT_ENGINE @DEFAULT_ENGINE@
+#cmakedefine DEFAULT_ENGINE "@DEFAULT_ENGINE@""
 
 #endif
