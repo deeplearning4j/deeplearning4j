@@ -565,9 +565,9 @@ endif()
 
 
 configure_file(include/config.h.in include/config.h @ONLY)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # ===========================================================================
 # Start of Content Pasted Verbatim from blas/CMakeLists.txt
