@@ -93,7 +93,6 @@ option(HELPERS_cudnn "Build with cuDNN" OFF)
 set(MSVC_RT_LIB "MultiThreadedDLL")
 
 set(SD_X86_BUILD false)
-set(SD_X86_BUILD false)
 set(SD_ARM_BUILD false)
 
 if(SD_ANDROID_BUILD)
@@ -206,7 +205,7 @@ if(${HELPERS_armcompute})
         message(STATUS "ARM Compute not found via find_package. Checking download conditions.")
         if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
             message(STATUS "Attempting to download ARM Compute Library from: ${ARM_COMPUTE_URL}")
-            configure_file(./cmake/CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt @ONLY)
+            configure_file(cmake/CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt @ONLY) # Corrected Path
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE result_config
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
@@ -247,7 +246,7 @@ if (${HELPERS_onednn})
     set(HAVE_ONEDNN 1)
     add_definitions(-DHAVE_ONEDNN=1)
     set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
-    configure_file(./cmake/CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt @ONLY)
+    configure_file(cmake/CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt @ONLY) # Corrected Path
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/onednn-download )
@@ -327,7 +326,7 @@ else()
 endif()
 
 if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download-complete.marker")
-    configure_file(cmake/CMakeLists.txt.flatbuffers.in flatbuffers-download/CMakeLists.txt @ONLY)
+    configure_file(cmake/CMakeLists.txt.flatbuffers.in flatbuffers-download/CMakeLists.txt @ONLY) # Corrected Path
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download)
@@ -689,7 +688,7 @@ if(SD_CUDA)
             set(NUM_TYPES 10)
             message(STATUS "Using default number of types: ${NUM_TYPES}")
         endif()
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/TypeMST.cmake)
+        include(TypeMST.cmake) # Corrected include path
         file(GLOB CUDA_COMPILATION_UNITS include/loops/cuda/compilation_units/*.cu.in)
         foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
             genCompilation(${FL_ITEM} CUDA_GENERATED_SOURCES)
