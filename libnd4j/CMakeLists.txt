@@ -565,7 +565,8 @@ endif()
 
 
 configure_file(include/config.h.in include/config.h @ONLY)
-
+add_custom_target(generate_config DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/include/config.h)
+add_dependencies(samediff_obj generate_config)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 

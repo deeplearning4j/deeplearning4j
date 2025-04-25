@@ -143,7 +143,7 @@ void stack(LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray&
   BUILD_SINGLE_SELECTOR(output.dataType(), stack_, (context, inArrs, output, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void stack_,
-                      (sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output,
+                      (LaunchContext* context, const std::vector<NDArray*>& inArrs, NDArray& output,
                           const int dim),
                       SD_COMMON_TYPES);
 
@@ -251,7 +251,7 @@ static void unstack_(LaunchContext* context, NDArray& input, const std::vector<N
     }
   }
 
-  // NDArray::registerSpecialUse(outArrs, {&input});
+   NDArray::registerSpecialUse(outArrs, {&input});
   input.tickReadDevice();
   for (const auto p : outArrs) p->tickWriteDevice();
 }
@@ -261,7 +261,7 @@ void unstack(LaunchContext* context, NDArray& input, const std::vector<NDArray*>
   BUILD_SINGLE_SELECTOR(input.dataType(), unstack_, (context, input, outArrs, dim), SD_COMMON_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void unstack_,
-                      (sd::LaunchContext * context, NDArray& input, const std::vector<NDArray*>& outArrs,
+                      (LaunchContext * context, NDArray& input, const std::vector<NDArray*>& outArrs,
                           const int dim),
                       SD_COMMON_TYPES);
 

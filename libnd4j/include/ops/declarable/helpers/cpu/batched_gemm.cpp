@@ -33,14 +33,14 @@ namespace ops {
 namespace helpers {
 
 
-void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas,   NDArray *betas,
+void bgemm(NDArray *a,  NDArray *b,  NDArray *c,   NDArray *alphas,   NDArray *betas,
            int transA, int transB, int M, int N, int K,  int lda,  int ldb,  int ldc,
-           sd::NDArray *all) {
-  sd::NDArray *allIndex = nullptr;
+           NDArray *all) {
+  NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
   else {
-    sd::NDArray allLocal = NDIndexUtils::createAll();
+    NDArray allLocal = NDIndexUtils::createAll();
     allIndex = &allLocal;
   }
 
@@ -49,7 +49,7 @@ void bgemm(sd::NDArray *a,  sd::NDArray *b,  sd::NDArray *c,   NDArray *alphas, 
   std::vector<NDArray *> bInputs;
   std::vector<NDArray *> outputs;
 
-  sd::ops::create_view createView;
+  ops::create_view createView;
 
   //divide by 2: queries and keys
   for(int i = 0; i < batchSize; i++) {

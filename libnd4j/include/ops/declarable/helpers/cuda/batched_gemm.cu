@@ -38,7 +38,7 @@ namespace helpers {
 
 
 void bgemm(NDArray *a, NDArray *b, NDArray *c,  NDArray *alphas,  NDArray *betas,
-                  int transA, int transB, int M, int N, int K, const int lda, const int ldb, const int ldc, NDArray *all) {
+                  int transA, int transB, int M, int N, int K, int lda, int ldb, int ldc, NDArray *all) {
   NDArray *allIndex = nullptr;
   if(all != nullptr)
     allIndex = all;
