@@ -1,4 +1,4 @@
-# Main CMakeLists.txt (incorporating fixes)
+# Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
 cmake_minimum_required(VERSION 3.15)
 
 
@@ -1059,6 +1059,10 @@ if(SD_CUDA)
 
         # Create Object Library
         add_library(samediff_obj OBJECT ${ALL_SOURCES})
+        # --- ADDED DEPENDENCY ---
+        # Ensure flatbuffers external project is built before compiling objects
+        add_dependencies(samediff_obj flatbuffers_external)
+        # --- END ADDED DEPENDENCY ---
         target_compile_features(samediff_obj PUBLIC cxx_std_17 cuda_std_17) # Ensure C++/CUDA standards
 
         # Set include directories for the object library
@@ -1269,6 +1273,10 @@ elseif(SD_CPU) # Correct syntax: elseif
 
     # Create Object Library
     add_library(samediff_obj OBJECT ${ALL_SOURCES})
+    # --- ADDED DEPENDENCY ---
+    # Ensure flatbuffers external project is built before compiling objects
+    add_dependencies(samediff_obj flatbuffers_external)
+    # --- END ADDED DEPENDENCY ---
     target_compile_features(samediff_obj PUBLIC cxx_std_17) # Ensure C++ standard
 
     # Set include directories for the object library
