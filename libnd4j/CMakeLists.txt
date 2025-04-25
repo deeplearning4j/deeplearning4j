@@ -429,7 +429,7 @@ endif()
 # Include ExternalProject module if not already done
 include(ExternalProject)
 
-set(FLATBUFFERS_TAG "v24.3.25" CACHE STRING "Flatbuffers Git Tag")
+set(FLATBUFFERS_TAG "v25.2.10" CACHE STRING "Flatbuffers Git Tag")
 set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Build Flatbuffers Tests")
 
 # Determine if flatc needs to be built based on environment variable set by build script
