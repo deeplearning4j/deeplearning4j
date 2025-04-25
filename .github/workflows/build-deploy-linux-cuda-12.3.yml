@@ -179,19 +179,6 @@ jobs:
           GCC:  11
         if: steps.cache-cuda-123.outputs.cache-hit != 'true'
 
-      # Install CUDA compiler package explicitly
-      - name: Install CUDA Compiler Package
-        run: |
-          echo "Installing CUDA compiler package"
-          sudo apt-get update
-          # Install both cuda-compiler and nvcc packages to ensure proper installation
-          sudo apt-get install -y cuda-compiler-12-3 cuda-nvcc-12-3
-          # Install additional necessary CUDA packages
-          sudo apt-get install -y cuda-toolkit-12-3 cuda-libraries-dev-12-3 cuda-command-line-tools-12-3
-          # Verify package installation
-          dpkg -l | grep cuda-compiler
-          dpkg -l | grep cuda-nvcc
-
       # Set up CUDA environment paths
       - name: Setup CUDA PATH
         run: |
