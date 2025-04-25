@@ -112,6 +112,7 @@ elseif(${SD_ARCH} MATCHES "arm64") # Second condition (separate elseif)
     # Original endif for the whole if/elseif chain
 endif()
 
+# Find the section related to CUDA configuration around line 167
 if (SD_CUDA)
     message("Enabling cuda")
 
@@ -145,13 +146,31 @@ if (SD_CUDA)
         message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
     endif()
 
-    if("${SD_PTXAS}" STREQUAL  "ON")
+    # Add CUDA flags for both Windows and Linux
+    if("${SD_PTXAS}" STREQUAL "ON")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
     endif()
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}   -allow-unsupported-compiler  ")
-    if(SD_KEEP_NVCC_OUTPUT)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}  --keep ")
+
+    # Set allow-unsupported-compiler flag for both Windows and Linux
+    # The syntax is the same on both platforms
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler")
+
+    # Windows-specific CUDA flags
+    if(WIN32)
+        message("Adding Windows-specific CUDA flags")
+        # No need for additional Windows-specific flags here as -allow-unsupported-compiler works the same
     endif()
+
+    # Linux-specific CUDA flags
+    if(UNIX AND NOT APPLE)
+        message("Adding Linux-specific CUDA flags")
+        # No need for additional Linux-specific flags here as -allow-unsupported-compiler works the same
+    endif()
+
+    if(SD_KEEP_NVCC_OUTPUT)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+    endif()
+
     enable_language(CUDA)
     # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
     set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)

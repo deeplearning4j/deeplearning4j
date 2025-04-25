@@ -260,14 +260,26 @@ if(SD_CUDA)
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 
+        # Common CUDA flags for all platforms - add -allow-unsupported-compiler flag
+        set(COMMON_CUDA_FLAGS "-allow-unsupported-compiler")
+        message("Adding -allow-unsupported-compiler flag for CUDA compilation")
+
+        # Add platform-specific compiler flags
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             if(SD_GCC_FUNCTRACE STREQUAL "ON")
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
                 add_compile_definitions(SD_GCC_FUNCTRACE)
             else()
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS} -Xcompiler=-fPIC")
             endif()
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            # Add Windows-specific flags, but keep -allow-unsupported-compiler
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS}")
+            message("Using allow-unsupported-compiler flag for Windows CUDA build")
+        else()
+            # For other compilers, ensure we still have the allow-unsupported-compiler flag
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS}")
         endif()
 
         if(WIN32)
@@ -280,6 +292,7 @@ if(SD_CUDA)
             endif()
         endif()
 
+        # Rest of the CUDA configuration (Jetson Nano, etc.)
         if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
             message("Adding Jetson Nano specific settings")
             # Need to manually specify stubbed links in order
@@ -306,7 +319,7 @@ if(SD_CUDA)
         endif()
 
         # Cap the number of registers to prevent resource exhaustion
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128  ")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
 
         # Define CUDA Architectures
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
@@ -343,8 +356,11 @@ if(SD_CUDA)
             endif()
         endif()
 
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -allow-unsupported-compiler -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+        # Add all the CUDA flags together, ensuring -allow-unsupported-compiler is included
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
+        # Add a message confirming unsupported compiler flag is enabled
+        message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
 
 
