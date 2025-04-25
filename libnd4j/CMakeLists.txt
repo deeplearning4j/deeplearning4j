@@ -116,18 +116,34 @@ endif()
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler")
+    # Set flags for both platforms to allow unsupported compilers
     set(CMAKE_CUDA_COMPILER_ID_FLAGS "--allow-unsupported-compiler")
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler")
 
-    message("Setting CUDA flags to allow unsupported compiler: ${CMAKE_CUDA_FLAGS}")
+    # Platform-specific settings
+    if(WIN32)
+        message("Setting up Windows-specific CUDA unsupported compiler flags")
+        # Additional Windows-specific environment variables to bypass compiler checks
+        set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
+        set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
 
-    add_definitions(-D__CUDABLAS__=true)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        set(CMAKE_CXX_FLAGS "")
+        # For Visual Studio integration
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            set(CMAKE_CXX_FLAGS "")
+        endif()
+    else()
+        message("Setting up Linux-specific CUDA unsupported compiler flags")
+        # Linux might need these environment variables as well
+        set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
+        set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
     endif()
 
-    enable_language(CUDA)
+    message("CUDA flags set to allow unsupported compiler: ${CMAKE_CUDA_FLAGS}")
 
+    add_definitions(-D__CUDABLAS__=true)
+
+    # Now enable CUDA language with unsupported compiler flags already set
+    enable_language(CUDA)
     find_package(CUDA REQUIRED)
     if(CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
