@@ -113,89 +113,276 @@ elseif(${SD_ARCH} MATCHES "arm64") # Second condition (separate elseif)
 endif()
 
 # Find the section related to CUDA configuration around line 167
-if (SD_CUDA)
-    message("Enabling cuda")
+if(SD_CUDA)
+    message("Building with CUDA support")
 
-    if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
-        message("Adding jetson nano specific settings")
-        # Need to manually specify stubbed links in order
-        # for cublas and cusolver to be resolved
-        if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
-            message("Setting cublas library manually")
-            set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
-            set(CUDA_cublas_LIBRARY  "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so")
-            # See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
-            unset(CUDA_cublas-NOTFOUND CACHE)
-            unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
-            unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler")
+    set(CMAKE_CUDA_COMPILER_ID_FLAGS "--allow-unsupported-compiler")
 
+    message("Setting CUDA flags to allow unsupported compiler: ${CMAKE_CUDA_FLAGS}")
 
-        endif()
-
-        if(NOT DEFINED CUDA_cusolver_LIBRARY OR "${CUDA_cusolver_LIBRARY}" MATCHES ".*NOTFOUND.*")
-            message("Setting cusolver library manually")
-            set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
-            set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so")
-            #See: https://stackoverflow.com/questions/47948473/what-this-cmake-error-means-my-variables-are-set-to-notfound
-            unset(CUDA_cusolver-NOTFOUND CACHE)
-            unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
-            unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
-
-        endif()
-
-        message("Jetson nano cublas library is ${CUDA_cublas_LIBRARY} and CuSolver library ${CUDA_cusolver_LIBRARY}")
-    endif()
-
-    # Add CUDA flags for both Windows and Linux
-    if("${SD_PTXAS}" STREQUAL "ON")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
-    endif()
-
-    # Set allow-unsupported-compiler flag for both Windows and Linux
-    # The syntax is the same on both platforms
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler")
-
-    # Windows-specific CUDA flags
-    if(WIN32)
-        message("Adding Windows-specific CUDA flags")
-        # No need for additional Windows-specific flags here as -allow-unsupported-compiler works the same
-    endif()
-
-    # Linux-specific CUDA flags
-    if(UNIX AND NOT APPLE)
-        message("Adding Linux-specific CUDA flags")
-        # No need for additional Linux-specific flags here as -allow-unsupported-compiler works the same
-    endif()
-
-    if(SD_KEEP_NVCC_OUTPUT)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+    add_definitions(-D__CUDABLAS__=true)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        set(CMAKE_CXX_FLAGS "")
     endif()
 
     enable_language(CUDA)
-    # see: https://stackoverflow.com/questions/2876357/determine-the-line-of-code-that-causes-a-segmentation-fault
-    set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
+
     find_package(CUDA REQUIRED)
-    # cuda driver library for device validator
-    find_library(CUDA_DRIVER_LIBRARY
-            NAMES cuda
-            PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-            PATH_SUFFIXES lib64 lib/x64)
+    if(CUDA_FOUND)
+        message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
+        include_directories(${CUDA_INCLUDE_DIRS})
+        message("CUDA found!")
 
-    # Add a platform agnostic way of showing we are compiling for cuda
-    # The normal way of using __NVCC__ and __CUDACC__ does not show up
-    # for cpp files which makes it difficult to add guards for specific functions.
-    add_compile_definitions(SD_CUDA=true)
-    if("$ENV{CLION_IDE}")
-        add_compile_definitions(__CUDA_CC__)
+        set(CMAKE_CUDA_FLAGS_DEBUG " -g")
+        message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
+
+        if("${SD_PTXAS}" STREQUAL "ON")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+        endif()
+
+        if(SD_KEEP_NVCC_OUTPUT)
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+        endif()
+
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            if(SD_GCC_FUNCTRACE STREQUAL "ON")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+                add_compile_definitions(SD_GCC_FUNCTRACE)
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+            endif()
+        endif()
+
+        if(WIN32)
+            message("Configuring CUDA libraries for Windows")
+            if(NOT DEFINED CUDA_cublas_LIBRARY)
+                set(CUDA_cublas_LIBRARY "${CUDA_HOME}/lib/x64/cublas.lib")
+            endif()
+            if(NOT DEFINED CUDA_cusolver_LIBRARY)
+                set(CUDA_cusolver_LIBRARY "${CUDA_HOME}/lib/x64/cusolver.lib")
+            endif()
+        endif()
+
+        if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
+            message("Adding Jetson Nano specific settings")
+            if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
+                message("Setting cublas library manually")
+                set(CUDA_cublas_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcublas.so" CACHE STRING "CUDA CUBLAS LIB" FORCE)
+                unset(CUDA_cublas-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cublas_LIBRARY-NOTFOUND PARENT_SCOPE)
+            endif()
+
+            if(NOT DEFINED CUDA_cusolver_LIBRARY OR CUDA_cusolver_LIBRARY MATCHES ".*NOTFOUND.*")
+                message("Setting cusolver library manually for Jetson Nano")
+                set(CUDA_cusolver_LIBRARY "$ENV{loc_DIR}/cuda/targets/aarch64-linux/lib/stubs/libcusolver.so" CACHE STRING "CUDA CUSOLVER LIB" FORCE)
+                unset(CUDA_cusolver-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND CACHE)
+                unset(CUDA_cusolver_LIBRARY-NOTFOUND PARENT_SCOPE)
+            endif()
+
+            message("Jetson Nano cublas library: ${CUDA_cublas_LIBRARY}, cusolver library: ${CUDA_cusolver_LIBRARY}")
+        endif()
+
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
+
+        string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
+        if(COMPUTE_CMP STREQUAL "all")
+            if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80")
+            else()
+                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90")
+            endif()
+            set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
+        elseif(COMPUTE_CMP STREQUAL "auto")
+            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
+            set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
+        elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE}")
+            set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
+        else()
+            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
+        endif()
+
+        string(REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
+        if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+            if(NOT "${CUDA_ARCH_FLAGS}" STREQUAL "")
+                set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA architectures" FORCE)
+            else()
+                if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
+                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 CACHE STRING "CUDA architectures for CUDA 11.x compilers" FORCE)
+                else()
+                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
+                endif()
+                add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
+            endif()
+        endif()
+
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+
+        message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
+
+        find_library(CUDA_DRIVER_LIBRARY
+                NAMES cuda
+                PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+                PATH_SUFFIXES lib64 lib/x64)
+
+        add_compile_definitions(SD_CUDA=true)
+        if("$ENV{CLION_IDE}")
+            add_compile_definitions(__CUDA_CC__)
+        endif()
+
+        message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
+
+        set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+
+        file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
+        file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
+        file(GLOB_RECURSE EXEC_SOURCES ../include/execution/impl/*.cpp ../include/execution/cuda/*.cu ../include/execution/cuda/*.h ../include/execution/*.cu ../include/execution/*.h)
+        file(GLOB_RECURSE TYPES_SOURCES ../include/types/*.cpp ../include/types/*.h)
+        file(GLOB_RECURSE ARRAY_SOURCES ../include/array/cuda/*.cu ../include/array/cuda/*.chpp ../include/array/impl/*.cpp ../include/array/cuda/*.cu ../include/array/*.h)
+        file(GLOB_RECURSE MEMORY_SOURCES ../include/memory/impl/*.cpp ../include/memory/cuda/*.cu ../include/memory/*.h)
+        file(GLOB_RECURSE GRAPH_SOURCES ../include/graph/*.cpp ../include/graph/*.cu ../include/graph/*.h)
+        file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
+        file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ../include/ops/declarable/helpers/cuda/*.cu ../include/ops/declarable/helpers/impl/*.cpp)
+        file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
+        file(GLOB_RECURSE HELPERS_SOURCES
+                ../include/build_info.cpp
+                ../include/ConstMessages.cpp
+                ../include/helpers/*.cpp
+                ../include/helpers/cuda/*.cu
+                ../include/helpers/*.h)
+        file(GLOB CPU_HELPERS_TO_EXCLUDE
+                ../include/helpers/cpu/*.cpp)
+        list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
+        file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h)
+        file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
+        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
+        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
+
+        foreach(FL_ITEM ${COMPILATION_UNITS})
+            genCompilation(${FL_ITEM})
+        endforeach()
+        set(ALL_SOURCES
+                ${CUDA_GENERATED_SOURCES}
+                ${PERF_SOURCES}
+                ${EXCEPTIONS_SOURCES}
+                ${EXEC_SOURCES}
+                ${TYPES_SOURCES}
+                ${ARRAY_SOURCES}
+                ${MEMORY_SOURCES}
+                ${GRAPH_SOURCES}
+                ${CUSTOMOPS_SOURCES}
+                ${CUSTOMOPS_ONEDNN_SOURCES}
+                ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+                ${CUSTOMOPS_GENERIC_SOURCES}
+                ${OPS_SOURCES}
+                ${HELPERS_SOURCES}
+                ${INDEXING_SOURCES}
+                ${LOOPS_SOURCES}
+                ${LEGACY_SOURCES}
+                ${LOOPS_SOURCES_CUDA}
+        )
+
+        if(HAVE_CUDNN)
+            message("cuDNN included")
+            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
+        endif()
+
+        if(SD_GCC_FUNCTRACE STREQUAL "ON")
+            add_library(samediff_obj OBJECT
+                    ${CUDA_GENERATED_SOURCES}
+                    ${LEGACY_SOURCES}
+                    ${HELPERS_CPP}
+                    ${CUSTOMOPS_HELPERS_SOURCES}
+                    ${HELPERS_SOURCES}
+                    ${EXEC_SOURCES}
+                    ${LOOPS_SOURCES}
+                    ${ARRAY_SOURCES}
+                    ${TYPES_SOURCES}
+                    ${MEMORY_SOURCES}
+                    ${GRAPH_SOURCES}
+                    ${CUSTOMOPS_SOURCES}
+                    ${INDEXING_SOURCES}
+                    ${EXCEPTIONS_SOURCES}
+                    ${OPS_SOURCES}
+                    ${PERF_SOURCES}
+                    ${CUSTOMOPS_CUDNN_SOURCES}
+                    ${CUSTOMOPS_ONEDNN_SOURCES}
+                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+                    ${CUSTOMOPS_GENERIC_SOURCES}
+                    ${LOOPS_SOURCES_CUDA}
+            )
+        else()
+            add_library(samediff_obj OBJECT
+                    ${CUDA_GENERATED_SOURCES}
+                    ${LOOPS_SOURCES_CUDA}
+                    ${LEGACY_SOURCES}
+                    ${HELPERS_CPP}
+                    ${CUSTOMOPS_HELPERS_SOURCES}
+                    ${HELPERS_SOURCES}
+                    ${EXEC_SOURCES}
+                    ${LOOPS_SOURCES}
+                    ${ARRAY_SOURCES}
+                    ${TYPES_SOURCES}
+                    ${MEMORY_SOURCES}
+                    ${GRAPH_SOURCES}
+                    ${CUSTOMOPS_SOURCES}
+                    ${INDEXING_SOURCES}
+                    ${EXCEPTIONS_SOURCES}
+                    ${OPS_SOURCES}
+                    ${PERF_SOURCES}
+                    ${CUSTOMOPS_CUDNN_SOURCES}
+                    ${CUSTOMOPS_ONEDNN_SOURCES}
+                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+                    ${CUSTOMOPS_GENERIC_SOURCES}
+                    ${LOOPS_SOURCES_CUDA}
+            )
+        endif()
+
+        target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+
+        set(MSVC_RT_LIB "MultiThreadedDLL")
+        set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+        if(WIN32)
+            message("Enabling /EHsc for CUDA on Windows")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+        endif()
+
+        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+        endif()
+
+        if(SD_STATIC_LIB AND SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
+        elseif(SD_STATIC_LIB)
+            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+        endif()
+
+        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
+                ${CUDA_LIBRARIES}
+                ${CUDA_DRIVER_LIBRARY}
+                ${CUDA_CUBLAS_LIBRARIES}
+                ${CUDA_cusolver_LIBRARY}
+                ${CUDNN}
+        )
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
+
+        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
-
-
-    message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
-
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
-
 endif()
 
 
