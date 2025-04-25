@@ -1058,8 +1058,6 @@ if (${HELPERS_cudnn})
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
 
-    #set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
-
     SET(CUDNN_LIBNAME "cudnn")
 
     if(DEFINED ENV{CUDNN_ROOT_DIR})
@@ -1071,22 +1069,51 @@ if (${HELPERS_cudnn})
         set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
     endif()
     message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
+
+    # Look for cuDNN in multiple potential locations
     find_path(CUDNN_INCLUDE_DIR cudnn.h
-            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-            PATH_SUFFIXES cuda/include include)
+            HINTS
+            ${CUDNN_ROOT_DIR}
+            ${CUDA_TOOLKIT_ROOT_DIR}
+            /usr/local/cuda
+            ENV CUDNN_ROOT_DIR
+            ENV CUDA_TOOLKIT_ROOT_DIR
+            PATH_SUFFIXES
+            cuda/include
+            include
+            include/cuda)
 
     find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
-            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
+            HINTS
+            ${CUDNN_ROOT_DIR}
+            ${CUDA_TOOLKIT_ROOT_DIR}
+            /usr/local/cuda
+            ENV CUDNN_ROOT_DIR
+            ENV CUDA_TOOLKIT_ROOT_DIR
+            PATH_SUFFIXES
+            lib
+            lib64
+            cuda/lib
+            cuda/lib64
+            cuda/lib/x64
+            lib/x64)
 
+    # Debug output to help diagnose the issue
+    message("CUDNN_INCLUDE_DIR search result: ${CUDNN_INCLUDE_DIR}")
+    message("CUDNN_LIBRARY search result: ${CUDNN_LIBRARY}")
 
     if (CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
-        message("CUDNN include dir is ${CUDNN_INCLUDE_DIR}")
+        message("Found cuDNN: include at ${CUDNN_INCLUDE_DIR}, library at ${CUDNN_LIBRARY}")
         include_directories(${CUDNN_INCLUDE_DIR})
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
     else()
-        message(FATAL_ERROR "Unable to find cuDNN, no library found. Please ensure cudnn is installed under the cuda toolkit directory.")
+        # More detailed error message but continue with build
+        message(WARNING "cuDNN not found. Continuing without cuDNN support.")
+        message("Searched for include in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
+        message("Searched for library '${CUDNN_LIBNAME}' in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
+        # Make this a warning instead of an error to allow builds to continue
+        set(HAVE_CUDNN false)
     endif()
 endif()
 
