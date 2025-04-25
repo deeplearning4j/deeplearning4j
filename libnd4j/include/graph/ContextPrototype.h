@@ -31,9 +31,7 @@
 
 #include <vector>
 
-#ifndef __STANDALONE_BUILD__
 #include <config.h>
-#endif
 
 namespace sd {
 namespace graph {
