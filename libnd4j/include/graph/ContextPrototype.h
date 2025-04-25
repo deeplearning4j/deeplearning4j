@@ -62,7 +62,7 @@ class SD_LIB_EXPORT ContextPrototype {
   bool _useONEDNN = Environment::getInstance().isUseONEDNN();
 
   // target engine for execution
-  samediff::Engine _engine = DEFAULT_ENGINE;
+  samediff::Engine _engine = samediff::ENGINE_CUDA;
 
   samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
 
