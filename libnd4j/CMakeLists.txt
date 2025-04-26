@@ -1,5 +1,5 @@
 # Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
-# FINAL CORRECTED VERSION 6 (Full File, Corrected Logic, STRICT Multi-Line Formatting)
+# FINAL CORRECTED VERSION 7 (Full File, Corrected Logic, STRICT Multi-Line Formatting)
 cmake_minimum_required(VERSION 3.15)
 
 # Explicitly enable CXX globally. CUDA is enabled conditionally later if needed.
@@ -14,11 +14,6 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
 # ///////////////////////////////////////////////////////////////////////////////
 # genCompilation: Generates cpp, cu files
-# INPUT:
-# $FILE_ITEM template-configuration that utilizes libnd4j type, macros helpers
-# defined inside { include/types/types.h, include/system/type_boilerplate.h}
-# OUTPUT:
-# $CPU_GENERATED_SOURCES/$CUDA_GENERATED_SOURCES generated files will be added into the appropriate list
 # ///////////////////////////////////////////////////////////////////////////////
 function(genCompilation FILE_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
@@ -29,9 +24,7 @@ function(genCompilation FILE_ITEM)
     endif()
 
     file(READ ${FL_ITEM} CONTENT_FL)
-    #check content for types
 
-    #set all to false
     set (SD_FLOAT_TYPES_GEN     0)
     set (SD_INTEGER_TYPES_GEN   0)
     set (SD_COMMON_TYPES_GEN    0)
@@ -40,11 +33,10 @@ function(genCompilation FILE_ITEM)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-    #STOP=COUNT(SD_COMMON_TYPES)-1
-    set(SD_INTEGER_TYPES_END 7)  # Indices 0-7
-    set(SD_COMMON_TYPES_END 12)  # Indices 0-12
-    set(SD_FLOAT_TYPES_END 3)    # Indices 0-3
-    set(SD_PAIRWISE_TYPES_END 12) # Indices 0-12
+    set(SD_INTEGER_TYPES_END 7)
+    set(SD_COMMON_TYPES_END 12)
+    set(SD_FLOAT_TYPES_END 3)
+    set(SD_PAIRWISE_TYPES_END 12)
 
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
@@ -70,12 +62,9 @@ function(genCompilation FILE_ITEM)
     endforeach()
 
     if(RANGE_STOP GREATER -1)
-        #message(STATUS "Generating ${FILE_ITEM_WE} for index range 0 to ${RANGE_STOP}") # Reduce verbosity
-        # Use local lists to accumulate generated files within the loop
         set(CPU_GENERATED_SOURCES_INTERNAL "")
         set(CUDA_GENERATED_SOURCES_INTERNAL "")
         foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
-            # set OFF if the index is above the specific type group's end index
             set(LOCAL_SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
             set(LOCAL_SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
             set(LOCAL_SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
@@ -94,27 +83,23 @@ function(genCompilation FILE_ITEM)
                 set (LOCAL_SD_PAIRWISE_TYPES_GEN 0)
             endif()
 
-            # Set CMake variables for configure_file based on local loop state
             set(SD_FLOAT_TYPES_GEN ${LOCAL_SD_FLOAT_TYPES_GEN})
             set(SD_INTEGER_TYPES_GEN ${LOCAL_SD_INTEGER_TYPES_GEN})
             set(SD_COMMON_TYPES_GEN ${LOCAL_SD_COMMON_TYPES_GEN})
             set(SD_PAIRWISE_TYPES_GEN ${LOCAL_SD_PAIRWISE_TYPES_GEN})
 
             set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
-            # Ensure the output directory exists before trying to configure the file
             get_filename_component(GENERATED_SOURCE_DIR ${GENERATED_SOURCE} DIRECTORY)
             file(MAKE_DIRECTORY ${GENERATED_SOURCE_DIR})
 
             configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
 
-            # Append to the correct internal list based on extension
             if(EXTENSION STREQUAL "cu")
                 list(APPEND CUDA_GENERATED_SOURCES_INTERNAL ${GENERATED_SOURCE})
             else()
                 list(APPEND CPU_GENERATED_SOURCES_INTERNAL ${GENERATED_SOURCE})
             endif()
 
-            # *** It's crucial to unset the temporary defines after configure_file ***
             unset(SD_FLOAT_TYPES_GEN)
             unset(SD_INTEGER_TYPES_GEN)
             unset(SD_COMMON_TYPES_GEN)
@@ -125,14 +110,12 @@ function(genCompilation FILE_ITEM)
         message(STATUS "Skipping generation for ${FILE_ITEM_WE} as no relevant TYPE_GEN directives found.")
     endif()
 
-    # Propagate lists back to parent scope
     set(CPU_GENERATED_SOURCES ${CPU_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
 endfunction()
 
 # Define a function to generate individual CUDA files for each type combination
 function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
-    # Split the COMBINATION string into a list
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
     list(GET COMB_LIST 0 COMB1)
     list(GET COMB_LIST 1 COMB2)
@@ -141,7 +124,6 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
     file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
 
-    # Extract class and method names using regex
     string(REGEX MATCH "template[ \n\t]+void[ \n\t]+([a-zA-Z0-9_:]+)::([a-zA-Z0-9_]+)<" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
     set(CLASS_NAME ${CMAKE_MATCH_1})
     set(METHOD_NAME ${CMAKE_MATCH_2})
@@ -153,7 +135,6 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     endif()
     string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
 
-    # Extract function signature arguments for unique identifier
     string(REGEX MATCH "::${METHOD_NAME}<.*>\\(([^)]*)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
     set(FUNCTION_ARGS_RAW "${CMAKE_MATCH_1}")
     string(REGEX REPLACE "[ \t\n]+" " " FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_RAW}")
@@ -169,21 +150,17 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
         set(SIGNATURE_ID "_h${SIGNATURE_ID_SHORT}")
     endif()
 
-    # Output filename
     set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
     set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
 
-    # Replace placeholders
     string(REPLACE "@COMB1@" "${COMB1}" MODIFIED_CONTENT "${TEMPLATE_CONTENT}")
     string(REPLACE "@COMB2@" "${COMB2}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
     string(REPLACE "@COMB3@" "${COMB3}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
-    # Remove iteration macro line
     string(REGEX REPLACE "[^\n]*ITERATE_COMBINATIONS_3[^\n]*\n?" "" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
 
     file(MAKE_DIRECTORY "${OUTPUT_DIR}")
     file(WRITE "${GENERATED_FILE}" "${MODIFIED_CONTENT}")
 
-    # Set properties and add to sources (using an internal list for loop safety)
     set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
     list(APPEND CUDA_GENERATED_SOURCES_INTERNAL ${GENERATED_FILE})
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
@@ -386,12 +363,6 @@ elseif(DEFINED SD_CPU AND SD_CPU)
     set(SD_CUDA FALSE)
 endif()
 message(STATUS "Build Mode: SD_CPU=${SD_CPU}, SD_CUDA=${SD_CUDA}")
-
-# Enable CUDA Language if SD_CUDA is TRUE
-if(SD_CUDA)
-    message(STATUS "Enabling CUDA language for the project.")
-    enable_language(CUDA)
-endif()
 
 # Find BLAS implementation if not using CUDA
 if(NOT SD_CUDA)
@@ -749,7 +720,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
     endif()
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-        add_compile_definitions(SD_GCC_FUNCTRACE)
+        # Definition added via target_compile_definitions if needed
     endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     if(UNIX AND NOT APPLE AND NOT SD_IOS_BUILD AND SD_SHARED_LIB)
@@ -789,240 +760,244 @@ set(CUDA_GENERATED_SOURCES "")
 set(CPU_GENERATED_SOURCES "")
 set(CUSTOMOPS_GENERIC_SOURCES "")
 
+
 # CUDA Configuration Block
 if(SD_CUDA)
     message(STATUS "--- Configuring CUDA Build ---")
     # Language enabled globally based on SD_CUDA check near top
 
-    if(CUDA_FOUND)
-        message(STATUS "CUDA Config: Version=${CUDA_VERSION}, Toolkit Root=${CUDA_TOOLKIT_ROOT_DIR}")
-        include_directories(${CUDA_INCLUDE_DIRS})
-
-        # Common CUDA flags, Arch flags, Sanitize flags, Find CUDA libs...
-        set(COMMON_CUDA_FLAGS "-allow-unsupported-compiler --expt-extended-lambda -Xfatbin -compress-all -maxrregcount=128")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS}")
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
-        endif()
-        set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G -lineinfo")
-        set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} --use_fast_math")
-        if(NOT DEFINED COMPUTE)
-            set(COMPUTE "all")
-            message(STATUS "COMPUTE variable not set, defaulting to 'all'")
-        endif()
-        string(TOLOWER "${COMPUTE}" COMPUTE_LOWER)
-        set(CUDA_ARCH_FLAGS_LIST "")
-        if(COMPUTE_LOWER STREQUAL "all")
-            if(CUDA_VERSION VERSION_LESS 11.0)
-                set(CUDA_ARCH_LIST 60 61 70 75)
-            elseif(CUDA_VERSION VERSION_LESS 12.0)
-                set(CUDA_ARCH_LIST 60 61 70 75 80 86)
-            else()
-                set(CUDA_ARCH_LIST 75 80 86 90)
-            endif()
-        elseif(COMPUTE_LOWER STREQUAL "auto")
-            set(CUDA_ARCH_LIST "")
-        else()
-            string(REPLACE " " ";" CUDA_ARCH_LIST_INPUT ${COMPUTE_LOWER})
-            set(CUDA_ARCH_LIST "")
-            foreach(ARCH_ITEM ${CUDA_ARCH_LIST_INPUT})
-                string(REPLACE "." "" ARCH_CLEAN ${ARCH_ITEM})
-                list(APPEND CUDA_ARCH_LIST ${ARCH_CLEAN})
-            endforeach()
-        endif()
-        if(CUDA_ARCH_LIST)
-            foreach(ARCH_CODE ${CUDA_ARCH_LIST})
-                list(APPEND CUDA_ARCH_FLAGS_LIST "-gencode")
-                list(APPEND CUDA_ARCH_FLAGS_LIST "arch=compute_${ARCH_CODE},code=compute_${ARCH_CODE}")
-                list(APPEND CUDA_ARCH_FLAGS_LIST "-gencode")
-                list(APPEND CUDA_ARCH_FLAGS_LIST "arch=compute_${ARCH_CODE},code=sm_${ARCH_CODE}")
-            endforeach()
-            set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
-            message(STATUS "Targeting CUDA Architectures (sm_): ${CUDA_ARCH_LIST}")
-        else()
-            message(STATUS "Targeting CUDA Architectures: Auto-detected by CMake/nvcc")
-            set(CMAKE_CUDA_ARCHITECTURES "")
-        endif()
-        string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS_LIST}")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
-        if(SD_SANITIZE AND SANITIZE_FLAGS)
-            message(STATUS "Adding sanitizer flags to CUDA host/device compiler via -Xcompiler")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"${SANITIZE_FLAGS}\"")
-        endif()
-        find_package(CUDAToolkit COMPONENTS cublas cusolver)
-        if(NOT CUDAToolkit_FOUND)
-            message(WARNING "Could not find required CUDA Toolkit components (cuBLAS, cuSolver) via find_package(CUDAToolkit). Linking might fail.")
-            find_library(CUDA_cublas_LIBRARY NAMES cublas HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-            find_library(CUDA_cusolver_LIBRARY NAMES cusolver HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
-            if(NOT CUDA_cublas_LIBRARY OR NOT CUDA_cusolver_LIBRARY)
-                message(FATAL_ERROR "Manual search for cuBLAS/cuSolver library failed.")
-            endif()
-            set(CUDAToolkit_LIBRARIES ${CUDA_cublas_LIBRARY} ${CUDA_cusolver_LIBRARY})
-        endif()
-
-        # --- Generate CUDA Source Files (Templates, etc.) ---
-        message(STATUS "Configuring CUDA source file generation...")
-        set(CUDA_GENERATED_DIR "${CMAKE_BINARY_DIR}/cuda_generated")
-        file(MAKE_DIRECTORY ${CUDA_GENERATED_DIR})
-        set(CUDA_GENERATED_SOURCES "") # Initialize list
-
-        if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
-            set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
-            message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST for CUDA generation")
-        else()
-            set(NUM_TYPES 10)
-            message(STATUS "Using default number of types for CUDA generation: ${NUM_TYPES}")
-        endif()
-
-        file(GLOB CUDA_COMPILATION_UNITS "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/compilation_units/*.cu.in")
-        foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
-            genCompilation(${FL_ITEM})
-        endforeach()
-
-        set(COMBINATIONS_3 "0,0,0;0,0,2;0,1,2;0,2,0;0,2,1;0,2,2;1,0,0;1,1,1;1,1,2;1,2,0;1,2,1;1,2,2;2,0,0;2,0,1;2,0,2;2,1,0;2,1,1;2,1,2;2,2,0;2,2,1;2,2,2")
-        message(STATUS "Using explicit list for CUDA type combinations")
-
-        file(GLOB CUDA_TEMPLATE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/comb_compilation_units/*.cu.in")
-        foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
-            foreach(COMBINATION ${COMBINATIONS_3})
-                genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CUDA_GENERATED_DIR}")
-            endforeach()
-        endforeach()
-        message(STATUS "Finished CUDA source generation.")
-        message(STATUS "DEBUG: Generated CUDA Sources List: ${CUDA_GENERATED_SOURCES}")
-
-        # --- Gather ALL CUDA Source Files ---
-        file(GLOB_RECURSE COMMON_SOURCES
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/generic/*.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/impl/*.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/array/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/array/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/types/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/types/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/build_info.cpp"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ConstMessages.cpp"
-                EXCLUDE REGEX ".*/cpu/.*\\.cpp$"
-        )
-        file(GLOB_RECURSE CUDA_SPECIFIC_SOURCES
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/cuda/*.h"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/*.cu"
-                "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.cu"
-        )
-        message(STATUS "DEBUG: CUDA Specific Sources (Combined GLOB): ${CUDA_SPECIFIC_SOURCES}")
-        if(HAVE_CUDNN)
-            message(STATUS "Adding cuDNN platform sources")
-            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/cudnn/*.cu")
-        endif()
-
-        set(ALL_SOURCES
-                ${COMMON_SOURCES}
-                ${CUDA_SPECIFIC_SOURCES}
-                ${CUDA_GENERATED_SOURCES}
-                ${CUSTOMOPS_CUDNN_SOURCES}
-        )
-        list(REMOVE_DUPLICATES ALL_SOURCES)
-        message(STATUS "DEBUG: Final ALL_SOURCES for CUDA build: ${ALL_SOURCES}")
-
-        # Create Object Library
-        add_library(samediff_obj OBJECT ${ALL_SOURCES})
-        add_dependencies(samediff_obj generate_config flatbuffers_external)
-        target_compile_features(samediff_obj PUBLIC cxx_std_17 cuda_std_17)
-
-        # Set include directories for the object library
-        target_include_directories(samediff_obj PUBLIC
-                "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                "${CMAKE_CURRENT_BINARY_DIR}/include"
-                ${FLATBUFFERS_INCLUDE_DIR}
-                ${CUDA_INCLUDE_DIRS}
-                $<$<BOOL:${HAVE_CUDNN}>:${CUDNN_INCLUDE_DIR}>
-                $<$<BOOL:${HAVE_ONEDNN}>:${ONEDNN_INCLUDE_DIRS}>
-        )
-
-        # Set compile definitions for the object library
-        target_compile_definitions(samediff_obj PUBLIC
-                $<$<BOOL:${HAVE_CUDNN}>:HAVE_CUDNN=1>
-                $<$<BOOL:${HAVE_ONEDNN}>:HAVE_ONEDNN=1>
-                __CUDABLAS__=true
-                SD_CUDA=true
-        )
-
-        # Handle MSVC Runtime Library for object library if needed
-        if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            target_compile_options(samediff_obj PRIVATE /EHsc /bigobj)
-        endif()
-
-        # --- Create Final Library (Shared/Static) ---
-        if(SD_SHARED_LIB)
-            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
-            set(FINAL_TARGET ${SD_LIBRARY_NAME})
-            message(STATUS "Creating shared library: ${SD_LIBRARY_NAME}")
-            if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-                set_property(TARGET ${FINAL_TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            endif()
-            if(NOT DEFINED PROJECT_VERSION)
-                set(PROJECT_VERSION "1.0.0-SNAPSHOT")
-            endif()
-            if(UNIX OR APPLE)
-                set_target_properties(${FINAL_TARGET} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1)
-            endif()
-        endif()
-        if(SD_STATIC_LIB)
-            add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:samediff_obj>)
-            if(NOT SD_SHARED_LIB)
-                set(FINAL_TARGET ${SD_LIBRARY_NAME}_static)
-            endif()
-            message(STATUS "Creating static library: ${SD_LIBRARY_NAME}_static")
-            if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-                set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            endif()
-            target_link_libraries(${SD_LIBRARY_NAME}_static PUBLIC flatbuffers)
-            install(TARGETS ${SD_LIBRARY_NAME}_static ARCHIVE DESTINATION lib)
-        endif()
-        if(NOT DEFINED FINAL_TARGET)
-            message(FATAL_ERROR "No library type selected (SD_SHARED_LIB or SD_STATIC_LIB must be ON)")
-        endif()
-
-        # --- Link Libraries to Final Target ---
-        target_link_libraries(${FINAL_TARGET} PUBLIC
-                CUDA::cudart
-                ${CUDAToolkit_LIBRARIES}
-                $<$<BOOL:${HAVE_CUDNN}>:${CUDNN}>
-                $<$<BOOL:${HAVE_ONEDNN}>:onednn>
-                Threads::Threads
-                flatbuffers
-                $<$<BOOL:${SD_SANITIZE}>:asan>
-        )
-        if (UNIX AND NOT APPLE)
-            target_link_libraries(${FINAL_TARGET} PUBLIC dl)
-        endif()
-
-        # Install shared library
-        if(SD_SHARED_LIB)
-            install(TARGETS ${SD_LIBRARY_NAME}
-                    LIBRARY DESTINATION lib
-                    RUNTIME DESTINATION bin
-                    ARCHIVE DESTINATION lib
-            )
-        endif()
-
-        message(STATUS "CUDA Build Configuration Complete.")
-
-    else()
-        message(FATAL_ERROR "CUDA was enabled (SD_CUDA=ON) but not found by find_package(CUDA).")
+    # Ensure CUDA was found and enabled
+    find_package(CUDA REQUIRED)
+    if(NOT CMAKE_CUDA_COMPILER)
+        message(FATAL_ERROR "CUDA language was enabled, but CMake failed to find the CUDA compiler (nvcc). Check CUDA installation and environment variables.")
     endif()
+    message(STATUS "CUDA Config: Version=${CUDA_VERSION}, Toolkit Root=${CUDA_TOOLKIT_ROOT_DIR}")
+    include_directories(${CUDA_INCLUDE_DIRS})
+
+    # Common CUDA flags, Arch flags, Sanitize flags, Find CUDA libs...
+    set(COMMON_CUDA_FLAGS "-allow-unsupported-compiler --expt-extended-lambda -Xfatbin -compress-all -maxrregcount=128")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS}")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+    endif()
+    set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -G -lineinfo")
+    set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} --use_fast_math")
+    if(NOT DEFINED COMPUTE)
+        set(COMPUTE "all")
+        message(STATUS "COMPUTE variable not set, defaulting to 'all'")
+    endif()
+    string(TOLOWER "${COMPUTE}" COMPUTE_LOWER)
+    set(CUDA_ARCH_FLAGS_LIST "")
+    if(COMPUTE_LOWER STREQUAL "all")
+        # REFORMATTED this block
+        if(CUDA_VERSION VERSION_LESS 11.0)
+            set(CUDA_ARCH_LIST 60 61 70 75)
+        elseif(CUDA_VERSION VERSION_LESS 12.0)
+            set(CUDA_ARCH_LIST 60 61 70 75 80 86)
+        else()
+            set(CUDA_ARCH_LIST 75 80 86 90)
+        endif()
+    elseif(COMPUTE_LOWER STREQUAL "auto")
+        set(CUDA_ARCH_LIST "")
+    else()
+        string(REPLACE " " ";" CUDA_ARCH_LIST_INPUT ${COMPUTE_LOWER})
+        set(CUDA_ARCH_LIST "")
+        foreach(ARCH_ITEM ${CUDA_ARCH_LIST_INPUT})
+            string(REPLACE "." "" ARCH_CLEAN ${ARCH_ITEM})
+            list(APPEND CUDA_ARCH_LIST ${ARCH_CLEAN})
+        endforeach()
+    endif()
+    if(CUDA_ARCH_LIST)
+        foreach(ARCH_CODE ${CUDA_ARCH_LIST})
+            list(APPEND CUDA_ARCH_FLAGS_LIST "-gencode")
+            list(APPEND CUDA_ARCH_FLAGS_LIST "arch=compute_${ARCH_CODE},code=compute_${ARCH_CODE}")
+            list(APPEND CUDA_ARCH_FLAGS_LIST "-gencode")
+            list(APPEND CUDA_ARCH_FLAGS_LIST "arch=compute_${ARCH_CODE},code=sm_${ARCH_CODE}")
+        endforeach()
+        set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_LIST})
+        message(STATUS "Targeting CUDA Architectures (sm_): ${CUDA_ARCH_LIST}")
+    else()
+        message(STATUS "Targeting CUDA Architectures: Auto-detected by CMake/nvcc")
+        set(CMAKE_CUDA_ARCHITECTURES "")
+    endif()
+    string(REPLACE ";" " " CUDA_ARCH_FLAGS_STR "${CUDA_ARCH_FLAGS_LIST}")
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${CUDA_ARCH_FLAGS_STR}")
+    if(SD_SANITIZE AND SANITIZE_FLAGS)
+        message(STATUS "Adding sanitizer flags to CUDA host/device compiler via -Xcompiler")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"${SANITIZE_FLAGS}\"")
+    endif()
+    find_package(CUDAToolkit COMPONENTS cublas cusolver)
+    if(NOT CUDAToolkit_FOUND)
+        message(WARNING "Could not find required CUDA Toolkit components (cuBLAS, cuSolver) via find_package(CUDAToolkit). Linking might fail.")
+        find_library(CUDA_cublas_LIBRARY NAMES cublas HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+        find_library(CUDA_cusolver_LIBRARY NAMES cusolver HINTS ${CUDA_TOOLKIT_ROOT_DIR}/lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib/x64)
+        if(NOT CUDA_cublas_LIBRARY OR NOT CUDA_cusolver_LIBRARY)
+            message(FATAL_ERROR "Manual search for cuBLAS/cuSolver library failed.")
+        endif()
+        set(CUDAToolkit_LIBRARIES ${CUDA_cublas_LIBRARY} ${CUDA_cusolver_LIBRARY})
+    endif()
+
+    # --- Generate CUDA Source Files (Templates, etc.) ---
+    message(STATUS "Configuring CUDA source file generation...")
+    set(CUDA_GENERATED_DIR "${CMAKE_BINARY_DIR}/cuda_generated")
+    file(MAKE_DIRECTORY ${CUDA_GENERATED_DIR})
+    set(CUDA_GENERATED_SOURCES "") # Initialize list
+
+    if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
+        set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
+        message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST for CUDA generation")
+    else()
+        set(NUM_TYPES 10)
+        message(STATUS "Using default number of types for CUDA generation: ${NUM_TYPES}")
+    endif()
+
+    file(GLOB CUDA_COMPILATION_UNITS "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/compilation_units/*.cu.in")
+    foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
+        genCompilation(${FL_ITEM})
+    endforeach()
+
+    set(COMBINATIONS_3 "0,0,0;0,0,2;0,1,2;0,2,0;0,2,1;0,2,2;1,0,0;1,1,1;1,1,2;1,2,0;1,2,1;1,2,2;2,0,0;2,0,1;2,0,2;2,1,0;2,1,1;2,1,2;2,2,0;2,2,1;2,2,2")
+    message(STATUS "Using explicit list for CUDA type combinations")
+
+    file(GLOB CUDA_TEMPLATE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/comb_compilation_units/*.cu.in")
+    foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
+        foreach(COMBINATION ${COMBINATIONS_3})
+            genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CUDA_GENERATED_DIR}")
+        endforeach()
+    endforeach()
+    message(STATUS "Finished CUDA source generation.")
+    message(STATUS "DEBUG: Generated CUDA Sources List: ${CUDA_GENERATED_SOURCES}")
+
+    # --- Gather ALL CUDA Source Files ---
+    file(GLOB_RECURSE COMMON_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/exceptions/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/generic/*.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/impl/*.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/array/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/types/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/types/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/indexing/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/impl/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/build_info.cpp"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ConstMessages.cpp"
+            EXCLUDE REGEX ".*/cpu/.*\\.cpp$"
+    )
+    file(GLOB_RECURSE CUDA_SPECIFIC_SOURCES
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/cuda/*.h"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/*.cu"
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.cu"
+    )
+    message(STATUS "DEBUG: CUDA Specific Sources (Combined GLOB): ${CUDA_SPECIFIC_SOURCES}")
+    if(HAVE_CUDNN)
+        message(STATUS "Adding cuDNN platform sources")
+        file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/cudnn/*.cu")
+    endif()
+
+    set(ALL_SOURCES
+            ${COMMON_SOURCES}
+            ${CUDA_SPECIFIC_SOURCES}
+            ${CUDA_GENERATED_SOURCES}
+            ${CUSTOMOPS_CUDNN_SOURCES}
+    )
+    list(REMOVE_DUPLICATES ALL_SOURCES)
+    message(STATUS "DEBUG: Final ALL_SOURCES for CUDA build: ${ALL_SOURCES}")
+
+    # Create Object Library
+    add_library(samediff_obj OBJECT ${ALL_SOURCES})
+    add_dependencies(samediff_obj generate_config flatbuffers_external)
+    target_compile_features(samediff_obj PUBLIC cxx_std_17 cuda_std_17)
+
+    # Set include directories for the object library
+    target_include_directories(samediff_obj PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/include"
+            "${CMAKE_CURRENT_BINARY_DIR}/include"
+            ${FLATBUFFERS_INCLUDE_DIR}
+            ${CUDA_INCLUDE_DIRS}
+            $<$<BOOL:${HAVE_CUDNN}>:${CUDNN_INCLUDE_DIR}>
+            $<$<BOOL:${HAVE_ONEDNN}>:${ONEDNN_INCLUDE_DIRS}>
+    )
+
+    # Set compile definitions for the object library
+    target_compile_definitions(samediff_obj PUBLIC
+            $<$<BOOL:${HAVE_CUDNN}>:HAVE_CUDNN=1>
+            $<$<BOOL:${HAVE_ONEDNN}>:HAVE_ONEDNN=1>
+            __CUDABLAS__=true
+            SD_CUDA=true
+    )
+
+    # Handle MSVC Runtime Library for object library if needed
+    if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        target_compile_options(samediff_obj PRIVATE /EHsc /bigobj)
+    endif()
+
+    # --- Create Final Library (Shared/Static) ---
+    if(SD_SHARED_LIB)
+        add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+        set(FINAL_TARGET ${SD_LIBRARY_NAME})
+        message(STATUS "Creating shared library: ${SD_LIBRARY_NAME}")
+        if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            set_property(TARGET ${FINAL_TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        endif()
+        if(NOT DEFINED PROJECT_VERSION)
+            set(PROJECT_VERSION "1.0.0-SNAPSHOT")
+        endif()
+        if(UNIX OR APPLE)
+            set_target_properties(${FINAL_TARGET} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1)
+        endif()
+    endif()
+    if(SD_STATIC_LIB)
+        add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:samediff_obj>)
+        if(NOT SD_SHARED_LIB)
+            set(FINAL_TARGET ${SD_LIBRARY_NAME}_static)
+        endif()
+        message(STATUS "Creating static library: ${SD_LIBRARY_NAME}_static")
+        if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        endif()
+        target_link_libraries(${SD_LIBRARY_NAME}_static PUBLIC flatbuffers)
+        install(TARGETS ${SD_LIBRARY_NAME}_static ARCHIVE DESTINATION lib)
+    endif()
+    if(NOT DEFINED FINAL_TARGET)
+        message(FATAL_ERROR "No library type selected (SD_SHARED_LIB or SD_STATIC_LIB must be ON)")
+    endif()
+
+    # --- Link Libraries to Final Target ---
+    target_link_libraries(${FINAL_TARGET} PUBLIC
+            CUDA::cudart
+            ${CUDAToolkit_LIBRARIES}
+            $<$<BOOL:${HAVE_CUDNN}>:${CUDNN}>
+            $<$<BOOL:${HAVE_ONEDNN}>:onednn>
+            Threads::Threads
+            flatbuffers
+            $<$<BOOL:${SD_SANITIZE}>:asan>
+    )
+    if (UNIX AND NOT APPLE)
+        target_link_libraries(${FINAL_TARGET} PUBLIC dl)
+    endif()
+
+    # Install shared library
+    if(SD_SHARED_LIB)
+        install(TARGETS ${SD_LIBRARY_NAME}
+                LIBRARY DESTINATION lib
+                RUNTIME DESTINATION bin
+                ARCHIVE DESTINATION lib
+        )
+    endif()
+
+    message(STATUS "CUDA Build Configuration Complete.")
+
+    # Removed else branch for the now-unreachable condition (CUDA was required but not found)
 
     # CPU Configuration Block
 elseif(SD_CPU)
@@ -1260,7 +1235,7 @@ if(SD_PREPROCESS)
 
     set(PREPROC_OPTIONS_STR "")
     # if(PREPROC_OPTIONS)
-    #    list(APPEND PREPROC_OPTIONS_STR ${PREPROC_OPTIONS}) # Needs careful handling if options contain spaces
+    #    list(APPEND PREPROC_OPTIONS_STR ${PREPROC_OPTIONS})
     # endif()
 
     set(preprocessor "")
@@ -1295,7 +1270,8 @@ if(SD_PREPROCESS)
                     list(APPEND pp_command_list ${PREPROC_INCLUDE_STR})
                     list(APPEND pp_command_list ${PREPROC_DEFINE_STR})
                     list(APPEND pp_command_list "${src_abs}")
-                    list(APPEND pp_command_list "-o" "${preprocessed_file}")
+                    list(APPEND pp_command_list "-o")
+                    list(APPEND pp_command_list "${preprocessed_file}")
 
                     add_custom_command(
                             OUTPUT ${preprocessed_file}
@@ -1313,7 +1289,8 @@ if(SD_PREPROCESS)
     endforeach()
 
     if(PREPROCESSED_FILES)
-        add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES}
+        add_custom_target(preprocess_sources ALL
+                DEPENDS ${PREPROCESSED_FILES}
                 COMMENT "Running C/C++/CUDA preprocessor on sources..."
         )
         set_directory_properties(PROPERTIES CLEAN_NO_CUSTOM 1)
@@ -1436,21 +1413,21 @@ if(UNIX)
         set(CPACK_DEBIAN_PACKAGE_MAINTAINER ${CPACK_PACKAGE_CONTACT})
         set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
         set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6 (>= 2.17)")
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS_LIST "") # Use list for easier appending
+        list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS_LIST "libc6 (>= 2.17)")
         if(SD_CUDA)
             if(CUDA_VERSION MATCHES "^([0-9]+)\\.([0-9]+)")
                 set(CUDA_MAJOR ${CMAKE_MATCH_1})
                 set(CUDA_MINOR ${CMAKE_MATCH_2})
-                list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS " cuda-cudart-${CUDA_MAJOR}-${CUDA_MINOR}")
+                list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS_LIST " cuda-cudart-${CUDA_MAJOR}-${CUDA_MINOR}")
             endif()
         endif()
         if(HAVE_CUDNN)
-            list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS " libcudnn8") # Example
+            list(APPEND CPACK_DEBIAN_PACKAGE_DEPENDS_LIST " libcudnn8") # Example
         endif()
-        string(REPLACE ";" ", " CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}")
+        string(REPLACE ";" ", " CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS_LIST}") # Convert list to string
 
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst.deb")
-            # Ensure control extra uses semicolon separator correctly if multiple files needed
             set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst.deb")
             if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm.deb")
                 string(APPEND CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA ";${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm.deb")
@@ -1468,18 +1445,19 @@ if(UNIX)
         set(CPACK_RPM_PACKAGE_GROUP "System Environment/Libraries")
         set(CPACK_RPM_PACKAGE_URL ${CPACK_PACKAGE_HOMEPAGE_URL})
         set(CPACK_RPM_PACKAGE_VENDOR ${CPACK_PACKAGE_VENDOR})
-        set(CPACK_RPM_PACKAGE_REQUIRES "glibc >= 2.17")
+        set(CPACK_RPM_PACKAGE_REQUIRES_LIST "") # Use list for easier appending
+        list(APPEND CPACK_RPM_PACKAGE_REQUIRES_LIST "glibc >= 2.17")
         if(SD_CUDA)
             if(CUDA_VERSION MATCHES "^([0-9]+)\\.([0-9]+)")
                 set(CUDA_MAJOR ${CMAKE_MATCH_1})
                 set(CUDA_MINOR ${CMAKE_MATCH_2})
-                list(APPEND CPACK_RPM_PACKAGE_REQUIRES " cuda-cudart-${CUDA_MAJOR}-${CUDA_MINOR}")
+                list(APPEND CPACK_RPM_PACKAGE_REQUIRES_LIST " cuda-cudart-${CUDA_MAJOR}-${CUDA_MINOR}")
             endif()
         endif()
         if(HAVE_CUDNN)
-            list(APPEND CPACK_RPM_PACKAGE_REQUIRES " libcudnn8") # Example
+            list(APPEND CPACK_RPM_PACKAGE_REQUIRES_LIST " libcudnn8") # Example
         endif()
-        string(REPLACE ";" ", " CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES}")
+        string(REPLACE ";" ", " CPACK_RPM_PACKAGE_REQUIRES "${CPACK_RPM_PACKAGE_REQUIRES_LIST}") # Convert list to string
 
         if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst.rpm")
             set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst.rpm")
