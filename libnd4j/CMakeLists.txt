@@ -1,5 +1,3 @@
-# Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
-# MERGED VERSION incorporating previous CUDA source generation/gathering
 cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -7,6 +5,218 @@ project(libnd4j)
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
+
+# <<< MERGE START: Add function definitions from previous CMake files >>>
+
+# ///////////////////////////////////////////////////////////////////////////////
+# genCompilation: Generates cpp, cu files
+# INPUT:
+# $FILE_ITEM template-configuration that utilizes libnd4j type, macros helpers
+# defined inside { include/types/types.h, include/system/type_boilerplate.h}
+# OUTPUT:
+# $CUSTOMOPS_GENERIC_SOURCES/$CUDA_GENERATED_SOURCES generated files will be added into this List
+# ///////////////////////////////////////////////////////////////////////////////
+#  A simple template-configuration file example:
+# // hints and defines what types will be generated
+# #cmakedefine SD_COMMON_TYPES_GEN
+# #cmakedefine SD_FLOAT_TYPES_GEN
+# // below if defines blocks are needed for correctly handling multiple types
+# #if defined(SD_COMMON_TYPES_GEN) && defined(SD_COMMON_TYPES_@FL_TYPE_INDEX@)
+#  BUILD_DOUBLE_TEMPLATE(template void someFunc, (arg_list,..),
+#                          SD_COMMON_TYPES_@FL_TYPE_INDEX@, SD_INDEXING_TYPES);
+# #endif
+# #if defined(SD_FLOAT_TYPES_GEN) && defined(SD_FLOAT_TYPES_@FL_TYPE_INDEX@)
+#  BUILD_SINGLE_TEMPLATE(template class SomeClass,, SD_FLOAT_TYPES_@FL_TYPE_INDEX@);
+# #endif
+# ///////////////////////////////////////////////////////////////////////////////
+function(genCompilation FILE_ITEM)
+    get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
+
+    set(EXTENSION "cpp")
+    if(FL_ITEM MATCHES "cu.in$")
+        set(EXTENSION "cu")
+    endif()
+
+    file(READ ${FL_ITEM} CONTENT_FL)
+    #check content for types
+
+    #set all to false
+    set (SD_FLOAT_TYPES_GEN     0)
+    set (SD_INTEGER_TYPES_GEN       0)
+    set (SD_COMMON_TYPES_GEN   0)
+    set (SD_PAIRWISE_TYPES_GEN  0)
+    set (RANGE_STOP         -1)
+
+    string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
+
+    #STOP=COUNT(SD_COMMON_TYPES)-1
+    set(SD_INTEGER_TYPES_END 7)  # Indices 0-7
+    set(SD_COMMON_TYPES_END 12)  # Indices 0-12
+    set(SD_FLOAT_TYPES_END 3)    # Indices 0-3
+    set(SD_PAIRWISE_TYPES_END 12) # Indices 0-12
+
+    foreach(TYPEX ${TYPE_MATCHES})
+        set(STOP -1)
+        if(TYPEX MATCHES "SD_INTEGER_TYPES_GEN$")
+            set (SD_INTEGER_TYPES_GEN  1)
+            set(STOP ${SD_INTEGER_TYPES_END})
+        endif()
+        if(TYPEX MATCHES "SD_COMMON_TYPES_GEN$")
+            set (SD_COMMON_TYPES_GEN 1)
+            set(STOP ${SD_COMMON_TYPES_END})
+        endif()
+        if(TYPEX MATCHES "SD_FLOAT_TYPES_GEN$")
+            set (SD_FLOAT_TYPES_GEN 1)
+            set(STOP ${SD_FLOAT_TYPES_END})
+        endif()
+        if(TYPEX MATCHES "SD_PAIRWISE_TYPES_GEN$")
+            set (SD_PAIRWISE_TYPES_GEN  1)
+            set(STOP ${SD_PAIRWISE_TYPES_END})
+        endif()
+        if(STOP GREATER RANGE_STOP)
+            set(RANGE_STOP ${STOP})
+        endif()
+    endforeach()
+
+    if(RANGE_STOP GREATER -1)
+        message(STATUS "Generating ${FILE_ITEM_WE} for index range 0 to ${RANGE_STOP}")
+        foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # set OFF if the index is above the specific type group's end index
+            set(TEMP_SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
+            set(TEMP_SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
+            set(TEMP_SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
+            set(TEMP_SD_PAIRWISE_TYPES_GEN ${SD_PAIRWISE_TYPES_GEN})
+
+            if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
+                set (TEMP_SD_FLOAT_TYPES_GEN 0)
+            endif()
+            if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
+                set (TEMP_SD_INTEGER_TYPES_GEN 0)
+            endif()
+            if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
+                set (TEMP_SD_COMMON_TYPES_GEN 0)
+            endif()
+            if(FL_TYPE_INDEX GREATER ${SD_PAIRWISE_TYPES_END})
+                set (TEMP_SD_PAIRWISE_TYPES_GEN 0)
+            endif()
+
+            # Use temporary variables for configure_file
+            set(SD_FLOAT_TYPES_GEN ${TEMP_SD_FLOAT_TYPES_GEN})
+            set(SD_INTEGER_TYPES_GEN ${TEMP_SD_INTEGER_TYPES_GEN})
+            set(SD_COMMON_TYPES_GEN ${TEMP_SD_COMMON_TYPES_GEN})
+            set(SD_PAIRWISE_TYPES_GEN ${TEMP_SD_PAIRWISE_TYPES_GEN})
+
+            set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+            configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
+
+            # Append to the correct list based on extension
+            if(EXTENSION STREQUAL "cu")
+                list(APPEND CUDA_GENERATED_SOURCES ${GENERATED_SOURCE})
+            else()
+                list(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE}) # Assuming CPU generated go here
+            endif()
+
+            # Restore original defines for next loop iteration (important!)
+            set(SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
+            set(SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
+            set(SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
+            set(SD_PAIRWISE_TYPES_GEN ${SD_PAIRWISE_TYPES_GEN})
+        endforeach()
+    else()
+        message(STATUS "Skipping generation for ${FILE_ITEM_WE} as no relevant TYPE_GEN directives found.")
+    endif()
+
+    # Propagate lists back to parent scope
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+    set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+endfunction()
+
+# Define a function to generate individual CUDA files for each type combination
+function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
+    # Split the COMBINATION string into a list
+    string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
+
+    # Extract combination values
+    list(GET COMB_LIST 0 COMB1)
+    list(GET COMB_LIST 1 COMB2)
+    list(GET COMB_LIST 2 COMB3)
+
+    # Get the base name from the template file
+    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
+
+    # Read the template content
+    file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
+
+    # Extract class and method names using regex
+    # Updated Regex to handle potential namespaces before class name and whitespace
+    string(REGEX MATCH "template[ \n\t]+void[ \n\t]+([a-zA-Z0-9_:]+)::([a-zA-Z0-9_]+)<" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
+    set(CLASS_NAME ${CMAKE_MATCH_1})
+    set(METHOD_NAME ${CMAKE_MATCH_2})
+
+    # Check if regex matched successfully
+    if(NOT CLASS_NAME OR NOT METHOD_NAME)
+        message(WARNING "Could not extract Class::Method from template ${TEMPLATE_FILE}. Using fallback naming.")
+        # Fallback naming if regex fails
+        set(CLASS_NAME "UnknownClass")
+        set(METHOD_NAME "UnknownMethod")
+    endif()
+
+    # Clean class name for file naming
+    string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
+
+    # Extract function signature arguments to create a unique identifier
+    # Updated Regex to be more robust against whitespace and pointer/reference symbols
+    string(REGEX MATCH "::${METHOD_NAME}<.*>\\(([^)]*)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
+    set(FUNCTION_ARGS_RAW "${CMAKE_MATCH_1}")
+    # Clean up args string: remove extra spaces, const, &, * for identifier generation
+    string(REGEX REPLACE "[ \t\n]+" " " FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_RAW}") # Normalize spaces
+    string(REGEX REPLACE "const " "" FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_CLEANED}") # Remove const
+    string(REGEX REPLACE "[&*]" "" FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_CLEANED}") # Remove &, *
+    string(REGEX REPLACE "," "_" FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_CLEANED}") # Replace comma with underscore
+    string(REGEX REPLACE "[^a-zA-Z0-9_]" "" FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_CLEANED}") # Remove remaining non-alphanumeric
+
+    # Create a signature identifier
+    set(SIGNATURE_ID "_sig${FUNCTION_ARGS_CLEANED}")
+
+    # Create a shorter hash if the signature identifier is too long (potential filesystem limits)
+    string(LENGTH "${SIGNATURE_ID}" SIG_ID_LEN)
+    if(SIG_ID_LEN GREATER 50) # Use a reasonable limit
+        string(MD5 SIGNATURE_HASH "${SIGNATURE_ID}")
+        string(SUBSTRING "${SIGNATURE_HASH}" 0 12 SIGNATURE_ID_SHORT) # Use 12 chars of MD5
+        set(SIGNATURE_ID "_h${SIGNATURE_ID_SHORT}")
+    endif()
+
+
+    # Output filename with signature identifier
+    set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
+    set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
+
+    # Replace placeholders with actual values
+    # Using @ placeholder as assumed by the configure_file command implicitly used by older file's genCompilation
+    string(REPLACE "@COMB1@" "${COMB1}" MODIFIED_CONTENT "${TEMPLATE_CONTENT}")
+    string(REPLACE "@COMB2@" "${COMB2}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+    string(REPLACE "@COMB3@" "${COMB3}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+
+    # Remove the iteration macro itself from the final file
+    # Use regex to remove lines containing ITERATE_COMBINATIONS_3 or similar
+    string(REGEX REPLACE "[^\n]*ITERATE_COMBINATIONS_3[^\n]*\n?" "" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+    # Add removal for other potential iteration macros if needed
+
+    # Create directory if needed
+    file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+
+    # Write the content
+    file(WRITE "${GENERATED_FILE}" "${MODIFIED_CONTENT}")
+
+    # Set properties and add to sources
+    set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
+    list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
+    set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
+
+    #message(STATUS "Generated CUDA single function: ${GENERATED_FILE}") # Keep this less verbose unless debugging
+endfunction()
+
+# <<< MERGE END: Add function definitions >>>
 
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
