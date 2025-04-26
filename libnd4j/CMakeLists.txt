@@ -263,6 +263,13 @@ if(NOT SD_CUDA)
 endif()
 
 
+# Set DEFAULT_ENGINE based on build type
+if(SD_CUDA)
+    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+else()
+    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+endif()
+
 #arm-compute entry
 set(ARMCOMPUTE_LIBRARIES "")
 set(HAVE_ARMCOMPUTE 0)
