@@ -1,5 +1,5 @@
 # Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
-# FINAL CORRECTED VERSION 7 (Full File, Corrected Logic, STRICT Multi-Line Formatting)
+# FINAL CORRECTED VERSION 8 (Full File, Simplified CUDA Init, STRICT Multi-Line Formatting)
 cmake_minimum_required(VERSION 3.15)
 
 # Explicitly enable CXX globally. CUDA is enabled conditionally later if needed.
@@ -14,6 +14,11 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
 # ///////////////////////////////////////////////////////////////////////////////
 # genCompilation: Generates cpp, cu files
+# INPUT:
+# $FILE_ITEM template-configuration that utilizes libnd4j type, macros helpers
+# defined inside { include/types/types.h, include/system/type_boilerplate.h}
+# OUTPUT:
+# $CPU_GENERATED_SOURCES/$CUDA_GENERATED_SOURCES generated files will be added into the appropriate list
 # ///////////////////////////////////////////////////////////////////////////////
 function(genCompilation FILE_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
@@ -24,7 +29,9 @@ function(genCompilation FILE_ITEM)
     endif()
 
     file(READ ${FL_ITEM} CONTENT_FL)
+    #check content for types
 
+    #set all to false
     set (SD_FLOAT_TYPES_GEN     0)
     set (SD_INTEGER_TYPES_GEN   0)
     set (SD_COMMON_TYPES_GEN    0)
@@ -33,10 +40,11 @@ function(genCompilation FILE_ITEM)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-    set(SD_INTEGER_TYPES_END 7)
-    set(SD_COMMON_TYPES_END 12)
-    set(SD_FLOAT_TYPES_END 3)
-    set(SD_PAIRWISE_TYPES_END 12)
+    #STOP=COUNT(SD_COMMON_TYPES)-1
+    set(SD_INTEGER_TYPES_END 7)  # Indices 0-7
+    set(SD_COMMON_TYPES_END 12)  # Indices 0-12
+    set(SD_FLOAT_TYPES_END 3)    # Indices 0-3
+    set(SD_PAIRWISE_TYPES_END 12) # Indices 0-12
 
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
@@ -62,9 +70,12 @@ function(genCompilation FILE_ITEM)
     endforeach()
 
     if(RANGE_STOP GREATER -1)
+        #message(STATUS "Generating ${FILE_ITEM_WE} for index range 0 to ${RANGE_STOP}") # Reduce verbosity
+        # Use local lists to accumulate generated files within the loop
         set(CPU_GENERATED_SOURCES_INTERNAL "")
         set(CUDA_GENERATED_SOURCES_INTERNAL "")
         foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # set OFF if the index is above the specific type group's end index
             set(LOCAL_SD_FLOAT_TYPES_GEN ${SD_FLOAT_TYPES_GEN})
             set(LOCAL_SD_INTEGER_TYPES_GEN ${SD_INTEGER_TYPES_GEN})
             set(LOCAL_SD_COMMON_TYPES_GEN ${SD_COMMON_TYPES_GEN})
@@ -83,23 +94,27 @@ function(genCompilation FILE_ITEM)
                 set (LOCAL_SD_PAIRWISE_TYPES_GEN 0)
             endif()
 
+            # Set CMake variables for configure_file based on local loop state
             set(SD_FLOAT_TYPES_GEN ${LOCAL_SD_FLOAT_TYPES_GEN})
             set(SD_INTEGER_TYPES_GEN ${LOCAL_SD_INTEGER_TYPES_GEN})
             set(SD_COMMON_TYPES_GEN ${LOCAL_SD_COMMON_TYPES_GEN})
             set(SD_PAIRWISE_TYPES_GEN ${LOCAL_SD_PAIRWISE_TYPES_GEN})
 
             set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+            # Ensure the output directory exists before trying to configure the file
             get_filename_component(GENERATED_SOURCE_DIR ${GENERATED_SOURCE} DIRECTORY)
             file(MAKE_DIRECTORY ${GENERATED_SOURCE_DIR})
 
             configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
 
+            # Append to the correct internal list based on extension
             if(EXTENSION STREQUAL "cu")
                 list(APPEND CUDA_GENERATED_SOURCES_INTERNAL ${GENERATED_SOURCE})
             else()
                 list(APPEND CPU_GENERATED_SOURCES_INTERNAL ${GENERATED_SOURCE})
             endif()
 
+            # *** It's crucial to unset the temporary defines after configure_file ***
             unset(SD_FLOAT_TYPES_GEN)
             unset(SD_INTEGER_TYPES_GEN)
             unset(SD_COMMON_TYPES_GEN)
@@ -110,12 +125,14 @@ function(genCompilation FILE_ITEM)
         message(STATUS "Skipping generation for ${FILE_ITEM_WE} as no relevant TYPE_GEN directives found.")
     endif()
 
+    # Propagate lists back to parent scope
     set(CPU_GENERATED_SOURCES ${CPU_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
 endfunction()
 
 # Define a function to generate individual CUDA files for each type combination
 function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
+    # Split the COMBINATION string into a list
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
     list(GET COMB_LIST 0 COMB1)
     list(GET COMB_LIST 1 COMB2)
@@ -124,6 +141,7 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
     file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
 
+    # Extract class and method names using regex
     string(REGEX MATCH "template[ \n\t]+void[ \n\t]+([a-zA-Z0-9_:]+)::([a-zA-Z0-9_]+)<" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
     set(CLASS_NAME ${CMAKE_MATCH_1})
     set(METHOD_NAME ${CMAKE_MATCH_2})
@@ -135,6 +153,7 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     endif()
     string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
 
+    # Extract function signature arguments for unique identifier
     string(REGEX MATCH "::${METHOD_NAME}<.*>\\(([^)]*)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
     set(FUNCTION_ARGS_RAW "${CMAKE_MATCH_1}")
     string(REGEX REPLACE "[ \t\n]+" " " FUNCTION_ARGS_CLEANED "${FUNCTION_ARGS_RAW}")
@@ -150,17 +169,21 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
         set(SIGNATURE_ID "_h${SIGNATURE_ID_SHORT}")
     endif()
 
+    # Output filename
     set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
     set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
 
+    # Replace placeholders
     string(REPLACE "@COMB1@" "${COMB1}" MODIFIED_CONTENT "${TEMPLATE_CONTENT}")
     string(REPLACE "@COMB2@" "${COMB2}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
     string(REPLACE "@COMB3@" "${COMB3}" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
+    # Remove iteration macro line
     string(REGEX REPLACE "[^\n]*ITERATE_COMBINATIONS_3[^\n]*\n?" "" MODIFIED_CONTENT "${MODIFIED_CONTENT}")
 
     file(MAKE_DIRECTORY "${OUTPUT_DIR}")
     file(WRITE "${GENERATED_FILE}" "${MODIFIED_CONTENT}")
 
+    # Set properties and add to sources (using an internal list for loop safety)
     set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
     list(APPEND CUDA_GENERATED_SOURCES_INTERNAL ${GENERATED_FILE})
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES_INTERNAL} PARENT_SCOPE)
@@ -306,7 +329,7 @@ endif()
 message(STATUS "Build flags determined: SD_ANDROID_BUILD=${SD_ANDROID_BUILD}, SD_IOS_BUILD=${SD_IOS_BUILD}, SD_X86_BUILD=${SD_X86_BUILD}, SD_ARM_BUILD=${SD_ARM_BUILD}, SD_ARCH=${SD_ARCH}")
 
 
-# Platform specific flags
+# Platform specific flags - REFORMATTED
 if (SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
@@ -363,6 +386,15 @@ elseif(DEFINED SD_CPU AND SD_CPU)
     set(SD_CUDA FALSE)
 endif()
 message(STATUS "Build Mode: SD_CPU=${SD_CPU}, SD_CUDA=${SD_CUDA}")
+
+# Enable CUDA Language if SD_CUDA is TRUE
+if(SD_CUDA)
+    message(STATUS "Enabling CUDA language for the project.")
+    enable_language(CUDA OPTIONAL) # Make it optional initially
+    if(NOT CMAKE_CUDA_COMPILER)
+        message(FATAL_ERROR "CUDA language was requested, but the CUDA compiler (nvcc) could not be found. Check CUDA installation and environment variables (e.g., PATH, CUDA_HOME, CUDA_TOOLKIT_ROOT_DIR).")
+    endif()
+endif()
 
 # Find BLAS implementation if not using CUDA
 if(NOT SD_CUDA)
@@ -764,13 +796,15 @@ set(CUSTOMOPS_GENERIC_SOURCES "")
 # CUDA Configuration Block
 if(SD_CUDA)
     message(STATUS "--- Configuring CUDA Build ---")
-    # Language enabled globally based on SD_CUDA check near top
 
     # Ensure CUDA was found and enabled
     find_package(CUDA REQUIRED)
     if(NOT CMAKE_CUDA_COMPILER)
-        message(FATAL_ERROR "CUDA language was enabled, but CMake failed to find the CUDA compiler (nvcc). Check CUDA installation and environment variables.")
+        # This check might be redundant due to REQUIRED, but kept for clarity
+        message(FATAL_ERROR "CUDA find_package REQUIRED succeeded, but CMAKE_CUDA_COMPILER is not set. CMake internal error or configuration issue.")
     endif()
+    # Language enabled globally if SD_CUDA was true
+
     message(STATUS "CUDA Config: Version=${CUDA_VERSION}, Toolkit Root=${CUDA_TOOLKIT_ROOT_DIR}")
     include_directories(${CUDA_INCLUDE_DIRS})
 
@@ -788,8 +822,8 @@ if(SD_CUDA)
     endif()
     string(TOLOWER "${COMPUTE}" COMPUTE_LOWER)
     set(CUDA_ARCH_FLAGS_LIST "")
+    # REFORMATTED this block
     if(COMPUTE_LOWER STREQUAL "all")
-        # REFORMATTED this block
         if(CUDA_VERSION VERSION_LESS 11.0)
             set(CUDA_ARCH_LIST 60 61 70 75)
         elseif(CUDA_VERSION VERSION_LESS 12.0)
@@ -836,6 +870,7 @@ if(SD_CUDA)
         endif()
         set(CUDAToolkit_LIBRARIES ${CUDA_cublas_LIBRARY} ${CUDA_cusolver_LIBRARY})
     endif()
+
 
     # --- Generate CUDA Source Files (Templates, etc.) ---
     message(STATUS "Configuring CUDA source file generation...")
@@ -914,7 +949,8 @@ if(SD_CUDA)
 
     # Create Object Library
     add_library(samediff_obj OBJECT ${ALL_SOURCES})
-    add_dependencies(samediff_obj generate_config flatbuffers_external)
+    add_dependencies(samediff_obj generate_config)
+    add_dependencies(samediff_obj flatbuffers_external)
     target_compile_features(samediff_obj PUBLIC cxx_std_17 cuda_std_17)
 
     # Set include directories for the object library
@@ -997,8 +1033,6 @@ if(SD_CUDA)
 
     message(STATUS "CUDA Build Configuration Complete.")
 
-    # Removed else branch for the now-unreachable condition (CUDA was required but not found)
-
     # CPU Configuration Block
 elseif(SD_CPU)
     message(STATUS "--- Configuring CPU Build ---")
@@ -1026,6 +1060,7 @@ elseif(SD_CPU)
 
     message(STATUS "CPU source generation configured.")
     message(STATUS "DEBUG: Generated CPU Sources List: ${CPU_GENERATED_SOURCES}")
+
 
     # --- Gather ALL CPU Source Files ---
     file(GLOB_RECURSE COMMON_SOURCES
@@ -1112,8 +1147,8 @@ elseif(SD_CPU)
             $<$<BOOL:${HAVE_OPENBLAS}>:HAVE_OPENBLAS=1>
             $<$<BOOL:${HAVE_ONEDNN}>:HAVE_ONEDNN=1>
             $<$<BOOL:${HAVE_ARMCOMPUTE}>:HAVE_ARMCOMPUTE=1>
-            __CPUBLAS__=true # Correctly defined here
-            SD_CPU=true      # Correctly defined here
+            __CPUBLAS__=true
+            SD_CPU=true
     )
 
     # Handle MSVC Runtime Library for object library
@@ -1403,6 +1438,7 @@ if(UNIX)
 
     set(CPACK_GENERATOR "TGZ") # Default fallback
 
+    # DEB Generator Settings - REFORMATTED
     if(DISTRIBUTION MATCHES "Ubuntu|Debian")
         set(CPACK_GENERATOR "DEB")
         if(NOT DEFINED RELEASE)
@@ -1434,6 +1470,7 @@ if(UNIX)
             endif()
         endif()
 
+        # RPM Generator Settings - REFORMATTED
     elseif(DISTRIBUTION MATCHES "CentOS|Fedora|RHEL|Rocky|AlmaLinux")
         set(CPACK_GENERATOR "RPM")
         if(NOT DEFINED RELEASE)
@@ -1467,12 +1504,14 @@ if(UNIX)
         endif()
     endif()
 
+    # Windows Generator Settings - REFORMATTED
 elseif(WIN32)
     set(CPACK_GENERATOR "NSIS")
     set(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION}")
     set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}")
     set(CPACK_NSIS_PUBLISHER "${CPACK_PACKAGE_VENDOR}")
     set(CPACK_NSIS_PACKAGE_NAME "${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION}")
+    # macOS Generator Settings - REFORMATTED
 elseif(APPLE)
     set(CPACK_GENERATOR "DragNDrop")
     set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-macOS")
