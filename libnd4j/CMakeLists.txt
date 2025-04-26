@@ -1,11 +1,9 @@
 # Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
+# MERGED VERSION incorporating previous CUDA source generation/gathering
 cmake_minimum_required(VERSION 3.15)
-
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(libnd4j)
-
-
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
@@ -577,8 +575,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # ===========================================================================
-# Start of Content Pasted Verbatim from blas/CMakeLists.txt
-# (Ensure paths inside this section are relative to libnd4j/ or use CMAKE_CURRENT_SOURCE_DIR properly)
+# Start of Content Pasted Verbatim from blas/CMakeLists.txt (and modified)
 # ===========================================================================
 
 include(CheckCXXCompilerFlag)
@@ -848,7 +845,7 @@ set(ALL_SOURCES "")
 set(CUSTOMOPS_ONEDNN_SOURCES "")
 set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
 set(CUSTOMOPS_CUDNN_SOURCES "")
-set(CUDA_GENERATED_SOURCES "")
+set(CUDA_GENERATED_SOURCES "") # <-- Initialize CUDA generated sources list
 set(CPU_GENERATED_SOURCES "")
 set(CUSTOMOPS_GENERIC_SOURCES "") # CPU generated combinations
 
@@ -866,6 +863,13 @@ set(CUSTOMOPS_GENERIC_SOURCES "") # CPU generated combinations
 # CUDA Configuration Block
 if(SD_CUDA)
     message(STATUS "--- Configuring CUDA Build ---")
+
+    # <<< MERGE START: Include TypeMST.cmake from previous version >>>
+    # Assuming TypeMST.cmake defines genCompilation, genSingleFunctionCuda, etc.
+    # Adjust path if necessary based on where you place TypeMST.cmake
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/TypeMST.cmake)
+    message(STATUS "Included TypeMST.cmake for CUDA source generation.")
+    # <<< MERGE END: Include TypeMST.cmake >>>
 
     add_definitions(-D__CUDABLAS__=true)
 
@@ -980,19 +984,57 @@ if(SD_CUDA)
         message(STATUS "Configuring CUDA source file generation...")
         set(CUDA_GENERATED_DIR "${CMAKE_BINARY_DIR}/cuda_generated")
         file(MAKE_DIRECTORY ${CUDA_GENERATED_DIR})
-        # (Include TypeMST.cmake or define genCompilation/genSingleFunctionCuda here)
-        # include(TypeMST.cmake) # Example include
 
-        # Placeholder for actual generation logic using helper functions
-        # file(GLOB CUDA_COMPILATION_UNITS include/loops/cuda/compilation_units/*.cu.in)
-        # foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
-        #     genCompilation(${FL_ITEM} CUDA_GENERATED_SOURCES) # Appends to CUDA_GENERATED_SOURCES
-        # endforeach()
-        # ... similar logic for comb_compilation_units using genSingleFunctionCuda ...
-        message(STATUS "CUDA source generation configured (Actual generation happens at build time).")
+        # <<< MERGE START: CUDA Source Generation Logic from previous version >>>
+        set(CUDA_GENERATED_SOURCES "") # Ensure list is initialized
+
+        # Determine NUM_TYPES based on SD_TYPES_LIST (logic from old file)
+        if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
+            set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
+            message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST for CUDA generation")
+        else()
+            set(NUM_TYPES 10) # Default number of types from old file
+            message(STATUS "Using default number of types for CUDA generation: ${NUM_TYPES}")
+        endif()
+
+        # Process compilation_units templates (using genCompilation from TypeMST.cmake)
+        # Adjust path relative to CMAKE_CURRENT_SOURCE_DIR
+        file(GLOB CUDA_COMPILATION_UNITS "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/compilation_units/*.cu.in")
+        foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
+            genCompilation(${FL_ITEM}) # Appends to CUDA_GENERATED_SOURCES via PARENT_SCOPE in function
+        endforeach()
+
+        # Decide whether to use MST or all combinations (logic from old file)
+        set(SD_USE_MST_TYPES ON) # Assuming this was the intended default
+        if(SD_USE_MST_TYPES)
+            generate_mst_combinations() # Assumes this populates COMBINATIONS_3
+            message(STATUS "Using optimized type combinations for CUDA comb_compilation_units")
+        else()
+            # Define ALL_TYPE_COMBINATIONS if needed or use a predefined list from TypeMST.cmake
+            # set(COMBINATIONS_3 ${ALL_TYPE_COMBINATIONS}) # Assuming ALL_TYPE_COMBINATIONS is defined somewhere
+            message(STATUS "Using all possible type combinations for CUDA comb_compilation_units")
+        endif()
+
+        # Process comb_compilation_units templates (using genSingleFunctionCuda from TypeMST.cmake)
+        # Adjust path relative to CMAKE_CURRENT_SOURCE_DIR
+        file(GLOB CUDA_TEMPLATE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/comb_compilation_units/*.cu.in")
+        foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
+            # Check if COMBINATIONS_3 is defined before iterating
+            if(DEFINED COMBINATIONS_3)
+                foreach(COMBINATION ${COMBINATIONS_3})
+                    genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CUDA_GENERATED_DIR}") # Appends to CUDA_GENERATED_SOURCES
+                endforeach()
+            else()
+                message(WARNING "COMBINATIONS_3 list is not defined. Skipping generation for ${TEMPLATE_FILE}.")
+            endif()
+        endforeach()
+        message(STATUS "Finished CUDA source generation.")
+        message(STATUS "DEBUG: Generated CUDA Sources List: ${CUDA_GENERATED_SOURCES}") # Debug message
+        # <<< MERGE END: CUDA Source Generation Logic >>>
 
 
         # --- Gather ALL CUDA Source Files ---
+        # Gather Common Sources (same as before, excluding CPU specifics)
         file(GLOB_RECURSE COMMON_SOURCES
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/*.h"
@@ -1024,6 +1066,7 @@ if(SD_CUDA)
                 EXCLUDE REGEX ".*/cpu/.*\\.cpp$"
         )
 
+        # Gather CUDA Specific sources (same pattern as before)
         file(GLOB_RECURSE CUDA_SPECIFIC_SOURCES
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.cu"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.h" # Include CUDA specific headers too
@@ -1041,9 +1084,22 @@ if(SD_CUDA)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.h"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.cu"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/cuda/*.h"
-                # Include generated CUDA sources placeholder
-                # "${CUDA_GENERATED_DIR}/*.cu" # Add generated sources here if applicable
         )
+        message(STATUS "DEBUG: CUDA Specific Sources (GLOB): ${CUDA_SPECIFIC_SOURCES}") # Debug message
+
+        # <<< MERGE START: Add more specific CUDA source GLOBs from previous version (Adjust paths) >>>
+        file(GLOB_RECURSE OLD_CUDA_EXEC_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/execution/cuda/*.cu")
+        file(GLOB_RECURSE OLD_CUDA_ARRAY_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cuda/*.cu")
+        file(GLOB_RECURSE OLD_CUDA_MEMORY_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cuda/*.cu")
+        file(GLOB_RECURSE OLD_CUDA_GRAPH_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/*.cu") # Note: Old file checked graph root
+        file(GLOB_RECURSE OLD_CUDA_CUSTOMOPS_HELPERS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cuda/*.cu")
+        file(GLOB_RECURSE OLD_CUDA_HELPERS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cuda/*.cu")
+        file(GLOB_RECURSE OLD_CUDA_LEGACY_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.cu") # Note: Old file checked legacy root
+        file(GLOB_RECURSE OLD_CUDA_LOOPS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cuda/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/*.cu") # Checked both
+
+        message(STATUS "DEBUG: Old CUDA Loops Sources (GLOB): ${OLD_CUDA_LOOPS_SOURCES}") # Debug
+        # <<< MERGE END: Add more specific CUDA source GLOBs >>>
+
 
         # Platform specific sources (cuDNN, potentially oneDNN if used with CUDA ops)
         if(HAVE_CUDNN)
@@ -1055,23 +1111,39 @@ if(SD_CUDA)
         #     file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES ...)
         # endif()
 
-        # Combine all sources
+        # Combine all sources (including generated and old patterns)
         set(ALL_SOURCES
                 ${COMMON_SOURCES}
                 ${CUDA_SPECIFIC_SOURCES}
-                ${CUDA_GENERATED_SOURCES} # Add generated list
+                ${CUDA_GENERATED_SOURCES} # <-- Now should be populated
+                # <<< MERGE START: Add sources from older GLOB patterns >>>
+                ${OLD_CUDA_EXEC_SOURCES}
+                ${OLD_CUDA_ARRAY_SOURCES}
+                ${OLD_CUDA_MEMORY_SOURCES}
+                ${OLD_CUDA_GRAPH_SOURCES}
+                ${OLD_CUDA_CUSTOMOPS_HELPERS_SOURCES}
+                ${OLD_CUDA_HELPERS_SOURCES}
+                ${OLD_CUDA_LEGACY_SOURCES}
+                ${OLD_CUDA_LOOPS_SOURCES}
+                # <<< MERGE END: Add sources from older GLOB patterns >>>
                 ${CUSTOMOPS_CUDNN_SOURCES}
                 # ${CUSTOMOPS_ONEDNN_SOURCES} # Add if applicable
         )
+        list(REMOVE_DUPLICATES ALL_SOURCES) # Clean up potential overlaps
+        message(STATUS "DEBUG: Final ALL_SOURCES for CUDA build: ${ALL_SOURCES}") # Debug
 
         # Create Object Library
         add_library(samediff_obj OBJECT ${ALL_SOURCES})
         add_dependencies(samediff_obj generate_config)
 
-        # --- ADDED DEPENDENCY ---
         # Ensure flatbuffers external project is built before compiling objects
         add_dependencies(samediff_obj flatbuffers_external)
-        # --- END ADDED DEPENDENCY ---
+        # <<< MERGE START: Add dependency on generated CUDA sources if generation happens via custom target >>>
+        # If genCompilation/genSingleFunctionCuda add custom commands, create a target depending on them
+        # add_custom_target(generate_cuda_sources DEPENDS ${CUDA_GENERATED_SOURCES}) # Example if needed
+        # add_dependencies(samediff_obj generate_cuda_sources) # Make obj lib depend on generation
+        # <<< MERGE END: Add dependency >>>
+
         target_compile_features(samediff_obj PUBLIC cxx_std_17 cuda_std_17) # Ensure C++/CUDA standards
 
         # Set include directories for the object library
@@ -1092,6 +1164,7 @@ if(SD_CUDA)
                 $<$<BOOL:${HAVE_ONEDNN}>:HAVE_ONEDNN=1>
                 # Add other common definitions
                 __CUDABLAS__=true
+                SD_CUDA=true # Ensure this is defined for the target
         )
 
         # Handle MSVC Runtime Library for object library if needed
@@ -1166,6 +1239,8 @@ if(SD_CUDA)
 
     # CPU Configuration Block
 elseif(SD_CPU) # Correct syntax: elseif
+    # --- CPU Configuration Block remains largely the same as in the combined file ---
+    # ... (Includes CPU source gathering, object library, final library, linking for CPU) ...
     message(STATUS "--- Configuring CPU Build ---")
     add_definitions(-D__CPUBLAS__=true)
 
@@ -1177,12 +1252,17 @@ elseif(SD_CPU) # Correct syntax: elseif
     file(MAKE_DIRECTORY ${CPU_COMB_GENERATED_DIR})
 
     # (Include/Define genCompilation and genPartitionCombination here if needed)
-    # Placeholder for actual generation logic
-    # file(GLOB CPU_COMPILATION_UNITS_IN include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ...)
+    # <<< Re-include TypeMST.cmake if CPU also uses generated sources >>>
+    # include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/TypeMST.cmake)
+
+    # <<< Add calls to genCompilation/genPartitionCombination for CPU templates if needed >>>
+    # Example:
+    # file(GLOB CPU_COMPILATION_UNITS_IN ${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ...)
     # foreach(FL_ITEM ${CPU_COMPILATION_UNITS_IN})
-    #     genCompilation(${FL_ITEM} CPU_GENERATED_SOURCES) # Appends to CPU_GENERATED_SOURCES
+    #     genCompilation(${FL_ITEM}) # Appends to CPU_GENERATED_SOURCES (ensure list exists)
     # endforeach()
     # ... similar logic for combination templates using genPartitionCombination ...
+
     message(STATUS "CPU source generation configured (Actual generation happens at build time).")
 
 
@@ -1256,11 +1336,12 @@ elseif(SD_CPU) # Correct syntax: elseif
     set(ALL_SOURCES
             ${COMMON_SOURCES}
             ${CPU_SPECIFIC_SOURCES}
-            ${CPU_GENERATED_SOURCES}     # Add generated list
-            ${CUSTOMOPS_GENERIC_SOURCES} # Add generated combinations list
+            ${CPU_GENERATED_SOURCES}     # Add generated list if CPU uses them
+            ${CUSTOMOPS_GENERIC_SOURCES} # Add generated combinations list if CPU uses them
             ${CUSTOMOPS_ONEDNN_SOURCES}  # Add platform specifics
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
     )
+    list(REMOVE_DUPLICATES ALL_SOURCES) # Clean up overlaps
 
     # Source file specific flags (Example: Disable optimizations for specific files)
     if (SD_X86_BUILD AND NOT WIN32)
@@ -1284,10 +1365,12 @@ elseif(SD_CPU) # Correct syntax: elseif
     add_library(samediff_obj OBJECT ${ALL_SOURCES})
     add_dependencies(samediff_obj generate_config)
 
-    # --- ADDED DEPENDENCY ---
     # Ensure flatbuffers external project is built before compiling objects
     add_dependencies(samediff_obj flatbuffers_external)
-    # --- END ADDED DEPENDENCY ---
+    # Add dependency on generated CPU sources if applicable
+    # add_custom_target(generate_cpu_sources DEPENDS ${CPU_GENERATED_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}) # Example
+    # add_dependencies(samediff_obj generate_cpu_sources) # Example
+
     target_compile_features(samediff_obj PUBLIC cxx_std_17) # Ensure C++ standard
 
     # Set include directories for the object library
@@ -1309,6 +1392,7 @@ elseif(SD_CPU) # Correct syntax: elseif
             $<$<BOOL:${HAVE_ARMCOMPUTE}>:HAVE_ARMCOMPUTE=1>
             # Add other common definitions
             __CPUBLAS__=true
+            SD_CPU=true # Ensure this is defined for the target
     )
 
     # Handle MSVC Runtime Library for object library
@@ -1396,7 +1480,7 @@ endif() # End SD_CUDA / SD_CPU block
 
 
 # ===========================================================================
-# End of Content Pasted Verbatim from blas/CMakeLists.txt
+# End of Content Merged/Modified from blas/CMakeLists.txt
 # ===========================================================================
 
 
