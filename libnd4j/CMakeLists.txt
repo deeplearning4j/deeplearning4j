@@ -1,3 +1,7 @@
+# Main CMakeLists.txt (incorporating fixes for flatbuffers dependencies and paths)
+# MERGED VERSION incorporating previous CUDA source generation/gathering
+# AND including necessary function definitions directly.
+# FIXED incorrect add_definitions calls.
 cmake_minimum_required(VERSION 3.15)
 
 # Explicitly enable CXX globally. CUDA is enabled conditionally later if needed.
@@ -10,14 +14,7 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 
 # <<< MERGE START: Add function definitions >>>
 
-# ///////////////////////////////////////////////////////////////////////////////
-# genCompilation: Generates cpp, cu files
-# INPUT:
-# $FILE_ITEM template-configuration that utilizes libnd4j type, macros helpers
-# defined inside { include/types/types.h, include/system/type_boilerplate.h}
-# OUTPUT:
-# $CUSTOMOPS_GENERIC_SOURCES/$CUDA_GENERATED_SOURCES generated files will be added into the appropriate list
-# ///////////////////////////////////////////////////////////////////////////////
+# Function to generate source files from templates based on type indices
 function(genCompilation FILE_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
 
@@ -212,7 +209,6 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
 endfunction()
 
 # <<< MERGE END: Add function definitions >>>
-
 
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
@@ -457,9 +453,6 @@ if(NOT SD_CUDA)
 
         if (BLAS_FOUND)
             message(STATUS "Found external BLAS implementation: ${BLAS_LIBRARIES}")
-            # This definition might be too generic if BLAS_LIBRARIES is not OpenBLAS
-            # Consider more specific checks if needed: if(${BLAS_INFO} MATCHES "openblas")
-            # add_definitions(-D__EXTERNAL_BLAS__=true) # Maybe redundant if BLAS_FOUND implies external
             set(HAVE_OPENBLAS TRUE) # Assume BLAS found is usable like OpenBLAS interface
             set(OPENBLAS_LIBRARIES ${BLAS_LIBRARIES}) # Use the found libraries
         else()
@@ -471,7 +464,6 @@ if(NOT SD_CUDA)
         message(STATUS "Using user-provided OpenBLAS path: ${OPENBLAS_PATH}")
         include_directories(${OPENBLAS_PATH}/include)
         link_directories(${OPENBLAS_PATH}/lib) # Add lib directory if not standard
-        # Determine library name (e.g., openblas, libopenblas) - might need adjustment
         find_library(OPENBLAS_LIBRARY NAMES openblas libopenblas HINTS ${OPENBLAS_PATH}/lib REQUIRED)
         if(OPENBLAS_LIBRARY)
             set(OPENBLAS_LIBRARIES ${OPENBLAS_LIBRARY})
@@ -479,7 +471,6 @@ if(NOT SD_CUDA)
         else()
             message(FATAL_ERROR "OPENBLAS_PATH was provided, but library not found in ${OPENBLAS_PATH}/lib")
         endif()
-        # Add definition to indicate OpenBLAS is used
         add_definitions(-DHAVE_OPENBLAS=1)
     endif()
 endif()
@@ -510,44 +501,29 @@ if(${HELPERS_armcompute})
         message(STATUS "ARM Compute not found via find_package. Checking download conditions.")
         if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
             message(STATUS "Attempting to download ARM Compute Library from: ${ARM_COMPUTE_URL}")
-
-            # Include ExternalProject module if not already done
             include(ExternalProject)
-
-            # Configure the download project using ExternalProject_Add
             ExternalProject_Add(armcompute_external
                     URL ${ARM_COMPUTE_URL}
-                    # URL_HASH SHA256=... # Add SHA256 hash for the specific version/file for security
                     SOURCE_DIR "${CMAKE_BINARY_DIR}/armcompute-src"
-                    CONFIGURE_COMMAND "" # Pre-built binaries, no configure step needed
-                    BUILD_COMMAND ""     # Pre-built binaries, no build step needed
-                    INSTALL_COMMAND ""   # We'll use the files directly from SOURCE_DIR
+                    CONFIGURE_COMMAND "" BUILD_COMMAND "" INSTALL_COMMAND ""
                     LOG_DOWNLOAD TRUE
             )
-
-            # Define the location AFTER the download step (ExternalProject doesn't set these automatically)
-            set(ARMCOMPUTE_ROOT "${CMAKE_BINARY_DIR}/armcompute-src") # Root dir after extraction
-            set(ARMCOMPUTE_INCLUDE_DIR_LIB "${ARMCOMPUTE_ROOT}/include") # Include for arm_compute library
-            set(ARMCOMPUTE_INCLUDE_DIR_CORE "${ARMCOMPUTE_ROOT}/include") # Include for arm_compute_core library
-            set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so") # Path to library
-            set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so") # Path to core library
-
-            # Create IMPORTED targets for the libraries AFTER ExternalProject_Add
+            set(ARMCOMPUTE_ROOT "${CMAKE_BINARY_DIR}/armcompute-src")
+            set(ARMCOMPUTE_INCLUDE_DIR_LIB "${ARMCOMPUTE_ROOT}/include")
+            set(ARMCOMPUTE_INCLUDE_DIR_CORE "${ARMCOMPUTE_ROOT}/include")
+            set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so")
+            set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
             add_library(arm_compute SHARED IMPORTED GLOBAL)
             set_property(TARGET arm_compute PROPERTY IMPORTED_LOCATION ${ARMCOMPUTE_LIB_PATH})
-            add_dependencies(arm_compute armcompute_external) # Depends on download
-
+            add_dependencies(arm_compute armcompute_external)
             add_library(arm_compute_core SHARED IMPORTED GLOBAL)
             set_property(TARGET arm_compute_core PROPERTY IMPORTED_LOCATION ${ARMCOMPUTE_CORE_LIB_PATH})
-            add_dependencies(arm_compute_core armcompute_external) # Depends on download
-
-            # Set variables for use in the build
+            add_dependencies(arm_compute_core armcompute_external)
             include_directories(${ARMCOMPUTE_INCLUDE_DIR_LIB} ${ARMCOMPUTE_INCLUDE_DIR_CORE})
-            set(ARMCOMPUTE_LIBRARIES arm_compute arm_compute_core) # Use the target names
+            set(ARMCOMPUTE_LIBRARIES arm_compute arm_compute_core)
             set(HAVE_ARMCOMPUTE 1)
-            add_definitions(-DHAVE_ARMCOMPUTE=1 -DARMCOMPUTENEON_ENABLED) # Add definitions
+            add_definitions(-DHAVE_ARMCOMPUTE=1 -DARMCOMPUTENEON_ENABLED)
             message(STATUS "ARM Compute Library configured via download at: ${ARMCOMPUTE_ROOT}")
-
         else()
             message(STATUS "ARM Compute helper active, but library not found and download conditions not met (URL: ${ARM_COMPUTE_URL}, Arch: ${SD_ARCH}). Build will continue without ARM Compute.")
         endif()
@@ -570,34 +546,25 @@ if (${HELPERS_onednn})
             SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn-src"
             BINARY_DIR "${CMAKE_BINARY_DIR}/onednn-build"
             CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} # Example install prefix
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
             -DDNNL_LIBRARY_TYPE=${DNNL_LIBRARY_TYPE}
             -DDNNL_BUILD_EXAMPLES=${DNNL_BUILD_EXAMPLES}
             -DDNNL_BUILD_TESTS=${DNNL_BUILD_TESTS}
-            # Pass necessary compiler/flags if cross-compiling
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
             -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-            INSTALL_COMMAND "" # We will link against the build directory library
-            LOG_CONFIGURE TRUE
-            LOG_BUILD TRUE
-            LOG_DOWNLOAD TRUE
+            INSTALL_COMMAND ""
+            LOG_CONFIGURE TRUE LOG_BUILD TRUE LOG_DOWNLOAD TRUE
     )
-
-    # Define imported target for oneDNN static library
     add_library(onednn STATIC IMPORTED GLOBAL)
-    set_property(TARGET onednn PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/onednn-build/src/libdnnl.a) # Adjust path/name if necessary
-    add_dependencies(onednn onednn_external) # Ensure it's built first
-
-    # Set include directories and libraries variable
-    set(ONEDNN_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/onednn-src/include) # Include dir from source
+    set_property(TARGET onednn PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/onednn-build/src/libdnnl.a)
+    add_dependencies(onednn onednn_external)
+    set(ONEDNN_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/onednn-src/include)
     include_directories(${ONEDNN_INCLUDE_DIRS})
-    set(ONEDNN_LIBRARIES onednn) # Use the target name
-
+    set(ONEDNN_LIBRARIES onednn)
     message(STATUS "oneDNN configured via ExternalProject. Include: ${ONEDNN_INCLUDE_DIRS}")
-
 endif()
 
 
@@ -605,49 +572,27 @@ if(${HELPERS_cudnn})
     if(NOT SD_CUDA)
         message(FATAL_ERROR "Can't build with cuDNN helper on a non-CUDA platform (SD_CUDA is OFF)")
     endif()
-
-    SET(CUDNN_LIBNAME "cudnn") # Base name
-
-    # Prefer environment variables if set
+    SET(CUDNN_LIBNAME "cudnn")
     if(DEFINED ENV{CUDNN_ROOT_DIR})
         set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
         message(STATUS "Using CUDNN_ROOT_DIR from environment: ${CUDNN_ROOT_DIR}")
     endif()
-    # CUDA_TOOLKIT_ROOT_DIR often set by find_package(CUDA) or environment
     if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
         set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
         message(STATUS "Using CUDA_TOOLKIT_ROOT_DIR from environment: ${CUDA_TOOLKIT_ROOT_DIR}")
-    elseif(DEFINED CUDA_TOOLKIT_ROOT_DIR) # Correct syntax: elseif
+    elseif(DEFINED CUDA_TOOLKIT_ROOT_DIR)
         message(STATUS "Using CUDA_TOOLKIT_ROOT_DIR from CUDA find_package: ${CUDA_TOOLKIT_ROOT_DIR}")
     endif()
-
-    # Search for include file
-    find_path(CUDNN_INCLUDE_DIR cudnn.h
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDA_TOOLKIT_ROOT_DIR}
-            ENV CUDNN_ROOT_DIR
-            ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES include include/cuda cuda/include) # Common suffixes
-
-    # Search for library file
-    find_library(CUDNN_LIBRARY NAMES ${CUDNN_LIBNAME} cudnn_static # Look for dynamic and static
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDA_TOOLKIT_ROOT_DIR}
-            ENV CUDNN_ROOT_DIR
-            ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES lib lib64 lib/x64 cuda/lib cuda/lib64 targets/${CMAKE_SYSTEM_PROCESSOR}-linux/lib) # Common suffixes
-
+    find_path(CUDNN_INCLUDE_DIR cudnn.h HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR PATH_SUFFIXES include include/cuda cuda/include)
+    find_library(CUDNN_LIBRARY NAMES ${CUDNN_LIBNAME} cudnn_static HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR PATH_SUFFIXES lib lib64 lib/x64 cuda/lib cuda/lib64 targets/${CMAKE_SYSTEM_PROCESSOR}-linux/lib)
     message(STATUS "cuDNN search: Include Dir = ${CUDNN_INCLUDE_DIR}")
     message(STATUS "cuDNN search: Library = ${CUDNN_LIBRARY}")
-
     if(CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
         message(STATUS "Found cuDNN: include at ${CUDNN_INCLUDE_DIR}, library at ${CUDNN_LIBRARY}")
         include_directories(${CUDNN_INCLUDE_DIR})
         set(HAVE_CUDNN true CACHE BOOL "cuDNN Found" FORCE)
-        add_definitions(-DHAVE_CUDNN=1) # Add definition
-        set(CUDNN ${CUDNN_LIBRARY}) # Set variable for linking
+        add_definitions(-DHAVE_CUDNN=1)
+        set(CUDNN ${CUDNN_LIBRARY})
     else()
         message(WARNING "cuDNN helper was specified, but cuDNN library or include directory not found. Build will continue without cuDNN support.")
         set(HAVE_CUDNN false CACHE BOOL "cuDNN Found" FORCE)
@@ -655,64 +600,46 @@ if(${HELPERS_cudnn})
 endif()
 
 # ================== Refactored Flatbuffers Section ==================
-# Include ExternalProject module if not already done
 include(ExternalProject)
-
 set(FLATBUFFERS_TAG "v25.2.10" CACHE STRING "Flatbuffers Git Tag")
 set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Build Flatbuffers Tests")
-
-# Determine if flatc needs to be built based on environment variable set by build script
-set(GENERATE_FLATC OFF) # Default OFF
+set(GENERATE_FLATC OFF)
 if(DEFINED ENV{GENERATE_FLATC})
     if("$ENV{GENERATE_FLATC}" STREQUAL "ON")
         set(GENERATE_FLATC ON)
         message(STATUS "Building flatc based on ENV{GENERATE_FLATC}=ON")
     endif()
 endif()
-# Cache the decision for the ExternalProject argument
 set(FLATBUFFERS_BUILD_FLATC ${GENERATE_FLATC} CACHE BOOL "Build flatc executable" FORCE)
-
-# Define ExternalProject for flatbuffers
 ExternalProject_Add(flatbuffers_external
         GIT_REPOSITORY https://github.com/google/flatbuffers.git
         GIT_TAG ${FLATBUFFERS_TAG}
-        SOURCE_DIR "${CMAKE_BINARY_DIR}/flatbuffers-src"  # Source code location after download
-        BINARY_DIR "${CMAKE_BINARY_DIR}/flatbuffers-build" # Where flatbuffers itself will be built
-        CMAKE_ARGS # Arguments passed to flatbuffers' CMake configure step
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} # Use main project's install prefix if needed
+        SOURCE_DIR "${CMAKE_BINARY_DIR}/flatbuffers-src"
+        BINARY_DIR "${CMAKE_BINARY_DIR}/flatbuffers-build"
+        CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
         -DFLATBUFFERS_BUILD_TESTS=${FLATBUFFERS_BUILD_TESTS}
-        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC} # Pass the flag to build flatc
+        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
         -DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}
-        # Pass necessary flags, especially for cross-compiling or specific runtimes like MSVC
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
         -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-        # Pass MSVC specific flags if on Windows
         $<$<BOOL:${WIN32}>:-DCMAKE_MSVC_RUNTIME_LIBRARY=${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>>
-        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG> # Build command
-        INSTALL_COMMAND ""             # We don't need to install it system-wide
-        UPDATE_COMMAND ""              # Avoid automatic updates unless needed
-        LOG_CONFIGURE TRUE
-        LOG_BUILD TRUE
-        LOG_DOWNLOAD TRUE
+        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config $<CONFIG>
+        INSTALL_COMMAND "" UPDATE_COMMAND ""
+        LOG_CONFIGURE TRUE LOG_BUILD TRUE LOG_DOWNLOAD TRUE
 )
-
-# Get include directory property from the external project AFTER it's configured/built
 set(FLATBUFFERS_INCLUDE_DIR ${CMAKE_BINARY_DIR}/flatbuffers-src/include)
 include_directories(${FLATBUFFERS_INCLUDE_DIR})
 message(STATUS "Flatbuffers include directory set to: ${FLATBUFFERS_INCLUDE_DIR}")
-
-# Define imported targets AFTER ExternalProject_Add
 add_library(flatbuffers STATIC IMPORTED GLOBAL)
-set_property(TARGET flatbuffers PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/flatbuffers-build/libflatbuffers.a) # Assume Linux/macOS name for now
+set_property(TARGET flatbuffers PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/flatbuffers-build/libflatbuffers.a)
 if(WIN32)
-    set_property(TARGET flatbuffers PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/flatbuffers-build/$<IF:$<CONFIG:Debug>,Debug,Release>/flatbuffers.lib) # Example for MSVC Debug/Release dirs
+    set_property(TARGET flatbuffers PROPERTY IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/flatbuffers-build/$<IF:$<CONFIG:Debug>,Debug,Release>/flatbuffers.lib)
 endif()
-add_dependencies(flatbuffers flatbuffers_external) # Ensure library depends on the external build
-
-# Add flatc executable target if built
+add_dependencies(flatbuffers flatbuffers_external)
 if(FLATBUFFERS_BUILD_FLATC)
     add_executable(flatc IMPORTED GLOBAL)
     set(FLATC_EXE_PATH "${CMAKE_BINARY_DIR}/flatbuffers-build/flatc")
@@ -735,7 +662,6 @@ if(FLATBUFFERS_BUILD_FLATC)
     set(FLATC_OUTPUT_DIR_JAVA "${CMAKE_CURRENT_SOURCE_DIR}/../../nd4j-serde/nd4j-flatbuffers-java/src/main/java")
     file(MAKE_DIRECTORY ${FLATC_OUTPUT_DIR_CPP})
     file(MAKE_DIRECTORY ${FLATC_OUTPUT_DIR_JAVA})
-
     add_custom_command(
             OUTPUT ${FLATC_OUTPUT_DIR_CPP}/graph_generated.h
             COMMAND $<TARGET_FILE:${FLATC_TARGET}>
@@ -759,12 +685,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 # ===========================================================================
-# Start of Build Logic Section (Modified for Merged Functionality)
+# Start of Build Logic Section
 # ===========================================================================
 
 # Architecture Tuning Flags
-set(ARCH_TUNE "") # Initialize
-if(SD_ARCH) # Check if SD_ARCH is set
+# ... (remains the same as previous version) ...
+if(SD_ARCH)
     if(SD_ARCH MATCHES "armv8|aarch64")
         set(ARCH_TUNE "-march=armv8-a")
     elseif(SD_ARCH MATCHES "armv7")
@@ -815,11 +741,11 @@ if(SD_ARCH) # Check if SD_ARCH is set
     endif()
 endif()
 
-
 # Compiler-Specific Flags (Additions)
+# ... (remains the same as previous version) ...
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     if(NOT SD_CUDA)
-        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11") # Use C++17 from top
+        # C++17 set globally
     endif()
     if(UNIX AND NOT APPLE AND NOT SD_IOS_BUILD AND SD_SHARED_LIB)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,'$ORIGIN'")
@@ -842,15 +768,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /EHsc")
 endif()
 
-
 # External Include Directories
 set(EXTERNAL_INCLUDE_DIRS "")
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
-    # list(APPEND EXTERNAL_INCLUDE_DIRS "/usr/include" "/usr/local/include") # Usually not needed
+    # list(APPEND EXTERNAL_INCLUDE_DIRS "/usr/include" "/usr/local/include")
 endif()
 
-
 # Set SD_LIBRARY_NAME Based on Build Type
+# ... (remains the same) ...
 if(NOT DEFINED SD_LIBRARY_NAME)
     if(SD_CUDA)
         set(SD_LIBRARY_NAME nd4jcuda)
@@ -870,13 +795,13 @@ set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
 set(CUSTOMOPS_CUDNN_SOURCES "")
 set(CUDA_GENERATED_SOURCES "")
 set(CPU_GENERATED_SOURCES "")
-set(CUSTOMOPS_GENERIC_SOURCES "") # CPU generated combinations from templates
+set(CUSTOMOPS_GENERIC_SOURCES "")
 
 
 # CUDA Configuration Block
 if(SD_CUDA)
     message(STATUS "--- Configuring CUDA Build ---")
-    add_definitions(-D__CUDABLAS__=true SD_CUDA=true)
+    # <<< REMOVED add_definitions(-D__CUDABLAS__=true SD_CUDA=true) >>> Use target_compile_definitions instead
 
     # Find CUDA package (already enabled, but find components)
     if(NOT CUDA_FOUND)
@@ -890,7 +815,6 @@ if(SD_CUDA)
         # Common CUDA flags
         set(COMMON_CUDA_FLAGS "-allow-unsupported-compiler --expt-extended-lambda -Xfatbin -compress-all -maxrregcount=128")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${COMMON_CUDA_FLAGS}")
-
         # Platform specific flags
         if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
@@ -967,7 +891,7 @@ if(SD_CUDA)
             set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
             message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST for CUDA generation")
         else()
-            set(NUM_TYPES 10)
+            set(NUM_TYPES 10) # Default number of types from old file
             message(STATUS "Using default number of types for CUDA generation: ${NUM_TYPES}")
         endif()
 
@@ -1105,12 +1029,11 @@ if(SD_CUDA)
             if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
                 set_property(TARGET ${FINAL_TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
             endif()
-            # Add PROJECT_VERSION variable definition if not already present
             if(NOT DEFINED PROJECT_VERSION)
-                set(PROJECT_VERSION "1.0.0-SNAPSHOT") # Or get from elsewhere
+                set(PROJECT_VERSION "1.0.0-SNAPSHOT")
             endif()
             if(UNIX OR APPLE)
-                set_target_properties(${FINAL_TARGET} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1) # Adjust SOVERSION as needed
+                set_target_properties(${FINAL_TARGET} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1)
             endif()
         endif()
 
@@ -1163,16 +1086,13 @@ if(SD_CUDA)
     # CPU Configuration Block
 elseif(SD_CPU)
     message(STATUS "--- Configuring CPU Build ---")
-    add_definitions(-D__CPUBLAS__=true SD_CPU=true)
+    # <<< REMOVED add_definitions(-D__CPUBLAS__=true SD_CPU=true) >>> Use target_compile_definitions instead
 
     # --- Generate CPU Source Files (Templates, etc.) ---
     message(STATUS "Configuring CPU source file generation...")
-    # Assume CPU might also use genCompilation for .cpp.in files
-    # Initialize list for generated CPU sources
     set(CPU_GENERATED_SOURCES "")
     set(CUSTOMOPS_GENERIC_SOURCES "") # Also used by CPU gen? Check template content
-
-    set(CPU_GENERATED_DIR "${CMAKE_BINARY_DIR}/cpu_generated") # Different dir? or use compilation_units?
+    set(CPU_GENERATED_DIR "${CMAKE_BINARY_DIR}/cpu_generated")
     file(MAKE_DIRECTORY ${CPU_GENERATED_DIR})
     set(CPU_COMB_GENERATED_DIR "${CMAKE_BINARY_DIR}/cpu_generated_combinations")
     file(MAKE_DIRECTORY ${CPU_COMB_GENERATED_DIR})
@@ -1188,11 +1108,15 @@ elseif(SD_CPU)
         genCompilation(${FL_ITEM}) # Uses function defined above, appends to CPU_GENERATED_SOURCES
     endforeach()
 
-    # Process combination templates for CPU (if any - e.g., pairwise_instantiation)
-    # The previous file had templates like pairwise_instantiation_template_2/3.cpp.in
-    # Assume these might use genCompilation or a similar mechanism.
-    # For now, we only include the genCompilation calls above.
-    # Add calls to genPartitionCombination if needed, definition needs to be added.
+    # Process combination templates for CPU (if needed)
+    # Example: Define combinations and call genPartitionCombination if CPU uses it
+    # set(COMBINATIONS_2 "0,0;0,1;...") # Define combinations
+    # file(GLOB CPU_COMB_TEMPLATES "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in")
+    # foreach(TEMPLATE_FILE ${CPU_COMB_TEMPLATES})
+    #    foreach(COMBINATION ${COMBINATIONS_2})
+    #        genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_COMB_GENERATED_DIR}") # Assuming genPartitionCombination is defined
+    #    endforeach()
+    # endforeach()
 
     message(STATUS "CPU source generation configured (Actual generation happens at build time).")
     message(STATUS "DEBUG: Generated CPU Sources List: ${CPU_GENERATED_SOURCES}")
@@ -1226,21 +1150,20 @@ elseif(SD_CPU)
             "${CMAKE_CURRENT_SOURCE_DIR}/include/legacy/*.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/build_info.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/ConstMessages.cpp"
-            # Exclude CUDA specific implementations
             EXCLUDE REGEX ".*/cuda/.*\\.cu$"
             EXCLUDE REGEX ".*/cuda/.*\\.h$"
-            EXCLUDE REGEX ".*/cudnn/.*\\.cu$" # Exclude platform specifics not for CPU
-            EXCLUDE REGEX ".*/armcompute/.*\\.cpp$" # Excluded if helper not enabled below
+            EXCLUDE REGEX ".*/cudnn/.*\\.cu$"
+            EXCLUDE REGEX ".*/armcompute/.*\\.cpp$" # This might be re-included below if helper enabled
     )
 
     file(GLOB_RECURSE CPU_SPECIFIC_SOURCES
             "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cpu/*.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/helpers/cpu/*.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cpu/*.cpp" # If any exist
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cpu/*.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/memory/cpu/*.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/*.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/helpers/cpu/*.h"
-            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cpu/*.cpp" # If any exist
+            "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cpu/*.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/array/cpu/*.h"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/*.cpp"
             "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/*.h"
@@ -1261,7 +1184,7 @@ elseif(SD_CPU)
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/armcompute/*.cpp"
                 "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/declarable/platform/armcompute/*.h")
     else()
-        # Exclude armcompute sources if helper not enabled
+        # Ensure armcompute sources are definitely excluded if helper not enabled
         list(FILTER COMMON_SOURCES EXCLUDE REGEX ".*/armcompute/.*\\.cpp$")
     endif()
 
@@ -1269,7 +1192,7 @@ elseif(SD_CPU)
             ${COMMON_SOURCES}
             ${CPU_SPECIFIC_SOURCES}
             ${CPU_GENERATED_SOURCES}     # Add generated CPU list
-            ${CUSTOMOPS_GENERIC_SOURCES} # Contains generated CPU pairwise if used
+            ${CUSTOMOPS_GENERIC_SOURCES} # Add generated CPU pairwise list
             ${CUSTOMOPS_ONEDNN_SOURCES}  # Add platform specifics
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
     )
@@ -1287,13 +1210,7 @@ elseif(SD_CPU)
     endif()
 
     # Filter sources based on selective ops if needed
-    # Function removeFileIfExcluded needs to be defined if this is used
-    # if(NOT SD_ALL_OPS)
-    #    message(STATUS "Filtering sources based on selective ops list...")
-    #    # foreach(category IN ITEMS ALL_SOURCES) # Simplified loop
-    #    #    removeFileIfExcluded(FILE_ITEM "${category}" LIST_ITEM ALL_SOURCES)
-    #    # endforeach()
-    # endif()
+    # if(NOT SD_ALL_OPS) ...
 
     # Create Object Library
     add_library(samediff_obj OBJECT ${ALL_SOURCES})
@@ -1340,9 +1257,8 @@ elseif(SD_CPU)
             set_property(TARGET ${FINAL_TARGET} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
         endif()
         if(UNIX OR APPLE)
-            # Add PROJECT_VERSION variable definition if not already present
             if(NOT DEFINED PROJECT_VERSION)
-                set(PROJECT_VERSION "1.0.0-SNAPSHOT") # Or get from elsewhere
+                set(PROJECT_VERSION "1.0.0-SNAPSHOT")
             endif()
             set_target_properties(${FINAL_TARGET} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION 1)
         endif()
@@ -1376,7 +1292,7 @@ elseif(SD_CPU)
     endif()
 
     target_link_libraries(${FINAL_TARGET} PUBLIC
-            ${OPENBLAS_LIBRARIES} # Contains BLAS_LIBRARIES if found via find_package(BLAS) or specific OpenBLAS lib
+            ${OPENBLAS_LIBRARIES}
             $<$<BOOL:${HAVE_ONEDNN}>:onednn>
             $<$<BOOL:${HAVE_ARMCOMPUTE}>:${ARMCOMPUTE_LIBRARIES}>
             Threads::Threads
