@@ -1423,7 +1423,6 @@ if(SD_CUDA)
 
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
                 ${CUDA_LIBRARIES}
-                ${CUDA_DRIVER_LIBRARY}
                 ${CUDA_CUBLAS_LIBRARIES}
                 ${CUDA_cusolver_LIBRARY}
                 ${CUDNN}
