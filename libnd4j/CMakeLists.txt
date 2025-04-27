@@ -1174,11 +1174,6 @@ set(GEN_COMPILATION_TEMPLATES
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # Set the environment variable for CUDA 12.3
-    # IMPORTANT: This is the correct format for CUDA 12.3
-    set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
-    set(ENV{NVCC_FLAGS} "--allow-unsupported-compiler")
-    set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
 
     # Force allow unsupported compiler environment variable
     set(ENV{CUDA_FORCE_UNSUPPORTED_COMPILER} "1")
