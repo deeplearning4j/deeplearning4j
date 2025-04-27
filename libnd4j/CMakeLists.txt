@@ -1174,12 +1174,10 @@ set(GEN_COMPILATION_TEMPLATES
 if(SD_CUDA)
     message("Building with CUDA support")
 
-
-    # Force allow unsupported compiler environment variable
-    set(ENV{CUDA_FORCE_UNSUPPORTED_COMPILER} "1")
-
-    # Do not set CMAKE_CUDA_FLAGS here, as it will be too late
-    # By the time enable_language is called, the flags must be in environment variables
+    # For CUDA 12.3, we need to set the environment variable before enabling CUDA
+    # This replaces the problematic --allow-unsupported-compiler flag
+    set(ENV{NVIDIA_CUDAFE_FLAGS} "allow_unsupported_compiler")
+    set(ENV{CUDA_FORCE_PTX_JIT} "1")
 
     # Enable CUDA language
     enable_language(CUDA)
@@ -1196,11 +1194,7 @@ if(SD_CUDA)
         include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
 
-        # Now it's safe to set cmake cuda flags for subsequent compilation
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
-        set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
-        set(CUDA_NVCC_FLAGS "--allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
-
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 
         if(SD_PTXAS)
@@ -1254,15 +1248,6 @@ if(SD_CUDA)
 
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
 
-        # Display the final environment and flags for debugging
-        message("Final environment variables and flags:")
-        message("CUDAFE_FLAGS: $ENV{CUDAFE_FLAGS}")
-        message("NVCC_FLAGS: $ENV{NVCC_FLAGS}")
-        message("CUDA_NVCC_FLAGS: $ENV{CUDA_NVCC_FLAGS}")
-        message("CUDA_FORCE_UNSUPPORTED_COMPILER: $ENV{CUDA_FORCE_UNSUPPORTED_COMPILER}")
-        message("CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
-        message("CUDA_NVCC_FLAGS: ${CUDA_NVCC_FLAGS}")
-
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
             if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
@@ -1299,6 +1284,10 @@ if(SD_CUDA)
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
+        find_library(CUDA_DRIVER_LIBRARY
+                NAMES cuda
+                PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+                PATH_SUFFIXES lib64 lib/x64)
 
         add_compile_definitions(SD_CUDA=true)
 
@@ -1334,7 +1323,6 @@ if(SD_CUDA)
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
         endforeach()
-
         set(ALL_SOURCES
                 ${CUDA_GENERATED_SOURCES}
                 ${PERF_SOURCES}
@@ -1440,6 +1428,7 @@ if(SD_CUDA)
 
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
                 ${CUDA_LIBRARIES}
+                ${CUDA_DRIVER_LIBRARY}
                 ${CUDA_CUBLAS_LIBRARIES}
                 ${CUDA_cusolver_LIBRARY}
                 ${CUDNN}
