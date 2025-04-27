@@ -1282,10 +1282,7 @@ if(SD_CUDA)
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
-        find_library(CUDA_DRIVER_LIBRARY
-                NAMES cuda
-                PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-                PATH_SUFFIXES lib64 lib/x64)
+
 
         add_compile_definitions(SD_CUDA=true)
 
