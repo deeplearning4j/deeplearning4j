@@ -846,132 +846,135 @@ if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
 
-# 2. Replace your OneDNN section with this code:
-if(${HELPERS_onednn} AND NOT ONEDNN_PROCESSING_DONE)
-    message("Going to pull & build onednn")
-    set(HAVE_ONEDNN 1)
-    set(ONEDNN_PROCESSING_DONE TRUE CACHE INTERNAL "Flag to indicate OneDNN processing is complete")
-    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+if(${HELPERS_onednn})
+    # Check if we've already processed OneDNN to avoid infinite recursion
+    if(NOT ONEDNN_PROCESSING_DONE)
+        message("Going to pull & build onednn")
+        set(HAVE_ONEDNN 1)
+        # Set the flag to prevent reprocessing
+        set(ONEDNN_PROCESSING_DONE TRUE CACHE INTERNAL "Flag to indicate OneDNN processing is complete")
+        set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-    # Download and extract only if needed
-    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/onednn-src/CMakeLists.txt")
-        message(STATUS "OneDNN source not found, downloading now")
-        configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
+        # Download and extract only if needed
+        if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/onednn-src/CMakeLists.txt")
+            message(STATUS "OneDNN source not found, downloading now")
+            configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
 
-        # Execute separate CMake process to download OneDNN
-        execute_process(
-                COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
-        )
-        if(result)
-            set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-            message(FATAL_ERROR "CMake step for onednn failed: ${result}")
+            # Execute separate CMake process to download OneDNN
+            execute_process(
+                    COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
+            )
+            if(result)
+                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
+                message(FATAL_ERROR "CMake step for onednn failed: ${result}")
+            endif()
+
+            execute_process(
+                    COMMAND "${CMAKE_COMMAND}" --build .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
+            )
+            if(result)
+                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
+                message(FATAL_ERROR "Build step for onednn failed: ${result}")
+            endif()
+
+            message(STATUS "OneDNN download and extraction completed")
+        else()
+            message(STATUS "Using existing OneDNN source")
         endif()
 
-        execute_process(
-                COMMAND "${CMAKE_COMMAND}" --build .
-                RESULT_VARIABLE result
-                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
-        )
-        if(result)
-            set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-            message(FATAL_ERROR "Build step for onednn failed: ${result}")
+        # Create a separate out-of-source build directory
+        set(ONEDNN_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-build-external")
+        file(MAKE_DIRECTORY "${ONEDNN_BUILD_DIR}")
+
+        # Only configure and build if the library doesn't exist yet
+        if(NOT EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
+            message(STATUS "Configuring and building OneDNN outside of main build")
+
+            # Configure OneDNN
+            execute_process(
+                    COMMAND "${CMAKE_COMMAND}"
+                    -G "${CMAKE_GENERATOR}"
+                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                    -DDNNL_LIBRARY_TYPE=STATIC
+                    -DDNNL_BUILD_TESTS=OFF
+                    -DDNNL_BUILD_EXAMPLES=OFF
+                    -DDNNL_VERBOSE=ON
+                    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/onednn-install
+                    "${CMAKE_CURRENT_SOURCE_DIR}/onednn-src"
+                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
+                    RESULT_VARIABLE onednn_config_result
+            )
+
+            if(onednn_config_result)
+                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
+                message(FATAL_ERROR "OneDNN configuration failed: ${onednn_config_result}")
+            endif()
+
+            # Build OneDNN
+            execute_process(
+                    COMMAND "${CMAKE_COMMAND}" --build .
+                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
+                    RESULT_VARIABLE onednn_build_result
+            )
+
+            if(onednn_build_result)
+                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
+                message(FATAL_ERROR "OneDNN build failed: ${onednn_build_result}")
+            endif()
+
+            message(STATUS "OneDNN built successfully")
+        else()
+            message(STATUS "Using previously built OneDNN")
         endif()
 
-        message(STATUS "OneDNN download and extraction completed")
+        # Find the OneDNN library
+        if(EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
+            set(ONEDNN_LIBRARY "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
+        else()
+            # Try to find it using find_library
+            find_library(ONEDNN_LIBRARY
+                    NAMES dnnl
+                    PATHS "${ONEDNN_BUILD_DIR}"
+                    "${ONEDNN_BUILD_DIR}/src"
+                    NO_DEFAULT_PATH
+            )
+
+            if(NOT ONEDNN_LIBRARY)
+                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
+                message(FATAL_ERROR "OneDNN library not found")
+            endif()
+        endif()
+
+        # Set up variables for using OneDNN
+        set(onednn_SOURCE_DIR "${ONEDNN_BUILD_DIR}")
+        set(onednn_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-src")
+        set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
+
+        # Add include directories
+        include_directories(
+                "${onednn_SOURCE_DIR}/include"
+                "${onednn_EXT_DIR}/include"
+                "${onednn_SOURCE_DIR}"
+        )
+
+        # Create an imported target for the library
+        add_library(dnnl STATIC IMPORTED GLOBAL)
+        set_target_properties(dnnl PROPERTIES
+                IMPORTED_LOCATION "${ONEDNN_LIBRARY}"
+        )
+
+        set(ONEDNN dnnl)
+        message(STATUS "OneDNN library found at: ${ONEDNN_LIBRARY}")
     else()
-        message(STATUS "Using existing OneDNN source")
+        message(STATUS "OneDNN processing already completed - using existing configuration")
+        # Just make sure the ONEDNN variable is properly set
+        set(HAVE_ONEDNN 1)
+        set(ONEDNN dnnl)
     endif()
-
-    # Create a separate out-of-source build directory
-    set(ONEDNN_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-build-external")
-    file(MAKE_DIRECTORY "${ONEDNN_BUILD_DIR}")
-
-    # Only configure and build if the library doesn't exist yet
-    if(NOT EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-        message(STATUS "Configuring and building OneDNN outside of main build")
-
-        # Configure OneDNN
-        execute_process(
-                COMMAND "${CMAKE_COMMAND}"
-                -G "${CMAKE_GENERATOR}"
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                -DDNNL_LIBRARY_TYPE=STATIC
-                -DDNNL_BUILD_TESTS=OFF
-                -DDNNL_BUILD_EXAMPLES=OFF
-                -DDNNL_VERBOSE=ON
-                -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/onednn-install
-                "${CMAKE_CURRENT_BINARY_DIR}/onednn-src"
-                WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
-                RESULT_VARIABLE onednn_config_result
-        )
-
-        if(onednn_config_result)
-            set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-            message(FATAL_ERROR "OneDNN configuration failed: ${onednn_config_result}")
-        endif()
-
-        # Build OneDNN
-        execute_process(
-                COMMAND "${CMAKE_COMMAND}" --build .
-                WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
-                RESULT_VARIABLE onednn_build_result
-        )
-
-        if(onednn_build_result)
-            set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-            message(FATAL_ERROR "OneDNN build failed: ${onednn_build_result}")
-        endif()
-
-        message(STATUS "OneDNN built successfully")
-    else()
-        message(STATUS "Using previously built OneDNN")
-    endif()
-
-    # Find the OneDNN library
-    if(EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-        set(ONEDNN_LIBRARY "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-    else()
-        # Try to find it using find_library
-        find_library(ONEDNN_LIBRARY
-                NAMES dnnl
-                PATHS "${ONEDNN_BUILD_DIR}"
-                "${ONEDNN_BUILD_DIR}/src"
-                NO_DEFAULT_PATH
-        )
-
-        if(NOT ONEDNN_LIBRARY)
-            set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-            message(FATAL_ERROR "OneDNN library not found")
-        endif()
-    endif()
-
-    # Set up variables for using OneDNN
-    set(onednn_SOURCE_DIR "${ONEDNN_BUILD_DIR}")
-    set(onednn_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-src")
-    set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
-
-    # Add include directories
-    include_directories(
-            "${onednn_SOURCE_DIR}/include"
-            "${onednn_EXT_DIR}/include"
-            "${onednn_SOURCE_DIR}"
-    )
-
-    # Create an imported target for the library
-    add_library(dnnl STATIC IMPORTED GLOBAL)
-    set_target_properties(dnnl PROPERTIES
-            IMPORTED_LOCATION "${ONEDNN_LIBRARY}"
-    )
-
-    set(ONEDNN dnnl)
-    message(STATUS "OneDNN library found at: ${ONEDNN_LIBRARY}")
-elseif(${HELPERS_onednn} AND ONEDNN_PROCESSING_DONE)
-    message(STATUS "OneDNN processing already completed - using existing configuration")
-    # Just make sure the ONEDNN variable is properly set
-    set(HAVE_ONEDNN 1)
-    set(ONEDNN dnnl)
 endif()
 # cuDNN configuration
 if(${HELPERS_cudnn})
@@ -1171,20 +1174,24 @@ set(GEN_COMPILATION_TEMPLATES
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # Set environment variables before enabling CUDA language
-    # This is important as CUDA configuration happens during enable_language
+    # First set environment variables to ensure the flags are passed properly
     set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
+    set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
 
-    # The --allow-unsupported-compiler flag may need to be passed differently
-    # depending on CUDA version. Let's try a more robust approach:
+    # For CUDA 12.3 specifically, set compiler flags directly
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
+    set(CUDA_NVCC_FLAGS "--allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
 
-    # First enable CUDA without any special flags
+    # Enable CUDA support
     enable_language(CUDA)
 
-    add_definitions(-D__CUDABLAS__=true)
-
+    # Find CUDA package
     find_package(CUDA REQUIRED)
+
     if(CUDA_FOUND)
+        message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+        include_directories(${CUDA_INCLUDE_DIRS})
+        message("CUDA found!")
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
         include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
