@@ -1171,56 +1171,46 @@ set(GEN_COMPILATION_TEMPLATES
 )
 
 # CUDA Build Configuration
-if(SD_CUDA)
-    message("Building with CUDA support")
+# IMPORTANT: For CUDA 12.3, we need to set specific environment variables
+# instead of command line flags
 
-    # First set environment variables to ensure the flags are passed properly
-    set(ENV{CUDAFE_FLAGS} "-allow-unsupported-compiler")
-    set(ENV{NVCC_OPTIONS} "-allow-unsupported-compiler")
+# Set environment variables for CUDA 12.3
+set(ENV{CUDA_FORCE_ALLOW_UNSUPPORTED_COMPILER} "1")
 
-    # For CUDA 12.3 specifically, set compiler flags directly
-    set(CMAKE_CUDA_FLAGS "-allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
-    set(CUDA_NVCC_FLAGS "-allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
+# The options format has changed in CUDA 12.3
+# Setting multiple approaches to maximize compatibility
+set(ENV{CUDAFE_FLAGS} "allow_unsupported_compiler")
+set(ENV{NVCC_OPTIONS} "allow_unsupported_compiler")
 
-    # Enable CUDA support
-    enable_language(CUDA)
+# Enable CUDA language
+enable_language(CUDA)
 
-    # Find CUDA package
-    find_package(CUDA REQUIRED)
+add_definitions(-D__CUDABLAS__=true)
 
-    if(CUDA_FOUND)
-        message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
-        include_directories(${CUDA_INCLUDE_DIRS})
-        message("CUDA found!")
-        message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
-        include_directories(${CUDA_INCLUDE_DIRS})
-        message("CUDA found!")
+find_package(CUDA REQUIRED)
+if(CUDA_FOUND)
+    message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
+    include_directories(${CUDA_INCLUDE_DIRS})
+    message("CUDA found!")
 
-        # Determine CUDA version to apply appropriate flags
-        if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 11.0)
-            # For older CUDA versions
-            set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} --allow-unsupported-compiler")
+    set(CMAKE_CUDA_FLAGS_DEBUG " -g")
+    message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
+
+    if(SD_PTXAS)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+    endif()
+
+    if(SD_KEEP_NVCC_OUTPUT)
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        if(SD_GCC_FUNCTRACE STREQUAL "ON")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+            add_compile_definitions(SD_GCC_FUNCTRACE)
         else()
-            # For newer CUDA versions
-            # Some versions need the flag in quotes, some with =
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} \"--allow-unsupported-compiler\"")
-            set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} \"--allow-unsupported-compiler\"")
-
-            # Also try with environment variables
-            set(ENV{CUDA_NVCC_FLAGS} "$ENV{CUDA_NVCC_FLAGS} --allow-unsupported-compiler")
-        endif()
-        if(SD_KEEP_NVCC_OUTPUT)
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
-        endif()
-
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-            if(SD_GCC_FUNCTRACE STREQUAL "ON")
-                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-                add_compile_definitions(SD_GCC_FUNCTRACE)
-            else()
-                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
-            endif()
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
 
         if(WIN32)
