@@ -1169,40 +1169,27 @@ set(INSTANTIATION_TEMPLATES_2
 set(GEN_COMPILATION_TEMPLATES
         "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
 )
-
-# CUDA Build Configuration
 # CUDA Configuration
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # Set flags for both platforms to allow unsupported compilers
-    set(CMAKE_CUDA_COMPILER_ID_FLAGS "--allow-unsupported-compiler")
-    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler")
+    # Set environment variables to allow unsupported compilers
+    set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
+    set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
+    set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
 
     # Platform-specific settings
     if(WIN32)
         message("Setting up Windows-specific CUDA unsupported compiler flags")
-        # Additional Windows-specific environment variables to bypass compiler checks
-        set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
-        set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
-
-        # For Visual Studio integration
-        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            set(CMAKE_CXX_FLAGS "")
-        endif()
     else()
         message("Setting up Linux-specific CUDA unsupported compiler flags")
-        # Linux might need these environment variables as well
-        set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
-        set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
     endif()
 
-    message("CUDA flags set to allow unsupported compiler: ${CMAKE_CUDA_FLAGS}")
+    # Enable CUDA language
+    enable_language(CUDA)
 
     add_definitions(-D__CUDABLAS__=true)
 
-    # Now enable CUDA language with unsupported compiler flags already set
-    enable_language(CUDA)
     find_package(CUDA REQUIRED)
     if(CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
@@ -1211,6 +1198,9 @@ if(SD_CUDA)
 
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
+
+        # Add --allow-unsupported-compiler to CUDA flags
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
 
         if("${SD_PTXAS}" STREQUAL "ON")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
@@ -1265,12 +1255,9 @@ if(SD_CUDA)
 
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
-            if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
-                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80")
-            else()
-                set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_72,code=sm_72 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_90,code=sm_90")
-            endif()
-            set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
+            # Updated architecture flags for CUDA 12.3
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_90,code=sm_90")
+            set(CMAKE_CUDA_ARCHITECTURES "60;61;70;75;80;86;89;90")
         elseif(COMPUTE_CMP STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
             set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
@@ -1286,11 +1273,8 @@ if(SD_CUDA)
             if(NOT "${CUDA_ARCH_FLAGS}" STREQUAL "")
                 set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA architectures" FORCE)
             else()
-                if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
-                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 CACHE STRING "CUDA architectures for CUDA 11.x compilers" FORCE)
-                else()
-                    set(CMAKE_CUDA_ARCHITECTURES 60 61 62 70 72 75 80 86 CACHE STRING "CUDA architectures for nvcc 12 and up" FORCE)
-                endif()
+                # Updated architectures for CUDA 12.3
+                set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86 89 90 CACHE STRING "CUDA architectures for CUDA 12.3+" FORCE)
                 add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
             endif()
         endif()
@@ -1337,11 +1321,24 @@ if(SD_CUDA)
         file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
-        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in  ../include/ops/impl/compilation_units/*.cpp.in)
 
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
         endforeach()
+
+        # Ensure we have at least one source file
+        if (NOT DEFINED CUDA_GENERATED_SOURCES OR "${CUDA_GENERATED_SOURCES}" STREQUAL "")
+            message(STATUS "Creating placeholder CUDA source file")
+            file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cuda_generated")
+            file(WRITE "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" "// Placeholder CUDA source file
+#include <cuda_runtime.h>
+extern \"C\" __global__ void placeholder_kernel() { }
+extern \"C\" void placeholder_function() { placeholder_kernel<<<1,1>>>(); }
+")
+            set(CUDA_GENERATED_SOURCES "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu")
+            set_source_files_properties("${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" PROPERTIES LANGUAGE CUDA)
+        endif()
+
         set(ALL_SOURCES
                 ${CUDA_GENERATED_SOURCES}
                 ${PERF_SOURCES}
@@ -1366,57 +1363,12 @@ if(SD_CUDA)
         if(HAVE_CUDNN)
             message("cuDNN included")
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
+            list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
 
-        # Check if CUDA_GENERATED_SOURCES is empty
-        if (NOT CUDA_GENERATED_SOURCES)
-            message(WARNING "CUDA_GENERATED_SOURCES is empty - checking CUDA template files and combinations")
-            # Re-run the template generation with more verbose output
-            file(GLOB CUDA_TEMPLATE_FILES
-                    "../include/loops/cuda/comb_compilation_units/*.cu.in"
-            )
-
-            foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
-                message(STATUS "Processing template file: ${TEMPLATE_FILE}")
-                foreach(COMBINATION ${COMBINATIONS_3})
-                    genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CMAKE_BINARY_DIR}/cuda_generated")
-                endforeach()
-            endforeach()
-
-            # If still empty after regeneration, add a placeholder to avoid the empty sources error
-            if (NOT CUDA_GENERATED_SOURCES)
-                message(WARNING "CUDA_GENERATED_SOURCES still empty, adding placeholder source")
-                # Create a simple placeholder file
-                file(WRITE "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" "// Placeholder source file\n#include <cuda_runtime.h>\nextern \"C\" void placeholder_function() {}\n")
-                set(CUDA_GENERATED_SOURCES "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu")
-                set_source_files_properties("${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" PROPERTIES LANGUAGE CUDA)
-            endif()
-        endif()
-
-        # Ensure ALL_SOURCES is populated with at least the basic required sources
-        set(ALL_SOURCES
-                ${CUDA_GENERATED_SOURCES}
-                ${PERF_SOURCES}
-                ${EXCEPTIONS_SOURCES}
-                ${EXEC_SOURCES}
-                ${TYPES_SOURCES}
-                ${ARRAY_SOURCES}
-                ${MEMORY_SOURCES}
-                ${GRAPH_SOURCES}
-                ${CUSTOMOPS_SOURCES}
-                ${CUSTOMOPS_ONEDNN_SOURCES}
-                ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-                ${CUSTOMOPS_GENERIC_SOURCES}
-                ${OPS_SOURCES}
-                ${HELPERS_SOURCES}
-                ${INDEXING_SOURCES}
-                ${LOOPS_SOURCES}
-                ${LEGACY_SOURCES}
-                ${LOOPS_SOURCES_CUDA}
-        )
-
-        # If ALL_SOURCES is still empty, add a minimal placeholder
-        if (NOT ALL_SOURCES)
+        # Ensure ALL_SOURCES is not empty
+        list(LENGTH ALL_SOURCES SOURCE_COUNT)
+        if(SOURCE_COUNT EQUAL 0)
             message(WARNING "ALL_SOURCES is empty, adding minimal placeholder")
             file(WRITE "${CMAKE_BINARY_DIR}/placeholder.cpp" "// Placeholder source file\nextern \"C\" void placeholder_function() {}\n")
             set(ALL_SOURCES "${CMAKE_BINARY_DIR}/placeholder.cpp")
