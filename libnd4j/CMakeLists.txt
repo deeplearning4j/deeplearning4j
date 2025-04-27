@@ -1455,8 +1455,7 @@ if(SD_CUDA)
     endif()
 endif()
 
-# Add blas subdirectory
-add_subdirectory(blas)
+
 
 # Add tests if enabled
 if(SD_BUILD_TESTS)
