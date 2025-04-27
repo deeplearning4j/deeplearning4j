@@ -1174,12 +1174,11 @@ set(GEN_COMPILATION_TEMPLATES
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # For CUDA 12.3, we need to set the environment variable before enabling CUDA
-    # This replaces the problematic --allow-unsupported-compiler flag
+    # Only change: Set these environment variables before enabling CUDA
     set(ENV{NVIDIA_CUDAFE_FLAGS} "allow_unsupported_compiler")
     set(ENV{CUDA_FORCE_PTX_JIT} "1")
 
-    # Enable CUDA language
+    # Original code from here on
     enable_language(CUDA)
 
     add_definitions(-D__CUDABLAS__=true)
@@ -1187,7 +1186,6 @@ if(SD_CUDA)
         add_compile_definitions(__CUDA_CC__)
     endif()
 
-    # Find CUDA package
     find_package(CUDA REQUIRED)
     if(CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
