@@ -1171,46 +1171,59 @@ set(GEN_COMPILATION_TEMPLATES
 )
 
 # CUDA Build Configuration
-# IMPORTANT: For CUDA 12.3, we need to set specific environment variables
-# instead of command line flags
+if(SD_CUDA)
+    message("Building with CUDA support")
 
-# Set environment variables for CUDA 12.3
-set(ENV{CUDA_FORCE_ALLOW_UNSUPPORTED_COMPILER} "1")
+    # Set the environment variable for CUDA 12.3
+    # IMPORTANT: This is the correct format for CUDA 12.3
+    set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
+    set(ENV{NVCC_FLAGS} "--allow-unsupported-compiler")
+    set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
 
-# The options format has changed in CUDA 12.3
-# Setting multiple approaches to maximize compatibility
-set(ENV{CUDAFE_FLAGS} "allow_unsupported_compiler")
-set(ENV{NVCC_OPTIONS} "allow_unsupported_compiler")
+    # Force allow unsupported compiler environment variable
+    set(ENV{CUDA_FORCE_UNSUPPORTED_COMPILER} "1")
 
-# Enable CUDA language
-enable_language(CUDA)
+    # Do not set CMAKE_CUDA_FLAGS here, as it will be too late
+    # By the time enable_language is called, the flags must be in environment variables
 
-add_definitions(-D__CUDABLAS__=true)
+    # Enable CUDA language
+    enable_language(CUDA)
 
-find_package(CUDA REQUIRED)
-if(CUDA_FOUND)
-    message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
-    include_directories(${CUDA_INCLUDE_DIRS})
-    message("CUDA found!")
-
-    set(CMAKE_CUDA_FLAGS_DEBUG " -g")
-    message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
-
-    if(SD_PTXAS)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+    add_definitions(-D__CUDABLAS__=true)
+    if("$ENV{CLION_IDE}")
+        add_compile_definitions(__CUDA_CC__)
     endif()
 
-    if(SD_KEEP_NVCC_OUTPUT)
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
-    endif()
+    # Find CUDA package
+    find_package(CUDA REQUIRED)
+    if(CUDA_FOUND)
+        message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
+        include_directories(${CUDA_INCLUDE_DIRS})
+        message("CUDA found!")
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if(SD_GCC_FUNCTRACE STREQUAL "ON")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-            add_compile_definitions(SD_GCC_FUNCTRACE)
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+        # Now it's safe to set cmake cuda flags for subsequent compilation
+        set(CMAKE_CUDA_FLAGS_DEBUG " -g")
+        set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
+        set(CUDA_NVCC_FLAGS "--allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
+
+        message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
+
+        if(SD_PTXAS)
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
+        endif()
+
+        if(SD_KEEP_NVCC_OUTPUT)
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
+        endif()
+
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            if(SD_GCC_FUNCTRACE STREQUAL "ON")
+                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -Wall   -Wno-return-type  -Wno-unknown-pragmas  -Wno-unused-variable -Wno-unused-parameter  -Wreturn-type -W -ggdb3 -fPIC -DSD_GCC_FUNCTRACE=1 -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -finstrument-functions  -O0")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+                add_compile_definitions(SD_GCC_FUNCTRACE)
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+            endif()
         endif()
 
         if(WIN32)
@@ -1246,7 +1259,15 @@ if(CUDA_FOUND)
 
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
 
-        # Define CUDA Architectures
+        # Display the final environment and flags for debugging
+        message("Final environment variables and flags:")
+        message("CUDAFE_FLAGS: $ENV{CUDAFE_FLAGS}")
+        message("NVCC_FLAGS: $ENV{NVCC_FLAGS}")
+        message("CUDA_NVCC_FLAGS: $ENV{CUDA_NVCC_FLAGS}")
+        message("CUDA_FORCE_UNSUPPORTED_COMPILER: $ENV{CUDA_FORCE_UNSUPPORTED_COMPILER}")
+        message("CMAKE_CUDA_FLAGS: ${CMAKE_CUDA_FLAGS}")
+        message("CUDA_NVCC_FLAGS: ${CUDA_NVCC_FLAGS}")
+
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
             if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 12.0)
@@ -1289,63 +1310,11 @@ if(CUDA_FOUND)
                 PATH_SUFFIXES lib64 lib/x64)
 
         add_compile_definitions(SD_CUDA=true)
-        if("$ENV{CLION_IDE}")
-            add_compile_definitions(__CUDA_CC__)
-        endif()
 
         message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
-        # Create output directory for CUDA generated files
-        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cuda_generated")
+        set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
-        # Initialize the list of CUDA generated sources
-        set(CUDA_GENERATED_SOURCES "")
-
-        # Determine the number of types to use
-        if(DEFINED SD_TYPES_LIST AND SD_TYPES_LIST_COUNT GREATER 0)
-            # If selective types are enabled, count them
-            set(NUM_TYPES ${SD_TYPES_LIST_COUNT})
-            message(STATUS "Using ${NUM_TYPES} types from SD_TYPES_LIST")
-        else()
-            # Default number of types if not using selective types
-            set(NUM_TYPES 10)
-            message(STATUS "Using default number of types: ${NUM_TYPES}")
-        endif()
-
-        # Include type definition module
-        include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/TypeMST.cmake)
-
-        # Process the compilation_units templates
-        file(GLOB CUDA_COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in)
-        foreach(FL_ITEM ${CUDA_COMPILATION_UNITS})
-            genCompilation(${FL_ITEM})
-        endforeach()
-
-        # Decide whether to use all combinations or optimized MST combinations
-        set(SD_USE_MST_TYPES ON)
-        if(SD_USE_MST_TYPES)
-            # Generate optimized type combinations
-            generate_mst_combinations()
-            message(STATUS "Using optimized type combinations instead of all possible combinations")
-        else()
-            # Use all possible combinations (original behavior)
-            set(COMBINATIONS_3 ${ALL_TYPE_COMBINATIONS})
-            message(STATUS "Using all possible type combinations")
-        endif()
-
-        # Get all CUDA template files from comb_compilation_units directory
-        file(GLOB CUDA_TEMPLATE_FILES
-                "../include/loops/cuda/comb_compilation_units/*.cu.in"
-        )
-
-        # For each template file, generate individual function files per type combination
-        foreach(TEMPLATE_FILE ${CUDA_TEMPLATE_FILES})
-            foreach(COMBINATION ${COMBINATIONS_3})
-                genSingleFunctionCuda(${TEMPLATE_FILE} ${COMBINATION} "${CMAKE_BINARY_DIR}/cuda_generated")
-            endforeach()
-        endforeach()
-
-        # Gather CUDA Source Files
         file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES ../include/execution/impl/*.cpp ../include/execution/cuda/*.cu ../include/execution/cuda/*.h ../include/execution/*.cu ../include/execution/*.h)
@@ -1371,7 +1340,6 @@ if(CUDA_FOUND)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
 
-        # Generate Compilation Units
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
         endforeach()
@@ -1397,13 +1365,11 @@ if(CUDA_FOUND)
                 ${LOOPS_SOURCES_CUDA}
         )
 
-        # Include cuDNN Sources if Available
         if(HAVE_CUDNN)
             message("cuDNN included")
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-        # Create Object Library
         if(SD_GCC_FUNCTRACE STREQUAL "ON")
             add_library(samediff_obj OBJECT
                     ${CUDA_GENERATED_SOURCES}
@@ -1457,7 +1423,6 @@ if(CUDA_FOUND)
 
         target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
-        # Handle MSVC Runtime Library
         set(MSVC_RT_LIB "MultiThreadedDLL")
         set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
@@ -1466,12 +1431,10 @@ if(CUDA_FOUND)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-        # Create the shared library using SD_LIBRARY_NAME
         if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
             add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
         endif()
 
-        # Create the static library if needed
         if(SD_STATIC_LIB AND SD_SHARED_LIB)
             add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
             set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
@@ -1482,10 +1445,8 @@ if(CUDA_FOUND)
             install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
         endif()
 
-        # Set MSVC runtime library for the shared library
         set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-        # Link CUDA Libraries
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
                 ${CUDA_LIBRARIES}
                 ${CUDA_DRIVER_LIBRARY}
@@ -1495,165 +1456,8 @@ if(CUDA_FOUND)
         )
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
 
-        # Install CUDA Library
         install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
-else()
-    # CPU Build Configuration
-    message("Building with CPU support")
-
-    # Gather CPU Source Files
-    file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
-    file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
-    file(GLOB_RECURSE EXEC_SOURCES ../include/execution/*.cpp ../include/execution/*.h)
-    file(GLOB_RECURSE TYPES_SOURCES ../include/types/*.cpp ../include/types/*.h)
-    file(GLOB_RECURSE ARRAY_SOURCES ../include/array/*.cpp ../include/array/*.h)
-    file(GLOB_RECURSE MEMORY_SOURCES ../include/memory/*.cpp ../include/memory/*.h)
-    file(GLOB_RECURSE GRAPH_SOURCES ../include/graph/*.cpp ../include/graph/*.h)
-    file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ../include/ops/declarable/helpers/cpu/*.cpp ../include/ops/declarable/helpers/impl/*.cpp)
-    file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
-    file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
-    file(GLOB_RECURSE HELPERS_SOURCES ../include/build_info.cpp ../include/ConstMessages.cpp ../include/helpers/*.cpp ../include/helpers/*.h)
-    file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
-    file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/*.cpp ../include/loops/*.h)
-    file(GLOB_RECURSE COMPILATION_UNITS ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in ../include/ops/impl/compilation_units/*.cpp.in)
-
-    set(ALL_SOURCES
-            ${PERF_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${EXEC_SOURCES}
-            ${TYPES_SOURCES}
-            ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES}
-            ${GRAPH_SOURCES}
-            ${CUSTOMOPS_SOURCES}
-            ${CUSTOMOPS_ONEDNN_SOURCES}
-            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-            ${CUSTOMOPS_GENERIC_SOURCES}
-            ${OPS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${INDEXING_SOURCES}
-            ${LOOPS_SOURCES}
-            ${LEGACY_SOURCES}
-            ${LOOPS_SOURCES}
-    )
-
-    if(SD_X86_BUILD)
-        # Disable platform optimizations for certain files on Linux/macOS
-        set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
-        set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
-    endif()
-
-    message("CPU BLAS")
-    add_definitions(-D__CPUBLAS__=true)
-
-    # Remove Excluded Files if Not All Operations are Included
-    if(NOT SD_ALL_OPS)
-        message("Not all SD OPS INCLUDED")
-
-        foreach(category IN ITEMS PERF_SOURCES EXCEPTIONS_SOURCES EXEC_SOURCES TYPES_SOURCES ARRAY_SOURCES MEMORY_SOURCES GRAPH_SOURCES CUSTOMOPS_SOURCES OPS_SOURCES HELPERS_SOURCES INDEXING_SOURCES LOOPS_SOURCES LEGACY_SOURCES LOOPS_SOURCES_CUDA HELPERS_CPP)
-            foreach(SRC_FILE ${${category}})
-                message("Checking exclusion for: ${SRC_FILE}")
-                removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${category}")
-            endforeach()
-        endforeach()
-    endif()
-
-    # Generate Compilation Units
-    foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM})
-    endforeach()
-
-    # Create Object Library
-    add_library(samediff_obj OBJECT
-            ${LEGACY_SOURCES}
-            ${CALLSTACK_SRC}
-            ${LOOPS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${EXEC_SOURCES}
-            ${ARRAY_SOURCES}
-            ${TYPES_SOURCES}
-            ${MEMORY_SOURCES}
-            ${GRAPH_SOURCES}
-            ${CUSTOMOPS_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${INDEXING_SOURCES}
-            ${CUSTOMOPS_ONEDNN_SOURCES}
-            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-            ${CUSTOMOPS_GENERIC_SOURCES}
-            ${OPS_SOURCES}
-            ${PERF_SOURCES}
-    )
-
-    target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-
-    # Add External Dependencies
-    foreach(external_dependency IN LISTS EXTERNAL_DEPENDENCY_PROJECTS)
-        message("@external ${external_dependency}")
-        add_dependencies(samediff_obj ${external_dependency})
-    endforeach()
-
-    # Create the shared library using SD_LIBRARY_NAME
-    if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
-        add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
-        if(ANDROID)
-            # Limit the number of compile jobs on systems with few cores
-            cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
-            if(_logical_cores LESS 4)
-                set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
-            endif()
-        endif()
-    endif()
-
-    # Create the static library if needed
-    if(SD_STATIC_LIB AND SD_SHARED_LIB)
-        add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
-        set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-        install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
-    elseif(SD_STATIC_LIB)
-        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
-        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
-    endif()
-
-    # Handle MSVC Runtime Library Consistently
-    set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-    set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-    # Link Libraries
-    if(NOT "$ENV{CLION_IDE}")
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-                ${EXTERNAL_DEPENDENCY_LIBS}
-                ${ONEDNN}
-                ${ONEDNN_LIBRARIES}
-                ${ARMCOMPUTE_LIBRARIES}
-                ${OPENBLAS_LIBRARIES}
-                ${BLAS_LIBRARIES}
-                ${CPU_FEATURES}
-        )
-        target_include_directories(${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
-    endif()
-
-    # Compiler Checks
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-        message(FATAL_ERROR "You need at least GCC 4.9")
-    endif()
-
-    # OpenMP for GCC
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        find_package(OpenMP)
-        if(OPENMP_FOUND)
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-        endif()
-    endif()
-
-    # Set Library Output Directories
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu")
-
-    # Install the Library
-    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
 endif()
 
 # Add blas subdirectory
