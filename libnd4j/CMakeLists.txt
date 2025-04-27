@@ -1175,12 +1175,12 @@ if(SD_CUDA)
     message("Building with CUDA support")
 
     # First set environment variables to ensure the flags are passed properly
-    set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
-    set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
+    set(ENV{CUDAFE_FLAGS} "-allow-unsupported-compiler")
+    set(ENV{NVCC_OPTIONS} "-allow-unsupported-compiler")
 
     # For CUDA 12.3 specifically, set compiler flags directly
-    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
-    set(CUDA_NVCC_FLAGS "--allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
+    set(CMAKE_CUDA_FLAGS "-allow-unsupported-compiler ${CMAKE_CUDA_FLAGS}")
+    set(CUDA_NVCC_FLAGS "-allow-unsupported-compiler ${CUDA_NVCC_FLAGS}")
 
     # Enable CUDA support
     enable_language(CUDA)
