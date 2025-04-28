@@ -1174,9 +1174,9 @@ if(SD_CUDA)
     message("Building with CUDA support")
 
     # Set environment variables to allow unsupported compilers
-    set(ENV{CUDAFE_FLAGS} "--allow-unsupported-compiler")
-    set(ENV{NVCC_OPTIONS} "--allow-unsupported-compiler")
-    set(ENV{CUDA_NVCC_FLAGS} "--allow-unsupported-compiler")
+    set(ENV{CUDAFE_FLAGS} "-allow-unsupported-compiler")
+    set(ENV{NVCC_OPTIONS} "-allow-unsupported-compiler")
+    set(ENV{CUDA_NVCC_FLAGS} "-allow-unsupported-compiler")
 
     # Platform-specific settings
     if(WIN32)
