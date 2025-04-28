@@ -1354,6 +1354,7 @@ if(SD_CUDA)
         )
 
         add_library(${SD_LIBRARY_NAME} OBJECT
+                PUBLIC
                 ${ALL_SOURCES}
         )
 
@@ -1496,6 +1497,7 @@ else()
 
     # Create Object Library
     add_library(${SD_LIBRARY_NAME} OBJECT
+            PUBLIC
             ${LEGACY_SOURCES}
             ${LOOPS_SOURCES}
             ${HELPERS_SOURCES}
