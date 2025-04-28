@@ -1252,8 +1252,8 @@ if(SD_CUDA)
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
             # Updated architecture flags for CUDA 12.3
-            set(CUDA_ARCH_FLAGS "-gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_90,code=sm_90")
-            set(CMAKE_CUDA_ARCHITECTURES "60;61;70;75;80;86;89;90")
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_90,code=sm_90")
+            set(CMAKE_CUDA_ARCHITECTURES "86;89;90")
         elseif(COMPUTE_CMP STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
             set(CMAKE_CUDA_ARCHITECTURES "${CUDA_DEFAULT_ARCHITECTURES}")
@@ -1270,7 +1270,7 @@ if(SD_CUDA)
                 set(CMAKE_CUDA_ARCHITECTURES ${CUDA_ARCH_FLAGS} CACHE STRING "CUDA architectures" FORCE)
             else()
                 # Updated architectures for CUDA 12.3
-                set(CMAKE_CUDA_ARCHITECTURES 60 61 70 75 80 86 89 90 CACHE STRING "CUDA architectures for CUDA 12.3+" FORCE)
+                set(CMAKE_CUDA_ARCHITECTURES 86 89 90 CACHE STRING "CUDA architectures for CUDA 12.3+" FORCE)
                 add_compile_definitions(CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES})
             endif()
         endif()
@@ -1278,11 +1278,12 @@ if(SD_CUDA)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
+        if(WIN32)
+            message("Setting up Windows-specific CUDA unsupported compiler flags")
+        else()
+            message("Setting up Linux-specific CUDA unsupported compiler flags")
+        endif()
 
-        find_library(CUDA_DRIVER_LIBRARY
-                NAMES cuda
-                PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-                PATH_SUFFIXES lib64 lib/x64)
 
         add_compile_definitions(SD_CUDA=true)
         if("$ENV{CLION_IDE}")
@@ -1322,18 +1323,7 @@ if(SD_CUDA)
             genCompilation(${FL_ITEM})
         endforeach()
 
-        # Ensure we have at least one source file
-        if (NOT DEFINED CUDA_GENERATED_SOURCES OR "${CUDA_GENERATED_SOURCES}" STREQUAL "")
-            message(STATUS "Creating placeholder CUDA source file")
-            file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cuda_generated")
-            file(WRITE "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" "// Placeholder CUDA source file
-#include <cuda_runtime.h>
-extern \"C\" __global__ void placeholder_kernel() { }
-extern \"C\" void placeholder_function() { placeholder_kernel<<<1,1>>>(); }
-")
-            set(CUDA_GENERATED_SOURCES "${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu")
-            set_source_files_properties("${CMAKE_BINARY_DIR}/cuda_generated/placeholder.cu" PROPERTIES LANGUAGE CUDA)
-        endif()
+
 
         set(ALL_SOURCES
                 ${CUDA_GENERATED_SOURCES}
@@ -1428,7 +1418,7 @@ extern \"C\" void placeholder_function() { placeholder_kernel<<<1,1>>>(); }
 
         if(WIN32)
             message("Enabling /EHsc for CUDA on Windows")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
         endif()
 
         if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
