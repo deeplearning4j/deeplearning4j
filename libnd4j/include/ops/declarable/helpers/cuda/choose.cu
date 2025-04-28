@@ -25,7 +25,7 @@
 #include <ops/ops.h>
 #include <helpers/PointersManager.h>
 #include <exceptions/cuda_exception.h>
-
+#include "helpers/DebugHelpers.h"
 namespace sd {
 namespace ops {
 namespace helpers {
