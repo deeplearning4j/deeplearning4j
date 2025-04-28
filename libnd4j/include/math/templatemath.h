@@ -1427,6 +1427,7 @@ inline __device__ float16 sd_atomicCAS<float16>(float16* address, float16 compar
 
 // Updated BPAIR structure for bfloat16 operations
 union BPAIR {
+  SD_DEVICE_HOST BPAIR() {}
   struct {
     unsigned short L;
     unsigned short H;
@@ -1750,7 +1751,7 @@ inline SD_DEVICE uint16_t sd_atomicMax<uint16_t>(uint16_t* address, uint16_t val
 
 // Proper PAIR struct for float16 operations
 struct PAIR {
-  PAIR() {}
+  SD_DEVICE_HOST PAIR() {}
   union {
     struct {
       float16 L;
