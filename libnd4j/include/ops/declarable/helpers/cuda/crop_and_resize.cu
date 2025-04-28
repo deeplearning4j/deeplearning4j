@@ -23,6 +23,7 @@
 #include <helpers/PointersManager.h>
 #include <execution/cuda/LaunchDims.h>
 #include <exceptions/cuda_exception.h>
+#include "helpers/DebugHelper.h"
 
 namespace sd {
 namespace ops {
