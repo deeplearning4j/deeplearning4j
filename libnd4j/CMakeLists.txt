@@ -536,6 +536,8 @@ function(genCompilation FL_ITEM)
 
             # Pass these variables to configure_file via cmake's variable system
             set(SD_FLOAT_TYPES_GEN ${ITER_SD_FLOAT_TYPES_GEN})
+            # Pass these variables to configure_file via cmake's variable system
+            set(SD_FLOAT_TYPES_GEN ${ITER_SD_FLOAT_TYPES_GEN})
             set(SD_INTEGER_TYPES_GEN ${ITER_SD_INTEGER_TYPES_GEN})
             set(SD_COMMON_TYPES_GEN ${ITER_SD_COMMON_TYPES_GEN})
             set(FL_TYPE_INDEX ${FL_TYPE_INDEX})
@@ -588,6 +590,7 @@ function(genCompilation FL_ITEM)
     # This prevents the list from growing infinitely
     set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} ${LOCAL_CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
+
 # genPartitionCombination: Generates combination files for CPU
 function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR)
     # Split combination string into a list
@@ -976,6 +979,7 @@ if(${HELPERS_onednn})
         set(ONEDNN dnnl)
     endif()
 endif()
+
 # cuDNN configuration
 if(${HELPERS_cudnn})
     if(NOT SD_CUDA)
@@ -1169,10 +1173,10 @@ set(INSTANTIATION_TEMPLATES_2
 set(GEN_COMPILATION_TEMPLATES
         "${CMAKE_CURRENT_SOURCE_DIR}/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
 )
+
 # CUDA Configuration
 if(SD_CUDA)
     message("Building with CUDA support")
-
 
     # Platform-specific settings
     if(WIN32)
@@ -1284,7 +1288,6 @@ if(SD_CUDA)
             message("Setting up Linux-specific CUDA unsupported compiler flags")
         endif()
 
-
         add_compile_definitions(SD_CUDA=true)
         if("$ENV{CLION_IDE}")
             add_compile_definitions(__CUDA_CC__)
@@ -1294,6 +1297,7 @@ if(SD_CUDA)
 
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
+        # Gather CUDA source files
         file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES ../include/execution/impl/*.cpp ../include/execution/cuda/*.cu ../include/execution/cuda/*.h ../include/execution/*.cu ../include/execution/*.h)
@@ -1323,10 +1327,13 @@ if(SD_CUDA)
             genCompilation(${FL_ITEM})
         endforeach()
 
-
+        if(HAVE_CUDNN)
+            message("cuDNN included")
+            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
+            list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
+        endif()
 
         set(ALL_SOURCES
-                ${CUDA_GENERATED_SOURCES}
                 ${PERF_SOURCES}
                 ${EXCEPTIONS_SOURCES}
                 ${EXEC_SOURCES}
@@ -1335,124 +1342,244 @@ if(SD_CUDA)
                 ${MEMORY_SOURCES}
                 ${GRAPH_SOURCES}
                 ${CUSTOMOPS_SOURCES}
-                ${CUSTOMOPS_ONEDNN_SOURCES}
-                ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-                ${CUSTOMOPS_GENERIC_SOURCES}
+                ${CUSTOMOPS_HELPERS_SOURCES}
                 ${OPS_SOURCES}
                 ${HELPERS_SOURCES}
                 ${INDEXING_SOURCES}
                 ${LOOPS_SOURCES}
                 ${LEGACY_SOURCES}
                 ${LOOPS_SOURCES_CUDA}
+                ${CUSTOMOPS_GENERIC_SOURCES}
+                ${CUSTOMOPS_CUDNN_SOURCES}
         )
 
-        if(HAVE_CUDNN)
-            message("cuDNN included")
-            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
-            list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
-        endif()
+        add_library(${SD_LIBRARY_NAME} OBJECT
+                ${ALL_SOURCES}
+        )
 
-        # Ensure ALL_SOURCES is not empty
-        list(LENGTH ALL_SOURCES SOURCE_COUNT)
-        if(SOURCE_COUNT EQUAL 0)
-            message(WARNING "ALL_SOURCES is empty, adding minimal placeholder")
-            file(WRITE "${CMAKE_BINARY_DIR}/placeholder.cpp" "// Placeholder source file\nextern \"C\" void placeholder_function() {}\n")
-            set(ALL_SOURCES "${CMAKE_BINARY_DIR}/placeholder.cpp")
-        endif()
-
-        if(SD_GCC_FUNCTRACE STREQUAL "ON")
-            add_library(samediff_obj OBJECT
-                    ${CUDA_GENERATED_SOURCES}
-                    ${LEGACY_SOURCES}
-                    ${HELPERS_CPP}
-                    ${CUSTOMOPS_HELPERS_SOURCES}
-                    ${HELPERS_SOURCES}
-                    ${EXEC_SOURCES}
-                    ${LOOPS_SOURCES}
-                    ${ARRAY_SOURCES}
-                    ${TYPES_SOURCES}
-                    ${MEMORY_SOURCES}
-                    ${GRAPH_SOURCES}
-                    ${CUSTOMOPS_SOURCES}
-                    ${INDEXING_SOURCES}
-                    ${EXCEPTIONS_SOURCES}
-                    ${OPS_SOURCES}
-                    ${PERF_SOURCES}
-                    ${CUSTOMOPS_CUDNN_SOURCES}
-                    ${CUSTOMOPS_ONEDNN_SOURCES}
-                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-                    ${CUSTOMOPS_GENERIC_SOURCES}
-                    ${LOOPS_SOURCES_CUDA}
-            )
-        else()
-            add_library(samediff_obj OBJECT
-                    ${CUDA_GENERATED_SOURCES}
-                    ${LOOPS_SOURCES_CUDA}
-                    ${LEGACY_SOURCES}
-                    ${HELPERS_CPP}
-                    ${CUSTOMOPS_HELPERS_SOURCES}
-                    ${HELPERS_SOURCES}
-                    ${EXEC_SOURCES}
-                    ${LOOPS_SOURCES}
-                    ${ARRAY_SOURCES}
-                    ${TYPES_SOURCES}
-                    ${MEMORY_SOURCES}
-                    ${GRAPH_SOURCES}
-                    ${CUSTOMOPS_SOURCES}
-                    ${INDEXING_SOURCES}
-                    ${EXCEPTIONS_SOURCES}
-                    ${OPS_SOURCES}
-                    ${PERF_SOURCES}
-                    ${CUSTOMOPS_CUDNN_SOURCES}
-                    ${CUSTOMOPS_ONEDNN_SOURCES}
-                    ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-                    ${CUSTOMOPS_GENERIC_SOURCES}
-                    ${LOOPS_SOURCES_CUDA}
-            )
-        endif()
-
-        target_include_directories(samediff_obj PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+        target_include_directories(${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
         set(MSVC_RT_LIB "MultiThreadedDLL")
-        set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         if(WIN32)
             message("Enabling /EHsc for CUDA on Windows")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
         endif()
 
-        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
-            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
-        endif()
-
         if(SD_STATIC_LIB AND SD_SHARED_LIB)
-            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
-            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
+            add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+            set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${SD_LIBRARY_NAME}_static")
+            set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
         elseif(SD_STATIC_LIB)
-            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
-            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+            add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+            set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+            set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
         endif()
 
-        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME}_shared SHARED $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+            set_target_properties(${SD_LIBRARY_NAME}_shared PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+            set_property(TARGET ${SD_LIBRARY_NAME}_shared PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-                ${CUDA_LIBRARIES}
-                ${CUDA_DRIVER_LIBRARY}
-                ${CUDA_CUBLAS_LIBRARIES}
-                ${CUDA_cusolver_LIBRARY}
-                ${CUDNN}
-        )
+            target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC
+                    ${CUDA_LIBRARIES}
+                    ${CUDA_DRIVER_LIBRARY}
+                    ${CUDA_CUBLAS_LIBRARIES}
+                    ${CUDA_cusolver_LIBRARY}
+                    ${CUDNN}
+            )
+
+            install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
+        endif()
+
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
-
-        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+
+    # Configure BLAS for CPU builds
+    message("CPU BLAS")
+    add_definitions(-D__CPUBLAS__=true)
+
+    # Gather CPU Source Files
+    file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
+    file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
+    file(GLOB_RECURSE EXEC_SOURCES ../include/execution/*.cpp ../include/execution/*.h)
+    file(GLOB_RECURSE TYPES_SOURCES ../include/types/*.cpp ../include/types/*.h)
+    file(GLOB_RECURSE ARRAY_SOURCES ../include/array/*.cpp ../include/array/*.h)
+    file(GLOB_RECURSE MEMORY_SOURCES ../include/memory/*.cpp ../include/memory/*.h)
+    file(GLOB_RECURSE GRAPH_SOURCES ../include/graph/*.cpp ../include/graph/*.h)
+    file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
+    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ../include/ops/declarable/helpers/cpu/*.cpp ../include/ops/declarable/helpers/impl/*.cpp)
+    file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
+    file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
+    file(GLOB_RECURSE HELPERS_SOURCES ../include/build_info.cpp ../include/ConstMessages.cpp ../include/helpers/*.cpp ../include/helpers/*.h)
+    file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
+    file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/*.cpp ../include/loops/*.h)
+    file(GLOB_RECURSE COMPILATION_UNITS ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in ../include/ops/impl/compilation_units/*.cpp.in)
+
+    # Include ONEDNN and ARM Compute Sources
+    if(HAVE_ONEDNN)
+        file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES
+                ../include/ops/declarable/platform/mkldnn/*.cpp
+                ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h
+        )
+        list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
+    endif()
+
+    if(HAVE_ARMCOMPUTE)
+        file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES
+                ../include/ops/declarable/platform/armcompute/*.cpp
+                ../include/ops/declarable/platform/armcompute/*.h
+        )
+        list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+    endif()
+
+    set(ALL_SOURCES
+            ${PERF_SOURCES}
+            ${EXCEPTIONS_SOURCES}
+            ${EXEC_SOURCES}
+            ${TYPES_SOURCES}
+            ${ARRAY_SOURCES}
+            ${MEMORY_SOURCES}
+            ${GRAPH_SOURCES}
+            ${CUSTOMOPS_SOURCES}
+            ${CUSTOMOPS_ONEDNN_SOURCES}
+            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+            ${CUSTOMOPS_GENERIC_SOURCES}
+            ${OPS_SOURCES}
+            ${HELPERS_SOURCES}
+            ${INDEXING_SOURCES}
+            ${LOOPS_SOURCES}
+            ${LEGACY_SOURCES}
+    )
+
+    if (SD_X86_BUILD)
+        # Disable platform optimizations for certain files on Linux/macOS
+        set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
+        set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
+    endif()
+
+    # Remove Excluded Files if Not All Operations are Included
+    if(NOT SD_ALL_OPS)
+        message("Not all SD OPS INCLUDED")
+
+        foreach(category IN ITEMS PERF_SOURCES EXCEPTIONS_SOURCES EXEC_SOURCES TYPES_SOURCES ARRAY_SOURCES MEMORY_SOURCES GRAPH_SOURCES CUSTOMOPS_SOURCES OPS_SOURCES HELPERS_SOURCES INDEXING_SOURCES LOOPS_SOURCES LEGACY_SOURCES LOOPS_SOURCES_CUDA HELPERS_CPP)
+            foreach(SRC_FILE ${${category}})
+                message("Checking exclusion for: ${SRC_FILE}")
+                removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${category}")
+            endforeach()
+        endforeach()
+    endif()
+
+    # Generate Compilation Units
+    foreach(FL_ITEM ${COMPILATION_UNITS})
+        genCompilation(${FL_ITEM})
+    endforeach()
+
+    # Process type combinations
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cpu_instantiations")
+    foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_3})
+        foreach(COMBINATION ${COMBINATIONS_3})
+            genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CMAKE_BINARY_DIR}/cpu_instantiations")
+        endforeach()
+    endforeach()
+
+    foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_2})
+        foreach(COMBINATION ${COMBINATIONS_2})
+            genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CMAKE_BINARY_DIR}/cpu_instantiations")
+        endforeach()
+    endforeach()
+
+    # Create Object Library
+    add_library(${SD_LIBRARY_NAME} OBJECT
+            ${LEGACY_SOURCES}
+            ${LOOPS_SOURCES}
+            ${HELPERS_SOURCES}
+            ${EXEC_SOURCES}
+            ${ARRAY_SOURCES}
+            ${TYPES_SOURCES}
+            ${MEMORY_SOURCES}
+            ${GRAPH_SOURCES}
+            ${CUSTOMOPS_SOURCES}
+            ${EXCEPTIONS_SOURCES}
+            ${INDEXING_SOURCES}
+            ${CUSTOMOPS_ONEDNN_SOURCES}
+            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+            ${CUSTOMOPS_GENERIC_SOURCES}
+            ${OPS_SOURCES}
+            ${PERF_SOURCES}
+    )
+
+    target_include_directories(${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
+
+    # Add External Dependencies
+    foreach(external_dependency IN LISTS EXTERNAL_DEPENDENCY_PROJECTS)
+        message("@external ${external_dependency}")
+        add_dependencies(${SD_LIBRARY_NAME} ${external_dependency})
+    endforeach()
+
+    # Create the shared library using SD_LIBRARY_NAME
+    if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+        add_library(${SD_LIBRARY_NAME}_shared SHARED $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+        set_target_properties(${SD_LIBRARY_NAME}_shared PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+        if(ANDROID)
+            # Limit the number of compile jobs on systems with few cores
+            cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+            if(_logical_cores LESS 4)
+                set_target_properties(${SD_LIBRARY_NAME}_shared PROPERTIES JOB_POOL_COMPILE one_jobs)
+            endif()
+        endif()
+
+        # Link required libraries to the shared library
+        target_link_libraries(${SD_LIBRARY_NAME}_shared
+                ${EXTERNAL_DEPENDENCY_LIBS}
+                ${ONEDNN}
+                ${ONEDNN_LIBRARIES}
+                ${ARMCOMPUTE_LIBRARIES}
+                ${OPENBLAS_LIBRARIES}
+                ${BLAS_LIBRARIES}
+                ${CPU_FEATURES}
+        )
+        install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
+    endif()
+
+    # Create the static library if needed
+    if (SD_STATIC_LIB AND SD_SHARED_LIB)
+        add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+        set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${SD_LIBRARY_NAME}_static")
+        set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
+    elseif(SD_STATIC_LIB)
+        add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
+        set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
+        set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
+    endif()
+
+    # Handle MSVC Runtime Library Consistently
+    set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+    # Compiler Checks
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
+        message(FATAL_ERROR "You need at least GCC 4.9")
+    endif()
+
+    # OpenMP for GCC
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        find_package(OpenMP)
+        if(OPENMP_FOUND)
+            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        endif()
+    endif()
+
+    # Set Library Output Directories
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu")
 endif()
-
-
 
 # Add tests if enabled
 if(SD_BUILD_TESTS)
@@ -1562,8 +1689,6 @@ if(SD_PREPROCESS STREQUAL "ON")
     add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
 endif()
 
-# Set installation directory
-
 # Set package information
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
@@ -1579,46 +1704,52 @@ set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSIO
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
-# Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH
-execute_process(COMMAND lsb_release -si OUTPUT_VARIABLE DISTRIBUTION OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(COMMAND uname -i OUTPUT_VARIABLE ARCHITECTURE)
 
-# Set package name and type (deb vs rpm)
-if(DISTRIBUTION STREQUAL "Ubuntu")
-    # Set Ubuntu-specific information
-    if(ARCHITECTURE MATCHES ".*x86_64.*")
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    else()
-        set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+
+if(UNIX)
+    # Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH
+    execute_process(COMMAND lsb_release -si OUTPUT_VARIABLE DISTRIBUTION OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND uname -i OUTPUT_VARIABLE ARCHITECTURE)
+
+    # Set package name and type (deb vs rpm)
+    if(DISTRIBUTION STREQUAL "Ubuntu")
+        # Set Ubuntu-specific information
+        if(ARCHITECTURE MATCHES ".*x86_64.*")
+            set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+        else()
+            set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+        endif()
+        set(CPACK_DEBIAN_PACKAGE_MAINTAINER "agibsonccc")
+        set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+        set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
+        set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/deeplearning4j")
+        set(CPACK_GENERATOR "DEB")
+        set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
+        set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
+    elseif(DISTRIBUTION STREQUAL "CentOS")
+        # Set Fedora-specific information
+        execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if(ARCHITECTURE MATCHES ".*x86_64.*")
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+        else()
+            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
+        endif()
+        set(CPACK_PACKAGE_CONTACT "agibsonccc")
+        set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
+        set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
+        set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
+        set(CPACK_RPM_PACKAGE_REQUIRES "")
+        set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/deeplearning4j/libnd4j")
+        set(CPACK_GENERATOR "RPM")
+        set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
+        set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
+        set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
+        set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
     endif()
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "agibsonccc")
-    set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-    set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-    set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/deeplearning4j")
-    set(CPACK_GENERATOR "DEB")
-    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
-    set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
-elseif(DISTRIBUTION STREQUAL "CentOS")
-    # Set Fedora-specific information
-    execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(ARCHITECTURE MATCHES ".*x86_64.*")
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
-    else()
-        set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
-    endif()
-    set(CPACK_PACKAGE_CONTACT "agibsonccc")
-    set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
-    set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
-    set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
-    set(CPACK_RPM_PACKAGE_REQUIRES "")
-    set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/deeplearning4j/libnd4j")
-    set(CPACK_GENERATOR "RPM")
-    set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
-    set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
-    set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
-    set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
+
 endif()
+
 
 include(CPack)
