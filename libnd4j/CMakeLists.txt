@@ -219,7 +219,7 @@ if(SD_ARCH MATCHES "armv8")
 elseif(SD_ARCH MATCHES "armv7")
     set(ARCH_TUNE "-march=${SD_ARCH} -mfpu=neon")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Aurora")
-    set_source_files_properties(../include/graph/impl/GraphHolder.cpp PROPERTIES COMPILE_FLAGS -g0)
+    set_source_files_properties(./include/graph/impl/GraphHolder.cpp PROPERTIES COMPILE_FLAGS -g0)
 elseif(SD_ARCH MATCHES "power*")
     set(ARCH_TUNE "-mcpu=${SD_ARCH} -mtune=${SD_ARCH} -D__POWER")
 elseif(SD_EXTENSION MATCHES "avx2")
@@ -1293,35 +1293,34 @@ if(SD_CUDA)
             add_compile_definitions(__CUDA_CC__)
         endif()
 
-        message("Set CUDA C++ Standard to ${CMAKE_CUDA_STANDARD}")
 
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
         # Gather CUDA source files
-        file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
-        file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
-        file(GLOB_RECURSE EXEC_SOURCES ../include/execution/impl/*.cpp ../include/execution/cuda/*.cu ../include/execution/cuda/*.h ../include/execution/*.cu ../include/execution/*.h)
-        file(GLOB_RECURSE TYPES_SOURCES ../include/types/*.cpp ../include/types/*.h)
-        file(GLOB_RECURSE ARRAY_SOURCES ../include/array/cuda/*.cu ../include/array/cuda/*.chpp ../include/array/impl/*.cpp ../include/array/cuda/*.cu ../include/array/*.h)
-        file(GLOB_RECURSE MEMORY_SOURCES ../include/memory/impl/*.cpp ../include/memory/cuda/*.cu ../include/memory/*.h)
-        file(GLOB_RECURSE GRAPH_SOURCES ../include/graph/*.cpp ../include/graph/*.cu ../include/graph/*.h)
-        file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
-        file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ../include/ops/declarable/helpers/cuda/*.cu ../include/ops/declarable/helpers/impl/*.cpp)
-        file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
+        file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
+        file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
+        file(GLOB_RECURSE EXEC_SOURCES ./include/execution/impl/*.cpp ./include/execution/cuda/*.cu ./include/execution/cuda/*.h ./include/execution/*.cu ./include/execution/*.h)
+        file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
+        file(GLOB_RECURSE ARRAY_SOURCES ./include/array/cuda/*.cu ./include/array/cuda/*.chpp ./include/array/impl/*.cpp ./include/array/cuda/*.cu ./include/array/*.h)
+        file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/impl/*.cpp ./include/memory/cuda/*.cu ./include/memory/*.h)
+        file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.cu ./include/graph/*.h)
+        file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
+        file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ./include/ops/declarable/helpers/cuda/*.cu ./include/ops/declarable/helpers/impl/*.cpp)
+        file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
         file(GLOB_RECURSE HELPERS_SOURCES
-                ../include/build_info.cpp
-                ../include/ConstMessages.cpp
-                ../include/helpers/*.cpp
-                ../include/helpers/cuda/*.cu
-                ../include/helpers/*.h)
+                ./include/build_info.cpp
+                ./include/ConstMessages.cpp
+                ./include/helpers/*.cpp
+                ./include/helpers/cuda/*.cu
+                ./include/helpers/*.h)
         file(GLOB CPU_HELPERS_TO_EXCLUDE
-                ../include/helpers/cpu/*.cpp)
+                ./include/helpers/cpu/*.cpp)
         list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
-        file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
-        file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/impl/*.cpp ../include/loops/*.h)
-        file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/*.cu ../include/legacy/*.h)
-        file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ../include/loops/*.cu ../include/loops/cuda/**/*.cu)
-        file(GLOB_RECURSE COMPILATION_UNITS ../include/loops/cuda/compilation_units/*.cu.in ../include/ops/impl/compilation_units/*.cpp.in)
+        file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp ./include/loops/*.h)
+        file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/*.h)
+        file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
+        file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in ./include/ops/impl/compilation_units/*.cpp.in)
 
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
@@ -1329,7 +1328,7 @@ if(SD_CUDA)
 
         if(HAVE_CUDNN)
             message("cuDNN included")
-            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ../include/ops/declarable/platform/cudnn/*.cu)
+            file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES ./include/ops/declarable/platform/cudnn/*.cu)
             list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
 
@@ -1354,7 +1353,6 @@ if(SD_CUDA)
         )
 
         add_library(${SD_LIBRARY_NAME} OBJECT
-                PUBLIC
                 ${ALL_SOURCES}
         )
 
@@ -1406,35 +1404,35 @@ else()
     add_definitions(-D__CPUBLAS__=true)
 
     # Gather CPU Source Files
-    file(GLOB_RECURSE PERF_SOURCES ../include/performance/*.cpp ../include/performance/*.h)
-    file(GLOB_RECURSE EXCEPTIONS_SOURCES ../include/exceptions/*.cpp ../include/exceptions/*.h)
-    file(GLOB_RECURSE EXEC_SOURCES ../include/execution/*.cpp ../include/execution/*.h)
-    file(GLOB_RECURSE TYPES_SOURCES ../include/types/*.cpp ../include/types/*.h)
-    file(GLOB_RECURSE ARRAY_SOURCES ../include/array/*.cpp ../include/array/*.h)
-    file(GLOB_RECURSE MEMORY_SOURCES ../include/memory/*.cpp ../include/memory/*.h)
-    file(GLOB_RECURSE GRAPH_SOURCES ../include/graph/*.cpp ../include/graph/*.h)
-    file(GLOB_RECURSE CUSTOMOPS_SOURCES ../include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ../include/ops/declarable/helpers/cpu/*.cpp ../include/ops/declarable/helpers/impl/*.cpp)
-    file(GLOB_RECURSE OPS_SOURCES ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp ../include/ops/*.h)
-    file(GLOB_RECURSE INDEXING_SOURCES ../include/indexing/*.cpp ../include/indexing/*.h)
-    file(GLOB_RECURSE HELPERS_SOURCES ../include/build_info.cpp ../include/ConstMessages.cpp ../include/helpers/*.cpp ../include/helpers/*.h)
-    file(GLOB_RECURSE LEGACY_SOURCES ../include/legacy/impl/*.cpp ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
-    file(GLOB_RECURSE LOOPS_SOURCES ../include/loops/*.cpp ../include/loops/*.h)
-    file(GLOB_RECURSE COMPILATION_UNITS ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in ../include/ops/impl/compilation_units/*.cpp.in)
+    file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
+    file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
+    file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
+    file(GLOB_RECURSE TYPES_SOURCES ./include/types/*.cpp ./include/types/*.h)
+    file(GLOB_RECURSE ARRAY_SOURCES ./include/array/*.cpp ./include/array/*.h)
+    file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
+    file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
+    file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
+    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp ./include/ops/declarable/helpers/impl/*.cpp)
+    file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
+    file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
+    file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/*.h)
+    file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
+    file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
+    file(GLOB_RECURSE COMPILATION_UNITS ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ./include/loops/cpu/compilation_units/*.cpp.in ./include/helpers/cpu/loops/*.cpp.in ./include/ops/impl/compilation_units/*.cpp.in)
 
     # Include ONEDNN and ARM Compute Sources
     if(HAVE_ONEDNN)
         file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES
-                ../include/ops/declarable/platform/mkldnn/*.cpp
-                ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h
+                ./include/ops/declarable/platform/mkldnn/*.cpp
+                ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h
         )
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
     endif()
 
     if(HAVE_ARMCOMPUTE)
         file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES
-                ../include/ops/declarable/platform/armcompute/*.cpp
-                ../include/ops/declarable/platform/armcompute/*.h
+                ./include/ops/declarable/platform/armcompute/*.cpp
+                ./include/ops/declarable/platform/armcompute/*.h
         )
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
     endif()
@@ -1461,7 +1459,7 @@ else()
     if (SD_X86_BUILD)
         # Disable platform optimizations for certain files on Linux/macOS
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
-        set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
+        set_source_files_properties(./include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
 
     # Remove Excluded Files if Not All Operations are Included
@@ -1476,6 +1474,7 @@ else()
         endforeach()
     endif()
 
+    set(CUSTOMOPS_GENERIC_SOURCES "")
     # Generate Compilation Units
     foreach(FL_ITEM ${COMPILATION_UNITS})
         genCompilation(${FL_ITEM})
@@ -1497,7 +1496,6 @@ else()
 
     # Create Object Library
     add_library(${SD_LIBRARY_NAME} OBJECT
-            PUBLIC
             ${LEGACY_SOURCES}
             ${LOOPS_SOURCES}
             ${HELPERS_SOURCES}
@@ -1595,7 +1593,7 @@ endif()
 # Preprocessing Configuration
 if(SD_PREPROCESS STREQUAL "ON")
     message("Preprocessing enabled: ${CMAKE_BINARY_DIR}")
-    include_directories(${CMAKE_BINARY_DIR}/../../include)
+    include_directories(${CMAKE_BINARY_DIR}/.././include)
 
     # Remove Duplicate Entries
     list(REMOVE_DUPLICATES ALL_SOURCES)
@@ -1633,23 +1631,23 @@ if(SD_PREPROCESS STREQUAL "ON")
 
                 get_property(INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
                 list(APPEND INCLUDE_DIRS
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/array
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/execution
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/types
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/memory
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/graph
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/exceptions
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/indexing
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/legacy
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops/cpu
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/loops/cuda
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/performance
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/helpers
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/system
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops/declarable
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../include/ops/declarable/helpers
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/array
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/execution
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/ops
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/types
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/memory
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/graph
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/exceptions
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/indexing
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/legacy
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/loops
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/loops/cpu
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/loops/cuda
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/performance
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/helpers
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/system
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/ops/declarable
+                        ${CMAKE_CURRENT_SOURCE_DIR}/./include/ops/declarable/helpers
                 )
 
                 set(include_dirs "")
