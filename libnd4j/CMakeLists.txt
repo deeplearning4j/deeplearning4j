@@ -1173,10 +1173,6 @@ set(GEN_COMPILATION_TEMPLATES
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # Set environment variables to allow unsupported compilers
-    set(ENV{CUDAFE_FLAGS} "-allow-unsupported-compiler")
-    set(ENV{NVCC_OPTIONS} "-allow-unsupported-compiler")
-    set(ENV{CUDA_NVCC_FLAGS} "-allow-unsupported-compiler")
 
     # Platform-specific settings
     if(WIN32)
@@ -1200,7 +1196,7 @@ if(SD_CUDA)
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 
         # Add --allow-unsupported-compiler to CUDA flags
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -allow-unsupported-compiler")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
 
         if("${SD_PTXAS}" STREQUAL "ON")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
