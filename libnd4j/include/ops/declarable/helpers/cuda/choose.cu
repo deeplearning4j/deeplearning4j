@@ -110,7 +110,7 @@ static void processConditionCuda(LaunchContext* context, int mode, NDArray* arg,
         arg->lengthOf());
     
     manager.synchronize();
-    DebugHelper::checkErrorCode(context->getCudaStream(), "chooseFunctor CUDA failed");
+    sd::DebugHelper::checkErrorCode(context->getCudaStream(), "chooseFunctor CUDA failed");
 }
 
 void chooseFunctorArray(LaunchContext* context, NDArray* arg, NDArray* comp, int mode, NDArray* result,
