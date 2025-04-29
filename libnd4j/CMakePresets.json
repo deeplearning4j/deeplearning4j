@@ -80,7 +80,7 @@
                 "SD_CUDA": true,
                 "BLAS":true,
                 "CMAKE_BUILD_TYPE" : "Debug",
-                "COMPUTE": "86",
+                "COMPUTE": "8.0",
                 "__CUDACC__" : "ON",
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",

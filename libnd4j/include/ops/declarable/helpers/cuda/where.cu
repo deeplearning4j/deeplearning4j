@@ -133,16 +133,16 @@ static void whereKernelLauncher(LaunchContext *context, NDArray &condition, NDAr
  PointersManager manager(context, "whereKernelLauncher");
 
  // First step: count true elements
- int *dCount = reinterpret_cast<int *>(manager.allocateDeviceMemory(sizeof(int)));
+ int *dCount = reinterpret_cast<int *>(manager.allocateDevMem(sizeof(int)));
  int zero = 0;
- manager.memcpyToDevice(&zero, dCount, sizeof(int));
+ manager.synchronize();
 
  countTrueElements<T><<<gridSize, blockSize, 512, *context->getCudaStream()>>>(
      condition.specialBuffer(), condition.specialShapeInfo(), dCount);
 
  // Wait for count to complete
  int hCount;
- manager.memcpyToHost(dCount, &hCount, sizeof(int));
+ manager.synchronize();
 
  if (hCount == 0) {
    // No true elements, return empty array
