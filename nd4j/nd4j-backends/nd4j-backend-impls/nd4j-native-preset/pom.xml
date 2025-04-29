@@ -89,23 +89,6 @@
                 <groupId>org.moditect</groupId>
                 <artifactId>moditect-maven-plugin</artifactId>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc-plugin.version}</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -113,29 +96,6 @@
                     <forceCreation>true</forceCreation>
                 </configuration>
                 <executions>
-                    <execution>
-                        <id>empty-javadoc-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>javadoc</classifier>
-                            <classesDirectory>${basedir}/javadoc</classesDirectory>
-
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>empty-sources-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>sources</classifier>
-                            <classesDirectory>${basedir}/src</classesDirectory>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>default-jar</id>
                         <phase>package</phase>
