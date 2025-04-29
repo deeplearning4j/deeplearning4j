@@ -41,6 +41,8 @@
         <byteunits.version>0.9.1</byteunits.version>
         <neoitertools.version>1.0.0</neoitertools.version>
         <module.name>nd4j.api</module.name>
+        <cuda.version>12.3</cuda.version>
+        <cudnn.version>8.9</cudnn.version>
     </properties>
 
 
@@ -177,7 +179,7 @@
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>
-                    <classifier>${javacpp.platform}</classifier>
+                    <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
                 </dependency>
             </dependencies>
         </profile>
