@@ -90,6 +90,50 @@ macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------}")
 endmacro()
 
+# Add this near the top with other option definitions
+option(SD_PREPROCESSOR "Use preprocessor" OFF)
+
+# Add this section before the flatbuffers download section
+# Compile Definitions for Operations
+set(DEFINITIONS_CONTENT "")
+if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
+    message("Adding all ops due to empty op list or SD_ALL_OPS definition: SD_ALL_OPS=${SD_ALL_OPS} SD_OPS_LIST=${SD_OPS_LIST}")
+    add_compile_definitions(SD_ALL_OPS=1)
+    string(APPEND DEFINITIONS_CONTENT "#define SD_ALL_OPS 1\n")
+else()
+    message("_OPS: ${SD_OPS_LIST}")
+    foreach(OP ${SD_OPS_LIST})
+        add_compile_definitions(OP_${OP}=1)
+        message(STATUS "OP: ${OP}")
+        string(APPEND DEFINITIONS_CONTENT "#define OP_${OP} 1\n")
+    endforeach()
+endif()
+
+# Compile Definitions for Types
+list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
+if(SD_TYPES_LIST_COUNT GREATER 0)
+    add_compile_definitions(SD_SELECTIVE_TYPES)
+    string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
+    foreach(SD_TYPE ${SD_TYPES_LIST})
+        string(TOUPPER ${SD_TYPE} SD_TYPE_UPPERCASE)
+        add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
+        message(STATUS "TYPE: ${SD_TYPE_UPPERCASE}")
+        string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
+    endforeach()
+endif()
+
+# Create the directory for generated files if it doesn't exist
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+# Write Definitions to include_ops.h file
+set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+message("Generating include_ops.h at: ${INCLUDE_OPS_FILE}")
+file(WRITE "${INCLUDE_OPS_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+
+# Add the generated directory to include paths
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+
 print_all_variables()
 
 # Define ARM Compute Library URLs based on architecture
