@@ -24,7 +24,6 @@
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 #include <types/types.h>
-#include <type_traits>
 /*
  * Type Ranking System:
 type_rank template and its specializations assign an integer rank to each supported type.
@@ -70,14 +69,10 @@ template<> struct type_rank<int32_t>     : std::integral_constant<int, 3> {};
 template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 #endif
 
-// Define for int64_t
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
-
-// Define for long long int only if it's not the same as int64_t
 #if !defined(__APPLE__) && !defined(_WIN32)
 template<> struct type_rank<long long int> : std::integral_constant<int, 4> {};
 #endif
-
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 
 
@@ -101,11 +96,7 @@ template<> struct type_rank<double>      : std::integral_constant<int, 7> {};
 // promote_type trait
 template<typename T1, typename T2>
 struct promote_type {
-  using type = typename std::conditional
-      (type_rank<T1>::value >= type_rank<T2>::value),
-        T1,
-        T2
-            >::type;
+  using type = typename std::conditional<(type_rank<T1>::value >= type_rank<T2>::value), T1, T2>::type;
 };
 
 // promote function template
@@ -117,10 +108,7 @@ typename promote_type<Type1, Type2>::type promote(ValueType value) {
 // promote_type3 trait for three types
 template<typename T1, typename T2, typename T3>
 struct promote_type3 {
-  using type = typename promote_type
-      typename promote_type<T1, T2>::type,
-        T3
-            >::type;
+  using type = typename promote_type<typename promote_type<T1, T2>::type, T3>::type;
 };
 
 
@@ -158,8 +146,6 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 
 #if defined(HAS_INT64)
 template<> struct type_name<int64_t>     { static const char* get() { return "int64_t"; } };
-
-// Define for long long int only if it's not the same as int64_t
 #if !defined(__APPLE__) && !defined(_WIN32)
 template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
 #endif
