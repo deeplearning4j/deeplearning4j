@@ -30,16 +30,15 @@
 namespace sd {
 
 #if defined(__APPLE__)
-#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
-#define __MAC_OS_X_VERSION_MIN_REQUIRED 101200 // Force minimum macOS 10.12
-#endif
+#include <Availability.h>
 #endif
 
-
-#if __cplusplus >= 201703L
-#define SHAPE_MUTEX_TYPE std::shared_mutex
+#if __cplusplus >= 201703L && (!defined(__APPLE__) || (defined(__MAC_OS_X_VERSION_MAX_ALLOWED) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
+#define TAD_MUTEX_TYPE std::shared_mutex
+#define TAD_LOCK_TYPE std::shared_lock
 #else
-#define SHAPE_MUTEX_TYPE std::mutex
+#define TAD_MUTEX_TYPE std::mutex
+#define TAD_LOCK_TYPE std::lock_guard
 #endif
 
 class SD_LIB_EXPORT ShapeTrieNode {
