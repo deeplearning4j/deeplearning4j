@@ -54,7 +54,9 @@ template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 #endif
 
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
-template<> struct type_rank<long long int>   : std::integral_constant<int, 4> {};
+#if !defined(__APPLE__) && !defined(__clang__) || (defined(__APPLE__) && !defined(__clang__))
+template<> struct type_rank<long long int> : std::integral_constant<int, 4> {};
+#endif
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 
 
