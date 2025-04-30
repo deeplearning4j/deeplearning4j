@@ -34,11 +34,11 @@ namespace sd {
 #endif
 
 #if __cplusplus >= 201703L && (!defined(__APPLE__))
-#define TAD_MUTEX_TYPE std::shared_mutex
-#define TAD_LOCK_TYPE std::shared_lock
+#define SHAPE_MUTEX_TYPE std::shared_mutex
+#define SHAPE_LOCK_TYPE std::shared_lock
 #else
-#define TAD_MUTEX_TYPE std::mutex
-#define TAD_LOCK_TYPE std::lock_guard
+#define SHAPE_MUTEX_TYPE std::mutex
+#define SHAPE_LOCK_TYPE std::lock_guard
 #endif
 
 class SD_LIB_EXPORT ShapeTrieNode {
