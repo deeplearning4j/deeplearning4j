@@ -29,6 +29,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 # Standard Settings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
+include(CheckCXXCompilerFlag)
 
 # Set Windows specific flags
 if(WIN32)
