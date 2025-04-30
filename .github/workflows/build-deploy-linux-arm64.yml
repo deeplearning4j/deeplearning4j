@@ -1,4 +1,3 @@
-# .github/workflows/your_workflow_name.yml (replace with your actual filename)
 on:
   workflow_dispatch:
     inputs:
@@ -102,7 +101,7 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-          
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
@@ -150,14 +149,12 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
-        
-        
 
       - name: Setup path
         shell: bash
         run: echo "/opt/protobuf/bin" >> $GITHUB_PATH
 
-      # --- MODIFIED STEP ---
+      # --- MODIFIED STEP WITH FIX ---
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
@@ -182,20 +179,40 @@ jobs:
               # Download ARM64 Compute Library
               ARCHIVE_NAME="arm_compute-v25.04-linux-aarch64-cpu-bin.tar.gz"
               wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/${ARCHIVE_NAME}
-              tar -xzf ${ARCHIVE_NAME}
+          
+              # Verify the downloaded archive
+              echo "Verifying downloaded archive:"
+              file ${ARCHIVE_NAME}
+          
+              # Create a specific directory for extraction
+              mkdir -p extract_dir
+          
+              # Extract with verbose output and error handling
+              echo "Extracting archive to designated directory..."
+              tar -xzvf ${ARCHIVE_NAME} -C extract_dir || { 
+                echo "Tar extraction failed with error code $?"; 
+                echo "Attempting alternative extraction method...";
+                # Alternative extraction without stdout redirection
+                tar -xvf ${ARCHIVE_NAME} --no-same-owner -C extract_dir;
+              }
+          
+              # List extracted contents to verify success
+              echo "Listing extracted contents:"
+              ls -la extract_dir
 
-              # Determine the actual extracted directory name (takes the first path component from the tar list)
-              # This makes it robust even if the archive version/name changes slightly
-              EXTRACTED_DIR_NAME=$(tar -tf ${ARCHIVE_NAME} | head -n 1 | cut -f1 -d"/")
-              if [ -z "$EXTRACTED_DIR_NAME" ] || [ ! -d "$EXTRACTED_DIR_NAME" ]; then
-                echo "Error: Could not determine or find extracted directory name from archive ${ARCHIVE_NAME}"
-                exit 1
+              # Determine the actual extracted directory name
+              EXTRACTED_DIR_NAME=$(find extract_dir -maxdepth 1 -type d | grep -v "^extract_dir$" | head -1)
+              if [ -z "$EXTRACTED_DIR_NAME" ]; then
+                echo "Warning: Could not determine extracted directory name. Using extract_dir as root."
+                ACTUAL_ARMCOMPUTE_ROOT="${ARMCOMPUTE_PARENT_DIR}/extract_dir"
+              else
+                echo "Determined ARM Compute Library root: ${EXTRACTED_DIR_NAME}"
+                ACTUAL_ARMCOMPUTE_ROOT="${EXTRACTED_DIR_NAME}"
               fi
-              ACTUAL_ARMCOMPUTE_ROOT="${ARMCOMPUTE_PARENT_DIR}/${EXTRACTED_DIR_NAME}"
-              echo "Determined ARM Compute Library root: ${ACTUAL_ARMCOMPUTE_ROOT}"
-
+          
               # Set ARMCOMPUTE_ROOT to the *actual* extracted path
               echo "ARMCOMPUTE_ROOT=${ACTUAL_ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
+              echo "ARM Compute Library setup complete at: ${ACTUAL_ARMCOMPUTE_ROOT}"
           fi
       # --- END OF MODIFIED STEP ---
 
