@@ -1735,6 +1735,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        JCublasNDArray ndArray = new JCublasNDArray();
+        ndArray.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(ndArray.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,ndArray.length(),false);
+        ndArray.setData(buff);
+        return ndArray;
+    }
+
+
+    @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
         if (Nd4j.getNativeOps().lastErrorCode() != 0)
             throw new RuntimeException(Nd4j.getNativeOps().lastErrorMessage());
