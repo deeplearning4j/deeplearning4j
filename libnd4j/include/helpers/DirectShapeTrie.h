@@ -29,6 +29,13 @@
 
 namespace sd {
 
+#if defined(__APPLE__)
+#ifndef __MAC_OS_X_VERSION_MIN_REQUIRED
+#define __MAC_OS_X_VERSION_MIN_REQUIRED 101200 // Force minimum macOS 10.12
+#endif
+#endif
+
+
 #if __cplusplus >= 201703L
 #define SHAPE_MUTEX_TYPE std::shared_mutex
 #else
