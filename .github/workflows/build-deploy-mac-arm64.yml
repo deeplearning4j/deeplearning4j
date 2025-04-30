@@ -153,7 +153,7 @@ jobs:
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install  gnu-sed unzip  ccache gcc swig autoconf-archive automake  libomp libtool libusb ant maven nasm xz pkg-config sdl  bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup libnd4j home if a download url is specified
