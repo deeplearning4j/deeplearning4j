@@ -41,8 +41,7 @@ PROMOTE_ARGS macro handles function arguments correctly.
 // Type ranking system
 template<typename T> struct type_rank;
 
-// Type ranking system
-template<typename T> struct type_rank;
+
 
 #if defined(HAS_BOOL)
 template<> struct type_rank<bool>        : std::integral_constant<int, 0> {};
