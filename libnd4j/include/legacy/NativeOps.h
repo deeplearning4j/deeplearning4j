@@ -31,7 +31,14 @@
 #include <array/InteropDataBuffer.h>
 #include <array/TadPack.h>
 #include <cnpy/cnpy.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <dbghelp.h>
+// Windows-specific backtrace implementation
+#else
 #include <execinfo.h>
+// Unix-style backtrace implementation
+#endif
 #include <graph/GraphState.h>
 #include <graph/ResultWrapper.h>
 #include <graph/VariablesSet.h>
