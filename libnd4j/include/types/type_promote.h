@@ -24,6 +24,7 @@
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 #include <types/types.h>
+#include <type_traits>
 /*
  * Type Ranking System:
 type_rank template and its specializations assign an integer rank to each supported type.
@@ -38,10 +39,12 @@ Macros like INSTANTIATE_PROMOTE and CALLBACK_INSTANTIATE_PROMOTE help in instant
 PROMOTE_ARGS macro handles function arguments correctly.
  */
 
+// Helper to detect if types are the same
+template <typename T, typename U>
+struct is_same_type : std::is_same<T, U> {};
+
 // Type ranking system
 template<typename T> struct type_rank;
-
-
 
 #if defined(HAS_BOOL)
 template<> struct type_rank<bool>        : std::integral_constant<int, 0> {};
@@ -71,9 +74,14 @@ template<> struct type_rank<int32_t>     : std::integral_constant<int, 3> {};
 template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 #endif
 
-
+// Always define for int64_t
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
-template<> struct type_rank<sd::LongType> : std::integral_constant<int, 4> {};
+
+// Use SFINAE to define long long int specialization only if it's a different type than int64_t
+template<typename T = void>
+struct type_rank<long long int, typename std::enable_if<!is_same_type<long long int, int64_t>::value, T>::type>
+    : std::integral_constant<int, 4> {};
+
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 
 #if defined(HAS_FLOAT16)
@@ -96,11 +104,11 @@ template<> struct type_rank<double>      : std::integral_constant<int, 7> {};
 // promote_type trait
 template<typename T1, typename T2>
 struct promote_type {
-  using type = typename std::conditional<
+  using type = typename std::conditional
       (type_rank<T1>::value >= type_rank<T2>::value),
-      T1,
-      T2
-      >::type;
+        T1,
+        T2
+            >::type;
 };
 
 // promote function template
@@ -112,10 +120,10 @@ typename promote_type<Type1, Type2>::type promote(ValueType value) {
 // promote_type3 trait for three types
 template<typename T1, typename T2, typename T3>
 struct promote_type3 {
-  using type = typename promote_type<
+  using type = typename promote_type
       typename promote_type<T1, T2>::type,
-      T3
-      >::type;
+        T3
+            >::type;
 };
 
 
@@ -152,10 +160,13 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 #endif
 
 #if defined(HAS_INT64)
-template<> struct type_name<int64_t> { static const char* get() { return "int64_t"; } };
-template<> struct type_name<sd::LongType> { static const char* get() { return "sd::LongType"; } };
-#endif
+template<> struct type_name<int64_t>     { static const char* get() { return "int64_t"; } };
 
+// Use SFINAE to define long long int specialization only if it's a different type than int64_t
+template<typename T = void>
+struct type_name<long long int, typename std::enable_if<!is_same_type<long long int, int64_t>::value, T>::type>
+{ static const char* get() { return "long long int"; } };
+#endif
 
 #if defined(HAS_UINT64)
 template<> struct type_name<uint64_t>    { static const char* get() { return "uint64_t"; } };
