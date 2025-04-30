@@ -301,6 +301,7 @@
                             <compilerOptions>
                                 <compilerOption>-std=c++17</compilerOption>
                                 <compilerOption>-Wl,--no-undefined</compilerOption>
+                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda/blas</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -444,7 +445,7 @@
                                 <compilerOption>-g</compilerOption>
                                 <compilerOption>-fPIC</compilerOption>
                                 <compilerOption>-std=c++17</compilerOption>
-
+                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda/blas</compilerOption>
                             </compilerOptions>
 
                         </configuration>
