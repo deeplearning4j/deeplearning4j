@@ -201,8 +201,7 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
 
-          gpg --version
-          gpg1 --version
+        
           brew list
           brew list --cask
           
