@@ -43,6 +43,10 @@
         <module.name>nd4j.api</module.name>
         <cuda.version>12.3</cuda.version>
         <cudnn.version>8.9</cudnn.version>
+        <libnd4j.platform>${javacpp.platform}</libnd4j.platform>
+        <libnd4j.extension></libnd4j.extension>
+        <libnd4j.chip></libnd4j.chip>
+        <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
     </properties>
 
 
@@ -146,6 +150,32 @@
     </dependencies>
 
     <profiles>
+        <!-- Mirror the same profile logic from libnd4j -->
+        <profile>
+            <id>chip</id>
+            <activation>
+                <property>
+                    <name>libnd4j.chip</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}</libnd4j.classifier>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>extension</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.extension}</libnd4j.classifier>
+            </properties>
+        </profile>
+
+        <!-- The main profile that includes libnd4j -->
         <profile>
             <id>cpu</id>
             <activation>
@@ -159,12 +189,11 @@
                     <groupId>org.nd4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${javacpp.platform}</classifier>
+                    <classifier>${libnd4j.classifier}</classifier>
                     <type>zip</type>
                 </dependency>
             </dependencies>
         </profile>
-
         <profile>
         <id>chip</id>
         <activation>
