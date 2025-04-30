@@ -24,9 +24,14 @@
 #include <array>
 #include <atomic>
 #include <memory>
-#include <shared_mutex>
 #include <vector>
 
+#if __cplusplus >= 201703L && (!defined(__APPLE__))
+#include <shared_mutex>
+
+#else
+#include <mutex>
+#endif
 namespace sd {
 
 #if defined(__APPLE__)
@@ -34,9 +39,11 @@ namespace sd {
 #endif
 
 #if __cplusplus >= 201703L && (!defined(__APPLE__))
+#include <shared_mutex>
 #define SHAPE_MUTEX_TYPE std::shared_mutex
 #define SHAPE_LOCK_TYPE std::shared_lock
 #else
+#include <mutex>
 #define SHAPE_MUTEX_TYPE std::mutex
 #define SHAPE_LOCK_TYPE std::lock_guard
 #endif

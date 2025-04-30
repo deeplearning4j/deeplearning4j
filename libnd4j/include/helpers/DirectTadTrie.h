@@ -24,7 +24,12 @@
 #include <array>
 #include <atomic>
 #include <memory>
+#if __cplusplus >= 201703L && (!defined(__APPLE__))
 #include <shared_mutex>
+
+#else
+#include <mutex>
+#endif
 #include <vector>
 
 #include "array/TadCalculator.h"

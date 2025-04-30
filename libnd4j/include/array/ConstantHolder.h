@@ -43,8 +43,8 @@ class ConstantHolder {
   ConstantHolder() = default;
   ~ConstantHolder() = default;
 
-  ConstantHolder &operator=(const ConstantHolder &other) = default;
-  ConstantHolder &operator=(ConstantHolder &&other) = default;
+  ConstantHolder &operator=(const ConstantHolder &other) = delete;
+  ConstantHolder &operator=(ConstantHolder &&other) = delete;
 
   bool hasBuffer(DataType dataType);
 
