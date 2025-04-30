@@ -1419,24 +1419,6 @@ else()
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
     endif()
 
-    set(ALL_SOURCES
-            ${PERF_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${EXEC_SOURCES}
-            ${TYPES_SOURCES}
-            ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES}
-            ${GRAPH_SOURCES}
-            ${CUSTOMOPS_SOURCES}
-            ${CUSTOMOPS_ONEDNN_SOURCES}
-            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-            ${CUSTOMOPS_GENERIC_SOURCES}
-            ${OPS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${INDEXING_SOURCES}
-            ${LOOPS_SOURCES}
-            ${LEGACY_SOURCES}
-    )
 
     if (SD_X86_BUILD)
         # Disable platform optimizations for certain files on Linux/macOS
@@ -1448,7 +1430,7 @@ else()
     if(NOT SD_ALL_OPS)
         message("Not all SD OPS INCLUDED")
 
-        foreach(category IN ITEMS PERF_SOURCES EXCEPTIONS_SOURCES EXEC_SOURCES TYPES_SOURCES ARRAY_SOURCES MEMORY_SOURCES GRAPH_SOURCES CUSTOMOPS_SOURCES OPS_SOURCES HELPERS_SOURCES INDEXING_SOURCES LOOPS_SOURCES LEGACY_SOURCES LOOPS_SOURCES_CUDA HELPERS_CPP)
+        foreach(category IN ITEMS ALL_SOURCES)
             foreach(SRC_FILE ${${category}})
                 message("Checking exclusion for: ${SRC_FILE}")
                 removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${category}")
@@ -1471,24 +1453,29 @@ else()
         endforeach()
     endforeach()
 
-    # Create Object Library
-    add_library(${SD_LIBRARY_NAME} OBJECT
-            ${LEGACY_SOURCES}
-            ${LOOPS_SOURCES}
-            ${HELPERS_SOURCES}
+
+    set(ALL_SOURCES
+            ${PERF_SOURCES}
+            ${EXCEPTIONS_SOURCES}
             ${EXEC_SOURCES}
-            ${ARRAY_SOURCES}
             ${TYPES_SOURCES}
+            ${ARRAY_SOURCES}
             ${MEMORY_SOURCES}
             ${GRAPH_SOURCES}
             ${CUSTOMOPS_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${INDEXING_SOURCES}
             ${CUSTOMOPS_ONEDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
             ${CUSTOMOPS_GENERIC_SOURCES}
             ${OPS_SOURCES}
-            ${PERF_SOURCES}
+            ${HELPERS_SOURCES}
+            ${INDEXING_SOURCES}
+            ${LOOPS_SOURCES}
+            ${LEGACY_SOURCES}
+    )
+
+    # Create Object Library
+    add_library(${SD_LIBRARY_NAME} OBJECT
+            ${ALL_SOURCES}
     )
 
     target_include_directories(${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
