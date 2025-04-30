@@ -2,6 +2,25 @@
 // Created by agibsonccc on 11/22/24.
 //
 
+/* ******************************************************************************
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
+
+
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 #include <types/types.h>
@@ -136,8 +155,11 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 #endif
 
 #if defined(HAS_INT64)
-template<> struct type_name<int64_t>     { static const char* get() { return "int64_t"; } };
+template<> struct type_name<int64_t> { static const char* get() { return "int64_t"; } };
+
+#if !(defined(__APPLE__) || defined(_WIN32))
 template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
+#endif
 #endif
 
 #if defined(HAS_UINT64)
