@@ -45,7 +45,7 @@ namespace generic {
 template<size_t NUM_STRIPES = 32>
 class StripedLocks {
 private:
- mutable std::array<std::shared_mutex, NUM_STRIPES> _mutexes;
+ mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes;
  mutable std::array<std::atomic<uint32_t>, NUM_STRIPES> _stripeCounts{};
  static constexpr int MAX_RETRIES = 500;
  static constexpr auto RETRY_DELAY = std::chrono::microseconds(50);
