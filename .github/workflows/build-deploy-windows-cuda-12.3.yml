@@ -263,55 +263,6 @@ jobs:
             Write-Warning "CUDA Path '$cudaPath' not found. Build might fail if CUDA is required."
           }
 
-      - name: Prepare Visual Studio Environment
-        shell: powershell
-        run: |
-          # Create a PowerShell script to find Visual Studio
-          $findVsScript = @"
-          # Find Visual Studio installation
-          \$vsPath = \$null
-          
-          if (Test-Path -Path "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat") {
-              \$vsPath = "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          } elseif (Test-Path -Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat") {
-              \$vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          } elseif (Test-Path -Path "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat") {
-              \$vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat"
-          } elseif (Test-Path -Path "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") {
-              \$vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-          }
-          
-          if (\$vsPath -eq \$null) {
-              Write-Error "Could not find Visual Studio installation"
-              exit 1
-          }
-          
-          Write-Host "Found Visual Studio at: \$vsPath"
-          
-          # Create a batch file to initialize Visual Studio environment
-          \$envSetupBat = @"
-          @echo off
-          call `"\$vsPath`"
-          set > `"%TEMP%\vs-environment.txt`"
-          "@
-          
-          \$envSetupBat | Out-File -FilePath "\$env:TEMP\vs-env-setup.bat" -Encoding ASCII
-          Write-Host "Created VS environment setup batch file at \$env:TEMP\vs-env-setup.bat"
-          "@
-          
-          # Write the script to disk
-          Set-Content -Path "$env:TEMP\find-vs.ps1" -Value $findVsScript
-          
-          # Execute the script
-          & powershell -File "$env:TEMP\find-vs.ps1"
-          
-          if (-not (Test-Path -Path "$env:TEMP\vs-env-setup.bat")) {
-              Write-Error "Failed to create Visual Studio environment setup batch file"
-              exit 1
-          }
-          
-          Write-Host "Successfully created Visual Studio environment setup"
-
       - name: Run cuda build
         shell: cmd
         env:
@@ -346,31 +297,40 @@ jobs:
           echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
           echo "---------------------------"
           
-          echo "Initializing Visual Studio environment..."
-          call "%TEMP%\vs-env-setup.bat"
-          
-          echo "Visual Studio environment initialized"
-          
-          echo "Loading environment variables..."
-          for /F "tokens=1,2 delims==" %%A in ('type "%TEMP%\vs-environment.txt" ^| findstr "INCLUDE LIB LIBPATH PATH VCToolsInstallDir"') do (
-              set "%%A=%%B"
-              echo "Set %%A=%%B"
+          echo "Checking for Visual Studio installations..."
+          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
+              echo "Found Visual Studio 2019 Enterprise"
+              set "VS_PATH=C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
+              echo "Found Visual Studio 2022 Enterprise"
+              set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat" (
+              echo "Found Visual Studio 2022 Professional"
+              set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat"
+          ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" (
+              echo "Found Visual Studio 2022 Community"
+              set "VS_PATH=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+          ) else (
+              echo "ERROR: Could not find any Visual Studio installation with vcvars64.bat"
+              exit 1
           )
           
-          echo "Checking for C++ compiler..."
+          echo "Initializing Visual Studio environment using %VS_PATH%..."
+          call "%VS_PATH%"
+          
+          echo "Checking if cl.exe is available in PATH..."
           where cl.exe
           if %ERRORLEVEL% NEQ 0 (
-              echo "ERROR: Visual C++ compiler (cl.exe) not found in PATH"
+              echo "ERROR: cl.exe not found in PATH after initializing Visual Studio environment"
               echo "Current PATH: %PATH%"
               exit 1
           ) else (
-              echo "Found C++ compiler at:"
-              where cl.exe
+              echo "cl.exe found in PATH"
           )
           
-          echo "Setting CMake compiler environment variables..."
-          set CXX=cl.exe
-          set CC=cl.exe
+          echo "Setting environment variables for CMake..."
+          set "CXX=cl.exe"
+          set "CC=cl.exe"
           
           echo "Setting MSYS environment..."
           set MSYSTEM=MINGW64
