@@ -157,10 +157,9 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 #if defined(HAS_INT64)
 template<> struct type_name<int64_t> { static const char* get() { return "int64_t"; } };
 
-#if !(defined(__APPLE__) || defined(_WIN32))
 template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
 #endif
-#endif
+
 
 #if defined(HAS_UINT64)
 template<> struct type_name<uint64_t>    { static const char* get() { return "uint64_t"; } };
