@@ -187,7 +187,7 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
   int rank = shape::rank(originalShape);
   // Use the enhanced hash computation for better distribution
   const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
-  std::unique_lock<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+  TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Check if a compatible TadPack already exists
   TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
