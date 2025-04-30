@@ -107,7 +107,7 @@ jobs:
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf # Changed to use runner.os for better caching if OS changes
+          key: ${{ runner.os }}-protobuf
           restore-keys: |
             ${{ runner.os }}-protobuf
       - uses: ./.github/actions/install-protobuf-linux
@@ -210,9 +210,43 @@ jobs:
                 ACTUAL_ARMCOMPUTE_ROOT="${EXTRACTED_DIR_NAME}"
               fi
           
-              # Set ARMCOMPUTE_ROOT to the *actual* extracted path
+              # Set the actual libraries paths
+              COMPUTE_LIB="${ACTUAL_ARMCOMPUTE_ROOT}/lib/armv8a-neon/libarm_compute.so"
+              COMPUTE_GRAPH_LIB="${ACTUAL_ARMCOMPUTE_ROOT}/lib/armv8a-neon/libarm_compute_graph.so"
+          
+              # Check if the libraries exist
+              if [ -f "${COMPUTE_LIB}" ]; then
+                echo "Found libarm_compute.so at ${COMPUTE_LIB}"
+              else
+                echo "ERROR: libarm_compute.so not found at expected location: ${COMPUTE_LIB}"
+                # Try to find it
+                COMPUTE_LIB=$(find "${ACTUAL_ARMCOMPUTE_ROOT}" -name "libarm_compute.so" | head -1)
+                echo "Searching for libarm_compute.so, found: ${COMPUTE_LIB}"
+              fi
+          
+              if [ -f "${COMPUTE_GRAPH_LIB}" ]; then
+                echo "Found libarm_compute_graph.so at ${COMPUTE_GRAPH_LIB}"
+              else
+                echo "ERROR: libarm_compute_graph.so not found at expected location: ${COMPUTE_GRAPH_LIB}"
+                # Try to find it
+                COMPUTE_GRAPH_LIB=$(find "${ACTUAL_ARMCOMPUTE_ROOT}" -name "libarm_compute_graph.so" | head -1)
+                echo "Searching for libarm_compute_graph.so, found: ${COMPUTE_GRAPH_LIB}"
+              fi
+          
+              # Set environment variables for the build
               echo "ARMCOMPUTE_ROOT=${ACTUAL_ARMCOMPUTE_ROOT}" >> "$GITHUB_ENV"
+              echo "ARMCOMPUTE_LIBRARY=${COMPUTE_LIB}" >> "$GITHUB_ENV"
+              echo "ARMCOMPUTE_GRAPH_LIBRARY=${COMPUTE_GRAPH_LIB}" >> "$GITHUB_ENV"
+          
+              # Since libarm_compute_core.so might not exist in this version, use libarm_compute.so as a fallback
+              echo "ARMCOMPUTE_CORE_LIBRARY=${COMPUTE_LIB}" >> "$GITHUB_ENV"
+          
               echo "ARM Compute Library setup complete at: ${ACTUAL_ARMCOMPUTE_ROOT}"
+              echo "Libraries configured: COMPUTE=${COMPUTE_LIB}, GRAPH=${COMPUTE_GRAPH_LIB}"
+          
+              # Also make sure LD_LIBRARY_PATH includes the ARM Compute Library directory
+              LIB_DIR=$(dirname "${COMPUTE_LIB}")
+              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${LIB_DIR}:${OPENBLAS_PATH}" >> "$GITHUB_ENV"
           fi
       # --- END OF MODIFIED STEP ---
 
@@ -231,6 +265,34 @@ jobs:
           echo "helper ${{ matrix.helper }}"
           echo "ARMCOMPUTE_TARGET $ARMCOMPUTE_TARGET"
           echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
+          
+          # Debug ARM Compute Library setup
+          if [ "${{ matrix.helper }}" == "armcompute" ]; then
+            echo "ARMCOMPUTE_ROOT: $ARMCOMPUTE_ROOT"
+            echo "ARMCOMPUTE_LIBRARY: $ARMCOMPUTE_LIBRARY"
+            echo "ARMCOMPUTE_GRAPH_LIBRARY: $ARMCOMPUTE_GRAPH_LIBRARY"
+            echo "ARMCOMPUTE_CORE_LIBRARY: $ARMCOMPUTE_CORE_LIBRARY"
+            echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+          
+            # Check if libraries exist
+            if [ -f "$ARMCOMPUTE_LIBRARY" ]; then
+              echo "ARMCOMPUTE_LIBRARY exists"
+            else
+              echo "WARNING: ARMCOMPUTE_LIBRARY does not exist at $ARMCOMPUTE_LIBRARY"
+            fi
+          
+            if [ -f "$ARMCOMPUTE_CORE_LIBRARY" ]; then
+              echo "ARMCOMPUTE_CORE_LIBRARY exists"
+            else
+              echo "WARNING: ARMCOMPUTE_CORE_LIBRARY does not exist at $ARMCOMPUTE_CORE_LIBRARY"
+            fi
+          
+            if [ -f "$ARMCOMPUTE_GRAPH_LIBRARY" ]; then
+              echo "ARMCOMPUTE_GRAPH_LIBRARY exists"
+            else
+              echo "WARNING: ARMCOMPUTE_GRAPH_LIBRARY does not exist at $ARMCOMPUTE_GRAPH_LIBRARY"
+            fi
+          fi
 
           sudo sysctl vm.overcommit_memory=2
           mvn --version
@@ -257,10 +319,20 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
-          # Note: LD_LIBRARY_PATH is now set correctly with the value from the setup step
-          # The ARMCOMPUTE_ROOT env var is also correctly set to the extracted dir path
-          LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
         run: |
+          # Additional diagnostics for ARM Compute Library
+          if [ "$HELPER" == "armcompute" ]; then
+            echo "Running with ARM Compute Library helper"
+            echo "ARMCOMPUTE_ROOT: $ARMCOMPUTE_ROOT"
+            echo "ARMCOMPUTE_LIBRARY: $ARMCOMPUTE_LIBRARY"
+            echo "ARMCOMPUTE_CORE_LIBRARY: $ARMCOMPUTE_CORE_LIBRARY"
+            echo "ARMCOMPUTE_GRAPH_LIBRARY: $ARMCOMPUTE_GRAPH_LIBRARY"
+            echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+          
+            # Ensure the CMake command includes the ARM Compute Library paths
+            export MAVEN_OPTS="$MAVEN_OPTS -DARMCOMPUTE_LIBRARY=$ARMCOMPUTE_LIBRARY -DARMCOMPUTE_CORE_LIBRARY=$ARMCOMPUTE_CORE_LIBRARY -DARMCOMPUTE_GRAPH_LIBRARY=$ARMCOMPUTE_GRAPH_LIBRARY"
+          fi
+          
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
