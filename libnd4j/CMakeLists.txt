@@ -500,140 +500,81 @@ function(removeFileIfExcluded)
         endif()
     endif()
 endfunction()
-
-# genCompilation: Generates cpp, cu files from templates
 function(genCompilation FL_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
 
     set(EXTENSION "cpp")
-
     if(FL_ITEM MATCHES "cu.in$")
         set(EXTENSION "cu")
     endif()
 
     file(READ ${FL_ITEM} CONTENT_FL)
 
-    # Set all to false - Use local variables to prevent modification of parent scope
-    set(LOCAL_SD_FLOAT_TYPES_GEN 0)
-    set(LOCAL_SD_INTEGER_TYPES_GEN 0)
-    set(LOCAL_SD_COMMON_TYPES_GEN 0)
-    set(LOCAL_SD_PAIRWISE_TYPES_GEN 0)
-    set(LOCAL_RANGE_STOP -1)
+    # Set all flags to false initially
+    set(SD_FLOAT_TYPES_GEN 0)
+    set(SD_INTEGER_TYPES_GEN 0)
+    set(SD_COMMON_TYPES_GEN 0)
+    set(SD_PAIRWISE_TYPES_GEN 0)
+    set(RANGE_STOP -1)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-    # Define end indices for different type lists
+    # Define range limits
     set(SD_INTEGER_TYPES_END 7)
     set(SD_COMMON_TYPES_END 12)
     set(SD_FLOAT_TYPES_END 3)
     set(SD_PAIRWISE_TYPES_END 12)
 
-    # Process type matches and set flags
+    # Process matches and set flags
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
         if(TYPEX MATCHES "SD_INTEGER_TYPES_GEN$")
-            set(LOCAL_SD_INTEGER_TYPES_GEN 1)
+            set(SD_INTEGER_TYPES_GEN 1)
             set(STOP ${SD_INTEGER_TYPES_END})
         endif()
         if(TYPEX MATCHES "SD_COMMON_TYPES_GEN$")
-            set(LOCAL_SD_COMMON_TYPES_GEN 1)
+            set(SD_COMMON_TYPES_GEN 1)
             set(STOP ${SD_COMMON_TYPES_END})
         endif()
         if(TYPEX MATCHES "SD_FLOAT_TYPES_GEN$")
-            set(LOCAL_SD_FLOAT_TYPES_GEN 1)
+            set(SD_FLOAT_TYPES_GEN 1)
             set(STOP ${SD_FLOAT_TYPES_END})
         endif()
         if(TYPEX MATCHES "SD_PAIRWISE_TYPES_GEN$")
-            set(LOCAL_SD_PAIRWISE_TYPES_GEN 1)
+            set(SD_PAIRWISE_TYPES_GEN 1)
             set(STOP ${SD_PAIRWISE_TYPES_END})
         endif()
-        if(STOP GREATER LOCAL_RANGE_STOP)
-            set(LOCAL_RANGE_STOP ${STOP})
+        if(STOP GREATER RANGE_STOP)
+            set(RANGE_STOP ${STOP})
         endif()
     endforeach()
 
-    # Generate files based on type flags
-    set(LOCAL_CUSTOMOPS_GENERIC_SOURCES "")
-
-    # Create the output directory if it doesn't exist
+    # Create output directory
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/compilation_units")
 
-    if(LOCAL_RANGE_STOP GREATER -1)
-        # First pass: collect all filenames to generate to avoid duplicates
-        set(FILES_TO_GENERATE "")
-
-        foreach(FL_TYPE_INDEX RANGE 0 ${LOCAL_RANGE_STOP})
-            # Copy flags for this iteration
-            set(ITER_SD_FLOAT_TYPES_GEN ${LOCAL_SD_FLOAT_TYPES_GEN})
-            set(ITER_SD_INTEGER_TYPES_GEN ${LOCAL_SD_INTEGER_TYPES_GEN})
-            set(ITER_SD_COMMON_TYPES_GEN ${LOCAL_SD_COMMON_TYPES_GEN})
-
-            # Turn off flags if index exceeds range
+    # Generate files in a single pass - just like the original
+    if(RANGE_STOP GREATER -1)
+        foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # Reset flags if index exceeds limits - directly modify the variables
             if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
-                set(ITER_SD_FLOAT_TYPES_GEN 0)
+                set(SD_FLOAT_TYPES_GEN 0)
             endif()
             if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
-                set(ITER_SD_INTEGER_TYPES_GEN 0)
+                set(SD_INTEGER_TYPES_GEN 0)
             endif()
             if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
-                set(ITER_SD_COMMON_TYPES_GEN 0)
+                set(SD_COMMON_TYPES_GEN 0)
             endif()
 
-            # Pass these variables to configure_file via cmake's variable system
-            set(SD_FLOAT_TYPES_GEN ${ITER_SD_FLOAT_TYPES_GEN})
-            # Pass these variables to configure_file via cmake's variable system
-            set(SD_FLOAT_TYPES_GEN ${ITER_SD_FLOAT_TYPES_GEN})
-            set(SD_INTEGER_TYPES_GEN ${ITER_SD_INTEGER_TYPES_GEN})
-            set(SD_COMMON_TYPES_GEN ${ITER_SD_COMMON_TYPES_GEN})
-            set(FL_TYPE_INDEX ${FL_TYPE_INDEX})
-
+            # Generate the file unconditionally
             set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
-            list(APPEND FILES_TO_GENERATE ${GENERATED_SOURCE})
-        endforeach()
-
-        # Second pass: actually generate the files
-        foreach(GENERATED_SOURCE ${FILES_TO_GENERATE})
-            # Extract the type index from the filename
-            string(REGEX MATCH "_([0-9]+)\.${EXTENSION}$" _ ${GENERATED_SOURCE})
-            set(FL_TYPE_INDEX ${CMAKE_MATCH_1})
-
-            # Configure again with the right flags for this index
-            set(ITER_SD_FLOAT_TYPES_GEN ${LOCAL_SD_FLOAT_TYPES_GEN})
-            set(ITER_SD_INTEGER_TYPES_GEN ${LOCAL_SD_INTEGER_TYPES_GEN})
-            set(ITER_SD_COMMON_TYPES_GEN ${LOCAL_SD_COMMON_TYPES_GEN})
-
-            if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
-                set(ITER_SD_FLOAT_TYPES_GEN 0)
-            endif()
-            if(FL_TYPE_INDEX GREATER ${SD_INTEGER_TYPES_END})
-                set(ITER_SD_INTEGER_TYPES_GEN 0)
-            endif()
-            if(FL_TYPE_INDEX GREATER ${SD_COMMON_TYPES_END})
-                set(ITER_SD_COMMON_TYPES_GEN 0)
-            endif()
-
-            # Set these for the configure_file command
-            set(SD_FLOAT_TYPES_GEN ${ITER_SD_FLOAT_TYPES_GEN})
-            set(SD_INTEGER_TYPES_GEN ${ITER_SD_INTEGER_TYPES_GEN})
-            set(SD_COMMON_TYPES_GEN ${ITER_SD_COMMON_TYPES_GEN})
-
-            # Only generate the file if it doesn't already exist
-            if(NOT EXISTS "${GENERATED_SOURCE}")
-                configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
-                message(STATUS "Generated: ${GENERATED_SOURCE}")
-            endif()
-
-            list(APPEND LOCAL_CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE})
+            configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
+            list(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE})
         endforeach()
     endif()
 
-    # Count how many files were generated
-    list(LENGTH LOCAL_CUSTOMOPS_GENERIC_SOURCES NUM_FILES)
-    message(STATUS "GenCompilation for ${FL_ITEM} generated ${NUM_FILES} files")
-
-    # Set the parent scope variable without recursive appending
-    # This prevents the list from growing infinitely
-    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} ${LOCAL_CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+    # Pass the updated list to parent scope
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
 
 # genPartitionCombination: Generates combination files for CPU
