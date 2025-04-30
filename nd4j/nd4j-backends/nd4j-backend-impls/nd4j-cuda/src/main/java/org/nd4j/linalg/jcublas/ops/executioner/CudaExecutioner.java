@@ -70,7 +70,7 @@ import org.nd4j.nativeblas.*;
 import java.util.*;
 
 import static org.bytedeco.cuda.global.cudart.*;
-
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 
 /**
  * JCuda executioner.
