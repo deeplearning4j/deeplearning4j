@@ -194,23 +194,7 @@
                 </dependency>
             </dependencies>
         </profile>
-        <profile>
-        <id>chip</id>
-        <activation>
-            <property>
-                <name>libnd4j.chip</name>
-            </property>
-        </activation>
-           <dependencies>
-               <dependency>
-                   <groupId>org.nd4j</groupId>
-                   <artifactId>libnd4j</artifactId>
-                   <version>${project.version}</version>
-                   <type>zip</type>
-                   <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
-               </dependency>
-           </dependencies>
-        </profile>
+
 
         <profile>
             <id>cuda</id>
