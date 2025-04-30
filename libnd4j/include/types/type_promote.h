@@ -39,10 +39,6 @@ Macros like INSTANTIATE_PROMOTE and CALLBACK_INSTANTIATE_PROMOTE help in instant
 PROMOTE_ARGS macro handles function arguments correctly.
  */
 
-// Helper to detect if types are the same
-template <typename T, typename U>
-struct is_same_type : std::is_same<T, U> {};
-
 // Type ranking system
 template<typename T> struct type_rank;
 
@@ -74,15 +70,16 @@ template<> struct type_rank<int32_t>     : std::integral_constant<int, 3> {};
 template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 #endif
 
-// Always define for int64_t
+// Define for int64_t
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
 
-// Use SFINAE to define long long int specialization only if it's a different type than int64_t
-template<typename T = void>
-struct type_rank<long long int, typename std::enable_if<!is_same_type<long long int, int64_t>::value, T>::type>
-    : std::integral_constant<int, 4> {};
+// Define for long long int only if it's not the same as int64_t
+#if !defined(__APPLE__) && !defined(_WIN32)
+template<> struct type_rank<long long int> : std::integral_constant<int, 4> {};
+#endif
 
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
+
 
 #if defined(HAS_FLOAT16)
 template<> struct type_rank<float16>     : std::integral_constant<int, 5> {};
@@ -162,10 +159,10 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 #if defined(HAS_INT64)
 template<> struct type_name<int64_t>     { static const char* get() { return "int64_t"; } };
 
-// Use SFINAE to define long long int specialization only if it's a different type than int64_t
-template<typename T = void>
-struct type_name<long long int, typename std::enable_if<!is_same_type<long long int, int64_t>::value, T>::type>
-{ static const char* get() { return "long long int"; } };
+// Define for long long int only if it's not the same as int64_t
+#if !defined(__APPLE__) && !defined(_WIN32)
+template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
+#endif
 #endif
 
 #if defined(HAS_UINT64)
