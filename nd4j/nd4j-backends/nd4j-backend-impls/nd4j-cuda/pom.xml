@@ -415,7 +415,6 @@
                                 <includePath>${libnd4jhome}/include/graph</includePath>
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
-                                <includePath>${libnd4jhome}/include/performance</includePath>
                                 <includePath>${libnd4jhome}/include/legacy</includePath>
 
                             </includePaths>

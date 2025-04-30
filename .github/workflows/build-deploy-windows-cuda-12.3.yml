@@ -297,45 +297,70 @@ jobs:
           echo "CUDNN Root Dir from env: %CUDNN_ROOT_DIR%"
           echo "---------------------------"
           
-          echo "Checking for Visual Studio installations..."
-          if exist "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
-              echo "Found Visual Studio 2019 Enterprise"
-              set VS_PATH="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          ) else (
-              echo "Visual Studio 2019 Enterprise not found, checking for Visual Studio 2022..."
-              if exist "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
-                  echo "Found Visual Studio 2022 Enterprise"
-                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-              ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat" (
-                  echo "Found Visual Studio 2022 Professional"
-                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat"
-              ) else if exist "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" (
-                  echo "Found Visual Studio 2022 Community"
-                  set VS_PATH="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
-              ) else (
-                  echo "ERROR: Could not find any Visual Studio installation with vcvars64.bat"
-                  echo "Searching for cl.exe in Program Files..."
-                  dir "C:\Program Files" /s /b | findstr cl.exe
-                  dir "C:\Program Files (x86)" /s /b | findstr cl.exe
-                  exit 1
+          REM *** FIXED VISUAL STUDIO COMPILER PATH DETECTION ***
+          powershell -Command "& {
+              # Find Visual Studio with proper path handling
+              $vsFound = $false
+          
+              # Properly quoted path detection for VS 2022 and 2019
+              $vsPathOptions = @(
+                  \"${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat\",
+                  \"${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat\",
+                  \"${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional\VC\Auxiliary\Build\vcvars64.bat\",
+                  \"${env:ProgramFiles}\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat\"
               )
+          
+              foreach ($vsPath in $vsPathOptions) {
+                  if (Test-Path -LiteralPath $vsPath) {
+                      Write-Host \"Found Visual Studio at: $vsPath\"
+                      # Create a bat file to initialize environment
+                      $envSetupBat = \"${env:TEMP}\vs-env-setup.bat\"
+                      @\"
+                      @echo off
+                      call `\"$vsPath`\"
+                      echo VS_ENV_INITIALIZED=true
+                      set > `\"${env:TEMP}\vs-environment.txt`\"
+                      \"@ | Out-File -FilePath $envSetupBat -Encoding ASCII
+          
+                      $vsFound = $true
+                      break
+                  }
+              }
+          
+              if (-not $vsFound) {
+                  Write-Error \"ERROR: Could not find any Visual Studio installation with vcvars64.bat\"
+                  exit 1
+              }
+          
+              Write-Host \"Created Visual Studio environment initialization script at: ${env:TEMP}\vs-env-setup.bat\"
+          }"
+          
+          REM Initialize Visual Studio environment
+          call "%TEMP%\vs-env-setup.bat"
+          
+          REM Verify VS environment was properly initialized
+          if not defined VS_ENV_INITIALIZED (
+              echo ERROR: Visual Studio environment initialization failed
+              exit 1
           )
           
-          echo "Initializing Visual Studio environment using %VS_PATH%..."
-          call %VS_PATH%
+          REM Load environment from saved file to ensure CMake gets the correct compiler path
+          for /F "tokens=*" %%A in ('type "%TEMP%\vs-environment.txt" ^| findstr "INCLUDE LIB LIBPATH PATH VCINSTALLDIR VCToolsInstallDir"') do set "%%A"
           
-          echo "Checking if cl.exe is available in PATH..."
+          REM Echo the compiler path that will be used
           where cl.exe
           if %ERRORLEVEL% NEQ 0 (
-              echo "ERROR: cl.exe not found in PATH after initializing Visual Studio environment"
-              echo "Current PATH: %PATH%"
-              dir "C:\Program Files\Microsoft Visual Studio\" /s /b | findstr cl.exe
-              dir "C:\Program Files (x86)\Microsoft Visual Studio\" /s /b | findstr cl.exe
+              echo ERROR: cl.exe not found in PATH after initializing Visual Studio environment
               exit 1
           ) else (
-              echo "cl.exe found in PATH"
+              echo Found cl.exe at:
+              where cl.exe
           )
-
+          
+          echo "Setting environment variables for CMake"
+          set CXX=cl.exe
+          set CC=cl.exe
+          
           echo "Setting MSYS environment..."
           set MSYSTEM=MINGW64
 

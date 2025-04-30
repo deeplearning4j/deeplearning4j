@@ -306,7 +306,6 @@
                                 <includePath>${libnd4jhome}/include/graph</includePath>
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
-                                <includePath>${libnd4jhome}/include/performance</includePath>
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
