@@ -20,8 +20,13 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <mutex>
+#if __cplusplus >= 201703L && (!defined(__APPLE__))
 #include <shared_mutex>
+
+#else
+#include <mutex>
+#endif
+
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -30,7 +35,13 @@
 
 namespace sd {
 namespace generic {
-
+#if __cplusplus >= 201703L && (!defined(__APPLE__))
+#define MUTEX_TYPE std::shared_mutex
+#define LOCK_TYPE std::shared_lock
+#else
+#define MUTEX_TYPE std::mutex
+#define LOCK_TYPE std::lock_guard
+#endif
 template<size_t NUM_STRIPES = 32>
 class StripedLocks {
 private:

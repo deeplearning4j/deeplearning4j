@@ -128,7 +128,7 @@ bool DirectTadTrie::exists(const std::vector<LongType>& dimensions, LongType* or
   if (!originalShape) return false;
 
   const size_t stripeIdx = computeStripeIndex(dimensions, originalShape);
-  TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+  LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Using the enhanced search method which verifies TadPack compatibility
   return enhancedSearch(dimensions, originalShape, stripeIdx) != nullptr;
@@ -168,7 +168,7 @@ TadPack* DirectTadTrie::getOrCreate(std::vector<LongType>& dimensions, LongType*
 
   // First try a read-only lookup
   {
-    TAD_LOCK_TYPE<TAD_MUTEX_TYPE> readLock(_mutexes[stripeIdx]);
+    LOCK_TYPE<MUTEX_TYPE> readLock(_mutexes[stripeIdx]);
     TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);
     if (existing) {
       return existing;
@@ -187,7 +187,7 @@ TadPack* DirectTadTrie::insert(std::vector<LongType>& dimensions, LongType* orig
   int rank = shape::rank(originalShape);
   // Use the enhanced hash computation for better distribution
   const size_t stripeIdx = computeStrideAwareHash(dimensions, originalShape);
-  TAD_LOCK_TYPE<TAD_MUTEX_TYPE> lock(_mutexes[stripeIdx]);
+  LOCK_TYPE<MUTEX_TYPE> lock(_mutexes[stripeIdx]);
 
   // Check if a compatible TadPack already exists
   TadPack* existing = enhancedSearch(dimensions, originalShape, stripeIdx);

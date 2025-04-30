@@ -25,28 +25,10 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-
-#if __cplusplus >= 201703L && (!defined(__APPLE__))
-#include <shared_mutex>
-
-#else
-#include <mutex>
-#endif
+#include "../generic/StripedLocks.h"
 namespace sd {
 
-#if defined(__APPLE__)
-#include <Availability.h>
-#endif
 
-#if __cplusplus >= 201703L && (!defined(__APPLE__))
-#include <shared_mutex>
-#define SHAPE_MUTEX_TYPE std::shared_mutex
-#define SHAPE_LOCK_TYPE std::shared_lock
-#else
-#include <mutex>
-#define SHAPE_MUTEX_TYPE std::mutex
-#define SHAPE_LOCK_TYPE std::lock_guard
-#endif
 
 class SD_LIB_EXPORT ShapeTrieNode {
  private:
@@ -123,7 +105,7 @@ class SD_LIB_EXPORT DirectShapeTrie {
  private:
   static const size_t NUM_STRIPES = 256; // Increased from 32 to reduce collisions
   std::array<ShapeTrieNode*, NUM_STRIPES> *_roots;
-  std::array<SHAPE_MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
+  std::array<MUTEX_TYPE*, NUM_STRIPES> *_mutexes = nullptr;
 
   // Helper method to create a fallback buffer when trie insertion fails
   // Always returns a valid shape buffer or throws an exception
@@ -133,12 +115,12 @@ class SD_LIB_EXPORT DirectShapeTrie {
   // Constructor
   DirectShapeTrie() {
     _roots = new std::array<ShapeTrieNode*, NUM_STRIPES>();
-    _mutexes = new std::array<SHAPE_MUTEX_TYPE*, NUM_STRIPES>();
+    _mutexes = new std::array<MUTEX_TYPE*, NUM_STRIPES>();
 
     for (size_t i = 0; i < NUM_STRIPES; i++) {
       (*_roots)[i] = new ShapeTrieNode(0, 0, false);
       // Allocate mutexes on the heap
-      (*_mutexes)[i] = new SHAPE_MUTEX_TYPE();
+      (*_mutexes)[i] = new MUTEX_TYPE();
     }
 
     ShapeBufferPlatformHelper::initialize();

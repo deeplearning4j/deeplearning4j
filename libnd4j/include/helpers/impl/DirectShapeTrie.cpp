@@ -322,7 +322,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
 
   // First try a read-only lookup without obtaining a write lock
   {
-   SHAPE_LOCK_TYPE<SHAPE_MUTEX_TYPE> readLock(*(*_mutexes)[stripeIdx]);
+   LOCK_TYPE<MUTEX_TYPE> readLock(*(*_mutexes)[stripeIdx]);
     ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
     if (existing != nullptr) {
       if (shapeInfoEqual(existing->primary(), shapeInfo)) {
@@ -332,7 +332,7 @@ ConstantShapeBuffer* DirectShapeTrie::getOrCreate(const LongType* shapeInfo) {
   }
 
   // If not found or not matching, grab exclusive lock and try again
-  SHAPE_LOCK_TYPE<SHAPE_MUTEX_TYPE> writeLock(*(*_mutexes)[stripeIdx]);
+  LOCK_TYPE<MUTEX_TYPE> writeLock(*(*_mutexes)[stripeIdx]);
 
   // Check again under the write lock
   ConstantShapeBuffer* existing = search(shapeInfo, stripeIdx);
@@ -447,7 +447,7 @@ bool DirectShapeTrie::exists(const LongType* shapeInfo) const {
 
   int shapeSignature = calculateShapeSignature(shapeInfo);
 
-  SHAPE_LOCK_TYPE<SHAPE_MUTEX_TYPE> lock(*(*_mutexes)[stripeIdx]);
+  LOCK_TYPE<MUTEX_TYPE> lock(*(*_mutexes)[stripeIdx]);
   ConstantShapeBuffer* found = search(shapeInfo, stripeIdx);
   return found != nullptr && shapeInfoEqual(found->primary(), shapeInfo);
 }
