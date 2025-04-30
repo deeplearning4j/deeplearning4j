@@ -956,6 +956,13 @@ if(${HELPERS_onednn})
                     RESULT_VARIABLE onednn_config_result
             )
 
+            file(GLOB ONEDNN_FILES "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src/*")
+            message(STATUS "OneDNN directory contents: ${ONEDNN_FILES}")
+
+            if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src/CMakeLists.txt")
+                message(FATAL_ERROR "OneDNN source directory exists but doesn't contain CMakeLists.txt. Directory: ${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src")
+            endif()
+
             if(onednn_config_result)
                 set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
                 message(FATAL_ERROR "OneDNN configuration failed: ${onednn_config_result}")
