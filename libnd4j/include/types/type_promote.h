@@ -74,8 +74,8 @@ template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 
 
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
+template<> struct type_rank<sd::LongType> : std::integral_constant<int, 4> {};
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
-
 
 #if defined(HAS_FLOAT16)
 template<> struct type_rank<float16>     : std::integral_constant<int, 5> {};
@@ -154,8 +154,7 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 
 #if defined(HAS_INT64)
 template<> struct type_name<int64_t> { static const char* get() { return "int64_t"; } };
-
-template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
+template<> struct type_name<sd::LongType> { static const char* get() { return "sd::LongType"; } };
 #endif
 
 
