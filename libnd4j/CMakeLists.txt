@@ -1319,9 +1319,7 @@ if(SD_CUDA)
         endif()
 
         add_compile_definitions(SD_CUDA=true)
-        if("$ENV{CLION_IDE}")
-            add_compile_definitions(__CUDA_CC__)
-        endif()
+
 
 
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
@@ -1433,6 +1431,13 @@ else()
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
 
+    set(CUSTOMOPS_GENERIC_SOURCES "")
+    # Generate Compilation Units
+    foreach(FL_ITEM ${COMPILATION_UNITS})
+        genCompilation(${FL_ITEM})
+    endforeach()
+
+
     # Gather CPU Source Files
     file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
@@ -1442,7 +1447,7 @@ else()
     file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
     file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp ./include/ops/declarable/helpers/cpu/*.cpp ./include/ops/declarable/helpers/impl/*.cpp)
+    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp  ./include/ops/declarable/helpers/impl/*.cpp)
     file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
     file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
     file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
@@ -1504,11 +1509,6 @@ else()
         endforeach()
     endif()
 
-    set(CUSTOMOPS_GENERIC_SOURCES "")
-    # Generate Compilation Units
-    foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM})
-    endforeach()
 
     # Process type combinations
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cpu_instantiations")
