@@ -952,8 +952,7 @@ if(${HELPERS_onednn})
                     -DDNNL_BUILD_EXAMPLES=OFF
                     -DDNNL_VERBOSE=ON
                     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/onednn-install
-                    "${CMAKE_CURRENT_SOURCE_DIR}/onednn-src"
-                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
+                    "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src"                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
                     RESULT_VARIABLE onednn_config_result
             )
 
