@@ -24,6 +24,7 @@
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 #include <types/types.h>
+
 /*
  * Type Ranking System:
 type_rank template and its specializations assign an integer rank to each supported type.
@@ -75,6 +76,10 @@ template<> struct type_rank<long long int> : std::integral_constant<int, 4> {};
 #endif
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 
+// Add unsigned long for macOS which is causing the compile error
+#if defined(__APPLE__)
+template<> struct type_rank<unsigned long> : std::integral_constant<int, 4> {};
+#endif
 
 #if defined(HAS_FLOAT16)
 template<> struct type_rank<float16>     : std::integral_constant<int, 5> {};
@@ -153,6 +158,11 @@ template<> struct type_name<long long int> { static const char* get() { return "
 
 #if defined(HAS_UINT64)
 template<> struct type_name<uint64_t>    { static const char* get() { return "uint64_t"; } };
+#endif
+
+// Add unsigned long for macOS which is causing the compile error
+#if defined(__APPLE__)
+template<> struct type_name<unsigned long> { static const char* get() { return "unsigned long"; } };
 #endif
 
 #if defined(HAS_FLOAT16)
