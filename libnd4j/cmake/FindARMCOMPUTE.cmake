@@ -19,6 +19,7 @@ find_path(ARMCOMPUTE_INCLUDE
         ENV ARMCOMPUTE_PATH
         /usr/include
         /usr/local/include
+        REQUIRED
 )
 
 # Find library files
@@ -32,6 +33,7 @@ find_library(ARMCOMPUTE_CORE_LIBRARY
         ENV ARMCOMPUTE_PATH
         /usr/lib
         /usr/local/lib
+        REQUIRED
 )
 
 find_library(ARMCOMPUTE_LIBRARY
@@ -44,6 +46,7 @@ find_library(ARMCOMPUTE_LIBRARY
         ENV ARMCOMPUTE_PATH
         /usr/lib
         /usr/local/lib
+        REQUIRED
 )
 
 # Set libraries variable
