@@ -1554,7 +1554,7 @@ else()
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
                 ${CPU_FEATURES} # Variable not defined
-                flatbuffers::flatbuffers # Link flatbuffers
+                flatbuffers# Link flatbuffers
         )
 
         if (HAVE_ONEDNN)
@@ -1571,7 +1571,7 @@ else()
         set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
         # Link dependencies to static lib interface? Or require user to link them? Usually the latter.
         target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
-                flatbuffers::flatbuffers
+                flatbuffers
                 ${ARMCOMPUTE_LIBRARIES}
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
@@ -1586,7 +1586,7 @@ else()
         set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
         set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
         target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
-                flatbuffers::flatbuffers
+                flatbuffers
                 ${ARMCOMPUTE_LIBRARIES}
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
