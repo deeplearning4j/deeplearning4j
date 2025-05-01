@@ -816,17 +816,33 @@ if(${HELPERS_armcompute})
                     set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
 
                     # Check if the expected library files exist after download/build
-                    set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute.so")
-                    set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_ROOT}/lib/libarm_compute_core.so")
+                    # Check if the expected library files exist after download/build
+                    # Libraries are expected in the BUILD directory, not the SOURCE directory (ARMCOMPUTE_ROOT)
+                    set(ARMCOMPUTE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/armcompute-build") # Assuming this is the build dir used by the sub-project
+                    set(ARMCOMPUTE_LIB_OUTPUT_DIR "${ARMCOMPUTE_BUILD_DIR}/lib") # Common output location, adjust if sub-project uses different path
+                    # Check common library names, adjust if SCons output differs
+                    set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute.so")
+                    set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute_core.so")
+                    # Optional: Add check for graph lib if needed
+                    # set(ARMCOMPUTE_GRAPH_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute_graph.so")
 
+                    # Verify the library paths exist
                     if(EXISTS "${ARMCOMPUTE_LIB_PATH}" AND EXISTS "${ARMCOMPUTE_CORE_LIB_PATH}")
+                        message(STATUS "Found Arm Compute libraries in: ${ARMCOMPUTE_LIB_OUTPUT_DIR}")
                         add_definitions(-DARMCOMPUTENEON_ENABLED)
-                        include_directories(${ARMCOMPUTE_ROOT} ${ARMCOMPUTE_ROOT}/include)
-                        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIB_PATH} ${ARMCOMPUTE_CORE_LIB_PATH})
+                        # Include header directory from source tree
+                        include_directories(${ARMCOMPUTE_ROOT}/include)
+                        # Set variable with paths to actual library files for linking
+                        set(ARMCOMPUTE_LIBRARIES "${ARMCOMPUTE_LIB_PATH}" "${ARMCOMPUTE_CORE_LIB_PATH}")
+                        # Add graph lib if needed: list(APPEND ARMCOMPUTE_LIBRARIES "${ARMCOMPUTE_GRAPH_LIB_PATH}")
                         set(HAVE_ARMCOMPUTE 1)
-                        message(STATUS "ARM Compute Library successfully configured via download at: ${ARMCOMPUTE_ROOT}")
+                        message(STATUS "ARM Compute Library successfully configured via download. Headers: ${ARMCOMPUTE_ROOT}/include Libs: ${ARMCOMPUTE_LIBRARIES}")
                     else()
-                        message(WARNING "ARM Compute download/build step completed, but library files not found at expected location: ${ARMCOMPUTE_ROOT}/lib")
+                        message(WARNING "ARM Compute build via execute_process completed, but library files not found.")
+                        message(WARNING "Looked for: ${ARMCOMPUTE_LIB_PATH}")
+                        message(WARNING "Looked for: ${ARMCOMPUTE_CORE_LIB_PATH}")
+                        message(WARNING "Check the build output directory used by the armcompute ExternalProject.")
+                        # HAVE_ARMCOMPUTE remains 0, ARMCOMPUTE_LIBRARIES remains empty.
                     endif()
                 endif()
             endif()
