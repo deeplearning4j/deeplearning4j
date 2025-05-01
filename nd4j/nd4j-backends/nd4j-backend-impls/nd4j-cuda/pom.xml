@@ -445,7 +445,7 @@
                                 <compilerOption>-g</compilerOption>
                                 <compilerOption>-fPIC</compilerOption>
                                 <compilerOption>-std=c++17</compilerOption>
-                                <compilerOption>-L${libnd4jhome}/blasbuild/cuda/blas</compilerOption>
+                                <compilerOption>-L${libnd4jhome}blasbuild/cuda/blas</compilerOption>
                             </compilerOptions>
 
                         </configuration>
