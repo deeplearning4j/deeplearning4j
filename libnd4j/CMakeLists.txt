@@ -1166,16 +1166,11 @@ set(INSTANTIATION_TEMPLATES_3
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
 )
 
-# Updated: Added paths for specials_single.cpp.in and specials_double.cpp.in
 set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
 )
-# Original: Seems unused based on later code
-# set(GEN_COMPILATION_TEMPLATES
-#        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
-# )
 
 # CUDA Configuration
 if(SD_CUDA)
@@ -1307,8 +1302,8 @@ if(SD_CUDA)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp ./include/loops/*.h)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
-        # Updated: Removed ops/impl/compilation_units/*.cpp.in as specials_* likely moved
         file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda/blas")
 
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
@@ -1382,7 +1377,6 @@ if(SD_CUDA)
             install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
         endif()
 
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda/blas")
     endif()
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
@@ -1390,7 +1384,8 @@ else()
     # Configure BLAS for CPU builds
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-
+    # Set Library Output Directories
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu/blas")
     set(CUSTOMOPS_GENERIC_SOURCES "") # Initialize list for generated sources
 
     # Gather templates processed by genCompilation (old style)
@@ -1623,8 +1618,7 @@ else()
         endif()
     endif()
 
-    # Set Library Output Directories
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu/blas")
+
 endif()
 
 # Add tests if enabled
