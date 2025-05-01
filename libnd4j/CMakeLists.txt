@@ -1169,10 +1169,9 @@ set(INSTANTIATION_TEMPLATES_3
 # Updated: Added paths for specials_single.cpp.in and specials_double.cpp.in
 set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/cpu/comb_compilation_units/specials_double.cpp.in" # Assumed path
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/cpu/comb_compilation_units/specials_single.cpp.in" # Assumed path
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/specials_double.cpp.in" # Corrected Path
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/specials_single.cpp.in" # Corrected Path
 )
-
 # Original: Seems unused based on later code
 # set(GEN_COMPILATION_TEMPLATES
 #        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
