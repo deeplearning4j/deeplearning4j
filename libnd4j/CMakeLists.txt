@@ -793,7 +793,7 @@ if(${HELPERS_armcompute})
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE result_config
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-                    OUTPUT_QUIET ERROR_QUIET)
+                   )
 
             if(NOT result_config EQUAL 0)
                 message(WARNING "CMake configuration step for ARM Compute Library download failed: ${result_config}")
@@ -802,7 +802,7 @@ if(${HELPERS_armcompute})
                 execute_process(COMMAND ${CMAKE_COMMAND} --build .
                         RESULT_VARIABLE result_build
                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-                        OUTPUT_QUIET ERROR_QUIET)
+                         )
 
                 if(NOT result_build EQUAL 0)
                     message(WARNING "Build step for ARM Compute Library download failed: ${result_build}")

@@ -24,7 +24,7 @@
 #include <array>
 #include <atomic>
 #include <memory>
-#include "../generic/StripedLocks.h"
+#include "./generic/StripedLocks.h"
 
 #include <vector>
 

@@ -25,7 +25,7 @@
 #include <atomic>
 #include <memory>
 #include <vector>
-#include "../generic/StripedLocks.h"
+#include "./generic/StripedLocks.h"
 namespace sd {
 
 
