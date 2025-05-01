@@ -1258,7 +1258,10 @@ if(SD_CUDA)
         elseif(COMPUTE_CMP STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
         else()
+
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
+            string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}") # Force replace ; with space
+
         endif()
 
 
