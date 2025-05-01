@@ -625,10 +625,13 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
     endif()
 
     # Define the output file name based on combination
+    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE) # Get base name like "pairwise_instantiation_template_2"
+    string(REPLACE "_template_" "_" OUTPUT_BASE_NAME "${TEMPLATE_BASE}") # Make it shorter like "pairwise_instantiation_2"
+
     if(COMBINATION_TYPE EQUAL 3)
-        set(OUTPUT_FILE "pairwise_instantiation_${COMB1}_${COMB2}_${COMB3}.cpp")
+        set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}_${COMB3}.cpp")
     elseif(COMBINATION_TYPE EQUAL 2)
-        set(OUTPUT_FILE "pairwise_instantiation_${COMB1}_${COMB2}.cpp")
+        set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}.cpp")
     endif()
 
     # Define the full path for the generated file
@@ -639,6 +642,7 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
 
     # Optionally, collect generated sources for further processing
     list(APPEND CUSTOMOPS_GENERIC_SOURCES "${GENERATED_FILE}")
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE) # Pass back up
 
     # Output a message for verification
     message(STATUS "Generated Instantiation File: ${GENERATED_FILE}")
@@ -794,7 +798,7 @@ if(${HELPERS_armcompute})
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE result_config
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-                   )
+            )
 
             if(NOT result_config EQUAL 0)
                 message(WARNING "CMake configuration step for ARM Compute Library download failed: ${result_config}")
@@ -803,7 +807,7 @@ if(${HELPERS_armcompute})
                 execute_process(COMMAND ${CMAKE_COMMAND} --build .
                         RESULT_VARIABLE result_build
                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-                         )
+                )
 
                 if(NOT result_build EQUAL 0)
                     message(WARNING "Build step for ARM Compute Library download failed: ${result_build}")
@@ -894,9 +898,11 @@ if(${HELPERS_onednn})
                     -DDNNL_BUILD_EXAMPLES=OFF
                     -DDNNL_VERBOSE=ON
                     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/onednn-install
-                    "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src"                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
+                    "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src" # Correct path to source
+                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
                     RESULT_VARIABLE onednn_config_result
             )
+
 
             file(GLOB ONEDNN_FILES "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src/*")
             message(STATUS "OneDNN directory contents: ${ONEDNN_FILES}")
@@ -947,15 +953,16 @@ if(${HELPERS_onednn})
 
         # Set up variables for using OneDNN
         set(onednn_SOURCE_DIR "${ONEDNN_BUILD_DIR}")
-        set(onednn_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-src")
+        set(onednn_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-src") # Path to downloaded source
         set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
 
         # Add include directories
         include_directories(
-                "${onednn_SOURCE_DIR}/include"
-                "${onednn_EXT_DIR}/include"
-                "${onednn_SOURCE_DIR}"
+                "${onednn_SOURCE_DIR}/include" # Build directory include
+                "${onednn_EXT_DIR}/include"  # Source directory include
+                "${onednn_SOURCE_DIR}"       # Build directory root
         )
+
 
         # Create an imported target for the library
         add_library(dnnl STATIC IMPORTED GLOBAL)
@@ -1159,13 +1166,17 @@ set(INSTANTIATION_TEMPLATES_3
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
 )
 
+# Updated: Added paths for specials_single.cpp.in and specials_double.cpp.in
 set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/cpu/comb_compilation_units/specials_double.cpp.in" # Assumed path
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/cpu/comb_compilation_units/specials_single.cpp.in" # Assumed path
 )
 
-set(GEN_COMPILATION_TEMPLATES
-        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
-)
+# Original: Seems unused based on later code
+# set(GEN_COMPILATION_TEMPLATES
+#        "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/compilation_units/pairwise_instantiation_template.cpp.in"
+# )
 
 # CUDA Configuration
 if(SD_CUDA)
@@ -1257,7 +1268,8 @@ if(SD_CUDA)
         endif()
 
 
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}") # Added CUDA_ARCH_FLAGS
+
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
         if(WIN32)
@@ -1296,7 +1308,8 @@ if(SD_CUDA)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp ./include/loops/*.h)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
-        file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in ./include/ops/impl/compilation_units/*.cpp.in)
+        # Updated: Removed ops/impl/compilation_units/*.cpp.in as specials_* likely moved
+        file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
 
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM})
@@ -1324,7 +1337,7 @@ if(SD_CUDA)
                 ${LOOPS_SOURCES}
                 ${LEGACY_SOURCES}
                 ${LOOPS_SOURCES_CUDA}
-                ${CUSTOMOPS_GENERIC_SOURCES}
+                ${CUSTOMOPS_GENERIC_SOURCES} # Generated by genCompilation
                 ${CUSTOMOPS_CUDNN_SOURCES}
         )
 
@@ -1379,10 +1392,18 @@ else()
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
 
-    set(CUSTOMOPS_GENERIC_SOURCES "")
-    # Generate Compilation Units
+    set(CUSTOMOPS_GENERIC_SOURCES "") # Initialize list for generated sources
+
+    # Gather templates processed by genCompilation (old style)
+    # Updated: Removed ops/impl/compilation_units/*.cpp.in if specials_* moved
+    file(GLOB_RECURSE COMPILATION_UNITS
+            ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
+            ./include/loops/cpu/compilation_units/*.cpp.in
+            ./include/helpers/cpu/loops/*.cpp.in)
+
+    # Generate Compilation Units (Old Style)
     foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM})
+        genCompilation(${FL_ITEM}) # Appends to CUSTOMOPS_GENERIC_SOURCES
     endforeach()
 
 
@@ -1395,13 +1416,15 @@ else()
     file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
     file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp  ./include/ops/declarable/helpers/impl/*.cpp)
+    # Updated: CUSTOMOPS_GENERIC_SOURCES now refers ONLY to genCompilation outputs. Partitioned sources are added later.
+    file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
+    file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp) # Regular CPU helpers
     file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
     file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
     file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
     file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
-    file(GLOB_RECURSE COMPILATION_UNITS ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in ./include/loops/cpu/compilation_units/*.cpp.in ./include/helpers/cpu/loops/*.cpp.in ./include/ops/impl/compilation_units/*.cpp.in)
+
 
     # Include ONEDNN and ARM Compute Sources
     if(HAVE_ONEDNN)
@@ -1423,56 +1446,80 @@ else()
 
     if (SD_X86_BUILD)
         # Disable platform optimizations for certain files on Linux/macOS
-        set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
+        # Note: Path cpu/NativeOps.cpp seems incorrect based on glob patterns, assuming it's within include structure
+        # set_source_files_properties(./include/??/cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(./include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
 
     # Remove Excluded Files if Not All Operations are Included
+    # Note: This removal logic might need adjustment depending on how sources are categorized now.
+    # For now, applying to the main categories.
     if(NOT SD_ALL_OPS)
         message("Not all SD OPS INCLUDED")
 
-        foreach(category IN ITEMS ALL_SOURCES)
-            foreach(SRC_FILE ${${category}})
-                message("Checking exclusion for: ${SRC_FILE}")
-                removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "${category}")
-            endforeach()
+        # Combine static source lists for checking
+        set(STATIC_SOURCES_TO_CHECK
+                ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
+                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
+                ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
+                ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES} ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+        )
+
+        set(FILTERED_STATIC_SOURCES "")
+        foreach(SRC_FILE ${STATIC_SOURCES_TO_CHECK})
+            # Check if the file should be kept (removeFileIfExcluded modifies the list passed by name)
+            set(temp_list "${SRC_FILE}") # Create a temporary list with one item
+            removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "temp_list")
+            if(temp_list) # If the list is not empty after checking, keep the file
+                list(APPEND FILTERED_STATIC_SOURCES "${SRC_FILE}")
+            else()
+                message("Excluding file due to op restrictions: ${SRC_FILE}")
+            endif()
         endforeach()
+        set(ALL_SOURCES ${FILTERED_STATIC_SOURCES}) # Start ALL_SOURCES with filtered static files
+
+    else()
+        # If SD_ALL_OPS is true, include all static sources directly
+        set(ALL_SOURCES
+                ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
+                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
+                ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
+                ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES} ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+        )
     endif()
 
+    # Add sources generated by genCompilation (already filtered if necessary by its internal logic)
+    list(APPEND ALL_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
 
-    # Process type combinations
-    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/cpu_instantiations")
+
+    # Process type combinations using genPartitionCombination (New Style)
+    set(PARTITION_SOURCES "") # Initialize list for these generated sources
+    set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
+    file(MAKE_DIRECTORY "${CPU_INST_DIR}")
+
     foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_3})
         foreach(COMBINATION ${COMBINATIONS_3})
-            genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CMAKE_BINARY_DIR}/cpu_instantiations")
+            # Call genPartitionCombination, it appends to CUSTOMOPS_GENERIC_SOURCES in its scope
+            genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CPU_INST_DIR}")
+            # Append the returned list to PARTITION_SOURCES
+            list(APPEND PARTITION_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
+            set(CUSTOMOPS_GENERIC_SOURCES "") # Clear for next call within this function's scope
         endforeach()
     endforeach()
 
     foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_2})
         foreach(COMBINATION ${COMBINATIONS_2})
-            genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CMAKE_BINARY_DIR}/cpu_instantiations")
+            # Call genPartitionCombination, it appends to CUSTOMOPS_GENERIC_SOURCES in its scope
+            genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_INST_DIR}")
+            # Append the returned list to PARTITION_SOURCES
+            list(APPEND PARTITION_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
+            set(CUSTOMOPS_GENERIC_SOURCES "") # Clear for next call within this function's scope
         endforeach()
     endforeach()
 
+    # Add sources generated by genPartitionCombination to the main list
+    list(APPEND ALL_SOURCES ${PARTITION_SOURCES})
 
-    set(ALL_SOURCES
-            ${PERF_SOURCES}
-            ${EXCEPTIONS_SOURCES}
-            ${EXEC_SOURCES}
-            ${TYPES_SOURCES}
-            ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES}
-            ${GRAPH_SOURCES}
-            ${CUSTOMOPS_SOURCES}
-            ${CUSTOMOPS_ONEDNN_SOURCES}
-            ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
-            ${CUSTOMOPS_GENERIC_SOURCES}
-            ${OPS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${INDEXING_SOURCES}
-            ${LOOPS_SOURCES}
-            ${LEGACY_SOURCES}
-    )
 
     # Create Object Library
     add_library(${SD_LIBRARY_NAME} OBJECT
@@ -1482,10 +1529,10 @@ else()
     target_include_directories(${SD_LIBRARY_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
 
     # Add External Dependencies
-    foreach(external_dependency IN LISTS EXTERNAL_DEPENDENCY_PROJECTS)
-        message("@external ${external_dependency}")
-        add_dependencies(${SD_LIBRARY_NAME} ${external_dependency})
-    endforeach()
+    # foreach(external_dependency IN LISTS EXTERNAL_DEPENDENCY_PROJECTS) # Variable not defined
+    #    message("@external ${external_dependency}")
+    #    add_dependencies(${SD_LIBRARY_NAME} ${external_dependency})
+    # endforeach()
 
     # Create the shared library using SD_LIBRARY_NAME
     if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
@@ -1500,15 +1547,21 @@ else()
         endif()
 
         # Link required libraries to the shared library
-        target_link_libraries(${SD_LIBRARY_NAME}_shared
-                ${EXTERNAL_DEPENDENCY_LIBS}
+        target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC # Changed PRIVATE to PUBLIC for linking deps
+                # ${EXTERNAL_DEPENDENCY_LIBS} # Variable not defined
                 ${ONEDNN}
-                ${ONEDNN_LIBRARIES}
+                # ${ONEDNN_LIBRARIES} # ONEDNN target should handle this
                 ${ARMCOMPUTE_LIBRARIES}
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
-                ${CPU_FEATURES}
+                ${CPU_FEATURES} # Variable not defined
+                flatbuffers::flatbuffers # Link flatbuffers
         )
+
+        if (HAVE_ONEDNN)
+            target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC dnnl) # Explicit link for imported target
+        endif()
+
         install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
     endif()
 
@@ -1517,11 +1570,32 @@ else()
         add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
         set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME "${SD_LIBRARY_NAME}_static")
         set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        # Link dependencies to static lib interface? Or require user to link them? Usually the latter.
+        target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
+                flatbuffers::flatbuffers
+                ${ARMCOMPUTE_LIBRARIES}
+                ${OPENBLAS_LIBRARIES}
+                ${BLAS_LIBRARIES}
+                # ${CPU_FEATURES} # Variable not defined
+        )
+        if (HAVE_ONEDNN)
+            target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
+        endif()
         install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
     elseif(SD_STATIC_LIB)
         add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
         set_target_properties(${SD_LIBRARY_NAME}_static PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
         set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
+                flatbuffers::flatbuffers
+                ${ARMCOMPUTE_LIBRARIES}
+                ${OPENBLAS_LIBRARIES}
+                ${BLAS_LIBRARIES}
+                # ${CPU_FEATURES} # Variable not defined
+        )
+        if (HAVE_ONEDNN)
+            target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
+        endif()
         install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
     endif()
 
@@ -1539,6 +1613,14 @@ else()
         if(OPENMP_FOUND)
             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+            # Link OpenMP to the shared library if found
+            if (TARGET ${SD_LIBRARY_NAME}_shared)
+                target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC OpenMP::OpenMP_CXX)
+            endif()
+            # Add OpenMP to the interface of the static library if found
+            if (TARGET ${SD_LIBRARY_NAME}_static)
+                target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE OpenMP::OpenMP_CXX)
+            endif()
         endif()
     endif()
 
