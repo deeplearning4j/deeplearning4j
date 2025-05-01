@@ -797,8 +797,7 @@ if(${HELPERS_armcompute})
         # Construct package name and URL (VERIFY THIS URL IS CORRECT!)
         set(ARMCOMPUTE_PKG_NAME "arm_compute-${ARMCOMPUTE_VERSION}-${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}-bin")
         set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
-        # IMPORTANT: Get the correct SHA256 hash for the specific file from the release page or by downloading it manually first!
-        set(ARMCOMPUTE_URL_HASH "SHA256=PLACE_CORRECT_SHA256_HASH_HERE") # e.g. SHA256=abc123def456...
+
 
         # Subdirectory within the extracted archive containing the libs (based on your previous log)
         # VERIFY this matches the actual archive structure.
@@ -807,7 +806,6 @@ if(${HELPERS_armcompute})
         ExternalProject_Add(armcompute_external # Define the external project target
                 PREFIX            "${CMAKE_BINARY_DIR}/armcompute_external" # Base directory for EP build/tmp files
                 URL               "${ARMCOMPUTE_URL}"
-                URL_HASH          ${ARMCOMPUTE_URL_HASH}
                 DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads" # Cache downloads here
                 SOURCE_DIR        "${ARMCOMPUTE_SOURCE_DIR}"      # Where archive contents are extracted
 
