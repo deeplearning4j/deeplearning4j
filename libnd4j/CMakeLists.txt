@@ -1369,7 +1369,7 @@ if(SD_CUDA)
             install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
         endif()
 
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda")
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda/blas")
     endif()
 else()
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
@@ -1542,7 +1542,7 @@ else()
     endif()
 
     # Set Library Output Directories
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu")
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu/blas")
 endif()
 
 # Add tests if enabled
