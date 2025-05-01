@@ -774,82 +774,85 @@ set(HAVE_ARMCOMPUTE 0)
 
 # Only attempt ARM Compute configuration if the helper flag is set
 if(${HELPERS_armcompute})
-    message(STATUS "ARM Compute helper is active, attempting configuration...")
+    # ===================================================================
+    # Manage ARM Compute Dependency using ExternalProject_Add
+    # ===================================================================
+    option(LIBND4J_BUILD_WITH_ARMCOMPUTE "Build with ARM Compute Library support" ON) # Make it optional if needed
 
-    # First, try to find an existing installation
-    find_package(ARMCOMPUTE QUIET)
+    if(LIBND4J_BUILD_WITH_ARMCOMPUTE AND (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64"))
+        message(STATUS "Configuring ARM Compute Library download using ExternalProject_Add")
+        include(ExternalProject)
 
-    if(ARMCOMPUTE_FOUND)
-        # Found via find_package
-        set(HAVE_ARMCOMPUTE 1)
-        include_directories(${ARMCOMPUTE_INCLUDE_DIRS})
-        set(ARMCOMPUTE_LIBRARIES ${ARMCOMPUTE_LIBRARIES})
-        message(STATUS "Found ARM Compute via find_package. Include: ${ARMCOMPUTE_INCLUDE_DIRS}, Libs: ${ARMCOMPUTE_LIBRARIES}")
+        # --- Configuration (Adjust these as needed) ---
+        set(ARMCOMPUTE_VERSION "v25.04") # Version from your logs
+        set(ARMCOMPUTE_ARCH "aarch64")   # Arch from your logs
+        set(ARMCOMPUTE_PLATFORM "linux") # Platform from your logs
+        set(ARMCOMPUTE_FLAVOR "cpu")     # Flavor from your logs
+
+        # Directory where headers/libs will be "installed" within the build tree
+        set(ARMCOMPUTE_INSTALL_DIR "${CMAKE_BINARY_DIR}/armcompute_install")
+        # Directory where ExternalProject will download/extract source archive
+        set(ARMCOMPUTE_SOURCE_DIR "${CMAKE_BINARY_DIR}/armcompute_external/src")
+
+        # Construct package name and URL (VERIFY THIS URL IS CORRECT!)
+        set(ARMCOMPUTE_PKG_NAME "arm_compute-${ARMCOMPUTE_VERSION}-${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}-bin")
+        set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
+        # IMPORTANT: Get the correct SHA256 hash for the specific file from the release page or by downloading it manually first!
+        set(ARMCOMPUTE_URL_HASH "SHA256=PLACE_CORRECT_SHA256_HASH_HERE") # e.g. SHA256=abc123def456...
+
+        # Subdirectory within the extracted archive containing the libs (based on your previous log)
+        # VERIFY this matches the actual archive structure.
+        set(ARMCOMPUTE_LIB_SUBDIR "lib/armv8a-neon")
+
+        ExternalProject_Add(armcompute_external # Define the external project target
+                PREFIX            "${CMAKE_BINARY_DIR}/armcompute_external" # Base directory for EP build/tmp files
+                URL               "${ARMCOMPUTE_URL}"
+                URL_HASH          ${ARMCOMPUTE_URL_HASH}
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads" # Cache downloads here
+                SOURCE_DIR        "${ARMCOMPUTE_SOURCE_DIR}"      # Where archive contents are extracted
+
+                # Since it's pre-built, no configure or build steps needed
+                CONFIGURE_COMMAND ""
+                BUILD_COMMAND     ""
+
+                # Define the "install" step: Copy needed files from extracted archive to our install dir
+                INSTALL_COMMAND   ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" && # Clean first
+                # Copy headers
+                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
+                # Copy the specific library directory
+                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
+
+                # Specify key output files to ensure the install step completes before dependents build
+                # Use library names/paths known to exist in the package. Adjust if needed.
+                BUILD_BYPRODUCTS  "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
+                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
+                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
+                BUILD_IN_SOURCE   1 # Often needed if there's no real build step
+        )
+
+        # --- Define an INTERFACE Library ---
+        # This represents the ARM Compute dependency for other targets to link against.
+        add_library(armcompute_interface INTERFACE)
+        # Tell targets linking this where to find headers
+        target_include_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/include")
+        # Tell targets linking this where to find libraries (-L flag)
+        target_link_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/lib")
+        # Specify libraries to link (-l flag names derived from lib*.so)
+        target_link_libraries(armcompute_interface INTERFACE arm_compute arm_compute_graph)
+
+        # Crucial: Make the interface target depend on the external project completing its install step.
+        add_dependencies(armcompute_interface armcompute_external)
+
+        # Set a variable to indicate ARM Compute is available via this method
+        set(ARMCOMPUTE_FOUND TRUE)
+        set(ARMCOMPUTE_INCLUDE_DIRS "${ARMCOMPUTE_INSTALL_DIR}/include") # For potential backward compatibility checks, not strictly needed
+        set(ARMCOMPUTE_LIBRARIES armcompute_interface) # The target name representing the libraries
+
     else()
-        # Not found via find_package, attempt download if URL is defined and arch matches
-        message(STATUS "ARM Compute not found via find_package. Checking download conditions.")
-        if(DEFINED ARM_COMPUTE_URL AND (${SD_ARCH} MATCHES "armv7" OR ${SD_ARCH} MATCHES "armv8-a" OR ${SD_ARCH} MATCHES "arm64"))
-            message(STATUS "Attempting to download ARM Compute Library from: ${ARM_COMPUTE_URL}")
-
-            # Configure the download project
-            configure_file(./CMakeLists.txt.armcompute.in armcompute-download/CMakeLists.txt @ONLY)
-
-            # Execute the CMake configure step for the download
-            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-                    RESULT_VARIABLE result_config
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-            )
-
-            if(NOT result_config EQUAL 0)
-                message(WARNING "CMake configuration step for ARM Compute Library download failed: ${result_config}")
-            else()
-                # Execute the CMake build step for the download
-                execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                        RESULT_VARIABLE result_build
-                        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/armcompute-download
-                )
-
-                if(NOT result_build EQUAL 0)
-                    message(WARNING "Build step for ARM Compute Library download failed: ${result_build}")
-                else()
-                    # Download and build successful, set up paths and variables
-                    set(ARMCOMPUTE_ROOT "${CMAKE_CURRENT_BINARY_DIR}/armcompute-src")
-
-                    # Check if the expected library files exist after download/build
-                    # Check if the expected library files exist after download/build
-                    # Libraries are expected in the BUILD directory, not the SOURCE directory (ARMCOMPUTE_ROOT)
-                    set(ARMCOMPUTE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/armcompute-build") # Assuming this is the build dir used by the sub-project
-                    set(ARMCOMPUTE_LIB_OUTPUT_DIR "${ARMCOMPUTE_BUILD_DIR}/lib") # Common output location, adjust if sub-project uses different path
-                    # Check common library names, adjust if SCons output differs
-                    set(ARMCOMPUTE_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute.so")
-                    set(ARMCOMPUTE_CORE_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute_core.so")
-                    # Optional: Add check for graph lib if needed
-                    # set(ARMCOMPUTE_GRAPH_LIB_PATH "${ARMCOMPUTE_LIB_OUTPUT_DIR}/libarm_compute_graph.so")
-
-                    # Verify the library paths exist
-                    if(EXISTS "${ARMCOMPUTE_LIB_PATH}" AND EXISTS "${ARMCOMPUTE_CORE_LIB_PATH}")
-                        message(STATUS "Found Arm Compute libraries in: ${ARMCOMPUTE_LIB_OUTPUT_DIR}")
-                        add_definitions(-DARMCOMPUTENEON_ENABLED)
-                        # Include header directory from source tree
-                        include_directories(${ARMCOMPUTE_ROOT}/include)
-                        # Set variable with paths to actual library files for linking
-                        set(ARMCOMPUTE_LIBRARIES "${ARMCOMPUTE_LIB_PATH}" "${ARMCOMPUTE_CORE_LIB_PATH}")
-                        # Add graph lib if needed: list(APPEND ARMCOMPUTE_LIBRARIES "${ARMCOMPUTE_GRAPH_LIB_PATH}")
-                        set(HAVE_ARMCOMPUTE 1)
-                        message(STATUS "ARM Compute Library successfully configured via download. Headers: ${ARMCOMPUTE_ROOT}/include Libs: ${ARMCOMPUTE_LIBRARIES}")
-                    else()
-                        message(WARNING "ARM Compute build via execute_process completed, but library files not found.")
-                        message(WARNING "Looked for: ${ARMCOMPUTE_LIB_PATH}")
-                        message(WARNING "Looked for: ${ARMCOMPUTE_CORE_LIB_PATH}")
-                        message(WARNING "Check the build output directory used by the armcompute ExternalProject.")
-                        # HAVE_ARMCOMPUTE remains 0, ARMCOMPUTE_LIBRARIES remains empty.
-                    endif()
-                endif()
-            endif()
-        else()
-            message(STATUS "ARM Compute helper active, but library not found and download conditions not met (URL: ${ARM_COMPUTE_URL}, Arch: ${SD_ARCH}).")
-        endif()
+        message(STATUS "Skipping ARM Compute setup via ExternalProject_Add (disabled or not AArch64)")
+        set(ARMCOMPUTE_FOUND FALSE)
     endif()
+    # ===================================================================
 endif()
 
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
