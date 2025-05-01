@@ -22,9 +22,10 @@
 #include <atomic>
 #if __cplusplus >= 201703L && (!defined(__APPLE__))
 #include <shared_mutex>
-
+#define SD_HAS_SHARED_MUTEX 1
 #else
 #include <mutex>
+#define SD_HAS_SHARED_MUTEX 0
 #endif
 
 #include <stdexcept>
@@ -35,174 +36,189 @@
 
 namespace sd {
 namespace generic {
-#if __cplusplus >= 201703L && (!defined(__APPLE__))
+
+#if SD_HAS_SHARED_MUTEX
 #define MUTEX_TYPE std::shared_mutex
-#define LOCK_TYPE std::shared_lock
+#define SHARED_LOCK_TYPE std::shared_lock
 #else
 #define MUTEX_TYPE std::mutex
-#define LOCK_TYPE std::lock_guard
+#define SHARED_LOCK_TYPE std::lock_guard
 #endif
+
 template<size_t NUM_STRIPES = 32>
 class StripedLocks {
-private:
- mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes;
- mutable std::array<std::atomic<uint32_t>, NUM_STRIPES> _stripeCounts{};
- static constexpr int MAX_RETRIES = 500;
- static constexpr auto RETRY_DELAY = std::chrono::microseconds(50);
- static constexpr int MAX_BACKOFF_SHIFT = 10;
- static constexpr auto MIN_DELAY = std::chrono::microseconds(50);
+ private:
+  mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes;
+  mutable std::array<std::atomic<uint32_t>, NUM_STRIPES> _stripeCounts{};
+  static constexpr int MAX_RETRIES = 500;
+  static constexpr auto RETRY_DELAY = std::chrono::microseconds(50);
+  static constexpr int MAX_BACKOFF_SHIFT = 10;
+  static constexpr auto MIN_DELAY = std::chrono::microseconds(50);
 
- static_assert((NUM_STRIPES & (NUM_STRIPES - 1)) == 0, "NUM_STRIPES must be a power of 2");
+  static_assert((NUM_STRIPES & (NUM_STRIPES - 1)) == 0, "NUM_STRIPES must be a power of 2");
 
- bool acquireLockWithTimeout(size_t stripe, bool exclusive, int maxRetries) const {
-   auto startTime = std::chrono::steady_clock::now();
+  bool acquireLockWithTimeout(size_t stripe, bool exclusive, int maxRetries) const {
+    auto startTime = std::chrono::steady_clock::now();
 
-   for (int attempt = 0; attempt < maxRetries; ++attempt) {
-     bool locked = exclusive ?
-                             _mutexes[stripe].try_lock() :
-                             _mutexes[stripe].try_lock_shared();
+    for (int attempt = 0; attempt < maxRetries; ++attempt) {
+      bool locked;
 
-     if (locked) {
-       _stripeCounts[stripe].fetch_add(1, std::memory_order_acq_rel);
-       return true;
-     }
+#if SD_HAS_SHARED_MUTEX
+      locked = exclusive ?
+                         _mutexes[stripe].try_lock() :
+                         _mutexes[stripe].try_lock_shared();
+#else
+      // With std::mutex, we can only do exclusive locks
+      locked = _mutexes[stripe].try_lock();
+#endif
 
-     if (std::chrono::steady_clock::now() - startTime > std::chrono::seconds(1)) {
-       return false;
-     }
+      if (locked) {
+        _stripeCounts[stripe].fetch_add(1, std::memory_order_acq_rel);
+        return true;
+      }
 
-     auto backoff = RETRY_DELAY * (1 << std::min(attempt, MAX_BACKOFF_SHIFT));
-     std::this_thread::sleep_for(backoff);
-   }
-   return false;
- }
+      if (std::chrono::steady_clock::now() - startTime > std::chrono::seconds(1)) {
+        return false;
+      }
 
-public:
- StripedLocks() {
-   initializeCounts();
- }
+      auto backoff = RETRY_DELAY * (1 << std::min(attempt, MAX_BACKOFF_SHIFT));
+      std::this_thread::sleep_for(backoff);
+    }
+    return false;
+  }
 
- class MultiLockGuard {
-  private:
-   StripedLocks& _locks;
-   std::vector<size_t> _stripes;
-   bool _exclusive;
-   bool _acquired{false};
-   static constexpr auto LOCK_TIMEOUT = std::chrono::seconds(2);
+ public:
+  StripedLocks() {
+    initializeCounts();
+  }
 
-   bool acquireAllLocksWithTimeout(const std::chrono::milliseconds& timeout) {
-     auto startTime = std::chrono::steady_clock::now();
-     std::vector<size_t> acquired;
-     acquired.reserve(_stripes.size());
+  class MultiLockGuard {
+   private:
+    StripedLocks& _locks;
+    std::vector<size_t> _stripes;
+    bool _exclusive;
+    bool _acquired{false};
+    static constexpr auto LOCK_TIMEOUT = std::chrono::seconds(2);
 
-     while (std::chrono::steady_clock::now() - startTime < timeout) {
-       bool allLocked = true;
-       for (size_t stripe : _stripes) {
-         if (!_locks.acquireLockWithTimeout(stripe, _exclusive, 1)) {
-           allLocked = false;
-           for (auto& s : acquired) {
-             _locks.unlockStripe(s, _exclusive);
-           }
-           acquired.clear();
-           break;
-         }
-         acquired.push_back(stripe);
-       }
-       if (allLocked) {
-         _acquired = true;
-         return true;
-       }
-       std::this_thread::sleep_for(MIN_DELAY);
-     }
-     return false;
-   }
+    bool acquireAllLocksWithTimeout(const std::chrono::milliseconds& timeout) {
+      auto startTime = std::chrono::steady_clock::now();
+      std::vector<size_t> acquired;
+      acquired.reserve(_stripes.size());
 
-  public:
-   MultiLockGuard(StripedLocks& locks,
-                  const std::vector<size_t>& stripes,
-                  bool exclusive,
-                  const std::chrono::milliseconds& timeout = std::chrono::seconds(2))
-       : _locks(locks), _stripes(stripes), _exclusive(exclusive) {
-     std::sort(_stripes.begin(), _stripes.end());
-     _stripes.erase(std::unique(_stripes.begin(), _stripes.end()), _stripes.end());
-     acquireAllLocksWithTimeout(timeout);
-   }
+      while (std::chrono::steady_clock::now() - startTime < timeout) {
+        bool allLocked = true;
+        for (size_t stripe : _stripes) {
+          if (!_locks.acquireLockWithTimeout(stripe, _exclusive, 1)) {
+            allLocked = false;
+            for (auto& s : acquired) {
+              _locks.unlockStripe(s, _exclusive);
+            }
+            acquired.clear();
+            break;
+          }
+          acquired.push_back(stripe);
+        }
+        if (allLocked) {
+          _acquired = true;
+          return true;
+        }
+        std::this_thread::sleep_for(MIN_DELAY);
+      }
+      return false;
+    }
 
-   bool acquired() const { return _acquired; }
+   public:
+    MultiLockGuard(StripedLocks& locks,
+                   const std::vector<size_t>& stripes,
+                   bool exclusive,
+                   const std::chrono::milliseconds& timeout = std::chrono::seconds(2))
+        : _locks(locks), _stripes(stripes), _exclusive(exclusive) {
+      std::sort(_stripes.begin(), _stripes.end());
+      _stripes.erase(std::unique(_stripes.begin(), _stripes.end()), _stripes.end());
+      acquireAllLocksWithTimeout(timeout);
+    }
 
-   void release() {
-     if (!_acquired) return;
-     for (auto it = _stripes.rbegin(); it != _stripes.rend(); ++it) {
-       _locks.unlockStripe(*it, _exclusive);
-     }
-     _acquired = false;
-   }
+    bool acquired() const { return _acquired; }
 
-   ~MultiLockGuard() {
-     if (_acquired) {
-       release();
-     }
-   }
+    void release() {
+      if (!_acquired) return;
+      for (auto it = _stripes.rbegin(); it != _stripes.rend(); ++it) {
+        _locks.unlockStripe(*it, _exclusive);
+      }
+      _acquired = false;
+    }
 
-   MultiLockGuard(const MultiLockGuard&) = delete;
-   MultiLockGuard& operator=(const MultiLockGuard&) = delete;
-   MultiLockGuard(MultiLockGuard&&) noexcept = default;
- };
+    ~MultiLockGuard() {
+      if (_acquired) {
+        release();
+      }
+    }
 
- MultiLockGuard acquireMultiLockWithTimeout(const std::vector<size_t>& stripes,
-                                            bool exclusive,
-                                            const std::chrono::milliseconds& timeout) {
-   return MultiLockGuard(*this, stripes, exclusive, timeout);
- }
+    MultiLockGuard(const MultiLockGuard&) = delete;
+    MultiLockGuard& operator=(const MultiLockGuard&) = delete;
+    MultiLockGuard(MultiLockGuard&&) noexcept = default;
+  };
 
- void lockStripe(size_t stripe, bool exclusive = false) const {
-   if (stripe >= NUM_STRIPES) {
-     throw std::out_of_range("Invalid stripe index");
-   }
+  MultiLockGuard acquireMultiLockWithTimeout(const std::vector<size_t>& stripes,
+                                             bool exclusive,
+                                             const std::chrono::milliseconds& timeout) {
+    return MultiLockGuard(*this, stripes, exclusive, timeout);
+  }
 
-   if (!acquireLockWithTimeout(stripe, exclusive, MAX_RETRIES)) {
-     auto currentCount = _stripeCounts[stripe].load(std::memory_order_relaxed);
-     std::string msg = "Failed to acquire " +
-                       std::string(exclusive ? "exclusive" : "shared") +
-                       " lock for stripe " + std::to_string(stripe) +
-                       " after " + std::to_string(MAX_RETRIES) +
-                       " attempts. Current count: " + std::to_string(currentCount);
-     THROW_EXCEPTION(msg.c_str());
-   }
- }
+  void lockStripe(size_t stripe, bool exclusive = false) const {
+    if (stripe >= NUM_STRIPES) {
+      throw std::out_of_range("Invalid stripe index");
+    }
 
- void unlockStripe(size_t stripe, bool exclusive = false) const {
-   if (stripe >= NUM_STRIPES) {
-     throw std::out_of_range("Invalid stripe index");
-   }
-   _stripeCounts[stripe].fetch_sub(1, std::memory_order_relaxed);
-   if (exclusive) {
-     _mutexes[stripe].unlock();
-   } else {
-     _mutexes[stripe].unlock_shared();
-   }
- }
+    if (!acquireLockWithTimeout(stripe, exclusive, MAX_RETRIES)) {
+      auto currentCount = _stripeCounts[stripe].load(std::memory_order_relaxed);
+      std::string msg = "Failed to acquire " +
+                        std::string(exclusive ? "exclusive" : "shared") +
+                        " lock for stripe " + std::to_string(stripe) +
+                        " after " + std::to_string(MAX_RETRIES) +
+                        " attempts. Current count: " + std::to_string(currentCount);
+      THROW_EXCEPTION(msg.c_str());
+    }
+  }
 
- MultiLockGuard acquireMultiLock(const std::vector<size_t>& stripes, bool exclusive = false) {
-   return MultiLockGuard(*this, stripes, exclusive);
- }
+  void unlockStripe(size_t stripe, bool exclusive = false) const {
+    if (stripe >= NUM_STRIPES) {
+      throw std::out_of_range("Invalid stripe index");
+    }
+    _stripeCounts[stripe].fetch_sub(1, std::memory_order_relaxed);
 
- uint32_t getStripeCount(size_t stripe) const {
-   return _stripeCounts[stripe].load(std::memory_order_relaxed);
- }
+#if SD_HAS_SHARED_MUTEX
+    if (exclusive) {
+      _mutexes[stripe].unlock();
+    } else {
+      _mutexes[stripe].unlock_shared();
+    }
+#else
+    // With std::mutex, we can only do exclusive unlocks
+    _mutexes[stripe].unlock();
+#endif
+  }
 
- template<typename T>
- size_t getStripeIndex(const T& value) const {
-   return std::hash<T>{}(value) & (NUM_STRIPES - 1);
- }
+  MultiLockGuard acquireMultiLock(const std::vector<size_t>& stripes, bool exclusive = false) {
+    return MultiLockGuard(*this, stripes, exclusive);
+  }
 
- void initializeCounts() {
-   for (auto& count : _stripeCounts) {
-     count.store(0, std::memory_order_relaxed);
-   }
- }
+  uint32_t getStripeCount(size_t stripe) const {
+    return _stripeCounts[stripe].load(std::memory_order_relaxed);
+  }
 
- static constexpr size_t getNumStripes() { return NUM_STRIPES; }
+  template<typename T>
+  size_t getStripeIndex(const T& value) const {
+    return std::hash<T>{}(value) & (NUM_STRIPES - 1);
+  }
+
+  void initializeCounts() {
+    for (auto& count : _stripeCounts) {
+      count.store(0, std::memory_order_relaxed);
+    }
+  }
+
+  static constexpr size_t getNumStripes() { return NUM_STRIPES; }
 };
 
 }} // namespace sd::generic
