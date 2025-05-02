@@ -36,12 +36,20 @@
     <name>nd4j-native</name>
 
     <properties>
-        <!-- Try to avoid setting this. This is mainly for being able to override for where we put binaries in javacpp jars for android. -->
         <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/cpu/nativecpu/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
-        <!-- Java 9 module name does not allow native-->
         <module.name>nd4j.cpu</module.name>
 
-    </properties>
+        <compiler.flag.cpp.standard>-std=c++17</compiler.flag.cpp.standard>
+
+        <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined>
+        <platform.linker.flag.rdynamic>-rdynamic</platform.linker.flag.rdynamic>
+        <platform.linker.flag.bsymbolic>-Bsymbolic</platform.linker.flag.bsymbolic>
+        <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
+        <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
+        <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
+        <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
+        <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
+        <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> <platform.functrace.libs></platform.functrace.libs> </properties>
 
 
     <dependencies>
@@ -76,9 +84,6 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
-
-
-
 
     <build>
         <plugins>
@@ -142,7 +147,6 @@
                 </executions>
             </plugin>
 
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -177,8 +181,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
             </plugin>
-
-
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -219,10 +221,53 @@
         </plugins>
     </build>
 
-
-
     <profiles>
 
+        <profile>
+            <id>os-unix-flags</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>!mac os x</name> </os>
+            </activation>
+            <properties>
+                <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined>
+                <platform.linker.flag.rdynamic>-rdynamic</platform.linker.flag.rdynamic>
+                <platform.linker.flag.bsymbolic>-Bsymbolic</platform.linker.flag.bsymbolic>
+                <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
+                <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
+                <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
+                <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
+                <platform.functrace.libs>${platform.functrace.libs.unix}</platform.functrace.libs>
+                <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> </properties>
+        </profile>
+
+        <profile>
+            <id>os-mac-flags</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <platform.linker.flag.no.undefined>-Wl,-undefined,error</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.linker.flag.bsymbolic></platform.linker.flag.bsymbolic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none>
+                <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp>
+                <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
+                <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
+                <platform.functrace.libs>${platform.functrace.libs.unix}</platform.functrace.libs> <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> </properties>
+        </profile>
+
+        <profile>
+            <id>os-windows-flags</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <platform.linker.flag.no.undefined>-Wl,--no-undefined</platform.linker.flag.no.undefined> <platform.linker.flag.rdynamic></platform.linker.flag.rdynamic> <platform.linker.flag.bsymbolic></platform.linker.flag.bsymbolic> <platform.compiler.flag.optimize.none>-O0</platform.compiler.flag.optimize.none> <platform.compiler.flag.no.omit.fp>-fno-omit-frame-pointer</platform.compiler.flag.no.omit.fp> <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls> <platform.compiler.flag.debug>-g</platform.compiler.flag.debug> <platform.functrace.libs></platform.functrace.libs> <platform.compiler.flag.windows.define>-D_WIN32</platform.compiler.flag.windows.define>
+            </properties>
+        </profile>
         <profile>
             <id>non-functrace</id>
             <activation>
@@ -230,7 +275,6 @@
                 <property>
                     <name>!libnd4j.calltrace</name>
                 </property>
-
             </activation>
             <build>
                 <plugins>
@@ -291,7 +335,6 @@
                             <classPaths>
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
-
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
@@ -333,9 +376,9 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-std=c++17</compilerOption>
-                                <compilerOption>-Wl,--no-undefined</compilerOption>
-
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.windows.define}</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -355,8 +398,7 @@
                                 <configuration>
                                     <skip>${javacpp.parser.skip}</skip>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets
-                                    </classOrPackageName>
+                                    <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets</classOrPackageName>
                                 </configuration>
                             </execution>
                             <execution>
@@ -376,7 +418,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -389,7 +430,6 @@
                     <name>libnd4j.calltrace</name>
                     <value>ON</value>
                 </property>
-
             </activation>
             <build>
                 <plugins>
@@ -430,8 +470,6 @@
                         <configuration>
                             <properties>${javacpp.platform.properties}</properties>
                             <propertyKeysAndValues>
-                                <!-- This might look out of place here. We need this to configure the preset to include the correct
-                                pre processor definition: SD_GCC_FUNCTRACE. -->
                                 <property>
                                     <name>libnd4j.calltrace</name>
                                     <value>${libnd4j.calltrace}</value>
@@ -456,7 +494,6 @@
                             <classPaths>
                                 <classPath>${project.build.outputDirectory}</classPath>
                             </classPaths>
-
                             <includePaths>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
                                 <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
@@ -471,8 +508,7 @@
                                 <includePath>${libnd4jhome}/include/graph</includePath>
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
-                                <includePath>${libnd4jhome}/include/performance</includePath>
-                            </includePaths>
+                                <includePath>${libnd4jhome}/include/performance</includePath> </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
@@ -499,25 +535,18 @@
                                 <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                             </linkResources>
                             <compilerOptions>
-                                <compilerOption>-std=c++17</compilerOption>
-                                <compilerOption>-Wl,--no-undefined</compilerOption>
-                                <!-- This is the main function. Tells gcc to instrument every function with an enter and exit function.-->
-                                <!-- Adds debug information in to the generated .so file. Needed for symbol decoding.  -->
-                                <compilerOption>-rdynamic</compilerOption>
-                                <!-- Need these 2 libraries including bin utils for handling address decoding-->
-                                <compilerOption>-ldl</compilerOption>
-                                <compilerOption>-O0</compilerOption>
-                                <!-- Only used for this function. We use inline static file handles only available in c++ 17-->
-                                <compilerOption>-std=c++17</compilerOption>
-                                <!-- Need to pass this to gcc in order to enable the right functions to appear in cmake.  -->
-                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption>
-                                <compilerOption>-lunwind</compilerOption>
-                                <compilerOption>-lbfd</compilerOption>
-                                <compilerOption>-ldw</compilerOption>
-                                <compilerOption>-Bsymbolic</compilerOption>
-                                <compilerOption>-fno-omit-frame-pointer</compilerOption>
-                                <compilerOption>-fno-optimize-sibling-calls</compilerOption>
-                                <compilerOption>-g</compilerOption>
+                                <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
+                                <compilerOption>-DSD_GCC_FUNCTRACE=ON</compilerOption> <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
+                                <compilerOption>${platform.linker.flag.rdynamic}</compilerOption>
+                                <compilerOption>${platform.linker.flag.bsymbolic}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.optimize.none}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.debug}</compilerOption>
+                                <compilerOption>${platform.compiler.flag.windows.define}</compilerOption> <compilerOption>${platform.functrace.libs}</compilerOption>
+
+                                <compilerOption>-finstrument-functions</compilerOption>
+
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -537,8 +566,7 @@
                                 <configuration>
                                     <skip>${javacpp.parser.skip}</skip>
                                     <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                                    <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets
-                                    </classOrPackageName>
+                                    <classOrPackageName>org.nd4j.presets.cpu.Nd4jCpuPresets</classOrPackageName>
                                 </configuration>
                             </execution>
                             <execution>
@@ -558,18 +586,15 @@
                             </execution>
                         </executions>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
 
-        <!-- profile only enabled for compat which does not have a matching classifier for dependencies-->
         <profile>
             <id>compat-profile</id>
             <activation>
                 <property>
                     <name>javacpp.platform.extension</name>
-                    <!-- Using the maven build extension (see ./mvn/extensions.xml) use regex to check for any value that isn't empty-->
                     <value>/.+/</value>
                 </property>
             </activation>
@@ -589,8 +614,7 @@
                     <groupId>org.bytedeco</groupId>
                     <artifactId>openblas</artifactId>
                     <version>${openblas.version}-${javacpp-presets.version}</version>
-                    <classifier>linux-x86_64</classifier>
-                    <optional>true</optional>
+                    <classifier>linux-x86_64</classifier> <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>
@@ -623,7 +647,6 @@
             </dependencies>
         </profile>
 
-
         <profile>
             <id>android-arm-32-output</id>
             <activation>
@@ -648,7 +671,6 @@
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/arm64-v8a</javacpp.build.output.path>
             </properties>
         </profile>
-
         <profile>
             <id>android-x86-output</id>
             <activation>
@@ -661,7 +683,6 @@
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86</javacpp.build.output.path>
             </properties>
         </profile>
-
         <profile>
             <id>android-x86_64-output</id>
             <activation>
@@ -674,7 +695,6 @@
                 <javacpp.build.output.path>${project.build.directory}/classes/lib/x86_64</javacpp.build.output.path>
             </properties>
         </profile>
-
 
         <profile>
             <id>avx2</id>
@@ -700,22 +720,15 @@
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
             </properties>
         </profile>
+
         <profile>
-            <!--
-            Windows note:
-               Do NOT use the gcc compiler in usr/ always use the one in mingw/bin
-               Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
-               prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
-               may show up.
-            -->
             <id>mingw</id>
             <activation>
                 <os>
                     <family>windows</family>
                 </os>
                 <property>
-                    <name>!javacpp.platform</name>
-                </property>
+                    <name>!javacpp.platform</name> </property>
             </activation>
             <build>
                 <plugins>
@@ -724,25 +737,12 @@
                         <artifactId>javacpp</artifactId>
                         <configuration>
                             <properties>${javacpp.platform}-mingw</properties>
-                            <!-- Add the _WIN32 macro to gcc forcibly. Depending on what version
-                            within msys2/mingw is used it will use the wrong code path in the generated javacpp
-                            code that reads in a file.-->
-                            <compilerOptions>
-                                <compilerOption>-D_WIN32</compilerOption>
-                            </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
         <profile>
-            <!--
-          Windows note:
-             Do NOT use the gcc compiler in usr/ always use the one in mingw/bin
-             Another note on this particular gcc: ensure the path is setup in msys2 with /c/msys64/mingw64/bin
-             prefixed. If the one in USR is used, errors like error: 'RTLD_LAZY' was not declared in this scope
-             may show up.
-      -->
             <id>mingw-windows-platform</id>
             <activation>
                 <os>
@@ -750,8 +750,7 @@
                 </os>
                 <property>
                     <name>javacpp.platform</name>
-                    <value>windows-x86_64</value>
-                </property>
+                    <value>windows-x86_64</value> </property>
             </activation>
             <build>
                 <plugins>
@@ -778,7 +777,6 @@
                 <libnd4jhome>${env.LIBND4J_HOME}</libnd4jhome>
             </properties>
         </profile>
-
         <profile>
             <id>libnd4j-assembly</id>
             <activation>
@@ -803,38 +801,34 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
-                        <version>3.1.2</version>
-                        <executions>
-                            <execution>
-                                <id>unpack</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>unpack</goal>
-                                </goals>
-                                <configuration>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>org.nd4j</groupId>
-                                            <artifactId>libnd4j</artifactId>
-                                            <version>${project.version}</version>
-                                            <type>zip</type>
-                                            <classifier>
-                                                ${javacpp.platform}${javacpp.platform.extension}
-                                            </classifier>
-                                            <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}
-                                            </outputDirectory>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                        </executions>
+                        <version>3.1.2</version> <executions>
+                        <execution>
+                            <id>unpack</id>
+                            <phase>initialize</phase>
+                            <goals>
+                                <goal>unpack</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>org.nd4j</groupId>
+                                        <artifactId>libnd4j</artifactId>
+                                        <version>${project.version}</version>
+                                        <type>zip</type>
+                                        <classifier>
+                                            ${javacpp.platform}${javacpp.platform.extension}
+                                        </classifier>
+                                        <overWrite>true</overWrite>
+                                        <outputDirectory>${project.build.directory}
+                                        </outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
+                    </executions>
                     </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
-
-
-
 </project>
