@@ -63,10 +63,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.bytedeco</groupId>
