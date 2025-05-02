@@ -49,7 +49,9 @@
         <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
-        <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> <platform.functrace.libs></platform.functrace.libs> </properties>
+        <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> <platform.functrace.libs></platform.functrace.libs>
+        <libnd4j.outputPath>${project.build.directory}/blasbuild/cpu</libnd4j.outputPath>
+    </properties>
 
 
     <dependencies>
@@ -351,7 +353,7 @@
                                 <includePath>${libnd4jhome}/include/memory</includePath>
                             </includePaths>
                             <linkPaths>
-                                <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
+                                <linkPath>${libnd4j.ou}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
                             </linkPaths>

@@ -858,6 +858,7 @@ if(NOT DEFINED ONEDNN_PROCESSING_DONE)
 endif()
 
 if(${HELPERS_onednn})
+    include(ExternalProject)
     message(STATUS "Configuring OneDNN dependency using ExternalProject_Add")
     set(HAVE_ONEDNN TRUE) # Assume success initially, ExternalProject handles failure
 
