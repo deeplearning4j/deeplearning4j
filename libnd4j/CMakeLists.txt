@@ -1329,7 +1329,7 @@ if(SD_CUDA)
             set_target_properties(${SD_LIBRARY_NAME}_shared PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
             set_property(TARGET ${SD_LIBRARY_NAME}_shared PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-            target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC
+            target_link_libraries(${SD_LIBRARY_NAME}_ PUBLIC
                     ${CUDA_LIBRARIES}
                     ${CUDA_DRIVER_LIBRARY}
                     ${CUDA_CUBLAS_LIBRARIES}
@@ -1337,7 +1337,7 @@ if(SD_CUDA)
                     ${CUDNN}
             )
 
-            install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
+            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
         endif()
 
     endif()
@@ -1519,7 +1519,7 @@ else()
             target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC dnnl) # Explicit link for imported target
         endif()
 
-        install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .)
+        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
 
     # Create the static library if needed
