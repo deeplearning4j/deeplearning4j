@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -8,7 +28,9 @@
     <parent>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-backend-impls</artifactId>
-        <version>1.0.0-SNAPSHOT</version> </parent>
+        <version>1.0.0-SNAPSHOT</version>
+
+    </parent>
 
     <artifactId>nd4j-cuda-12.3</artifactId>
 
@@ -16,7 +38,9 @@
 
     <properties>
         <cuda.version>12.3</cuda.version>
-        <cudnn.version>8.9</cudnn.version> <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version> <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
+        <cudnn.version>8.9</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.10</javacpp-presets.cuda.version>
+        <javacpp.build.output.path>${project.build.directory}/classes/org/nd4j/linalg/jcublas/bindings/${javacpp.platform}${javacpp.platform.extension}</javacpp.build.output.path>
         <module.name>nd4j.cuda</module.name>
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
         <libnd4j.functrace>OFF</libnd4j.functrace>

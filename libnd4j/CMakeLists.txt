@@ -858,143 +858,85 @@ if(NOT DEFINED ONEDNN_PROCESSING_DONE)
 endif()
 
 if(${HELPERS_onednn})
-    # Check if we've already processed OneDNN to avoid infinite recursion
-    if(NOT ONEDNN_PROCESSING_DONE)
-        message("Going to pull & build onednn")
-        set(HAVE_ONEDNN 1)
-        # Set the flag to prevent reprocessing
-        set(ONEDNN_PROCESSING_DONE TRUE CACHE INTERNAL "Flag to indicate OneDNN processing is complete")
-        set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+    message(STATUS "Configuring OneDNN dependency using ExternalProject_Add")
+    set(HAVE_ONEDNN TRUE) # Assume success initially, ExternalProject handles failure
 
-        # Download and extract only if needed
-        if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/onednn-src/CMakeLists.txt")
-            message(STATUS "OneDNN source not found, downloading now")
-            configure_file(./CMakeLists.txt.onednn.in onednn-download/CMakeLists.txt)
+    # Define directories for OneDNN within the build tree
+    set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install") # Where headers/libs will be installed
+    set(ONEDNN_SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn_external/src")    # Where source code will be cloned
+    set(ONEDNN_BUILD_DIR "${CMAKE_BINARY_DIR}/onednn_external/build")   # Where OneDNN will be built
 
-            # Execute separate CMake process to download OneDNN
-            execute_process(
-                    COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
-            )
-            if(result)
-                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-                message(FATAL_ERROR "CMake step for onednn failed: ${result}")
-            endif()
+    # --- Add OneDNN using ExternalProject_Add ---
+    ExternalProject_Add(onednn_external # Define the external project target
+            PREFIX            "${CMAKE_BINARY_DIR}/onednn_external" # Base directory for EP build/tmp files
+            GIT_REPOSITORY    "https://github.com/KonduitAI/oneDNN.git" # Use the correct repo
+            GIT_TAG           "master" # Or a specific commit/tag for stability
 
-            execute_process(
-                    COMMAND "${CMAKE_COMMAND}" --build .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/onednn-download"
-            )
-            if(result)
-                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-                message(FATAL_ERROR "Build step for onednn failed: ${result}")
-            endif()
+            SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
+            BINARY_DIR        "${ONEDNN_BUILD_DIR}" # Explicitly set build directory
 
-            message(STATUS "OneDNN download and extraction completed")
-        else()
-            message(STATUS "Using existing OneDNN source")
-        endif()
+            # --- CMake Configuration Step ---
+            # Pass necessary options to OneDNN's CMake configuration
+            # Ensure CMAKE_INSTALL_PREFIX directs install artifacts correctly
+            CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DDNNL_LIBRARY_TYPE=STATIC # Build static library
+            -DDNNL_BUILD_TESTS=OFF     # Disable tests
+            -DDNNL_BUILD_EXAMPLES=OFF  # Disable examples
+            -DDNNL_VERBOSE=OFF         # Disable verbose build unless debugging
+            # Add other necessary flags like compiler paths or toolchains if needed for cross-compilation
+            # Example for cross-compiling: -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
 
-        # Create a separate out-of-source build directory
-        set(ONEDNN_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-build-external")
-        file(MAKE_DIRECTORY "${ONEDNN_BUILD_DIR}")
+            # --- Build Step ---
+            # Use CMake's build command
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE}
 
-        # Only configure and build if the library doesn't exist yet
-        if(NOT EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-            message(STATUS "Configuring and building OneDNN outside of main build")
+            # --- Install Step ---
+            # Use CMake's install command targeting the prefix defined in CMAKE_ARGS
+            INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
 
-            # Configure OneDNN
-            execute_process(
-                    COMMAND "${CMAKE_COMMAND}"
-                    -G "${CMAKE_GENERATOR}"
-                    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                    -DDNNL_LIBRARY_TYPE=STATIC
-                    -DDNNL_BUILD_TESTS=OFF
-                    -DDNNL_BUILD_EXAMPLES=OFF
-                    -DDNNL_VERBOSE=ON
-                    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/onednn-install
-                    "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src" # Correct path to source
-                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
-                    RESULT_VARIABLE onednn_config_result
-            )
+            # --- Specify key output files ---
+            # These ensure the install step completes before dependents build.
+            # Adjust paths/names if OneDNN's install structure changes.
+            BUILD_BYPRODUCTS  "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
+            "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a" # Assuming static lib name
 
+            # --- Logging ---
+            LOG_DOWNLOAD      ON
+            LOG_CONFIGURE     ON
+            LOG_BUILD         ON
+            LOG_INSTALL       ON
+    )
 
-            file(GLOB ONEDNN_FILES "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src/*")
-            message(STATUS "OneDNN directory contents: ${ONEDNN_FILES}")
+    # --- Define an INTERFACE Library for OneDNN ---
+    # This represents the OneDNN dependency for other targets (like libnd4j) to link against.
+    add_library(onednn_interface INTERFACE)
 
-            if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src/CMakeLists.txt")
-                message(FATAL_ERROR "OneDNN source directory exists but doesn't contain CMakeLists.txt. Directory: ${CMAKE_CURRENT_BINARY_DIR}/onednn-download/onednn-src")
-            endif()
+    # Tell targets linking this where to find OneDNN headers
+    target_include_directories(onednn_interface INTERFACE
+            "${ONEDNN_INSTALL_DIR}/include"
+    )
 
-            if(onednn_config_result)
-                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-                message(FATAL_ERROR "OneDNN configuration failed: ${onednn_config_result}")
-            endif()
+    # Tell targets linking this the full path to the static library to link
+    # For static libraries, linking the full path is often necessary.
+    # Adjust the library name/extension (.a/.lib) based on the platform if needed.
+    target_link_libraries(onednn_interface INTERFACE
+            "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
+    )
 
-            # Build OneDNN
-            execute_process(
-                    COMMAND "${CMAKE_COMMAND}" --build .
-                    WORKING_DIRECTORY "${ONEDNN_BUILD_DIR}"
-                    RESULT_VARIABLE onednn_build_result
-            )
+    # Crucial: Make the interface target depend on the external project completing its install step.
+    add_dependencies(onednn_interface onednn_external)
 
-            if(onednn_build_result)
-                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-                message(FATAL_ERROR "OneDNN build failed: ${onednn_build_result}")
-            endif()
+    # Set the variable used later in target_link_libraries for libnd4j
+    set(ONEDNN onednn_interface) # Use the interface library target name
 
-            message(STATUS "OneDNN built successfully")
-        else()
-            message(STATUS "Using previously built OneDNN")
-        endif()
+    message(STATUS "OneDNN configured via ExternalProject_Add. Build artifacts will be in ${ONEDNN_INSTALL_DIR}")
 
-        # Find the OneDNN library
-        if(EXISTS "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-            set(ONEDNN_LIBRARY "${ONEDNN_BUILD_DIR}/src/libdnnl.a")
-        else()
-            # Try to find it using find_library
-            find_library(ONEDNN_LIBRARY
-                    NAMES dnnl
-                    PATHS "${ONEDNN_BUILD_DIR}"
-                    "${ONEDNN_BUILD_DIR}/src"
-                    NO_DEFAULT_PATH
-            )
-
-            if(NOT ONEDNN_LIBRARY)
-                set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
-                message(FATAL_ERROR "OneDNN library not found")
-            endif()
-        endif()
-
-        # Set up variables for using OneDNN
-        set(onednn_SOURCE_DIR "${ONEDNN_BUILD_DIR}")
-        set(onednn_EXT_DIR "${CMAKE_CURRENT_BINARY_DIR}/onednn-src") # Path to downloaded source
-        set(ONEDNN_PATH "${onednn_SOURCE_DIR}")
-
-        # Add include directories
-        include_directories(
-                "${onednn_SOURCE_DIR}/include" # Build directory include
-                "${onednn_EXT_DIR}/include"  # Source directory include
-                "${onednn_SOURCE_DIR}"       # Build directory root
-        )
-
-
-        # Create an imported target for the library
-        add_library(dnnl STATIC IMPORTED GLOBAL)
-        set_target_properties(dnnl PROPERTIES
-                IMPORTED_LOCATION "${ONEDNN_LIBRARY}"
-        )
-
-        set(ONEDNN dnnl)
-        message(STATUS "OneDNN library found at: ${ONEDNN_LIBRARY}")
-    else()
-        message(STATUS "OneDNN processing already completed - using existing configuration")
-        # Just make sure the ONEDNN variable is properly set
-        set(HAVE_ONEDNN 1)
-        set(ONEDNN dnnl)
-    endif()
+else()
+    message(STATUS "Skipping OneDNN setup via ExternalProject_Add (HELPERS_onednn is OFF)")
+    set(HAVE_ONEDNN FALSE)
+    set(ONEDNN "") # Ensure variable is empty if not used
 endif()
 
 # cuDNN configuration
