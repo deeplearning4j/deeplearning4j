@@ -26,7 +26,7 @@
 
 #include <loops/pairwise_instantiations.h>
 #include <types/type_promote.h>
-#include "../pairwise.hpp"
+#include <loops/cpu/pairwise.hpp>
 // Note: Instantiations are generated to prevent compiler memory issues
 
 
