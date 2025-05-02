@@ -23,7 +23,7 @@
 // @date Dec 26, 2024 // Adjusted date format/value to match example style
 //
 
-#include <ops/specials_double.hpp> // Original include
+#include <ops/impl/specials_double.hpp> // Original include
 #include <system/type_boilerplate.h> // For type lists like SD_NUMERIC_TYPES_PART_X
 #include <loops/pairwise_instantiations.h> // For ITERATE_COMBINATIONS macro
 // Note: Instantiations are generated to prevent compiler memory issues
