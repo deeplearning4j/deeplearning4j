@@ -36,7 +36,7 @@ namespace sd {
 ITERATE_COMBINATIONS(
    SD_NUMERIC_TYPES_PART_@COMB1@,
    SD_NUMERIC_TYPES_PART_@COMB2@, // Second list needed by macro, but likely only Type1 is used
-   template class sd::SpecialMethods, // Template pattern for the class (expects one type arg)
+    class sd::SpecialMethods, // Template pattern for the class (expects one type arg)
    SpecialMethods,                  // Base name (used internally by macro/CMake)
    ;                                // Trailing semicolon for the instantiation
 )
