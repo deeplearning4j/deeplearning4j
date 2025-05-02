@@ -225,39 +225,39 @@ if(SD_USE_LTO)
     endif()
 endif()
 
-# Compile Definitions for Operations
-set(DEFINITIONS_CONTENT "")
-if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
-    message("Adding all ops due to empty op list or SD_ALL_OPS definition: SD_ALL_OPS=${SD_ALL_OPS} SD_OPS_LIST=${SD_OPS_LIST}")
-    add_compile_definitions(SD_ALL_OPS=1)
-    string(APPEND DEFINITIONS_CONTENT "#define SD_ALL_OPS 1\n")
-else()
-    message("_OPS: ${SD_OPS_LIST}")
-    foreach(OP ${SD_OPS_LIST})
-        add_compile_definitions(OP_${OP}=1)
-        message(STATUS "OP: ${OP}")
-        string(APPEND DEFINITIONS_CONTENT "#define OP_${OP} 1\n")
-    endforeach()
-endif()
+# Compile Definitions for Operations (Appears duplicated, but harmless)
+# set(DEFINITIONS_CONTENT "")
+# if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
+#     message("Adding all ops due to empty op list or SD_ALL_OPS definition: SD_ALL_OPS=${SD_ALL_OPS} SD_OPS_LIST=${SD_OPS_LIST}")
+#     add_compile_definitions(SD_ALL_OPS=1)
+#     string(APPEND DEFINITIONS_CONTENT "#define SD_ALL_OPS 1\n")
+# else()
+#     message("_OPS: ${SD_OPS_LIST}")
+#     foreach(OP ${SD_OPS_LIST})
+#         add_compile_definitions(OP_${OP}=1)
+#         message(STATUS "OP: ${OP}")
+#         string(APPEND DEFINITIONS_CONTENT "#define OP_${OP} 1\n")
+#     endforeach()
+# endif()
 
-# Compile Definitions for Types
-list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
-if(SD_TYPES_LIST_COUNT GREATER 0)
-    add_compile_definitions(SD_SELECTIVE_TYPES)
-    string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
-    foreach(SD_TYPE ${SD_TYPES_LIST})
-        string(TOUPPER ${SD_TYPE} SD_TYPE_UPPERCASE)
-        add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
-        message(STATUS "TYPE: ${SD_TYPE_UPPERCASE}")
-        string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
-    endforeach()
-endif()
+# Compile Definitions for Types (Appears duplicated, but harmless)
+# list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
+# if(SD_TYPES_LIST_COUNT GREATER 0)
+#     add_compile_definitions(SD_SELECTIVE_TYPES)
+#     string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
+#     foreach(SD_TYPE ${SD_TYPES_LIST})
+#         string(TOUPPER ${SD_TYPE} SD_TYPE_UPPERCASE)
+#         add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
+#         message(STATUS "TYPE: ${SD_TYPE_UPPERCASE}")
+#         string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
+#     endforeach()
+# endif()
 
-# Write Definitions to Header File
-if(OP_OUTPUT_FILE MATCHES ".h$")
-    message("Definitions will be written to \"${OP_OUTPUT_FILE}\"")
-    file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
-endif()
+# Write Definitions to Header File (Appears duplicated, but harmless)
+# if(OP_OUTPUT_FILE MATCHES ".h$")
+#     message("Definitions will be written to \"${OP_OUTPUT_FILE}\"")
+#     file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+# endif()
 
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
@@ -1329,7 +1329,7 @@ if(SD_CUDA)
             set_target_properties(${SD_LIBRARY_NAME}_shared PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
             set_property(TARGET ${SD_LIBRARY_NAME}_shared PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-            target_link_libraries(${SD_LIBRARY_NAME}_ PUBLIC
+            target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC
                     ${CUDA_LIBRARIES}
                     ${CUDA_DRIVER_LIBRARY}
                     ${CUDA_CUBLAS_LIBRARIES}
@@ -1337,11 +1337,11 @@ if(SD_CUDA)
                     ${CUDNN}
             )
 
-            install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+            install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .) # Changed target name from ${SD_LIBRARY_NAME}
         endif()
 
     endif()
-else()
+else() # Start of CPU Build Section
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
 
     # Configure BLAS for CPU builds
@@ -1382,6 +1382,9 @@ else()
     file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
 
+
+    # Initialize ALL_SOURCES list here before conditional appends
+    set(ALL_SOURCES "")
 
     # Include ONEDNN and ARM Compute Sources
     if(HAVE_ONEDNN)
@@ -1433,15 +1436,16 @@ else()
                 message("Excluding file due to op restrictions: ${SRC_FILE}")
             endif()
         endforeach()
-        set(ALL_SOURCES ${FILTERED_STATIC_SOURCES}) # Start ALL_SOURCES with filtered static files
+        # Append filtered static sources to ALL_SOURCES (which already contains platform sources)
+        list(APPEND ALL_SOURCES ${FILTERED_STATIC_SOURCES})
 
     else()
         # If SD_ALL_OPS is true, include all static sources directly
-        set(ALL_SOURCES
+        list(APPEND ALL_SOURCES
                 ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
                 ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
-                ${LEGACY_SOURCES} ${LOOPS_SOURCES} ${CUSTOMOPS_ONEDNN_SOURCES} ${CUSTOMOPS_ARMCOMPUTE_SOURCES}
+                ${LEGACY_SOURCES} ${LOOPS_SOURCES} # Platform sources already added
         )
     endif()
 
@@ -1506,20 +1510,20 @@ else()
         # Link required libraries to the shared library
         target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC # Changed PRIVATE to PUBLIC for linking deps
                 # ${EXTERNAL_DEPENDENCY_LIBS} # Variable not defined
-                ${ONEDNN}
+                ${ONEDNN} # Should be the interface target 'onednn_interface' if HAVE_ONEDNN is true
                 # ${ONEDNN_LIBRARIES} # ONEDNN target should handle this
-                ${ARMCOMPUTE_LIBRARIES}
+                ${ARMCOMPUTE_LIBRARIES} # Should be the interface target 'armcompute_interface' if HAVE_ARMCOMPUTE is true
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
-                ${CPU_FEATURES} # Variable not defined
-                flatbuffers# Link flatbuffers
+                # ${CPU_FEATURES} # Variable not defined
+                flatbuffers # Link flatbuffers
         )
 
-        if (HAVE_ONEDNN)
-            target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC dnnl) # Explicit link for imported target
-        endif()
+        # if (HAVE_ONEDNN) # Linking via interface target should handle this
+        #     target_link_libraries(${SD_LIBRARY_NAME}_shared PUBLIC dnnl) # Explicit link for imported target
+        # endif()
 
-        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+        install(TARGETS ${SD_LIBRARY_NAME}_shared DESTINATION .) # Changed target name from ${SD_LIBRARY_NAME}
     endif()
 
     # Create the static library if needed
@@ -1530,14 +1534,15 @@ else()
         # Link dependencies to static lib interface? Or require user to link them? Usually the latter.
         target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
                 flatbuffers
-                ${ARMCOMPUTE_LIBRARIES}
+                ${ARMCOMPUTE_LIBRARIES} # Should be the interface target
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
+                ${ONEDNN} # Should be the interface target
                 # ${CPU_FEATURES} # Variable not defined
         )
-        if (HAVE_ONEDNN)
-            target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
-        endif()
+        # if (HAVE_ONEDNN) # Interface target handles linking
+        #     target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
+        # endif()
         install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
     elseif(SD_STATIC_LIB)
         add_library(${SD_LIBRARY_NAME}_static STATIC $<TARGET_OBJECTS:${SD_LIBRARY_NAME}>)
@@ -1545,14 +1550,15 @@ else()
         set_property(TARGET ${SD_LIBRARY_NAME}_static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
         target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE
                 flatbuffers
-                ${ARMCOMPUTE_LIBRARIES}
+                ${ARMCOMPUTE_LIBRARIES} # Should be the interface target
                 ${OPENBLAS_LIBRARIES}
                 ${BLAS_LIBRARIES}
+                ${ONEDNN} # Should be the interface target
                 # ${CPU_FEATURES} # Variable not defined
         )
-        if (HAVE_ONEDNN)
-            target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
-        endif()
+        # if (HAVE_ONEDNN) # Interface target handles linking
+        #     target_link_libraries(${SD_LIBRARY_NAME}_static INTERFACE dnnl)
+        # endif()
         install(TARGETS ${SD_LIBRARY_NAME}_static DESTINATION .)
     endif()
 
@@ -1582,7 +1588,7 @@ else()
     endif()
 
 
-endif()
+endif() # End of CPU Build Section
 
 # Add tests if enabled
 if(SD_BUILD_TESTS)
@@ -1692,67 +1698,112 @@ if(SD_PREPROCESS STREQUAL "ON")
     add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
 endif()
 
-# Set package information
+# --- CPack Configuration ---
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
 set(CPACK_PACKAGE_CONTACT "agibsonccc <adam@konduit.ai>")
 set(CPACK_PACKAGE_VENDOR "Eclipse")
 set(CPACK_SETDESTDIR "false")
-set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib") # Consider if this is the desired install path
 set(CPACK_PACKAGE_NAME "libnd4j")
 set(CPACK_PACKAGE_VERSION_MAJOR "0")
 set(CPACK_PACKAGE_VERSION_MINOR "8")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j") # Directory within the install prefix
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
+# **ADDED**: Explicitly set the path to the license file.
+# Assumes LICENSE is in the root source directory (${CMAKE_CURRENT_SOURCE_DIR}). Adjust if needed.
+# Clearing CMake cache (CMakeCache.txt, CMakeFiles/) before re-running is recommended if the previous error persists.
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 
 
-if(UNIX)
-    # Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH
-    execute_process(COMMAND lsb_release -si OUTPUT_VARIABLE DISTRIBUTION OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND lsb_release -sc OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND uname -i OUTPUT_VARIABLE ARCHITECTURE)
+# --- Linux Packaging (DEB/RPM) ---
+if(UNIX AND NOT APPLE) # Exclude Apple from this Linux-specific logic
+    # **MODIFIED**: Check if lsb_release command works before using its output.
+    # Note: The underlying fix for the original warning is to install lsb_release
+    # (e.g., `sudo apt install lsb-release` or `sudo dnf install redhat-lsb-core`).
+    # This change makes the script more robust if the command is missing.
+    execute_process(COMMAND lsb_release -si
+            OUTPUT_VARIABLE DISTRIBUTION
+            RESULT_VARIABLE LSB_DIST_RESULT
+            ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND lsb_release -sc
+            OUTPUT_VARIABLE RELEASE
+            RESULT_VARIABLE LSB_REL_RESULT
+            ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    # Set package name and type (deb vs rpm)
-    if(DISTRIBUTION STREQUAL "Ubuntu")
-        # Set Ubuntu-specific information
-        if(ARCHITECTURE MATCHES ".*x86_64.*")
-            set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    if(LSB_DIST_RESULT EQUAL 0 AND LSB_REL_RESULT EQUAL 0)
+        message(STATUS "Determined Linux distribution: ${DISTRIBUTION} ${RELEASE}")
+        execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCHITECTURE OUTPUT_STRIP_TRAILING_WHITESPACE) # Use uname -m for arch
+
+        # Set package name and type (deb vs rpm)
+        if(DISTRIBUTION MATCHES "Ubuntu|Debian") # Match Debian too
+            set(CPACK_GENERATOR "DEB")
+            message(STATUS "Configuring DEB package for ${DISTRIBUTION} ${RELEASE} (${ARCHITECTURE})")
+            # Set Ubuntu/Debian-specific information
+            if(ARCHITECTURE MATCHES "x86_64")
+                set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+            elseif(ARCHITECTURE MATCHES "i[3-6]86")
+                set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+            elseif(ARCHITECTURE MATCHES "aarch64")
+                set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm64")
+            elseif(ARCHITECTURE MATCHES "armv7")
+                set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf") # Common ARM 32-bit
+            else()
+                set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${ARCHITECTURE}) # Fallback
+                message(WARNING "Uncommon architecture '${ARCHITECTURE}' for DEB, using as is.")
+            endif()
+            set(CPACK_DEBIAN_PACKAGE_MAINTAINER "agibsonccc <adam@konduit.ai>") # Use full contact
+            set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+            set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda") # Consider making this conditional on SD_CUDA
+            set(CPACK_DEBIAN_PACKAGE_DEPENDS "") # Add dependencies if any (e.g., libc6)
+            set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/deeplearning4j")
+            set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+            set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm") # Ensure these scripts exist
+
+        elseif(DISTRIBUTION MATCHES "CentOS|Fedora|RHEL") # Match common RPM distros
+            set(CPACK_GENERATOR "RPM")
+            message(STATUS "Configuring RPM package for ${DISTRIBUTION} ${RELEASE} (${ARCHITECTURE})")
+            # Set Fedora/CentOS/RHEL-specific information
+            # Use lsb_release -sr for CentOS release version if needed, though RELEASE might be codename
+            # execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE OS_RELEASE_VERSION OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if(ARCHITECTURE MATCHES "x86_64")
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+            elseif(ARCHITECTURE MATCHES "i[3-6]86")
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
+            elseif(ARCHITECTURE MATCHES "aarch64")
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE "aarch64")
+            else()
+                set(CPACK_RPM_PACKAGE_ARCHITECTURE ${ARCHITECTURE}) # Fallback
+                message(WARNING "Uncommon architecture '${ARCHITECTURE}' for RPM, using as is.")
+            endif()
+            set(CPACK_PACKAGE_CONTACT "agibsonccc <adam@konduit.ai>") # Use full contact
+            set(CPACK_RPM_PACKAGE_GROUP "Development/Libraries") # More standard group
+            set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
+            set(CPACK_RPM_PACKAGE_SUGGESTS "cuda") # Consider making conditional
+            set(CPACK_RPM_PACKAGE_REQUIRES "") # Add dependencies if any (e.g., glibc)
+            set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/deeplearning4j/libnd4j") # Project URL
+            # Adjust filename format if needed, removing potential codename from RELEASE
+            set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-${CPACK_PACKAGE_RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
+            set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst") # Ensure these scripts exist
+            set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
+            set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib") # Verify install paths match
+
         else()
-            set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
+            message(WARNING "lsb_release found, but distribution '${DISTRIBUTION}' not specifically handled for DEB/RPM packaging. Using generic CPack settings.")
+            # Optionally set a generic generator if packaging is still desired
+            # set(CPACK_GENERATOR "TGZ") # Example: fallback to a tarball
         endif()
-        set(CPACK_DEBIAN_PACKAGE_MAINTAINER "agibsonccc")
-        set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-        set(CPACK_DEBIAN_PACKAGE_RECOMMENDS "cuda")
-        set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-        set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/deeplearning4j")
-        set(CPACK_GENERATOR "DEB")
-        set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
-        set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
-    elseif(DISTRIBUTION STREQUAL "CentOS")
-        # Set Fedora-specific information
-        execute_process(COMMAND lsb_release -sr OUTPUT_VARIABLE RELEASE OUTPUT_STRIP_TRAILING_WHITESPACE)
-        if(ARCHITECTURE MATCHES ".*x86_64.*")
-            set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
-        else()
-            set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
-        endif()
-        set(CPACK_PACKAGE_CONTACT "agibsonccc")
-        set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
-        set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
-        set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
-        set(CPACK_RPM_PACKAGE_REQUIRES "")
-        set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/deeplearning4j/libnd4j")
-        set(CPACK_GENERATOR "RPM")
-        set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
-        set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
-        set(CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm")
-        set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION "/usr/local/lib")
+
+    else()
+        message(WARNING "lsb_release command failed or not found. Cannot automatically determine Linux distribution for specific DEB/RPM packaging. Using generic CPack settings.")
+        # Optionally set a generic generator if packaging is still desired
+        # set(CPACK_GENERATOR "TGZ") # Example: fallback to a tarball
     endif()
 
-endif()
+endif() # End of UNIX specific packaging
 
-
+# Include CPack module at the end
 include(CPack)
