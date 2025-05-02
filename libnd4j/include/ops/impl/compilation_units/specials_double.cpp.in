@@ -31,25 +31,23 @@
 
 namespace sd {
 
-// Instantiation for DoubleMethods class template
-// Based on the types defined by the combination of partitions @COMB1@ and @COMB2@
+
 ITERATE_COMBINATIONS(
-   SD_NUMERIC_TYPES_PART_@COMB1@,
-   SD_NUMERIC_TYPES_PART_@COMB2@,class sd::DoubleMethods, // Template pattern for the class
-   DoubleMethods,                   // Base name (used internally by macro/CMake)
-   ;                                // Trailing semicolon for the instantiation
+    SD_NUMERIC_TYPES_PART_@COMB1@,
+    SD_NUMERIC_TYPES_PART_@COMB2@,
+    INSTANT_PROCESS_CLASSCOMBINATION, // Template pattern for the class
+    class sd::DoubleMethods,
+    ;
 )
 
-// Instantiation for SpecialTypeConverter::convertGeneric function template
-// Based on the types defined by the combination of partitions @COMB1@ and @COMB2@
-// NOTE: Using ITERATE_COMBINATIONS_3 pattern for function signature, adapting for 2 types
-INSTANTIATE_PAIRWISE_FUNCTION(
-   SD_NUMERIC_TYPES_PART_@COMB1@,
-   SD_NUMERIC_TYPES_PART_@COMB2@,
-   sd::SpecialTypeConverter, // Class containing the static method (or namespace if free function)
-   convertGeneric,          // Method/Function name
-   // Signature of the function template being instantiated
-   (sd::Pointer * extras, void *dx, sd::LongType N, void *dz)
+
+ITERATE_COMBINATIONS(
+    SD_NUMERIC_TYPES_PART_@COMB1@,
+    SD_NUMERIC_TYPES_PART_@COMB2@,
+    INSTANT_PROCESS_COMBINATION,
+    sd::SpecialTypeConverter::convertGeneric,
+    (sd::Pointer * extras, void *dx, sd::LongType N, void *dz);
 )
+
 
 } // namespace sd

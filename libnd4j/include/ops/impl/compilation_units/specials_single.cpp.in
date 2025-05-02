@@ -30,15 +30,11 @@
 
 namespace sd {
 
-// Instantiation for SpecialMethods class template
-// Assumes ITERATE_COMBINATIONS handles single-parameter templates
-// by using the first type from the generated pair based on partitions @COMB1@ and @COMB2@.
-ITERATE_COMBINATIONS(
-   SD_NUMERIC_TYPES_PART_@COMB1@,
-   SD_NUMERIC_TYPES_PART_@COMB2@, // Second list needed by macro, but likely only Type1 is used
-    class sd::SpecialMethods, // Template pattern for the class (expects one type arg)
-   SpecialMethods,                  // Base name (used internally by macro/CMake)
-   ;                                // Trailing semicolon for the instantiation
+#define SPECIAL_METHODS_DECL(T) template  class SpecialMethods<GET_SECOND(T)>;
+ITERATE_LIST(
+    SD_NUMERIC_TYPES_PART_@COMB1@,
+    SPECIAL_METHODS_DECL
+
 )
 
 } // namespace sd
