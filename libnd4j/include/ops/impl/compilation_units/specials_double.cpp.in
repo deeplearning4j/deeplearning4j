@@ -33,8 +33,8 @@ namespace sd {
 
 
 ITERATE_COMBINATIONS(
-    SD_NUMERIC_TYPES_PART_@COMB1@,
-    SD_NUMERIC_TYPES_PART_@COMB2@,
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
     INSTANT_PROCESS_CLASSCOMBINATION, // Template pattern for the class
     class sd::DoubleMethods,
     ;
@@ -42,8 +42,8 @@ ITERATE_COMBINATIONS(
 
 
 ITERATE_COMBINATIONS(
-    SD_NUMERIC_TYPES_PART_@COMB1@,
-    SD_NUMERIC_TYPES_PART_@COMB2@,
+    SD_COMMONS_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
     INSTANT_PROCESS_COMBINATION,
     sd::SpecialTypeConverter::convertGeneric,
     (sd::Pointer * extras, void *dx, sd::LongType N, void *dz);

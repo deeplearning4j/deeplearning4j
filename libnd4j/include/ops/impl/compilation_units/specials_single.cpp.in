@@ -32,7 +32,7 @@ namespace sd {
 
 #define SPECIAL_METHODS_DECL(T) template  class SpecialMethods<GET_SECOND(T)>;
 ITERATE_LIST(
-    SD_NUMERIC_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB1@,
     SPECIAL_METHODS_DECL
 
 )
