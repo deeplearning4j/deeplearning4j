@@ -1265,8 +1265,7 @@ if(SD_CUDA)
         file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/*.cu ./include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA  ./include/loops/*.cu ./include/loops/cuda/**/*.cu)
         file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
-        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cuda/blas") # This affects where the final library goes, might want top-level
-
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
         foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(${FL_ITEM}) # Appends to CUSTOMOPS_GENERIC_SOURCES
         endforeach()
@@ -1339,7 +1338,7 @@ else() # Start of CPU Build Section
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
     # Set Library Output Directories
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/cpu/blas") # This affects where the final library goes, might want top-level
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}") # This affects where the final library goes, might want top-level
     set(CUSTOMOPS_GENERIC_SOURCES "") # Initialize list for generated sources
 
     # Gather templates processed by genCompilation (old style)
