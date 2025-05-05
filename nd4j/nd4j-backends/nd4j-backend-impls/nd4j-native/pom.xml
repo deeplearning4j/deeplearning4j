@@ -363,7 +363,7 @@
                                 <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                                 <buildResource>/lib/</buildResource>
                                 <buildResource>/</buildResource>
-                                <buildResource>${libnd4jhome}/blasbuild/cpu/blas</buildResource>
+                                <buildResource>${libnd4jhome}/blasbuild/cpu</buildResource>
                             </buildResources>
                             <includeResources>
                                 <includeResource>/${javacpp.platform.library.path}/include/

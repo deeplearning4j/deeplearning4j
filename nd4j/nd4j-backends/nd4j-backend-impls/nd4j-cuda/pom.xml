@@ -257,7 +257,7 @@
                                 <includePath>${libnd4jhome}/include/performance</includePath>
                             </includePaths>
                             <linkPaths>
-                                <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath> </linkPaths>
+                                <linkPath>${libnd4jhome}/blasbuild/cuda</linkPath> </linkPaths>
                             <compilerOptions>
                                 <compilerOption>-std=c++17</compilerOption>
                                 <compilerOption>-Wl,--no-undefined</compilerOption>
