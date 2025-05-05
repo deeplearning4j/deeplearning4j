@@ -53,6 +53,7 @@ void SD_HOST TransformAny<X, Z>::exec(const void *vx, const sd::LongType *xShape
 }
 
 BUILD_DOUBLE_TEMPLATE(template class TransformAny, , SD_COMMON_TYPES, SD_COMMON_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class TransformAny, , SD_STRING_TYPES, SD_STRING_TYPES);
 
 }  // namespace transform
 }  // namespace functions

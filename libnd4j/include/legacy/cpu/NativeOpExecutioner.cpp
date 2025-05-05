@@ -1086,7 +1086,14 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   if(sd::DataTypeUtils::isS(xType)) {
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
+                            ::exec(opNum,
+                                   hX,
+                                   hXShapeInfo,
+                                   hZ,
+                                   hZShapeInfo,
+                                   extraParams,
+                                   thread_id,
+                                   numThreads),
                             SD_STRING_TYPES, SD_STRING_TYPES);
     };
 

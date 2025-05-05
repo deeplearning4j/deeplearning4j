@@ -24,10 +24,12 @@
 #include <helpers/shape.h>
 #include <loops/ReduceType.h>
 #include <loops/summarystatsreduce.h>
+#include <math/templatemath.h>
 #include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
-#include <math/templatemath.h>
+
+#include <codecvt>
 #include <vector>
 
 #define no_op_exec_special_any                                                                           \
@@ -543,13 +545,222 @@ class Axpy {
 template <typename X, typename Z>
 class Assign {
  public:
-  no_op_exec_special_any no_op_exec_special_any_cuda
+  // Assuming this member exists based on the error message context
+  // Define it appropriately or remove if not applicable to the generic case
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
 
-  SD_OP_DEF static Z
-  op(X d1, X *params) {
-    return static_cast<Z>(d1);
+  SD_OP_DEF static Z op(X d1, X *params) {
+    // Use if constexpr (C++17) for better compile-time checking
+    if constexpr (std::is_same_v<X, Z>) {
+      return d1; // No conversion needed
+    } else if constexpr (std::is_convertible_v<X, Z>) {
+      return static_cast<Z>(d1); // Use static_cast only if directly convertible
+    } else {
+      // This path should ideally not be taken for types requiring
+      // specialized conversion. Rely on specializations below.
+      // If a conversion is attempted here without a specialization,
+      // it will likely lead to a compile error as before.
+      // You could add a static_assert here for unsupported types:
+      // static_assert(std::is_convertible_v<X, Z>, "Assign requires specialization for this type combination or direct convertibility.");
+      return static_cast<Z>(d1); // Keep the original line to trigger errors for unhandled cases
+    }
   }
 };
+
+// --- Specialization: std::basic_string<char16_t> -> std::basic_string<char> (UTF-16 to UTF-8) ---
+template <>
+class Assign<std::basic_string<char16_t>, std::basic_string<char>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char>
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
+    try {
+      // C++11/14/17 way using codecvt (may be deprecated in C++17 but often still works)
+      std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+      return converter.to_bytes(d1);
+    } catch (const std::range_error& e) {
+      // Handle conversion errors (e.g., invalid surrogate pairs)
+      // Log the error and return an empty string or throw a custom exception
+      // sd::PrintMessage("Warning: UTF-16 to UTF-8 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char>(); // Return empty string on error
+    }
+    // Add alternative implementations using ICU or platform APIs if <codecvt> is problematic
+  }
+};
+
+// --- Specialization: std::basic_string<char> -> std::basic_string<char16_t> (UTF-8 to UTF-16) ---
+template <>
+class Assign<std::basic_string<char>, std::basic_string<char16_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char16_t>
+  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
+    try {
+      std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
+      return converter.from_bytes(d1);
+    } catch (const std::range_error& e) {
+      // Handle conversion errors (e.g., invalid UTF-8 sequences)
+      // sd::PrintMessage("Warning: UTF-8 to UTF-16 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char16_t>(); // Return empty string on error
+    }
+    // Add alternative implementations using ICU or platform APIs if <codecvt> is problematic
+  }
+};
+
+// --- Optional: Identity Specializations (can improve clarity/performance slightly) ---
+
+// Specialization for char -> char (handled by generic is_same_v now, but explicit is ok)
+template <>
+class Assign<std::basic_string<char>, std::basic_string<char>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char>
+  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
+    return d1; // Direct copy
+  }
+};
+
+// Specialization for char16_t -> char16_t (handled by generic is_same_v now, but explicit is ok)
+template <>
+class Assign<std::basic_string<char16_t>, std::basic_string<char16_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char16_t>
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
+    return d1; // Direct copy
+  }
+};
+
+
+// --- Specialization: std::basic_string<char32_t> -> std::basic_string<char> (UTF-32 to UTF-8) ---
+template <>
+class Assign<std::basic_string<char32_t>, std::basic_string<char>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
+    try {
+      // Use std::codecvt_utf8<char32_t> for converting between UTF-32 and UTF-8
+      std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+      return converter.to_bytes(d1);
+    } catch (const std::range_error& e) {
+      // Handle conversion errors
+      // sd::PrintMessage("Warning: UTF-32 to UTF-8 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char>(); // Return empty string on error
+    }
+  }
+};
+
+// --- Specialization: std::basic_string<char> -> std::basic_string<char32_t> (UTF-8 to UTF-32) ---
+template <>
+class Assign<std::basic_string<char>, std::basic_string<char32_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char32_t>
+  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
+    try {
+      // Use std::codecvt_utf8<char32_t> for converting between UTF-32 and UTF-8
+      std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
+      return converter.from_bytes(d1);
+    } catch (const std::range_error& e) {
+      // Handle conversion errors
+      // sd::PrintMessage("Warning: UTF-8 to UTF-32 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char32_t>(); // Return empty string on error
+    }
+  }
+};
+
+// --- Optional: Identity Specialization for char32_t ---
+template <>
+class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char32_t>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
+    return d1; // Direct copy
+  }
+};
+
+
+// --- Specialization: std::basic_string<char32_t> -> std::basic_string<char16_t> (UTF-32 to UTF-16) ---
+template <>
+class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char16_t>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
+    try {
+      // Use std::codecvt_utf16<char32_t> for converting between UTF-32 (internal) and UTF-16 (external bytes)
+      std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> converter;
+
+      // 1. Convert UTF-32 string to a byte string representing UTF-16
+      std::string utf16_bytes = converter.to_bytes(d1);
+
+      // 2. Construct char16_t string from the UTF-16 byte sequence.
+      //    reinterpret_cast assumes the byte string contains valid, correctly aligned UTF-16 data.
+      //    This is generally the case for std::codecvt_utf16 output.
+      //    Requires sizeof(char16_t) == 2. Check std::endian if more control needed.
+      if (utf16_bytes.size() % sizeof(char16_t) != 0) {
+        // Handle error: byte string length is not a multiple of char16_t size
+        // sd::PrintMessage("Warning: UTF-32 to UTF-16 conversion resulted in invalid byte length.\n");
+        return std::basic_string<char16_t>();
+      }
+      return std::basic_string<char16_t>(
+          reinterpret_cast<const char16_t*>(utf16_bytes.data()),
+          utf16_bytes.size() / sizeof(char16_t)
+      );
+    } catch (const std::range_error& e) {
+      // Handle conversion errors (e.g., code points invalid for UTF-16?)
+      // sd::PrintMessage("Warning: UTF-32 to UTF-16 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char16_t>(); // Return empty string on error
+    }
+  }
+};
+
+// --- Specialization: std::basic_string<char16_t> -> std::basic_string<char32_t> (UTF-16 to UTF-32) ---
+template <>
+class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
+ public:
+  // Define members specific to this specialization if needed
+  // no_op_exec_special_any no_op_exec_special_any_cuda;
+
+  SD_OP_DEF static std::basic_string<char32_t>
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
+    try {
+      // Use std::codecvt_utf16<char32_t> for converting between UTF-32 (internal) and UTF-16 (external bytes)
+      std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> converter;
+
+      // Convert a sequence of bytes representing UTF-16 (d1 viewed as bytes) to UTF-32 string.
+      // from_bytes expects const char* range.
+      return converter.from_bytes(
+          reinterpret_cast<const char*>(d1.data()), // Start of byte sequence
+          reinterpret_cast<const char*>(d1.data() + d1.size()) // End of byte sequence (one past last char16_t)
+      );
+    } catch (const std::range_error& e) {
+      // Handle conversion errors (e.g., invalid surrogate pairs)
+      // sd::PrintMessage("Warning: UTF-16 to UTF-32 conversion failed for string assignment: %s\n", e.what());
+      return std::basic_string<char32_t>(); // Return empty string on error
+    }
+  }
+};
+
+
 
 template <typename X, typename Z>
 class And {

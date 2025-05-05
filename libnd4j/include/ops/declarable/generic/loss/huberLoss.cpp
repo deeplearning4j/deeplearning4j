@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
   auto error = *predictions - *labels;
   error.applyTransform(transform::Abs, &error);
   NDArray quadratic(error.shapeInfo(), block.getWorkspace());
-  error.applyScalar(scalar::MinPairwise, &delta, &quadratic);
+  error.applyScalar(scalar::MinPairwise, delta, &quadratic);
 
   NDArray E = quadratic * quadratic * 0.5f + (error - quadratic) * delta;
 
