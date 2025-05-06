@@ -222,7 +222,7 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
   absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
 
   NDArray gtMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::GreaterThan, &delta, &gtMask);
+  absDiff.applyScalar(scalar::GreaterThan, delta, &gtMask);
 
   NDArray signDiff(diff);
   diff.applyTransform(transform::Sign, &signDiff);
