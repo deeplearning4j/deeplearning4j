@@ -353,7 +353,7 @@
                                 <includePath>${libnd4jhome}/include/memory</includePath>
                             </includePaths>
                             <linkPaths>
-                                <linkPath>${libnd4j.ou}</linkPath>
+                                <linkPath>${libnd4j.outputPath}</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/lib</linkPath>
                                 <linkPath>${env.OPENBLAS_PATH}/</linkPath>
                             </linkPaths>
