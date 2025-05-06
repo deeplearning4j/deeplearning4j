@@ -50,7 +50,7 @@
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
         <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> <platform.functrace.libs></platform.functrace.libs>
-        <libnd4j.outputPath>${project.build.directory}/blasbuild/cpu</libnd4j.outputPath>
+        <libnd4j.outputPath>${project.build.directory}/../../../../../blasbuild/cpu</libnd4j.outputPath>
     </properties>
 
 

@@ -45,7 +45,7 @@
         <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
         <libnd4j.functrace>OFF</libnd4j.functrace>
 
-        <libnd4j.outputPath>${project.build.directory}/blasbuild/cuda</libnd4j.outputPath>
+        <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cuda</libnd4j.outputPath>
 
     </properties>
 
