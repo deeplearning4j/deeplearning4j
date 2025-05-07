@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j-api-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -88,7 +88,7 @@
         <!-- Note that this is shaded protobuf. We use this instead of google's version mainly due ot other systems packaging
         their own older (incompatible) protobuf versions-->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>protobuf</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -112,7 +112,7 @@
 
         <!-- Shaded version of Jackson -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -133,7 +133,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -186,7 +186,7 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.nd4j</groupId>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <classifier>${libnd4j.classifier}</classifier>
@@ -206,7 +206,7 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>org.nd4j</groupId>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>

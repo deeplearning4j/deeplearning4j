@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j-backend-impls</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -48,7 +48,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-presets-common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -82,11 +82,11 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
     </dependencies>
@@ -222,7 +222,7 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.nd4j</groupId>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>
@@ -260,7 +260,7 @@
                                 <configuration>
                                     <artifactItems>
                                         <artifactItem>
-                                            <groupId>org.nd4j</groupId>
+                                            <groupId>org.eclipse.deeplearning4j</groupId>
                                             <artifactId>libnd4j</artifactId>
                                             <version>${project.version}</version>
                                             <type>zip</type>

@@ -24,7 +24,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.nd4j</groupId>
+  <groupId>org.eclipse.deeplearning4j</groupId>
   <artifactId>libnd4j-gen</artifactId>
   <version>1.0-SNAPSHOT</version>
 
@@ -32,7 +32,7 @@
 
 
   <parent>
-    <groupId>org.deeplearning4j</groupId>
+    <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>codegen</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
@@ -80,7 +80,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>protobuf</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
@@ -94,14 +94,14 @@
 
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
 
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-api</artifactId>
       <version>${nd4j.version}</version>
     </dependency>

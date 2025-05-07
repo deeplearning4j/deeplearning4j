@@ -24,7 +24,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.deeplearning4j</groupId>
+    <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>deeplearning4j</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -358,7 +358,7 @@
                         <modules>
                             <module>
                                 <artifact>
-                                    <groupId>org.nd4j</groupId>
+                                    <groupId>org.eclipse.deeplearning4j</groupId>
                                     <artifactId>nd4j-api</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>
@@ -379,7 +379,7 @@
 
                             <module>
                                 <artifact>
-                                    <groupId>org.nd4j</groupId>
+                                    <groupId>org.eclipse.deeplearning4j</groupId>
                                     <artifactId>nd4j-common</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>
@@ -397,7 +397,7 @@
 
                             <module>
                                 <artifact>
-                                    <groupId>org.nd4j</groupId>
+                                    <groupId>org.eclipse.deeplearning4j</groupId>
                                     <artifactId>nd4j-native</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>
@@ -418,7 +418,7 @@
 
                             <module>
                                 <artifact>
-                                    <groupId>org.nd4j</groupId>
+                                    <groupId>org.eclipse.deeplearning4j</groupId>
                                     <artifactId>nd4j-cuda-12.3</artifactId>
                                     <version>${project.version}</version>
                                 </artifact>

@@ -27,7 +27,7 @@
   <artifactId>samediff-import-api</artifactId>
 
   <parent>
-    <groupId>org.nd4j</groupId>
+    <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>samediff-import</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </parent>
@@ -135,24 +135,24 @@
 
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-tensorflow</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-api</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-common</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-onnxruntime</artifactId>
       <version>${project.version}</version>
     </dependency>

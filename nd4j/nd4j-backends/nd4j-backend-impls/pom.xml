@@ -29,7 +29,7 @@
       </modules>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j-backends</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>

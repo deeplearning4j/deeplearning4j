@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.nd4j</groupId>
+  <groupId>org.eclipse.deeplearning4j</groupId>
   <artifactId>nd4j-log-analyzer</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
@@ -103,17 +103,17 @@
     </dependency>
 
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-common</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.deeplearning4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>deeplearning4j-nn</artifactId>
       <version>${nd4j.version}</version>
     </dependency>
@@ -123,7 +123,7 @@
       <version>${lombok.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>jackson</artifactId>
       <version>${jackson.version}</version>
     </dependency>

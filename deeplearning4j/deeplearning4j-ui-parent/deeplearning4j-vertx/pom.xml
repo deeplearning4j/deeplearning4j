@@ -25,7 +25,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.deeplearning4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>deeplearning4j-ui-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -59,12 +59,12 @@
             <version>${vertx.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui-model</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -89,7 +89,7 @@
             <version>2.3.2</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -309,7 +309,7 @@
         </dependency>
         <!-- For SameDiff UI -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-webjar</artifactId>
             <version>${project.version}</version>
         </dependency>

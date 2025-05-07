@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.deeplearning4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -68,12 +68,12 @@
         </dependency>
 
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

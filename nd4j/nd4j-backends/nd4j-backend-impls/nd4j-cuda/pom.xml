@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j-backend-impls</artifactId>
         <version>1.0.0-SNAPSHOT</version>
 
@@ -52,13 +52,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>libnd4j</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-cuda-12.3-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -74,11 +74,11 @@
             <classifier>${dependency.platform}</classifier> </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
     </dependencies>
@@ -206,12 +206,12 @@
                         <artifactId>javacpp</artifactId>
                         <dependencies>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-cuda-12.3-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-native-api</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -313,12 +313,12 @@
                         <artifactId>javacpp</artifactId>
                         <dependencies>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-cuda-12.3-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-native-api</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -444,7 +444,7 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.nd4j</groupId>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>
@@ -465,7 +465,7 @@
                                 <configuration>
                                     <artifactItems>
                                         <artifactItem>
-                                            <groupId>org.nd4j</groupId>
+                                            <groupId>org.eclipse.deeplearning4j</groupId>
                                             <artifactId>libnd4j</artifactId>
                                             <version>${project.version}</version>
                                             <type>zip</type>
