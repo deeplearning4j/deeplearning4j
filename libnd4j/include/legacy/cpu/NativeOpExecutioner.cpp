@@ -403,7 +403,7 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext *lc, int opNum
   auto func = PRAGMA_THREADS_FOR {
     BUILD_TRIPLE_SELECTOR(xType, yType, zType, functions::pairwise_transforms::PairWiseTransform,
                           ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, start, stop),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
   };
 
 
@@ -971,7 +971,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
-                        ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
+                        ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, nullptr, 1),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -994,7 +994,7 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext *lc, int opNu
   auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
   BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce,
-                        ::execScalar(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo),
+                        ::execScalar(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo),
                         SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -1021,7 +1021,7 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext *lc, int opNum, con
 
   BUILD_DOUBLE_SELECTOR(
       xType, zType, functions::summarystats::SummaryStatsReduce,
-      ::exec(opNum, biasCorrected, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength),
+      ::exec(opNum, biasCorrected, const_cast<void *>(hX), hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength),
       SD_COMMON_TYPES, SD_FLOAT_TYPES);
 }
 
@@ -1086,7 +1086,14 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   if(sd::DataTypeUtils::isS(xType)) {
     auto func = PRAGMA_THREADS_DO {
       BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
-                            ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads),
+                            ::exec(opNum,
+                                   hX,
+                                   hXShapeInfo,
+                                   hZ,
+                                   hZShapeInfo,
+                                   extraParams,
+                                   thread_id,
+                                   numThreads),
                             SD_STRING_TYPES, SD_STRING_TYPES);
     };
 

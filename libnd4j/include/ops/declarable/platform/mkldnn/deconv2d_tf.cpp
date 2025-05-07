@@ -95,7 +95,7 @@ static void deconv2TFdBpMKLDNN(NDArray* weights, NDArray* gradO, NDArray* gradI,
   dnnl::convolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 

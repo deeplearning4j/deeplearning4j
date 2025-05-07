@@ -19,7 +19,11 @@ template<> uint64_t SIMDHasher<uint64_t>::hash_chunk(const uint64_t* data, size_
   for (size_t i = 0; i < size - 1; i += 2) {
     uint64x2_t val = vld1q_u64(data + i);
     hash_vec = veorq_u64(hash_vec, val);
-    hash_vec = vmulq_u64(hash_vec, golden);
+    // Extract lower 32 bits of each 64-bit lane
+    uint32x2_t low_hash = vmovn_u64(hash_vec);
+    uint32x2_t low_golden = vmovn_u64(golden);
+    // Perform 32x32 -> 64 bit widening multiply
+    hash_vec = vmull_u32(low_hash, low_golden);
   }
 
   uint64_t tmp[2];

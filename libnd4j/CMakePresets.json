@@ -2,6 +2,28 @@
     "version": 2,
     "configurePresets": [
         {
+            "name": "base_cpu_onednn",
+            "displayName": "Configure preset for the base",
+            "description": "Sets generator, build and install directory",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/blasbuild/cpu",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "SD_LIBRARY_NAME": "nd4jcpu",
+                "SD_CPU": true,
+                "HELPERS_onednn": "ON",
+                "GENERATE_FLATC": "ON",
+                "SD_ARCH": "x86-64",
+                "SD_GCC_FUNCTRACE": "ON",
+                "PRINT_MATH": "ON",
+                "PRINT_INDICES": "ON",
+                "SD_ALL_OPS": true,
+                "CMAKE_BUILD_TYPE" : "Debug",
+                "OPENBLAS_PATH": "$env{HOME}/.javacpp/cache/openblas-0.3.19-1.5.7-linux-x86_64.jar/org/bytedeco/openblas/linux-x86_64"
+            }
+        },
+        {
             "name": "base_cpu",
             "displayName": "Configure preset for the base",
             "description": "Sets generator, build and install directory",
@@ -58,7 +80,7 @@
                 "SD_CUDA": true,
                 "BLAS":true,
                 "CMAKE_BUILD_TYPE" : "Debug",
-                "COMPUTE": "86",
+                "COMPUTE": "8.0",
                 "__CUDACC__" : "ON",
                 "SD_GCC_FUNCTRACE": "ON",
                 "CMAKE_CUDA_ARCHITECTURES": "86",

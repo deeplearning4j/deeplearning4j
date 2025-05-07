@@ -1,0 +1,53 @@
+# --- Start of Arm Compute Library Build Section ---
+
+# Find CMake for install commands and get CPU count
+find_package(CMake REQUIRED)
+include(ProcessorCount)
+ProcessorCount(CPU_COUNT)
+if(NOT CPU_COUNT GREATER 0)
+  set(CPU_COUNT 1)
+endif()
+
+# Define installation path within the build directory
+set(ARMCOMPUTE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/armcompute-install")
+message(STATUS "Arm Compute Library install prefix: ${ARMCOMPUTE_INSTALL_PREFIX}")
+
+ExternalProject_Add(armcompute
+    GIT_REPOSITORY    https://github.com/ARM-software/ComputeLibrary.git
+    GIT_TAG           v25.04 # Or specific commit hash
+    SOURCE_DIR        "${CMAKE_BINARY_DIR}/armcompute-src"
+    BINARY_DIR        "${CMAKE_BINARY_DIR}/armcompute-build"
+    INSTALL_DIR       ${ARMCOMPUTE_INSTALL_PREFIX}
+
+    # --- Build Configuration ---
+    # Adjust SCons options like arch, neon, opencl as needed for linux-arm64
+    # Ensure scons, python, arm64 compiler are in the PATH
+    BUILD_COMMAND     scons
+                        Werror=0 debug=0 neon=1 opencl=0 embed_kernels=1 cppthreads=1
+                        os=linux arch=arm64-v8a build=native -j${CPU_COUNT}
+
+    # --- Installation ---
+    # Copy required headers and libraries to install prefix
+    INSTALL_COMMAND   ${CMAKE_COMMAND} -E make_directory ${ARMCOMPUTE_INSTALL_PREFIX}/lib &&
+                      ${CMAKE_COMMAND} -E make_directory ${ARMCOMPUTE_INSTALL_PREFIX}/include &&
+                      ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/armcompute-src/include ${ARMCOMPUTE_INSTALL_PREFIX}/include &&
+                      ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/armcompute-build/libarm_compute.so ${ARMCOMPUTE_INSTALL_PREFIX}/lib/ &&
+                      ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/armcompute-build/libarm_compute_core.so ${ARMCOMPUTE_INSTALL_PREFIX}/lib/
+                      # Add other .so files (e.g., libarm_compute_graph.so) if needed
+
+    # --- Housekeeping ---
+    CONFIGURE_COMMAND ""
+    TEST_COMMAND      ""
+)
+
+# --- Create Imported Target ---
+# Use this target in target_link_libraries() and add_dependencies()
+add_library(arm_compute INTERFACE IMPORTED GLOBAL)
+set_property(TARGET arm_compute PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${ARMCOMPUTE_INSTALL_PREFIX}/include")
+set_property(TARGET arm_compute PROPERTY INTERFACE_LINK_LIBRARIES
+             "${ARMCOMPUTE_INSTALL_PREFIX}/lib/libarm_compute.so;${ARMCOMPUTE_INSTALL_PREFIX}/lib/libarm_compute_core.so") # Adjust list as needed
+# Ensure targets using this depend on 'armcompute'
+# Example: add_dependencies(your_javacpp_target armcompute)
+# Example: target_link_libraries(your_javacpp_target PRIVATE arm_compute)
+
+# --- End of Arm Compute Library Build Section ---

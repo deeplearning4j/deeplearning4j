@@ -26,13 +26,14 @@
 
 #include <loops/pairwise_instantiations.h>
 #include <types/type_promote.h>
+#include <loops/cpu/pairwise.hpp>
 // Note: Instantiations are generated to prevent compiler memory issues
 
 
 
 ITERATE_COMBINATIONS(
-    SD_NUMERIC_TYPES_PART_@COMB1@,
-    SD_NUMERIC_TYPES_PART_@COMB2@,
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
     CALLBACK_INSTANTIATE_PROMOTE,
     promote,
     ;

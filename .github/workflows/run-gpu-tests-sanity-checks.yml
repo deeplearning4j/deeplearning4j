@@ -5,6 +5,79 @@ jobs:
     runs-on:  windows-2019
     steps:
       - uses: actions/checkout@v2
+      
+      - name: Free Disk Space (Windows)
+        shell: powershell
+        run: |
+          # Show initial disk space
+          Write-Host "Initial disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+          
+          # Remove Windows Defender scan history
+          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Removed Windows Defender scan history"
+          
+          # Clear Windows temp folders
+          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows temp folders"
+          
+          # Clear Windows Update cache safely (without stopping/starting service)
+          try {
+              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Windows Update download cache"
+          }
+          catch {
+              Write-Host "Could not clear Windows Update cache. Continuing..."
+          }
+          
+          # Clean package manager caches
+          if (Test-Path -Path "C:\npm\cache") {
+              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared NPM cache"
+          }
+          
+          choco cache remove -y -ErrorAction SilentlyContinue
+          Write-Host "Cleared Chocolatey cache"
+          
+          # Remove Docker images if Docker is installed
+          try {
+              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+                  docker image prune -a -f
+                  docker container prune -f
+                  docker volume prune -f
+                  Write-Host "Pruned Docker resources"
+              }
+          }
+          catch {
+              Write-Host "Failed to prune Docker resources. Continuing..."
+          }
+          
+          # Remove .NET SDK/Runtime backup folders
+          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
+              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed .NET backup folders"
+          }
+          
+          # Clear Azure artifacts cache
+          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
+              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Azure artifacts cache"
+          }
+          
+          # Optimize Windows Component Store
+          try {
+              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+              Write-Host "Optimized Windows Component Store"
+          }
+          catch {
+              Write-Host "Failed to optimize Windows Component Store. Continuing..."
+          }
+          
+          # Show final disk space
+          Write-Host "Final disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+      
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.6.0
@@ -12,21 +85,16 @@ jobs:
         env:
           cuda: 11.4.1
       - name: Cache cuda install windows cuda 11.4
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-114
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.4
           key: windows-2019-cuda-11.4
           restore-keys: windows-2019-cuda-11.4
       - name: Cache cuda install windows cuda 11.6
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cuda-116
         with:
           path: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6
           key: windows-2019-cuda-11.6
           restore-keys: windows-2019-cuda-11.6
-
-
-
-
-

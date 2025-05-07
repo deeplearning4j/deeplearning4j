@@ -66,7 +66,7 @@ static void _percentile(NDArray& input, NDArray& output, std::vector<LongType>& 
   // FIXME: parallelism !
   for (int i = 0; i < listOfSubArrs.size(); ++i) {
     auto buff = reinterpret_cast<T*>(flattenedArr.buffer());
-    flattenedArr.assign(*listOfSubArrs.at(i));
+    flattenedArr.assign(listOfSubArrs.at(i));
     std::sort(buff, buff + len);
     output.p(i, flattenedArr.e<T>(position));
   }

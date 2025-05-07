@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.deeplearning4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -42,12 +42,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.nd4j</groupId>
+                <groupId>org.eclipse.deeplearning4j</groupId>
                 <artifactId>nd4j-api</artifactId>
                 <version>${nd4j.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.nd4j</groupId>
+                <groupId>org.eclipse.deeplearning4j</groupId>
                 <artifactId>nd4j-common</artifactId>
                 <version>${nd4j.version}</version>
             </dependency>
@@ -73,17 +73,17 @@
         </dependency>
 
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-datasets</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-datavec-iterators</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-modelimport</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -98,7 +98,7 @@
             <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nn</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -131,13 +131,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
         </dependency>
         <dependency>
@@ -147,23 +147,23 @@
         </dependency>
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.datavec</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${datavec.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.datavec</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>datavec-data-image</artifactId>
             <version>${datavec.version}</version>
         </dependency>
         <!-- deeplearning4j-ui-components: Used for generating HTML for export (ROC curves and the like) -->
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui-components</artifactId>
             <version>${project.version}</version>
         </dependency>

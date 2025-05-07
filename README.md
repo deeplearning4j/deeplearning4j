@@ -34,12 +34,12 @@ Deeplearning4J has quite a few dependencies. For this reason we only support usa
 ```xml
 <dependencies>
   <dependency>
-      <groupId>org.deeplearning4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
       <version>1.0.0-M2.1</version>
   </dependency>
   <dependency>
-      <groupId>org.nd4j</groupId>
+      <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>nd4j-native-platform</artifactId>
       <version>1.0.0-M2.1</version>
   </dependency>

@@ -18,7 +18,6 @@
   ~  * SPDX-License-Identifier: Apache-2.0
   ~  ******************************************************************************/
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -26,12 +25,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.deeplearning4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>deeplearning4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.nd4j</groupId>
+    <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>libnd4j</artifactId>
     <packaging>pom</packaging>
 
@@ -43,8 +42,7 @@
 
     <properties>
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
-
-        <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
+        <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
         <cuda.version>12.3</cuda.version>
         <cudnn.version>8.9</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
@@ -60,16 +58,7 @@
         <libnd4j.operations></libnd4j.operations>
         <libnd4j.datatypes></libnd4j.datatypes>
         <libnd4j.sanitize>OFF</libnd4j.sanitize>
-        <!-- Used during cuda compilation. Shows information about ptxas assembly for debugging cuda.-->
         <libnd4j.ptxas>OFF</libnd4j.ptxas>
-        <!-- NOTE WHEN SETTING THIS VALUE. THREAD AND ADDRESS CAN NOT BE USED TOGETHER. THAT IS WHY THIS OPTION EXISTS.
-         FOR THREADS USE: thread,undefined,float-divide-by-zero,float-cast-overflow
-         FOR ADDRESS USE: address,float-divide-by-zero,float-cast-overflow
-         FOR UNDEFINED USE: undefined,float-divide-by-zero,float-cast-overflow
-         Note that address and undefined can't be used at the same time.
-         An address memory overlap will occur otherwise.
-         See: https://github.com/google/sanitizers/issues/856
-         -->
         <libnd4j.sanitizers>address,</libnd4j.sanitizers>
         <libnd4j.arch></libnd4j.arch>
         <openblas.artifactId></openblas.artifactId>
@@ -84,18 +73,11 @@
         <libnd4j.test.runner></libnd4j.test.runner>
         <libnd4j.keepnvcc>OFF</libnd4j.keepnvcc>
         <libnd4j.optimization>3</libnd4j.optimization>
-       <!-- Used to print indices of for loops in cpu. Used to detect out of bounds crashes when a program crashes.-->
         <libnd4j.printindices>OFF</libnd4j.printindices>
-        <!-- Used to print individual math operations. Need: PRINT_MATH_FUNCTION_NAME to use. Functions in platformmath.h and templatemath.h will run additional print statements. Pick from there.-->
         <libnd4j.printmath>OFF</libnd4j.printmath>
         <junit.version>5.9.2</junit.version>
 
         <cpu.core.count></cpu.core.count>
-        <!-- New property for preprocessor flag
-         This flag allows us to use cmake to generate commands
-         we can use to output files that just run the preprocessor.
-         This is used for debugging odd macro behavior.
-         -->
         <libnd4j.preprocess>OFF</libnd4j.preprocess>
     </properties>
 
@@ -175,7 +157,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Infer the number of CPU cores and put it in the cpu.core.count property -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -242,7 +223,6 @@
             <activation>
                 <property>
                     <name>javacpp.platform.extension</name>
-                    <!-- Using the maven build extension (see ./mvn/extensions.xml) use regex to check for any value that isn't empty-->
                     <value>/.+/</value>
                 </property>
             </activation>
@@ -264,7 +244,6 @@
             </properties>
         </profile>
 
-        <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
         <profile>
             <id>build-windows</id>
             <activation>
@@ -276,7 +255,6 @@
                 <libnd4j.buildprogram>sh</libnd4j.buildprogram>
             </properties>
         </profile>
-        <!-- Default build program should be bash on non windows platforms -->
         <profile>
             <id>build-unix</id>
             <activation>
@@ -286,7 +264,6 @@
                 <libnd4j.buildprogram>bash</libnd4j.buildprogram>
             </properties>
         </profile>
-        <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
         <profile>
             <id>libnd4j-single-thread</id>
             <activation>
@@ -306,7 +283,6 @@
                 </property>
             </activation>
             <properties>
-                <!-- Note: CPU core count is from build helper plugin -->
                 <libnd4j.buildthreads>${cpu.core.count}</libnd4j.buildthreads>
             </properties>
         </profile>
@@ -341,11 +317,8 @@
                 </property>
             </activation>
             <properties>
-                <!-- Leave libnd4j.chip and libnd4j.classifier as is to build CPU version as well. -->
-                <!-- <libnd4j.chip>cuda</libnd4j.chip> -->
                 <libnd4j.cpu.compile.skip>true</libnd4j.cpu.compile.skip>
                 <libnd4j.cuda.compile.skip>false</libnd4j.cuda.compile.skip>
-                <!-- <libnd4j.classifier>${libnd4j.platform}-cuda-${cuda.version}</libnd4j.classifier> -->
             </properties>
             <build>
                 <plugins>
@@ -370,6 +343,8 @@
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--output-path</argument>
+                                        <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>
                                         <argument>--chip</argument>
@@ -506,6 +481,8 @@
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh</argument>
+                                        <argument>--output-path</argument>
+                                        <argument>${libnd4j.outputPath}</argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>
                                         <argument>--chip</argument>

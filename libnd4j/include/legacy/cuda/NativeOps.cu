@@ -2266,7 +2266,7 @@ void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) {
         for (int j = k >> 1; j > 0; j >>= 1) {
           BUILD_SINGLE_SELECTOR(xType, bitonicSortStepGeneric,
                                 (launchDims, stream, x->specialBuffer(), dXShapeInfo, j, k, xLength, descending),
-                                SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES);
         }
       }
     } else {
@@ -2289,7 +2289,7 @@ void sort(sd::Pointer *extraPointers, OpaqueNDArray x, bool descending) {
           int half = n >> 1;
           BUILD_SINGLE_SELECTOR(xType, bitonicArbitraryStepGeneric,
                                 (launchDims, stream, x->specialBuffer(), dXShapeInfo, n, xLength, rev, descending),
-                                SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES);
           n >>= 1;
           rev = 1;
         } while (n > 1);
@@ -2352,7 +2352,7 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x,
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey,
                                 (launchDims, stream, x->specialBuffer(),
                                     dXShapeInfo, y->specialBuffer(), dyShapeInfo, j, k, xLength, descending),
-                                SD_COMMON_TYPES, SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
         }
       }
     } else {
@@ -2378,7 +2378,7 @@ void sortByKey(sd::Pointer *extraPointers, OpaqueNDArray x,
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
                                 (launchDims, stream, x->specialBuffer(),
                                     dXShapeInfo, y->specialBuffer(), dyShapeInfo, n, xLength, rev, descending),
-                                SD_COMMON_TYPES, SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
           n >>= 1;
           rev = 1;
         } while (n > 1);
@@ -2443,7 +2443,7 @@ void sortByValue(sd::Pointer *extraPointers,OpaqueNDArray x,
                                 (launchDims, stream, y->specialBuffer(),
                                     dyShapeInfo, x->specialBuffer(),
                                     dXShapeInfo, j, k, xLength, descending),
-                                SD_COMMON_TYPES, SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
         }
       }
     } else {
@@ -2465,7 +2465,7 @@ void sortByValue(sd::Pointer *extraPointers,OpaqueNDArray x,
           BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
                                 (launchDims, stream, y->specialBuffer(),
                                     dyShapeInfo, x->specialBuffer(), dXShapeInfo, n, xLength, rev, descending),
-                                SD_COMMON_TYPES, SD_COMMON_TYPES);
+                                SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
           n >>= 1;
           rev = 1;
         } while (n > 1);
@@ -2526,7 +2526,7 @@ void sortTadByKey(sd::Pointer *extraPointers,
                           (launchDims, stream, x->specialBuffer(),
                               dXShapeInfo, y->specialBuffer(), dyShapeInfo,
                               dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
     // Check for CUDA errors after sort execution
     sd::DebugHelper::checkErrorCode(stream, "sortTadByKey(...) failed");
@@ -2581,7 +2581,7 @@ void sortTadByValue(sd::Pointer *extraPointers,
     BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
                           (launchDims, stream, y->specialBuffer(), dyShapeInfo, x->specialBuffer(), dXShapeInfo,
                               dimensionPtr, dimensionLength, tadPack->platformShapeInfo(), tadPack->platformOffsets(), descending),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
 
     // Check for CUDA errors after sort execution
     sd::DebugHelper::checkErrorCode(stream, "sortTadByValue(...) failed");
@@ -2627,7 +2627,7 @@ void sortTad(sd::Pointer *extraPointers, OpaqueNDArray  x,
     BUILD_SINGLE_SELECTOR(
         xType, oesTadGeneric,
         (launchDims, stream, x->specialBuffer(), dXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending),
-        SD_COMMON_TYPES
+        SD_NUMERIC_TYPES
     );
 
     // Check for CUDA errors after sort execution

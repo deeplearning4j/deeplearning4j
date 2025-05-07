@@ -26,7 +26,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <system/op_boilerplate.h>
 
-#include "../triangular_solve.h"
+#include <ops/declarable/helpers/triangular_solve.h>
 #include "execution/cuda/LaunchDims.h"
 #include "helpers/DebugHelper.h"
 
@@ -120,7 +120,7 @@ static void upperTriangularSolve(LaunchContext* context, NDArray * leftInput, ND
 
 template <typename T>
 static Status triangularSolveFunctor_(LaunchContext* context, NDArray* leftInput, NDArray* rightInput,
-                                          bool lower, bool adjoint, NDArray* output) {
+                                          bool lower, bool unitsOnDiag, NDArray* output) {
 
   auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
   auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
@@ -130,9 +130,9 @@ static Status triangularSolveFunctor_(LaunchContext* context, NDArray* leftInput
       if(i >= rightPart.size() || i > outputPart.size())
         break;
       if (lower) {
-        lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
+        lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], unitsOnDiag, outputPart[i]);
       } else {
-        upperTriangularSolve<T>(context, leftPart[i], rightPart[i], false, outputPart[i]);
+        upperTriangularSolve<T>(context, leftPart[i], rightPart[i], unitsOnDiag, outputPart[i]);
       }
     }
   };
@@ -155,11 +155,10 @@ void triangularSolve2D(LaunchContext* context, NDArray& leftInput, NDArray& righ
                        bool const lower, bool const unitsOnDiag, NDArray& output) {
   triangularSolveFunctor_<T>(context, const_cast<NDArray*>(&leftInput), const_cast<NDArray*>(&rightInput), lower,
                              unitsOnDiag, &output);
-
-
 }
+
 BUILD_SINGLE_TEMPLATE(template void triangularSolve2D,
-                      (sd::LaunchContext * context, NDArray& leftInput, NDArray& rightInput,
+                      (LaunchContext* context, NDArray& leftInput, NDArray& rightInput,
                           bool const lower, bool const unitsOnDiag, NDArray& output),
                       SD_FLOAT_TYPES);
 
@@ -210,9 +209,8 @@ static SD_KERNEL void lowerAdjointKernel(T const* input, T* output, LongType bat
 }
 
 template <typename T>
-static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bool const lower,
-                                     NDArray* output) {
-  NDArray::prepareSpecialUse({input}, {output});
+static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {
+  NDArray::prepareSpecialUse({output}, {input});
   std::vector<LongType> dims = {-2, -1};
   auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), &dims);
   auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(),&dims);
@@ -236,7 +234,7 @@ static void adjointTriangularMatrix_(LaunchContext* context, NDArray * input, bo
 
   }
 
-  NDArray::registerSpecialUse({input}, {output});
+  NDArray::registerSpecialUse({output}, {input});
 }
 
 void adjointMatrix(LaunchContext* context, NDArray * input, bool const lower, NDArray* output) {

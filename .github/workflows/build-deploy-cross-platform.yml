@@ -34,7 +34,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: ubuntu-20.04
+        default: ubuntu-22.04
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -52,14 +52,14 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
@@ -70,16 +70,12 @@ jobs:
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
+        
+        
 
 
       - name: Build on  linux-x86_64

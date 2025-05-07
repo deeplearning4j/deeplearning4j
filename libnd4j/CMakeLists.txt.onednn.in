@@ -9,8 +9,9 @@ ExternalProject_Add(onednn
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/onednn-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/onednn-build"
   CONFIGURE_COMMAND ""
-  CMAKE_ARGS        -DDNNL_USE_MKL=ML -DDNNL_LIBRARY_TYPE=STATIC -G \"Unix Makefiles\"
-  BUILD_COMMAND     ""
-  INSTALL_COMMAND   ""
+  BUILD_COMMAND     "${CMAKE_COMMAND}" -E echo "OneDNN cloned to: ${CMAKE_CURRENT_BINARY_DIR}/onednn-src"
+  INSTALL_COMMAND   "${CMAKE_COMMAND}" -E echo "Listing onednn-src contents:" && "${CMAKE_COMMAND}" -E ls "${CMAKE_CURRENT_BINARY_DIR}/onednn-src"
   TEST_COMMAND      ""
+  LOG_DOWNLOAD      ON
+  LOG_UPDATE        ON
 )

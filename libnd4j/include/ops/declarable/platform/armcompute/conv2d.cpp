@@ -55,7 +55,7 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   sd::LongType kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<sd::LongType>(weights->sizeAt(1));  // filter(kernel) width
 
   // Calculate individual paddings
-  unsigned sd::LongType padLeft, padTop, padRight, padBottom;
+   sd::LongType padLeft, padTop, padRight, padBottom;
   sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
   sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
@@ -65,10 +65,10 @@ PLATFORM_IMPL(conv2d, ENGINE_CPU) {
   ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
   int pWSame = (paddingMode == 2 && dW > 1) ? ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2
                                             : pW;  // dH == 1 for causal mode in conv1d
-  padLeft = pW;
-  padTop = pH;
+   padLeft = pW;
+   padTop = pH;
   padRight = (oW - 1) * sW - iW + kW - pWSame;
-  padBottom = (oH - 1) * sH - iH + kH - pH;
+ padBottom = (oH - 1) * sH - iH + kH - pH;
 
   std::vector<sd::LongType> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, oC);
   REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0,

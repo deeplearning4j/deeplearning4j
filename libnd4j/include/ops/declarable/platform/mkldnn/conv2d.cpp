@@ -65,7 +65,7 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
 
   auto type = dnnl::memory::data_type::f32;
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {3, 2, 0, 1};  // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
   else if (2 == wFormat)
@@ -114,7 +114,7 @@ static void conv2dMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDArra
   sd_debug("Created engine\n",0);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -154,9 +154,9 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
                            const int isNCHW, const int wFormat) {
   // mkl support weights/gradW in [oC, iC, kH, kW] format only
 
-  int bS, iC, iH, iW, oC, oH,
+  sd::LongType bS, iC, iH, iW, oC, oH,
       oW;  // batch size, input channels, input height/width, output channels, output height/width;
-  int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
+  sd::LongType indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;  // corresponding indexes
   ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                              indIiH, indWiC, indWoC, indWkH, indOoH);
 
@@ -177,7 +177,7 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
 
   auto type = dnnl::memory::data_type::f32;
 
-  std::vector<sd::LongType> permut;
+  std::vector<int> permut;
   if (0 == wFormat)
     permut = {3, 2, 0, 1};  // [kH, kW, iC, oC] -> [oC, iC, kH, kW]
   else if (2 == wFormat)
@@ -235,7 +235,7 @@ static void conv2dBpMKLDNN(NDArray *input, NDArray *weights, NDArray *bias, NDAr
                                                                              op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 

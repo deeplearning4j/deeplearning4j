@@ -140,7 +140,7 @@ static void batchnormMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArra
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray& dLdO,
+static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDArray* dLdO,
                               NDArray* weights, NDArray* dLdI, NDArray* dLdW, const float epsilon,
                               const bool isNCHW) {
   // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for x
@@ -198,7 +198,7 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // dLdO
   dnnl::memory::desc dLdO_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
   dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
-  onednnUtils::setBlockStrides(dLdO, dLdO_user_md);
+  onednnUtils::setBlockStrides(*dLdO, dLdO_user_md);
 
   // dLdI
   dnnl::memory::desc dLdI_mkl_md = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
@@ -226,7 +226,7 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   onednnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
   // dLdO
-  onednnUtils::loadDataToMklStream(dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(),
+  onednnUtils::loadDataToMklStream(*dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(),
                                    args[DNNL_ARG_DIFF_DST]);
 
   // mean
@@ -282,8 +282,8 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // dLdI = dfdm / N + (2/N) * dfdv * (dvdm/2  + (x - m))
   // dLdI = gamma * (  stdInv * -g_sum/N + (2/N) * dfdv * (dvdm/2  + (x - m))  )
 
-  std::vector<sd::LongType> axes = isNCHW ? std::vector<int>{1} : std::vector<int>{xRank - 1};
-  const auto excludedAxes = ShapeUtils::evalDimsToExclude(x->rankOf(), axes);
+  std::vector<sd::LongType> axes = isNCHW ? std::vector<sd::LongType>{1} : std::vector<sd::LongType>{xRank - 1};
+  const auto excludedAxes = ShapeUtils::evalDimsToExclude(x->rankOf(),axes.size(), axes.data());
 
   // inversed batch size 1 / N
   const auto Ninv = 1.f * mean->lengthOf() / x->lengthOf();
@@ -294,22 +294,22 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
 
   // stdInv
   NDArray stdInv = *variance + epsilon;
-  stdInv.applyTransform(transform::Reciprocal, stdInv);  // 1 / (variance + epsilon)
-  stdInv.applyTransform(transform::Sqrt, stdInv);        // 1 / (variance + epsilon)^0.5
+  stdInv.applyTransform(transform::Reciprocal, &stdInv);  // 1 / (variance + epsilon)
+  stdInv.applyTransform(transform::Sqrt, &stdInv);        // 1 / (variance + epsilon)^0.5
 
   // dfdm / N
-  auto dfdm = dLdO.reduceAlongDimension(sd::reduce::Sum, excludedAxes);
+  auto dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
   dfdm *= stdInv;
   dfdm *= -Ninv;
 
   // dvdm / 2
   NDArray dvdm(mean);  // empty array with same shape as mean
-  xMinusMean.reduceAlongDimension(sd::reduce::Sum, dvdm, excludedAxes);
+  xMinusMean.reduceAlongDimension(sd::reduce::Sum, &dvdm, excludedAxes);
   dvdm *= -Ninv;
 
   // (2/N)*dfdv
   NDArray dfdv(variance);  // empty array with same shape as variance
-  (xMinusMean * dLdO).reduceAlongDimension(sd::reduce::Sum, dfdv, excludedAxes);
+  (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, &dfdv, excludedAxes);
   dfdv *= stdInv * stdInv * stdInv;
   dfdv *= -Ninv;
 
@@ -318,7 +318,7 @@ static void batchnormBpMKLDNN(NDArray* x, NDArray* mean, NDArray* variance, NDAr
   // dfdv * (dvdm/2  + (x - m))
   xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &dfdv, &xMinusMean);
   // add dfdm / N
-  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dfdm, xMinusMean);
+  xMinusMean.applyBroadcast(sd::broadcast::Add, &axes, &dfdm, &xMinusMean);
   // * gamma
   auto gamma = (*weights)({0, 1, 0, 0});
   xMinusMean.applyBroadcast(sd::broadcast::Multiply, &axes, &gamma, &xMinusMean);
@@ -376,19 +376,22 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
                  input->sizeAt(axes[0]), ShapeUtils::shapeAsString(beta).c_str());
 
   // types of all input arrays should be the same (except dLdO)
-  for (int i = 1; i < block.width() - 1; ++i)
+  for (size_t i = 1; i < block.width() - 1; ++i)
     REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
                  "BATCHNORM_MKLDNN op: types of all input arrays should be the same !");
 
   NDArray* weights = nullptr;
 
   if (applyScale || applyOffset) {
-    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
+    std::vector<sd::LongType > shape = {2, input->sizeAt(axes[0])};
+    weights = new NDArray(input->ordering(),shape , input->dataType());
 
     if (applyScale)
       (*weights)({0, 1, 0, 0}).assign(gamma);
-    else
-      (*weights)({0, 1, 0, 0}).assign(1);
+    else {
+      sd::LongType scalarVal = 1;
+      (*weights)({0, 1, 0, 0}).assign(scalarVal);
+    }
     if (applyOffset)
       (*weights)({1, 2, 0, 0}).assign(beta);
     else
@@ -518,19 +521,21 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
                  input->sizeAt(axes[0]), ShapeUtils::shapeAsString(beta).c_str());
 
   // types of all input arrays should be the same
-  for (int i = 1; i < block.width() - 1; ++i)
+  for (size_t i = 1; i < block.width() - 1; ++i)
     REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0,
                  "BATCHNORM_BP_MKLDNN op: types of all input arrays should be the same !");
 
   NDArray *weights = nullptr, *dLdW = nullptr;
 
   if (applyScale || applyOffset) {
-    weights = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
-    dLdW = new NDArray(input->ordering(), {2, input->sizeAt(axes[0])}, input->dataType(), 0, 0, 0, 0);
+    sd::LongType scalar = 1;
+    std::vector<sd::LongType> shape =  {2, input->sizeAt(axes[0])};
+    weights = new NDArray(input->ordering(),shape, input->dataType());
+    dLdW = new NDArray(input->ordering(), shape, input->dataType());
     if (applyScale)
       (*weights)({0, 1, 0, 0}).assign(gamma);
     else
-      (*weights)({0, 1, 0, 0}).assign(1);
+      (*weights)({0, 1, 0, 0}).assign(scalar);
     if (applyOffset)
       (*weights)({1, 2, 0, 0}).assign(beta);
     else
@@ -540,10 +545,11 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
   const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
 
   if (shape::strideDescendingCAscendingF(dLdO->shapeInfo()))
-    batchnormBpMKLDNN(input, mean, variance, *dLdO, weights, dLdI, dLdW, epsilon, isNCHW);
-  else
-    batchnormBpMKLDNN(input, mean, variance, dLdO->dup(), weights, dLdI, dLdW, epsilon, isNCHW);
-
+    batchnormBpMKLDNN(input, mean, variance, dLdO, weights, dLdI, dLdW, epsilon, isNCHW);
+  else {
+    NDArray dupped = dLdO->dup();
+    batchnormBpMKLDNN(input, mean, variance, &dupped, weights, dLdI, dLdW, epsilon, isNCHW);
+  }
   *dLdM = 0;
   *dLdV = 0;
 
@@ -599,10 +605,10 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
     axes.push_back(input->rankOf() - 1);  // default dimension to reduce along is last dimension
 
   const sd::LongType inRank = input->rankOf();
+  std::vector<sd::LongType> shape =  {1, inRank - 1};
   Requirements req("ONEDNN BATCHNORM_BP OP");
   req.expectTrue(block.isUseONEDNN(), IS_USE_ONEDNN_MSG) &&
       req.expectEq(makeInfoVariable(axes.size(), "axes.size()"), 1) &&
-      req.expectIn(makeInfoVariable(axes[0], "axes#0"), {1, inRank - 1}) &&
       req.expectIn(makeInfoVariable(inRank, RANK_MSG_INPUT0), {2, 4, 5}) &&
       req.expectTrue(makeInfoVariable(
                          [input, mean, variance, dLdO, gamma, beta, dLdG, dLdB, dLdI] {

@@ -50,7 +50,7 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
   std::vector<dnnl::memory::desc> x_user_md(inArrs.size()), x_mkl_md(inArrs.size());
 
   // inputs
-  for (int i = 0; i < inArrs.size(); ++i) {
+  for (size_t i = 0; i < inArrs.size(); ++i) {
     dnnl::memory::dims dims = inArrs[i]->getShapeAsFlatVector();
     x_user_md[i] = x_mkl_md[i] = dnnl::memory::desc(dims, type, onednnUtils::getFormat(*inArrs[i]));
     onednnUtils::setBlockStrides(*inArrs[i], x_user_md[i]);
@@ -62,7 +62,7 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
   dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, onednnUtils::getFormat(output));
   onednnUtils::setBlockStrides(output, z_user_md);
 
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   auto engine = onednnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -71,7 +71,7 @@ static void concatMKLDNN(const std::vector<NDArray*>& inArrs, NDArray& output, c
   dnnl::stream stream(engine);
 
   // inputs
-  for (int i = 0; i < inArrs.size(); ++i)
+  for (size_t i = 0; i < inArrs.size(); ++i)
     onednnUtils::loadDataToMklStream(*inArrs[i], engine, stream, x_user_md[i], op_prim_desc.src_desc(i),
                                      args[DNNL_ARG_MULTIPLE_SRC + i]);
 

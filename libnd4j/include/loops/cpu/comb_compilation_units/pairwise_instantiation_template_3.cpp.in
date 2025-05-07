@@ -26,6 +26,7 @@
 
 #include <loops/pairwise_instantiations.h>
 #include <types/type_promote.h>
+#include <loops/cpu/pairwise.hpp>
 // Note: Instantiations are generated to prevent compiler memory issues
 
 /*
@@ -35,9 +36,9 @@
  */
 
 ITERATE_COMBINATIONS_3(
-    SD_NUMERIC_TYPES_PART_@COMB1@,
-    SD_NUMERIC_TYPES_PART_@COMB2@,
-    SD_NUMERIC_TYPES_PART_@COMB3@,
+    SD_COMMON_TYPES_PART_@COMB1@,
+    SD_COMMON_TYPES_PART_@COMB2@,
+    SD_COMMON_TYPES_PART_@COMB3@,
     INSTANT_PROCESS_COMBINATION_3,
     functions::pairwise_transforms::PairWiseTransform,
     ::exec(int opNum, const void *x, const sd::LongType *xShapeInfo, const void *y,

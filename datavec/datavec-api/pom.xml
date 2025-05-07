@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.datavec</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>datavec-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -78,7 +78,7 @@
         </dependency>
         <!-- ND4J Shaded Jackson Dependencies -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>jackson</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
@@ -89,12 +89,12 @@
         </dependency>
         <!-- ND4J common, mainly for CompactHeapStringList -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-common</artifactId>
         </dependency>
         <!-- ND4J api, mainly for NDArrayWritable and recognizing an INDArray in UnsafeWritableInjector -->
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-api</artifactId>
         </dependency>
         <dependency>
@@ -119,7 +119,7 @@
             <version>${fastutil.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

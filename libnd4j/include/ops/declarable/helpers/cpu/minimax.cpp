@@ -19,10 +19,9 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __MIN_I_MAX_H_HELPERS__
-#define __MIN_I_MAX_H_HELPERS__
 #include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/helpers/minimax.h>
 #include <system/op_boilerplate.h>
 
 namespace sd {
@@ -30,7 +29,7 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+static void minimumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
   auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
 
   auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
@@ -88,8 +87,9 @@ static void minimumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray*
       gradY->assign(&preY);
   }
 }
+
 template <typename T>
-void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+void maximumBPFunctor_(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
   auto lambdaX = LAMBDA_TTT(_e, _x, _y) { return _x >= _y ? _e : (T)0.; });
 
   auto lambdaY = LAMBDA_TTT(_e, _x, _y) { return _x <= _y ? _e : (T)0.; });
@@ -149,21 +149,20 @@ void maximumBPFunctor_(NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
   }
 }
 
-void minimumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
+void minimumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
                       NDArray* gradY) {
-  BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
+  BUILD_SINGLE_SELECTOR(x->dataType(), minimumBPFunctor_, (context, x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
 }
 
-void maximumBPFunctor(sd::LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
+void maximumBPFunctor(LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX,
                       NDArray* gradY) {
-  BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
+  BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (context, x, y, epsNext, gradX, gradY), SD_NUMERIC_TYPES);
 }
 BUILD_SINGLE_TEMPLATE(template void minimumBPFunctor_,
-                      (NDArray * x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
+                      (LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
 BUILD_SINGLE_TEMPLATE(template void maximumBPFunctor_,
-                      (NDArray * x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
+                      (LaunchContext* context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), SD_NUMERIC_TYPES);
 
 }  // namespace helpers
 }  // namespace ops
 }  // namespace sd
-#endif

@@ -37,7 +37,7 @@ jobs:
             experimental: true
             name: Extra maven flags
 
-          - runs_on: ubuntu-20.04
+          - runs_on: ubuntu-22.04
             experimental: true
             name: OS to run on
 
@@ -59,14 +59,14 @@ jobs:
       - uses: ./.github/actions/set-linux-distro-version
       - uses: ./.github/actions/update-deps-linux
       - name: Cache cmake install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
       - name: Cache protobuf install
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
@@ -79,11 +79,11 @@ jobs:
 
 
       - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
       - name: Setup libnd4j home if a download url is specified
         shell: bash
@@ -165,13 +165,85 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      
+      - name: Free Disk Space (Windows)
+        shell: powershell
+        run: |
+          # Show initial disk space
+          Write-Host "Initial disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+          
+          # Remove Windows Defender scan history
+          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Removed Windows Defender scan history"
+          
+          # Clear Windows temp folders
+          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows temp folders"
+          
+          # Clear Windows Update cache safely (without stopping/starting service)
+          try {
+              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Windows Update download cache"
+          }
+          catch {
+              Write-Host "Could not clear Windows Update cache. Continuing..."
+          }
+          
+          # Clean package manager caches
+          if (Test-Path -Path "C:\npm\cache") {
+              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared NPM cache"
+          }
+          
+          choco cache remove -y -ErrorAction SilentlyContinue
+          Write-Host "Cleared Chocolatey cache"
+          
+          # Remove Docker images if Docker is installed
+          try {
+              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+                  docker image prune -a -f
+                  docker container prune -f
+                  docker volume prune -f
+                  Write-Host "Pruned Docker resources"
+              }
+          }
+          catch {
+              Write-Host "Failed to prune Docker resources. Continuing..."
+          }
+          
+          # Remove .NET SDK/Runtime backup folders
+          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
+              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed .NET backup folders"
+          }
+          
+          # Clear Azure artifacts cache
+          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
+              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Azure artifacts cache"
+          }
+          
+          # Optimize Windows Component Store
+          try {
+              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+              Write-Host "Optimized Windows Component Store"
+          }
+          catch {
+              Write-Host "Failed to optimize Windows Component Store. Continuing..."
+          }
+          
+          # Show final disk space
+          Write-Host "Final disk space:"
+          Get-PSDrive C | Select-Object Used,Free
 
       - name: Set up Java for publishing to GitHub Packages
         uses: konduitai/setup-java@main
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
 
       - uses: msys2/setup-msys2@v2
@@ -246,11 +318,11 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          cache: 'maven'
+        
 
 
       - name: Update path for gnu sed
@@ -280,6 +352,3 @@ jobs:
                   mvn_ext=" -Dlibnd4j.classifier=macosx-x86_64"
             fi
             cd ${GITHUB_WORKSPACE}/platform-tests && mvn  -Djavacpp.platform=macosx-x86_64 ${mvn_ext} clean test 
-
-
-

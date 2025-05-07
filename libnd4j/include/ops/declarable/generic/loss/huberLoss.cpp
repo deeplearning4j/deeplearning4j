@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
   auto error = *predictions - *labels;
   error.applyTransform(transform::Abs, &error);
   NDArray quadratic(error.shapeInfo(), block.getWorkspace());
-  error.applyScalar(scalar::MinPairwise, &delta, &quadratic);
+  error.applyScalar(scalar::MinPairwise, delta, &quadratic);
 
   NDArray E = quadratic * quadratic * 0.5f + (error - quadratic) * delta;
 
@@ -219,10 +219,10 @@ CUSTOM_OP_IMPL(huber_loss_grad, 3, 3, false, 1, 1) {
   NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic) * delta;
 
   NDArray lteMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::LessThanOrEqual, &delta, &lteMask);
+  absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
 
   NDArray gtMask(diff.shapeInfo(), BOOL, true, block.launchContext());
-  absDiff.applyScalar(scalar::GreaterThan, &delta, &gtMask);
+  absDiff.applyScalar(scalar::GreaterThan, delta, &gtMask);
 
   NDArray signDiff(diff);
   diff.applyTransform(transform::Sign, &signDiff);

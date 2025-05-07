@@ -20,7 +20,6 @@
 
 package org.nd4j.linalg.util;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -56,7 +55,6 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
      *
      * @return
      */
-    @Nullable
     @Override
     public synchronized INDArray get() {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();

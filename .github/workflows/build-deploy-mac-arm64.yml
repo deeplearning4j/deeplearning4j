@@ -35,7 +35,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-10.15
+        default: macos-14-large
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -121,15 +121,15 @@ jobs:
                  echo "Building libnd4j from source"
                  modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
               fi
-              command="mvn ${{ matrix.mvn_ext }} -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
+              command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl  $modules  -Dlibnd4j.arch=armv8-a  -Dlibnd4j.platform=macosx-arm64 -Djavacpp.platform=macosx-arm64 -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh   -DskipTestResourceEnforcement=true  -Dmaven.javadoc.failOnError=false -Djavacpp.platform=macosx-arm64  -Pcpu  --also-make  --batch-mode deploy -DskipTests"
               if [ "${{ matrix.helper }}" != '' ] && [ "${{ matrix.extension }}" != '' ]; then
-                  mvn_ext="-Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
+                  mvn_ext="-Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}"
               elif [ "${{ matrix.helper }}" != '' ]; then
-                  mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
+                  mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=${{ matrix.helper }} -Dlibnd4j.helper=${{ matrix.helper }} -Dlibnd4j.extension=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }}"
               elif [ "${{ matrix.extension }}" != '' ]; then
-                 mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-arm64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
+                 mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.extension }}"
               else
-                  mvn_ext=" -Pprotoc-provided-binaries -Dlibnd4j.classifier=macosx-arm64"
+                  mvn_ext=" -Posx-aarch64-protoc -Dlibnd4j.classifier=macosx-arm64"
               fi
               if  [  "${{ matrix.libnd4j_file_download }}" != '' ]; then
                 echo "Adding libnd4j download"
@@ -140,29 +140,20 @@ jobs:
               echo "COMMAND=${command}" >> $GITHUB_ENV
               sudo rm -Rf /Library/Developer/CommandLineTools/SDKs/MacOSX10*
 
-      - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v1
-        env:
-            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
 
       - name: Set up Java for publishing to OSSRH
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-          server-id: ${{ github.event.inputs.serverId }}
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
+        
+        
 
 
       - name: Update path for gnu sed
         shell: bash
         run: |
-             brew install gpg1 gnu-sed unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+             brew install  gnu-sed unzip  ccache gcc swig autoconf-archive automake  libomp libtool libusb ant maven nasm xz pkg-config sdl  bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
              echo "$(brew --prefix)/opt/gnu-sed/libexec/gnubin" >> $GITHUB_PATH
 
       - name: Setup libnd4j home if a download url is specified
@@ -170,8 +161,8 @@ jobs:
         run: |
             mkdir "${GITHUB_WORKSPACE}/openblas_home"
             cd "${GITHUB_WORKSPACE}/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-macosx-arm64.jar
-            unzip openblas-0.3.19-1.5.7-macosx-arm64.jar
+            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-macosx-arm64.jar
+            unzip openblas-0.3.28-1.5.11-macosx-arm64.jar
             cd ..
             cp ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.0.dylib  ${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/libopenblas.dylib
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/macosx-arm64/" >> "$GITHUB_ENV"
@@ -210,12 +201,10 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
 
-          gpg --version
-          gpg1 --version
+        
           brew list
           brew list --cask
-          # download libnd4j from a url and set it up if LIBND4J_FILE_NAME is defined
-          bash ./bootstrap-libnd4j-from-url.sh macosx arm64 "${{ matrix.helper }}" "${{ matrix.extension }}"
+          
           if [ "$PERFORM_RELEASE" == 1 ]; then
                     echo "Performing release with command ${COMMAND}"
                     bash ${GITHUB_WORKSPACE}/release-specified-component.sh  "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"

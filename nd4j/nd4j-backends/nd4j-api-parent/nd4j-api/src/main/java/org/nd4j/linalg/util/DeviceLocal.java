@@ -23,7 +23,6 @@ package org.nd4j.linalg.util;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,7 +56,6 @@ public abstract class DeviceLocal<T extends Object> {
      *
      * @return
      */
-    @Nullable
     public T get() {
         return get(Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
@@ -68,7 +66,6 @@ public abstract class DeviceLocal<T extends Object> {
      * @param deviceId
      * @return
      */
-    @Nullable
     public T get(int deviceId) {
         try {
             locksMap.get(deviceId).readLock().lock();

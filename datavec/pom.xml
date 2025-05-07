@@ -26,12 +26,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.deeplearning4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>deeplearning4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.datavec</groupId>
+    <groupId>org.eclipse.deeplearning4j</groupId>
     <artifactId>datavec-parent</artifactId>
     <packaging>pom</packaging>
 
@@ -79,13 +79,13 @@
             </dependency>
             <!-- ND4J common, mainly for CompactHeapStringList -->
             <dependency>
-                <groupId>org.nd4j</groupId>
+                <groupId>org.eclipse.deeplearning4j</groupId>
                 <artifactId>nd4j-common</artifactId>
                 <version>${nd4j.version}</version>
             </dependency>
             <!-- ND4J api, mainly for NDArrayWritable and recognizing an INDArray in UnsafeWritableInjector -->
             <dependency>
-                <groupId>org.nd4j</groupId>
+                <groupId>org.eclipse.deeplearning4j</groupId>
                 <artifactId>nd4j-api</artifactId>
                 <version>${nd4j.version}</version>
             </dependency>

@@ -70,7 +70,7 @@ import org.nd4j.nativeblas.*;
 import java.util.*;
 
 import static org.bytedeco.cuda.global.cudart.*;
-
+import org.nd4j.linalg.jcublas.JCublasNDArray;
 
 /**
  * JCuda executioner.
@@ -1733,6 +1733,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         return new TadPack(tadShape, tadOffsets);
     }
+
+    @Override
+    public INDArray createFromDescriptor(DataBuffer shapeInformation) {
+        JCublasNDArray ndArray = new JCublasNDArray();
+        ndArray.setShapeInfoDataBuffer(shapeInformation);
+        DataType dt = Shape.dataType(ndArray.shapeInfoJava());
+        DataBuffer buff = Nd4j.createBuffer(dt,ndArray.length(),false);
+        ndArray.setData(buff);
+        return ndArray;
+    }
+
 
     @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {

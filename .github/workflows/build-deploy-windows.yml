@@ -45,7 +45,7 @@ on:
       runsOn:
         description: 'OS to run on'
         required: false
-        default: windows-2019
+        default: windows-2022
 
       debug_enabled:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
@@ -111,6 +111,79 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      
+      - name: Free Disk Space (Windows)
+        shell: powershell
+        run: |
+          # Show initial disk space
+          Write-Host "Initial disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+          
+          # Remove Windows Defender scan history
+          Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Removed Windows Defender scan history"
+          
+          # Clear Windows temp folders
+          Remove-Item -Path "$env:SystemRoot\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared Windows temp folders"
+          
+          # Clear Windows Update cache safely (without stopping/starting service)
+          try {
+              Remove-Item -Path "$env:SystemRoot\SoftwareDistribution\Download\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Windows Update download cache"
+          }
+          catch {
+              Write-Host "Could not clear Windows Update cache. Continuing..."
+          }
+          
+          # Clean package manager caches
+          if (Test-Path -Path "C:\npm\cache") {
+              Remove-Item -Path "C:\npm\cache\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared NPM cache"
+          }
+          
+          choco cache remove -y -ErrorAction SilentlyContinue
+          Write-Host "Cleared Chocolatey cache"
+          
+          # Remove Docker images if Docker is installed
+          try {
+              if (Get-Command "docker" -ErrorAction SilentlyContinue) {
+                  docker image prune -a -f
+                  docker container prune -f
+                  docker volume prune -f
+                  Write-Host "Pruned Docker resources"
+              }
+          }
+          catch {
+              Write-Host "Failed to prune Docker resources. Continuing..."
+          }
+          
+          # Remove .NET SDK/Runtime backup folders
+          if (Test-Path -Path "$env:ProgramData\Microsoft\.NET\*.backup") {
+              Remove-Item -Path "$env:ProgramData\Microsoft\.NET\*.backup" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Removed .NET backup folders"
+          }
+          
+          # Clear Azure artifacts cache
+          if (Test-Path -Path "$env:LOCALAPPDATA\Microsoft\Azure\*") {
+              Remove-Item -Path "$env:LOCALAPPDATA\Microsoft\Azure\*" -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "Cleared Azure artifacts cache"
+          }
+          
+          # Optimize Windows Component Store
+          try {
+              Start-Process -FilePath "dism.exe" -ArgumentList "/online /Cleanup-Image /StartComponentCleanup" -NoNewWindow -Wait
+              Write-Host "Optimized Windows Component Store"
+          }
+          catch {
+              Write-Host "Failed to optimize Windows Component Store. Continuing..."
+          }
+          
+          # Show final disk space
+          Write-Host "Final disk space:"
+          Get-PSDrive C | Select-Object Used,Free
+      
       - name: Set mvn build command based on matrix
         shell: powershell
         run: |
@@ -124,7 +197,7 @@ jobs:
               $modules=":nd4j-native-preset,:nd4j-native,libnd4j,:nd4j-native-platform"
             }
           
-            $command="mvn  ${{ matrix.mvn_ext }} -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
+            $command="mvn  ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -pl $modules -Pcpu -Dlibnd4j.buildthreads=${{ matrix.build_threads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3   -Possrh -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Djavacpp.platform=windows-x86_64   -Dlibnd4j.platform=windows-x86_64 deploy -DskipTests --also-make"
             if ( "${{ matrix.helper }}" -ne ""  -And "${{ matrix.extension }}" -ne "" ) {
                $mvn_ext=" -Dlibnd4j.classifier=windows-x86_64-${{ matrix.helper }}-${{matrix.extension}} -Dlibnd4j.extension=${{ matrix.extension }} -Djavacpp.platform.extension=-${{ matrix.helper }}-${{ matrix.extension }}  -Dlibnd4j.helper=${{ matrix.helper }}  -Dlibnd4j.platform=windows-x86_64    deploy -DskipTests"
             } elseif ( "${{ matrix.helper }}" -ne "" ) {
@@ -158,7 +231,7 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-          cache: 'maven'
+        
 
 
       - uses: msys2/setup-msys2@v2
@@ -174,16 +247,11 @@ jobs:
         run: |
             mkdir "%GITHUB_WORKSPACE%/openblas_home"
             cd "%GITHUB_WORKSPACE%/openblas_home"
-            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/openblas-0.3.19-1.5.7-windows-x86_64.jar
-            unzip openblas-0.3.19-1.5.7-windows-x86_64.jar
+            wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.28-1.5.11/openblas-0.3.28-1.5.11-windows-x86_64.jar
+            unzip openblas-0.3.28-1.5.11-windows-x86_64.jar
             cd ..
             echo "OPENBLAS_PATH=${GITHUB_WORKSPACE}/openblas_home/org/bytedeco/openblas/windows-x86_64/" | Out-File -FilePath  "$env:GITHUB_ENV" -Encoding utf8 -Append
         if: ${{ matrix.libnd4j_file_download != '' }}
-      - name: Import GPG Key
-        uses: crazy-max/ghaction-import-gpg@v1
-        env:
-            GPG_PRIVATE_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-            PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
       - name: Run windows cpu build
         shell: cmd
         run: |
@@ -205,11 +273,9 @@ jobs:
               ) else (
                   if "%PERFORM_RELEASE%"==1 (
                         echo "Running release"
-                         bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                          bash "%GITHUB_WORKSPACE%/release-specified-component.sh"  "%RELEASE_VERSION%" "%SNAPSHOT_VERSION%" "%RELEASE_REPO_ID%" "%COMMAND%"
                    ) else (
                       echo "Running snapshots"
-                      bash "%GITHUB_WORKSPACE%/bootstrap-libnd4j-from-url.sh"
                       call "%GITHUB_WORKSPACE%\mvn-command.bat"
                    )
               )
@@ -230,6 +296,3 @@ jobs:
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
-
-
-

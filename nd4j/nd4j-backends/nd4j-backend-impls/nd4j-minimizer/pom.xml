@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>nd4j-backend-impls</artifactId>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -25,12 +25,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-cpu-backend-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.nd4j</groupId>
+            <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>nd4j-minimizer-preset</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -58,12 +58,12 @@
                         <version>${javacpp.version}</version>
                         <dependencies>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-minimizer-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-native-api</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -110,7 +110,6 @@
                                 <includePath>${libnd4jhome}/include/graph</includePath>
                                 <includePath>${libnd4jhome}/include/indexing</includePath>
                                 <includePath>${libnd4jhome}/include/memory</includePath>
-                                <includePath>${libnd4jhome}/include/performance</includePath>
                             </includePaths>
                             <linkPaths>
                                 <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
@@ -210,12 +209,12 @@
                         <version>${javacpp.version}</version>
                         <dependencies>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-minimizer-preset</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
                             <dependency>
-                                <groupId>org.nd4j</groupId>
+                                <groupId>org.eclipse.deeplearning4j</groupId>
                                 <artifactId>nd4j-native-api</artifactId>
                                 <version>${project.version}</version>
                             </dependency>
@@ -415,40 +414,6 @@
                 <artifactId>maven-antrun-plugin</artifactId>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>libnd4j-checks</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <requireProperty>
-                                    <property>libnd4jhome</property>
-                                    <message>You must set the LIBND4J_HOME environment variable!
-                                    </message>
-                                    <regex>.*/.*</regex>
-                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
-                                    </regexMessage>
-                                </requireProperty>
-                                <requireFilesExist>
-                                    <files>
-                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
-                                        <file>${libnd4jhome}/blasbuild/cpu/blas</file>
-                                    </files>
-                                    <message>!!! You have to compile libnd4j with cpu support
-                                        first!
-                                    </message>
-                                </requireFilesExist>
-                            </rules>
-                            <fail>true</fail>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -525,35 +490,6 @@
         </profile>
 
 
-        <profile>
-            <!-- This causes build failure on osx due to memory issues. For now, just skip this since we publish javadoc from other platforms fine.-->
-            <id>skip-javadoc-on-osx</id>
-            <activation>
-                <os>
-                    <family>mac</family>
-                </os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>android-arm-32-output</id>
             <activation>
@@ -715,7 +651,7 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>org.nd4j</groupId>
+                    <groupId>org.eclipse.deeplearning4j</groupId>
                     <artifactId>libnd4j</artifactId>
                     <version>${project.version}</version>
                     <type>zip</type>
@@ -724,21 +660,7 @@
             </dependencies>
             <build>
                 <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-enforcer-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>libnd4j-checks</id>
-                                <goals>
-                                    <goal>enforce</goal>
-                                </goals>
-                                <configuration>
-                                    <skip>true</skip>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
@@ -753,7 +675,7 @@
                                 <configuration>
                                     <artifactItems>
                                         <artifactItem>
-                                            <groupId>org.nd4j</groupId>
+                                            <groupId>org.eclipse.deeplearning4j</groupId>
                                             <artifactId>libnd4j</artifactId>
                                             <version>${project.version}</version>
                                             <type>zip</type>

@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.nd4j</groupId>
+        <groupId>org.eclipse.deeplearning4j</groupId>
         <artifactId>nd4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
@@ -119,7 +119,7 @@
                             <configuration>
                                 <artifactItems>
                                     <artifactItem>
-                                        <groupId>org.nd4j</groupId>
+                                        <groupId>org.eclipse.deeplearning4j</groupId>
                                         <artifactId>${project.artifactId}</artifactId>
                                         <version>${project.version}</version>
                                         <type>jar</type>

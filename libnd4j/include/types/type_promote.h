@@ -2,9 +2,29 @@
 // Created by agibsonccc on 11/22/24.
 //
 
+/* ******************************************************************************
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
+
+
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 #include <types/types.h>
+
 /*
  * Type Ranking System:
 type_rank template and its specializations assign an integer rank to each supported type.
@@ -18,9 +38,6 @@ promote function template converts a value to the promoted type.
 Macros like INSTANTIATE_PROMOTE and CALLBACK_INSTANTIATE_PROMOTE help in instantiating the promote function for different type combinations.
 PROMOTE_ARGS macro handles function arguments correctly.
  */
-
-// Type ranking system
-template<typename T> struct type_rank;
 
 // Type ranking system
 template<typename T> struct type_rank;
@@ -54,9 +71,15 @@ template<> struct type_rank<uint32_t>    : std::integral_constant<int, 3> {};
 #endif
 
 template<> struct type_rank<int64_t>     : std::integral_constant<int, 4> {};
-template<> struct type_rank<long long int>   : std::integral_constant<int, 4> {};
+#if !defined(__APPLE__) && !defined(_WIN32)
+template<> struct type_rank<long long int> : std::integral_constant<int, 4> {};
+#endif
 template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 
+// Add unsigned long for macOS which is causing the compile error
+#if defined(__APPLE__)
+template<> struct type_rank<unsigned long> : std::integral_constant<int, 4> {};
+#endif
 
 #if defined(HAS_FLOAT16)
 template<> struct type_rank<float16>     : std::integral_constant<int, 5> {};
@@ -78,11 +101,7 @@ template<> struct type_rank<double>      : std::integral_constant<int, 7> {};
 // promote_type trait
 template<typename T1, typename T2>
 struct promote_type {
-  using type = typename std::conditional<
-      (type_rank<T1>::value >= type_rank<T2>::value),
-      T1,
-      T2
-      >::type;
+  using type = typename std::conditional<(type_rank<T1>::value >= type_rank<T2>::value), T1, T2>::type;
 };
 
 // promote function template
@@ -94,10 +113,7 @@ typename promote_type<Type1, Type2>::type promote(ValueType value) {
 // promote_type3 trait for three types
 template<typename T1, typename T2, typename T3>
 struct promote_type3 {
-  using type = typename promote_type<
-      typename promote_type<T1, T2>::type,
-      T3
-      >::type;
+  using type = typename promote_type<typename promote_type<T1, T2>::type, T3>::type;
 };
 
 
@@ -135,11 +151,18 @@ template<> struct type_name<uint32_t>    { static const char* get() { return "ui
 
 #if defined(HAS_INT64)
 template<> struct type_name<int64_t>     { static const char* get() { return "int64_t"; } };
+#if !defined(__APPLE__) && !defined(_WIN32)
 template<> struct type_name<long long int> { static const char* get() { return "long long int"; } };
+#endif
 #endif
 
 #if defined(HAS_UINT64)
 template<> struct type_name<uint64_t>    { static const char* get() { return "uint64_t"; } };
+#endif
+
+// Add unsigned long for macOS which is causing the compile error
+#if defined(__APPLE__)
+template<> struct type_name<unsigned long> { static const char* get() { return "unsigned long"; } };
 #endif
 
 #if defined(HAS_FLOAT16)

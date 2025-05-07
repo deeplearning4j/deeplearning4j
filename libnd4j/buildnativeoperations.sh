@@ -7,8 +7,8 @@
 #  * terms of the Apache License, Version 2.0 which is available at
 #  * https://www.apache.org/licenses/LICENSE-2.0.
 #  *
-#  *  See the NOTICE file distributed with this work for additional
-#  *  information regarding copyright ownership.
+#  * See the NOTICE file distributed with this work for additional
+#  * information regarding copyright ownership.
 #  * Unless required by applicable law or agreed to in writing, software
 #  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 #  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -853,6 +853,41 @@ else
     eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" >> "$LOG_OUTPUT" 2>&1 && cd ../../..
 fi
 
+# Determine script location
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Find the libnd4j directory
+if [[ "$SCRIPT_DIR" == */libnd4j* ]]; then
+    # Already in or under libnd4j directory
+    LIBND4J_DIR=$(echo "$SCRIPT_DIR" | sed 's/\(.*libnd4j\).*/\1/')
+else
+    # Check if we're in the parent deeplearning4j directory
+    if [ -d "$SCRIPT_DIR/libnd4j" ]; then
+        LIBND4J_DIR="$SCRIPT_DIR/libnd4j"
+    else
+        # Try going up one directory to see if libnd4j is there
+        if [ -d "$SCRIPT_DIR/../libnd4j" ]; then
+            LIBND4J_DIR="$SCRIPT_DIR/../libnd4j"
+        else
+            echo "Error: Could not locate libnd4j directory"
+            exit 1
+        fi
+    fi
+fi
+
+# Save the original directory before potentially changing directories
+ORIGINAL_DIR=$(pwd)
+
+# cd to the script directory for the operations that need to be performed there
+cd "$SCRIPT_DIR"
+
+if [ "$GENERATE_FLATC" == "ON" ]; then
+    echo "Copying flatc generated for java"
+    # ensure proper flatc sources are in place
+    bash "$LIBND4J_DIR/copy-flatc-java.sh"
+fi
+
+# Return to the original directory where the script was launched from
+cd "$ORIGINAL_DIR"
 
 echo "Build process completed successfully."

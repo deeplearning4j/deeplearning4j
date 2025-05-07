@@ -1,17 +1,14 @@
 #ifndef LIBND4J_CONFIG_H
+#include <execution/Engine.h>
+
 #define LIBND4J_CONFIG_H
 
 #cmakedefine HAVE_ONEDNN
 
-#cmakedefine HAVE_VEDNN
 
-#cmakedefine HAVE_VEDA
 
 #cmakedefine SD_LIBRARY_NAME "@SD_LIBRARY_NAME@"
 
-#if defined(HAVE_VEDA)
-#define VEDA_VEDNN_LIBRARY "lib" SD_LIBRARY_NAME "_device.vso"
-#endif
 
 #cmakedefine HAVE_ARMCOMPUTE
 

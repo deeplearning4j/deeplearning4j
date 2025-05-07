@@ -114,7 +114,7 @@ static void xwPlusBiasMKLDNN(NDArray* x, NDArray* weights, NDArray* bias, NDArra
   dnnl::inner_product_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 

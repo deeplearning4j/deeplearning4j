@@ -76,7 +76,7 @@ void setBlockStrides(NDArray& array, dnnl::memory::desc& mklMd, const std::vecto
     if (permut.empty())
       for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(i);
     else {
-      if (array.rankOf() != permut.size())
+      if (static_cast<size_t>(array.rankOf()) != permut.size())
         THROW_EXCEPTION("mkldnnUtils::setBlockStrides: size of permut vector is not equal to array rank !");
       for (auto i = 0; i < array.rankOf(); ++i) mklMd.data.format_desc.blocking.strides[i] = array.strideAt(permut[i]);
     }
@@ -158,7 +158,7 @@ void poolingONEDNN(NDArray* input, NDArray* output, const sd::LongType kD, const
   dnnl::pooling_forward::primitive_desc op_prim_desc(op_desc, engine);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   dnnl::stream stream(engine);
 
@@ -256,7 +256,7 @@ void poolingBpONEDNN(NDArray* input, NDArray* gradO, NDArray* gradI, const sd::L
   dnnl::pooling_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
 
   // arguments (memory buffers) necessary for calculations
-  std::unordered_map<sd::LongType, dnnl::memory> args;
+  std::unordered_map<int, dnnl::memory> args;
 
   // gradO
   onednnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(),
@@ -346,28 +346,28 @@ dnnl::engine& getEngine(void* ptr) {
   return *eng;
 }
 
-void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, const sd::NDArray& in, const sd::NDArray& out) {
+void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, sd::NDArray* in, sd::NDArray* out) {
   // replicate OneDNN check that was added since v1.8
   // https://github.com/oneapi-src/oneDNN/blob/master/src/common/pooling.cpp#L108-L110
   // if (str < 1 || dil < 0 || pad_l < 0 || pad_r + str < 0) return invalid_arguments;
-  if (in.rankOf() > 4 && block.getIArguments()->size() > 12) {
+  if (in->rankOf() > 4 && block.getIArguments()->size() > 12) {
     // pooling 3D
-    int kD = INT_ARG(0);            // filter(kernel) depth
-    int kH = INT_ARG(1);            // filter(kernel) height
-    int kW = INT_ARG(2);            // filter(kernel) width
-    int sD = INT_ARG(3);            // strides depth
-    int sH = INT_ARG(4);            // strides height
-    int sW = INT_ARG(5);            // strides width
-    int pD = INT_ARG(6);            // paddings depth
-    int pH = INT_ARG(7);            // paddings height
-    int pW = INT_ARG(8);            // paddings width
-    int dD = INT_ARG(9);            // dilations depth
-    int dH = INT_ARG(10);           // dilations height
-    int dW = INT_ARG(11);           // dilations width
-    int paddingMode = INT_ARG(12);  // 1-SAME,  0-VALID
+    sd::LongType kD = INT_ARG(0);            // filter(kernel) depth
+    sd::LongType kH = INT_ARG(1);            // filter(kernel) height
+    sd::LongType kW = INT_ARG(2);            // filter(kernel) width
+    sd::LongType sD = INT_ARG(3);            // strides depth
+    sd::LongType sH = INT_ARG(4);            // strides height
+    sd::LongType sW = INT_ARG(5);            // strides width
+    sd::LongType pD = INT_ARG(6);            // paddings depth
+    sd::LongType pH = INT_ARG(7);            // paddings height
+    sd::LongType pW = INT_ARG(8);            // paddings width
+    sd::LongType dD = INT_ARG(9);            // dilations depth
+    sd::LongType dH = INT_ARG(10);           // dilations height
+    sd::LongType dW = INT_ARG(11);           // dilations width
+    sd::LongType paddingMode = INT_ARG(12);  // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13); // unnecessary for max case, required only for avg and pnorm cases
     int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;  // 1-NDHWC, 0-NCDHW
-    reqs.expectEq(makeInfoVariable(in.rankOf(), RANK_MSG_INPUT0), 5) &&
+    reqs.expectEq(makeInfoVariable(in->rankOf(), RANK_MSG_INPUT0), 5) &&
         // stride >=1
         reqs.expectGreaterEq(makeInfoVariable(sD, "strides#Depth"), 1) &&
         reqs.expectGreaterEq(makeInfoVariable(sH, "strides#Height"), 1) &&
@@ -377,10 +377,10 @@ void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, const sd:
         reqs.expectGreaterEq(makeInfoVariable(dH, "dilation#Height"), 0) &&
         reqs.expectGreaterEq(makeInfoVariable(dW, "dilation#Width"), 0);
     if (reqs) {
-      int bS, iC, iD, iH, iW, oC, oD, oH,
+      sd::LongType bS, iC, iD, iH, iW, oC, oD, oH,
           oW;  // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
-      int indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
-      ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, in, out, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
+      sd::LongType indIOioC, indIOioD, indWoC, indWiC, indWkD;  // corresponding indexes
+      ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *in, *out, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC,
                                                       indIOioD, indWiC, indWoC, indWkD);
 
       if (paddingMode)  // SAME
@@ -402,13 +402,13 @@ void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, const sd:
     const int kW = INT_ARG(1);
     const int sH = INT_ARG(2);
     const int sW = INT_ARG(3);
-    int pH = INT_ARG(4);
-    int pW = INT_ARG(5);
+    sd::LongType pH = INT_ARG(4);
+    sd::LongType pW = INT_ARG(5);
     const int dH = INT_ARG(6);
     const int dW = INT_ARG(7);
     const int paddingMode = INT_ARG(8);
     const int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;  // INT_ARG(10): 1-NHWC, 0-NCHW
-    reqs.expectEq(makeInfoVariable(in.rankOf(), RANK_MSG_INPUT0), 4) &&
+    reqs.expectEq(makeInfoVariable(in->rankOf(), RANK_MSG_INPUT0), 4) &&
         // stride >=1
         reqs.expectGreaterEq(makeInfoVariable(sH, "strides#Height"), 1) &&
         reqs.expectGreaterEq(makeInfoVariable(sW, "strides#Width"), 1) &&
@@ -416,8 +416,8 @@ void checkPoolingONEDNN(Requirements& reqs, sd::graph::Context& block, const sd:
         reqs.expectGreaterEq(makeInfoVariable(dH, "dilation#Height"), 0) &&
         reqs.expectGreaterEq(makeInfoVariable(dW, "dilation#Width"), 0);
     if (reqs) {
-      int bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
-      ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, in, out, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
+      sd::LongType bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;
+      ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *in, *out, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH,
                                                       indWiC, indWoC, indWkH, indOoH);
       if (paddingMode) {
         ops::ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);

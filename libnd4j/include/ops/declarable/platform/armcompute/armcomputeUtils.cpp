@@ -138,15 +138,13 @@ Arm_TensorInfo getArmTensorInfo(NDArray& arr, arm_compute::DataLayout layout) {
 
   size_t total_size = arr.lengthOf() * element_size;
   size_t offset = 0;
-  // size_t size_ind = rank - 1;
-  // total_size = shape[size_ind] * strides[size_ind];
   if (arr.hasPaddedBuffer()) {
     internal_printf("---has padded buffer %d\n", 0);
     total_size = arr.getDataBuffer()->getLenInBytes();
-    offset = arr.bufferOffset() * element_size;
+    offset = arr.offset() * element_size;
   }
   internal_printf(":: offset %d el size %d  arr.getDataBuffer()->getLenInBytes() %d lengthof %d \n",
-                  (int)arr.bufferOffset(), (int)element_size, (int)arr.getDataBuffer()->getLenInBytes(),
+                  (int)arr.offset(), (int)element_size, (int)arr.getDataBuffer()->getLenInBytes(),
                   (int)arr.lengthOf());
   Arm_TensorInfo info;
   info.init(shape, numChannels, dType, strides, offset, total_size);
@@ -176,10 +174,10 @@ Arm_Tensor getArmTensor(NDArray& arr, arm_compute::DataLayout layout) {
 void copyFromTensor(const Arm_Tensor& inTensor, sd::NDArray& output) {
   // only for C order
   if (output.ordering() != 'c') return;
-  const sd::LongType* shapeInfo = output.shapeInfo();
-  const sd::LongType* bases = &(shapeInfo[1]);
-  const sd::LongType rank = shapeInfo[0];
-  const sd::LongType* strides = output.stridesOf();
+  sd::LongType* shapeInfo = output.shapeInfo();
+  sd::LongType* bases = &(shapeInfo[1]);
+  sd::LongType rank = shapeInfo[0];
+  sd::LongType* strides = output.stridesOf();
   int width = bases[rank - 1];
   uint8_t* outputBuffer = (uint8_t*)output.buffer();
   size_t offset = 0;
@@ -204,13 +202,13 @@ void copyFromTensor(const Arm_Tensor& inTensor, sd::NDArray& output) {
 
 }
 
-void copyToTensor(const sd::NDArray& input, Arm_Tensor& outTensor) {
+void copyToTensor(sd::NDArray& input, Arm_Tensor& outTensor) {
   // only for C order
   if (input.ordering() != 'c') return;
-  const sd::LongType* shapeInfo = input.shapeInfo();
-  const sd::LongType* bases = &(shapeInfo[1]);
-  const sd::LongType rank = shapeInfo[0];
-  const sd::LongType* strides = input.stridesOf();
+  sd::LongType* shapeInfo = input.shapeInfo();
+  sd::LongType* bases = &(shapeInfo[1]);
+  sd::LongType rank = shapeInfo[0];
+  sd::LongType* strides = input.stridesOf();
   uint8_t* inputBuffer = (uint8_t*)input.buffer();
   int width = bases[rank - 1];
   size_t offset = 0;

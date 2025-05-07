@@ -24,7 +24,8 @@
 #include <array>
 #include <atomic>
 #include <memory>
-#include <shared_mutex>
+#include "./generic/StripedLocks.h"
+
 #include <vector>
 
 #include "array/TadCalculator.h"
@@ -182,19 +183,13 @@ class SD_LIB_EXPORT TadTrieNode {
 
 };
 
-#if __cplusplus >= 201703L
-#define TAD_MUTEX_TYPE std::shared_mutex
-#define TAD_LOCK_TYPE std::shared_lock
-#else
-#define TAD_MUTEX_TYPE std::mutex
-#define TAD_LOCK_TYPE std::lock_guard
-#endif
+
 
 class SD_LIB_EXPORT DirectTadTrie {
  private:
   static const size_t NUM_STRIPES = 128; // Increased from 32 to reduce collision chance
   std::array<std::unique_ptr<TadTrieNode>, NUM_STRIPES> _roots;
-  mutable std::array<TAD_MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
+  mutable std::array<MUTEX_TYPE, NUM_STRIPES> _mutexes = {};
   std::array<std::atomic<int>, NUM_STRIPES> _stripeCounts = {};
 
  public:
@@ -204,7 +199,7 @@ class SD_LIB_EXPORT DirectTadTrie {
     for (size_t i = 0; i < NUM_STRIPES; i++) {
       _roots[i] = std::make_unique<TadTrieNode>(0, 0, false);
       // Make sure mutexes are properly initialized
-      new (&_mutexes[i]) TAD_MUTEX_TYPE();  // Explicit initialization
+      new (&_mutexes[i]) MUTEX_TYPE();  // Explicit initialization
     }
 #endif
   }

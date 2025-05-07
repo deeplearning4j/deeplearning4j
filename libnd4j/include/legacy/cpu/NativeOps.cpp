@@ -470,31 +470,7 @@ void tear(Pointer *extraPointers, OpaqueDataBuffer *dbX, LongType const *hXShape
   }
 }
 
-void average(Pointer *extras,
-             OpaqueNDArrayArr x,
-             OpaqueNDArray z,int n, LongType length, bool propagate) {
-  try {
-    auto xType = x[0]->dataType();
 
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::averageGeneric(x, z, n, length, propagate),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
-
-void accumulate(Pointer *extras, OpaqueNDArrayArr x,  OpaqueNDArray z, int n, LongType length) {
-  try {
-    auto xType = x[0]->dataType();
-
-    BUILD_SINGLE_SELECTOR(xType, SpecialMethods, ::accumulateGeneric(x, z, n, length),
-                          SD_COMMON_TYPES);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
-}
 
 void enableP2P(bool enable) {
   // no-op
@@ -860,7 +836,7 @@ void sortByKey(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,bool des
     auto yType = y->dataType();
 
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortByKey(x, y, descending),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -873,7 +849,7 @@ void sortByValue(Pointer *extraPointers, OpaqueNDArray x,OpaqueNDArray y, bool d
     auto yType = y->dataType();
 
     BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortByValue(x, y, descending),
-                          SD_COMMON_TYPES, SD_COMMON_TYPES);
+                          SD_NUMERIC_TYPES, SD_NUMERIC_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -886,8 +862,8 @@ void sortTadByKey(Pointer *extraPointers, OpaqueNDArray x, OpaqueNDArray y,
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
-    BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_COMMON_TYPES,
-                          SD_COMMON_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+                          SD_NUMERIC_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
@@ -899,8 +875,8 @@ void sortTadByValue(Pointer *extraPointers, OpaqueNDArray x,
     auto xType = x->dataType();
     auto yType = y->dataType();
     auto dimensionLength = dimension->lengthOf();
-    BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_COMMON_TYPES,
-                          SD_COMMON_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, DoubleMethods, ::sortTadByValue(x, y, dimension, descending), SD_NUMERIC_TYPES,
+                          SD_NUMERIC_TYPES);
   } catch (std::exception &e) {
     LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
     LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
