@@ -4,9 +4,9 @@
 
 Proposed
 
-Proposed by: AI Assistant (based on user input) (May 8, 2025)
+Proposed by: Adam Gibson  (May 8, 2025)
 
-Discussed with: N/A
+Discussed with: Paul Dubs
 
 ## Context
 
