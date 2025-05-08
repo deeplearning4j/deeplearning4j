@@ -35,7 +35,7 @@ on:
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-14-large
+        default: macos-14
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
