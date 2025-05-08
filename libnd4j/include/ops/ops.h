@@ -576,17 +576,10 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char>> {
 
   SD_OP_DEF static std::basic_string<char>
   op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
-    try {
       // C++11/14/17 way using codecvt (may be deprecated in C++17 but often still works)
       std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
       return converter.to_bytes(d1);
-    } catch (const std::range_error& e) {
-      // Handle conversion errors (e.g., invalid surrogate pairs)
-      // Log the error and return an empty string or throw a custom exception
-      // sd::PrintMessage("Warning: UTF-16 to UTF-8 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char>(); // Return empty string on error
-    }
-    // Add alternative implementations using ICU or platform APIs if <codecvt> is problematic
+
   }
 };
 
@@ -599,15 +592,9 @@ class Assign<std::basic_string<char>, std::basic_string<char16_t>> {
 
   SD_OP_DEF static std::basic_string<char16_t>
   op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
-    try {
       std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
       return converter.from_bytes(d1);
-    } catch (const std::range_error& e) {
-      // Handle conversion errors (e.g., invalid UTF-8 sequences)
-      // sd::PrintMessage("Warning: UTF-8 to UTF-16 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char16_t>(); // Return empty string on error
-    }
-    // Add alternative implementations using ICU or platform APIs if <codecvt> is problematic
+
   }
 };
 
