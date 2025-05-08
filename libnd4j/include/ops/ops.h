@@ -742,7 +742,6 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
 
   SD_OP_DEF static std::basic_string<char32_t>
   op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
-    try {
       // Use std::codecvt_utf16<char32_t> for converting between UTF-32 (internal) and UTF-16 (external bytes)
       std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> converter;
 
@@ -752,11 +751,6 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
           reinterpret_cast<const char*>(d1.data()), // Start of byte sequence
           reinterpret_cast<const char*>(d1.data() + d1.size()) // End of byte sequence (one past last char16_t)
       );
-    } catch (const std::range_error& e) {
-      // Handle conversion errors (e.g., invalid surrogate pairs)
-      // sd::PrintMessage("Warning: UTF-16 to UTF-32 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char32_t>(); // Return empty string on error
-    }
   }
 };
 
