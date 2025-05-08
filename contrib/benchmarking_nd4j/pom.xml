@@ -32,19 +32,7 @@
         <maven>3.0</maven>
     </prerequisites>
 
-    <repositories>
-        <repository>
-            <id>snapshots-repo</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
-            </snapshots>
-        </repository>
-    </repositories>
+
 
 
     <dependencies>
