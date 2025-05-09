@@ -19,6 +19,10 @@
 //
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
+
+#pragma once
+#ifndef UNICODE
+#define UNICODE
 #include <system/common.h>
 
 
@@ -642,3 +646,5 @@ SD_HOST_DEVICE bool utf32to8(const void* input, void* output, const LongType nIn
 
 }  // namespace unicode
 }  // namespace sd
+
+#endif
