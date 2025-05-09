@@ -16,6 +16,7 @@ release.properties
 *.prefs
 *.settings/*
 *.log
+libnd4j/preprocessed
 .project
 .classpath
 metastore_db

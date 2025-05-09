@@ -132,6 +132,9 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
+          server-id: 'central'
+          server-username: ${{ secrets.ORG_OSSRH_USERNAME }}
+          server-password: ${{ secrets.ORG_OSSRH_PASSWORD }}
         
         
 
