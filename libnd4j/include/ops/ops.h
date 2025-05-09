@@ -32,6 +32,8 @@
 #include <codecvt>
 #include <vector>
 
+#include "helpers/unicode.h"
+
 #define no_op_exec_special_any                                                                           \
   static const bool requiresSpecial = false;                                                                       \
   static void execSpecial(const X *dx, const sd::LongType *xShapeBuffer, Z *result,                                \
@@ -570,20 +572,23 @@ class Assign {
 
 // --- Specialization: std::basic_string<char16_t> -> std::basic_string<char> (UTF-16 to UTF-8) ---
 // --- Specialization: std::basic_string<char16_t> (UTF-16) -> std::basic_string<char> (UTF-8) ---
+// --- Specialization: std::basic_string<char16_t> (UTF-16) -> std::basic_string<char> (UTF-8) ---
 template <>
 class Assign<std::basic_string<char16_t>, std::basic_string<char>> {
  public:
+  // Manually expanded "no_op_exec_special_any" content
   static const bool requiresSpecial = false;
   static void execSpecial(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
                           std::basic_string<char> *result, const sd::LongType *resultShapeBuffer,
                           std::basic_string<char16_t> *extraParams, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffsets) {}
 #ifdef __CUDACC__
+  // Manually expanded "no_op_exec_special_any_cuda" content
   static SD_DEVICE void execSpecialCuda(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
                                         std::basic_string<char> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char16_t> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char> *reductionPointer, // Z is std::basic_string<char>
+                                        std::basic_string<char> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -620,7 +625,7 @@ class Assign<std::basic_string<char>, std::basic_string<char16_t>> {
                                         std::basic_string<char16_t> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char16_t> *reductionPointer, // Z is std::basic_string<char16_t>
+                                        std::basic_string<char16_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -657,7 +662,7 @@ class Assign<std::basic_string<char32_t>, std::basic_string<char>> {
                                         std::basic_string<char> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char32_t> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char> *reductionPointer, // Z is std::basic_string<char>
+                                        std::basic_string<char> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -694,7 +699,7 @@ class Assign<std::basic_string<char>, std::basic_string<char32_t>> {
                                         std::basic_string<char32_t> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char32_t> *reductionPointer, // Z is std::basic_string<char32_t>
+                                        std::basic_string<char32_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -731,7 +736,7 @@ class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {
                                         std::basic_string<char16_t> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char32_t> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char16_t> *reductionPointer, // Z is std::basic_string<char16_t>
+                                        std::basic_string<char16_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -768,7 +773,7 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
                                         std::basic_string<char32_t> *result, const sd::LongType *resultShapeBuffer,
                                         std::basic_string<char16_t> *extraParams,
                                         sd::LongType *allocationPointer,
-                                        std::basic_string<char32_t> *reductionPointer, // Z is std::basic_string<char32_t>
+                                        std::basic_string<char32_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
@@ -790,7 +795,6 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
     return std::basic_string<char32_t>();
   }
 };
-
 
 // --- Identity Specializations ---
 template <>
@@ -858,6 +862,8 @@ class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
     return d1;
   }
 };
+
+
 
 
 template <typename X, typename Z>
