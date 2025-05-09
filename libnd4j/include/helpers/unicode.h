@@ -46,32 +46,32 @@ constexpr uint32_t CODEPOINTMAX = 0x0010ffffu;
 
 // SD_INLINE helpers will become SD_HOST_DEVICE inline
 template <typename T>
-SD_INLINE uint8_t castToU8(const T cp) {
+SD_HOST_DEVICE SD_INLINE uint8_t castToU8(const T cp) {
   return static_cast<uint8_t>(0xff & cp);
 }
 
 template <typename T>
-SD_INLINE uint16_t castToU16(const T cp) {
+SD_HOST_DEVICE SD_INLINE uint16_t castToU16(const T cp) {
   return static_cast<uint16_t>(0xffff & cp);
 }
 
 template <typename T>
-SD_INLINE uint32_t castToU32(const T cp) {
+SD_HOST_DEVICE SD_INLINE uint32_t castToU32(const T cp) {
   return static_cast<uint32_t>(0xffffffff & cp);
 }
 
 template <typename T>
-SD_INLINE bool isTrail(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isTrail(const T cp) {
   return ((castToU8(cp) >> 6) == 0x2);
 }
 
 template <typename T>
-SD_INLINE bool isHighSurrogate(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isHighSurrogate(const T cp) {
   return (cp & 0xfffffc00) == 0xd800;
 }
 
 template <typename T>
-SD_HOST_DEVICE /* Added SD_HOST_DEVICE, was missing specifier */ bool isLowSurrogate(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isLowSurrogate(const T cp) {
   return (cp & 0xfffffc00) == 0xdc00;
 }
 
@@ -81,12 +81,12 @@ SD_INLINE bool isLeadSurrogate(const T cp) {
 }
 
 template <typename T>
-SD_INLINE bool isTrailSurrogate(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isTrailSurrogate(const T cp) {
   return (cp >= TRAILBYTEMIN && cp <= TRAILBYTEMAX);
 }
 
 template <typename T>
-SD_INLINE bool isSurrogateU8(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isSurrogateU8(const T cp) {
   // This check might be problematic for char if T is char and cp is negative due to sign extension.
   // However, it's usually called after casting to uint8_t or on unsigned types.
   // The original used castToU8(*it) then isSurrogateU8.
@@ -100,19 +100,19 @@ SD_INLINE bool isSurrogateU16(const T cp) {
 }
 
 template <typename T>
-SD_INLINE bool isSymbolU8Valid(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isSymbolU8Valid(const T cp) {
   // Assumes cp is a Unicode codepoint (uint32_t) to check against CODEPOINTMAX and surrogate range
   return (cp <= CODEPOINTMAX && !isSurrogateU8(cp));
 }
 
 template <typename T>
-SD_INLINE bool isSymbolValid(const T cp) {
+SD_HOST_DEVICE SD_INLINE bool isSymbolValid(const T cp) {
   return (cp <= CODEPOINTMAX);
 }
 
 
 template <typename T>
-SD_INLINE uint32_t surrogateU32(const T& high, const T& low) {
+SD_HOST_DEVICE SD_INLINE uint32_t surrogateU32(const T& high, const T& low) {
   // Ensure high and low are treated as unsigned for calculation if they are char16_t
   return (static_cast<uint32_t>(high) << 10) + static_cast<uint32_t>(low) - 0x35fdc00;
   // Original was: return (high << 10) + low - 0x35fdc00;
@@ -140,7 +140,7 @@ SD_INLINE uint32_t surrogateU32(const T& high, const T& low) {
 
 
 template <typename T>
-SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength(const T* it) {
+SD_HOST_DEVICE SD_INLINE LongType symbolLength(const T* it) {
   uint8_t lead = castToU8(*it);
   if (lead < 0x80)
     return 1;
@@ -155,7 +155,7 @@ SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength(const T* it) {
 }
 
 template <typename T>
-SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength32(const T* it) {
+SD_HOST_DEVICE SD_INLINE LongType symbolLength32(const T* it) {
   auto lead = castToU32(*it); // Assumes T is char32_t or uint32_t
   if (lead < ONEBYTEBOUND) // < 0x80
     return 1;
@@ -170,7 +170,7 @@ SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength32(const T* it) {
 }
 
 template <typename T>
-SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength16(const T* it) {
+SD_HOST_DEVICE SD_INLINE LongType symbolLength16(const T* it) {
   // This function determines the UTF-8 length of a character represented by UTF-16 sequence pointed to by `it`.
   uint16_t lead = castToU16(*it);
   if (!isLeadSurrogate(lead)) { // Non-surrogate or BMP char
@@ -188,7 +188,7 @@ SD_HOST_DEVICE /* Added SD_HOST_DEVICE */ LongType symbolLength16(const T* it) {
   }
 }
 
-SD_HOST_DEVICE LongType offsetUtf8StringInUtf32(const void* start, const void* end) {
+SD_HOST_DEVICE  SD_INLINE LongType offsetUtf8StringInUtf32(const void* start, const void* end) {
   LongType count = 0;
   for (auto it = static_cast<const int8_t*>(start); it < end; /*manual increment*/) {
     auto length = symbolLength(it);
@@ -199,7 +199,7 @@ SD_HOST_DEVICE LongType offsetUtf8StringInUtf32(const void* start, const void* e
   return static_cast<LongType>(count * sizeof(char32_t));
 }
 
-SD_HOST_DEVICE LongType offsetUtf16StringInUtf32(const void* start, const void* end) {
+SD_HOST_DEVICE  SD_INLINE LongType offsetUtf16StringInUtf32(const void* start, const void* end) {
   LongType count = 0;
   for (auto it = static_cast<const uint16_t*>(start); it < end;) {
     uint16_t current_char = *it;
@@ -217,7 +217,7 @@ SD_HOST_DEVICE LongType offsetUtf16StringInUtf32(const void* start, const void* 
   return static_cast<LongType>(count * sizeof(char32_t));
 }
 
-SD_HOST_DEVICE LongType offsetUtf8StringInUtf16(const void* start, const void* end) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf8StringInUtf16(const void* start, const void* end) {
   LongType utf16_code_units = 0;
   for (auto it = static_cast<const int8_t*>(start); it < end; /*manual increment*/) {
     auto u8_len = symbolLength(it);
@@ -245,7 +245,7 @@ SD_HOST_DEVICE LongType offsetUtf8StringInUtf16(const void* start, const void* e
   return static_cast<LongType>(utf16_code_units * sizeof(char16_t));
 }
 
-SD_HOST_DEVICE LongType offsetUtf16StringInUtf8(const void* start, const void* end) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf16StringInUtf8(const void* start, const void* end) {
   LongType utf8_bytes = 0;
   for (auto it = static_cast<const uint16_t*>(start); it < end;) {
     uint16_t current_char = *it;
@@ -268,7 +268,7 @@ SD_HOST_DEVICE LongType offsetUtf16StringInUtf8(const void* start, const void* e
 }
 
 
-SD_HOST_DEVICE LongType offsetUtf32StringInUtf16(const void* start, const void* end) {
+SD_HOST_DEVICE  SD_INLINE LongType offsetUtf32StringInUtf16(const void* start, const void* end) {
   LongType utf16_code_units = 0;
   for (auto it = static_cast<const uint32_t*>(start); it < end; it++) {
     uint32_t cp = *it;
@@ -283,7 +283,7 @@ SD_HOST_DEVICE LongType offsetUtf32StringInUtf16(const void* start, const void* 
   return static_cast<LongType>(utf16_code_units * sizeof(char16_t));
 }
 
-SD_HOST_DEVICE LongType offsetUtf32StringInUtf8(const void* start, const void* end) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf32StringInUtf8(const void* start, const void* end) {
   LongType count = 0;
   for (auto it = static_cast<const uint32_t*>(start); it < end; it++) {
     count += symbolLength32(it); // symbolLength32 returns UTF-8 bytes for a UTF-32 char
@@ -291,7 +291,7 @@ SD_HOST_DEVICE LongType offsetUtf32StringInUtf8(const void* start, const void* e
   return count;
 }
 
-SD_HOST_DEVICE bool isStringValidU8(const void* start, const void* stop) {
+SD_HOST_DEVICE  SD_INLINE bool isStringValidU8(const void* start, const void* stop) {
   // The original implementation had a bug for `isSymbolU8Valid(castToU8(*it))`
   // `isSymbolU8Valid` expects a full codepoint, not just one byte of a multi-byte sequence.
   // A proper UTF-8 validation is more complex. This function as written only checks if individual bytes
@@ -344,7 +344,7 @@ SD_HOST_DEVICE bool isStringValidU8(const void* start, const void* stop) {
   return true;
 }
 
-SD_HOST_DEVICE bool isStringValidU16(const void* start, const void* stop) {
+SD_HOST_DEVICE SD_INLINE bool isStringValidU16(const void* start, const void* stop) {
   auto current = static_cast<const uint16_t*>(start);
   auto end_ptr = static_cast<const uint16_t*>(stop);
   while (current < end_ptr) {
@@ -374,7 +374,7 @@ SD_HOST_DEVICE bool isStringValidU16(const void* start, const void* stop) {
   return true;
 }
 
-SD_HOST_DEVICE bool isStringValidU32(const void* start, const void* stop) {
+SD_HOST_DEVICE SD_INLINE bool isStringValidU32(const void* start, const void* stop) {
   for (auto it = static_cast<const uint32_t*>(start); it < stop; it++) { // Changed != to <
     if (!isSymbolValid(castToU32(*it))) { // castToU32 might be redundant if *it is already uint32_t
       return false;
@@ -385,7 +385,7 @@ SD_HOST_DEVICE bool isStringValidU32(const void* start, const void* stop) {
   return true;
 }
 
-SD_HOST_DEVICE void* utf16to8Ptr(const void* start, const void* end, void* res) {
+SD_HOST_DEVICE SD_INLINE void* utf16to8Ptr(const void* start, const void* end, void* res) {
   auto result = static_cast<uint8_t*>(res); // Changed to uint8_t* for clarity with UTF-8 bytes
   for (auto it = static_cast<const uint16_t*>(start); it < end;) { // Changed != to <
     uint32_t cp = castToU16(*it++);
@@ -434,7 +434,7 @@ SD_HOST_DEVICE void* utf16to8Ptr(const void* start, const void* end, void* res) 
   return result;
 }
 
-SD_HOST_DEVICE void* utf8to16Ptr(const void* start, const void* end, void* res) {
+SD_HOST_DEVICE  SD_INLINE void* utf8to16Ptr(const void* start, const void* end, void* res) {
   auto result = static_cast<uint16_t*>(res);
   for (auto it = static_cast<const int8_t*>(start); it < end;) { // Changed != to <
     auto nLength = symbolLength(it);
@@ -476,7 +476,7 @@ SD_HOST_DEVICE void* utf8to16Ptr(const void* start, const void* end, void* res) 
   return result;
 }
 
-SD_HOST_DEVICE void* utf32to8Ptr(const void* start, const void* end, void* result_arg) { // Renamed result to result_arg
+SD_HOST_DEVICE SD_INLINE void* utf32to8Ptr(const void* start, const void* end, void* result_arg) { // Renamed result to result_arg
   auto res = static_cast<uint8_t*>(result_arg);
   for (auto it = static_cast<const uint32_t*>(start); it < end; it++) { // Changed != to <
     uint32_t cp = *it;
@@ -501,7 +501,7 @@ SD_HOST_DEVICE void* utf32to8Ptr(const void* start, const void* end, void* resul
   return res; // Return the updated pointer
 }
 
-SD_HOST_DEVICE void* utf8to32Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
+SD_HOST_DEVICE SD_INLINE void* utf8to32Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
   auto result = static_cast<uint32_t*>(res_arg);
   for (auto it = static_cast<const int8_t*>(start); it < end;) { // Changed != to <
     auto nLength = symbolLength(it);
@@ -528,7 +528,7 @@ SD_HOST_DEVICE void* utf8to32Ptr(const void* start, const void* end, void* res_a
   return result;
 }
 
-SD_HOST_DEVICE void* utf16to32Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
+SD_HOST_DEVICE  SD_INLINE void* utf16to32Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
   auto result = static_cast<uint32_t*>(res_arg);
   for (auto it = static_cast<const uint16_t*>(start); it < end; /*manual increment in loop*/) {
     uint16_t cpHigh = *it++;
@@ -559,7 +559,7 @@ SD_HOST_DEVICE void* utf16to32Ptr(const void* start, const void* end, void* res_
 }
 
 
-SD_HOST_DEVICE void* utf32to16Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
+SD_HOST_DEVICE SD_INLINE void* utf32to16Ptr(const void* start, const void* end, void* res_arg) { // Renamed res
   auto result = static_cast<uint16_t*>(res_arg);
   for (auto it = static_cast<const uint32_t*>(start); it < end; it++) { // Changed != to <
     uint32_t cp = *it; // Renamed cpHigh to cp
@@ -577,27 +577,27 @@ SD_HOST_DEVICE void* utf32to16Ptr(const void* start, const void* end, void* res_
 }
 
 // Overloads taking nInputSize
-SD_HOST_DEVICE LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf8StringInUtf32(const void* input, uint32_t nInputSize) {
   return offsetUtf8StringInUtf32(input, static_cast<const int8_t*>(input) + nInputSize);
 }
 
-SD_HOST_DEVICE LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf16StringInUtf32(const void* input, uint32_t nInputSize) {
   return offsetUtf16StringInUtf32(input, static_cast<const uint16_t*>(input) + nInputSize);
 }
 
-SD_HOST_DEVICE LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf8StringInUtf16(const void* input, uint32_t nInputSize) {
   return offsetUtf8StringInUtf16(input, static_cast<const int8_t*>(input) + nInputSize);
 }
 
-SD_HOST_DEVICE LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf16StringInUtf8(const void* input, uint32_t nInputSize) {
   return offsetUtf16StringInUtf8(input, static_cast<const uint16_t*>(input) + nInputSize);
 }
 
-SD_HOST_DEVICE LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize) {
+SD_HOST_DEVICE  SD_INLINE LongType offsetUtf32StringInUtf8(const void* input, uint32_t nInputSize) {
   return offsetUtf32StringInUtf8(input, static_cast<const uint32_t*>(input) + nInputSize);
 }
 
-SD_HOST_DEVICE LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE LongType offsetUtf32StringInUtf16(const void* input, const uint32_t nInputSize) {
   return offsetUtf32StringInUtf16(input, static_cast<const uint32_t*>(input) + nInputSize);
 }
 
@@ -611,7 +611,7 @@ SD_HOST_DEVICE LongType offsetUtf32StringInUtf16(const void* input, const uint32
 // However, the original `...Ptr` functions themselves don't signal errors well (e.g. buffer overflow).
 // I'll assume the bool wrappers are mostly for syntactic sugar and the caller checks output size.
 
-SD_HOST_DEVICE bool utf8to16(const void* input, void* output, uint32_t nInputSize) {
+SD_HOST_DEVICE  SD_INLINE bool utf8to16(const void* input, void* output, uint32_t nInputSize) {
   // The ...Ptr functions return the advanced output pointer.
   // Casting to bool might just check if the pointer is non-null.
   // A more robust check isn't possible without knowing the output buffer size here.
@@ -619,27 +619,27 @@ SD_HOST_DEVICE bool utf8to16(const void* input, void* output, uint32_t nInputSiz
   return true; // Assuming success if it runs; Ptr functions should handle errors internally or by convention.
 }
 
-SD_HOST_DEVICE bool utf8to32(const void* input, void* output, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE bool utf8to32(const void* input, void* output, uint32_t nInputSize) {
   utf8to32Ptr(input, static_cast<const int8_t*>(input) + nInputSize, output);
   return true;
 }
 
-SD_HOST_DEVICE bool utf16to32(const void* input, void* output, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE bool utf16to32(const void* input, void* output, uint32_t nInputSize) {
   utf16to32Ptr(input, static_cast<const uint16_t*>(input) + nInputSize, output);
   return true;
 }
 
-SD_HOST_DEVICE bool utf16to8(const void* input, void* output, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE bool utf16to8(const void* input, void* output, uint32_t nInputSize) {
   utf16to8Ptr(input, static_cast<const uint16_t*>(input) + nInputSize, output);
   return true;
 }
 
-SD_HOST_DEVICE bool utf32to16(const void* input, void* output, uint32_t nInputSize) {
+SD_HOST_DEVICE SD_INLINE bool utf32to16(const void* input, void* output, uint32_t nInputSize) {
   utf32to16Ptr(input, static_cast<const uint32_t*>(input) + nInputSize, output);
   return true;
 }
 
-SD_HOST_DEVICE bool utf32to8(const void* input, void* output, const LongType nInputSize) { // nInputSize is LongType here
+SD_HOST_DEVICE SD_INLINE bool utf32to8(const void* input, void* output, const LongType nInputSize) { // nInputSize is LongType here
   utf32to8Ptr(input, static_cast<const uint32_t*>(input) + nInputSize, output);
   return true;
 }
