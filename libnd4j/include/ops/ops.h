@@ -567,177 +567,208 @@ class Assign {
   }
 };
 
-// --- Specialization: std::basic_string<char16_t> -> std::basic_string<char> (UTF-16 to UTF-8) ---
 template <>
 class Assign<std::basic_string<char16_t>, std::basic_string<char>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
+  
+  SD_HOST_DEVICE static std::basic_string<char> // SD_OP_DEF is SD_HOST_DEVICE static
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> * /*params*/) {
+    char temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES];
+    const char16_t* input_data = d1.data();
+    const uint32_t input_length_char16_units = static_cast<uint32_t>(d1.length());
 
-  SD_OP_DEF static std::basic_string<char>
-  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
-      // C++11/14/17 way using codecvt (may be deprecated in C++17 but often still works)
-      std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-      return converter.to_bytes(d1);
+    sd::LongType required_bytes = sd::unicode::offsetUtf16StringInUtf8(input_data, input_length_char16_units);
 
+    if (required_bytes > 0 && static_cast<size_t>(required_bytes) <= SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES) {
+      void* end_ptr = sd::unicode::utf16to8Ptr(input_data, input_data + input_length_char16_units, temp_output_buffer);
+      size_t bytes_written = static_cast<char*>(end_ptr) - temp_output_buffer;
+      if (bytes_written == static_cast<size_t>(required_bytes)) {
+        return std::basic_string<char>(temp_output_buffer, bytes_written);
+      }
+    }
+    return std::basic_string<char>();
   }
 };
 
-// --- Specialization: std::basic_string<char> -> std::basic_string<char16_t> (UTF-8 to UTF-16) ---
+// --- Specialization: std::basic_string<char> (UTF-8) -> std::basic_string<char16_t> (UTF-16) ---
 template <>
 class Assign<std::basic_string<char>, std::basic_string<char16_t>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
 
-  SD_OP_DEF static std::basic_string<char16_t>
-  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
-      std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> converter;
-      return converter.from_bytes(d1);
+  SD_HOST_DEVICE static std::basic_string<char16_t>
+  op(const std::basic_string<char>& d1, std::basic_string<char> * /*params*/) {
+    char16_t temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES / sizeof(char16_t) + 1];
+    const char* input_data = d1.data();
+    const uint32_t input_length_bytes = static_cast<uint32_t>(d1.length());
 
+    sd::LongType required_bytes_for_utf16 = sd::unicode::offsetUtf8StringInUtf16(input_data, input_length_bytes);
+    
+    if (required_bytes_for_utf16 > 0 && static_cast<size_t>(required_bytes_for_utf16) < sizeof(temp_output_buffer)) {
+      void* end_ptr = sd::unicode::utf8to16Ptr(input_data, input_data + input_length_bytes, temp_output_buffer);
+      size_t char16_units_written = static_cast<char16_t*>(end_ptr) - temp_output_buffer;
+      if (char16_units_written * sizeof(char16_t) == static_cast<size_t>(required_bytes_for_utf16)) {
+        return std::basic_string<char16_t>(temp_output_buffer, char16_units_written);
+      }
+    }
+    return std::basic_string<char16_t>();
   }
 };
 
-// --- Optional: Identity Specializations (can improve clarity/performance slightly) ---
-
-// Specialization for char -> char (handled by generic is_same_v now, but explicit is ok)
-template <>
-class Assign<std::basic_string<char>, std::basic_string<char>> {
- public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
-
-  SD_OP_DEF static std::basic_string<char>
-  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
-    return d1; // Direct copy
-  }
-};
-
-// Specialization for char16_t -> char16_t (handled by generic is_same_v now, but explicit is ok)
-template <>
-class Assign<std::basic_string<char16_t>, std::basic_string<char16_t>> {
- public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
-
-  SD_OP_DEF static std::basic_string<char16_t>
-  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
-    return d1; // Direct copy
-  }
-};
-
-
-// --- Specialization: std::basic_string<char32_t> -> std::basic_string<char> (UTF-32 to UTF-8) ---
+// --- Specialization: std::basic_string<char32_t> (UTF-32) -> std::basic_string<char> (UTF-8) ---
 template <>
 class Assign<std::basic_string<char32_t>, std::basic_string<char>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
 
-  SD_OP_DEF static std::basic_string<char>
-  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
-    try {
-      // Use std::codecvt_utf8<char32_t> for converting between UTF-32 and UTF-8
-      std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-      return converter.to_bytes(d1);
-    } catch (const std::range_error& e) {
-      // Handle conversion errors
-      // sd::PrintMessage("Warning: UTF-32 to UTF-8 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char>(); // Return empty string on error
+  SD_HOST_DEVICE static std::basic_string<char>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> * /*params*/) {
+    char temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES];
+    const char32_t* input_data = d1.data();
+    const uint32_t input_length_char32_units = static_cast<uint32_t>(d1.length());
+
+    sd::LongType required_bytes = sd::unicode::offsetUtf32StringInUtf8(input_data, input_length_char32_units);
+
+    if (required_bytes > 0 && static_cast<size_t>(required_bytes) <= SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES) {
+      void* end_ptr = sd::unicode::utf32to8Ptr(input_data, input_data + input_length_char32_units, temp_output_buffer);
+      size_t bytes_written = static_cast<char*>(end_ptr) - temp_output_buffer;
+      if (bytes_written == static_cast<size_t>(required_bytes)) {
+        return std::basic_string<char>(temp_output_buffer, bytes_written);
+      }
     }
+    return std::basic_string<char>();
   }
 };
 
-// --- Specialization: std::basic_string<char> -> std::basic_string<char32_t> (UTF-8 to UTF-32) ---
+// --- Specialization: std::basic_string<char> (UTF-8) -> std::basic_string<char32_t> (UTF-32) ---
 template <>
 class Assign<std::basic_string<char>, std::basic_string<char32_t>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
 
-  SD_OP_DEF static std::basic_string<char32_t>
-  op(const std::basic_string<char>& d1, std::basic_string<char> *params) {
-    try {
-      // Use std::codecvt_utf8<char32_t> for converting between UTF-32 and UTF-8
-      std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
-      return converter.from_bytes(d1);
-    } catch (const std::range_error& e) {
-      // Handle conversion errors
-      // sd::PrintMessage("Warning: UTF-8 to UTF-32 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char32_t>(); // Return empty string on error
+  SD_HOST_DEVICE static std::basic_string<char32_t>
+  op(const std::basic_string<char>& d1, std::basic_string<char> * /*params*/) {
+    char32_t temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES / sizeof(char32_t) + 1];
+    const char* input_data = d1.data();
+    const uint32_t input_length_bytes = static_cast<uint32_t>(d1.length());
+
+    sd::LongType required_bytes_for_utf32_data = sd::unicode::offsetUtf8StringInUtf32(input_data, input_length_bytes);
+    
+    if (required_bytes_for_utf32_data > 0 && static_cast<size_t>(required_bytes_for_utf32_data) < sizeof(temp_output_buffer) ) {
+      void* end_ptr = sd::unicode::utf8to32Ptr(input_data, input_data + input_length_bytes, temp_output_buffer);
+      size_t char32_units_written = static_cast<char32_t*>(end_ptr) - temp_output_buffer;
+      if (char32_units_written * sizeof(char32_t) == static_cast<size_t>(required_bytes_for_utf32_data)) {
+        return std::basic_string<char32_t>(temp_output_buffer, char32_units_written);
+      }
     }
+    return std::basic_string<char32_t>();
   }
 };
 
-// --- Optional: Identity Specialization for char32_t ---
-template <>
-class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
- public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
-
-  SD_OP_DEF static std::basic_string<char32_t>
-  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
-    return d1; // Direct copy
-  }
-};
-
-
-// --- Specialization: std::basic_string<char32_t> -> std::basic_string<char16_t> (UTF-32 to UTF-16) ---
+// --- Specialization: std::basic_string<char32_t> (UTF-32) -> std::basic_string<char16_t> (UTF-16) ---
 template <>
 class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
 
-  SD_OP_DEF static std::basic_string<char16_t>
-  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> *params) {
-    try {
-      // Use std::codecvt_utf16<char32_t> for converting between UTF-32 (internal) and UTF-16 (external bytes)
-      std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> converter;
+  SD_HOST_DEVICE static std::basic_string<char16_t>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> * /*params*/) {
+    char16_t temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES / sizeof(char16_t) + 1];
+    const char32_t* input_data = d1.data();
+    const uint32_t input_length_char32_units = static_cast<uint32_t>(d1.length());
 
-      // 1. Convert UTF-32 string to a byte string representing UTF-16
-      std::string utf16_bytes = converter.to_bytes(d1);
+    sd::LongType required_bytes_for_utf16 = sd::unicode::offsetUtf32StringInUtf16(input_data, input_length_char32_units);
 
-      // 2. Construct char16_t string from the UTF-16 byte sequence.
-      //    reinterpret_cast assumes the byte string contains valid, correctly aligned UTF-16 data.
-      //    This is generally the case for std::codecvt_utf16 output.
-      //    Requires sizeof(char16_t) == 2. Check std::endian if more control needed.
-      if (utf16_bytes.size() % sizeof(char16_t) != 0) {
-        // Handle error: byte string length is not a multiple of char16_t size
-        // sd::PrintMessage("Warning: UTF-32 to UTF-16 conversion resulted in invalid byte length.\n");
-        return std::basic_string<char16_t>();
+    if (required_bytes_for_utf16 > 0 && static_cast<size_t>(required_bytes_for_utf16) < sizeof(temp_output_buffer)) {
+      void* end_ptr = sd::unicode::utf32to16Ptr(input_data, input_data + input_length_char32_units, temp_output_buffer);
+      size_t char16_units_written = static_cast<char16_t*>(end_ptr) - temp_output_buffer;
+      if (char16_units_written * sizeof(char16_t) == static_cast<size_t>(required_bytes_for_utf16)) {
+        return std::basic_string<char16_t>(temp_output_buffer, char16_units_written);
       }
-      return std::basic_string<char16_t>(
-          reinterpret_cast<const char16_t*>(utf16_bytes.data()),
-          utf16_bytes.size() / sizeof(char16_t)
-      );
-    } catch (const std::range_error& e) {
-      // Handle conversion errors (e.g., code points invalid for UTF-16?)
-      // sd::PrintMessage("Warning: UTF-32 to UTF-16 conversion failed for string assignment: %s\n", e.what());
-      return std::basic_string<char16_t>(); // Return empty string on error
     }
+    return std::basic_string<char16_t>();
   }
 };
 
-// --- Specialization: std::basic_string<char16_t> -> std::basic_string<char32_t> (UTF-16 to UTF-32) ---
+// --- Specialization: std::basic_string<char16_t> (UTF-16) -> std::basic_string<char32_t> (UTF-32) ---
 template <>
 class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
  public:
-  // Define members specific to this specialization if needed
-  // no_op_exec_special_any no_op_exec_special_any_cuda;
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
 
-  SD_OP_DEF static std::basic_string<char32_t>
-  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> *params) {
-      // Use std::codecvt_utf16<char32_t> for converting between UTF-32 (internal) and UTF-16 (external bytes)
-      std::wstring_convert<std::codecvt_utf16<char32_t>, char32_t> converter;
+  SD_HOST_DEVICE static std::basic_string<char32_t>
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> * /*params*/) {
+    char32_t temp_output_buffer[SD_STRING_ASSIGN_DEVICE_TEMP_BUFFER_BYTES / sizeof(char32_t) + 1];
+    const char16_t* input_data = d1.data();
+    const uint32_t input_length_char16_units = static_cast<uint32_t>(d1.length());
 
-      // Convert a sequence of bytes representing UTF-16 (d1 viewed as bytes) to UTF-32 string.
-      // from_bytes expects const char* range.
-      return converter.from_bytes(
-          reinterpret_cast<const char*>(d1.data()), // Start of byte sequence
-          reinterpret_cast<const char*>(d1.data() + d1.size()) // End of byte sequence (one past last char16_t)
-      );
+    sd::LongType required_bytes_for_utf32_data = sd::unicode::offsetUtf16StringInUtf32(input_data, input_length_char16_units);
+
+    if (required_bytes_for_utf32_data > 0 && static_cast<size_t>(required_bytes_for_utf32_data) < sizeof(temp_output_buffer)) {
+      void* end_ptr = sd::unicode::utf16to32Ptr(input_data, input_data + input_length_char16_units, temp_output_buffer);
+      size_t char32_units_written = static_cast<char32_t*>(end_ptr) - temp_output_buffer;
+      if (char32_units_written * sizeof(char32_t) == static_cast<size_t>(required_bytes_for_utf32_data)) {
+        return std::basic_string<char32_t>(temp_output_buffer, char32_units_written);
+      }
+    }
+    return std::basic_string<char32_t>();
+  }
+};
+
+// --- Identity Specializations ---
+template <>
+class Assign<std::basic_string<char>, std::basic_string<char>> {
+ public:
+  
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
+  SD_HOST_DEVICE static std::basic_string<char>
+  op(const std::basic_string<char>& d1, std::basic_string<char> * /*params*/) {
+    return d1;
+  }
+};
+
+template <>
+class Assign<std::basic_string<char16_t>, std::basic_string<char16_t>> {
+ public:
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
+  SD_HOST_DEVICE static std::basic_string<char16_t>
+  op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> * /*params*/) {
+    return d1;
+  }
+};
+
+template <>
+class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
+ public:
+#ifdef __CUDACC__
+  no_op_exec_special_any_cuda;
+#endif
+  SD_HOST_DEVICE static std::basic_string<char32_t>
+  op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> * /*params*/) {
+    return d1;
   }
 };
 
