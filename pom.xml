@@ -642,6 +642,8 @@
                 <version>${maven-central-publishing-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>published</waitUntil>
                     <autoPublish>false</autoPublish>
                     <failOnBuildFailure>true</failOnBuildFailure>
                     <autoPublish>${central.publishing.autoPublish}</autoPublish>
