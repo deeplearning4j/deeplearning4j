@@ -30,7 +30,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
 
       runsOn:
         description: 'System to run on'

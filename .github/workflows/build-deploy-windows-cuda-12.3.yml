@@ -25,7 +25,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
       mvnFlags:
         description: 'Extra maven flags (must escape input yourself if used)'
         required: false
@@ -276,7 +276,7 @@ jobs:
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
-          PUBLISH_TO: ossrh
+          PUBLISH_TO: central
           LIBND4J_HOME_SUFFIX: cuda
           MAVEN_OPTS: "-Xmx2g"
 

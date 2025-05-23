@@ -24,7 +24,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -263,7 +263,7 @@ jobs:
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}
           RELEASE_REPO_ID: ${{ matrix.release_repo_id }}
-          PUBLISH_TO: ossrh
+          PUBLISH_TO: central
           LIBND4J_HOME_SUFFIX: cuda
           HELPER: ${{ matrix.helper }}
           EXTENSION: ${{ matrix.extension }}
