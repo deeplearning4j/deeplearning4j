@@ -147,8 +147,8 @@ jobs:
           java-version: 11
           distribution: 'temurin'
           server-id: 'central'
-          server-username: ${{ secrets.ORG_OSSRH_USERNAME }}
-          server-password: ${{ secrets.ORG_OSSRH_PASSWORD }}
+          server-username: ${{ secrets.SONATYPE_USER_1 }}
+          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
         
         
 
