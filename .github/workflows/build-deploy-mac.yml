@@ -30,7 +30,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
 
       runsOn:
         description: 'System to run on'
@@ -152,6 +152,9 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
+          server-id: 'central'
+          server-username: ${{ secrets.SONATYPE_USER_1 }}
+          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
         
         
 
@@ -179,7 +182,7 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
+          PUBLISH_TO: central
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}

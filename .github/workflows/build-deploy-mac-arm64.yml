@@ -30,12 +30,12 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
 
       runsOn:
         description: 'System to run on'
         required: false
-        default: macos-14-large
+        default: macos-14
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -146,6 +146,9 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
+          server-id: 'central'
+          server-username: ${{ secrets.SONATYPE_USER_1 }}
+          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
         
         
 
@@ -172,12 +175,6 @@ jobs:
       - name: Build and install
         shell: bash
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
           SNAPSHOT_VERSION: ${{ matrix.snapshot_version }}

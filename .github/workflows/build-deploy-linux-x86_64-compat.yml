@@ -29,7 +29,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -154,7 +154,7 @@ jobs:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
+          PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
@@ -191,7 +191,7 @@ jobs:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_TO: ossrh
+          PUBLISH_TO: central
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
