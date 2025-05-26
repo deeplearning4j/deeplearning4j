@@ -49,7 +49,6 @@
         <platform.compiler.flag.no.optimize.sibling.calls>-fno-optimize-sibling-calls</platform.compiler.flag.no.optimize.sibling.calls>
         <platform.compiler.flag.debug>-g</platform.compiler.flag.debug>
         <platform.functrace.libs.unix>-ldl -lunwind -lbfd -ldw</platform.functrace.libs.unix>
-        <platform.compiler.flag.windows.define></platform.compiler.flag.windows.define> <platform.functrace.libs></platform.functrace.libs>
         <libnd4j.outputPath>${project.build.directory}/../../../../../libnd4j/blasbuild/cpu</libnd4j.outputPath>
     </properties>
 
@@ -380,7 +379,6 @@
                             <compilerOptions>
                                 <compilerOption>${compiler.flag.cpp.standard}</compilerOption>
                                 <compilerOption>${platform.linker.flag.no.undefined}</compilerOption>
-                                <compilerOption>${platform.compiler.flag.windows.define}</compilerOption>
                             </compilerOptions>
                         </configuration>
                         <executions>
@@ -545,7 +543,6 @@
                                 <compilerOption>${platform.compiler.flag.no.omit.fp}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.no.optimize.sibling.calls}</compilerOption>
                                 <compilerOption>${platform.compiler.flag.debug}</compilerOption>
-                                <compilerOption>${platform.compiler.flag.windows.define}</compilerOption> <compilerOption>${platform.functrace.libs}</compilerOption>
 
                                 <compilerOption>-finstrument-functions</compilerOption>
 

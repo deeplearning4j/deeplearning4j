@@ -127,7 +127,7 @@
         <javacpp.platform.compiler/>
         <javacpp.platform.sysroot/>
         <javacpp.platform.extension/>
-        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <javacpp.compiler.options></javacpp.compiler.options>
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
