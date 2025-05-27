@@ -153,8 +153,8 @@ jobs:
           java-version: 11
           distribution: 'temurin'
           server-id: 'central'
-          server-username: ${{ secrets.SONATYPE_USER_1 }}
-          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
+          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
         
         
 
@@ -184,8 +184,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_TO: central
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           PERFORM_RELEASE: ${{ matrix.deploy_to_release_staging }}
           RELEASE_VERSION: ${{ matrix.release_version }}
