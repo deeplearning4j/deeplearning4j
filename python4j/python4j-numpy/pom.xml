@@ -58,12 +58,7 @@
             <artifactId>nd4j-native-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>python4j-core</artifactId>

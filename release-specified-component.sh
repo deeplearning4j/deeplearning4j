@@ -82,7 +82,7 @@ fi
 if [ -z "${MODULES}" ]; then export MODULES= ; fi
 
 
-DEPLOY_COMMAND="${DEPLOY_COMMAND}  ${MODULES} -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false -Ddl4j.release.server=ossrh"
+DEPLOY_COMMAND="${DEPLOY_COMMAND}  ${MODULES} -Prelease  -Dlocal.software.repository=$RELEASE_PROFILE -Denforcer.skip -Dmaven.javadoc.failOnError=false"
 
  #-DstagingRepositoryId=$STAGING_REPOSITORY
 if [[ -z ${STAGING_REPOSITORY:-} ]]; then

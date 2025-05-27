@@ -69,14 +69,9 @@
     <dependency>
       <groupId>org.bytedeco</groupId>
       <artifactId>onnx-platform</artifactId>
-      <version>1.12.0-1.5.8</version>
+      <version>1.17.0-1.5.11</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.deeplearning4j</groupId>
-      <artifactId>nd4j-common-tests</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
+
     <dependency>
       <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>samediff-import-api</artifactId>

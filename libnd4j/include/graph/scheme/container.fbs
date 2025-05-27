@@ -1,0 +1,96 @@
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+include "graph.fbs";
+include "array.fbs";
+
+namespace graph;
+
+// Compression type used for sections in the container
+enum CompressionType:byte {
+    NONE,       // No compression 
+    DEFLATE,    // Deflate compression
+    ZSTD        // Zstandard compression (future)
+}
+
+// Section types in the container
+enum SectionType:byte {
+    HEADER,         // Container header information
+    METADATA,       // Metadata key-value pairs
+    GRAPH,          // Graph structure (FlatGraph)
+    ARRAYS,         // Array data
+    SHARD_INFO      // Information about sharding
+}
+
+// Container file header
+table ContainerHeader {
+    format_version:int;        // Container format version
+    section_count:int;         // Number of sections in the container
+    checksum:long;             // Optional checksum for integrity verification
+}
+
+// Metadata key-value pair
+table MetadataEntry {
+    key:string;                // Metadata key
+    value:string;              // Metadata value
+}
+
+// Metadata section
+table MetadataSection {
+    entries:[MetadataEntry];   // List of metadata entries
+}
+
+// Sharding information
+table ShardInfo {
+    shard_index:int;           // Current shard index
+    shard_count:int;           // Total number of shards
+    shard_type:string;         // Type of shard (e.g., "graph", "weights")
+    base_filename:string;      // Base filename for related shards
+}
+
+// Section header
+table SectionHeader {
+    type:SectionType;          // Section type
+    size:long;                 // Size of section data in bytes
+    compression:CompressionType; // Compression type used
+    offset:long;               // Offset in the container file
+    checksum:long;             // Optional checksum for integrity verification
+}
+
+// Array entry in the arrays section
+table ArrayEntry {
+    variable_name:string;      // Name of the variable
+    array:FlatArray;           // The array data
+}
+
+// Arrays section
+table ArraysSection {
+    arrays:[ArrayEntry];       // List of arrays
+}
+
+// Container structure
+table ModelContainer {
+    header:ContainerHeader;    // Container header
+    sections:[SectionHeader];  // Section headers
+    metadata:MetadataSection;  // Metadata section
+    graph:FlatGraph;           // Graph section
+    arrays:ArraysSection;      // Arrays section
+    shard_info:ShardInfo;      // Shard information (optional)
+}
+
+root_type ModelContainer;

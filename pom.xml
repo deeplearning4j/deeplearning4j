@@ -79,42 +79,8 @@
             </releases>
         </repository>
 
-        <repository>
-            <id>ossrh-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
     </repositories>
 
-    <pluginRepositories>
-        <pluginRepository>
-            <id>ossrh-snapshots</id>
-            <name>Sonatype Nexus Snapshots</name>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
 
 
     <properties>
@@ -161,7 +127,7 @@
         <javacpp.platform.compiler/>
         <javacpp.platform.sysroot/>
         <javacpp.platform.extension/>
-        <javacpp.compiler.options>-Wl,--no-undefined</javacpp.compiler.options>
+        <javacpp.compiler.options></javacpp.compiler.options>
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
 
@@ -219,7 +185,7 @@
         <jackson.databind.version>2.16.0</jackson.databind.version>
         <shaded.snakeyaml.version>1.33</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
         <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.21.7</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -281,7 +247,7 @@
         <jdk9.exports>--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/sun.nio.cs=ALL-UNNAMED --add-opens=java.base/sun.security.action=ALL-UNNAMED --add-opens=java.base/sun.util.calendar=ALL-UNNAMED --add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/java.nio=ALL-UNNAMED</jdk9.exports>
 
         <central.publishing.autoPublish>false</central.publishing.autoPublish>
-        <central.publishing.publishingRepositoryId>ossrh</central.publishing.publishingRepositoryId>
+        <central.publishing.publishingRepositoryId>central</central.publishing.publishingRepositoryId>
 
     </properties>
 
@@ -676,7 +642,7 @@
                 <version>${maven-central-publishing-plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <autoPublish>false</autoPublish>
+                    <waitUntil>published</waitUntil>
                     <failOnBuildFailure>true</failOnBuildFailure>
                     <autoPublish>${central.publishing.autoPublish}</autoPublish>
                 </configuration>

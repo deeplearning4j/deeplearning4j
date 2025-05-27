@@ -31,7 +31,7 @@ on:
       serverId:
         description: 'Server id to publish to'
         required: false
-        default: ossrh
+        default: central
 
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
@@ -132,6 +132,9 @@ jobs:
         with:
           java-version: 11
           distribution: 'temurin'
+          server-id: 'central'
+          server-username: ${{ secrets.SONATYPE_USER_1 }}
+          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
         
         
 
@@ -275,8 +278,8 @@ jobs:
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
           TARGET_OS: android
-          PUBLISH_TO: ossrh
-          DEPLOY_TO: ossrh
+          PUBLISH_TO: central
+          DEPLOY_TO: central
           MAVEN_OPTS: -Xmx2g
         run: |
           echo "--- Environment for Build Step ---"

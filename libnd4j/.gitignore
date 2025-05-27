@@ -15,6 +15,7 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 cmake-build-debug/
+preprocessed/
 libnd4j.build/
 build
 *.ptx
