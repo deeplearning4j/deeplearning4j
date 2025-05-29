@@ -1,3 +1,4 @@
+# Workflow for CUDA 12.6 Windows build
 on:
   workflow_dispatch:
     inputs:
@@ -227,12 +228,17 @@ jobs:
           cuda: "12.6"
         if: steps.cache-cuda-126.outputs.cache-hit != 'true'
 
-      - name: Set up Java and Maven cache/auth
-        uses: konduitai/setup-java@main
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v4
         with:
           java-version: 11
           distribution: 'temurin'
-        
+          server-id: ${{ github.event.inputs.serverId }}
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          cache: 'maven'
         
 
       - name: Setup Windows PATH

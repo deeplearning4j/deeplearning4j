@@ -66,20 +66,6 @@
         <module>codegen</module>
     </modules>
 
-    <repositories>
-        <repository>
-            <id>jetbrains-kotlinx</id>
-            <url>https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven</url>
-            <name>Kotlinx repo</name>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-        </repository>
-
-    </repositories>
 
 
 
