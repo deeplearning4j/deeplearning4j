@@ -853,7 +853,6 @@ if(${HELPERS_armcompute})
     endif()
     # ===================================================================
 endif()
-flat
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
