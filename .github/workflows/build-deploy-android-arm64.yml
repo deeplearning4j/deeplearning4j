@@ -101,7 +101,7 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-          
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
@@ -132,12 +132,68 @@ jobs:
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
 
-        
-
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
+      # Cache custom ARM64 NDK
+      - name: Cache ARM64 NDK
+        uses: actions/cache@v4
+        id: cache-arm64-ndk
         with:
-          ndk-version: r21d
+          path: ${{ github.workspace }}/android-ndk-r27b
+          key: android-ndk-r27b-aarch64-${{ runner.os }}
+          restore-keys: android-ndk-r27b-aarch64-
+
+      # Setup custom ARM64 NDK (emulating the official setup-ndk action)
+      - name: Setup ARM64 Android NDK
+        id: setup-ndk
+        shell: bash
+        run: |
+          NDK_VERSION="r27b"
+          NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
+          
+          # Check if NDK is already cached
+          if [ ! -d "${NDK_DIR}" ]; then
+            echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
+          
+            # Download the ARM64 NDK zip file
+            wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
+          
+            # Extract the NDK
+            echo "Extracting NDK..."
+            unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
+          
+            # Clean up zip file
+            rm ndk.zip
+          
+            # Verify extraction
+            if [ ! -d "${NDK_DIR}" ]; then
+              echo "Error: NDK directory not found after extraction"
+              ls -la "${GITHUB_WORKSPACE}"
+              exit 1
+            fi
+          else
+            echo "Using cached ARM64 NDK at ${NDK_DIR}"
+          fi
+          
+          # Set outputs to emulate the official setup-ndk action
+          echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
+          
+          # Add NDK to PATH
+          echo "${NDK_DIR}" >> $GITHUB_PATH
+          
+          # Set ANDROID_NDK_ROOT environment variable
+          echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
+          echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
+          
+          # Detect full version from source.properties
+          if [ -f "${NDK_DIR}/source.properties" ]; then
+            FULL_VERSION=$(grep "Pkg.Revision" "${NDK_DIR}/source.properties" | cut -d'=' -f2 | cut -d'-' -f1 | tr -d ' ')
+            echo "ndk-full-version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+            echo "Detected NDK full version: ${FULL_VERSION}"
+          else
+            echo "Warning: source.properties not found, using version ${NDK_VERSION}"
+            echo "ndk-full-version=${NDK_VERSION}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "ARM64 NDK setup complete at: ${NDK_DIR}"
 
       - name: Set mvn build command based on matrix
         shell: bash
@@ -152,7 +208,7 @@ jobs:
           echo "OPENBLAS_DIR=${OPENBLAS_DIR}" >> $GITHUB_ENV
           echo "CURRENT_TARGET=android-arm64" >> $GITHUB_ENV
           echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
-          echo "NDK_VERSION=r21d" >> $GITHUB_ENV
+          echo "NDK_VERSION=r27b" >> $GITHUB_ENV
           echo "ANDROID_VERSION=21" >> $GITHUB_ENV
           
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
@@ -212,6 +268,16 @@ jobs:
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
           echo "helper ${{ matrix.helper }}"
           echo "NDK Path: ${{ steps.setup-ndk.outputs.ndk-path }}"
+          echo "NDK Full Version: ${{ steps.setup-ndk.outputs.ndk-full-version }}"
+          
+          # Verify NDK installation
+          if [ -d "${{ steps.setup-ndk.outputs.ndk-path }}" ]; then
+            echo "NDK successfully installed"
+            ls -la "${{ steps.setup-ndk.outputs.ndk-path }}"
+          else
+            echo "Error: NDK path not found"
+            exit 1
+          fi
           
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
@@ -241,14 +307,13 @@ jobs:
           HELPER: ${{ matrix.helper }}
           MAVEN_OPTS: -Xmx2g
           PROTO_EXEC: /opt/protobuf/bin/protoc
-         
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
 
         run: |
           # Manually configure the Android NDK environment
           echo "Setting up Android NDK environment variables"
-          echo "ANDROID_NDK=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
-              
+          echo "Using custom ARM64 NDK at: ${{ steps.setup-ndk.outputs.ndk-path }}"
+          
           # Define CMake arguments for building libnd4j
           cmake_args="-DSD_ARCH=armv8-a -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
           
