@@ -759,6 +759,7 @@ if(${HELPERS_onednn})
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
+            DEPENDS           flatbuffers_external
     )
 
     add_library(onednn_interface INTERFACE)
