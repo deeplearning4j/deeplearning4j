@@ -1390,19 +1390,27 @@ else() # Start of CPU Build Section
     endif()
 
 # OpenMP for GCC
+# OpenMP for GCC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         find_package(OpenMP)
         if(OPENMP_FOUND)
-            message(STATUS "OpenMP found, applying flags and libraries.")
-            message(STATUS "--> OpenMP CXX Flags: ${OpenMP_CXX_FLAGS}")
-            message(STATUS "--> OpenMP CXX Libraries: ${OpenMP_CXX_LIBRARIES}")
-
-            # Apply the OpenMP compile flag to the object library
+            # Apply the OpenMP compile flag (-fopenmp) to the sources
             target_compile_options(${OBJECT_LIB_NAME} INTERFACE ${OpenMP_CXX_FLAGS})
             target_compile_options(${OBJECT_LIB_NAME} PRIVATE ${OpenMP_CXX_FLAGS})
 
-            # Explicitly link the required OpenMP libraries (like pthread) to the final shared library
-            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${OpenMP_CXX_LIBRARIES})
+            # Get the list of libraries found by FindOpenMP
+            set(OPENMP_LINK_LIBS ${OpenMP_CXX_LIBRARIES})
+
+            # Correct the path to the static pthread library by replacing it with the proper linker flag.
+            # This ensures we link against the shared version (libpthread.so).
+            string(REPLACE "/usr/lib/aarch64-linux-gnu/libpthread.a" "-lpthread" OPENMP_LINK_LIBS "${OPENMP_LINK_LIBS}")
+
+            message(STATUS "OpenMP found, applying flags and libraries.")
+            message(STATUS "--> Original OpenMP CXX Libraries: ${OpenMP_CXX_LIBRARIES}")
+            message(STATUS "--> Corrected OpenMP CXX Libraries for linking: ${OPENMP_LINK_LIBS}")
+
+            # Link the final shared library against the corrected list of OpenMP libraries
+            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${OPENMP_LINK_LIBS})
         endif()
     endif()
 endif() # End of CPU Build Section
