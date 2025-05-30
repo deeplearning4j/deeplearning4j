@@ -51,6 +51,11 @@ on:
         required: false
         default: false
 
+      swapSize:
+        description: 'Swap file size in GB (e.g., 4 for 4GB)'
+        required: false
+        default: 4
+
 jobs:
   linux-arm64:
     runs-on: ${{ github.event.inputs.runsOn }}
@@ -83,12 +88,17 @@ jobs:
           - build_threads: ${{ github.event.inputs.buildThreads }}
             experimental: true
             name: The number of threads to build libnd4j with
+          - swap_size: ${{ github.event.inputs.swapSize }}
+            experimental: true
+            name: Swap file size in GB
     steps:
       - uses: AutoModality/action-clean@v1
+
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+
       - uses: actions/checkout@v2
 
       - name: Free Disk Space
@@ -102,6 +112,53 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Configure swap space
+        shell: bash
+        run: |
+          echo "=== Initial system status ==="
+          free -h
+          df -h
+          echo "Available disk space on root:"
+          df -h /
+          
+          # Check if swap is already enabled
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured:"
+            swapon --show
+          else
+            echo "Configuring swap space..."
+          
+            # Use input parameter for swap size, default to 4GB
+            SWAP_SIZE="${{ matrix.swap_size }}G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+          
+            # Create swap file
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || {
+              echo "fallocate failed, trying dd..."
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=${{ matrix.swap_size }} status=progress
+            }
+          
+            # Set up swap
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          
+            # Verify swap is active
+            echo "=== Swap configuration completed ==="
+            free -h
+            swapon --show
+          fi
+          
+          # Tune swappiness for build workloads
+          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
+          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.swappiness=20
+          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
+          
+          # Show final memory status
+          echo "=== Final memory status ==="
+          free -h
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
@@ -110,6 +167,7 @@ jobs:
           key: ${{ runner.os }}-protobuf
           restore-keys: |
             ${{ runner.os }}-protobuf
+
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
 
@@ -253,7 +311,6 @@ jobs:
               LIB_DIR=$(dirname "${COMPUTE_LIB}")
               echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${LIB_DIR}:${OPENBLAS_PATH}" >> "$GITHUB_ENV"
           fi
-      # --- END OF MODIFIED STEP ---
 
       - name: Debug Info
         shell: bash
@@ -268,6 +325,7 @@ jobs:
           echo "server id ${{ github.event.inputs.serverId }}"
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
           echo "helper ${{ matrix.helper }}"
+          echo "swap size ${{ matrix.swap_size }}GB"
           echo "ARMCOMPUTE_TARGET $ARMCOMPUTE_TARGET"
           echo "LIBND4J_CLASSIFIER $LIBND4J_CLASSIFIER"
           
@@ -304,6 +362,21 @@ jobs:
           cmake --version
           protoc --version
 
+      - name: Monitor memory during build
+        shell: bash
+        run: |
+          # Start background memory monitoring
+          (while true; do 
+            echo "$(date '+%H:%M:%S'): $(free -h | head -n 2 | tail -n 1)"
+            if swapon --show | grep -q "/"; then
+              echo "$(date '+%H:%M:%S'): Swap: $(swapon --show --noheadings)"
+            fi
+            sleep 120  # Check every 2 minutes
+          done) > memory_monitor.log 2>&1 &
+          MONITOR_PID=$!
+          echo "MONITOR_PID=${MONITOR_PID}" >> $GITHUB_ENV
+          echo "Started memory monitoring (PID: ${MONITOR_PID})"
+
       - name: Build with Maven
         shell: bash
         env:
@@ -325,6 +398,10 @@ jobs:
           LIBND4J_BUILD_THREADS: ${{ github.event.inputs.buildThreads }}
           PROTO_EXEC: /opt/protobuf/bin/protoc
         run: |
+          # Show memory status before build
+          echo "=== Memory status before build ==="
+          free -h
+          
           # Additional diagnostics for ARM Compute Library
           if [ "$HELPER" == "armcompute" ]; then
             echo "Running with ARM Compute Library helper"
@@ -345,3 +422,35 @@ jobs:
               # This command should now execute successfully if dependencies are correct
               eval "${COMMAND}"
           fi
+
+      - name: Show memory usage summary
+        if: always()
+        shell: bash
+        run: |
+          # Stop memory monitoring
+          if [ -n "$MONITOR_PID" ]; then
+            kill $MONITOR_PID 2>/dev/null || true
+          fi
+          
+          echo "=== Final memory status ==="
+          free -h
+          if swapon --show | grep -q "/"; then
+            echo "=== Swap usage ==="
+            swapon --show
+          fi
+          
+          echo "=== Memory usage during build ==="
+          if [ -f memory_monitor.log ]; then
+            cat memory_monitor.log
+          else
+            echo "No memory monitoring log found"
+          fi
+
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          echo "Cleaning up swap configuration..."
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true
+          echo "Swap cleanup completed"
