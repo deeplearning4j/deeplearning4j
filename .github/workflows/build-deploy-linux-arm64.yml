@@ -160,7 +160,6 @@ jobs:
         shell: bash
         run: echo "/opt/protobuf/bin" >> $GITHUB_PATH
 
-      # --- MODIFIED STEP WITH FIX ---
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
