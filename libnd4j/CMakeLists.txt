@@ -226,40 +226,6 @@ if(SD_USE_LTO)
     endif()
 endif()
 
-# Compile Definitions for Operations (Appears duplicated, but harmless)
-# set(DEFINITIONS_CONTENT "")
-# if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
-#     message("Adding all ops due to empty op list or SD_ALL_OPS definition: SD_ALL_OPS=${SD_ALL_OPS} SD_OPS_LIST=${SD_OPS_LIST}")
-#     add_compile_definitions(SD_ALL_OPS=1)
-#     string(APPEND DEFINITIONS_CONTENT "#define SD_ALL_OPS 1\n")
-# else()
-#     message("_OPS: ${SD_OPS_LIST}")
-#     foreach(OP ${SD_OPS_LIST})
-#         add_compile_definitions(OP_${OP}=1)
-#         message(STATUS "OP: ${OP}")
-#         string(APPEND DEFINITIONS_CONTENT "#define OP_${OP} 1\n")
-#     endforeach()
-# endif()
-
-# Compile Definitions for Types (Appears duplicated, but harmless)
-# list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
-# if(SD_TYPES_LIST_COUNT GREATER 0)
-#     add_compile_definitions(SD_SELECTIVE_TYPES)
-#     string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
-#     foreach(SD_TYPE ${SD_TYPES_LIST})
-#         string(TOUPPER ${SD_TYPE} SD_TYPE_UPPERCASE)
-#         add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
-#         message(STATUS "TYPE: ${SD_TYPE_UPPERCASE}")
-#         string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
-#     endforeach()
-# endif()
-
-# Write Definitions to Header File (Appears duplicated, but harmless)
-# if(OP_OUTPUT_FILE MATCHES ".h$")
-#     message("Definitions will be written to \"${OP_OUTPUT_FILE}\"")
-#     file(WRITE "${OP_OUTPUT_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
-# endif()
-
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
@@ -470,8 +436,6 @@ endif()
 set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
 
 # Common functions for both CPU and CUDA builds
-
-# removeFileIfExcluded: removes the file from the given glob list
 function(removeFileIfExcluded)
     cmake_parse_arguments(
             PARSED_ARGS
@@ -853,6 +817,7 @@ if(${HELPERS_armcompute})
     endif()
     # ===================================================================
 endif()
+
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
@@ -1004,6 +969,8 @@ if(${HELPERS_cudnn})
     endif()
 endif()
 
+# --- [START] CORRECTED FLATBUFFERS AND CODE GENERATION LOGIC ---
+
 # Flatbuffers configuration
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
     set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
@@ -1011,8 +978,6 @@ else()
     set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Disable flatc build" FORCE)
 endif()
 
-# Flatbuffers download
-# ==================== ADD THIS NEW BLOCK ====================
 # Add flatbuffers dependency using ExternalProject_Add directly
 include(ExternalProject)
 ExternalProject_Add(flatbuffers_external
@@ -1032,52 +997,50 @@ ExternalProject_Add(flatbuffers_external
     INSTALL_COMMAND   ""
 
     # Specify an output from the build to allow other targets to depend on it
+    # This ensures flatc is built before anything that depends on flatbuffers_external
     BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
 )
 
+# This command makes the 'flatbuffers' library target available to link against.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+        EXCLUDE_FROM_ALL)
 
-
-# Flatbuffers generation
+# Correct, build-time Flatbuffers code generation
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-    # First, ensure flatc is built
-    execute_process(
-            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build --target flatc
-            RESULT_VARIABLE FLATC_BUILD_RESULT
-    )
-    if(FLATC_BUILD_RESULT)
-        message(FATAL_ERROR "Failed to build flatc: ${FLATC_BUILD_RESULT}")
-    endif()
-
+    # Define the path to the flatc executable that ExternalProject will create
     set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
-    message("Using flatc from: ${FLATC_EXECUTABLE}")
 
-    # Create required directories
-    execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated
-            ${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated/sd
+    # Define the main output header file from the generation script.
+    # Note: This should be an actual file that the script is known to create, used for dependency tracking.
+    set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
+
+    # Create a custom command to run the generator script.
+    # This command depends on the flatbuffers_external target, ensuring it runs AFTER flatc is built.
+    add_custom_command(
+        OUTPUT ${MAIN_GENERATED_HEADER}
+        COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+        DEPENDS flatbuffers_external
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Running flatc to generate C++ headers"
+        VERBATIM
     )
 
-    # Run flatc generation
-    execute_process(
-            COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}"
-            bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-            RESULT_VARIABLE FLATC_RESULT
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    # Create a target that represents the result of the code generation.
+    add_custom_target(generate_flatbuffers_headers
+        DEPENDS ${MAIN_GENERATED_HEADER}
     )
-    if(FLATC_RESULT)
-        message(FATAL_ERROR "Flatbuffer generation failed: ${FLATC_RESULT}")
-    endif()
 
-    # Copy Java files
-    execute_process(
-            COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-            RESULT_VARIABLE COPY_RESULT
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    # This handles the Java file copying as a post-build event for the generation target.
+    add_custom_command(
+        TARGET generate_flatbuffers_headers POST_BUILD
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Copying generated Java files"
+        VERBATIM
     )
-    if(COPY_RESULT)
-        message(FATAL_ERROR "Java file copying failed: ${COPY_RESULT}")
-    endif()
 endif()
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include)
 
 # Configuration file
@@ -1085,55 +1048,22 @@ configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# Set type combinations for CUDA generation
+# --- [END] CORRECTED FLATBUFFERS AND CODE GENERATION LOGIC ---
+
 # Set type combinations for CUDA generation
 set(COMBINATIONS_3
-        "0,0,0"
-        "0,0,1"
-        "0,0,2"
-        "0,1,0"
-        "0,1,1"
-        "0,1,2"
-        "0,2,0"
-        "0,2,1"
-        "0,2,2"
-        "1,0,0"
-        "1,0,1"
-        "1,0,2"
-        "1,1,0"
-        "1,1,1"
-        "1,1,2"
-        "1,2,0"
-        "1,2,1"
-        "1,2,2"
-        "2,0,0"
-        "2,0,1"
-        "2,0,2"
-        "2,1,0"
-        "2,1,1"
-        "2,1,2"
-        "2,2,0"
-        "2,2,1"
-        "2,2,2"
+        "0,0,0" "0,0,1" "0,0,2" "0,1,0" "0,1,1" "0,1,2" "0,2,0" "0,2,1" "0,2,2"
+        "1,0,0" "1,0,1" "1,0,2" "1,1,0" "1,1,1" "1,1,2" "1,2,0" "1,2,1" "1,2,2"
+        "2,0,0" "2,0,1" "2,0,2" "2,1,0" "2,1,1" "2,1,2" "2,2,0" "2,2,1" "2,2,2"
 )
-
 set(COMBINATIONS_2
-        "0,0"
-        "0,1"
-        "1,0"
-        "1,1"
-        "0,2"
-        "2,0"
-        "1,2"
-        "2,1"
-        "2,2"
+        "0,0" "0,1" "1,0" "1,1" "0,2" "2,0" "1,2" "2,1" "2,2"
 )
 
 # Define template locations
 set(INSTANTIATION_TEMPLATES_3
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_3.cpp.in"
 )
-
 set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/include/loops/cpu/comb_compilation_units/pairwise_instantiation_template_2.cpp.in"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_double.cpp.in"
@@ -1226,15 +1156,11 @@ if(SD_CUDA)
         elseif(COMPUTE_CMP STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
         else()
-
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
             string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}") # Force replace ; with space
-
         endif()
 
-
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}") # Added CUDA_ARCH_FLAGS
-
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
         if(WIN32)
@@ -1244,7 +1170,6 @@ if(SD_CUDA)
         endif()
 
         add_compile_definitions(SD_CUDA=true)
-
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
         # Gather CUDA source files
@@ -1258,14 +1183,8 @@ if(SD_CUDA)
         file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
         file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES ./include/ops/declarable/helpers/cuda/*.cu ./include/ops/declarable/helpers/impl/*.cpp)
         file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
-        file(GLOB_RECURSE HELPERS_SOURCES
-                ./include/build_info.cpp
-                ./include/ConstMessages.cpp
-                ./include/helpers/*.cpp
-                ./include/helpers/cuda/*.cu
-                ./include/helpers/*.h)
-        file(GLOB CPU_HELPERS_TO_EXCLUDE
-                ./include/helpers/cpu/*.cpp)
+        file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp ./include/helpers/cuda/*.cu ./include/helpers/*.h)
+        file(GLOB CPU_HELPERS_TO_EXCLUDE ./include/helpers/cpu/*.cpp)
         list(REMOVE_ITEM HELPERS_SOURCES ${CPU_HELPERS_TO_EXCLUDE})
         file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/impl/*.cpp ./include/loops/*.h)
@@ -1278,22 +1197,10 @@ if(SD_CUDA)
         endforeach()
 
         set(ALL_SOURCES
-                ${PERF_SOURCES}
-                ${EXCEPTIONS_SOURCES}
-                ${EXEC_SOURCES}
-                ${TYPES_SOURCES}
-                ${ARRAY_SOURCES}
-                ${MEMORY_SOURCES}
-                ${GRAPH_SOURCES}
-                ${CUSTOMOPS_SOURCES}
-                ${CUSTOMOPS_HELPERS_SOURCES}
-                ${OPS_SOURCES}
-                ${HELPERS_SOURCES}
-                ${INDEXING_SOURCES}
-                ${LOOPS_SOURCES}
-                ${LEGACY_SOURCES}
-                ${LOOPS_SOURCES_CUDA}
-                ${CUSTOMOPS_GENERIC_SOURCES} # Generated by genCompilation
+                ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES}
+                ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES}
+                ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES} ${HELPERS_SOURCES} ${INDEXING_SOURCES}
+                ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${LOOPS_SOURCES_CUDA} ${CUSTOMOPS_GENERIC_SOURCES}
         )
 
         if(HAVE_CUDNN)
@@ -1302,64 +1209,49 @@ if(SD_CUDA)
             list(APPEND ALL_SOURCES ${CUSTOMOPS_CUDNN_SOURCES})
         endif()
 
-        # Create an OBJECT library first (compiles sources without linking)
-        # This internal target name doesn't conflict with the final library name
         set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
-        add_library(${OBJECT_LIB_NAME} OBJECT
-                ${ALL_SOURCES}
-        )
+        add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+
+        if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+            add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
+        endif()
 
         target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
         set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-        # Add platform-specific flags to the object library
         if(WIN32)
             message("Enabling /EHsc for CUDA on Windows")
-            target_compile_options(${OBJECT_LIB_NAME} INTERFACE "/EHsc" "/bigobj") # Apply to interface if needed by consumers
-            target_compile_options(${OBJECT_LIB_NAME} PRIVATE "/EHsc" "/bigobj") # Apply to internal build
+            target_compile_options(${OBJECT_LIB_NAME} INTERFACE "/EHsc" "/bigobj")
+            target_compile_options(${OBJECT_LIB_NAME} PRIVATE "/EHsc" "/bigobj")
         endif()
 
-        # Create the final SHARED library using the object library
         add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-        set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME}) # Ensure output file is nd4jcuda.dll/so
+        set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
         set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-        # Link dependencies to the final shared library
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-                ${CUDA_LIBRARIES}
-                ${CUDA_DRIVER_LIBRARY}
-                ${CUDA_CUBLAS_LIBRARIES}
-                ${CUDA_cusolver_LIBRARY}
-                ${CUDNN}
-                # Add flatbuffers if needed for CUDA build? Assuming yes for now.
-                flatbuffers
+                ${CUDA_LIBRARIES} ${CUDA_DRIVER_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}
+                ${CUDA_cusolver_LIBRARY} ${CUDNN} flatbuffers
         )
 
-        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .) # Install the final shared library
-
+        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif()
 else() # Start of CPU Build Section
     set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
 
-    # Configure BLAS for CPU builds
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-    # Set Library Output Directories
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}") # This affects where the final library goes, might want top-level
-    set(CUSTOMOPS_GENERIC_SOURCES "") # Initialize list for generated sources
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
+    set(CUSTOMOPS_GENERIC_SOURCES "")
 
-    # Gather templates processed by genCompilation (old style)
-    # Updated: Removed ops/impl/compilation_units/*.cpp.in if specials_* moved
     file(GLOB_RECURSE COMPILATION_UNITS
             ./include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
             ./include/loops/cpu/compilation_units/*.cpp.in
             ./include/helpers/cpu/loops/*.cpp.in)
 
-    # Generate Compilation Units (Old Style)
     foreach(FL_ITEM ${COMPILATION_UNITS})
-        genCompilation(${FL_ITEM}) # Appends to CUSTOMOPS_GENERIC_SOURCES
+        genCompilation(${FL_ITEM})
     endforeach()
-
 
     # Gather CPU Source Files
     file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
@@ -1370,21 +1262,17 @@ else() # Start of CPU Build Section
     file(GLOB_RECURSE MEMORY_SOURCES ./include/memory/*.cpp ./include/memory/*.h)
     file(GLOB_RECURSE GRAPH_SOURCES ./include/graph/*.cpp ./include/graph/*.h)
     file(GLOB_RECURSE CUSTOMOPS_SOURCES ./include/ops/declarable/generic/*.cpp)
-    # Updated: CUSTOMOPS_GENERIC_SOURCES now refers ONLY to genCompilation outputs. Partitioned sources are added later.
     file(GLOB_RECURSE CUSTOMOPS_HELPERS_IMPL_SOURCES ./include/ops/declarable/helpers/impl/*.cpp)
-    file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp) # Regular CPU helpers
+    file(GLOB_RECURSE CUSTOMOPS_HELPERS_CPU_SOURCES ./include/ops/declarable/helpers/cpu/*.cpp)
     file(GLOB_RECURSE OPS_SOURCES ./include/ops/impl/*.cpp ./include/ops/declarable/impl/*.cpp ./include/ops/*.h)
     file(GLOB_RECURSE INDEXING_SOURCES ./include/indexing/*.cpp ./include/indexing/*.h)
     file(GLOB_RECURSE HELPERS_SOURCES ./include/build_info.cpp ./include/ConstMessages.cpp ./include/helpers/*.cpp  ./include/helpers/cpu/*.cpp ./include/helpers/*.h)
     file(GLOB_RECURSE LEGACY_SOURCES ./include/legacy/impl/*.cpp ./include/legacy/cpu/*.cpp ./include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES ./include/loops/*.cpp ./include/loops/*.h)
 
-
-    # Initialize ALL_SOURCES list here before conditional appends
     set(ALL_SOURCES "")
 
-    # Include ONEDNN and ARM Compute Sources Conditionally
-    set(CUSTOMOPS_ONEDNN_SOURCES "") # Initialize
+    set(CUSTOMOPS_ONEDNN_SOURCES "")
     if(HAVE_ONEDNN)
         file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP
                 ./include/ops/declarable/platform/mkldnn/*.cpp
@@ -1394,7 +1282,7 @@ else() # Start of CPU Build Section
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
     endif()
 
-    set(CUSTOMOPS_ARMCOMPUTE_SOURCES "") # Initialize
+    set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
     if(HAVE_ARMCOMPUTE)
         file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP
                 ./include/ops/declarable/platform/armcompute/*.cpp
@@ -1404,16 +1292,10 @@ else() # Start of CPU Build Section
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
     endif()
 
-
     if (SD_X86_BUILD)
-        # Disable platform optimizations for certain files on Linux/macOS
-        # Note: Path cpu/NativeOps.cpp seems incorrect based on glob patterns, assuming it's within include structure
-        # set_source_files_properties(./include/??/cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(./include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
 
-    # Filter Sources Based on SD_ALL_OPS
-    # Combine static source lists for checking
     set(STATIC_SOURCES_TO_CHECK
             ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
@@ -1425,128 +1307,101 @@ else() # Start of CPU Build Section
         message("Not all SD OPS INCLUDED - Filtering sources")
         set(FILTERED_STATIC_SOURCES "")
         foreach(SRC_FILE ${STATIC_SOURCES_TO_CHECK})
-            # Check if the file should be kept (removeFileIfExcluded modifies the list passed by name)
-            set(temp_list "${SRC_FILE}") # Create a temporary list with one item
+            set(temp_list "${SRC_FILE}")
             removeFileIfExcluded(FILE_ITEM "${SRC_FILE}" LIST_ITEM "temp_list")
-            if(temp_list) # If the list is not empty after checking, keep the file
+            if(temp_list)
                 list(APPEND FILTERED_STATIC_SOURCES "${SRC_FILE}")
             else()
                 message("Excluding file due to op restrictions: ${SRC_FILE}")
             endif()
         endforeach()
-        # Append filtered static sources to ALL_SOURCES (which might already contain platform sources if they weren't filtered above)
-        # To avoid duplicates if platform sources were already added, filter the main list
-        list(REMOVE_ITEM ALL_SOURCES ${STATIC_SOURCES_TO_CHECK}) # Remove all potential static sources first
-        list(APPEND ALL_SOURCES ${FILTERED_STATIC_SOURCES}) # Add back only the filtered ones
-
+        list(REMOVE_ITEM ALL_SOURCES ${STATIC_SOURCES_TO_CHECK})
+        list(APPEND ALL_SOURCES ${FILTERED_STATIC_SOURCES})
     else()
-        # If SD_ALL_OPS is true, include all static sources directly (ensure no duplicates with platform sources)
         list(APPEND ALL_SOURCES
                 ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} ${TYPES_SOURCES} ${ARRAY_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_IMPL_SOURCES}
                 ${CUSTOMOPS_HELPERS_CPU_SOURCES} ${OPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}
-                ${LEGACY_SOURCES} ${LOOPS_SOURCES} # Platform sources already added
+                ${LEGACY_SOURCES} ${LOOPS_SOURCES}
         )
-        list(REMOVE_DUPLICATES ALL_SOURCES) # Clean up potential duplicates
+        list(REMOVE_DUPLICATES ALL_SOURCES)
     endif()
 
-    # Add sources generated by genCompilation (already filtered if necessary by its internal logic)
     list(APPEND ALL_SOURCES ${CUSTOMOPS_GENERIC_SOURCES})
 
-
-    # Process type combinations using genPartitionCombination (New Style)
-    set(PARTITION_SOURCES "") # Initialize list for these generated sources
+    set(PARTITION_SOURCES "")
     set(CPU_INST_DIR "${CMAKE_BINARY_DIR}/cpu_instantiations")
     file(MAKE_DIRECTORY "${CPU_INST_DIR}")
-
-    # Temporarily store generated partition sources to avoid scope issues with PARENT_SCOPE
     set(GENERATED_PARTITION_SOURCES_TEMP "")
 
     foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_3})
         foreach(COMBINATION ${COMBINATIONS_3})
-            # Call genPartitionCombination, it appends to CUSTOMOPS_GENERIC_SOURCES in its scope
-            set(CUSTOMOPS_GENERIC_SOURCES "") # Clear before call
+            set(CUSTOMOPS_GENERIC_SOURCES "")
             genPartitionCombination(${TEMPLATE_FILE} 3 ${COMBINATION} "${CPU_INST_DIR}")
-            # Append the returned list to PARTITION_SOURCES
             list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
         endforeach()
     endforeach()
 
     foreach(TEMPLATE_FILE ${INSTANTIATION_TEMPLATES_2})
         foreach(COMBINATION ${COMBINATIONS_2})
-            # Call genPartitionCombination, it appends to CUSTOMOPS_GENERIC_SOURCES in its scope
-            set(CUSTOMOPS_GENERIC_SOURCES "") # Clear before call
+            set(CUSTOMOPS_GENERIC_SOURCES "")
             genPartitionCombination(${TEMPLATE_FILE} 2 ${COMBINATION} "${CPU_INST_DIR}")
-            # Append the returned list to PARTITION_SOURCES
             list(APPEND GENERATED_PARTITION_SOURCES_TEMP ${CUSTOMOPS_GENERIC_SOURCES})
         endforeach()
     endforeach()
-    set(PARTITION_SOURCES ${GENERATED_PARTITION_SOURCES_TEMP}) # Assign accumulated list
+    set(PARTITION_SOURCES ${GENERATED_PARTITION_SOURCES_TEMP})
 
-    # Add sources generated by genPartitionCombination to the main list
     list(APPEND ALL_SOURCES ${PARTITION_SOURCES})
-    list(REMOVE_DUPLICATES ALL_SOURCES) # Final cleanup
+    list(REMOVE_DUPLICATES ALL_SOURCES)
 
-    # Create Object Library
-    # Use a distinct internal name for the object library
     set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
-    add_library(${OBJECT_LIB_NAME} OBJECT
-            ${ALL_SOURCES}
-    )
+    add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+
+    if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+        add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
+    endif()
 
     target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
     set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-
-    # Create the final shared library using the object library
     add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
-    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME}) # Ensure output file is nd4jcpu.dll/so
+    set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
     set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-    # Apply Android specific properties if needed
     if(ANDROID)
-        # Limit the number of compile jobs on systems with few cores
         cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
         if(_logical_cores LESS 4)
             set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
         endif()
     endif()
 
-    # Link required libraries to the shared library
     target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
-            ${ONEDNN}               # Interface target 'onednn_interface' or empty
-            ${ARMCOMPUTE_LIBRARIES} # Interface target 'armcompute_interface' or empty
+            ${ONEDNN}
+            ${ARMCOMPUTE_LIBRARIES}
             ${OPENBLAS_LIBRARIES}
             ${BLAS_LIBRARIES}
-            flatbuffers            # Link flatbuffers
+            flatbuffers
     )
 
-    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .) # Install the final shared library
+    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
 
-
-    # Compiler Checks
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
         message(FATAL_ERROR "You need at least GCC 4.9")
     endif()
 
-    # OpenMP for GCC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         find_package(OpenMP)
         if(OPENMP_FOUND)
-            # Apply flags to the object library target
             target_compile_options(${OBJECT_LIB_NAME} INTERFACE ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
             target_compile_options(${OBJECT_LIB_NAME} PRIVATE ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-            # Link OpenMP to the final shared library
             target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
         endif()
     endif()
-
 endif() # End of CPU Build Section
 
 # Add tests if enabled
 if(SD_BUILD_TESTS)
     include(CTest)
-    # tests are always compiled with all ops included
     set(SD_ALL_OPS true)
     enable_testing()
     add_subdirectory(tests_cpu)
@@ -1557,41 +1412,32 @@ if(SD_PREPROCESS STREQUAL "ON")
     message("Preprocessing enabled: ${CMAKE_BINARY_DIR}")
     include_directories(${CMAKE_BINARY_DIR}/.././include)
 
-    # Get ALL_SOURCES from the final object library target
     get_target_property(FINAL_ALL_SOURCES ${OBJECT_LIB_NAME} SOURCES)
     list(REMOVE_DUPLICATES FINAL_ALL_SOURCES)
 
-
-    # Define Output Directory
     set(PREPROCESSED_DIR "${CMAKE_SOURCE_DIR}/preprocessed")
     file(MAKE_DIRECTORY ${PREPROCESSED_DIR})
 
-    # Initialize Lists
     set(PREPROCESSED_FILES)
     set(PROCESSED_SOURCES "")
 
-    # Create Custom Commands for Each Source File
     foreach(src IN LISTS FINAL_ALL_SOURCES)
-        # Skip generated files that don't exist on disk yet or are not regular source files
         if(NOT EXISTS ${src} OR NOT src MATCHES "\\.(c|cpp|cxx|cc|cu)$")
             continue()
         endif()
 
         if(NOT src IN_LIST PROCESSED_SOURCES)
             get_filename_component(src_name ${src} NAME_WE)
-            get_filename_component(src_path ${src} PATH) # Get full path
+            get_filename_component(src_path ${src} PATH)
 
-            # Create a unique name based on relative path if possible
             file(RELATIVE_PATH rel_path ${CMAKE_SOURCE_DIR} ${src_path})
-            string(REPLACE "/" "_" src_dir_ "${rel_path}") # Use relative path for uniqueness
+            string(REPLACE "/" "_" src_dir_ "${rel_path}")
 
-            # Handle absolute paths outside source dir (e.g., generated files in build dir)
             if(IS_ABSOLUTE ${src} AND NOT src MATCHES "^${CMAKE_SOURCE_DIR}")
                 file(RELATIVE_PATH rel_path_build ${CMAKE_BINARY_DIR} ${src_path})
                 string(REPLACE "/" "_" src_dir_build_ "${rel_path_build}")
                 set(src_dir_ "build_${src_dir_build_}")
             endif()
-
 
             set(preprocessed_file "${PREPROCESSED_DIR}/${src_dir_}_${src_name}.i")
             message(STATUS "Processing ${src} to ${preprocessed_file}")
@@ -1614,17 +1460,9 @@ if(SD_PREPROCESS STREQUAL "ON")
                     string(APPEND defs_flags " -D${def}")
                 endforeach()
 
-                set(opts_flags "")
-                # Be careful with compile options, some might not be valid for -E
-                # list(APPEND opts_flags ${compile_opts})
-                # string(REPLACE ";" " " opts_flags_str "${opts_flags}")
-
-
                 if(src MATCHES "\\.cu$")
                     set(language "CUDA")
                     set(compiler "${CMAKE_CUDA_COMPILER}")
-                    # Add CUDA specific flags if necessary, excluding those incompatible with -E
-                    # set(lang_flags "${CMAKE_CUDA_FLAGS}") - This contains incompatible flags like -Xcompiler
                 elseif(src MATCHES "\\.c$")
                     set(language "C")
                     set(compiler "${CMAKE_C_COMPILER}")
@@ -1638,26 +1476,20 @@ if(SD_PREPROCESS STREQUAL "ON")
                     continue()
                 endif()
 
-                # Filter flags incompatible with -E (like linker flags, optimization flags potentially)
-                # This is a basic attempt; might need refinement
                 string(REGEX REPLACE "-O[0-9]" "" lang_flags "${lang_flags}")
                 string(REGEX REPLACE "-g" "" lang_flags "${lang_flags}")
                 string(REGEX REPLACE "-flto" "" lang_flags "${lang_flags}")
-                string(REGEX REPLACE "-fPIC" "" lang_flags "${lang_flags}") # -fPIC usually OK, but remove for safety
-                # Add more filters as needed
-
+                string(REGEX REPLACE "-fPIC" "" lang_flags "${lang_flags}")
 
                 message("COMMAND ${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}")
                 execute_process(
                         COMMAND ${CMAKE_COMMAND} -E time "${compiler}" -E ${lang_flags} ${defs_flags} ${include_flags} "${src}" -o "${preprocessed_file}"
-                        # WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/../" # Better to use absolute paths for sources
                         RESULT_VARIABLE result
                         OUTPUT_VARIABLE stdout_output
                         ERROR_VARIABLE stderr_output
                         OUTPUT_STRIP_TRAILING_WHITESPACE
                         ERROR_STRIP_TRAILING_WHITESPACE
                 )
-
 
                 set(output_log_file "${preprocessed_file}.log")
                 file(WRITE ${output_log_file} "Command:\n${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}\n\n")
@@ -1677,17 +1509,14 @@ if(SD_PREPROCESS STREQUAL "ON")
             endif()
 
             list(APPEND PROCESSED_SOURCES ${src})
-        else()
-            # message(STATUS "Skipping already processed file: ${src}")
         endif()
     endforeach()
 
     set_directory_properties(PROPERTIES CLEAN_NO_CUSTOM 1)
 
-    # Create a Custom Target for All Preprocessed Files
     if(PREPROCESSED_FILES)
         add_custom_target(preprocess_sources ALL DEPENDS ${PREPROCESSED_FILES})
     else()
-        add_custom_target(preprocess_sources ALL) # Define target even if no files processed
+        add_custom_target(preprocess_sources ALL)
     endif()
 endif()
