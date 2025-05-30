@@ -26,7 +26,9 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-set(CMAKE_FIND_DEBUG_MODE 1)
+# Disable debug mode to reduce excessive output
+# set(CMAKE_FIND_DEBUG_MODE 1)
+
 # Standard Settings
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 17)
@@ -725,7 +727,74 @@ if(${HELPERS_armcompute})
     endif()
 endif()
 
-# OneDNN configuration
+# Add flatbuffers dependency using ExternalProject_Add directly
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+    set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
+else()
+    set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Disable flatc build" FORCE)
+endif()
+
+include(ExternalProject)
+ExternalProject_Add(flatbuffers_external
+    GIT_REPOSITORY    https://github.com/google/flatbuffers/
+    GIT_TAG           v25.2.10
+    SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
+    BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
+    CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCMAKE_BUILD_TYPE=Release
+        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
+    INSTALL_COMMAND   ""
+    BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
+                      "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
+)
+
+# Make the flatbuffers include path globally available for all targets in this project.
+# This ensures that both the main library and external processes like JNI compilation can find the headers.
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
+
+# Define an INTERFACE library to represent the flatbuffers dependency for other targets.
+add_library(flatbuffers_interface INTERFACE)
+
+# Define the full path to the static library that will be built by the external project
+set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
+
+# Tell any target linking against our interface to link with the actual library file
+target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
+
+# Crucial: Make our interface target depend on the external project completing its build.
+add_dependencies(flatbuffers_interface flatbuffers_external)
+
+# Correct, build-time Flatbuffers code generation
+if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
+    set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
+
+    set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
+
+    add_custom_command(
+        OUTPUT ${MAIN_GENERATED_HEADER}
+        COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+        DEPENDS flatbuffers_external
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Running flatc to generate C++ headers"
+        VERBATIM
+    )
+
+    add_custom_target(generate_flatbuffers_headers
+        DEPENDS ${MAIN_GENERATED_HEADER}
+    )
+
+    add_custom_command(
+        TARGET generate_flatbuffers_headers POST_BUILD
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Copying generated Java files"
+        VERBATIM
+    )
+endif()
+
+# OneDNN configuration - FIXED: Removed problematic flatbuffers dependency
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
@@ -759,7 +828,7 @@ if(${HELPERS_onednn})
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
-            DEPENDS           flatbuffers_external
+            # FIXED: Removed "DEPENDS flatbuffers_external" which was causing the error
     )
 
     add_library(onednn_interface INTERFACE)
@@ -823,79 +892,10 @@ if(${HELPERS_cudnn})
     endif()
 endif()
 
-
-if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-    set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
-else()
-    set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Disable flatc build" FORCE)
-endif()
-
-# Add flatbuffers dependency using ExternalProject_Add directly
-include(ExternalProject)
-ExternalProject_Add(flatbuffers_external
-    GIT_REPOSITORY    https://github.com/google/flatbuffers/
-    GIT_TAG           v25.2.10
-    SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
-    BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
-    CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_BUILD_TYPE=Release
-        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
-    INSTALL_COMMAND   ""
-    BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
-)
-
-# Make the flatbuffers include path globally available for all targets in this project.
-# This ensures that both the main library and external processes like JNI compilation can find the headers.
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
-
-# Define an INTERFACE library to represent the flatbuffers dependency for other targets.
-add_library(flatbuffers_interface INTERFACE)
-
-# Define the full path to the static library that will be built by the external project
-set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
-
-# Tell any target linking against our interface to link with the actual library file
-target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
-
-# Crucial: Make our interface target depend on the external project completing its build.
-add_dependencies(flatbuffers_interface flatbuffers_external)
-
-# Correct, build-time Flatbuffers code generation
-if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-    set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
-
-    set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
-
-    add_custom_command(
-        OUTPUT ${MAIN_GENERATED_HEADER}
-        COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-        DEPENDS flatbuffers_external
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Running flatc to generate C++ headers"
-        VERBATIM
-    )
-
-    add_custom_target(generate_flatbuffers_headers
-        DEPENDS ${MAIN_GENERATED_HEADER}
-    )
-
-    add_custom_command(
-        TARGET generate_flatbuffers_headers POST_BUILD
-        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Copying generated Java files"
-        VERBATIM
-    )
-endif()
-
 # Configuration file
 configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-# --- [END] CORRECTED FLATBUFFERS AND CODE GENERATION LOGIC ---
 
 # Set type combinations for CUDA generation
 set(COMBINATIONS_3
@@ -917,7 +917,6 @@ set(INSTANTIATION_TEMPLATES_2
         "${CMAKE_CURRENT_SOURCE_DIR}/include/ops/impl/compilation_units/specials_single.cpp.in"
 )
 
-# CUDA Configuration
 # CUDA Configuration
 if(SD_CUDA)
     message("Building with CUDA support")
@@ -1049,6 +1048,9 @@ if(SD_CUDA)
 
         set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
         add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+
+        # FIXED: Use flatbuffers_interface instead of flatbuffers_external
+        add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
 
         if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
             add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
@@ -1187,6 +1189,9 @@ else() # Start of CPU Build Section
 
     set(OBJECT_LIB_NAME "${SD_LIBRARY_NAME}_object")
     add_library(${OBJECT_LIB_NAME} OBJECT ${ALL_SOURCES})
+
+    # FIXED: Use flatbuffers_interface instead of flatbuffers_external
+    add_dependencies(${OBJECT_LIB_NAME} flatbuffers_interface)
 
     if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         add_dependencies(${OBJECT_LIB_NAME} generate_flatbuffers_headers)
