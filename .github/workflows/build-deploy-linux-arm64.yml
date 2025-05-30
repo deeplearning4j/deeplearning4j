@@ -26,11 +26,6 @@ on:
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
-
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
@@ -82,9 +77,6 @@ jobs:
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
           - build_threads: ${{ github.event.inputs.buildThreads }}
             experimental: true
             name: The number of threads to build libnd4j with

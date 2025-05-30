@@ -21,10 +21,6 @@ on:
         required: false
         default: 1.0.0-SNAPSHOT
 
-      releaseRepoId:
-        description: 'Release repository id'
-        required: false
-        default:
 
       serverId:
         description: 'Server id to publish to'
@@ -95,10 +91,6 @@ jobs:
           - server_id: ${{ github.event.inputs.serverId }}
             experimental: true
             name: Server id
-
-          - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
 
           - mvn_flags: ${{ github.event.inputs.mvnFlags }}
             experimental: true
