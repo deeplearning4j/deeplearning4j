@@ -1228,7 +1228,7 @@ if(SD_CUDA)
 
         target_link_libraries(${SD_LIBRARY_NAME} PUBLIC
                 ${CUDA_LIBRARIES} ${CUDA_DRIVER_LIBRARY} ${CUDA_CUBLAS_LIBRARIES}
-                ${CUDA_cusolver_LIBRARY} ${CUDNN} flatbuffers
+                ${CUDA_cusolver_LIBRARY} ${CUDNN} flatbuffers_interface
         )
 
         install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
@@ -1377,7 +1377,7 @@ else() # Start of CPU Build Section
             ${ARMCOMPUTE_LIBRARIES}
             ${OPENBLAS_LIBRARIES}
             ${BLAS_LIBRARIES}
-            flatbuffers
+            flatbuffers_interface
     )
 
     install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
