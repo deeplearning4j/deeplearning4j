@@ -1001,10 +1001,7 @@ ExternalProject_Add(flatbuffers_external
     BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
 )
 
-# This command makes the 'flatbuffers' library target available to link against.
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
-        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
-        EXCLUDE_FROM_ALL)
+
 
 # Correct, build-time Flatbuffers code generation
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
