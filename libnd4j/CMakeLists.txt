@@ -853,7 +853,7 @@ if(${HELPERS_armcompute})
     endif()
     # ===================================================================
 endif()
-
+flat
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
@@ -1013,24 +1013,41 @@ else()
 endif()
 
 # Flatbuffers download
-if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download-complete.marker")
-    configure_file(CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
-    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download)
-    if(result)
-        message(FATAL_ERROR "CMake step for flatbuffers failed: ${result}")
-    endif()
-    execute_process(COMMAND ${CMAKE_COMMAND} --build .
-            RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download)
-    if(result)
-        message(FATAL_ERROR "Build step for flatbuffers failed: ${result}")
-    endif()
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-download-complete.marker" "Download complete")
-else()
-    message(STATUS "Flatbuffers already downloaded, skipping download step")
-endif()
+# ==================== ADD THIS NEW BLOCK ====================
+# Add flatbuffers dependency using ExternalProject_Add directly
+include(ExternalProject)
+ExternalProject_Add(flatbuffers_external
+    GIT_REPOSITORY    https://github.com/google/flatbuffers/
+    GIT_TAG           v25.2.10
+    SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
+    BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
+
+    # Pass toolchain information correctly and robustly to the external project
+    CMAKE_ARGS
+        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DCMAKE_BUILD_TYPE=Release
+        -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
+
+    # We don't need a separate install step
+    INSTALL_COMMAND   ""
+
+    # Specify an output from the build to allow other targets to depend on it
+    BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
+)
+
+# This command makes the 'flatbuffers' library target available to the rest of our project
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
+        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
+        EXCLUDE_FROM_ALL)
+
+# Explicitly state that our main library target depends on the flatbuffers external project.
+# This ensures flatbuffers is fully built before libnd4j tries to link against it.
+# NOTE: Replace 'your_main_library_target' with the actual name of your library (e.g., nd4jcpu_object).
+# You can find this in the add_library() call for your project.
+# Based on your scripts, it's likely ${SD_LIBRARY_NAME}_object
+add_dependencies(${SD_LIBRARY_NAME}_object flatbuffers_external)
+# ============================================================
 
 # Add flatbuffers directly to build
 add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
