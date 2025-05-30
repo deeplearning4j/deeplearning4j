@@ -112,16 +112,6 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
 
-      - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@v1.0.0
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          docker-images: true
-          swap-storage: true
 
       - uses: ./.github/actions/set-linux-distro-version
       - name: Set mvn build command based on matrix
