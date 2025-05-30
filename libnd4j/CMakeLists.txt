@@ -823,9 +823,7 @@ if(${HELPERS_cudnn})
     endif()
 endif()
 
-# --- [START] CORRECTED FLATBUFFERS AND CODE GENERATION LOGIC ---
 
-# Flatbuffers configuration
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
     set(FLATBUFFERS_BUILD_FLATC "ON" CACHE STRING "Enable flatc build" FORCE)
 else()
@@ -840,8 +838,9 @@ ExternalProject_Add(flatbuffers_external
     SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
     BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
     CMAKE_ARGS
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+        # Correctly quote the compiler paths to handle spaces
+        -DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}"
+        -DCMAKE_CXX_COMPILER="${CMAKE_CXX_COMPILER}"
         -DCMAKE_BUILD_TYPE=Release
         -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
     INSTALL_COMMAND   ""
