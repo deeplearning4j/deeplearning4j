@@ -1035,23 +1035,7 @@ ExternalProject_Add(flatbuffers_external
     BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
 )
 
-# This command makes the 'flatbuffers' library target available to the rest of our project
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
-        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
-        EXCLUDE_FROM_ALL)
 
-# Explicitly state that our main library target depends on the flatbuffers external project.
-# This ensures flatbuffers is fully built before libnd4j tries to link against it.
-# NOTE: Replace 'your_main_library_target' with the actual name of your library (e.g., nd4jcpu_object).
-# You can find this in the add_library() call for your project.
-# Based on your scripts, it's likely ${SD_LIBRARY_NAME}_object
-add_dependencies(${SD_LIBRARY_NAME}_object flatbuffers_external)
-# ============================================================
-
-# Add flatbuffers directly to build
-add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
-        ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build
-        EXCLUDE_FROM_ALL)
 
 # Flatbuffers generation
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
