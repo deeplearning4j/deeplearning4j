@@ -1389,12 +1389,20 @@ else() # Start of CPU Build Section
         message(FATAL_ERROR "You need at least GCC 4.9")
     endif()
 
+# OpenMP for GCC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         find_package(OpenMP)
         if(OPENMP_FOUND)
-            target_compile_options(${OBJECT_LIB_NAME} INTERFACE ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-            target_compile_options(${OBJECT_LIB_NAME} PRIVATE ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS})
-            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
+            message(STATUS "OpenMP found, applying flags and libraries.")
+            message(STATUS "--> OpenMP CXX Flags: ${OpenMP_CXX_FLAGS}")
+            message(STATUS "--> OpenMP CXX Libraries: ${OpenMP_CXX_LIBRARIES}")
+
+            # Apply the OpenMP compile flag to the object library
+            target_compile_options(${OBJECT_LIB_NAME} INTERFACE ${OpenMP_CXX_FLAGS})
+            target_compile_options(${OBJECT_LIB_NAME} PRIVATE ${OpenMP_CXX_FLAGS})
+
+            # Explicitly link the required OpenMP libraries (like pthread) to the final shared library
+            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC ${OpenMP_CXX_LIBRARIES})
         endif()
     endif()
 endif() # End of CPU Build Section
