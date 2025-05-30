@@ -42,7 +42,6 @@ endif()
 option(SD_NATIVE "Optimize for build machine (might not work on others)" OFF)
 option(SD_CHECK_VECTORIZATION "checks for vectorization" OFF)
 option(SD_BUILD_TESTS "Build tests" OFF)
-# Force shared library build - these options are kept for potential compatibility but ignored by the simplified logic below
 option(SD_STATIC_LIB "Build static library (ignored, only shared lib is built)" OFF)
 option(SD_SHARED_LIB "Build shared library (ignored, this is the default)" ON)
 option(SD_SANITIZE "Enable Address Sanitizer" OFF)
@@ -284,9 +283,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
     endif()
 
     if("${SD_GCC_FUNCTRACE}" STREQUAL "ON")
-        # See: https://github.com/bombela/backward-cpp
-
-        # Check if compiler is nvcc or nvcc_wrapper
         set(COMPILER_IS_NVCC false)
         get_filename_component(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
         if(COMPILER_NAME MATCHES "^nvcc")
@@ -299,14 +295,11 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT CMAKE_SYSTEM_NAME MATCHES "A
             endif()
         endif()
 
-        # Set C++ standard
         set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
         if(COMPILER_IS_NVCC)
-            # GNU C++ extensions are not supported by nvcc
             set(CMAKE_CXX_EXTENSIONS OFF)
         endif()
 
-        # Set C++ compiler and flags
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
@@ -344,7 +337,6 @@ set(SD_X86_BUILD false)
 set(SD_ARM_BUILD false)
 
 if(SD_ANDROID_BUILD)
-    # For Android, trust ANDROID_ABI
     if(ANDROID_ABI MATCHES "x86_64")
         set(SD_X86_BUILD true)
         set(SD_ARCH "x86-64")
@@ -359,7 +351,6 @@ if(SD_ANDROID_BUILD)
         set(SD_ARCH "armv7-a")
     endif()
 elseif(NOT SD_IOS_BUILD)
-    # Non-Android, Non-iOS logic
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64|amd64")
         set(SD_X86_BUILD true)
         if(NOT DEFINED SD_ARCH)
@@ -476,7 +467,6 @@ function(genCompilation FL_ITEM)
 
     file(READ ${FL_ITEM} CONTENT_FL)
 
-    # Set all flags to false initially
     set(SD_FLOAT_TYPES_GEN 0)
     set(SD_INTEGER_TYPES_GEN 0)
     set(SD_COMMON_TYPES_GEN 0)
@@ -485,13 +475,11 @@ function(genCompilation FL_ITEM)
 
     string(REGEX MATCHALL "#cmakedefine[ \t]+SD_(INTEGER|COMMON|FLOAT|PAIRWISE)_TYPES_GEN" TYPE_MATCHES ${CONTENT_FL})
 
-    # Define range limits
     set(SD_INTEGER_TYPES_END 7)
     set(SD_COMMON_TYPES_END 12)
     set(SD_FLOAT_TYPES_END 3)
     set(SD_PAIRWISE_TYPES_END 12)
 
-    # Process matches and set flags
     foreach(TYPEX ${TYPE_MATCHES})
         set(STOP -1)
         if(TYPEX MATCHES "SD_INTEGER_TYPES_GEN$")
@@ -515,13 +503,10 @@ function(genCompilation FL_ITEM)
         endif()
     endforeach()
 
-    # Create output directory
     file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/compilation_units")
 
-    # Generate files in a single pass - just like the original
     if(RANGE_STOP GREATER -1)
         foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
-            # Reset flags if index exceeds limits - directly modify the variables
             if(FL_TYPE_INDEX GREATER ${SD_FLOAT_TYPES_END})
                 set(SD_FLOAT_TYPES_GEN 0)
             endif()
@@ -532,26 +517,19 @@ function(genCompilation FL_ITEM)
                 set(SD_COMMON_TYPES_GEN 0)
             endif()
 
-            # Generate the file unconditionally
             set(GENERATED_SOURCE "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
             configure_file("${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
             list(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE})
         endforeach()
     endif()
 
-    # Pass the updated list to parent scope
     set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 endfunction()
 
-# genPartitionCombination: Generates combination files for CPU
 function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTPUT_DIR)
-    # Split combination string into a list
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
-
-    # Determine number of elements
     list(LENGTH COMB_LIST COMB_COUNT)
 
-    # Validate combination
     if(NOT (COMBINATION_TYPE EQUAL 3 OR COMBINATION_TYPE EQUAL 2))
         message(FATAL_ERROR "Unsupported COMBINATION_TYPE: ${COMBINATION_TYPE}. Use 3 or 2.")
     endif()
@@ -561,7 +539,6 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
         message(FATAL_ERROR "Combination length (${COMB_COUNT}) does not match COMBINATION_TYPE (${COMBINATION_TYPE}).")
     endif()
 
-    # Define placeholders based on combination type
     if(COMBINATION_TYPE EQUAL 3)
         list(GET COMB_LIST 0 COMB1)
         list(GET COMB_LIST 1 COMB2)
@@ -576,10 +553,8 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
         set(PLACEHOLDER2 "@COMB2@")
     endif()
 
-    # Read the template content
     file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
 
-    # Perform placeholder replacements
     if(COMBINATION_TYPE EQUAL 3)
         string(REPLACE "${PLACEHOLDER1}" "${COMB1}" TEMP_CONTENT "${TEMPLATE_CONTENT}")
         string(REPLACE "${PLACEHOLDER2}" "${COMB2}" TEMP_CONTENT "${TEMP_CONTENT}")
@@ -589,9 +564,8 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
         string(REPLACE "${PLACEHOLDER2}" "${COMB2}" FINAL_CONTENT "${FINAL_CONTENT}")
     endif()
 
-    # Define the output file name based on combination
-    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE) # Get base name like "pairwise_instantiation_template_2"
-    string(REPLACE "_template_" "_" OUTPUT_BASE_NAME "${TEMPLATE_BASE}") # Make it shorter like "pairwise_instantiation_2"
+    get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
+    string(REPLACE "_template_" "_" OUTPUT_BASE_NAME "${TEMPLATE_BASE}")
 
     if(COMBINATION_TYPE EQUAL 3)
         set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}_${COMB3}.cpp")
@@ -599,86 +573,63 @@ function(genPartitionCombination TEMPLATE_FILE COMBINATION_TYPE COMBINATION OUTP
         set(OUTPUT_FILE "${OUTPUT_BASE_NAME}_${COMB1}_${COMB2}.cpp")
     endif()
 
-    # Define the full path for the generated file
     set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
-
-    # Write the processed content to the output file
     file(WRITE "${GENERATED_FILE}" "${FINAL_CONTENT}")
 
-    # Optionally, collect generated sources for further processing
     list(APPEND CUSTOMOPS_GENERIC_SOURCES "${GENERATED_FILE}")
-    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE) # Pass back up
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
 
-    # Output a message for verification
     message(STATUS "Generated Instantiation File: ${GENERATED_FILE}")
 endfunction()
 
-# genSingleFunctionCuda: Generate individual CUDA files for each type combination
 function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
-    # Split the COMBINATION string into a list
     string(REPLACE "," ";" COMB_LIST "${COMBINATION}")
 
-    # Extract combination values
     list(GET COMB_LIST 0 COMB1)
     list(GET COMB_LIST 1 COMB2)
     list(GET COMB_LIST 2 COMB3)
 
-    # Get the base name from the template file
     get_filename_component(TEMPLATE_BASE "${TEMPLATE_FILE}" NAME_WE)
 
-    # Read the template content
     file(READ "${TEMPLATE_FILE}" TEMPLATE_CONTENT)
 
-    # Extract class and method names using regex
     string(REGEX MATCH "([a-zA-Z0-9_:]+),[ \n\t]*::([a-zA-Z0-9_]+)" FUNCTION_MATCH "${TEMPLATE_CONTENT}")
     set(CLASS_NAME ${CMAKE_MATCH_1})
     set(METHOD_NAME ${CMAKE_MATCH_2})
 
-    # Clean class name for file naming
     string(REGEX REPLACE "::" "_" CLASS_NAME_CLEAN "${CLASS_NAME}")
 
-    # Extract function signature to create a hash
     string(REGEX MATCH "::${METHOD_NAME}\\(([^;]+)\\);" FUNC_ARGS_MATCH "${TEMPLATE_CONTENT}")
     set(FUNCTION_ARGS "${CMAKE_MATCH_1}")
 
-    # Create a signature identifier based on parameter count and types
     set(PARAM_COUNT 0)
     set(SIGNATURE_ID "")
 
-    # Split the function arguments and count them
     string(REPLACE "," ";" ARGS_LIST "${FUNCTION_ARGS}")
     list(LENGTH ARGS_LIST PARAM_COUNT)
 
-    # Create a hash of the signature
     foreach(ARG ${ARGS_LIST})
-        # Extract just the type name from the parameter
         string(REGEX MATCH "^[^*& \t]+" TYPE_NAME "${ARG}")
         if(TYPE_NAME)
-            # Append to the signature ID
             string(APPEND SIGNATURE_ID "_${TYPE_NAME}")
         endif()
     endforeach()
 
-    # Create a shorter hash if the signature is too long
     if(SIGNATURE_ID MATCHES ".{30,}")
         string(MD5 SIGNATURE_HASH "${SIGNATURE_ID}")
         string(SUBSTRING "${SIGNATURE_HASH}" 0 8 SIGNATURE_ID)
         set(SIGNATURE_ID "_h${SIGNATURE_ID}")
     endif()
 
-    # Output filename with signature identifier
     set(OUTPUT_FILE "${CLASS_NAME_CLEAN}_${METHOD_NAME}${SIGNATURE_ID}_${COMB1}_${COMB2}_${COMB3}.cu")
     set(GENERATED_FILE "${OUTPUT_DIR}/${OUTPUT_FILE}")
 
-    # Check if this file already exists - if so, no need to regenerate
     if(EXISTS "${GENERATED_FILE}")
-        # Add to CUDA_GENERATED_SOURCES without regenerating
         list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
         set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
         return()
     endif()
 
-    # Extract just the necessary header information
     set(START_MARKER "ITERATE_COMBINATIONS_3")
     string(FIND "${TEMPLATE_CONTENT}" "${START_MARKER}" START_POS)
     if(START_POS EQUAL -1)
@@ -687,17 +638,12 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
 
     string(SUBSTRING "${TEMPLATE_CONTENT}" 0 ${START_POS} HEADER_CONTENT)
 
-    # Create streamlined content with just the single instantiation needed
     set(NEW_CONTENT "${HEADER_CONTENT}\n\n// Single function instantiation for ${CLASS_NAME}::${METHOD_NAME}\n")
     string(APPEND NEW_CONTENT "template void ${CLASS_NAME}::${METHOD_NAME}<SD_SINGLE_TYPE_${COMB1}, SD_SINGLE_TYPE_${COMB2}, SD_SINGLE_TYPE_${COMB3}>(${FUNCTION_ARGS});\n")
 
-    # Create directory if needed
     file(MAKE_DIRECTORY "${OUTPUT_DIR}")
-
-    # Write the processed content to the output file
     file(WRITE "${GENERATED_FILE}" "${NEW_CONTENT}")
 
-    # Set properties and add to sources
     set_source_files_properties("${GENERATED_FILE}" PROPERTIES LANGUAGE CUDA)
     list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
@@ -707,23 +653,18 @@ endfunction()
 
 # Configure BLAS for CPU builds
 if(NOT SD_CUDA)
-    # We need this definition to avoid global memory use within onednn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
     if("${OPENBLAS_PATH}" STREQUAL "")
-        # We don't want OpenBLAS on Apple
         if(NOT APPLE)
-            # Note: this is not a typo
             set(BLA_VENDOR "OpenBLAS")
         endif()
 
-        # Look around for system blas
         find_package(BLAS REQUIRED)
         if(BLAS_FOUND)
             message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
             add_definitions(-D__EXTERNAL_BLAS__=true)
         endif()
     else()
-        # Use externally provided OPENBLAS_PATH
         set(HAVE_OPENBLAS 1)
         message("Setting openblas")
         include_directories(${OPENBLAS_PATH}/include/)
@@ -733,176 +674,108 @@ if(NOT SD_CUDA)
 endif()
 
 # ARM Compute configuration
-# Initialize variables to indicate ARM Compute is not yet configured
 set(ARMCOMPUTE_LIBRARIES "")
 set(HAVE_ARMCOMPUTE 0)
-
-# Only attempt ARM Compute configuration if the helper flag is set
 if(${HELPERS_armcompute})
-    # ===================================================================
-    # Manage ARM Compute Dependency using ExternalProject_Add
-    # ===================================================================
-    option(LIBND4J_BUILD_WITH_ARMCOMPUTE "Build with ARM Compute Library support" ON) # Make it optional if needed
+    option(LIBND4J_BUILD_WITH_ARMCOMPUTE "Build with ARM Compute Library support" ON)
 
     if(LIBND4J_BUILD_WITH_ARMCOMPUTE AND (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64"))
         message(STATUS "Configuring ARM Compute Library download using ExternalProject_Add")
         include(ExternalProject)
 
-        # --- Configuration (Adjust these as needed) ---
-        set(ARMCOMPUTE_VERSION "v25.04") # Version from your logs
-        set(ARMCOMPUTE_ARCH "aarch64")   # Arch from your logs
-        set(ARMCOMPUTE_PLATFORM "linux") # Platform from your logs
-        set(ARMCOMPUTE_FLAVOR "cpu")     # Flavor from your logs
-
-        # Directory where headers/libs will be "installed" within the build tree
+        set(ARMCOMPUTE_VERSION "v25.04")
+        set(ARMCOMPUTE_ARCH "aarch64")
+        set(ARMCOMPUTE_PLATFORM "linux")
+        set(ARMCOMPUTE_FLAVOR "cpu")
         set(ARMCOMPUTE_INSTALL_DIR "${CMAKE_BINARY_DIR}/armcompute_install")
-        # Directory where ExternalProject will download/extract source archive
         set(ARMCOMPUTE_SOURCE_DIR "${CMAKE_BINARY_DIR}/armcompute_external/src")
-
-        # Construct package name and URL (VERIFY THIS URL IS CORRECT!)
         set(ARMCOMPUTE_PKG_NAME "arm_compute-${ARMCOMPUTE_VERSION}-${ARMCOMPUTE_PLATFORM}-${ARMCOMPUTE_ARCH}-${ARMCOMPUTE_FLAVOR}-bin")
         set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
-
-
-        # Subdirectory within the extracted archive containing the libs (based on your previous log)
-        # VERIFY this matches the actual archive structure.
         set(ARMCOMPUTE_LIB_SUBDIR "lib/armv8a-neon")
 
-        ExternalProject_Add(armcompute_external # Define the external project target
-                PREFIX            "${CMAKE_BINARY_DIR}/armcompute_external" # Base directory for EP build/tmp files
+        ExternalProject_Add(armcompute_external
+                PREFIX            "${CMAKE_BINARY_DIR}/armcompute_external"
                 URL               "${ARMCOMPUTE_URL}"
-                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads" # Cache downloads here
-                SOURCE_DIR        "${ARMCOMPUTE_SOURCE_DIR}"      # Where archive contents are extracted
-
-                # Since it's pre-built, no configure or build steps needed
+                DOWNLOAD_DIR      "${CMAKE_BINARY_DIR}/downloads"
+                SOURCE_DIR        "${ARMCOMPUTE_SOURCE_DIR}"
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND     ""
-
-                # Define the "install" step: Copy needed files from extracted archive to our install dir
-                INSTALL_COMMAND   ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" && # Clean first
-                # Copy headers
-                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
-                # Copy the specific library directory
-                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
-
-                # Specify key output files to ensure the install step completes before dependents build
-                # Use library names/paths known to exist in the package. Adjust if needed.
+                INSTALL_COMMAND   ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" &&
+                                  ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
+                                  ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
                 BUILD_BYPRODUCTS  "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
-                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
-                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
-                BUILD_IN_SOURCE   1 # Often needed if there's no real build step
+                                  "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
+                                  "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
+                BUILD_IN_SOURCE   1
         )
 
-        # --- Define an INTERFACE Library ---
-        # This represents the ARM Compute dependency for other targets to link against.
         add_library(armcompute_interface INTERFACE)
-        # Tell targets linking this where to find headers
         target_include_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/include")
-        # Tell targets linking this where to find libraries (-L flag)
         target_link_directories(armcompute_interface INTERFACE "${ARMCOMPUTE_INSTALL_DIR}/lib")
-        # Specify libraries to link (-l flag names derived from lib*.so)
         target_link_libraries(armcompute_interface INTERFACE arm_compute arm_compute_graph)
-
-        # Crucial: Make the interface target depend on the external project completing its install step.
         add_dependencies(armcompute_interface armcompute_external)
 
-        # Set a variable to indicate ARM Compute is available via this method
         set(ARMCOMPUTE_FOUND TRUE)
-        set(ARMCOMPUTE_INCLUDE_DIRS "${ARMCOMPUTE_INSTALL_DIR}/include") # For potential backward compatibility checks, not strictly needed
-        set(ARMCOMPUTE_LIBRARIES armcompute_interface) # The target name representing the libraries
+        set(ARMCOMPUTE_INCLUDE_DIRS "${ARMCOMPUTE_INSTALL_DIR}/include")
+        set(ARMCOMPUTE_LIBRARIES armcompute_interface)
 
     else()
         message(STATUS "Skipping ARM Compute setup via ExternalProject_Add (disabled or not AArch64)")
         set(ARMCOMPUTE_FOUND FALSE)
     endif()
-    # ===================================================================
 endif()
 
+# OneDNN configuration
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
-
 if(${HELPERS_onednn})
     include(ExternalProject)
     message(STATUS "Configuring OneDNN dependency using ExternalProject_Add")
-    set(HAVE_ONEDNN TRUE) # Assume success initially, ExternalProject handles failure
+    set(HAVE_ONEDNN TRUE)
 
-    # Define directories for OneDNN within the build tree
-    set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install") # Where headers/libs will be installed
-    set(ONEDNN_SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn_external/src")    # Where source code will be cloned
-    set(ONEDNN_BUILD_DIR "${CMAKE_BINARY_DIR}/onednn_external/build")   # Where OneDNN will be built
+    set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
+    set(ONEDNN_SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn_external/src")
+    set(ONEDNN_BUILD_DIR "${CMAKE_BINARY_DIR}/onednn_external/build")
 
-    # --- Add OneDNN using ExternalProject_Add ---
-    ExternalProject_Add(onednn_external # Define the external project target
-            PREFIX            "${CMAKE_BINARY_DIR}/onednn_external" # Base directory for EP build/tmp files
-            GIT_REPOSITORY    "https://github.com/KonduitAI/oneDNN.git" # Use the correct repo
-            GIT_TAG           "master" # Or a specific commit/tag for stability
-
+    ExternalProject_Add(onednn_external
+            PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
+            GIT_REPOSITORY    "https://github.com/KonduitAI/oneDNN.git"
+            GIT_TAG           "master"
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
-            BINARY_DIR        "${ONEDNN_BUILD_DIR}" # Explicitly set build directory
-
-            # --- CMake Configuration Step ---
-            # Pass necessary options to OneDNN's CMake configuration
-            # Ensure CMAKE_INSTALL_PREFIX directs install artifacts correctly
+            BINARY_DIR        "${ONEDNN_BUILD_DIR}"
             CMAKE_ARGS
-            -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
-            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-            -DDNNL_LIBRARY_TYPE=STATIC # Build static library
-            -DDNNL_BUILD_TESTS=OFF     # Disable tests
-            -DDNNL_BUILD_EXAMPLES=OFF  # Disable examples
-            -DDNNL_VERBOSE=OFF         # Disable verbose build unless debugging
-            # Add other necessary flags like compiler paths or toolchains if needed for cross-compilation
-            # Example for cross-compiling: -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
-
-            # --- Build Step ---
-            # Use CMake's build command
+                -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
+                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                -DDNNL_LIBRARY_TYPE=STATIC
+                -DDNNL_BUILD_TESTS=OFF
+                -DDNNL_BUILD_EXAMPLES=OFF
+                -DDNNL_VERBOSE=OFF
             BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE}
-
-            # --- Install Step ---
-            # Use CMake's install command targeting the prefix defined in CMAKE_ARGS
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
-
-            # --- Specify key output files ---
-            # These ensure the install step completes before dependents build.
-            # Adjust paths/names if OneDNN's install structure changes.
             BUILD_BYPRODUCTS  "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
-            "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a" # Assuming static lib name
-
-            # --- Logging ---
+                              "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
             LOG_DOWNLOAD      ON
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
     )
 
-    # --- Define an INTERFACE Library for OneDNN ---
-    # This represents the OneDNN dependency for other targets (like libnd4j) to link against.
     add_library(onednn_interface INTERFACE)
-
-    # Tell targets linking this where to find OneDNN headers
     target_include_directories(onednn_interface INTERFACE
             "${ONEDNN_INSTALL_DIR}/include"
     )
-
-    # Tell targets linking this the full path to the static library to link
-    # For static libraries, linking the full path is often necessary.
-    # Adjust the library name/extension (.a/.lib) based on the platform if needed.
     target_link_libraries(onednn_interface INTERFACE
             "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
     )
-
-    # Crucial: Make the interface target depend on the external project completing its install step.
     add_dependencies(onednn_interface onednn_external)
-
-    # Set the variable used later in target_link_libraries for libnd4j
-    set(ONEDNN onednn_interface) # Use the interface library target name
+    set(ONEDNN onednn_interface)
 
     message(STATUS "OneDNN configured via ExternalProject_Add. Build artifacts will be in ${ONEDNN_INSTALL_DIR}")
-
 else()
     message(STATUS "Skipping OneDNN setup via ExternalProject_Add (HELPERS_onednn is OFF)")
     set(HAVE_ONEDNN FALSE)
-    set(ONEDNN "") # Ensure variable is empty if not used
+    set(ONEDNN "")
 endif()
 
 # cuDNN configuration
@@ -923,35 +796,16 @@ if(${HELPERS_cudnn})
     endif()
     message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
 
-    # Look for cuDNN in multiple potential locations
     find_path(CUDNN_INCLUDE_DIR cudnn.h
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDA_TOOLKIT_ROOT_DIR}
-            /usr/local/cuda
-            ENV CUDNN_ROOT_DIR
-            ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES
-            cuda/include
-            include
-            include/cuda)
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} /usr/local/cuda
+            ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR
+            PATH_SUFFIXES cuda/include include include/cuda)
 
     find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
-            HINTS
-            ${CUDNN_ROOT_DIR}
-            ${CUDA_TOOLKIT_ROOT_DIR}
-            /usr/local/cuda
-            ENV CUDNN_ROOT_DIR
-            ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES
-            lib
-            lib64
-            cuda/lib
-            cuda/lib64
-            cuda/lib/x64
-            lib/x64)
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} /usr/local/cuda
+            ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR
+            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
 
-    # Debug output to help diagnose the issue
     message("CUDNN_INCLUDE_DIR search result: ${CUDNN_INCLUDE_DIR}")
     message("CUDNN_LIBRARY search result: ${CUDNN_LIBRARY}")
 
@@ -961,7 +815,6 @@ if(${HELPERS_cudnn})
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
     else()
-        # More detailed error message but continue with build
         message(WARNING "cuDNN not found. Continuing without cuDNN support.")
         message("Searched for include in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
         message("Searched for library '${CUDNN_LIBNAME}' in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
@@ -985,35 +838,37 @@ ExternalProject_Add(flatbuffers_external
     GIT_TAG           v25.2.10
     SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
     BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
-
-    # Pass toolchain information correctly and robustly to the external project
     CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE=Release
         -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
-
-    # We don't need a separate install step
     INSTALL_COMMAND   ""
-
-    # Specify an output from the build to allow other targets to depend on it
-    # This ensures flatc is built before anything that depends on flatbuffers_external
     BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
 )
 
+# Make the flatbuffers include path globally available for all targets in this project.
+# This ensures that both the main library and external processes like JNI compilation can find the headers.
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include")
 
+# Define an INTERFACE library to represent the flatbuffers dependency for other targets.
+add_library(flatbuffers_interface INTERFACE)
+
+# Define the full path to the static library that will be built by the external project
+set(FLATBUFFERS_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a")
+
+# Tell any target linking against our interface to link with the actual library file
+target_link_libraries(flatbuffers_interface INTERFACE ${FLATBUFFERS_LIBRARY})
+
+# Crucial: Make our interface target depend on the external project completing its build.
+add_dependencies(flatbuffers_interface flatbuffers_external)
 
 # Correct, build-time Flatbuffers code generation
 if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
-    # Define the path to the flatc executable that ExternalProject will create
     set(FLATC_EXECUTABLE "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc")
 
-    # Define the main output header file from the generation script.
-    # Note: This should be an actual file that the script is known to create, used for dependency tracking.
     set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
 
-    # Create a custom command to run the generator script.
-    # This command depends on the flatbuffers_external target, ensuring it runs AFTER flatc is built.
     add_custom_command(
         OUTPUT ${MAIN_GENERATED_HEADER}
         COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
@@ -1023,12 +878,10 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         VERBATIM
     )
 
-    # Create a target that represents the result of the code generation.
     add_custom_target(generate_flatbuffers_headers
         DEPENDS ${MAIN_GENERATED_HEADER}
     )
 
-    # This handles the Java file copying as a post-build event for the generation target.
     add_custom_command(
         TARGET generate_flatbuffers_headers POST_BUILD
         COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
@@ -1037,8 +890,6 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
         VERBATIM
     )
 endif()
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src/include)
 
 # Configuration file
 configure_file(include/config.h.in include/config.h)
@@ -1071,19 +922,16 @@ set(INSTANTIATION_TEMPLATES_2
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # Platform-specific settings
     if(WIN32)
         message("Setting up Windows-specific CUDA unsupported compiler flags")
     else()
         message("Setting up Linux-specific CUDA unsupported compiler flags")
     endif()
 
-    # Enable CUDA language
     enable_language(CUDA)
-
     add_definitions(-D__CUDABLAS__=true)
-
     find_package(CUDA REQUIRED)
+
     if(CUDA_FOUND)
         message("CUDA include directory: ${CUDA_INCLUDE_DIRS} with CXX compiler ${CMAKE_CXX_COMPILER_ID} SD_GCC_FUNCTRACE=${SD_GCC_FUNCTRACE}")
         include_directories(${CUDA_INCLUDE_DIRS})
@@ -1092,7 +940,6 @@ if(SD_CUDA)
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
 
-        # Add --allow-unsupported-compiler to CUDA flags
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
 
         if("${SD_PTXAS}" STREQUAL "ON")
@@ -1148,16 +995,15 @@ if(SD_CUDA)
 
         string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
-            # Updated architecture flags for CUDA 12.3
             set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_90,code=sm_90")
         elseif(COMPUTE_CMP STREQUAL "auto")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
         else()
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
-            string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}") # Force replace ; with space
+            string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}")
         endif()
 
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}") # Added CUDA_ARCH_FLAGS
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
         if(WIN32)
@@ -1169,7 +1015,6 @@ if(SD_CUDA)
         add_compile_definitions(SD_CUDA=true)
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
-        # Gather CUDA source files
         file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/impl/*.cpp ./include/execution/cuda/*.cu ./include/execution/cuda/*.h ./include/execution/*.cu ./include/execution/*.h)
@@ -1190,7 +1035,7 @@ if(SD_CUDA)
         file(GLOB_RECURSE COMPILATION_UNITS ./include/loops/cuda/compilation_units/*.cu.in)
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}")
         foreach(FL_ITEM ${COMPILATION_UNITS})
-            genCompilation(${FL_ITEM}) # Appends to CUSTOMOPS_GENERIC_SOURCES
+            genCompilation(${FL_ITEM})
         endforeach()
 
         set(ALL_SOURCES
@@ -1250,7 +1095,6 @@ else() # Start of CPU Build Section
         genCompilation(${FL_ITEM})
     endforeach()
 
-    # Gather CPU Source Files
     file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
     file(GLOB_RECURSE EXEC_SOURCES ./include/execution/*.cpp ./include/execution/*.h)
@@ -1271,20 +1115,14 @@ else() # Start of CPU Build Section
 
     set(CUSTOMOPS_ONEDNN_SOURCES "")
     if(HAVE_ONEDNN)
-        file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP
-                ./include/ops/declarable/platform/mkldnn/*.cpp
-                ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h
-        )
+        file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP ./include/ops/declarable/platform/mkldnn/*.cpp ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
         set(CUSTOMOPS_ONEDNN_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES_TMP})
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
     endif()
 
     set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
     if(HAVE_ARMCOMPUTE)
-        file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP
-                ./include/ops/declarable/platform/armcompute/*.cpp
-                ./include/ops/declarable/platform/armcompute/*.h
-        )
+        file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP ./include/ops/declarable/platform/armcompute/*.cpp ./include/ops/declarable/platform/armcompute/*.h)
         set(CUSTOMOPS_ARMCOMPUTE_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP})
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
     endif()
@@ -1386,8 +1224,7 @@ else() # Start of CPU Build Section
         message(FATAL_ERROR "You need at least GCC 4.9")
     endif()
 
-# OpenMP for GCC
-# OpenMP for GCC
+    # OpenMP for GCC
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         # On modern GCC, we can directly set the required flags and libraries
         # instead of relying on the FindOpenMP module, which is failing its
@@ -1508,7 +1345,6 @@ if(SD_PREPROCESS STREQUAL "ON")
                 else()
                     list(APPEND PREPROCESSED_FILES ${preprocessed_file})
                 endif()
-
             else()
                 message(STATUS "Preprocessed file already exists, skipping: ${preprocessed_file}")
                 list(APPEND PREPROCESSED_FILES ${preprocessed_file})
