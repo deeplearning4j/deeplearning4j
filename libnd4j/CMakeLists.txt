@@ -918,14 +918,17 @@ set(INSTANTIATION_TEMPLATES_2
 )
 
 # CUDA Configuration
+# CUDA Configuration
 if(SD_CUDA)
     message("Building with CUDA support")
 
-    # [FIX] Set the flag to allow unsupported MSVC compilers before any CUDA-related commands.
-    # This is crucial for the initial compiler identification check performed by 'enable_language(CUDA)' to pass.
+    # [FIX] Force the '--allow-unsupported-compiler' flag into the CMake cache
+    # before enabling the CUDA language. This is the correct way to ensure the flag
+    # is used during the initial compiler identification step, which otherwise fails
+    # on systems with MSVC versions newer than what the CUDA Toolkit officially supports.
     if(WIN32)
-        message("Setting Windows-specific flag to allow unsupported MSVC compiler for CUDA.")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
+        message("Forcing Windows-specific CUDA flag: --allow-unsupported-compiler")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler" CACHE STRING "Initial CUDA compiler flags" FORCE)
     endif()
 
     enable_language(CUDA)
@@ -959,6 +962,7 @@ if(SD_CUDA)
         endif()
 
         if(WIN32)
+            # This configuration is now handled by the specific library settings below
             message("Configuring CUDA libraries for Windows")
             if(NOT DEFINED CUDA_cublas_LIBRARY)
                 set(CUDA_cublas_LIBRARY "${CUDA_HOME}/lib/x64/cublas.lib")
@@ -967,7 +971,6 @@ if(SD_CUDA)
                 set(CUDA_cusolver_LIBRARY "${CUDA_HOME}/lib/x64/cusolver.lib")
             endif()
         endif()
-
         if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
             message("Adding Jetson Nano specific settings")
             if(NOT DEFINED CUDA_cublas_LIBRARY OR "${CUDA_cublas_LIBRARY}" MATCHES ".*NOTFOUND.*" )
