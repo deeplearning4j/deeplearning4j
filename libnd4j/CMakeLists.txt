@@ -921,10 +921,11 @@ set(INSTANTIATION_TEMPLATES_2
 if(SD_CUDA)
     message("Building with CUDA support")
 
+    # [FIX] Set the flag to allow unsupported MSVC compilers before any CUDA-related commands.
+    # This is crucial for the initial compiler identification check performed by 'enable_language(CUDA)' to pass.
     if(WIN32)
-        message("Setting up Windows-specific CUDA unsupported compiler flags")
-    else()
-        message("Setting up Linux-specific CUDA unsupported compiler flags")
+        message("Setting Windows-specific flag to allow unsupported MSVC compiler for CUDA.")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
     endif()
 
     enable_language(CUDA)
@@ -938,8 +939,6 @@ if(SD_CUDA)
 
         set(CMAKE_CUDA_FLAGS_DEBUG " -g")
         message("CMAKE_CXX_COMPILER_ID = ${CMAKE_CXX_COMPILER_ID}")
-
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
 
         if("${SD_PTXAS}" STREQUAL "ON")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
@@ -1005,11 +1004,6 @@ if(SD_CUDA)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
-        if(WIN32)
-            message("Setting up Windows-specific CUDA unsupported compiler flags")
-        else()
-            message("Setting up Linux-specific CUDA unsupported compiler flags")
-        endif()
 
         add_compile_definitions(SD_CUDA=true)
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
