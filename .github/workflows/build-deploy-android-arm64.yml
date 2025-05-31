@@ -93,18 +93,12 @@ jobs:
           sudo swapon /swapfile
           sudo sysctl vm.swappiness=20
           free -h
-      - name: Cache cmake install
-        uses: actions/cache@v4
-        id: cache-cmake
-        with:
-          path: /opt/cmake
-          key: ${{ runner.os }}-cmake
       - name: Cache protobuf install
         uses: actions/cache@v4
-        id: cache-protobuf
+        id: cache-protobuf-arm
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf-arm
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
       - uses: ./.github/actions/install-cmake-linux
