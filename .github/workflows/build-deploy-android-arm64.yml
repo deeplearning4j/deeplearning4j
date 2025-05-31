@@ -59,40 +59,21 @@ jobs:
         helper: [armcompute, ""]
         include:
           - mvn_ext: ${{ github.event.inputs.mvnFlags }}
-            experimental: true
-            name: Extra maven flags
           - debug_enabled: ${{ github.event.inputs.debug_enabled }}
-            experimental: true
-            name: Debug enabled
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
-            experimental: true
-            name: Whether to deploy to release staging or not
           - release_version: ${{ github.event.inputs.releaseVersion }}
-            experimental: true
-            name: Release version
           - snapshot_version: ${{ github.event.inputs.snapshotVersion }}
-            experimental: true
-            name: Snapshot version
           - server_id: ${{ github.event.inputs.serverId }}
-            experimental: true
-            name: Server id
           - release_repo_id: ${{ github.event.inputs.releaseRepoId }}
-            experimental: true
-            name: The release repository to run on
           - build_threads: ${{ github.event.inputs.buildThreads }}
-            experimental: true
-            name: The number of threads to build libnd4j with
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - uses: AutoModality/action-clean@v1
-
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-
       - uses: actions/checkout@v2
-
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -103,76 +84,31 @@ jobs:
           large-packages: true
           docker-images: true
           swap-storage: true
-
       - name: Configure swap space
         shell: bash
         run: |
-          echo "=== Initial system status ==="
-          free -h
-          df -h
-          echo "Available disk space on root:"
-          df -h /
-          
-          # Check if swap is already enabled
-          if swapon --show | grep -q "/"; then
-            echo "Swap already configured:"
-            swapon --show
-          else
-            echo "Configuring swap space..."
-          
-            # Use fixed 4GB swap size
-            SWAP_SIZE="4G"
-            echo "Creating ${SWAP_SIZE} swap file..."
-          
-            # Create swap file
-            sudo fallocate -l ${SWAP_SIZE} /swapfile || {
-              echo "fallocate failed, trying dd..."
-              sudo dd if=/dev/zero of=/swapfile bs=1G count=4 status=progress
-            }
-          
-            # Set up swap
-            sudo chmod 600 /swapfile
-            sudo mkswap /swapfile
-            sudo swapon /swapfile
-          
-            # Verify swap is active
-            echo "=== Swap configuration completed ==="
-            free -h
-            swapon --show
-          fi
-          
-          # Tune swappiness for build workloads
-          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
-          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
           sudo sysctl vm.swappiness=20
-          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
-          
-          # Show final memory status
-          echo "=== Final memory status ==="
           free -h
-
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
         with:
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
-
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
           key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
-
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
-
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
-
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
@@ -184,105 +120,49 @@ jobs:
           gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
           cache: 'maven'
-
-      # Cache custom ARM64 NDK
       - name: Cache ARM64 NDK
         uses: actions/cache@v4
         id: cache-arm64-ndk
         with:
           path: ${{ github.workspace }}/android-ndk-r27b
           key: android-ndk-r27b-aarch64-${{ runner.os }}
-          restore-keys: android-ndk-r27b-aarch64-
-
-      # Setup custom ARM64 NDK (emulating the official setup-ndk action)
       - name: Setup ARM64 Android NDK
         id: setup-ndk
         shell: bash
         run: |
           NDK_VERSION="r27b"
           NDK_DIR="${GITHUB_WORKSPACE}/android-ndk-${NDK_VERSION}"
-          
-          # Check if NDK is already cached
           if [ ! -d "${NDK_DIR}" ]; then
             echo "Downloading ARM64 Android NDK ${NDK_VERSION}..."
-          
-            # Download the ARM64 NDK zip file
             wget -q "https://github.com/lzhiyong/termux-ndk/releases/download/android-ndk/android-ndk-r27b-aarch64.zip" -O ndk.zip
-          
-            # Extract the NDK
-            echo "Extracting NDK..."
             unzip -q ndk.zip -d "${GITHUB_WORKSPACE}"
-          
-            # Clean up zip file
             rm ndk.zip
-          
-            # Verify extraction
-            if [ ! -d "${NDK_DIR}" ]; then
-              echo "Error: NDK directory not found after extraction"
-              ls -la "${GITHUB_WORKSPACE}"
-              exit 1
-            fi
-          else
-            echo "Using cached ARM64 NDK at ${NDK_DIR}"
           fi
-          
-          # Set outputs to emulate the official setup-ndk action
           echo "ndk-path=${NDK_DIR}" >> $GITHUB_OUTPUT
-          
-          # Add NDK to PATH
           echo "${NDK_DIR}" >> $GITHUB_PATH
-          
-          # Set ANDROID_NDK_ROOT environment variable
           echo "ANDROID_NDK_ROOT=${NDK_DIR}" >> $GITHUB_ENV
           echo "ANDROID_NDK=${NDK_DIR}" >> $GITHUB_ENV
-          
-          # Detect full version from source.properties
-          if [ -f "${NDK_DIR}/source.properties" ]; then
-            FULL_VERSION=$(grep "Pkg.Revision" "${NDK_DIR}/source.properties" | cut -d'=' -f2 | cut -d'-' -f1 | tr -d ' ')
-            echo "ndk-full-version=${FULL_VERSION}" >> $GITHUB_OUTPUT
-            echo "Detected NDK full version: ${FULL_VERSION}"
-          else
-            echo "Warning: source.properties not found, using version ${NDK_VERSION}"
-            echo "ndk-full-version=${NDK_VERSION}" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "ARM64 NDK setup complete at: ${NDK_DIR}"
-
       - name: Set mvn build command based on matrix
         shell: bash
         run: |
-          # Set constants for Android ARM64
           LIBND4J_CLASSIFIER="android-arm64"
-          OPENBLAS_JAR="openblas-0.3.19-1.5.7-android-arm64.jar"
-          OPENBLAS_DIR="${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a"
-          
           echo "LIBND4J_CLASSIFIER=${LIBND4J_CLASSIFIER}" >> $GITHUB_ENV
-          echo "OPENBLAS_JAR=${OPENBLAS_JAR}" >> $GITHUB_ENV
-          echo "OPENBLAS_DIR=${OPENBLAS_DIR}" >> $GITHUB_ENV
-          echo "CURRENT_TARGET=android-arm64" >> $GITHUB_ENV
+          echo "OPENBLAS_JAR=openblas-0.3.19-1.5.7-android-arm64.jar" >> $GITHUB_ENV
+          echo "OPENBLAS_DIR=${GITHUB_WORKSPACE}/openblas_home/lib/arm64-v8a" >> $GITHUB_ENV
           echo "ARMCOMPUTE_TARGET=arm64-v8a" >> $GITHUB_ENV
-          echo "NDK_VERSION=r27b" >> $GITHUB_ENV
-          echo "ANDROID_VERSION=21" >> $GITHUB_ENV
-          
           if [ "${{ github.event.inputs.libnd4jUrl }}" != '' ]; then
              modules=':nd4j-native,:nd4j-native-preset'
-          else 
-             echo "Building libnd4j from source"
+          else
              modules=':nd4j-native,:nd4j-native-preset,:libnd4j'
           fi
-          
           command="mvn ${{ matrix.mvn_ext }} -Dlibnd4j.generate.flatc=ON -Posx-aarch64-protoc -pl $modules  -Pcpu -Dlibnd4j.buildthreads=${{ github.event.inputs.buildThreads }} -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.count=3 -Possrh -DskipTestResourceEnforcement=true -Dmaven.javadoc.failOnError=false -Djavacpp.platform=${LIBND4J_CLASSIFIER} -Pcpu --also-make --batch-mode deploy -DskipTests"
-          
           if [ "${{ matrix.helper }}" != '' ]; then
              mvn_ext=" -Dlibnd4j.helper=${{ matrix.helper }} -Djavacpp.platform.extension=-${{ matrix.helper }} -Dlibnd4j.classifier=${LIBND4J_CLASSIFIER}-${{ matrix.helper }}"
           else
              mvn_ext=""
           fi
-          
           command="${command} ${mvn_ext}"
-          echo "Setting command for helper ${{ matrix.helper }} to ${command}"
           echo "COMMAND=${command}" >> $GITHUB_ENV
-
       - name: Setup OpenBLAS and ARM Compute Library
         shell: bash
         run: |
@@ -291,175 +171,77 @@ jobs:
           cd "${GITHUB_WORKSPACE}/openblas_home"
           wget https://repo1.maven.org/maven2/org/bytedeco/openblas/0.3.19-1.5.7/${OPENBLAS_JAR}
           unzip ${OPENBLAS_JAR}
-          
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          
-          # Fix OpenBLAS library paths - the JAR contains libopenblas.so, not libopenblas.so.0
-          if [ -f "${OPENBLAS_DIR}/libopenblas.so" ]; then
-            # Create symlink from libopenblas.so.0 to libopenblas.so if needed
-            if [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
-              ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
-            fi
-            echo "OpenBLAS library found and configured at ${OPENBLAS_DIR}/libopenblas.so"
-          else
-            echo "Error: OpenBLAS library not found at expected location"
-            echo "Contents of ${OPENBLAS_DIR}:"
-            ls -la "${OPENBLAS_DIR}" || echo "Directory does not exist"
-            exit 1
+          # Create symlink for build consistency
+          if [ -f "${OPENBLAS_DIR}/libopenblas.so" ] && [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
+            ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
           fi
-          
           # Setup ARM Compute Library if selected
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
-              mkdir -p "${GITHUB_WORKSPACE}/armcompute_home"
-              cd "${GITHUB_WORKSPACE}/armcompute_home"
-          
-              # Download appropriate ARM Compute Library binary for Android
+              ARMCOMPUTE_HOME="${GITHUB_WORKSPACE}/armcompute_home"
+              mkdir -p "${ARMCOMPUTE_HOME}"
+              cd "${ARMCOMPUTE_HOME}"
               wget https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz
               tar -xzf arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz
-          
-              echo "ARMCOMPUTE_ROOT=${GITHUB_WORKSPACE}/armcompute_home" >> "$GITHUB_ENV"
+              # Set ARMCOMPUTE_ROOT to the explicit path of the extracted contents
+              echo "ARMCOMPUTE_ROOT=${ARMCOMPUTE_HOME}/arm_compute-v25.04-android-aarch64-cpu-bin" >> "$GITHUB_ENV"
           fi
-
-      - name: Debug Info
-        shell: bash
-        run: |
-          echo "libnd4j build threads ${{ github.event.inputs.buildThreads }}"
-          echo "deploy to release staging repo or not ${{ github.event.inputs.deployToReleaseStaging }}"
-          echo "release version ${{ github.event.inputs.releaseVersion }}"
-          echo "snapshot version ${{ github.event.inputs.snapshotVersion }}"
-          echo "debug enabled ${{ github.event.inputs.debug_enabled }}"
-          echo "libnd4j url ${{ github.event.inputs.libnd4jUrl }}"
-          echo "maven flags ${{ github.event.inputs.mvnFlags }}"
-          echo "server id ${{ github.event.inputs.serverId }}"
-          echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
-          echo "helper ${{ matrix.helper }}"
-          echo "swap size 4GB"
-          echo "NDK Path: ${{ steps.setup-ndk.outputs.ndk-path }}"
-          echo "NDK Full Version: ${{ steps.setup-ndk.outputs.ndk-full-version }}"
-          
-          # Verify NDK installation
-          if [ -d "${{ steps.setup-ndk.outputs.ndk-path }}" ]; then
-            echo "NDK successfully installed"
-            ls -la "${{ steps.setup-ndk.outputs.ndk-path }}"
-          else
-            echo "Error: NDK path not found"
-            exit 1
-          fi
-          
-          # Verify OpenBLAS installation
-          echo "OpenBLAS directory contents:"
-          ls -la "${OPENBLAS_DIR}" || echo "OpenBLAS directory not found"
-          
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-
-      - name: Monitor memory during build
-        shell: bash
-        run: |
-          # Start background memory monitoring
-          (while true; do 
-            echo "$(date '+%H:%M:%S'): $(free -h | head -n 2 | tail -n 1)"
-            if swapon --show | grep -q "/"; then
-              echo "$(date '+%H:%M:%S'): Swap: $(swapon --show --noheadings)"
-            fi
-            sleep 120  # Check every 2 minutes
-          done) > memory_monitor.log 2>&1 &
-          MONITOR_PID=$!
-          echo "MONITOR_PID=${MONITOR_PID}" >> $GITHUB_ENV
-          echo "Started memory monitoring (PID: ${MONITOR_PID})"
-
       - name: Build with Maven
         shell: bash
         env:
           MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
-          CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
-          DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEPLOY: 1
-          BUILD_USING_MAVEN: 1
-          TARGET_OS: android
-          PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-          DEPLOY_TO: central
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
           SNAPSHOT_VERSION: ${{ github.event.inputs.snapshotVersion }}
           RELEASE_REPO_ID: ${{ github.event.inputs.releaseRepoId }}
-          MODULES: ${{ github.event.inputs.mvnFlags }}
-          HELPER: ${{ matrix.helper }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
           MAVEN_OPTS: -Xmx2g
           PROTO_EXEC: /opt/protobuf/bin/protoc
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
         run: |
-          # Show memory status before build
-          echo "=== Memory status before build ==="
-          free -h
-          
-          # Manually configure the Android NDK environment
-          echo "Setting up Android NDK environment variables"
-          echo "Using custom ARM64 NDK at: ${{ steps.setup-ndk.outputs.ndk-path }}"
-          
-          # Define CMake arguments for building libnd4j
-          cmake_args="-DSD_ARCH=armv8-a -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
-          
-          if [ "${{ matrix.helper }}" == "armcompute" ]; then
-            cmake_args="${cmake_args} -DHELPERS_armcompute=true"
-          fi
-          
-          # Build libnd4j if not provided via URL
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          # Pre-build native libraries with CMake if not using a pre-packaged libnd4j
           if [ "${{ github.event.inputs.libnd4jUrl }}" == '' ]; then
+            echo "Starting manual pre-build of libnd4j..."
+          
+            # Define CMake arguments for building libnd4j
+            cmake_args="-DSD_ARCH=armv8-a -DSD_ANDROID_BUILD=true -DOPENBLAS_PATH=${OPENBLAS_PATH}"
+          
+            # Add armcompute helper flags if enabled
+            if [ "${{ matrix.helper }}" == "armcompute" ]; then
+              echo "Enabling armcompute helper for native build."
+              cmake_args="${cmake_args} -DHELPERS_armcompute=true -DARMCOMPUTE_ROOT=${ARMCOMPUTE_ROOT}"
+            fi
+          
+            # Navigate to libnd4j build directory
             cd "${GITHUB_WORKSPACE}/libnd4j"
             mkdir -p blasbuild/android-arm64
             cd blasbuild/android-arm64
           
             # Configure with CMake
+            echo "Configuring with CMake args: ${cmake_args}"
             cmake ${cmake_args} ../..
           
             # Build with specified number of threads
+            echo "Building with make -j${{ github.event.inputs.buildThreads }}"
             make -j${{ github.event.inputs.buildThreads }}
             cd ${GITHUB_WORKSPACE}
+            echo "Manual pre-build of libnd4j finished."
           fi
           
-          # Run Maven build
+          # Run the main Maven build
+          echo "Running Maven command: ${COMMAND}"
           if [ "$PERFORM_RELEASE" == 1 ]; then
               bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
           else
-              echo "Running build and deploying to snapshots"
               eval "${COMMAND}"
           fi
-
-      - name: Show memory usage summary
-        if: always()
-        shell: bash
-        run: |
-          # Stop memory monitoring
-          if [ -n "$MONITOR_PID" ]; then
-            kill $MONITOR_PID 2>/dev/null || true
-          fi
-          
-          echo "=== Final memory status ==="
-          free -h
-          if swapon --show | grep -q "/"; then
-            echo "=== Swap usage ==="
-            swapon --show
-          fi
-          
-          echo "=== Memory usage during build ==="
-          if [ -f memory_monitor.log ]; then
-            cat memory_monitor.log
-          else
-            echo "No memory monitoring log found"
-          fi
-
       - name: Cleanup swap
         if: always()
         shell: bash
         run: |
-          echo "Cleaning up swap configuration..."
-          sudo swapoff /swapfile 2>/dev/null || true
-          sudo rm -f /swapfile 2>/dev/null || true
-          echo "Swap cleanup completed"
+          sudo swapoff /swapfile || true
+          sudo rm -f /swapfile || true
