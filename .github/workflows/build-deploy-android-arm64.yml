@@ -240,7 +240,20 @@ jobs:
           unzip ${OPENBLAS_JAR}
           
           echo "OPENBLAS_PATH=${OPENBLAS_DIR}" >> "$GITHUB_ENV"
-          cp ${OPENBLAS_DIR}/libopenblas.so.0 ${OPENBLAS_DIR}/libopenblas.so
+          
+          # Fix OpenBLAS library paths - the JAR contains libopenblas.so, not libopenblas.so.0
+          if [ -f "${OPENBLAS_DIR}/libopenblas.so" ]; then
+            # Create symlink from libopenblas.so.0 to libopenblas.so if needed
+            if [ ! -f "${OPENBLAS_DIR}/libopenblas.so.0" ]; then
+              ln -s "${OPENBLAS_DIR}/libopenblas.so" "${OPENBLAS_DIR}/libopenblas.so.0"
+            fi
+            echo "OpenBLAS library found and configured at ${OPENBLAS_DIR}/libopenblas.so"
+          else
+            echo "Error: OpenBLAS library not found at expected location"
+            echo "Contents of ${OPENBLAS_DIR}:"
+            ls -la "${OPENBLAS_DIR}" || echo "Directory does not exist"
+            exit 1
+          fi
           
           # Setup ARM Compute Library if selected
           if [ "${{ matrix.helper }}" == "armcompute" ]; then
@@ -278,6 +291,10 @@ jobs:
             echo "Error: NDK path not found"
             exit 1
           fi
+          
+          # Verify OpenBLAS installation
+          echo "OpenBLAS directory contents:"
+          ls -la "${OPENBLAS_DIR}" || echo "OpenBLAS directory not found"
           
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
