@@ -227,6 +227,14 @@ if(SD_USE_LTO)
     endif()
 endif()
 
+if(SD_ARM_BUILD)
+    if(NOT SD_ARCH) # This is TRUE for undefined OR empty strings
+        message(STATUS "Warning: SD_ARCH was not set for this ARM build. Defaulting to 'aarch64'.")
+        set(SD_ARCH "aarch64")
+    endif()
+endif()
+
+
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
