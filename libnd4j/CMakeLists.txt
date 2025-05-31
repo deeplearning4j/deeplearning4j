@@ -280,13 +280,13 @@ if(SD_ARM_BUILD)
         set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     endif()
 endif()
-
 if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
-    # codegen template builds
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+    # Add these lines:
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-warn-shared-textrel")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-warn-shared-textrel")
 endif()
-
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
