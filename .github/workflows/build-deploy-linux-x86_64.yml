@@ -50,7 +50,7 @@ on:
       swapSize:
         description: 'Swap file size in GB (e.g., 4 for 4GB)'
         required: false
-        default: 4
+        default: 8
 
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
