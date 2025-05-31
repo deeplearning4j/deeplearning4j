@@ -344,6 +344,7 @@ jobs:
               Write-Warning "cl.exe not yet available in PATH, but should be available after environment reload"
           }
           
+          # CORRECTED BLOCK: Replaced the faulty try/catch with a simple if/else
           $nvccLocation = Get-Command nvcc.exe -ErrorAction SilentlyContinue
           if ($nvccLocation) {
               Write-Host "✓ Found nvcc.exe at: $($nvccLocation.Source)"
