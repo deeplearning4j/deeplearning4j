@@ -222,6 +222,7 @@ jobs:
             ${{ matrix.runs_on }}-cuda-12.3-${{ matrix.helper }}-
 
       - name: Install CUDA 12.3 (if not cached)
+        if: steps.cache-cuda-123.outputs.cache-hit != 'true'
         shell: powershell
         env:
           CUDA_VERSION: "12.3"
@@ -237,7 +238,6 @@ jobs:
             Write-Error "Failed to download CUDA install script!"
             exit 1
           }
-        if: steps.cache-cuda-123.outputs.cache-hit != 'true'
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v4
@@ -344,15 +344,10 @@ jobs:
               Write-Warning "cl.exe not yet available in PATH, but should be available after environment reload"
           }
           
-          try {
-              $nvccLocation = Get-Command nvcc.exe -ErrorAction SilentlyContinue
-              if ($nvccLocation) {
-                  Write-Host "✓ Found nvcc.exe at: $($nvccLocation.Source)"
-              } else {
-                  Write-Host "nvcc.exe will be available after CUDA path is added"
-              }
-          }
-          catch {
+          $nvccLocation = Get-Command nvcc.exe -ErrorAction SilentlyContinue
+          if ($nvccLocation) {
+              Write-Host "✓ Found nvcc.exe at: $($nvccLocation.Source)"
+          } else {
               Write-Host "nvcc.exe will be available after CUDA path is added"
           }
           
