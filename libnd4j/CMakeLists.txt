@@ -363,6 +363,10 @@ elseif(NOT SD_IOS_BUILD)
         endif()
     elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm*|aarch64")
         set(SD_ARM_BUILD true)
+        # FIX: Add this block to set a default for ARM architecture
+        if(NOT DEFINED SD_ARCH)
+            set(SD_ARCH "aarch64")
+        endif()
     endif()
 endif()
 
