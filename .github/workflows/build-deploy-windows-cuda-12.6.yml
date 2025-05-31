@@ -333,20 +333,6 @@ jobs:
           Write-Host "Adding to PATH: $newPath"
           echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           
-          # Verify compilers are available
-          Write-Host "Verifying compiler availability..."
-          
-          try {
-              $clLocation = Get-Command cl.exe -ErrorAction Stop
-              Write-Host "✓ Found cl.exe at: $($clLocation.Source)"
-          }
-          catch {
-              Write-Warning "cl.exe not yet available in PATH, but should be available after environment reload"
-          }
-          
-    
-          
-          Write-Host "Environment setup complete"
 
       - name: Verify Build Environment
         shell: powershell
