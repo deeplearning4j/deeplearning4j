@@ -87,11 +87,11 @@ jobs:
       - name: Configure swap space
         shell: bash
         run: |
-          sudo fallocate -l ${{ matrix.swap_size }}G /swapfile
+          sudo fallocate -l 16G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
-          sudo sysctl vm.swappiness=20
+          sudo sysctl vm.swappiness=60
           free -h
       - name: Cache protobuf install
         uses: actions/cache@v4
