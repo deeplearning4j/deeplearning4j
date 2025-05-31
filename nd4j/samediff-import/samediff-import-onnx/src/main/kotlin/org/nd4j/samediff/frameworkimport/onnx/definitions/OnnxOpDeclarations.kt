@@ -29,12 +29,92 @@ import org.nd4j.samediff.frameworkimport.onnx.rule.tensor.NDArrayMappingRule
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.registry.OpRegistryHolder
+import org.nd4j.samediff.frameworkimport.onnx.definitions.MicrosoftOnnxExtensions
 
 val onnxOpRegistry = OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto>("onnx",OpDescriptorLoaderHolder.nd4jOpDescriptor)
 fun registry(): OpMappingRegistry<Onnx.GraphProto,Onnx.NodeProto,Onnx.NodeProto,Onnx.TensorProto,Onnx.TensorProto.DataType,Onnx.AttributeProto,Onnx.AttributeProto> {
         return onnxOpRegistry
 }
 
+val fastGelu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "FastGelu",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val gelu = OnnxMappingProcess(
+        opName = "gelu",
+        inputFrameworkOpName = "Gelu",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X"))),
+        attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0)
+)
+
+val biasGelu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BiasGelu",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val quickGelu = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "QuickGelu",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val skipLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "SkipLayerNormalization",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val attention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "Attention",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val multiHeadAttention = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "MultiHeadAttention",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val biasAdd = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BiasAdd",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val layerNormalizationMs = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "LayerNormalization",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
+
+val biasSoftmax = OnnxMappingProcess(
+        opName = "noop",
+        inputFrameworkOpName = "BiasSoftmax",
+        opMappingRegistry = onnxOpRegistry,
+        tensorMappingRules = listOf(),
+        attributeMappingRules = listOf()
+)
 
 val names = mapOf(
         "Acos" to "acos",
@@ -213,6 +293,14 @@ val batchNorm = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "BatchNormalization"
 )
+
+
+val embedLayerNormalization = OnnxMappingProcess(
+        opName = "noop",
+        opMappingRegistry = onnxOpRegistry,
+        inputFrameworkOpName = "EmbedLayerNormalization"
+)
+
 //TODO: Binarizer
 //TODO: Bitshift
 //TODO: CastMap
@@ -1172,6 +1260,7 @@ object OnnxOpDeclarations {
                 groupedOps.forEach { name,node ->
                         singleGroupedOps[name] = node[0]
                 }
+                MicrosoftOnnxExtensions.registerMicrosoftExtensions(onnxOpRegistry)
 
                 OpRegistryHolder.registerOpList("onnx", singleGroupedOps)
 
