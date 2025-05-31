@@ -1226,20 +1226,19 @@ else() # Start of CPU Build Section
     endif()
 
     # OpenMP for GCC
+    # OpenMP Configuration
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        # On modern GCC, we can directly set the required flags and libraries
-        # instead of relying on the FindOpenMP module, which is failing its
-        # internal checks on this specific ARM64 platform.
-        message(STATUS "Manually configuring OpenMP for GNU compiler.")
-
-        # Add the OpenMP compile flag to the object library
-        target_compile_options(${OBJECT_LIB_NAME} INTERFACE "-fopenmp")
-        target_compile_options(${OBJECT_LIB_NAME} PRIVATE "-fopenmp")
-
-        # Add the required linker libraries to the final shared library.
-        # -lgomp is the GNU OpenMP runtime library.
-        # -lpthread is the POSIX threads library, which OpenMP depends on.
-        target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-lgomp" "-lpthread")
+        find_package(OpenMP)
+        if(OpenMP_CXX_FOUND)
+            message(STATUS "OpenMP found, linking OpenMP::OpenMP_CXX")
+            target_link_libraries(${OBJECT_LIB_NAME} PUBLIC OpenMP::OpenMP_CXX)
+            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC OpenMP::OpenMP_CXX)
+        else()
+            message(WARNING "OpenMP not found, falling back to manual configuration")
+            target_compile_options(${OBJECT_LIB_NAME} INTERFACE "-fopenmp")
+            target_compile_options(${OBJECT_LIB_NAME} PRIVATE "-fopenmp")
+            target_link_libraries(${SD_LIBRARY_NAME} PUBLIC "-fopenmp")
+        endif()
     endif()
 endif() # End of CPU Build Section
 
