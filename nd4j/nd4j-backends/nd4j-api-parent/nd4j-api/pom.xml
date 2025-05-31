@@ -52,6 +52,10 @@
 
 
     <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
        <!-- Annotation scanning for discovering UDFs -->
         <dependency>
             <groupId>com.dorkbox</groupId>

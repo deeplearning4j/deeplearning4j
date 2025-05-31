@@ -133,6 +133,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("FastGelu", fastGelu)
         
         // Gelu mapping  
         val gelu = OnnxMappingProcess(
@@ -142,6 +143,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X"))),
             attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0)
         )
+        registry.registerMappingProcess("Gelu", gelu)
         
         // BiasGelu mapping
         val biasGelu = OnnxMappingProcess(
@@ -151,6 +153,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("BiasGelu", biasGelu)
         
         // QuickGelu mapping
         val quickGelu = OnnxMappingProcess(
@@ -160,6 +163,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("QuickGelu", quickGelu)
         
         // SkipLayerNormalization mapping
         val skipLayerNorm = OnnxMappingProcess(
@@ -169,6 +173,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("SkipLayerNormalization", skipLayerNorm)
         
         // Attention mapping
         val attention = OnnxMappingProcess(
@@ -178,6 +183,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("Attention", attention)
         
         // MultiHeadAttention mapping
         val multiHeadAttention = OnnxMappingProcess(
@@ -187,6 +193,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("MultiHeadAttention", multiHeadAttention)
         
         // BiasAdd mapping
         val biasAdd = OnnxMappingProcess(
@@ -196,6 +203,7 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("BiasAdd", biasAdd)
         
         // LayerNormalization mapping (Microsoft version)
         val layerNormalization = OnnxMappingProcess(
@@ -205,6 +213,17 @@ object MicrosoftOnnxExtensions {
             tensorMappingRules = listOf(),
             attributeMappingRules = listOf()
         )
+        registry.registerMappingProcess("LayerNormalization", layerNormalization)
+        
+        // BiasSoftmax mapping
+        val biasSoftmax = OnnxMappingProcess(
+            inputFrameworkOpName = "BiasSoftmax",
+            opName = "noop", // Handled by PreImportHook
+            opMappingRegistry = registry,
+            tensorMappingRules = listOf(),
+            attributeMappingRules = listOf()
+        )
+        registry.registerMappingProcess("BiasSoftmax", biasSoftmax)
     }
     
     private fun registerExtensionOpDescriptors(registry: OpMappingRegistry<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto, Onnx.TensorProto.DataType, Onnx.AttributeProto, Onnx.AttributeProto>) {

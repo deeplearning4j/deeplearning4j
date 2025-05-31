@@ -58,15 +58,19 @@
     </plugins>
   </build>
 
-
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.deeplearning4j</groupId>
       <artifactId>samediff-import-api</artifactId>
       <version>${project.version}</version>
     </dependency>
+    
+    <!-- TensorFlow dependencies for protobuf classes and GraphRunner -->
+    <dependency>
+      <groupId>org.eclipse.deeplearning4j</groupId>
+      <artifactId>nd4j-tensorflow</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
-
 
 </project>

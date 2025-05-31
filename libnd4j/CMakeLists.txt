@@ -812,7 +812,7 @@ if(HELPERS_onednn AND NOT HELPERS_onednn STREQUAL "false" AND NOT HELPERS_onednn
 
     ExternalProject_Add(onednn_external
             PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
-            GIT_REPOSITORY    "https://github.com/KonduitAI/oneDNN.git"
+            GIT_REPOSITORY    "https://github.com/uxlfoundation/oneDNN.git"
             GIT_TAG           "master"
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
             BINARY_DIR        "${ONEDNN_BUILD_DIR}"
