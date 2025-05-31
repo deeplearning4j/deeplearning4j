@@ -275,6 +275,10 @@ if(SD_ARM_BUILD)
         message(STATUS "Warning: SD_ARCH was not set for this ARM build. Defaulting to 'armv8-a'.")
         set(SD_ARCH "armv8-a")
     endif()
+
+    if(SD_ANDROID)
+        set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    endif()
 endif()
 
 # Architecture Tuning
