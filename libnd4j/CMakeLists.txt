@@ -281,6 +281,12 @@ if(SD_ARM_BUILD)
     endif()
 endif()
 
+if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
+    # codegen template builds
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+endif()
+
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
