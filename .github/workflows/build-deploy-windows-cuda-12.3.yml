@@ -332,59 +332,6 @@ jobs:
           $newPath = "$msysPath;$cudaPath\bin;$cudaPath\libnvvp;"
           Write-Host "Adding to PATH: $newPath"
           echo $newPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          
-
-      - name: Verify Build Environment
-        shell: powershell
-        run: |
-          Write-Host "=== Build Environment Verification ==="
-          
-          # Check environment variables
-          Write-Host "CUDA_PATH: $env:CUDA_PATH"
-          Write-Host "CUDNN_ROOT_DIR: $env:CUDNN_ROOT_DIR"
-          Write-Host "VCToolsInstallDir: $env:VCToolsInstallDir"
-          Write-Host "VCINSTALLDIR: $env:VCINSTALLDIR"
-          
-          # Verify compilers
-          Write-Host "`n=== Compiler Verification ==="
-          
-          try {
-              $clPath = Get-Command cl.exe -ErrorAction Stop
-              Write-Host "✓ cl.exe found at: $($clPath.Source)"
-          
-              # Test cl.exe
-              $clVersion = & cl.exe 2>&1 | Select-String "Microsoft.*Compiler"
-              Write-Host "✓ cl.exe version: $clVersion"
-          }
-          catch {
-              Write-Error "✗ cl.exe not found in PATH. Build will likely fail."
-              Write-Host "Current PATH:"
-              $env:PATH -split ';' | ForEach-Object { Write-Host "  $_" }
-              exit 1
-          }
-          
-          try {
-              $nvccPath = Get-Command nvcc.exe -ErrorAction Stop
-              Write-Host "✓ nvcc.exe found at: $($nvccPath.Source)"
-          
-              # Test nvcc
-              $nvccVersion = & nvcc.exe --version | Select-String "release"
-              Write-Host "✓ nvcc.exe version: $nvccVersion"
-          }
-          catch {
-              Write-Error "✗ nvcc.exe not found in PATH. CUDA build will fail."
-              exit 1
-          }
-          
-          # Check CUDA installation
-          if (Test-Path "$env:CUDA_PATH\bin\nvcc.exe") {
-              Write-Host "✓ CUDA installation verified at: $env:CUDA_PATH"
-          } else {
-              Write-Error "✗ CUDA installation not found at: $env:CUDA_PATH"
-              exit 1
-          }
-          
-          Write-Host "`n=== Environment Verification Complete ==="
 
       - name: Run cuda build
         shell: cmd
