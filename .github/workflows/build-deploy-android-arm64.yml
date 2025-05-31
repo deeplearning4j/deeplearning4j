@@ -85,10 +85,12 @@ jobs:
     runs-on: ${{ github.event.inputs.runsOn }}
     steps:
       - uses: AutoModality/action-clean@v1
+
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+
       - uses: actions/checkout@v2
 
       - name: Free Disk Space
@@ -102,6 +104,53 @@ jobs:
           docker-images: true
           swap-storage: true
 
+      - name: Configure swap space
+        shell: bash
+        run: |
+          echo "=== Initial system status ==="
+          free -h
+          df -h
+          echo "Available disk space on root:"
+          df -h /
+          
+          # Check if swap is already enabled
+          if swapon --show | grep -q "/"; then
+            echo "Swap already configured:"
+            swapon --show
+          else
+            echo "Configuring swap space..."
+          
+            # Use fixed 4GB swap size
+            SWAP_SIZE="4G"
+            echo "Creating ${SWAP_SIZE} swap file..."
+          
+            # Create swap file
+            sudo fallocate -l ${SWAP_SIZE} /swapfile || {
+              echo "fallocate failed, trying dd..."
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=4 status=progress
+            }
+          
+            # Set up swap
+            sudo chmod 600 /swapfile
+            sudo mkswap /swapfile
+            sudo swapon /swapfile
+          
+            # Verify swap is active
+            echo "=== Swap configuration completed ==="
+            free -h
+            swapon --show
+          fi
+          
+          # Tune swappiness for build workloads
+          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
+          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.swappiness=20
+          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
+          
+          # Show final memory status
+          echo "=== Final memory status ==="
+          free -h
+
       - name: Cache cmake install
         uses: actions/cache@v4
         id: cache-cmake
@@ -109,6 +158,7 @@ jobs:
           path: /opt/cmake
           key: ${{ runner.os }}-cmake
           restore-keys: ${{ runner.os }}-cmake
+
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
@@ -116,10 +166,13 @@ jobs:
           path: /opt/protobuf
           key: ${{ runner.os }}-protobuf
           restore-keys: ${{ runner.os }}-protobuf
+
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
+
       - uses: ./.github/actions/install-cmake-linux
         if: steps.cache-cmake.outputs.cache-hit != 'true'
+
       - name: Set up Java for publishing to OSSRH
         uses: actions/setup-java@v4
         with:
@@ -280,6 +333,7 @@ jobs:
           echo "server id ${{ github.event.inputs.serverId }}"
           echo "release repo id ${{ github.event.inputs.releaseRepoId }}"
           echo "helper ${{ matrix.helper }}"
+          echo "swap size 4GB"
           echo "NDK Path: ${{ steps.setup-ndk.outputs.ndk-path }}"
           echo "NDK Full Version: ${{ steps.setup-ndk.outputs.ndk-full-version }}"
           
@@ -300,6 +354,21 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
+
+      - name: Monitor memory during build
+        shell: bash
+        run: |
+          # Start background memory monitoring
+          (while true; do 
+            echo "$(date '+%H:%M:%S'): $(free -h | head -n 2 | tail -n 1)"
+            if swapon --show | grep -q "/"; then
+              echo "$(date '+%H:%M:%S'): Swap: $(swapon --show --noheadings)"
+            fi
+            sleep 120  # Check every 2 minutes
+          done) > memory_monitor.log 2>&1 &
+          MONITOR_PID=$!
+          echo "MONITOR_PID=${MONITOR_PID}" >> $GITHUB_ENV
+          echo "Started memory monitoring (PID: ${MONITOR_PID})"
 
       - name: Build with Maven
         shell: bash
@@ -325,8 +394,11 @@ jobs:
           MAVEN_OPTS: -Xmx2g
           PROTO_EXEC: /opt/protobuf/bin/protoc
           LD_LIBRARY_PATH: $LD_LIBRARY_PATH:$OPENBLAS_PATH
-
         run: |
+          # Show memory status before build
+          echo "=== Memory status before build ==="
+          free -h
+          
           # Manually configure the Android NDK environment
           echo "Setting up Android NDK environment variables"
           echo "Using custom ARM64 NDK at: ${{ steps.setup-ndk.outputs.ndk-path }}"
@@ -359,3 +431,35 @@ jobs:
               echo "Running build and deploying to snapshots"
               eval "${COMMAND}"
           fi
+
+      - name: Show memory usage summary
+        if: always()
+        shell: bash
+        run: |
+          # Stop memory monitoring
+          if [ -n "$MONITOR_PID" ]; then
+            kill $MONITOR_PID 2>/dev/null || true
+          fi
+          
+          echo "=== Final memory status ==="
+          free -h
+          if swapon --show | grep -q "/"; then
+            echo "=== Swap usage ==="
+            swapon --show
+          fi
+          
+          echo "=== Memory usage during build ==="
+          if [ -f memory_monitor.log ]; then
+            cat memory_monitor.log
+          else
+            echo "No memory monitoring log found"
+          fi
+
+      - name: Cleanup swap
+        if: always()
+        shell: bash
+        run: |
+          echo "Cleaning up swap configuration..."
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile 2>/dev/null || true
+          echo "Swap cleanup completed"
