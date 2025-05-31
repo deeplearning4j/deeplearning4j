@@ -960,16 +960,9 @@ set(INSTANTIATION_TEMPLATES_2
 
 # CUDA Configuration
 if(SD_CUDA)
-    message("Building with CUDA support")
-
-    # [FIX] Force the '--allow-unsupported-compiler' flag into the CMake cache
-    # before enabling the CUDA language. This is the correct way to ensure the flag
-    # is used during the initial compiler identification step, which otherwise fails
-    # on systems with MSVC versions newer than what the CUDA Toolkit officially supports.
-    if(WIN32)
-        message("Forcing Windows-specific CUDA flag: --allow-unsupported-compiler")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler" CACHE STRING "Initial CUDA compiler flags" FORCE)
-    endif()
+    set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
+    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler" CACHE STRING "CUDA compile flags" FORCE)
+    set(CMAKE_CUDA_HOST_COMPILER_OPTIONS "--allow-unsupported-compiler")
 
     enable_language(CUDA)
     add_definitions(-D__CUDABLAS__=true)
