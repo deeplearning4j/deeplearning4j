@@ -995,6 +995,10 @@ if(SD_CUDA)
         endif()
 
         if(WIN32)
+            if(MSVC)
+                # Enable conforming preprocessor to fix __VA_ARGS__ expansion issues
+                add_compile_options(/Zc:preprocessor)
+            endif()
             # This configuration is now handled by the specific library settings below
             message("Configuring CUDA libraries for Windows")
             if(NOT DEFINED CUDA_cublas_LIBRARY)
