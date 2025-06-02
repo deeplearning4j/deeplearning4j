@@ -159,7 +159,7 @@ set(ARM_COMPUTE_URL_AARCH64 "https://github.com/ARM-software/ComputeLibrary/rele
 set(ARM_COMPUTE_URL_ANDROID_AARCH64 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz")
 
 # Set the appropriate URL based on architecture
-if(HELPERS_armcompute AND ${SD_ARCH} MATCHES "armv7")
+if("${HELPERS_armcompute} AND ${SD_ARCH} MATCHES "armv7")
     set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ARMV7})
     message("Using ARM Compute Library for ARMv7 32-bit")
 elseif(HELPERS_armcompute AND ${SD_ARCH} MATCHES "armv8-a")
