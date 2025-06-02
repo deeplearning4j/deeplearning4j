@@ -904,52 +904,206 @@ else()
     set(ONEDNN "")
 endif()
 
-# cuDNN configuration - FIXED: Only configure when explicitly enabled
+# cuDNN configuration - FIXED: Better Windows support and debugging
 if(HELPERS_cudnn)
     message(STATUS "cuDNN helper is enabled")
     if(NOT SD_CUDA)
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
 
+    # Add debug output to verify the option is being triggered
+    message(STATUS "HELPERS_cudnn is ON - proceeding with cuDNN detection")
+    message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
+    message(STATUS "CUDA found: ${CUDA_FOUND}")
+
     SET(CUDNN_LIBNAME "cudnn")
 
+    # Windows-specific cuDNN library names and paths
+    if(WIN32)
+        # On Windows, cuDNN might be named differently
+        SET(CUDNN_LIBNAME_WIN "cudnn64_8")  # Common naming for cuDNN 8.x
+        SET(CUDNN_LIBNAME_WIN_ALT "cudnn")  # Fallback naming
+
+        # Try to find CUDA installation directory if not set
+        if(NOT DEFINED ENV{CUDA_PATH} AND NOT DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
+            # Common CUDA installation paths on Windows
+            set(CUDA_POSSIBLE_PATHS
+                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
+                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
+                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.7"
+                    "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.6"
+                    "C:/cuda"
+            )
+            foreach(CUDA_PATH_CANDIDATE ${CUDA_POSSIBLE_PATHS})
+                if(EXISTS "${CUDA_PATH_CANDIDATE}")
+                    set(ENV{CUDA_TOOLKIT_ROOT_DIR} "${CUDA_PATH_CANDIDATE}")
+                    message(STATUS "Auto-detected CUDA path: ${CUDA_PATH_CANDIDATE}")
+                    break()
+                endif()
+            endforeach()
+        endif()
+    endif()
+
+    # Set cuDNN root directory from environment variables
     if(DEFINED ENV{CUDNN_ROOT_DIR})
-        message("Using cudnn root directory from environment")
+        message(STATUS "Using cuDNN root directory from environment: $ENV{CUDNN_ROOT_DIR}")
         set(CUDNN_ROOT_DIR $ENV{CUDNN_ROOT_DIR})
     endif()
+
     if(DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
-        message("Using cuda root directory from environment")
+        message(STATUS "Using CUDA root directory from environment: $ENV{CUDA_TOOLKIT_ROOT_DIR}")
         set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_TOOLKIT_ROOT_DIR})
     endif()
-    message("Cudnn root dir ${CUDNN_ROOT_DIR} CUDA TOOLKIT ROOT DIR ${CUDA_TOOLKIT_ROOT_DIR}")
 
+    if(DEFINED ENV{CUDA_PATH})
+        message(STATUS "Using CUDA path from environment: $ENV{CUDA_PATH}")
+        set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
+    endif()
+
+    message(STATUS "cuDNN root dir: ${CUDNN_ROOT_DIR}")
+    message(STATUS "CUDA toolkit root dir: ${CUDA_TOOLKIT_ROOT_DIR}")
+
+    # Enhanced search paths for Windows
+    set(CUDNN_SEARCH_PATHS "")
+    if(WIN32)
+        list(APPEND CUDNN_SEARCH_PATHS
+                ${CUDNN_ROOT_DIR}
+                ${CUDA_TOOLKIT_ROOT_DIR}
+                "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA"
+                "C:/cuda"
+                "C:/cudnn"
+                "$ENV{ProgramFiles}/NVIDIA GPU Computing Toolkit/CUDA"
+        )
+    else()
+        list(APPEND CUDNN_SEARCH_PATHS
+                ${CUDNN_ROOT_DIR}
+                ${CUDA_TOOLKIT_ROOT_DIR}
+                /usr/local/cuda
+                /opt/cuda
+        )
+    endif()
+
+    # Find cuDNN include directory
     find_path(CUDNN_INCLUDE_DIR cudnn.h
-            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} /usr/local/cuda
-            ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES cuda/include include include/cuda)
+            HINTS ${CUDNN_SEARCH_PATHS}
+            PATH_SUFFIXES
+            include
+            cuda/include
+            include/cuda
+            CUDNN/include  # Windows cuDNN standalone installation
+            DOC "cuDNN include directory"
+    )
 
-    find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
-            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR} /usr/local/cuda
-            ENV CUDNN_ROOT_DIR ENV CUDA_TOOLKIT_ROOT_DIR
-            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 cuda/lib/x64 lib/x64)
+    # Find cuDNN library
+    if(WIN32)
+        # Try multiple library names on Windows
+        find_library(CUDNN_LIBRARY
+                NAMES ${CUDNN_LIBNAME_WIN} ${CUDNN_LIBNAME_WIN_ALT} ${CUDNN_LIBNAME}
+                HINTS ${CUDNN_SEARCH_PATHS}
+                PATH_SUFFIXES
+                lib
+                lib64
+                lib/x64
+                cuda/lib
+                cuda/lib64
+                cuda/lib/x64
+                CUDNN/lib/x64  # Windows cuDNN standalone installation
+                DOC "cuDNN library"
+        )
+    else()
+        find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
+                HINTS ${CUDNN_SEARCH_PATHS}
+                PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64
+                DOC "cuDNN library"
+        )
+    endif()
 
-    message("CUDNN_INCLUDE_DIR search result: ${CUDNN_INCLUDE_DIR}")
-    message("CUDNN_LIBRARY search result: ${CUDNN_LIBRARY}")
+    # Debug output
+    message(STATUS "cuDNN include search result: ${CUDNN_INCLUDE_DIR}")
+    message(STATUS "cuDNN library search result: ${CUDNN_LIBRARY}")
 
+    # Additional debugging - list what was actually searched
+    if(NOT CUDNN_INCLUDE_DIR)
+        message(STATUS "cuDNN include search paths tried:")
+        foreach(search_path ${CUDNN_SEARCH_PATHS})
+            message(STATUS "  ${search_path}/include")
+            message(STATUS "  ${search_path}/cuda/include")
+            message(STATUS "  ${search_path}/CUDNN/include")
+        endforeach()
+    endif()
+
+    if(NOT CUDNN_LIBRARY)
+        message(STATUS "cuDNN library search paths tried:")
+        foreach(search_path ${CUDNN_SEARCH_PATHS})
+            if(WIN32)
+                message(STATUS "  ${search_path}/lib/x64")
+                message(STATUS "  ${search_path}/CUDNN/lib/x64")
+            endif()
+            message(STATUS "  ${search_path}/lib")
+            message(STATUS "  ${search_path}/lib64")
+        endforeach()
+        if(WIN32)
+            message(STATUS "cuDNN library names tried: ${CUDNN_LIBNAME_WIN}, ${CUDNN_LIBNAME_WIN_ALT}, ${CUDNN_LIBNAME}")
+        else()
+            message(STATUS "cuDNN library name tried: ${CUDNN_LIBNAME}")
+        endif()
+    endif()
+
+    # Verify cuDNN was found
     if(CUDNN_LIBRARY AND CUDNN_INCLUDE_DIR)
-        message("Found cuDNN: include at ${CUDNN_INCLUDE_DIR}, library at ${CUDNN_LIBRARY}")
+        message(STATUS "✓ Found cuDNN:")
+        message(STATUS "  Include: ${CUDNN_INCLUDE_DIR}")
+        message(STATUS "  Library: ${CUDNN_LIBRARY}")
+
+        # Verify the files actually exist
+        if(EXISTS "${CUDNN_INCLUDE_DIR}/cudnn.h")
+            message(STATUS "  ✓ cudnn.h found")
+        else()
+            message(WARNING "  ✗ cudnn.h NOT found at ${CUDNN_INCLUDE_DIR}/cudnn.h")
+        endif()
+
+        if(EXISTS "${CUDNN_LIBRARY}")
+            message(STATUS "  ✓ cuDNN library file exists")
+        else()
+            message(WARNING "  ✗ cuDNN library file NOT found at ${CUDNN_LIBRARY}")
+        endif()
+
         include_directories(${CUDNN_INCLUDE_DIR})
         set(HAVE_CUDNN true)
         set(CUDNN ${CUDNN_LIBRARY})
+
+        # Add cuDNN preprocessor definition
+        add_definitions(-DHAVE_CUDNN=1)
+
     else()
-        message(WARNING "cuDNN not found. Continuing without cuDNN support.")
-        message("Searched for include in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
-        message("Searched for library '${CUDNN_LIBNAME}' in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
+        message(WARNING "✗ cuDNN not found. Continuing without cuDNN support.")
+        message(STATUS "To enable cuDNN, ensure:")
+        message(STATUS "  1. cuDNN is installed")
+        message(STATUS "  2. Set CUDNN_ROOT_DIR environment variable, or")
+        message(STATUS "  3. Set CUDA_TOOLKIT_ROOT_DIR environment variable, or")
+        if(WIN32)
+            message(STATUS "  4. Install cuDNN to a standard location like C:/cudnn")
+            message(STATUS "  5. Make sure cuDNN DLLs are in your PATH")
+        else()
+            message(STATUS "  4. Install cuDNN to /usr/local/cuda or /opt/cuda")
+        endif()
         set(HAVE_CUDNN false)
+        set(CUDNN "")
     endif()
 else()
     message(STATUS "cuDNN helper is disabled (HELPERS_cudnn=OFF)")
     set(HAVE_CUDNN false)
+    set(CUDNN "")
+endif()
+
+# Add a summary message about cuDNN status
+if(SD_CUDA)
+    if(HAVE_CUDNN)
+        message(STATUS "CUDA BUILD: cuDNN integration ENABLED")
+    else()
+        message(STATUS "CUDA BUILD: cuDNN integration DISABLED")
+        message(STATUS "  To enable cuDNN, set -DHELPERS_cudnn=ON and ensure cuDNN is installed")
+    endif()
 endif()
 
 # Configuration file
