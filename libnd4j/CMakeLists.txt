@@ -17,6 +17,14 @@
 ################################################################################
 
 cmake_minimum_required(VERSION 3.15)
+
+# --- FIX FOR UNSUPPORTED HOST COMPILERS (ALL PLATFORMS) ---
+# This must be set BEFORE the project() command to ensure the flags are used
+# during CMake's initial CUDA compiler identification step.
+#   --allow-unsupported-compiler: The flag for nvcc itself.
+#   -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__: The macro that the CUDA headers check for.
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+
 project(libnd4j)
 
 # Basic CMake Configuration
@@ -56,6 +64,11 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 option(SD_PTXAS "Enable ptxas verbose output" OFF)
 option(SD_KEEP_NVCC_OUTPUT "Keep NVCC output files" OFF)
 option(SD_PREPROCESS "Enable preprocessing" OFF)
+
+# Helper options - these control whether helper libraries are enabled
+option(HELPERS_armcompute "Enable ARM Compute Library helper" OFF)
+option(HELPERS_onednn "Enable OneDNN helper" OFF)
+option(HELPERS_cudnn "Enable cuDNN helper" OFF)
 
 # Handle PRINT_INDICES option
 message("PRINT_INDICES: ${PRINT_INDICES}")
@@ -146,10 +159,10 @@ set(ARM_COMPUTE_URL_AARCH64 "https://github.com/ARM-software/ComputeLibrary/rele
 set(ARM_COMPUTE_URL_ANDROID_AARCH64 "https://github.com/ARM-software/ComputeLibrary/releases/download/v25.04/arm_compute-v25.04-android-aarch64-cpu-bin.tar.gz")
 
 # Set the appropriate URL based on architecture
-if(${SD_ARCH} MATCHES "armv7")
+if(HELPERS_armcompute AND ${SD_ARCH} MATCHES "armv7")
     set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ARMV7})
     message("Using ARM Compute Library for ARMv7 32-bit")
-elseif(${SD_ARCH} MATCHES "armv8-a")
+elseif(HELPERS_armcompute AND ${SD_ARCH} MATCHES "armv8-a")
     if(SD_ANDROID_BUILD)
         set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ANDROID_AARCH64})
         message("Using ARM Compute Library for Android ARM64 (matched armv8-a)")
@@ -157,7 +170,7 @@ elseif(${SD_ARCH} MATCHES "armv8-a")
         set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_AARCH64})
         message("Using ARM Compute Library for ARM64 (matched armv8-a)")
     endif()
-elseif(${SD_ARCH} MATCHES "arm64")
+elseif(HELPERS_armcompute AND ${SD_ARCH} MATCHES "arm64")
     if(SD_ANDROID_BUILD)
         set(ARM_COMPUTE_URL ${ARM_COMPUTE_URL_ANDROID_AARCH64})
         message("Using ARM Compute Library for Android ARM64 (matched arm64)")
@@ -338,8 +351,8 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
-     message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
-     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++11")
+    message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++11")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10")
 
     if(UNIX)
@@ -716,10 +729,11 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
-# ARM Compute configuration
+# ARM Compute configuration - FIXED: Only configure when explicitly enabled
 set(ARMCOMPUTE_LIBRARIES "")
 set(HAVE_ARMCOMPUTE 0)
-if(HELPERS_armcompute AND NOT HELPERS_armcompute STREQUAL "false" AND NOT HELPERS_armcompute STREQUAL "FALSE" AND NOT HELPERS_armcompute STREQUAL "OFF")
+if(HELPERS_armcompute)
+    message(STATUS "ARM Compute Library helper is enabled")
     option(LIBND4J_BUILD_WITH_ARMCOMPUTE "Build with ARM Compute Library support" ON)
 
     if(LIBND4J_BUILD_WITH_ARMCOMPUTE AND (CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|AARCH64|arm64|ARM64"))
@@ -744,11 +758,11 @@ if(HELPERS_armcompute AND NOT HELPERS_armcompute STREQUAL "false" AND NOT HELPER
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND     ""
                 INSTALL_COMMAND   ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" &&
-                                  ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
-                                  ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
+                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
+                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
                 BUILD_BYPRODUCTS  "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
-                                  "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
-                                  "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
+                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
+                "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
                 BUILD_IN_SOURCE   1
         )
 
@@ -761,11 +775,15 @@ if(HELPERS_armcompute AND NOT HELPERS_armcompute STREQUAL "false" AND NOT HELPER
         set(ARMCOMPUTE_FOUND TRUE)
         set(ARMCOMPUTE_INCLUDE_DIRS "${ARMCOMPUTE_INSTALL_DIR}/include")
         set(ARMCOMPUTE_LIBRARIES armcompute_interface)
+        set(HAVE_ARMCOMPUTE 1)
 
     else()
         message(STATUS "Skipping ARM Compute setup via ExternalProject_Add (disabled or not AArch64)")
         set(ARMCOMPUTE_FOUND FALSE)
     endif()
+else()
+    message(STATUS "ARM Compute Library helper is disabled (HELPERS_armcompute=OFF)")
+    set(ARMCOMPUTE_FOUND FALSE)
 endif()
 
 # Add flatbuffers dependency using ExternalProject_Add directly
@@ -777,18 +795,18 @@ endif()
 
 include(ExternalProject)
 ExternalProject_Add(flatbuffers_external
-    GIT_REPOSITORY    https://github.com/google/flatbuffers/
-    GIT_TAG           v25.2.10
-    SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
-    BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
-    CMAKE_ARGS
+        GIT_REPOSITORY    https://github.com/google/flatbuffers/
+        GIT_TAG           v25.2.10
+        SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
+        BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
+        CMAKE_ARGS
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
         -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_BUILD_TYPE=Release
         -DFLATBUFFERS_BUILD_FLATC=${FLATBUFFERS_BUILD_FLATC}
-    INSTALL_COMMAND   ""
-    BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
-                      "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
+        INSTALL_COMMAND   ""
+        BUILD_BYPRODUCTS  "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/flatc"
+        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build/libflatbuffers.a"
 )
 
 # Make the flatbuffers include path globally available for all targets in this project.
@@ -814,32 +832,33 @@ if(DEFINED ENV{GENERATE_FLATC} OR DEFINED GENERATE_FLATC)
     set(MAIN_GENERATED_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/graph/generated.h")
 
     add_custom_command(
-        OUTPUT ${MAIN_GENERATED_HEADER}
-        COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
-        DEPENDS flatbuffers_external
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Running flatc to generate C++ headers"
-        VERBATIM
+            OUTPUT ${MAIN_GENERATED_HEADER}
+            COMMAND ${CMAKE_COMMAND} -E env "FLATC_PATH=${FLATC_EXECUTABLE}" bash ${CMAKE_CURRENT_SOURCE_DIR}/flatc-generate.sh
+            DEPENDS flatbuffers_external
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Running flatc to generate C++ headers"
+            VERBATIM
     )
 
     add_custom_target(generate_flatbuffers_headers
-        DEPENDS ${MAIN_GENERATED_HEADER}
+            DEPENDS ${MAIN_GENERATED_HEADER}
     )
 
     add_custom_command(
-        TARGET generate_flatbuffers_headers POST_BUILD
-        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Copying generated Java files"
-        VERBATIM
+            TARGET generate_flatbuffers_headers POST_BUILD
+            COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/copy-flatc-java.sh
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+            COMMENT "Copying generated Java files"
+            VERBATIM
     )
 endif()
 
-# OneDNN configuration - FIXED: Removed problematic flatbuffers dependency
+# OneDNN configuration - FIXED: Only configure when explicitly enabled
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
-if(HELPERS_onednn AND NOT HELPERS_onednn STREQUAL "false" AND NOT HELPERS_onednn STREQUAL "FALSE" AND NOT HELPERS_onednn STREQUAL "OFF")
+if(HELPERS_onednn)
+    message(STATUS "OneDNN helper is enabled")
     include(ExternalProject)
     message(STATUS "Configuring OneDNN dependency using ExternalProject_Add")
     set(HAVE_ONEDNN TRUE)
@@ -855,21 +874,20 @@ if(HELPERS_onednn AND NOT HELPERS_onednn STREQUAL "false" AND NOT HELPERS_onednn
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
             BINARY_DIR        "${ONEDNN_BUILD_DIR}"
             CMAKE_ARGS
-                -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
-                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                -DDNNL_LIBRARY_TYPE=STATIC
-                -DDNNL_BUILD_TESTS=OFF
-                -DDNNL_BUILD_EXAMPLES=OFF
-                -DDNNL_VERBOSE=OFF
+            -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DDNNL_LIBRARY_TYPE=STATIC
+            -DDNNL_BUILD_TESTS=OFF
+            -DDNNL_BUILD_EXAMPLES=OFF
+            -DDNNL_VERBOSE=OFF
             BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE}
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
             BUILD_BYPRODUCTS  "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
-                              "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
+            "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
             LOG_DOWNLOAD      ON
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
-            # FIXED: Removed "DEPENDS flatbuffers_external" which was causing the error
     )
 
     add_library(onednn_interface INTERFACE)
@@ -884,13 +902,14 @@ if(HELPERS_onednn AND NOT HELPERS_onednn STREQUAL "false" AND NOT HELPERS_onednn
 
     message(STATUS "OneDNN configured via ExternalProject_Add. Build artifacts will be in ${ONEDNN_INSTALL_DIR}")
 else()
-    message(STATUS "Skipping OneDNN setup via ExternalProject_Add (HELPERS_onednn is OFF)")
+    message(STATUS "OneDNN helper is disabled (HELPERS_onednn=OFF)")
     set(HAVE_ONEDNN FALSE)
     set(ONEDNN "")
 endif()
 
-# cuDNN configuration
-if(HELPERS_cudnn AND NOT HELPERS_cudnn STREQUAL "false" AND NOT HELPERS_cudnn STREQUAL "FALSE" AND NOT HELPERS_cudnn STREQUAL "OFF")
+# cuDNN configuration - FIXED: Only configure when explicitly enabled
+if(HELPERS_cudnn)
+    message(STATUS "cuDNN helper is enabled")
     if(NOT SD_CUDA)
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
@@ -931,6 +950,9 @@ if(HELPERS_cudnn AND NOT HELPERS_cudnn STREQUAL "false" AND NOT HELPERS_cudnn ST
         message("Searched for library '${CUDNN_LIBNAME}' in: ${CUDNN_ROOT_DIR}, ${CUDA_TOOLKIT_ROOT_DIR}, and system paths")
         set(HAVE_CUDNN false)
     endif()
+else()
+    message(STATUS "cuDNN helper is disabled (HELPERS_cudnn=OFF)")
+    set(HAVE_CUDNN false)
 endif()
 
 # Configuration file
@@ -961,7 +983,8 @@ set(INSTANTIATION_TEMPLATES_2
 # CUDA Configuration
 if(SD_CUDA)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
-    set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler" CACHE STRING "CUDA compile flags" FORCE)
+    # THE LINE BELOW IS MOVED TO THE TOP OF THE FILE AND IS NOW INEFFECTIVE HERE
+    # set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler" CACHE STRING "CUDA compile flags" FORCE)
     set(CMAKE_CUDA_HOST_COMPILER_OPTIONS "--allow-unsupported-compiler")
 
     enable_language(CUDA)
@@ -1149,18 +1172,26 @@ else() # Start of CPU Build Section
 
     set(ALL_SOURCES "")
 
+    # OneDNN sources - FIXED: Only include when helper is enabled
     set(CUSTOMOPS_ONEDNN_SOURCES "")
     if(HAVE_ONEDNN)
+        message(STATUS "Including OneDNN platform sources")
         file(GLOB_RECURSE CUSTOMOPS_ONEDNN_SOURCES_TMP ./include/ops/declarable/platform/mkldnn/*.cpp ./include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
         set(CUSTOMOPS_ONEDNN_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES_TMP})
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ONEDNN_SOURCES})
+    else()
+        message(STATUS "Skipping OneDNN platform sources (OneDNN helper disabled)")
     endif()
 
+    # ARM Compute sources - FIXED: Only include when helper is enabled
     set(CUSTOMOPS_ARMCOMPUTE_SOURCES "")
     if(HAVE_ARMCOMPUTE)
+        message(STATUS "Including ARM Compute platform sources")
         file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP ./include/ops/declarable/platform/armcompute/*.cpp ./include/ops/declarable/platform/armcompute/*.h)
         set(CUSTOMOPS_ARMCOMPUTE_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES_TMP})
         list(APPEND ALL_SOURCES ${CUSTOMOPS_ARMCOMPUTE_SOURCES})
+    else()
+        message(STATUS "Skipping ARM Compute platform sources (ARM Compute helper disabled)")
     endif()
 
     if (SD_X86_BUILD)
