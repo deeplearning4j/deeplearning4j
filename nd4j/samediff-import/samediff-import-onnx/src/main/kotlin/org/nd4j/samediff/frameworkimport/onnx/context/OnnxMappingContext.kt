@@ -94,9 +94,15 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
     }
 
     override fun irNode(): IRNode<Onnx.NodeProto, Onnx.TensorProto, Onnx.AttributeProto, Onnx.AttributeProto, Onnx.TensorProto.DataType> {
-        if(node.opType == "Placeholder")
-            return OnnxIRNode(node,  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")["Constant"]!!,graph.opMappingRegistry())
-        return OnnxIRNode(node,  OpDescriptorLoaderHolder.listForFramework<Onnx.NodeProto>("onnx")[node.opType]!!,graph.opMappingRegistry())
+        // Use the registry's lookup method instead of bypassing it
+        val opRegistry = graph.opMappingRegistry()
+        val opDefToUse = if(node.opType == "Placeholder") {
+            opRegistry.lookupInputFrameworkOpDef("Constant")
+        } else {
+            opRegistry.lookupInputFrameworkOpDef(node.opType)
+        }
+        
+        return OnnxIRNode(node, opDefToUse, opRegistry)
     }
 
     override fun tensorInputFromInputFrameworkName(name: String): IRTensor<Onnx.TensorProto, Onnx.TensorProto.DataType> {

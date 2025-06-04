@@ -25,6 +25,30 @@
 #include <limits>
 #include <system/type_boilerplate.h>  // For sd::LongType and other types
 
+// Add compiler-specific SIMD handling for problematic types
+#if defined(__GNUC__) && !defined(__clang__)
+// GCC-specific: Disable SIMD warnings for unsupported types
+#define PRAGMA_OMP_DECLARE_SIMD_SAFE \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+    _Pragma("omp declare simd") \
+    _Pragma("GCC diagnostic pop")
+#elif defined(__clang__)
+// Clang-specific: Similar approach
+#define PRAGMA_OMP_DECLARE_SIMD_SAFE \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wignored-attributes\"") \
+    _Pragma("omp declare simd") \
+    _Pragma("clang diagnostic pop")
+#elif defined(_MSC_VER)
+// MSVC: No SIMD pragma, just inline
+#define PRAGMA_OMP_DECLARE_SIMD_SAFE
+#else
+// Default fallback
+#define PRAGMA_OMP_DECLARE_SIMD_SAFE _Pragma("omp declare simd")
+#endif
+
+
 #if defined(_MSC_VER)
 
 #define OMP_STRINGIFY_HELPER(args) #args

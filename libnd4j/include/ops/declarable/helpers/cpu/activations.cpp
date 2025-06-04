@@ -39,7 +39,7 @@ void static _softMaxDerivForVector(sd::LaunchContext* context, const void* input
   T* outBuff = reinterpret_cast<T*>(output);
 
   T max = -DataTypeUtils::max<T>();
-  T sum = 0.;
+  T sum = static_cast<T>(0.);
   const sd::LongType length = shape::length(inShapeInfo);
 
   const sd::LongType rank = shape::rank(inShapeInfo);
@@ -99,7 +99,7 @@ void logSoftMaxForVector_(void const* input, sd::LongType const* inShapeInfo, vo
   auto outBuff = reinterpret_cast<T*>(output);
 
   T max = -DataTypeUtils::max<T>();
-  T sum = 0;
+  T sum = static_cast<T>(0);
 
   auto length = shape::length(inShapeInfo);
   sd::LongType  inRank = shape::rank(inShapeInfo);

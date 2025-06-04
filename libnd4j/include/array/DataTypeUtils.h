@@ -321,7 +321,7 @@ SD_INLINE SD_HOST_DEVICE bfloat16 DataTypeUtils::min<bfloat16>() {
 
 template <>
 SD_INLINE SD_HOST_DEVICE bfloat16 DataTypeUtils::min_positive<bfloat16>() {
-  return 0;
+  return bfloat16::min_positive();
 }
 
 template <>
@@ -519,16 +519,17 @@ SD_INLINE bool DataTypeUtils::castShapeInfo(const LongType *originalShapeInfo, T
 // returns the difference between 1.0 and the next representable value of the given floating-point type
 template <typename T>
 SD_INLINE SD_HOST_DEVICE T DataTypeUtils::eps() {
-  if (std::is_same<T, double>::value)
+  if constexpr (std::is_same_v<T, double>) {
     return std::numeric_limits<double>::epsilon();
-  else if (std::is_same<T, float>::value)
+  } else if constexpr (std::is_same_v<T, float>) {
     return std::numeric_limits<float>::epsilon();
-  else if (std::is_same<T, float16>::value)
-    return 0.00097656;
-  else if (std::is_same<T, bfloat16>::value)
-    return bfloat16::eps();
-  else
-    return 0;
+  } else if constexpr (std::is_same_v<T, float16>) {
+    return float16(0.00097656);
+  } else if constexpr (std::is_same_v<T, bfloat16>) {
+    return bfloat16(0.0078125);  // Approximate bfloat16 epsilon
+  } else {
+    return T(0);
+  }
 }
 
 template <typename T1, typename T2>

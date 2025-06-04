@@ -306,7 +306,7 @@ void Schur<T>::calcFromHessenberg() {
 
   T shift = T(0);
 
-  T norm = 0;
+  T norm = static_cast<T>(0);
   for (int j = 0; j < numCols; ++j)
     norm += t({0, math::sd_min<int>(numCols, j + 2), j, j + 1}).reduceNumber(reduce::ASum).template t<T>(0);
 

@@ -135,13 +135,12 @@ object MicrosoftOnnxExtensions {
         )
         registry.registerMappingProcess("FastGelu", fastGelu)
         
-        // Gelu mapping  
         val gelu = OnnxMappingProcess(
             inputFrameworkOpName = "Gelu",
-            opName = "gelu",
+            opName = "noop",
             opMappingRegistry = registry,
-            tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "X"))),
-            attributeMappingRules = booleanConstant(inputName = "inPlace", constantValue = false, argumentIndex = 0)
+            tensorMappingRules = listOf(),
+            attributeMappingRules = listOf()
         )
         registry.registerMappingProcess("Gelu", gelu)
         

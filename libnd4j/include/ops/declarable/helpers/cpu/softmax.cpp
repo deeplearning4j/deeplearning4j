@@ -38,7 +38,7 @@ static void softMaxForVector_(void const* input, sd::LongType const* inShapeInfo
   auto outBuff = reinterpret_cast<T*>(output);
 
   T max = -DataTypeUtils::max<T>();
-  T sum = 0.;
+  T sum = static_cast<T>(0.);
   int inEWS = shape::elementWiseStride(inShapeInfo);
   int outEWS = shape::elementWiseStride(outShapeInfo);
   int length = shape::length(inShapeInfo);
@@ -195,7 +195,7 @@ static void softmax_(sd::LaunchContext* context, NDArray* input, NDArray* output
           auto outBuff = output->bufferAsT<T>() + tadOffsets[i];
 
           T max = -DataTypeUtils::max<T>();
-          T sum = 0.f;
+          T sum = static_cast<T>(0.f);
 
           for (sd::LongType j = 0; j < tadLen; ++j) max = sd::math::sd_max<T>(max, inBuff[offsets[j]]);
 

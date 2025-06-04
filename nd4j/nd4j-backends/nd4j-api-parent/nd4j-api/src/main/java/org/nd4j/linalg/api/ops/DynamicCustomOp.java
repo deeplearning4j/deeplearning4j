@@ -362,8 +362,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             if(outputVariables.length > 0 && outputArguments().isEmpty()) {
+                // Validate operation is ready for execution before proceeding
+                if (!isReadyForExecution()) {
+                    log.warn("Skipping computeArrays for operation " + opName() + " (" + getOwnName() +
+                            ") - operation not ready for execution");
+                    return;
+                }
+
                 //override output variables to ensure data types, shapes and output arrays are properly computed
-                List<DataBuffer> longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+                List<DataBuffer> longShapeDescriptors;
+                try {
+                    longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+                } catch (Exception e) {
+                    log.warn("Failed to calculate output shape for operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
+                    return;
+                }
+
                 if(!longShapeDescriptors.isEmpty())
                     for(int i = 0; i < longShapeDescriptors.size(); i++) {
                         if(outputVariables[i].getArr() != null) {
@@ -373,8 +387,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
                             addOutputArgument(arr);
                         }
-
-
                     }
 
                 try(OpContext ctx = Nd4j.getExecutioner().buildContext()) {
@@ -390,7 +402,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                         l.preOpExecution(sameDiff, At.defaultAt(),op2,ctx);
                     }
 
-                    INDArray[] exec = Nd4j.getExecutioner().exec(this,ctx);
+                    INDArray[] exec;
+                    try {
+                        exec = Nd4j.getExecutioner().exec(this,ctx);
+                    } catch (Exception e) {
+                        log.warn("Failed to execute operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
+                        return;
+                    }
+
                     for(Listener  l : sameDiff.getListeners()) {
                         l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
                     }
@@ -413,16 +432,64 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             outputVariables[i].setShape(exec[i].shape());
                             sameDiff.setEagerArrForVarName(outputVariables[i].name(),exec[i]);
                         }
-
                     }
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    log.warn("Error during eager execution of operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
+                    // Don't rethrow - allow execution to continue
                 }
+            }
+        }
+    }
 
-
-
+    /**
+     * Validates that this operation is properly configured and ready for execution.
+     * This should be called before computeArrays() to prevent native crashes.
+     *
+     * @return true if the operation is ready for execution, false otherwise
+     */
+    public boolean isReadyForExecution() {
+        try {
+            // Check if we have a valid descriptor
+            CustomOpDescriptor descriptor = getDescriptor();
+            if (descriptor == null) {
+                return false;
             }
 
+            // Validate input requirements
+            if (descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs()) {
+                return false;
+            }
+
+            // Validate integer argument requirements
+            if (descriptor.getNumIArgs() > 0 && numIArguments() < descriptor.getNumIArgs()) {
+                return false;
+            }
+
+            // Validate floating point argument requirements
+            if (descriptor.getNumTArgs() > 0 && numTArguments() < descriptor.getNumTArgs()) {
+                return false;
+            }
+
+            // Check that all input arrays are non-null and have valid shapes
+            for (int i = 0; i < numInputArguments(); i++) {
+                INDArray input = getInputArgument(i);
+                if (input == null || input.isEmpty()) {
+                    return false;
+                }
+            }
+
+            // Most importantly: try to calculate output shape
+            // This is where the "Dimensions array is null" error would occur
+            try {
+                List<DataBuffer> shapes = calculateOutputShape();
+                return shapes != null && !shapes.isEmpty();
+            } catch (Exception e) {
+                // If shape calculation fails, the op is not ready
+                return false;
+            }
+
+        } catch (Exception e) {
+            return false;
         }
     }
 

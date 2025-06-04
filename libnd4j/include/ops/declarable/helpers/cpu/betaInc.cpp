@@ -36,11 +36,11 @@ namespace helpers {
 
 template <typename T>
 static T continuedFraction(const T a, const T b, const T x) {
-  const T min = DataTypeUtils::min_positive<T>() / DataTypeUtils::eps<T>();
+  const T min = DataTypeUtils::min_positive<T>() / static_cast<T>(DataTypeUtils::eps<T>());
   const T aPlusb = a + b;
   T val, aPlus2i;
 
-  T t2 = 1;
+  T t2 = static_cast<T>(1);
   T t1 = static_cast<T>(1) - aPlusb * x / (a + static_cast<T>(1));
   if (math::sd_abs<T,T>(t1) < min) t1 = min;
   t1 = static_cast<T>(1) / t1;
@@ -86,7 +86,7 @@ static T betaIncCore(T a, T b, T x) {
 
   if (x == static_cast<T>(0) || x == static_cast<T>(1)) return x;
 
-  const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
+  const T gammaPart = static_cast<T>(lgamma(a) + lgamma(b) - lgamma(a + b));
   const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(1.f - x) * b - gammaPart);
 
   if (x <= (a + static_cast<T>(1)) / (a + b + static_cast<T>(2)))

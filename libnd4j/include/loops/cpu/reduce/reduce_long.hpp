@@ -55,9 +55,7 @@ void SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::Long
     return;
   }
 
-  auto startingValue = OpType::startingValue(x);
   sd::LongType xShapeInfoCast[SD_MAX_RANK];
-  const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
   int maxThreads = sd::math::sd_min<int>(64, sd::Environment::getInstance().maxThreads());
   Z intermediate[64];
 
@@ -103,7 +101,6 @@ Z SD_HOST ReduceLongFunction<X, Z>::execScalar(const void *vx, const sd::LongTyp
   } else {
     auto startingValue = OpType::startingValue(x);
     sd::LongType xShapeInfoCast[SD_MAX_RANK];
-    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     sd::LongType xRank = shape::rank(xShapeInfo);
     sd::LongType* xShape = shape::shapeOf(xShapeInfo);

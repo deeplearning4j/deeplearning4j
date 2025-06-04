@@ -23,6 +23,7 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
+#include <type_traits>
 
 #if defined(__INTEL_COMPILER) || defined(SD_F16C)
 #include <immintrin.h>
@@ -38,7 +39,7 @@ struct bfloat16;
 
 struct ihalf : public __half {
 public:
- SD_HOST_DEVICE ihalf() : half() {
+ SD_HOST_DEVICE ihalf() : __half() {
    //
  }
 
@@ -46,13 +47,13 @@ public:
 
  SD_INLINE SD_HOST_DEVICE unsigned short getX() const { return this->__x; }
 
- SD_INLINE SD_HOST_DEVICE void assign(const half f) { this->__x = ((__half_raw*)&f)->x; }
+ SD_INLINE SD_HOST_DEVICE void assign(const __half f) { this->__x = ((__half_raw*)&f)->x; }
 };
 
 #else
 struct ihalf : public __half {
 public:
- SD_HOST_DEVICE ihalf() : half() {
+ SD_HOST_DEVICE ihalf() : __half() {
    //
  }
 
@@ -60,12 +61,12 @@ public:
 
  SD_INLINE SD_HOST_DEVICE unsigned short getX() const { return this->x; }
 
- SD_INLINE SD_HOST_DEVICE void assign(const half f) { this->x = ((__half*)&f)->x; }
+ SD_INLINE SD_HOST_DEVICE void assign(const __half f) { this->x = ((__half*)&f)->x; }
 };
 #endif  // CUDA_8
 
 #else
-struct __half {
+struct alignas(2) __half {
 public:
  unsigned short x;
  inline unsigned short* getXP() { return &this->x; }
@@ -118,9 +119,12 @@ SD_INLINE SD_HOST_DEVICE float cpu_ihalf2float(ihalf h) {
    exponent += 0x70;
  }
 
- int temp = ((sign << 31) | (exponent << 23) | mantissa);
-
- return *((float*)((void*)&temp));
+ union {
+   int i;
+   float f;
+ } u;
+ u.i = ((sign << 31) | (exponent << 23) | mantissa);
+ return u.f;
 }
 #endif
 
@@ -136,12 +140,17 @@ SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
 SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
  ihalf ret;
 
- unsigned x = *((int*)(void*)(&f));
- unsigned u = (x & 0x7fffffff), remainder, shift, lsb, lsb_s1, lsb_m1;
+ union {
+   float f;
+   int i;
+ } u;
+ u.f = f;
+ unsigned x = u.i;
+ unsigned u_val = (x & 0x7fffffff), remainder, shift, lsb, lsb_s1, lsb_m1;
  unsigned sign, exponent, mantissa;
 
  // Get rid of +NaN/-NaN case first.
- if (u > 0x7f800000) {
+ if (u_val > 0x7f800000) {
    *ret.getXP() = 0x7fffU;
    return ret;
  }
@@ -149,17 +158,17 @@ SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
  sign = ((x >> 16) & 0x8000);
 
  // Get rid of +Inf/-Inf, +0/-0.
- if (u > 0x477fefff) {
+ if (u_val > 0x477fefff) {
    *ret.getXP() = sign | 0x7c00U;
    return ret;
  }
- if (u < 0x33000001) {
+ if (u_val < 0x33000001) {
    *ret.getXP() = (sign | 0x0000);
    return ret;
  }
 
- exponent = ((u >> 23) & 0xff);
- mantissa = (u & 0x7fffff);
+ exponent = ((u_val >> 23) & 0xff);
+ mantissa = (u_val & 0x7fffff);
 
  if (exponent > 0x70) {
    shift = 13;
@@ -190,7 +199,7 @@ SD_INLINE SD_HOST_DEVICE ihalf cpu_float2ihalf_rn(float f) {
 }
 #endif
 
-struct float16 {
+struct alignas(2) float16 {
 private:
  template <typename T>
  struct isNumericType {
@@ -211,7 +220,7 @@ public:
 
  template <typename T,
            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
- SD_INLINE SD_HOST_DEVICE float16(const T& rhs) {
+ SD_INLINE SD_HOST_DEVICE explicit float16(const T& rhs) {
    *this = rhs;
  }
 
@@ -296,7 +305,7 @@ public:
  }
 
  SD_INLINE SD_HOST_DEVICE float16& operator=(const bool rhs) {
-   *this = (float)rhs ? 1.f : 0.f;
+   *this = rhs ? 1.0f : 0.0f;
    return *this;
  }
 
@@ -320,7 +329,7 @@ public:
  template <typename T,
            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
  SD_INLINE SD_HOST_DEVICE float16& operator=(const T& rhs) {
-   *this = (float)rhs;
+   *this = static_cast<float>(rhs);
    return *this;
  }
 
@@ -343,27 +352,28 @@ public:
 #ifdef SD_NATIVE_HALFS
  SD_INLINE SD_HOST_DEVICE friend bool operator<(const float16& a, const float16& b) { return __hlt(a.data, b.data); }
 #else
- SD_INLINE SD_HOST_DEVICE friend bool operator<(const float16& a, const float16& b) { return (float)a < (float)b; }
+ SD_INLINE SD_HOST_DEVICE friend bool operator<(const float16& a, const float16& b) { return static_cast<float>(a) < static_cast<float>(b); }
 #endif
 
 #ifdef SD_NATIVE_HALFS
  SD_INLINE SD_HOST_DEVICE friend bool operator>(const float16& a, const float16& b) { return __hgt(a.data, b.data); }
 #else
- SD_INLINE SD_HOST_DEVICE friend bool operator>(const float16& a, const float16& b) { return (float)a > (float)b; }
+ SD_INLINE SD_HOST_DEVICE friend bool operator>(const float16& a, const float16& b) { return static_cast<float>(a) > static_cast<float>(b); }
 #endif
 
 #ifdef SD_NATIVE_HALFS
  SD_INLINE SD_HOST_DEVICE friend bool operator<=(const float16& a, const float16& b) { return __hle(a.data, b.data); }
 #else
- SD_INLINE SD_HOST_DEVICE friend bool operator<=(const float16& a, const float16& b) { return (float)a <= (float)b; }
+ SD_INLINE SD_HOST_DEVICE friend bool operator<=(const float16& a, const float16& b) { return static_cast<float>(a) <= static_cast<float>(b); }
 #endif
 
 #ifdef SD_NATIVE_HALFS
  SD_INLINE SD_HOST_DEVICE friend bool operator>=(const float16& a, const float16& b) { return __hge(a.data, b.data); }
 #else
- SD_INLINE SD_HOST_DEVICE friend bool operator>=(const float16& a, const float16& b) { return (float)a >= (float)b; }
+ SD_INLINE SD_HOST_DEVICE friend bool operator>=(const float16& a, const float16& b) { return static_cast<float>(a) >= static_cast<float>(b); }
 #endif
 
+// Arithmetic operators - optimized for native CUDA half support when available
 #ifdef SD_NATIVE_HALFS
  SD_INLINE SD_HOST_DEVICE friend float16 operator+(const float16& a, const float16& b) {
    return __hadd(a.data, b.data);
@@ -386,180 +396,212 @@ public:
  }
 #else
  SD_INLINE SD_HOST_DEVICE friend float16 operator+(const float16& a, const float16& b) {
-   return float16((float)a + (float)b);
+   return float16(static_cast<float>(a) + static_cast<float>(b));
  }
- SD_INLINE SD_HOST_DEVICE float16& operator--() {
-   *this = *this - (float16)1.f;
-   return *this;
+ 
+ SD_INLINE SD_HOST_DEVICE friend float16 operator-(const float16& a, const float16& b) {
+   return float16(static_cast<float>(a) - static_cast<float>(b));
  }
+ 
  SD_INLINE SD_HOST_DEVICE friend float16 operator*(const float16& a, const float16& b) {
-   return float16((float)a * (float)b);
+   return float16(static_cast<float>(a) * static_cast<float>(b));
  }
+ 
  SD_INLINE SD_HOST_DEVICE friend float16 operator/(const float16& a, const float16& b) {
-   return float16((float)a / (float)b);
+   return float16(static_cast<float>(a) / static_cast<float>(b));
  }
 #endif
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator+(const float16& a, const T& b) {
-   return a + static_cast<float16>(b);
+   return float16(static_cast<float>(a) + static_cast<float>(b));
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator+(const T& a, const float16& b) {
-   return static_cast<float16>(a) + b;
+   return float16(static_cast<float>(a) + static_cast<float>(b));
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator-(const float16& a, const T& b) {
-   return a - static_cast<float16>(b);
+   return float16(static_cast<float>(a) - static_cast<float>(b));
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator-(const T& a, const float16& b) {
-   return static_cast<float16>(a) - b;
+   return float16(static_cast<float>(a) - static_cast<float>(b));
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator*(const float16& a, const T& b) {
-   return a * static_cast<float16>(b);
+   return float16(static_cast<float>(a) * static_cast<float>(b));
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator*(const T& a, const float16& b) {
-   return static_cast<float16>(a) * b;
+   return float16(static_cast<float>(a) * static_cast<float>(b));
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator/(const float16& a, const T& b) {
-   return a / static_cast<float16>(b);
+   return float16(static_cast<float>(a) / static_cast<float>(b));
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend float16 operator/(const T& a, const float16& b) {
-   return static_cast<float16>(a) / b;
+   return float16(static_cast<float>(a) / static_cast<float>(b));
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator==(const float16& a, const T& b) {
-   return a == static_cast<float16>(b);
+   return static_cast<float>(a) == static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator==(const T& a, const float16& b) {
-   return static_cast<float16>(a) == b;
+   return static_cast<float>(a) == static_cast<float>(b);
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator!=(const float16& a, const T& b) {
-   return a != static_cast<float16>(b);
+   return static_cast<float>(a) != static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator!=(const T& a, const float16& b) {
-   return static_cast<float16>(a) != b;
+   return static_cast<float>(a) != static_cast<float>(b);
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator<(const float16& a, const T& b) {
-   return a < static_cast<float16>(b);
+   return static_cast<float>(a) < static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator<(const T& a, const float16& b) {
-   return static_cast<float16>(a) < b;
+   return static_cast<float>(a) < static_cast<float>(b);
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator>(const float16& a, const T& b) {
-   return a > static_cast<float16>(b);
+   return static_cast<float>(a) > static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator>(const T& a, const float16& b) {
-   return static_cast<float16>(a) > b;
+   return static_cast<float>(a) > static_cast<float>(b);
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator<=(const float16& a, const T& b) {
-   return a <= static_cast<float16>(b);
+   return static_cast<float>(a) <= static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator<=(const T& a, const float16& b) {
-   return static_cast<float16>(a) <= b;
+   return static_cast<float>(a) <= static_cast<float>(b);
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator>=(const float16& a, const T& b) {
-   return a >= static_cast<float16>(b);
+   return static_cast<float>(a) >= static_cast<float>(b);
  }
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE friend bool operator>=(const T& a, const float16& b) {
-   return static_cast<float16>(a) >= b;
+   return static_cast<float>(a) >= static_cast<float>(b);
  }
 
- SD_INLINE SD_HOST_DEVICE float16& operator+=(float16 rhs) {
-   *this = (float)*this + (float)rhs;
+ // Compound assignment operators
+ SD_INLINE SD_HOST_DEVICE float16& operator+=(const float16& rhs) {
+   *this = static_cast<float>(*this) + static_cast<float>(rhs);
    return *this;
  }
 
- SD_INLINE SD_HOST_DEVICE float16& operator-=(float16 rhs) {
-   *this = (float)*this - (float)rhs;
+ SD_INLINE SD_HOST_DEVICE float16& operator-=(const float16& rhs) {
+   *this = static_cast<float>(*this) - static_cast<float>(rhs);
    return *this;
  }
 
- SD_INLINE SD_HOST_DEVICE float16& operator*=(float16 rhs) {
-   *this = (float)*this * (float)rhs;
+ SD_INLINE SD_HOST_DEVICE float16& operator*=(const float16& rhs) {
+   *this = static_cast<float>(*this) * static_cast<float>(rhs);
    return *this;
  }
 
- SD_INLINE SD_HOST_DEVICE float16& operator/=(float16 rhs) {
-   *this = (float)*this / (float)rhs;
+ SD_INLINE SD_HOST_DEVICE float16& operator/=(const float16& rhs) {
+   *this = static_cast<float>(*this) / static_cast<float>(rhs);
    return *this;
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE float16& operator+=(const T& rhs) {
-   *this = *this + rhs;
+   *this = static_cast<float>(*this) + static_cast<float>(rhs);
    return *this;
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE float16& operator-=(const T& rhs) {
-   *this = *this - rhs;
+   *this = static_cast<float>(*this) - static_cast<float>(rhs);
    return *this;
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE float16& operator*=(const T& rhs) {
-   *this = *this * rhs;
+   *this = static_cast<float>(*this) * static_cast<float>(rhs);
    return *this;
  }
 
  template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
  SD_INLINE SD_HOST_DEVICE float16& operator/=(const T& rhs) {
-   *this = *this / rhs;
+   *this = static_cast<float>(*this) / static_cast<float>(rhs);
    return *this;
  }
 
  SD_INLINE SD_HOST_DEVICE float16& operator++() {
-   *this = *this + (float16)1.f;
+   *this = static_cast<float>(*this) + 1.0f;
    return *this;
  }
 
-
+ SD_INLINE SD_HOST_DEVICE float16& operator--() {
+   *this = static_cast<float>(*this) - 1.0f;
+   return *this;
+ }
 
  SD_INLINE SD_HOST_DEVICE float16 operator++(int) {
-   *this = *this + (float16)1.f;
-   return *this;
+   float16 tmp = *this;
+   *this = static_cast<float>(*this) + 1.0f;
+   return tmp;
  }
 
  SD_INLINE SD_HOST_DEVICE float16 operator--(int) {
-   *this = *this - (float16)1.f;
-   return *this;
+   float16 tmp = *this;
+   *this = static_cast<float>(*this) - 1.0f;
+   return tmp;
  }
 
- SD_INLINE SD_HOST_DEVICE float16 operator-() const { return 0.f - (float)*this; }
+ SD_INLINE SD_HOST_DEVICE float16 operator-() const { 
+   float16 result;
+   *result.data.getXP() = data.getX() ^ 0x8000U; // Flip sign bit
+   return result;
+ }
 
+ // Helper methods
+ SD_INLINE SD_HOST_DEVICE static float as_float(const float16& f16) {
+   return static_cast<float>(f16);
+ }
+
+ SD_INLINE SD_HOST_DEVICE static float16 from_float(float f) {
+   return float16(f);
+ }
 };
+
+// Ensure proper alignment for SIMD operations
+static_assert(sizeof(float16) == 2, "float16 must be 2 bytes");
+static_assert(alignof(float16) >= 2, "float16 must be at least 2-byte aligned");
+
+// Template specializations to ensure SIMD compatibility
+namespace std {
+  template<>
+  struct is_arithmetic<float16> : std::true_type {};
+  
+  template<>
+  struct is_floating_point<float16> : std::true_type {};
+}
 
 #ifdef __CUDACC__
 SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
 
 SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
 #endif
-
 
 #endif

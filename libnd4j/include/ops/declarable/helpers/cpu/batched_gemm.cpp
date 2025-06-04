@@ -1,4 +1,4 @@
-/* ******************************************************************************
+ /* ******************************************************************************
  *
  *
  * This program and the accompanying materials are made available under the
@@ -148,7 +148,7 @@ static void bgemm_( std::vector<NDArray *> &vA,  std::vector<NDArray *> &vB, std
         auto beta = betas->isScalar() ? betas->e<T>(0) : betas->e<T>(p);
         for (int m = 0; m < M; m++) {
           for (int n = 0; n < N; n++) {
-            T c_mnp = 0;
+            T c_mnp = static_cast<T>(0);
             PRAGMA_OMP_SIMD
             for (int k = 0; k < K; k++) {
               c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] *

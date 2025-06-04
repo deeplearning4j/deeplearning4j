@@ -38,10 +38,10 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArra
   const int depth = crops->sizeAt(3);
 
   for (auto b = 0; b < numBoxes; ++b) {
-    T y1 = boxes->t<F>(b, 0);
-    T x1 = boxes->t<F>(b, 1);
-    T y2 = boxes->t<F>(b, 2);
-    T x2 = boxes->t<F>(b, 3);
+    T y1 = static_cast<T>(boxes->t<F>(b, 0));
+    T x1 = static_cast<T>(boxes->t<F>(b, 1));
+    T y2 = static_cast<T>(boxes->t<F>(b, 2));
+    T x2 = static_cast<T>(boxes->t<F>(b, 3));
 
     int bIn = indices->e<int>(b);
     if (bIn >= batchSize) {
@@ -84,7 +84,7 @@ SD_LIB_HIDDEN void cropAndResizeFunctor_(NDArray *images, NDArray *boxes, NDArra
             }
             int left_x_index = math::p_floor(in_x);
             int right_x_index = math::p_ceil(in_x);
-            T x_lerp = in_x - left_x_index;
+            T x_lerp = static_cast<T>(in_x - left_x_index);
 
             for (auto d = 0; d < depth; ++d) {
               const float topLeft(images->e<float>(bIn, topYIndex, left_x_index, d));

@@ -139,7 +139,7 @@ void clipByNormBp(sd::LaunchContext* context, NDArray *input, NDArray  *gradO, N
 template <typename T>
 static void clipByGlobalNorm_(std::vector<NDArray*>& inputs, double clipNorm, sd::memory::Workspace* workspace,
                               std::vector<NDArray*>& outputs, bool isInplace) {
-  T globalNorm = 0;
+  T globalNorm = static_cast<T>(0);
   for (size_t i = 0; i < inputs.size(); i++) {
     auto input = inputs[i];
     auto l2norm = input->reduceNumber(reduce::Norm2);
@@ -178,8 +178,8 @@ BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_,
 template <typename T>
 static void clipByValue_(NDArray* input, double leftBound, double rightBound, NDArray* output) {
   auto routine = LAMBDA_T(_x, leftBound, rightBound) {
-    if (_x > rightBound) return rightBound;
-    if (_x < leftBound) return leftBound;
+    if (_x > rightBound) return static_cast<T>(rightBound);
+    if (_x < leftBound) return static_cast<T>(leftBound);
     return _x;
   });
 

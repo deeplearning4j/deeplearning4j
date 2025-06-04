@@ -1134,16 +1134,18 @@ void deleteResultWrapper(sd::Pointer ptr) {
 
 
 template <typename T>
-SD_INLINE int estimateThresholdGeneric(sd::Pointer *extraPointers, sd::Pointer hX, int N, T threshold) {
+SD_INLINE int estimateThresholdGeneric(sd::Pointer *extraPointers, sd::Pointer hX, int N, float threshold) {
   auto buffer = reinterpret_cast<T *>(hX);
   int span = (N / 6) + 8;
+  // Cast the threshold to the appropriate type T
+  T typedThreshold = static_cast<T>(threshold);
 
   auto func = PRAGMA_REDUCE_LONG {
     int64_t cnt = 0;
     PRAGMA_OMP_SIMD
     for (auto e = start; e < stop; e++) {
       auto v = sd::math::sd_abs<T,T>(buffer[e]);
-      if (v >= threshold) cnt++;
+      if (v >= typedThreshold) cnt++;
     }
 
     return cnt;
@@ -1157,6 +1159,7 @@ int estimateThreshold(sd::Pointer *extraPointers, sd::Pointer hX, sd::LongType c
                       float threshold) {
   try {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+
     BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), SD_FLOAT_TYPES);
   } catch (std::exception &e) {
     sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

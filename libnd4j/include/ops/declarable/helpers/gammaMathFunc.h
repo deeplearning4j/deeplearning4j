@@ -58,7 +58,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   if (x == xInt &&
       xInt <= 20) {  // psi(n) = -Euler_Mascheroni_const + sum_from_k=1_to_n-1( 1/k ), for n = 1,2,3,...inf, we use this
                      // formula only for n <= 20 to avoid time consuming sum calculation for bigger n
-    T result = -0.577215664901532;
+    T result = static_cast<T>(-0.577215664901532);
     for (LongType i = 1; i <= xInt - 1; ++i) {
       result += static_cast<T>(1) / i;
     }
@@ -69,7 +69,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   if (x - xInt == 0.5 && xInt <= 20) {  // psi(n+0.5) = -Euler_Mascheroni_const - 2*ln(2) + sum_from_k=1_to_n( 2/(2*k-1)
                                         // )    , for n = 1,2,3,...inf, we use this formula only for n <= 20 to avoid
                                         // time consuming sum calculation for bigger n
-    T result = -0.577215664901532 - 2 * math::sd_log<T, T>(2);
+    T result = static_cast<T>(-0.577215664901532 - static_cast<T>(2) * math::sd_log<T, T>(static_cast<T>(2)));
     for (LongType i = 1; i <= xInt; ++i) {
       result += static_cast<T>(2) / (2 * i - 1);
     }
@@ -94,7 +94,7 @@ SD_HOST_DEVICE T diGammaScalar(T x) {
   // -0.00757575757575758, 0.0210927960927961, -0.0833333333333333};
 
   const T x2Inv = static_cast<T>(1) / (x * x);
-  T result = 0;
+  T result = static_cast<T>(0);
 
   for (int i = 6; i >= 0; --i) result = (result + coeffs[i]) * x2Inv;
   return result + math::sd_log<T, T>(x) - static_cast<T>(0.5) / x;

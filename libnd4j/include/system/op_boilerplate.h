@@ -2263,14 +2263,14 @@
   }                                                                                        \
   EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else { \
     printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);                \
-    return 0;                                                                              \
+    return static_cast<X>(0);                                                                              \
   }
 #define RETURNING_DISPATCH_BY_OPNUM_TT(NAME, SIGNATURE, ...)                                  \
   if (false) {                                                                                \
   }                                                                                           \
   EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL_TT, NAME, (SIGNATURE), __VA_ARGS__)) else { \
     printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__);                   \
-    return 0;                                                                                 \
+    return static_cast<Y>(0);                                                                                 \
   }
 
 #define PARAMS(...) __VA_ARGS__

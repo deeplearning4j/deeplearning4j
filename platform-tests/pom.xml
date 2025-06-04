@@ -59,7 +59,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
         <platform.classifier>${javacpp.platform}</platform.classifier>
-        <backend.artifactId>nd4j-cuda-12.3</backend.artifactId>
+        <backend.artifactId>nd4j-native</backend.artifactId>
         <!-- UDF package names for TestUdf -->
         <org.nd4j.linalg.api.ops.udf.classes></org.nd4j.linalg.api.ops.udf.classes>
         <lombok.version>1.18.38</lombok.version>
@@ -425,7 +425,7 @@
 
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
-            <artifactId>nd4j-cuda-12.3</artifactId>
+            <artifactId>nd4j-native</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -434,6 +434,11 @@
             <version>${derby.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.eclipse.deeplearning4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.deeplearning4j</groupId>
             <artifactId>deeplearning4j-graph</artifactId>
@@ -447,7 +452,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.deeplearning4j</groupId>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-test-resources</artifactId>
             <version>${dl4j.version}</version>
         </dependency>

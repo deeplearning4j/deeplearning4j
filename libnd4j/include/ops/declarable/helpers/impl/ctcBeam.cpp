@@ -337,7 +337,7 @@ void inner_beam_search(const Type* log_p, const uint64_t inc_p, IndexType* resul
   // additional storage to sort overlapped case by classes
   std::vector<std::pair<IndexType, int>> child_class_sorter_help;
   child_class_sorter_help.resize(beam_width - 1);
-  Type norm_offset = 0;
+  Type norm_offset = static_cast<Type>(0);
 
   for (uint64_t t = 0; t < len_t; t++) {
     auto next_beam_size = 0;

@@ -42,7 +42,7 @@ static void dropoutSimple(NDArray* input, NDArray* output, double probValue, int
     for (auto e = start; e < stop; e++) {
       float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
       //dropout mask might not be the same length
-      if (mask != nullptr && e < mask->lengthOf()) mask->p<T>(e, val);
+      if (mask != nullptr && e < mask->lengthOf()) mask->p<T>(e, static_cast<T>(val));
       if (val < probValue) flattenedOutput.p<T>(e, flattenedInput.e<T>(e));
     }
   };

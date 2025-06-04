@@ -293,10 +293,14 @@ if(SD_ARM_BUILD)
         set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     endif()
 endif()
+
+
+# Keep the Android-specific case as well
 if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
 endif()
+
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
     set(ARCH_TUNE "-march=${SD_ARCH}")
@@ -349,8 +353,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
     message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++11")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++11 -fPIC")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10 -fPIC")
+
+    # Add flags to handle large relocations for x86_64
+    if(SD_X86_BUILD)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--no-relax")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,--no-relax")
+    endif()
 
     if(UNIX)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/,-z,--no-undefined,--verbose")
@@ -383,6 +393,17 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
 
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
+    endif()
+endif()
+
+# Handle large template instantiations that can cause relocation errors
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Reduce memory pressure during compilation
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=30 --param ggc-min-heapsize=32768")
+
+    # Handle large relocations for x86_64
+    if(SD_X86_BUILD)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-relax")
     endif()
 endif()
 

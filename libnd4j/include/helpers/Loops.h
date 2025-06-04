@@ -920,7 +920,6 @@ SD_LIB_HIDDEN void ReductionLoops<X, Z, E>::loopReduce(memory::Workspace* worksp
     reduceDefault<X, Z, E, OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 }
 
-//////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename E>
 template <typename OpType>
 SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
@@ -928,83 +927,93 @@ SD_LIB_HIDDEN void TransformLoops<X, Z, E>::loopTransform(const X* x,
                                                           const LongType* zShapeInfo,
                                                           E* extraParams,
                                                           LongType threadId, LongType numThreads) {
-  const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+  // Basic validation
   if(xShapeInfo == nullptr) {
     THROW_EXCEPTION("Input x shape info was null!");
   }
-
-  if(xShapeInfo[0] > SD_MAX_RANK || xShapeInfo[0] < 0) {
-    THROW_EXCEPTION("x shape info appears to be corrupt. This is likely due to deallocation.");
-  }
-
-  if(zShapeInfo[0] > SD_MAX_RANK || zShapeInfo[0] < 0) {
-    THROW_EXCEPTION("z shape info appears to be corrupt. This is likely due to deallocation.");
-  }
-
   if(zShapeInfo == nullptr) {
     THROW_EXCEPTION("Input z shape info was null!");
   }
+  if(xShapeInfo[0] > SD_MAX_RANK || xShapeInfo[0] < 0) {
+    THROW_EXCEPTION("x shape info appears to be corrupt.");
+  }
+  if(zShapeInfo[0] > SD_MAX_RANK || zShapeInfo[0] < 0) {
+    THROW_EXCEPTION("z shape info appears to be corrupt.");
+  }
 
-
-  sd::LongType xRank = shape::rank(xShapeInfo);
-  sd::LongType zRank = shape::rank(zShapeInfo);
+  // Get basic shape information
+  const LongType len = shape::length(xShapeInfo);
+  const LongType xRank = shape::rank(xShapeInfo);
+  const LongType zRank = shape::rank(zShapeInfo);
 
   const LongType* xShape = shape::shapeOf(const_cast<LongType*>(xShapeInfo));
   const LongType* zShape = shape::shapeOf(const_cast<LongType*>(zShapeInfo));
   const LongType* xStride = shape::stride(const_cast<LongType*>(xShapeInfo));
   const LongType* zStride = shape::stride(const_cast<LongType*>(zShapeInfo));
-  const LongType len = shape::length(xShapeInfo);
-  switch (kindOfLoop) {
-    //*********************************************//
-    default: {
-      if(shape::shapeEquals(xShapeInfo, zShapeInfo)) {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        auto xLen = shape::length(xShapeInfo);
-        auto zLen = shape::length(zShapeInfo);
-        auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
-        for (auto i = span.startX(); i < span.stopX(); i++) {
-          INDEX2COORDS(i, xRank, xShape, xCoords);
-          INDEX2COORDS(i,zRank, zShape, zCoords);
+  // Determine thread work span
+  auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
 
-          sd::LongType xOffset;
-          sd::LongType zOffset;
-          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-          COORDS2INDEX(zRank, zStride, zCoords, zOffset);
+  // Process each element
+  for (auto i = span.startX(); i < span.stopX(); i++) {
+    // Calculate coordinates and offsets
+    LongType xCoords[SD_MAX_RANK];
+    LongType zCoords[SD_MAX_RANK];
 
+    INDEX2COORDS(i, xRank, xShape, xCoords);
+    INDEX2COORDS(i, zRank, zShape, zCoords);
 
-          auto opResult = OpType::op(x[xOffset], extraParams);
-          z[zOffset] = static_cast<Z>(opResult);
-        }
+    LongType xOffset;
+    LongType zOffset;
+    COORDS2INDEX(xRank, xStride, xCoords, xOffset);
+    COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
+    // Simple heuristic based on operation patterns observed
+    Z result;
 
+    // For X -> bool transformations (any input type to bool output)
+    if constexpr (std::is_same_v<Z, bool>) {
+      // Operations that expect X* (input type pointer)
+      constexpr bool expects_x_ptr =
+          std::is_same_v<OpType, simdOps::IsInf<X, Z>> ||
+          std::is_same_v<OpType, simdOps::IsNan<X, Z>> ||
+          std::is_same_v<OpType, simdOps::MatchConditionBool<X, Z>> ||
+          std::is_same_v<OpType, simdOps::IsPositive<X, Z>> ||
+          std::is_same_v<OpType, simdOps::Not<X, Z>> ||
+          std::is_same_v<OpType, simdOps::IsNegative<X, Z>> ||
+          std::is_same_v<OpType, simdOps::Assign<X, Z>>;
+
+      if constexpr (expects_x_ptr) {
+        result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
       } else {
-        LongType xCoords[SD_MAX_RANK];
-        LongType zCoords[SD_MAX_RANK];
-        auto xLen = shape::length(xShapeInfo);
-        auto zLen = shape::length(zShapeInfo);
-        auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+        // Operations that expect Z* (bool*): IsFinite, IsInfOrNan, etc.
+        result = OpType::op(x[xOffset], static_cast<Z*>(nullptr));
+      }
+    }
+    // For same-type transformations, use input type
+    else if constexpr (std::is_same_v<X, Z>) {
+      result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
+    }
+    // Default: try with extraParams if types match, otherwise check for operations that expect Z*
+    else {
+      // Operations that typically expect Z* (output type pointer)
+      constexpr bool expects_z_ptr =
+          std::is_same_v<OpType, simdOps::Sqrt<X, Z>> ||
+          std::is_same_v<OpType, simdOps::RSqrt<X, Z>>;  // Added RSqrt here
 
-        for (auto i = span.startX(); i < span.stopX(); i++) {
-          INDEX2COORDS(i, xRank, xShape, xCoords);
-          INDEX2COORDS(i, zRank, zShape, zCoords);
-
-          LongType xOffset;
-          LongType zOffset;
-          COORDS2INDEX(xRank, xStride, xCoords, xOffset);
-          COORDS2INDEX(zRank, zStride, zCoords, zOffset);
-
-
-          auto opResult = OpType::op(x[xOffset], extraParams);
-          z[zOffset] = static_cast<Z>(opResult);
-        }
+      if constexpr (expects_z_ptr) {
+        result = OpType::op(x[xOffset], static_cast<Z*>(nullptr));
+      } else if constexpr (std::is_same_v<E, X>) {
+        result = OpType::op(x[xOffset], extraParams);
+      } else {
+        result = OpType::op(x[xOffset], static_cast<X*>(nullptr));
       }
     }
 
+    z[zOffset] = result;
   }
-
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>

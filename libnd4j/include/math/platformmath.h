@@ -155,12 +155,34 @@ SD_INLINE SD_HOST void sd_print_math2<uint32_t>(const char* func_name, uint32_t 
   fflush(stdout);
 }
 
+SD_INLINE SD_HOST void sd_print_math(const char* func_name, float16 input, float16 output) {
+#if defined(SD_GCC_FUNCTRACE)
+  PRINT_IF_NECESSARY(func_name);
+#endif
+  printf("%s<float16>: input = %f, output = %f\n",
+         func_name,
+         static_cast<double>(input), static_cast<double>(output));
+  fflush(stdout);
+}
+
+SD_INLINE SD_HOST void sd_print_math(const char* func_name, bfloat16 input, bfloat16 output) {
+#if defined(SD_GCC_FUNCTRACE)
+  PRINT_IF_NECESSARY(func_name);
+#endif
+  printf("%s<bfloat16>: input = %f, output = %f\n",
+         func_name,
+         static_cast<double>(input), static_cast<double>(output));
+  fflush(stdout);
+}
+
 template <typename T>
 SD_INLINE SD_HOST void sd_print_math(const char* func_name, T input, T output) {
 #if defined(SD_GCC_FUNCTRACE)
   PRINT_IF_NECESSARY(func_name);
 #endif
-  printf("%s<%s>: input = %f, output = %f\n", typeid(T).name(),func_name, static_cast<double>(input), static_cast<double>(output));
+  printf("%s<%s>: input = %f, output = %f\n",
+         func_name, typeid(T).name(),
+         static_cast<double>(input), static_cast<double>(output));
   fflush(stdout);
 }
 

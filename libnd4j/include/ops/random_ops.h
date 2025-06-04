@@ -29,17 +29,17 @@
 #define method_idx                                                                                             \
   static SD_INLINE SD_HOST_DEVICE T op(sd::LongType idx, sd::LongType length, sd::graph::RandomGenerator *rng, \
                                        T *extraParams) {                                                       \
-    return -1.0f;                                                                                              \
+    return static_cast<T>(-1.0f);                                                                                              \
   }
 #define method_X                                                                          \
   static SD_INLINE SD_HOST_DEVICE T op(T valueX, sd::LongType idx, sd::LongType length,   \
                                        sd::graph::RandomGenerator *rng, T *extraParams) { \
-    return -2.0f;                                                                         \
+    return static_cast<T>(-2.0f);                                                                         \
   }
 #define method_XY                                                                                 \
   static SD_INLINE SD_HOST_DEVICE T op(T valueX, T valueY, sd::LongType idx, sd::LongType length, \
                                        sd::graph::RandomGenerator *rng, T *extraParams) {         \
-    return -3.0f;                                                                                 \
+    return static_cast<T>(-3.0f);                                                                                 \
   }
 
 #define no_exec_special                                                                                     \

@@ -361,19 +361,18 @@ std::mutex Threads::gThreadmutex;
 	bool   Threads::tryAcquire(int numThreads) {
 		std::lock_guard<std::mutex> lock(gThreadmutex);
 		auto nThreads = _nFreeThreads - numThreads;
-		if (nThreads >= 0) {
-			_nFreeThreads = nThreads;
+		//error: comparison of unsigned expression in ‘>= 0’ is always true [-Werror=type-limits]
 
-			return true;
-		}
-		return false;
+		_nFreeThreads = nThreads;
+     	return true;
+
 	}
 
 	bool  Threads::freeThreads(int numThreads) {
 		std::lock_guard<std::mutex> lock(gThreadmutex);
 		_nFreeThreads += numThreads;
 		// check if correct number of threads
-		return _nFreeThreads > sd::Environment::getInstance().maxThreads();
+		return _nFreeThreads > static_cast<uint64_t >(sd::Environment::getInstance().maxThreads());
 	}
 #endif
 
@@ -523,7 +522,7 @@ int Threads::parallel_for(FUNC_2D function, int64_t startX, int64_t stopX, int64
 
     if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-				for (int e = 0; e < numThreads; e++) {
+				for (uint64_t e = 0; e < numThreads; e++) {
 					auto span = Span2::build(splitLoop, e, numThreads, startX, stopX, incX, startY, stopY, incY);
 					function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
 				}
@@ -597,7 +596,7 @@ int Threads::parallel_for(FUNC_3D function, int64_t startX, int64_t stopX, int64
 
 			auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 #pragma omp parallel for
-			for (int e = 0; e < numThreads; e++) {
+			for (uint64_t e = 0; e < numThreads; e++) {
 				auto thread_id = numThreads - e - 1;
 				auto span = Span3::build(splitLoop, thread_id, numThreads, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 				function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
@@ -662,7 +661,7 @@ int Threads::parallel_do(FUNC_DO function, sd::LongType numThreads) {
 		}
 		else {
 			// if there's no threads available - we'll execute function sequentially one by one
-			for (uint64_t e = 0; e < numThreads; e++)
+			for (uint64_t e = 0; e < static_cast<uint64_t >(numThreads); e++)
 				function(e, numThreads);
 
 			return numThreads;
@@ -780,7 +779,7 @@ double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t st
 
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-			for (int e = 0; e < numThreads; e++) {
+			for (uint64_t e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = span * (e + 1) + start;
 
@@ -920,7 +919,7 @@ int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_
 #ifdef _OPENMP
   if (tryAcquire(numThreads)) {
 #pragma omp parallel for
-			for (size_t j = 0; j < numThreads; j++) {
+			for (int j = 0; j < numThreads; j++) {
 				function(j, thread_spans[j].start, thread_spans[j].end, increment);
 			}
 			freeThreads(numThreads);

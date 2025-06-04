@@ -143,7 +143,7 @@ static NDArray lup_(LaunchContext* context, NDArray* input, NDArray* compound, N
   const sd::LongType rowNum = input->rows();
   const sd::LongType columnNum = input->columns();
 
-  NDArray determinant = NDArrayFactory::create<T>(1.f, context);
+  NDArray determinant = NDArrayFactory::create<T>(static_cast<T>(1.f), context);
   NDArray compoundMatrix = *input;                   // copy
   NDArray permutationMatrix(input, false, context);  // has same shape as input and contiguous strides
   permutationMatrix.setIdentity();
@@ -524,7 +524,7 @@ static bool checkCholeskyInput_(sd::LaunchContext* context, NDArray * input) {
             DataTypeUtils::min_positive<T>())
           return false;
 
-    NDArray output = NDArrayFactory::create<T>(0., context);
+    NDArray output = NDArrayFactory::create<T>(static_cast<T>(0.), context);
     if (sd::Status::OK != determinant(context, thisMatrix, &output)) return false;
     if (output.e<T>(0) <= T(0)) return 0;
     NDArray reversedMatrix(*thisMatrix);
@@ -563,11 +563,11 @@ sd::Status cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bo
 
     for (sd::LongType col = 0; col < n; col++) {
       for (sd::LongType row = 0; row < col; row++) {
-        T rowSum = 0;
+        T rowSum = static_cast<T>(0);
         for (sd::LongType k = 0; k < row; ++k) rowSum += (lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(row, k));
         lowerMatrix->p(col, row, (matrix->e<T>(row, col) - rowSum) / lowerMatrix->e<T>(row, row));
       }
-      T diagonalSum = 0;
+      T diagonalSum = static_cast<T>(0);
       for (sd::LongType k = 0; k < col; ++k) diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
       lowerMatrix->p(col, col, sd::math::sd_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
     }

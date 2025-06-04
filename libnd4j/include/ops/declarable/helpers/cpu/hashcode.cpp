@@ -69,7 +69,7 @@ static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
 
         sd::LongType r = 1;
         for (sd::LongType e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
-          auto v = longBytes<T>(blockBuffer[e]);
+          auto v = longBytes<T>(static_cast<T>(blockBuffer[e]));
           r = 31 * r + v;
         }
 

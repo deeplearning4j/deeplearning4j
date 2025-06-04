@@ -134,7 +134,7 @@ static void barnes_edge_forces_(NDArray* rowP, NDArray * colP, NDArray * valP, i
       int shift = n * colCount;
       for (int i = s; i < end; i++) {
         T const* thisSlice = dataP + colP->e<int>(i) * colCount;
-        T res = 1;
+        T res = static_cast<T>(1);
 
         for (int k = 0; k < colCount; k++) {
           auto tempVal = dataP[shift + k] - thisSlice[k];  // thisSlice[k];

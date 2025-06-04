@@ -1830,5 +1830,130 @@ INSTANT_PROCESS_COMBINATION, INSTANT_PROCESS_COMBINATION_3, INSTANT_PROCESS_COMB
    PROCESS_ELEMENT(GET_FIRST(ELEMENT), GET_SECOND(ELEMENT), FUNC_NAME, ARGS)
 
 
+#define STATIC_CAST_VALUE(dataType, sourceValue, targetVariable) \
+  do { \
+    switch (dataType) { \
+      case sd::DataType::BFLOAT16: { \
+        targetVariable = static_cast<bfloat16>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::HALF: { \
+        targetVariable = static_cast<float16>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::FLOAT32: { \
+        targetVariable = static_cast<float>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::DOUBLE: { \
+        targetVariable = static_cast<double>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT8: { \
+        targetVariable = static_cast<int8_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT16: { \
+        targetVariable = static_cast<int16_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT32: { \
+        targetVariable = static_cast<int32_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::INT64: { \
+        targetVariable = static_cast<int64_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT8: { \
+        targetVariable = static_cast<uint8_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT16: { \
+        targetVariable = static_cast<uint16_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT32: { \
+        targetVariable = static_cast<uint32_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::UINT64: { \
+        targetVariable = static_cast<uint64_t>(sourceValue); \
+        break; \
+      } \
+      case sd::DataType::BOOL: { \
+        targetVariable = static_cast<bool>(sourceValue); \
+        break; \
+      } \
+      default: { \
+        printf("[ERROR] Unknown dataType=%d for value casting on %s:%d\n", dataType, __FILE__, __LINE__); \
+        fflush(stdout); \
+        THROW_EXCEPTION("unsupported data type for value casting"); \
+      } \
+    } \
+  } while(0)
 
+// Cast a pointer to a specific type based on DataType enum
+#define STATIC_CAST_POINTER(dataType, sourcePointer, targetPointer) \
+  do { \
+    switch (dataType) { \
+      case sd::DataType::BFLOAT16: { \
+        targetPointer = static_cast<bfloat16*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::HALF: { \
+        targetPointer = static_cast<float16*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::FLOAT32: { \
+        targetPointer = static_cast<float*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::DOUBLE: { \
+        targetPointer = static_cast<double*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT8: { \
+        targetPointer = static_cast<int8_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT16: { \
+        targetPointer = static_cast<int16_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT32: { \
+        targetPointer = static_cast<int32_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::INT64: { \
+        targetPointer = static_cast<int64_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT8: { \
+        targetPointer = static_cast<uint8_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT16: { \
+        targetPointer = static_cast<uint16_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT32: { \
+        targetPointer = static_cast<uint32_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::UINT64: { \
+        targetPointer = static_cast<uint64_t*>(sourcePointer); \
+        break; \
+      } \
+      case sd::DataType::BOOL: { \
+        targetPointer = static_cast<bool*>(sourcePointer); \
+        break; \
+      } \
+      default: { \
+        printf("[ERROR] Unknown dataType=%d for pointer casting on %s:%d\n", dataType, __FILE__, __LINE__); \
+        fflush(stdout); \
+        THROW_EXCEPTION("unsupported data type for pointer casting"); \
+      } \
+    } \
+  } while(0)
 #endif  // TESTS_CPU_TYPE_BOILERPLATE_H

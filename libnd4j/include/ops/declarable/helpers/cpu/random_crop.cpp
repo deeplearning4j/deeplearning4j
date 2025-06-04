@@ -41,7 +41,8 @@ static sd::Status _randomCropFunctor(graph::Context& context, NDArray* input, ND
   // functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng,
   // output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
   for (sd::LongType e = 0; e < output->lengthOf(); ++e) {
-    output->p(e, rngX.relativeT<T>(e, 0, shape->e<sd::LongType>(last)));
+    T put = rngX.relativeT<T>(e, static_cast<T>(0), static_cast<T>(shape->e<sd::LongType>(last)));
+    output->p(e, put);
   }
   sd::LongType maxIndex = output->argMax();
   sd::LongType startPos = output->e<sd::LongType>(maxIndex);

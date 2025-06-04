@@ -5,15 +5,21 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.common.resources.Resources
-import org.nd4j.common.tests.tags.TagNames
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.onnx.importer.OnnxFrameworkImporter
 import java.util.*
 
-@Tag(TagNames.ONNX)
 class TestOnnxFrameworkImporter {
 
 
+
+
+
+    @Test
+    fun testOther() {
+        val importer = OnnxFrameworkImporter()
+        importer.runImport("/home/agibsonccc/Documents/GitHub/kompile/./anserini-models/bge-base-en-v1.5/bge-base-en-v1.5.onnx")
+    }
 
 
 

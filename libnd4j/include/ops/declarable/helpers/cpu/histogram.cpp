@@ -32,7 +32,7 @@ static void histogram_(void const *xBuffer, sd::LongType const *xShapeInfo, void
 
   int length = shape::length(xShapeInfo);
 
-  X binSize = (max_val - min_val) / (numBins);
+  X binSize = static_cast<X>((max_val - min_val) / (numBins));
 
   // FIXME: this op should be parallelized
   {

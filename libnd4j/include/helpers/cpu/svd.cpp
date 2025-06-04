@@ -334,7 +334,7 @@ template <typename T>
 T SVD<T>::secularEq(const T diff, NDArray& col0, NDArray& diag, NDArray permut,
                     NDArray& diagShifted, const T shift) {
   auto len = permut.lengthOf();
-  T res = 1.;
+  T res = static_cast<T>(1.);
   T item;
   for (int i = 0; i < len; ++i) {
     int j = (int)permut.t<T>(i);
@@ -378,7 +378,7 @@ void SVD<T>::calcSingVals(NDArray col0, NDArray& diag, NDArray& permut, NDArray&
     }
 
     T mid = left + (right - left) / (T)2.;
-    T fMid = secularEq(mid, col0, diag, permut, diag, 0.);
+    T fMid = secularEq(mid, col0, diag, permut, diag, static_cast<T>(0.));
     T shift = (k == curLen - 1 || fMid > (T)0.) ? left : right;
 
     auto diagShifted = diag - shift;

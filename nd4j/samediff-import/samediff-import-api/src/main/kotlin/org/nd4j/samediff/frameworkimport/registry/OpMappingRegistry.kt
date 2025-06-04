@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.registry
 
+import onnx.Onnx
 import org.apache.commons.collections4.MultiSet
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
@@ -32,6 +33,7 @@ import org.nd4j.samediff.frameworkimport.findOp
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.samediff.frameworkimport.process.MappingProcess
 import org.nd4j.samediff.frameworkimport.process.MappingProcessLoader
+import org.nd4j.samediff.frameworkimport.process.PreImportHookMappingProcess
 import org.nd4j.samediff.frameworkimport.reflect.ImportReflectionCache
 import org.nd4j.shade.protobuf.TextFormat
 import java.io.File
@@ -97,7 +99,44 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         //workaround for placeholder not being defined, only used in limited circumstances
         if(name == "Placeholder" && !opDefList.containsKey("Placeholder"))
             return opDefList["Constant"]!!
-        return  opDefList[name]!!
+            
+        // Check if this is a PreImportHook operation before failing
+        if (!opDefList.containsKey(name)) {
+            val hasPreHookRules = cache.preProcessRuleImplementationsByOp.cellSet().any { cell ->
+                cell.rowKey == inputFrameworkName && cell.columnKey == name
+            }
+            
+            if (hasPreHookRules) {
+                // Create a dummy op definition for PreImportHook operations
+                val dummyOpDef = createDummyOpDefinition(name)
+                opDefList[name] = dummyOpDef
+                return dummyOpDef
+            }
+        }
+        
+        // Check if the op definition exists
+        if (!opDefList.containsKey(name)) {
+            throw IllegalArgumentException("No op definition found for '$name' in framework '$inputFrameworkName'. Available ops: ${opDefList.keys.sorted()}")
+        }
+        
+        return opDefList[name]!!
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun createDummyOpDefinition(opName: String): OP_DEF_TYPE {
+        // For ONNX, create a minimal NodeProto
+        return when (inputFrameworkName) {
+            "onnx" -> {
+                Onnx.NodeProto.newBuilder()
+                    .setOpType(opName)
+                    .setDomain("com.microsoft") // Default domain for most PreImportHook ops
+                    .setName("${opName}_prehook")
+                    .build() as OP_DEF_TYPE
+            }
+            else -> {
+                throw IllegalArgumentException("Dummy op definition creation not implemented for framework: $inputFrameworkName")
+            }
+        }
     }
 
     fun registerInputFrameworkOpDef(name: String,opDef: OP_DEF_TYPE) {
@@ -112,7 +151,6 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
         return registeredOps.containsKey(inputFrameworkOpName)
     }
 
-
     fun  lookupOpMappingProcess(inputFrameworkOpName: String): MappingProcess<
             GRAPH_TYPE,
             OP_DEF_TYPE,
@@ -122,19 +160,21 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
             ATTRIBUTE_VALUE_TYPE,
             DATA_TYPE> {
 
-
         if(!registeredOps.containsKey(inputFrameworkOpName)) {
             val allRules = cache.preProcessRuleImplementationsByOp
-            val noRules = allRules.cellSet().filter { input -> input.rowKey == inputFrameworkOpName }.isEmpty()
-            if(noRules)
-                throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
-            else {
-                println()
+            val hasPreHookRules = allRules.cellSet().any { cell ->
+                cell.rowKey == inputFrameworkName && cell.columnKey == inputFrameworkOpName
             }
-        }
-
-        if(!registeredOps.containsKey(inputFrameworkOpName)) {
-            throw IllegalArgumentException("No input framework op name with name $inputFrameworkOpName found!")
+            
+            if(hasPreHookRules) {
+                // Create and register a dummy MappingProcess for this PreImportHook operation
+                val dummyProcess = PreImportHookMappingProcess<GRAPH_TYPE, OP_DEF_TYPE, NODE_TYPE, TENSOR_TYPE, ATTRIBUTE_TYPE, ATTRIBUTE_VALUE_TYPE, DATA_TYPE>(
+                    inputFrameworkName, inputFrameworkOpName
+                )
+                registeredOps.put(inputFrameworkOpName, dummyProcess)
+            } else {
+                throw IllegalArgumentException("No import process defined for $inputFrameworkOpName")
+            }
         }
 
         return registeredOps[inputFrameworkOpName]!!.first()
@@ -213,9 +253,3 @@ class OpMappingRegistry<GRAPH_TYPE: GeneratedMessageV3,
     }
 
 }
-
-
-
-
-
-

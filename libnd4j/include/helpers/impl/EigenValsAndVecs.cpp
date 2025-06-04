@@ -64,7 +64,7 @@ void calcEigenVals_(NDArray& schurMatrixT, NDArray& _Vals) {
       _Vals.r<T>(i, 0) = schurMatrixT.t<T>(i, i);  // real part
       _Vals.r<T>(i, 1) = T(0);                     // imaginary part
 
-      if (!math::sd_isfin<T>(_Vals.t<T>(i, 0))) {
+      if (!math::sd_isfin<T>(_Vals.t<T>(static_cast<T>(i), static_cast<T>(0)))) {
         THROW_EXCEPTION("ops::helpers::igenValsAndVec::calcEigenVals: got infinite eigen value !");
         return;
       }
@@ -108,7 +108,7 @@ template <typename T>
 void calcPseudoEigenVecs_(NDArray& schurMatrixT, NDArray& schurMatrixU, NDArray& _Vals) {
   const int numOfCols = schurMatrixU.sizeAt(1);
 
-  T norm = 0;
+  T norm = static_cast<T>(0);
   for (int j = 0; j < numOfCols; ++j)
     norm += schurMatrixT({j, j + 1, math::sd_max<LongType>(j - 1, 0), numOfCols})
         .reduceNumber(reduce::ASum)

@@ -81,6 +81,7 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2) {                  \
    return static_cast<Z>(result);                                      \
 }
 
+#define COMMA_MATH ,
 #define SD_PROMOTE_FUNC3(FUNC_NAME, BODY)                                \
 template<typename T, typename U = T, typename V = T, typename Z = T>     \
 SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
@@ -88,11 +89,16 @@ SD_HOST_DEVICE SD_INLINE Z FUNC_NAME(T val1, U val2, V eps) {            \
    calc_type promoted_val1 = static_cast<calc_type>(val1);              \
    calc_type promoted_val2 = static_cast<calc_type>(val2);              \
    calc_type promoted_eps = static_cast<calc_type>(eps);                \
-   calc_type result = BODY;                                             \
+   calc_type result; \
+   if constexpr (std::is_same_v<calc_type COMMA_MATH bool> || std::is_same_v<calc_type COMMA_MATH bfloat16> || std::is_same_v<calc_type COMMA_MATH float16>) { \
+     bool bool_result = BODY; \
+     result = static_cast<calc_type>(bool_result ? 1 : 0); \
+   } else { \
+     result = BODY; \
+   } \
    SD_PRINT_MATH_FUNC2(#FUNC_NAME, promoted_val1, promoted_val2, result,Z); \
    return static_cast<Z>(result);                                       \
 }
-
 template <typename T, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_abs(T value);
 
@@ -594,14 +600,14 @@ SD_HOST_DEVICE SD_INLINE bool sd_isnan<sd::UnsignedLong>(sd::UnsignedLong value)
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<float16>(float16 value) {
   bool result = value < (float16)-HALF_MAX_VALUE || value > (float16)HALF_MAX_VALUE;
-  SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result,float16);
+  SD_PRINT_MATH_FUNC("sd_isinf<float16>", value, result, bool);
   return result;
 }
 
 template <>
 SD_HOST_DEVICE SD_INLINE bool sd_isinf<bfloat16>(bfloat16 value) {
   bool result = value < (bfloat16)-BFLOAT16_MAX_VALUE || value > (bfloat16)BFLOAT16_MAX_VALUE;
-  SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result,bfloat16);
+  SD_PRINT_MATH_FUNC("sd_isinf<bfloat16>", value, result, bool);
   return result;
 }
 
@@ -690,10 +696,11 @@ SD_HOST_DEVICE SD_INLINE bool sd_isinf<sd::UnsignedLong>(sd::UnsignedLong value)
   return result;
 }
 
+
 template <typename T>
 SD_HOST_DEVICE SD_INLINE bool sd_isfin(T value) {
   bool result = !sd_isnan<T>(value) && !sd_isinf<T>(value);
-  SD_PRINT_MATH_FUNC("sd_isfin", value, result,T);
+  SD_PRINT_MATH_FUNC("sd_isfin", value, result, bool);
   return result;
 }
 
@@ -733,28 +740,31 @@ SD_HOST_DEVICE SD_INLINE sd::LongType sd_copysign<sd::LongType>(sd::LongType val
 }
 
 
-
-
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
   Z result;
   if (a <= X(0.000001)) {
-    result = Z(0);
+   result = Z(0);
   } else {
-    Z aim = sd_pow<X, X, Z>(x, a) / (sd_exp<X, Z>(x) * sd_gamma<Y, Z>(a));
-    Z sum = Z(0.);
-    Z denom = Z(1.);
-    for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {
-      denom *= (a + i);
-      sum += sd_pow<X, int, Z>(x, i) / denom;
-    }
-    result = aim * sum;
+   // Convert x to type X to avoid type mismatch errors when Y is bool or other incompatible type
+   X x_converted = static_cast<X>(x);
+   // Convert a to type Y for sd_gamma function call
+   Y a_converted = static_cast<Y>(a);
+   Z aim = sd_pow<X, X, Z>(x_converted, a) / (sd_exp<X, Z>(x_converted) * sd_gamma<Y, Z>(a_converted));
+   Z sum = Z(0.);
+   Z denom = Z(1.);
+   for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {
+     denom *= static_cast<Z>(a + i);  // <-- Cast to Z to fix type mismatch
+     sum += sd_pow<X, int, Z>(x_converted, i) / denom;
+   }
+   result = aim * sum;
   }
-  SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result,Z);
+  SD_PRINT_MATH_FUNC2("sd_igamma", a, x, result, Z);
   return result;
 }
 
-// Implementing sd_igammac and adding print statements
+
+
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_igammac(X a, Y x) {
   Z result = Z(1.) - sd_igamma<X, Y, Z>(a, x);
@@ -778,6 +788,15 @@ SD_HOST_DEVICE SD_INLINE float sd_pow(float val, float val2) {
   SD_PRINT_MATH_FUNC2("sd_pow float", val, val2, result,float);
   return result;
 }
+
+template <>
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_pow<bfloat16, bfloat16, bfloat16>(bfloat16 val, bfloat16 val2) {
+  bfloat16 result = (bfloat16)p_pow<float>((float)val, (float)val2);
+  SD_PRINT_MATH_FUNC2("sd_pow<bfloat16>", val, val2, result, bfloat16);
+  return result;
+}
+
+
 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
@@ -857,9 +876,21 @@ SD_HOST_DEVICE SD_INLINE Z sd_cos(X val) {
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_exp(X val) {
-  return p_exp<X>(val);
+  return static_cast<Z>(p_exp<X>(val));
+}
+template <>
+SD_HOST_DEVICE SD_INLINE bfloat16 sd_exp<bfloat16, bfloat16>(bfloat16 val) {
+  bfloat16 result = (bfloat16)p_exp<float>((float)val);
+  SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, bfloat16);
+  return result;
 }
 
+template <>
+SD_HOST_DEVICE SD_INLINE float16 sd_exp<float16, float16>(float16 val) {
+  float16 result = (float16)p_exp<float>((float)val);
+  SD_PRINT_MATH_FUNC("sd_exp<bfloat16>", val, result, float16);
+  return result;
+}
 
 
 // Implement sd_lgamma with print statements
@@ -925,7 +956,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_sin(X val) {
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_sqrt(X val) {
   Z result = p_sqrt<Z>(static_cast<Z>(val));
-  SD_PRINT_MATH_FUNC("sd_sqrt", val, result,Z);
+  SD_PRINT_MATH_FUNC("sd_sqrt", static_cast<Z>(val), result,Z);
   return result;
 }
 

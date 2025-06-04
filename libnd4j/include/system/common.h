@@ -1,25 +1,24 @@
 /* ******************************************************************************
- *
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- *  See the NOTICE file distributed with this work for additional
- *  information regarding copyright ownership.
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+*
+*
+* This program and the accompanying materials are made available under the
+* terms of the Apache License, Version 2.0 which is available at
+* https://www.apache.org/licenses/LICENSE-2.0.
+*
+*  See the NOTICE file distributed with this work for additional
+*  information regarding copyright ownership.
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+* License for the specific language governing permissions and limitations
+* under the License.
+*
+* SPDX-License-Identifier: Apache-2.0
+******************************************************************************/
 
 #ifndef SD_SYSTEM_COMMON_H
 #define SD_SYSTEM_COMMON_H
 
-#include <system/openmp_pragmas.h>
 #include <cstdint>
 
 #define STRINGIZE2(x) #x
@@ -125,6 +124,9 @@
 
 #endif
 
+// Include openmp_pragmas.h AFTER SD_INLINE is defined
+#include <system/openmp_pragmas.h>
+
 #ifdef __CUDACC__
 
 #define SD_META_DEF SD_INLINE SD_HOST
@@ -137,8 +139,12 @@
 
 #else
 
+// Proper fix: Use SIMD but handle the float16/bfloat16 issue with template specializations
 #define SD_META_DEF PRAGMA_OMP_DECLARE_SIMD SD_INLINE
 #define SD_OP_DEF PRAGMA_OMP_DECLARE_SIMD SD_INLINE
+
+// Alternative macro for problematic template instantiations
+#define SD_OP_DEF_NO_SIMD SD_INLINE
 
 #endif
 
@@ -159,41 +165,41 @@
 
 namespace sd {
 
-    using Pointer = void*;
-    using LongType = long long;
-    using UnsignedLong = uint64_t;
-    using Unsigned = unsigned int;
+using Pointer = void*;
+using LongType = long long;
+using UnsignedLong = uint64_t;
+using Unsigned = unsigned int;
 
 
 
-    enum class Status : int {
-        OK = 0,
-        BAD_INPUT = 1,
-        BAD_SHAPE = 2,
-        BAD_RANK = 3,
-        BAD_PARAMS = 4,
-        BAD_OUTPUT = 5,
-        BAD_RNG = 6,
-        BAD_EPSILON = 7,
-        BAD_GRADIENTS = 8,
-        BAD_BIAS = 9,
-        VALIDATION = 20,
-        BAD_GRAPH = 30,
-        BAD_LENGTH = 31,
-        BAD_DIMENSIONS = 32,
-        BAD_ORDER = 33,
-        BAD_ARGUMENTS = 34,
-        DOUBLE_WRITE = 40,
-        DOUBLE_READ = 45,
-        KERNEL_FAILURE = 50,
-        EQ_TRUE = 100,
-        EQ_FALSE = 101,
-        MAYBE = 119
-    };
-    struct ErrorResult {
-      sd::Status status;
-      std::string message;
-    };
+enum class Status : int {
+ OK = 0,
+ BAD_INPUT = 1,
+ BAD_SHAPE = 2,
+ BAD_RANK = 3,
+ BAD_PARAMS = 4,
+ BAD_OUTPUT = 5,
+ BAD_RNG = 6,
+ BAD_EPSILON = 7,
+ BAD_GRADIENTS = 8,
+ BAD_BIAS = 9,
+ VALIDATION = 20,
+ BAD_GRAPH = 30,
+ BAD_LENGTH = 31,
+ BAD_DIMENSIONS = 32,
+ BAD_ORDER = 33,
+ BAD_ARGUMENTS = 34,
+ DOUBLE_WRITE = 40,
+ DOUBLE_READ = 45,
+ KERNEL_FAILURE = 50,
+ EQ_TRUE = 100,
+ EQ_FALSE = 101,
+ MAYBE = 119
+};
+struct ErrorResult {
+ sd::Status status;
+ std::string message;
+};
 
 }  // namespace sd
 

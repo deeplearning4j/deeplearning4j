@@ -237,8 +237,8 @@ static void sruBIBP_(NDArray* x, NDArray* w, NDArray* b, NDArray* c0, NDArray* c
 
   auto func = PRAGMA_THREADS_FOR {
     for (auto col = start; col < stop; col++) {
-      T gbF = 0.f;
-      T gbR = 0.f;
+      T gbF = static_cast<T>(0.f);
+      T gbR = static_cast<T>(0.f);
       const auto colNum = col % d2;
       const bool flip = colNum >= K;
       T maskVal = mask ? *(pMask + col) : T(1.);
