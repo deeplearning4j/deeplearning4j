@@ -41,6 +41,20 @@
 
 
     <properties>
+
+        <!-- Enhanced type configuration for debug builds -->
+        <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
+        <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
+        <libnd4j.debug.auto.reduce>true</libnd4j.debug.auto.reduce>
+
+        <!-- Type profiles for easy selection -->
+        <libnd4j.datatypes.minimal>float32;double;int32;int64</libnd4j.datatypes.minimal>
+        <libnd4j.datatypes.essential>float32;double;int32;int64;int8;int16</libnd4j.datatypes.essential>
+        <libnd4j.datatypes.floats>float32;double;float16</libnd4j.datatypes.floats>
+        <libnd4j.datatypes.integers>int8;int16;int32;int64;uint8;uint16;uint32;uint64</libnd4j.datatypes.integers>
+
+
+
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>
         <libnd4j.outputPath>${project.basedir}/blasbuild/${libnd4j.chip}</libnd4j.outputPath>
         <cuda.version>12.3</cuda.version>
@@ -386,6 +400,13 @@
                                         <argument>${libnd4j.preprocess}</argument>
                                         <argument>--generate-flatc</argument>
                                         <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
 
@@ -530,6 +551,13 @@
                                         <argument>${libnd4j.preprocess}</argument>
                                         <argument>--generate-flatc</argument>
                                         <argument>${libnd4j.generate.flatc}</argument>
+                                        <argument>--debug-type-profile</argument>
+                                        <argument>${libnd4j.debug.types.profile}</argument>
+                                        <argument>--debug-custom-types</argument>
+                                        <argument>${libnd4j.debug.types.custom}</argument>
+                                        <argument>--debug-auto-reduce</argument>
+                                        <argument>${libnd4j.debug.auto.reduce}</argument>
+
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>
@@ -539,6 +567,20 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>debug-functrace-auto-reduce</id>
+            <activation>
+                <property>
+                    <name>libnd4j.calltrace</name>
+                    <value>ON</value>
+                </property>
+            </activation>
+            <properties>
+                <!-- Auto-reduce types for debug builds -->
+                <libnd4j.datatypes>${libnd4j.datatypes.minimal}</libnd4j.datatypes>
+            </properties>
         </profile>
 
         <profile>

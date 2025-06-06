@@ -24,6 +24,45 @@ set -eu
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+declare -A DEBUG_TYPE_PROFILES=(
+    ["MINIMAL_INDEXING"]="float32;double;int32;int64"
+    ["ESSENTIAL"]="float32;double;int32;int64;int8;int16"
+    ["FLOATS_ONLY"]="float32;double;float16"
+    ["INTEGERS_ONLY"]="int8;int16;int32;int64;uint8;uint16;uint32;uint64"
+    ["SINGLE_PRECISION"]="float32;int32;int64"
+    ["DOUBLE_PRECISION"]="double;int32;int64"
+)
+
+# Function to resolve debug type profile
+resolve_debug_types() {
+    local profile="$1"
+    local custom_types="$2"
+      if [ "$profile" != "CUSTOM" ] && [ -z "${DEBUG_TYPE_PROFILES[$profile]:-}" ]; then
+            echo "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING" >&2
+            profile="MINIMAL_INDEXING"
+        fi
+
+    if [ "$profile" == "CUSTOM" ] && [ -n "$custom_types" ]; then
+        # Ensure minimum indexing types are included in custom
+        local minimum_types="int32;int64;float32"
+        local combined_types="$minimum_types"
+
+        # Add custom types, avoiding duplicates
+        IFS=';' read -ra CUSTOM_ARRAY <<< "$custom_types"
+        for type in "${CUSTOM_ARRAY[@]}"; do
+            if [[ "$combined_types" != *"$type"* ]]; then
+                combined_types="$combined_types;$type"
+            fi
+        done
+        echo "$combined_types"
+    elif [ -n "${DEBUG_TYPE_PROFILES[$profile]}" ]; then
+        echo "${DEBUG_TYPE_PROFILES[$profile]}"
+    else
+        echo "float32;double;int32;int64"  # Default minimal
+    fi
+}
+
+
 setwindows_msys() {
   if [[ $KERNEL == *"windows"* ]]; then
     export CMAKE_COMMAND="$CMAKE_COMMAND -G \"MSYS Makefiles\""
@@ -95,12 +134,28 @@ KEEP_NVCC="OFF"
 PREPROCESS="ON"  # Initialize PREPROCESS variable
 CMAKE_ARGUMENTS=""
 PTXAS_INFO="OFF"
+DEBUG_TYPE_PROFILE=""
+DEBUG_CUSTOM_TYPES=""
+DEBUG_AUTO_REDUCE="true"
 while [[ $# -gt 0 ]]
 do
     key="$1"
     value="${2:-}"
     # Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
     case $key in
+    --debug-type-profile)
+         DEBUG_TYPE_PROFILE="$value"
+                shift # past argument
+                ;;
+            --debug-custom-types)
+                DEBUG_CUSTOM_TYPES="$value"
+                shift # past argument
+                ;;
+            --debug-auto-reduce)
+                DEBUG_AUTO_REDUCE="$value"
+                shift # past argument
+                ;;
+
       --generate-flatc)
                 export GENERATE_FLATC="ON"
                 CMAKE_ARGUMENTS="$CMAKE_ARGUMENTS -DGENERATE_FLATC=ON"
@@ -241,6 +296,24 @@ do
             ;;
     esac
 done
+
+if [ "$FUNC_TRACE" == "ON" ] && [ "$DEBUG_AUTO_REDUCE" == "true" ]; then
+    echo "=== DEBUG BUILD TYPE REDUCTION ACTIVE ==="
+
+    if [ -n "$DEBUG_TYPE_PROFILE" ]; then
+        RESOLVED_TYPES=$(resolve_debug_types "$DEBUG_TYPE_PROFILE" "$DEBUG_CUSTOM_TYPES")
+        DATATYPES="$RESOLVED_TYPES"
+        echo "Debug Profile: $DEBUG_TYPE_PROFILE"
+        echo "Resolved Types: $DATATYPES"
+    elif [ -z "$DATATYPES" ]; then
+        # No types specified and no profile - use minimal safe default
+        DATATYPES=$(resolve_debug_types "MINIMAL_INDEXING" "")
+        echo "Auto-selected MINIMAL_INDEXING profile for debug build"
+        echo "Types: $DATATYPES"
+    fi
+
+    echo "============================================="
+fi
 
 HOST=$(uname -s | tr [A-Z] [a-z])
 KERNEL=$HOST-$(uname -m | tr [A-Z] [a-z])

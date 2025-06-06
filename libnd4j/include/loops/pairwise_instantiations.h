@@ -40,49 +40,162 @@
  * PairWiseTransform::exec instantiated for types: @TYPE1@, @TYPE2@, @TYPE3@
  */
 
+// ============================================================================
+// SAFE TYPE PARTITIONING SYSTEM 
+// This system prevents the "index out of bounds" errors that occur when 
+// using custom type sets with fewer types than expected by hardcoded indices.
+// ============================================================================
 
+// Helper macro to get the count of types
+#define COUNT_SD_COMMON_TYPES COUNT_NARG(SD_COMMON_TYPES)
+#define COUNT_SD_NUMERIC_TYPES COUNT_NARG(SD_NUMERIC_TYPES)
 
-// Manually Defined Partitions Using GET Macros
+// Safe partitioning for SD_COMMON_TYPES
+// These will always work regardless of how many types are actually defined
+
+// Part 0: First available types (up to 5)
+#if COUNT_SD_COMMON_TYPES >= 5
+#define SD_COMMON_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_COMMON_TYPES), \
+    GET_ELEMENT(1, SD_COMMON_TYPES), \
+    GET_ELEMENT(2, SD_COMMON_TYPES), \
+    GET_ELEMENT(3, SD_COMMON_TYPES), \
+    GET_ELEMENT(4, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 4
+#define SD_COMMON_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_COMMON_TYPES), \
+    GET_ELEMENT(1, SD_COMMON_TYPES), \
+    GET_ELEMENT(2, SD_COMMON_TYPES), \
+    GET_ELEMENT(3, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 3
+#define SD_COMMON_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_COMMON_TYPES), \
+    GET_ELEMENT(1, SD_COMMON_TYPES), \
+    GET_ELEMENT(2, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 2
+#define SD_COMMON_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_COMMON_TYPES), \
+    GET_ELEMENT(1, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 1
+#define SD_COMMON_TYPES_PART_0 (GET_ELEMENT(0, SD_COMMON_TYPES))
+#else
+// Fallback for empty type list - use float as safe default
+#define SD_COMMON_TYPES_PART_0 ((sd::DataType::FLOAT32, float))
+#endif
+
+// Part 1: Next types if available, otherwise reuse Part 0
+#if COUNT_SD_COMMON_TYPES >= 9
+#define SD_COMMON_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_COMMON_TYPES), \
+    GET_ELEMENT(6, SD_COMMON_TYPES), \
+    GET_ELEMENT(7, SD_COMMON_TYPES), \
+    GET_ELEMENT(8, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 8
+#define SD_COMMON_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_COMMON_TYPES), \
+    GET_ELEMENT(6, SD_COMMON_TYPES), \
+    GET_ELEMENT(7, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 7
+#define SD_COMMON_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_COMMON_TYPES), \
+    GET_ELEMENT(6, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 6
+#define SD_COMMON_TYPES_PART_1 (GET_ELEMENT(5, SD_COMMON_TYPES))
+#else
+// Fallback: reuse Part 0 when we don't have enough types
+#define SD_COMMON_TYPES_PART_1 SD_COMMON_TYPES_PART_0
+#endif
+
+// Part 2: Even more types if available, otherwise reuse Part 0
+#if COUNT_SD_COMMON_TYPES >= 13
+#define SD_COMMON_TYPES_PART_2 (\
+    GET_ELEMENT(9, SD_COMMON_TYPES), \
+    GET_ELEMENT(10, SD_COMMON_TYPES), \
+    GET_ELEMENT(11, SD_COMMON_TYPES), \
+    GET_ELEMENT(12, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 12
+#define SD_COMMON_TYPES_PART_2 (\
+    GET_ELEMENT(9, SD_COMMON_TYPES), \
+    GET_ELEMENT(10, SD_COMMON_TYPES), \
+    GET_ELEMENT(11, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 11
+#define SD_COMMON_TYPES_PART_2 (\
+    GET_ELEMENT(9, SD_COMMON_TYPES), \
+    GET_ELEMENT(10, SD_COMMON_TYPES))
+#elif COUNT_SD_COMMON_TYPES == 10
+#define SD_COMMON_TYPES_PART_2 (GET_ELEMENT(9, SD_COMMON_TYPES))
+#else
+// Fallback: reuse Part 0 when we don't have enough types
+#define SD_COMMON_TYPES_PART_2 SD_COMMON_TYPES_PART_0
+#endif
+
+// Safe partitioning for SD_NUMERIC_TYPES
+// Part 0: First available numeric types (up to 5)
+#if COUNT_SD_NUMERIC_TYPES >= 5
 #define SD_NUMERIC_TYPES_PART_0 (\
-    GET(0, (SD_NUMERIC_TYPES)), \
-    GET(1, (SD_NUMERIC_TYPES)), \
-    GET(2, (SD_NUMERIC_TYPES)), \
-    GET(3, (SD_NUMERIC_TYPES)), \
-    GET(4, (SD_NUMERIC_TYPES)))
+    GET_ELEMENT(0, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(1, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(2, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(3, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(4, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 4
+#define SD_NUMERIC_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(1, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(2, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(3, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 3
+#define SD_NUMERIC_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(1, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(2, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 2
+#define SD_NUMERIC_TYPES_PART_0 (\
+    GET_ELEMENT(0, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(1, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 1
+#define SD_NUMERIC_TYPES_PART_0 (GET_ELEMENT(0, SD_NUMERIC_TYPES))
+#else
+// Fallback for empty numeric type list
+#define SD_NUMERIC_TYPES_PART_0 ((sd::DataType::FLOAT32, float))
+#endif
 
-#define SD_NUMERIC_TYPES_PART_1 \
-    (GET(5, (SD_NUMERIC_TYPES)), \
-    GET(6, (SD_NUMERIC_TYPES)), \
-    GET(7, (SD_NUMERIC_TYPES)), \
-    GET(8, (SD_NUMERIC_TYPES))) \
+// Part 1: Next numeric types if available, otherwise reuse Part 0
+#if COUNT_SD_NUMERIC_TYPES >= 9
+#define SD_NUMERIC_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(6, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(7, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(8, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 8
+#define SD_NUMERIC_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(6, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(7, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 7
+#define SD_NUMERIC_TYPES_PART_1 (\
+    GET_ELEMENT(5, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(6, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 6
+#define SD_NUMERIC_TYPES_PART_1 (GET_ELEMENT(5, SD_NUMERIC_TYPES))
+#else
+// Fallback: reuse Part 0 when we don't have enough types
+#define SD_NUMERIC_TYPES_PART_1 SD_NUMERIC_TYPES_PART_0
+#endif
 
-#define SD_NUMERIC_TYPES_PART_2 \
- (GET(9, (SD_NUMERIC_TYPES)), \
-     GET(10, (SD_NUMERIC_TYPES)))
+// Part 2: Even more numeric types if available, otherwise reuse Part 0
+#if COUNT_SD_NUMERIC_TYPES >= 11
+#define SD_NUMERIC_TYPES_PART_2 (\
+    GET_ELEMENT(9, SD_NUMERIC_TYPES), \
+    GET_ELEMENT(10, SD_NUMERIC_TYPES))
+#elif COUNT_SD_NUMERIC_TYPES == 10
+#define SD_NUMERIC_TYPES_PART_2 (GET_ELEMENT(9, SD_NUMERIC_TYPES))
+#else
+// Fallback: reuse Part 0 when we don't have enough types
+#define SD_NUMERIC_TYPES_PART_2 SD_NUMERIC_TYPES_PART_0
+#endif
 
 #define PRINT_NUMERIC_TYPES_PARTS \
     PRINT SD_NUMERIC_TYPES_PART_2
 
-
-#define SD_COMMON_TYPES_PART_0 (\
-    GET(0, (SD_COMMON_TYPES)), \
-    GET(1, (SD_COMMON_TYPES)), \
-    GET(2, (SD_COMMON_TYPES)), \
-    GET(3, (SD_COMMON_TYPES)), \
-    GET(4, (SD_COMMON_TYPES)))
-
-#define SD_COMMON_TYPES_PART_1 \
-    (GET(5, (SD_COMMON_TYPES)), \
-    GET(6, (SD_COMMON_TYPES)), \
-    GET(7, (SD_COMMON_TYPES)), \
-    GET(8, (SD_COMMON_TYPES))) \
-
-#define SD_COMMON_TYPES_PART_2 \
-    (GET(9, (SD_COMMON_TYPES)), \
-    GET(10, (SD_COMMON_TYPES)), \
-    GET(11, (SD_COMMON_TYPES)), \
-    GET(12, (SD_COMMON_TYPES))) \
-
-
 #endif  // LIBND4J_PAIRWISE_INSTANTIATIONS_H
-

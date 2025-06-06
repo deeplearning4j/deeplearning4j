@@ -296,10 +296,103 @@ endif()
 
 
 # Keep the Android-specific case as well
-if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+if(SD_GCC_FUNCTRACE STREQUAL "ON")
+    message(STATUS "=== DEBUG BUILD TYPE ANALYSIS ===")
+
+    # Count combinations that would be generated
+    list(LENGTH SD_TYPES_LIST CURRENT_TYPE_COUNT)
+    if(CURRENT_TYPE_COUNT GREATER 0)
+        math(EXPR ESTIMATED_3_COMBINATIONS "${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT}")
+        math(EXPR ESTIMATED_2_COMBINATIONS "${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT}")
+
+        message(STATUS "Current types: ${SD_TYPES_LIST}")
+        message(STATUS "Type count: ${CURRENT_TYPE_COUNT}")
+        message(STATUS "Estimated 3-type combinations: ${ESTIMATED_3_COMBINATIONS}")
+        message(STATUS "Estimated 2-type combinations: ${ESTIMATED_2_COMBINATIONS}")
+
+        # Warn if combination count is dangerously high
+        if(ESTIMATED_3_COMBINATIONS GREATER 125)
+            message(WARNING "⚠️  HIGH COMBINATION COUNT DETECTED!")
+            message(WARNING "   ${ESTIMATED_3_COMBINATIONS} 3-type combinations may cause:")
+            message(WARNING "   - Binary size >2GB (x86-64 limit exceeded)")
+            message(WARNING "   - Compilation failure due to PLT overflow")
+            message(WARNING "   - Very long build times")
+            message(WARNING "")
+            message(WARNING "   Consider using fewer types for debug builds:")
+            message(WARNING "   -Dlibnd4j.datatypes=\"float32;double;int32;int64\"")
+        endif()
+
+        # Estimate binary size (rough calculation: ~10MB per 27 combinations)
+        math(EXPR SIZE_ESTIMATE_MB "${ESTIMATED_3_COMBINATIONS} * 10 / 27")
+        if(SIZE_ESTIMATE_MB GREATER 2000)
+            message(WARNING "   Estimated binary size: ~${SIZE_ESTIMATE_MB}MB (may exceed x86-64 limits)")
+        else()
+            message(STATUS "Estimated binary size: ~${SIZE_ESTIMATE_MB}MB")
+        endif()
+    endif()
+
+    message(STATUS "==================================")
 endif()
+
+# Apply type-based combination reduction for debug builds
+if(SD_GCC_FUNCTRACE STREQUAL "ON" AND ESTIMATED_3_COMBINATIONS GREATER 64)
+    message(STATUS "Applying debug build combination reduction...")
+
+    # Generate combinations based on actual selected types
+    set(ORIGINAL_COMBINATIONS_3 ${COMBINATIONS_3})
+    set(ORIGINAL_COMBINATIONS_2 ${COMBINATIONS_2})
+
+    # Map selected types to indices
+    set(TYPE_INDEX_MAP "")
+    set(TYPE_INDEX 0)
+    foreach(TYPE_NAME ${SD_TYPES_LIST})
+        list(APPEND TYPE_INDEX_MAP ${TYPE_INDEX})
+        math(EXPR TYPE_INDEX "${TYPE_INDEX} + 1")
+    endforeach()
+
+    # Generate new combinations based on selected types only
+    set(NEW_COMBINATIONS_3 "")
+    set(NEW_COMBINATIONS_2 "")
+
+    foreach(i ${TYPE_INDEX_MAP})
+        foreach(j ${TYPE_INDEX_MAP})
+            list(APPEND NEW_COMBINATIONS_2 "${i},${j}")
+            foreach(k ${TYPE_INDEX_MAP})
+                list(APPEND NEW_COMBINATIONS_3 "${i},${j},${k}")
+            endforeach()
+        endforeach()
+    endforeach()
+
+    set(COMBINATIONS_3 ${NEW_COMBINATIONS_3})
+    set(COMBINATIONS_2 ${NEW_COMBINATIONS_2})
+
+    list(LENGTH COMBINATIONS_3 FINAL_3_COUNT)
+    list(LENGTH COMBINATIONS_2 FINAL_2_COUNT)
+    message(STATUS "Reduced combinations: ${FINAL_3_COUNT} 3-type, ${FINAL_2_COUNT} 2-type")
+endif()
+
+# Enhanced type validation
+if(SD_TYPES_LIST_COUNT GREATER 0)
+    set(MISSING_INDEXING_TYPES "")
+
+    # Check for essential indexing types
+    if(NOT "int32" IN_LIST SD_TYPES_LIST AND NOT "int32_t" IN_LIST SD_TYPES_LIST)
+        list(APPEND MISSING_INDEXING_TYPES "int32")
+    endif()
+    if(NOT "int64" IN_LIST SD_TYPES_LIST AND NOT "int64_t" IN_LIST SD_TYPES_LIST)
+        list(APPEND MISSING_INDEXING_TYPES "int64")
+    endif()
+    if(NOT "float32" IN_LIST SD_TYPES_LIST AND NOT "float" IN_LIST SD_TYPES_LIST)
+        list(APPEND MISSING_INDEXING_TYPES "float32")
+    endif()
+
+    if(MISSING_INDEXING_TYPES)
+        message(WARNING "⚠️  Missing critical indexing types: ${MISSING_INDEXING_TYPES}")
+        message(WARNING "   Array indexing operations may fail at runtime!")
+        message(WARNING "   Consider adding these to your type list.")
+    endif()
+endif()
+
 
 # Architecture Tuning
 if(SD_ARCH MATCHES "armv8")
@@ -396,16 +489,44 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
     endif()
 endif()
 
-# Handle large template instantiations that can cause relocation errors
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # Reduce memory pressure during compilation
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=30 --param ggc-min-heapsize=32768")
 
-    # Handle large relocations for x86_64
-    if(SD_X86_BUILD)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-relax")
+# Comprehensive linker fix for PLT overflow
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
+    message(STATUS "Configuring linker for large template library with PLT overflow prevention")
+
+    # Clear any existing conflicting linker flags
+    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+    string(REGEX REPLACE "-fuse-ld=[a-zA-Z]+" "" CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS}")
+
+    # Try mold first (best for large C++ template libraries)
+    execute_process(COMMAND mold --version OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE MOLD_AVAILABLE)
+    if(MOLD_AVAILABLE EQUAL 0)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+        message(STATUS "✓ Using mold linker (handles large PLT tables)")
+    else()
+        # Use GNU LD with PLT-specific optimizations (more reliable than Gold for this)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+        message(STATUS "✓ Using GNU LD with PLT overflow prevention")
     endif()
+
+    # Use large memory model (required for your template scale)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+
+    # Memory optimization during compilation
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+
+    # Section splitting for better linker handling
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+
+    message(STATUS "Applied PLT overflow prevention for large template library")
 endif()
+
+
 
 # Ensure SD_CPU is TRUE if neither SD_CUDA nor SD_CPU is set
 if(NOT SD_CUDA)
