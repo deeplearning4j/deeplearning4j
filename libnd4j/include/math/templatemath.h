@@ -754,7 +754,7 @@ SD_HOST_DEVICE SD_INLINE Z sd_igamma(X a, Y x) {
    Z sum = Z(0.);
    Z denom = Z(1.);
    for (int i = 0; Z(1. / denom) > Z(1.0e-12); i++) {
-     denom *= static_cast<Z>(a + i);  // <-- Cast to Z to fix type mismatch
+     denom *= static_cast<Z>(a + i);
      sum += sd_pow<X, int, Z>(x_converted, i) / denom;
    }
    result = aim * sum;

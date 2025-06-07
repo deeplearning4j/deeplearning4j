@@ -45,7 +45,7 @@
         <!-- Enhanced type configuration for debug builds -->
         <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
         <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
-        <libnd4j.debug.auto.reduce>true</libnd4j.debug.auto.reduce>
+        <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
 
         <!-- Type profiles for easy selection -->
         <libnd4j.datatypes.minimal>float32;double;int32;int64</libnd4j.datatypes.minimal>
