@@ -21,6 +21,10 @@
 #
 
 set -exo pipefail
+echo "TEST RUNNER PREFIX: $test_runner_prefix"
+echo "TEST_RUNNER_PREFIX (uppercase): $TEST_RUNNER_PREFIX"
+echo "test_runner_prefix (lowercase): $test_runner_prefix"
+
 java_call="java "
 script_dir=$( cd -- "$( dirname -- "${bash_source[0]}" )" &> /dev/null && pwd )
 echo "RUNNING WITH CUSTOM JVM"
@@ -42,7 +46,7 @@ if [[ -z $libjvm_path ]]; then
 fi
 
 # if test_runner_prefix is not empty and contains "valgrind"
-if [[ -n $TEST_RUNNER_PREFIX && TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
+if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "valgrind" ]]; then
     # create a file to store the suppression information
     suppression_file="valgrind_suppressions.supp"
 
@@ -69,15 +73,14 @@ eof
 
     # check if "--suppressions" already exists in test_runner_prefix
     if [[ $TEST_RUNNER_PREFIX != *"--suppressions"* ]]; then
-        $TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX   --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free --error-limit=no"
+TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free"
     fi
 
     java_call="${java_call} -Djava.compiler=none"
 fi
 # if test_runner_prefix is not empty and contains "compute-sanitizer"
 if [[ -n $TEST_RUNNER_PREFIX && $TEST_RUNNER_PREFIX =~ "compute-sanitizer" ]]; then
-    TEST_RUNNER_PREFIX="${TEST_RUNNER_PREFIX} --tool=memcheck --report-api-errors all  --show-backtrace yes --print-limit 1000 "
-    # set default options for compute-sanitizer if none are specified
+    TEST_RUNNER_PREFIX="$TEST_RUNNER_PREFIX --error-limit=no --suppressions=$suppression_file --track-origins=yes --keep-stacktraces=alloc-and-free"
     # add jvm option to disable jit compilation to help with debugging
     java_call="${java_call}  -Djava.compiler=none"
 
