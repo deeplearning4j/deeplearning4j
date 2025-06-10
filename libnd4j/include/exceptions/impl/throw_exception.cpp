@@ -25,11 +25,11 @@ void throwException(const char* exceptionMessage) {
 void throwException(const char* exceptionMessage) {
 #ifndef __CUDA_CC__
   sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(exceptionMessage);
   throw std::runtime_error(exceptionMessage);
 #else
   sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+  sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(exceptionMessage);
   printf("Exception: %s\n", exceptionMessage);
 #endif
 }
