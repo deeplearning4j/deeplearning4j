@@ -126,8 +126,8 @@ jobs:
           java-version: 11
           distribution: 'temurin'
           server-id: 'central'
-          server-username: ${{ secrets.SONATYPE_USER_1 }}
-          server-password: ${{ secrets.SONATYPE_USER1_PASS }}
+          server-username: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          server-password: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
 
         
 
@@ -218,7 +218,7 @@ jobs:
       - name: Build with Maven
         shell: bash
         env:
-          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_GPG_KEY }}
+          MAVEN_GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           CROSS_COMPILER_DIR: ${{ steps.setup-ndk.outputs.ndk-path }}
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -226,9 +226,9 @@ jobs:
           BUILD_USING_MAVEN: 1
           TARGET_OS: android
           PUBLISH_TO: central
-          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
-          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          MAVEN_USERNAME: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           DEPLOY_TO: central
           PERFORM_RELEASE: ${{ github.event.inputs.deployToReleaseStaging }}
           RELEASE_VERSION: ${{ github.event.inputs.releaseVersion }}
