@@ -41,6 +41,9 @@ public class CpuEnvironment implements Environment {
     private final Nd4jCpu.Environment e;
 
     protected boolean truncateNDArrayLongStrings = false;
+    
+    // Variable origin tracing flag for debugging import issues
+    protected boolean variableTracingEnabled = false;
 
     public static CpuEnvironment getInstance(){
         return INSTANCE;
@@ -69,9 +72,6 @@ public class CpuEnvironment implements Environment {
     public void setLogNativeNDArrayCreation(boolean logNativeNDArrayCreation) {
         e.setLogNativeNDArrayCreation(logNativeNDArrayCreation);
     }
-
-
-
 
     @Override
     public boolean isCheckOutputChange() {
@@ -341,6 +341,16 @@ public class CpuEnvironment implements Environment {
     @Override
     public void setDeleteSpecial(boolean reallyDelete) {
         e.setDeleteSpecial(reallyDelete);
+    }
+
+    @Override
+    public boolean isVariableTracingEnabled() {
+        return variableTracingEnabled;
+    }
+
+    @Override
+    public void setVariableTracingEnabled(boolean enabled) {
+        this.variableTracingEnabled = enabled;
     }
     
     // CUDA specific methods implementation (no-op for CPU)

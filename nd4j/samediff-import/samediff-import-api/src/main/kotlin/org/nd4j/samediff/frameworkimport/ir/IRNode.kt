@@ -140,4 +140,8 @@ interface IRNode<NODE_TYPE : GeneratedMessageV3,
     fun hasAttribute(inputName: String): Boolean
 
     fun internalValue(): NODE_TYPE
+
+    fun internalValueString(): String {
+        return internalValue().toString()
+    }
 }

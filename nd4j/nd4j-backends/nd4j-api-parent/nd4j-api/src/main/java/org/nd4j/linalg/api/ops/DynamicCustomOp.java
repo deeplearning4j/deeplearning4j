@@ -53,6 +53,8 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.*;
 
+import static org.nd4j.autodiff.samediff.VariableType.ARRAY;
+
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
@@ -291,13 +293,112 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     protected void addOutputsToOp() {
-        computeArrays();
+        // Don't compute arrays during graph building/import
+        if (!SameDiff.isInGraphBuildingMode()) {
+            computeArrays();
+        }
+
         if (sameDiff.getOutputsForOp(this) == null)
             sameDiff.addOutgoingFor(outputVariables, this);
+    }
+    /**
+     * Enhanced input argument setup with proper placeholder handling
+     */
+    private void ensureInputArgumentsFromSameDiff() {
+        if (inputArguments.isEmpty() && args() != null) {
+            for (SDVariable arg : args()) {
+                INDArray arr = resolveInputArrayForPlaceholder(arg);
+                if (arr != null) {
+                    addInputArgument(arr);
+                } else {
+                    // For Case 1 placeholders (no defined shape), this is expected
+                    // The operation should not execute during import/graph building
+                    log.debug("Placeholder {} has no array - operation {} will be deferred",
+                            arg.name(), getOwnName());
+                    return; // Exit early - don't execute operation during graph building
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolve input array with proper placeholder handling for both cases
+     */
+    private INDArray resolveInputArrayForPlaceholder(SDVariable arg) {
+        // Case 1: Check if this is a runtime placeholder (like input_ids)
+        if (arg.isPlaceHolder()) {
+            // Check if user has provided data for this placeholder
+            if (sameDiff.getEagerArrays().hasArray(arg.name())) {
+                return sameDiff.getEagerArrForVarName(arg.name());
+            }
+
+            // Check if placeholder has defined shape (Case 2)
+            if (arg.getShape() != null && isValidForAutoCreation(arg)) {
+                // Case 2: Placeholder with defined shape - can create array if appropriate
+                return createPlaceholderArray(arg);
+            } else {
+                // Case 1: Placeholder without shape or inappropriate for auto-creation
+                // This is normal during graph construction - should not execute yet
+                log.debug("Placeholder {} has no shape or inappropriate for auto-creation", arg.name());
+                return null;
+            }
+        }
+
+        // Non-placeholder variables
+        return sameDiff.getArrForVarName(arg.name());
     }
 
 
     /**
+     * Create array for Case 2 placeholders only
+     */
+    private INDArray createPlaceholderArray(SDVariable placeholder) {
+        long[] shape = placeholder.getShape();
+        DataType dataType = placeholder.dataType();
+
+        if (dataType == DataType.UNKNOWN) {
+            dataType = DataType.FLOAT;
+        }
+
+        log.info("Creating placeholder array for {} with shape {} and type {}",
+                placeholder.name(), Arrays.toString(shape), dataType);
+
+        INDArray arr = Nd4j.zeros(dataType, shape);
+        sameDiff.setEagerArrForVarName(placeholder.name(), arr);
+        return arr;
+    }
+
+    /**
+     * Check if placeholder is valid for auto-creation (Case 2 only)
+     */
+    private boolean isValidForAutoCreation(SDVariable placeholder) {
+        String name = placeholder.name();
+
+        // Never auto-create common input placeholders - these should be provided by user
+        if (name.contains("input_ids") || name.contains("attention_mask") ||
+                name.contains("token_type_ids") || name.startsWith("input")) {
+            return false;
+        }
+
+        // Never auto-create if we're in graph building mode
+        if (SameDiff.isInGraphBuildingMode()) {
+            return false;
+        }
+
+        // Only auto-create small, reasonable shapes
+        long[] shape = placeholder.getShape();
+        long totalElements = 1;
+        for (long dim : shape) {
+            if (dim <= 0) return false; // Dynamic dimension - Case 1
+            totalElements *= dim;
+            if (totalElements > 1000) return false; // Too large
+        }
+
+        return true;
+    }
+
+
+     /**
      * Generate fake data for {@link #computeArrays()}
      * of the  given shape with the data type {@link Nd4j#defaultFloatingPointType()}
      * @param shape the shape to use
@@ -319,6 +420,19 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void computeArrays() {
+        if (!sameDiff.isEagerMode()) {
+            return;
+        }
+
+        // Early check: if any placeholder inputs are missing, skip execution entirely
+        if (shouldSkipExecutionForMissingInputs()) {
+            log.debug("Skipping execution of {} - placeholder inputs not available (normal during import)",
+                    getOwnName());
+            return;
+        }
+
+
+
         if(sameDiff.isEagerMode()) {
             SDVariable[] args = args();
             if(inputArguments.isEmpty()) {
@@ -348,16 +462,30 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                             sameDiff.setEagerArrForVarName(arg.name(),arr);
                             addInputArgument(arr);
                             log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+
                         } else {
                             addInputArgument(sameDiff.getEagerArrForVarName(arg.name()));
                         }
                     }
                     else {
-                        INDArray add = Nd4j.create(arg.dataType(),1);
-                        sameDiff.setEagerArrForVarName(arg.name(),add);
-                        addInputArgument(add);
-                        log.warn("Variable name " + arg.name() + " from  op of type " + opName() + " with unique name of " + getOwnName() + " was not able to resolve an array for eager computation, inserting dummy array. This can happen with control flow ops. Please validate this if in error.");
+                        // Check if this is a placeholder that should not have a dummy array
+                        if (arg.isPlaceHolder() && isPlaceholderVariable(arg)) {
+                            log.debug("Skipping execution for operation {} - input placeholder {} has no array (this is normal during import)",
+                                    getOwnName(), arg.name());
+                            return; // Exit early - don't execute during import
+                        }  else if (arg.getVariableType() == ARRAY &&
+                                !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                            log.debug("Skipping execution for operation {} - input array variable {} has no computed array yet (normal during import)",
+                                    getOwnName(), arg.name());
+                            return; // Exit early - don't execute during import
+                        }
+
+                        // For non-user-input placeholders, still avoid dummy arrays during import
+                        log.warn("Cannot resolve array for variable {} in operation {} - skipping execution",
+                                arg.name(), getOwnName());
+                        return; // Exit early instead of creating dummy arrays
                     }
+
                 }
             }
 
@@ -371,17 +499,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
                 //override output variables to ensure data types, shapes and output arrays are properly computed
                 List<DataBuffer> longShapeDescriptors;
-                try {
-                    longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
-                } catch (Exception e) {
-                    log.warn("Failed to calculate output shape for operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
-                    return;
-                }
+                longShapeDescriptors = Nd4j.getExecutioner().calculateOutputShape(this);
+
 
                 if(!longShapeDescriptors.isEmpty())
                     for(int i = 0; i < longShapeDescriptors.size(); i++) {
-                        if(outputVariables[i].getArr() != null) {
-                            addOutputArgument(outputVariables[i].getArr());
+                        // Use non-executing array check instead of getArr()
+                        if(sameDiff.arrayAlreadyExistsForVarName(outputVariables[i].name())) {
+                            addOutputArgument(sameDiff.getArrForVarName(outputVariables[i].name()));
                         } else {
                             //not yet computed
                             INDArray arr = Nd4j.createFromDescriptor(longShapeDescriptors.get(i));
@@ -403,12 +528,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                     }
 
                     INDArray[] exec;
-                    try {
-                        exec = Nd4j.getExecutioner().exec(this,ctx);
-                    } catch (Exception e) {
-                        log.warn("Failed to execute operation " + opName() + " (" + getOwnName() + "): " + e.getMessage());
-                        return;
-                    }
+                    exec = Nd4j.getExecutioner().exec(this,ctx);
+
 
                     for(Listener  l : sameDiff.getListeners()) {
                         l.opExecution(sameDiff, At.defaultAt(),null,op2,ctx,exec);
@@ -439,6 +560,30 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 }
             }
         }
+    }
+
+
+
+    /**
+     * Check if this is a placeholder that shouldn't have dummy arrays created
+     */
+    private boolean isPlaceholderVariable(SDVariable arg) {
+        return arg != null && arg.isPlaceHolder();
+    }
+
+    /**
+     * Check if we should skip execution due to missing placeholder arrays
+     */
+    private boolean shouldSkipExecutionForMissingInputs() {
+        if (args() == null) return false;
+
+        for (SDVariable arg : args()) {
+            // If any input is a placeholder without an array, skip execution during import
+            if (arg.isPlaceHolder() && !sameDiff.arrayAlreadyExistsForVarName(arg.name())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

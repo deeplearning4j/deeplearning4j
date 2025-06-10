@@ -387,6 +387,26 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private SameDiff child;
 
+    private static final ThreadLocal<Boolean> GRAPH_BUILDING_MODE = ThreadLocal.withInitial(() -> false);
+
+
+
+    /**
+     * Set graph building mode (called at start of import)
+     */
+    public static void setGraphBuildingMode(boolean building) {
+        GRAPH_BUILDING_MODE.set(building);
+    }
+
+    /**
+     * Check if currently in graph building mode
+     */
+    public static boolean isInGraphBuildingMode() {
+        return GRAPH_BUILDING_MODE.get();
+    }
+
+
+
     /**
      * Get the inference factory
      *
@@ -7546,9 +7566,550 @@ public class SameDiff extends SDBaseOps {
         return loopWithConditions(null,loopParams);
     }
 
+
+
+    /**
+     * Execute an operation once and cache all outputs
+     * @param opName The name of the operation to execute
+     * @param requestedOutputVariable The specific output variable requested
+     * @return The array for the requested output variable
+     */
+    public INDArray computeOperationEagerly(String opName, String requestedOutputVariable) {
+        SameDiffOp opMeta = ops.get(opName);
+        if (opMeta == null) {
+            log.warn("Operation not found: {}", opName);
+            return null;
+        }
+
+        DifferentialFunction op = opMeta.getOp();
+
+        // Check if all outputs for this operation are already cached
+        String[] outputNames = getOutputsForOp(op);
+        if (outputNames != null && areAllOutputsCached(outputNames)) {
+            return getEagerArrForVarName(requestedOutputVariable);
+        }
+
+        // Validate inputs are ready
+        if (!areInputsReady(opMeta)) {
+            log.warn("Inputs not ready for operation: {}", opName);
+            return null;
+        }
+
+        // Execute operation once using built-in shape calculation
+        List<INDArray> results = executeOperationWithShapeValidation(op);
+
+        // Cache all results
+        if (results != null && outputNames != null) {
+            for (int i = 0; i < Math.min(results.size(), outputNames.length); i++) {
+                setEagerArrForVarName(outputNames[i], results.get(i));
+
+                // Update variable metadata
+                SDVariable outputVar = getVariable(outputNames[i]);
+                if (outputVar != null) {
+                    outputVar.setShape(results.get(i).shape());
+                    if (outputVar.dataType() == DataType.UNKNOWN) {
+                        outputVar.setDataType(results.get(i).dataType());
+                    }
+                }
+            }
+        }
+
+        return getEagerArrForVarName(requestedOutputVariable);
+    }
+
+    /**
+     * Execute operation using built-in shape calculation and validation
+     */
+    private List<INDArray> executeOperationWithShapeValidation(DifferentialFunction op) {
+        try {
+            if (op instanceof CustomOp) {
+                return executeCustomOpEagerly((CustomOp) op);
+            } else if (op instanceof BaseOp) {
+                return executeBaseOpEagerly((BaseOp) op);
+            } else {
+                log.warn("Unsupported operation type: {}", op.getClass().getName());
+                return null;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to execute operation {}: {}", op.opName(), e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * Execute CustomOp with shape validation
+     */
+    private List<INDArray> executeCustomOpEagerly(CustomOp customOp) {
+        try {
+            // Ensure inputs are set from SameDiff arrays
+            ensureCustomOpInputsReady(customOp);
+
+            // Use built-in shape calculation
+            List<DataBuffer> outputDescs = customOp.calculateOutputShape();
+            if (outputDescs == null || outputDescs.isEmpty()) {
+                log.warn("Could not calculate output shapes for CustomOp: {}", customOp.opName());
+                return null;
+            }
+
+            // Allocate output arrays
+            List<INDArray> outputArrays = new ArrayList<>();
+            for (DataBuffer desc : outputDescs) {
+                outputArrays.add(Nd4j.createFromDescriptor(desc));
+            }
+
+            // Set outputs and execute
+            customOp.clearArrays();
+            for (INDArray output : outputArrays) {
+                customOp.addOutputArgument(output);
+            }
+
+            try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                ctx.setInputArrays(customOp.inputArguments());
+                ctx.setOutputArrays(customOp.outputArguments());
+                ctx.setIArguments(customOp.iArgs());
+                ctx.setTArguments(customOp.tArgs());
+                ctx.setBArguments(customOp.bArgs());
+                ctx.setDArguments(customOp.dArgs());
+
+                INDArray[] results = Nd4j.getExecutioner().exec(customOp, ctx);
+                return Arrays.asList(results);
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to execute CustomOp {}: {}", customOp.opName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Ensure BaseOp inputs are properly set from SameDiff arrays
+     */
+    private void ensureBaseOpInputsReady(BaseOp baseOp) {
+        SDVariable[] args = baseOp.args();
+        if (args != null && args.length > 0) {
+            if (baseOp.x() == null) {
+                INDArray xArr = getArrForVarName(args[0].name());
+                baseOp.setX(xArr);
+            }
+
+            if (args.length > 1 && baseOp.y() == null) {
+                INDArray yArr = getArrForVarName(args[1].name());
+                baseOp.setY(yArr);
+            }
+        }
+    }
+
+
+    /**
+     * Execute BaseOp with shape validation
+     */
+    private List<INDArray> executeBaseOpEagerly(BaseOp baseOp) {
+        try {
+            // Ensure inputs are set
+            ensureBaseOpInputsReady(baseOp);
+
+            // Calculate output shape using existing BaseOp logic
+            long[] outputShape = calculateBaseOpOutputShape(baseOp);
+            if (outputShape == null) {
+                log.warn("Could not calculate output shape for BaseOp: {}", baseOp.opName());
+                return null;
+            }
+
+            // Infer output datatype
+            DataType outputDataType = inferBaseOpOutputDataType(baseOp);
+
+            // Allocate output array
+            INDArray outputArray = Nd4j.create(outputDataType, outputShape);
+            baseOp.setZ(outputArray);
+
+            // Execute
+            try (OpContext ctx = Nd4j.getExecutioner().buildContext()) {
+                if (baseOp.y() != null) {
+                    ctx.setInputArrays(baseOp.x(), baseOp.y());
+                } else {
+                    ctx.setInputArrays(baseOp.x());
+                }
+                ctx.setOutputArrays(baseOp.z());
+
+                INDArray result = Nd4j.getExecutioner().exec(baseOp, ctx);
+                return Arrays.asList(result);
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to execute BaseOp {}: {}", baseOp.opName(), e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Calculate output shape for BaseOp using existing methods
+     */
+    private long[] calculateBaseOpOutputShape(BaseOp baseOp) {
+        if (baseOp.x() == null) {
+            return null;
+        }
+
+        Op.Type opType = baseOp.opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_FLOAT:
+            case TRANSFORM_STRICT:
+                return baseOp.x().shape();
+
+            case PAIRWISE:
+            case PAIRWISE_BOOL:
+                if (baseOp.y() != null) {
+                    return Shape.broadcastOutputShape(baseOp.x().shape(), baseOp.y().shape());
+                }
+                return baseOp.x().shape();
+
+            case REDUCE_FLOAT:
+            case REDUCE_LONG:
+            case REDUCE_BOOL:
+            case REDUCE_SAME:
+                if (baseOp instanceof ReduceOp) {
+                    ReduceOp reduceOp = (ReduceOp) baseOp;
+                    return Shape.reductionShape(
+                            baseOp.x(),
+                            reduceOp.dimensionsArr(),
+                            true,
+                            reduceOp.isKeepDims());
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return baseOp.x().shape();
+    }
+
+    /**
+     * Ensure CustomOp inputs are properly set from SameDiff arrays
+     */
+    private void ensureCustomOpInputsReady(CustomOp customOp) {
+        if (customOp.numInputArguments() == 0) {
+            DynamicCustomOp dynamicCustomOp =(DynamicCustomOp)  customOp;
+            SDVariable[] args = dynamicCustomOp.args();
+            if (args != null) {
+                for (SDVariable arg : args) {
+                    INDArray arr = getArrForVarName(arg.name());
+                    if (arr != null) {
+                        customOp.addInputArgument(arr);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Infer output data type for BaseOp
+     */
+    private DataType inferBaseOpOutputDataType(BaseOp baseOp) {
+        Op.Type opType = baseOp.opType();
+        switch (opType) {
+            case TRANSFORM_SAME:
+            case TRANSFORM_STRICT:
+                return baseOp.x().dataType();
+
+            case TRANSFORM_FLOAT:
+            case REDUCE_FLOAT:
+                return baseOp.x().dataType().isFPType() ? baseOp.x().dataType() : DataType.FLOAT;
+
+            case REDUCE_LONG:
+            case INDEXREDUCE:
+                return DataType.LONG;
+
+            case REDUCE_BOOL:
+            case PAIRWISE_BOOL:
+                return DataType.BOOL;
+
+            case PAIRWISE:
+                return DataType.FLOAT; // Safe default
+
+            default:
+                return baseOp.x().dataType();
+        }
+    }
+
+    /**
+     * Check if all outputs for an operation are cached
+     */
+    private boolean areAllOutputsCached(String[] outputNames) {
+        for (String outputName : outputNames) {
+            if (!getEagerArrays().hasArray(outputName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if all inputs for an operation are ready with better validation
+     */
+    private boolean areInputsReady(SameDiffOp opMeta) {
+        if (opMeta == null || opMeta.getOp() == null) {
+            return false;
+        }
+
+        DifferentialFunction op = opMeta.getOp();
+        String[] inputNames = getInputsForOp(op);
+
+        if (inputNames == null || inputNames.length == 0) {
+            // No inputs required - operation can execute
+            return true;
+        }
+
+        for (String inputName : inputNames) {
+            if (!isVariableReadyForExecution(inputName)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Input variable '{}' not ready for operation '{}' ({})",
+                            inputName, op.getOwnName(), op.opName());
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Variable-level validation: Check if a specific variable can be used as input to operations.
+     * This is called by areOperationInputsReady() for each input variable.
+     */
+    private boolean isVariableReadyForExecution(String varName) {
+        // Check if variable exists in graph
+        Variable varMeta = variables.get(varName);
+        if (varMeta == null) {
+            return false;
+        }
+
+        // 1. Check if array is already cached/computed
+        if (arrayAlreadyExistsForVarName(varName)) {
+            INDArray arr = getArrForVarName(varName);
+            if (arr != null && !arr.isEmpty()) {
+                return true;
+            }
+        }
+
+        // 2. Check eager arrays cache
+        if (eagerArrays.hasArray(varName)) {
+            INDArray arr = eagerArrays.getArray(varName);
+            if (arr != null && !arr.isEmpty()) {
+                return true;
+            }
+        }
+
+        // 3. Handle different variable types
+        switch (varMeta.getVariable().getVariableType()) {
+            case CONSTANT:
+                // Constants should always have arrays
+                return arrayAlreadyExistsForVarName(varName);
+
+            case PLACEHOLDER:
+                // Placeholders are ready if:
+                // a) User provided data, OR
+                // b) They have defined shape and we're in appropriate execution mode
+                if (arrayAlreadyExistsForVarName(varName)) {
+                    return true;
+                }
+
+                // Don't auto-create placeholders during import/graph building
+                if (isInGraphBuildingMode()) {
+                    return false;
+                }
+
+                // Only consider placeholder ready if user explicitly provided data
+                return eagerArrays.hasArray(varName);
+
+            case ARRAY:
+                // ARRAY variables need their producing operation to have executed
+                String producingOp = varMeta.getOutputOfOp();
+                if (producingOp == null) {
+                    // Orphaned array variable
+                    return false;
+                }
+
+                // Check if producing operation has already executed and cached results
+                if (arrayAlreadyExistsForVarName(varName)) {
+                    return true;
+                }
+
+                // CRITICAL: Don't recurse into producing operation during readiness check
+                // This prevents infinite loops and premature execution
+                return false;
+
+            default:
+                return arrayAlreadyExistsForVarName(varName);
+        }
+    }
+
+
+    /**
+     * SDVariable-level validation helper: Check if the inputs to a variable's producing operation
+     * are ready. This is used by SDVariable.areInputsReady() and should NOT recurse into execution.
+     *
+     * This is different from areOperationInputsReady() which is used for actual execution decisions.
+     */
+    private boolean areProducingOperationInputsReady(Variable varMeta) {
+        if (varMeta.getOutputOfOp() == null) {
+            // Not an operation output - check if variable itself is ready
+            return isVariableReadyForExecution(varMeta.getVariable().name());
+        }
+
+        SameDiffOp opMeta = ops.get(varMeta.getOutputOfOp());
+        return areInputsReady(opMeta);
+    }
+
+    /**
+     * Enhanced validation that prevents execution with malformed inputs.
+     * Call this before attempting any operation execution.
+     */
+    private void validateInputsForExecution(DifferentialFunction op) {
+        String[] inputNames = getInputsForOp(op);
+        if (inputNames == null) {
+            return;
+        }
+
+        for (int i = 0; i < inputNames.length; i++) {
+            String inputName = inputNames[i];
+
+            if (!isVariableReadyForExecution(inputName)) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' at index %d for operation '%s' (%s) is not ready for execution. " +
+                                "Variable exists in graph but has no array data.",
+                        inputName, i, op.getOwnName(), op.opName()));
+            }
+
+            // Additional validation: check array is not null/empty
+            INDArray arr = getArrForVarName(inputName);
+            if (arr == null) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' for operation '%s' has null array",
+                        inputName, op.getOwnName()));
+            }
+
+            if (arr.isEmpty() && !isEmptyArrayExpected(op, i)) {
+                throw new IllegalStateException(String.format(
+                        "Input variable '%s' for operation '%s' has empty array when non-empty expected",
+                        inputName, op.getOwnName()));
+            }
+        }
+    }
+
+    /**
+     * Check if empty arrays are expected for specific operations/indices.
+     */
+    private boolean isEmptyArrayExpected(DifferentialFunction op, int inputIndex) {
+        // Some operations legitimately accept empty arrays
+        // Add operation-specific logic here if needed
+        return false;
+    }
+
+
+    /**
+     * Comprehensive check for variable array readiness
+     */
+    private boolean isVariableArrayReady(String varName) {
+        // Check eager arrays first
+        if (getEagerArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check variable arrays
+        if (getVariablesArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check constant arrays
+        if (getConstantArrays().hasArray(varName)) {
+            return true;
+        }
+
+        // Check if variable exists and has shape info for placeholders
+        Variable var = variables.get(varName);
+        if (var != null && var.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            SDVariable sdVar = getVariable(varName);
+            if (sdVar != null && sdVar.getShape() != null) {
+                // Placeholder with known shape - can create array if needed
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get array with proper fallback logic
+     */
+    private INDArray getArrayForVariable(String varName) {
+        // Try eager arrays first
+        if (getEagerArrays().hasArray(varName)) {
+            return getEagerArrays().getArray(varName);
+        }
+
+        // Try variable arrays
+        if (getVariablesArrays().hasArray(varName)) {
+            return getVariablesArrays().getArray(varName);
+        }
+
+        // Try constant arrays
+        if (getConstantArrays().hasArray(varName)) {
+            return getConstantArrays().getArray(varName);
+        }
+
+        // Try standard getter
+        INDArray arr = getArrForVarName(varName);
+        if (arr != null) {
+            return arr;
+        }
+
+        // Last resort: create array for placeholder if possible
+        Variable var = variables.get(varName);
+        if (var != null && var.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
+            SDVariable sdVar = getVariable(varName);
+            if (sdVar != null && sdVar.getShape() != null) {
+                return createPlaceholderArray(sdVar);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Create array for placeholder with validation
+     */
+    private INDArray createPlaceholderArray(SDVariable placeholder) {
+        long[] shape = placeholder.getShape();
+        DataType dataType = placeholder.dataType();
+
+        if (shape == null) {
+            log.warn("Cannot create array for placeholder {} - no shape information", placeholder.name());
+            return null;
+        }
+
+        // Ensure positive dimensions
+        long[] positiveShape = new long[shape.length];
+        for (int i = 0; i < shape.length; i++) {
+            positiveShape[i] = shape[i] <= 0 ? 1 : shape[i];
+        }
+
+        if (dataType == DataType.UNKNOWN) {
+            dataType = DataType.FLOAT; // Safe default
+        }
+
+        log.debug("Creating placeholder array for {} with shape {} and type {}",
+                placeholder.name(), Arrays.toString(positiveShape), dataType);
+
+        INDArray arr = Nd4j.zeros(dataType, positiveShape);
+        setEagerArrForVarName(placeholder.name(), arr);
+        return arr;
+    }
+
+
     /**
      * Loop with conditions.
-     * For more information see the underlyign class
+     * For more information see the underlying class
      * {@link ControlFlow#loopWithConditions(String[], String, SameDiff, SameDiff, String, SDVariable[], String[], String[])}
      * @param loopParams the loop parameters to loop with
      * @return
@@ -7563,5 +8124,8 @@ public class SameDiff extends SDBaseOps {
 
         return ret;
     }
+
+
+
 
 }

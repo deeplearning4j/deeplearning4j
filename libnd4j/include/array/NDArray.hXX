@@ -5242,8 +5242,6 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   sd::LongType coords[1] = {i};
   sd::LongType xOffset;
   COORDS2INDEX(1, shape::stride(shapeInfo()), coords, xOffset);
-  printf("Resolve index for scalar set %lld for input i %lld\n", xOffset, i);
-  fflush(stdout);
   // Direct value assignment, no need for scalar.isS() check
   templatedSet<T, T>(buffer(), xOffset, dataType(), (void*)&value);
 }

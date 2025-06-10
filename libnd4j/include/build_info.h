@@ -29,19 +29,43 @@ extern "C" {
 SD_LIB_EXPORT const char *buildInfo();
 SD_LIB_EXPORT bool isFuncTrace();
 
-// New type information functions
+// Type information functions
 SD_LIB_EXPORT const char *getSupportedTypes();
 SD_LIB_EXPORT const char **getSupportedTypesArray();
 SD_LIB_EXPORT int getSupportedTypesCount();
 SD_LIB_EXPORT bool isTypeSupported(const char* typeName);
 
-// Additional type metadata functions
+// Type metadata functions
 SD_LIB_EXPORT bool hasSelectiveTypes();
 SD_LIB_EXPORT const char *getTypeSelectionMode();
 SD_LIB_EXPORT const char *getBinaryTypeInfo();
 
+// NEW: Enhanced error message functions
+SD_LIB_EXPORT const char *getMissingTypeError(const char* missingType, const char* context);
+SD_LIB_EXPORT const char *getDetailedTypeConfig();
+
 #ifdef __cplusplus
 }
+
+// C++ only functions for generating error messages
+#include <string>
+#include <vector>
+
+// Generate proper error message for missing types
+std::string generateMissingTypeError(const std::string& missingType, const std::string& context = "");
+
+// Generate error message for operations with missing types
+std::string generateTypeMismatchError(const std::string& operation,
+                                      const std::vector<std::string>& requiredTypes,
+                                      const std::string& context = "");
+
+// Get detailed type configuration for debugging
+std::string getDetailedTypeConfiguration();
+
+// Helper functions
+std::string toLowerCase(const std::string& str);
+std::string typeToScriptFormat(const std::string& typeName);
+
 #endif
 
 #endif

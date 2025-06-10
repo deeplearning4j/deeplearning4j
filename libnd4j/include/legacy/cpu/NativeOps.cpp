@@ -87,7 +87,6 @@ sd::Pointer lcSolverHandle(OpaqueLaunchContext lc) { return nullptr; }
 
 void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y,
                        NDArray *z,void *extraParams, NDArray *dimension) {
-  try {
     auto tadPackX = ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(),
                                                                       dimension->bufferAsT<sd::LongType>(),
                                                                       dimension->lengthOf());
@@ -112,10 +111,6 @@ void execBroadcastBool(Pointer *extraPointers, int opNum, NDArray *x, NDArray *y
 
     NDArray::registerSpecialUse({z}, {x, y});
 
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
 }
 
 
@@ -731,27 +726,16 @@ void sort(Pointer *extraPointers, OpaqueNDArray x, bool descending) {
 void sortTad(Pointer *extraPointers, OpaqueNDArray  x,
              LongType *dimension, LongType dimensionLength,
              LongType *tadShapeInfo,  LongType *tadOffsets, bool descending) {
-  try {
     NativeOpExecutioner::execSort(x, dimension, dimensionLength, descending);
 
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-  }
 }
 
 
 
 Status execCustomOp2(Pointer *extraPointers, LongType hash, OpaqueContext *context) {
-  try {
     auto op = ops::OpRegistrator::getInstance().getOperation(hash);
     return op->execute(context);
-  } catch (std::exception &e) {
-    LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-    LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    THROW_EXCEPTION(e.what());
-    return Status::VALIDATION;
-  }
+
 }
 
 

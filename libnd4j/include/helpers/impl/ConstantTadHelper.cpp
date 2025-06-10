@@ -31,26 +31,53 @@ TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType d
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, std::vector<LongType>* dimensions) {
+  if (dimensions == nullptr) {
+    THROW_EXCEPTION("Dimensions vector is null");
+  }
   return tadForDimensions(originalShape, const_cast<LongType*>(dimensions->data()), dimensions->size());
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(TadDescriptor* descriptor) {
+  if (descriptor == nullptr) {
+    THROW_EXCEPTION("TadDescriptor is null");
+  }
   return tadForDimensions(descriptor->originalShape(), descriptor->axis().data(),
                           descriptor->axis().size());
 }
 
 TadPack* ConstantTadHelper::tadForDimensions(LongType* originalShape, LongType* dimensions, LongType dimLength) {
-    if (!originalShape) THROW_EXCEPTION("Original shape is null");
-    if (!dimensions) THROW_EXCEPTION("Dimensions array is null");
-    if (dimLength <= 0) THROW_EXCEPTION("Invalid dimension length");
+    if (originalShape == nullptr) {
+        THROW_EXCEPTION("Original shape is null");
+    }
+    if (dimensions == nullptr) {
+        THROW_EXCEPTION("Dimensions array is null");
+    }
+    if (dimLength <= 0) {
+        THROW_EXCEPTION("Invalid dimension length");
+    }
 
     sd::LongType rank = shape::rank(originalShape);
-    if (rank < 0) THROW_EXCEPTION("Invalid shape rank");
+    if (rank < 0) {
+        THROW_EXCEPTION("Invalid shape rank");
+    }
+    
+    // Additional validation: check if dimensions are within valid range
+    for (LongType i = 0; i < dimLength; i++) {
+        LongType dim = dimensions[i];
+        if (dim < 0) dim += rank;  // Handle negative dimensions
+        if (dim < 0 || dim >= rank) {
+            THROW_EXCEPTION("Dimension index is out of bounds");
+        }
+    }
 
     std::vector<LongType> dims(dimensions, dimensions + dimLength);
 
     // Single attempt pattern - no double locking
-    return _trie.getOrCreate(dims, originalShape);
+    try {
+        return _trie.getOrCreate(dims, originalShape);
+    } catch (const std::exception& e) {
+        THROW_EXCEPTION("Failed to create or retrieve TAD pack");
+    }
 }
 
 } // namespace sd

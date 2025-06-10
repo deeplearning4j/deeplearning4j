@@ -17,6 +17,7 @@ class TestOnnxFrameworkImporter {
 
     @Test
     fun testOther() {
+        Nd4j.getEnvironment().isVariableTracingEnabled = true
         val importer = OnnxFrameworkImporter()
         importer.runImport("/home/agibsonccc/Documents/GitHub/kompile/./anserini-models/bge-base-en-v1.5/bge-base-en-v1.5.onnx")
     }

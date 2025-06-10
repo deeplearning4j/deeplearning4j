@@ -29,6 +29,9 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.shape.CreateView;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.common.util.ArrayUtil;
@@ -123,7 +126,6 @@ public class SDVariable implements Serializable {
     }
 
 
-    // autogen_tag::sdvars::end
     /**
      * A getter for the allocated ndarray with this {@link SDVariable}.
      *
@@ -136,12 +138,34 @@ public class SDVariable implements Serializable {
      * @return the {@link INDArray} associated with this variable.
      */
     public INDArray getArr(boolean enforceExistence) {
+        // First check if array already exists in any holder
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
+
         if(variableType == VariableType.ARRAY && enforceExistence) {
-            throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
-        } else if(variableType == VariableType.ARRAY) {
+            // For ARRAY types in eager mode, try to compute if inputs are ready
             if(sameDiff.isEagerMode()) {
+                Variable varMeta = sameDiff.getVariables().get(getVarName());
+                if(varMeta != null && varMeta.getOutputOfOp() != null) {
+                    if(areInputsReady(varMeta)) {
+                        return computeArrayEagerly();
+                    }
+                }
+            }
+            throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
+        }else if(variableType == VariableType.ARRAY) {
+            if(sameDiff.isEagerMode()) {
+                Variable varMeta = sameDiff.getVariables().get(getVarName());
+                if(varMeta != null && varMeta.getOutputOfOp() != null) {
+                    // Add import detection here
+                    if(sameDiff.isInGraphBuildingMode()) {
+                        return null; // Don't compute during import
+                    }
+
+                    if(areInputsReady(varMeta)) {
+                        return computeArrayEagerly();
+                    }
+                }
                 return sameDiff.getEagerArrForVarName(name());
             }
             return null;
@@ -152,6 +176,34 @@ public class SDVariable implements Serializable {
             throw new IllegalStateException("No array exists for variable \"" + name() + "\"");
         }
         return ret;
+    }
+
+    public INDArray computeArrayEagerly() {
+        if (variableType != VariableType.ARRAY) {
+            return null;
+        }
+
+        Variable varMeta = sameDiff.getVariables().get(varName);
+        if (varMeta == null || varMeta.getOutputOfOp() == null) {
+            return null;
+        }
+
+        // Delegate everything to operation-level execution
+        return sameDiff.computeOperationEagerly(varMeta.getOutputOfOp(), varName);
+    }
+
+    private boolean areInputsReady(Variable varMeta) {
+        if(varMeta.getOutputOfOp() == null) return false;
+
+        SameDiffOp op = sameDiff.getOps().get(varMeta.getOutputOfOp());
+        if(op == null || op.getInputsToOp() == null) return false;
+
+        for(String inputName : op.getInputsToOp()) {
+            if(!sameDiff.arrayAlreadyExistsForVarName(inputName)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 

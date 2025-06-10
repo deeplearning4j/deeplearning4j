@@ -34,8 +34,33 @@ message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 
-# Disable debug mode to reduce excessive output
-# set(CMAKE_FIND_DEBUG_MODE 1)
+# Include the enhanced type validation functions
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/TypeValidation.cmake)
+
+# Add new CMake options for type validation
+option(SD_STRICT_TYPE_VALIDATION "Enable strict type validation" OFF)
+option(SD_DEBUG_AUTO_REDUCE "Auto-reduce types for debug builds" ON)
+option(SD_SHOW_TYPE_IMPACT "Show estimated build impact" ON)
+
+# Add debug type profile option
+set(SD_DEBUG_TYPE_PROFILE "" CACHE STRING "Debug type profile (MINIMAL_INDEXING, ESSENTIAL, FLOATS_ONLY, etc.)")
+set(SD_DEBUG_CUSTOM_TYPES "" CACHE STRING "Custom types for debug profile")
+
+# Set default validation mode based on build configuration
+if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
+    if(SD_GCC_FUNCTRACE STREQUAL "ON")
+        set(SD_TYPES_VALIDATION_MODE "DEBUG")
+    elseif(SD_STRICT_TYPE_VALIDATION)
+        set(SD_TYPES_VALIDATION_MODE "STRICT")
+    else()
+        set(SD_TYPES_VALIDATION_MODE "NORMAL")
+    endif()
+endif()
+
+# Enable debug auto-reduction by default for debug builds
+if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE STREQUAL "ON")
+    set(SD_DEBUG_AUTO_REDUCE TRUE)
+endif()
 
 # Standard Settings
 set(CMAKE_CXX_STANDARD 17)
@@ -72,6 +97,25 @@ option(HELPERS_cudnn "Enable cuDNN helper" OFF)
 
 # Handle PRINT_INDICES option
 message("PRINT_INDICES: ${PRINT_INDICES}")
+
+function(print_status_colored type message)
+    if(type STREQUAL "ERROR")
+        message(FATAL_ERROR "❌ ${message}")
+    elseif(type STREQUAL "WARNING")
+        message(WARNING "⚠️  ${message}")
+    elseif(type STREQUAL "SUCCESS")
+        message(STATUS "✅ ${message}")
+    elseif(type STREQUAL "INFO")
+        message(STATUS "ℹ️  ${message}")
+    elseif(type STREQUAL "DEBUG")
+        message(STATUS "🔍 ${message}")
+    elseif(type STREQUAL "NOTICE")
+        message(NOTICE "📢 ${message}")
+    else()
+        message(STATUS "${message}")
+    endif()
+endfunction()
+
 if(PRINT_INDICES)
     message("Added print indices compile definition")
     add_compile_definitions(PRINT_INDICES)
@@ -98,6 +142,34 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 # Print build type and all variables
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
+
+# Enhanced build messages with type information
+message(STATUS "")
+print_status_colored("INFO" "=== LIBND4J BUILD CONFIGURATION ===")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Chip: ${SD_CHIP}")
+message(STATUS "Platform: ${SD_PLATFORM}")
+
+if(SD_TYPES_LIST_COUNT GREATER 0)
+    message(STATUS "Type Selection: SELECTIVE (${SD_TYPES_LIST_COUNT} types)")
+else()
+    message(STATUS "Type Selection: ALL")
+endif()
+
+if(SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "")
+    message(STATUS "Debug Type Profile: ${SD_DEBUG_TYPE_PROFILE}")
+endif()
+
+if(SD_GCC_FUNCTRACE STREQUAL "ON")
+    message(STATUS "Function Tracing: ENABLED")
+    if(SD_DEBUG_AUTO_REDUCE)
+        message(STATUS "Debug Type Reduction: ENABLED")
+    endif()
+endif()
+
+message(STATUS "Type Validation: ${SD_TYPES_VALIDATION_MODE}")
+message(STATUS "")
+
 macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------{")
     get_cmake_property(_variableNames VARIABLES)
@@ -107,11 +179,401 @@ macro(print_all_variables)
     message(STATUS "print_all_variables------------------------------------------}")
 endmacro()
 
-# Add this near the top with other option definitions
-option(SD_PREPROCESSOR "Use preprocessor" OFF)
+# Type aliases for normalization
+set(TYPE_ALIAS_float "float32")
+set(TYPE_ALIAS_half "float16")
+set(TYPE_ALIAS_long "int64")
+set(TYPE_ALIAS_unsignedlong "uint64")
+set(TYPE_ALIAS_int "int32")
+set(TYPE_ALIAS_bfloat "bfloat16")
+set(TYPE_ALIAS_float64 "double")
+
+# All supported types list
+set(ALL_SUPPORTED_TYPES
+        "bool" "int8" "uint8" "int16" "uint16" "int32" "uint32"
+        "int64" "uint64" "float16" "bfloat16" "float32" "double"
+        "float" "half" "long" "unsignedlong" "int" "bfloat" "float64"
+        "utf8" "utf16" "utf32"
+)
+
+# Minimum required types for basic functionality
+set(MINIMUM_REQUIRED_TYPES "int32" "int64" "float32")
+
+# Debug type profiles
+set(DEBUG_PROFILE_MINIMAL_INDEXING "float32;double;int32;int64")
+set(DEBUG_PROFILE_ESSENTIAL "float32;double;int32;int64;int8;int16")
+set(DEBUG_PROFILE_FLOATS_ONLY "float32;double;float16")
+set(DEBUG_PROFILE_INTEGERS_ONLY "int8;int16;int32;int64;uint8;uint16;uint32;uint64")
+set(DEBUG_PROFILE_SINGLE_PRECISION "float32;int32;int64")
+set(DEBUG_PROFILE_DOUBLE_PRECISION "double;int32;int64")
+
+# Function to normalize a type name (handle aliases)
+function(normalize_type input_type output_var)
+    set(normalized_type "${input_type}")
+
+    # Check if it's an alias
+    if(DEFINED TYPE_ALIAS_${input_type})
+        set(normalized_type "${TYPE_ALIAS_${input_type}}")
+    endif()
+
+    set(${output_var} "${normalized_type}" PARENT_SCOPE)
+endfunction()
+
+# Function to check if a type is supported
+function(is_type_supported type result_var)
+    normalize_type("${type}" normalized_type)
+
+    if("${normalized_type}" IN_LIST ALL_SUPPORTED_TYPES)
+        set(${result_var} TRUE PARENT_SCOPE)
+    else()
+        set(${result_var} FALSE PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Function to show available types
+function(show_available_types)
+    message(STATUS "")
+    print_status_colored("INFO" "=== AVAILABLE DATA TYPES ===")
+    message(STATUS "")
+    message(STATUS "Core Types:")
+    message(STATUS "  bool     - Boolean type")
+    message(STATUS "  int8     - 8-bit signed integer")
+    message(STATUS "  uint8    - 8-bit unsigned integer")
+    message(STATUS "  int16    - 16-bit signed integer")
+    message(STATUS "  uint16   - 16-bit unsigned integer")
+    message(STATUS "  int32    - 32-bit signed integer")
+    message(STATUS "  uint32   - 32-bit unsigned integer")
+    message(STATUS "  int64    - 64-bit signed integer")
+    message(STATUS "  uint64   - 64-bit unsigned integer")
+    message(STATUS "")
+    message(STATUS "Floating Point Types:")
+    message(STATUS "  float16  - 16-bit floating point (half precision)")
+    message(STATUS "  bfloat16 - 16-bit brain floating point")
+    message(STATUS "  float32  - 32-bit floating point (single precision)")
+    message(STATUS "  double   - 64-bit floating point (double precision)")
+    message(STATUS "")
+    message(STATUS "Type Aliases:")
+    message(STATUS "  float    -> float32")
+    message(STATUS "  half     -> float16")
+    message(STATUS "  long     -> int64")
+    message(STATUS "  int      -> int32")
+    message(STATUS "  bfloat   -> bfloat16")
+    message(STATUS "  float64  -> double")
+    message(STATUS "")
+endfunction()
+
+# Function to resolve debug type profile
+function(resolve_debug_profile profile custom_types result_var)
+    if(profile STREQUAL "CUSTOM")
+        if(custom_types AND NOT custom_types STREQUAL "")
+            # Ensure minimum indexing types are included
+            set(minimum_types "int32;int64;float32")
+            set(combined_types "${minimum_types}")
+
+            # Add custom types, avoiding duplicates
+            string(REPLACE ";" ";" CUSTOM_LIST "${custom_types}")
+            foreach(type IN LISTS CUSTOM_LIST)
+                if(NOT type IN_LIST combined_types)
+                    set(combined_types "${combined_types};${type}")
+                endif()
+            endforeach()
+            set(${result_var} "${combined_types}" PARENT_SCOPE)
+        else()
+            message(FATAL_ERROR "CUSTOM profile specified but no custom types provided!")
+        endif()
+    elseif(DEFINED DEBUG_PROFILE_${profile})
+        set(${result_var} "${DEBUG_PROFILE_${profile}}" PARENT_SCOPE)
+    else()
+        print_status_colored("WARNING" "Unknown debug profile '${profile}', using MINIMAL_INDEXING")
+        set(${result_var} "${DEBUG_PROFILE_MINIMAL_INDEXING}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+# Function to estimate build impact
+function(estimate_build_impact types_string build_type)
+    if(NOT types_string OR types_string STREQUAL "" OR types_string STREQUAL "all" OR types_string STREQUAL "ALL")
+        print_status_colored("INFO" "=== BUILD IMPACT ESTIMATION ===")
+        message(STATUS "Using ALL types - expect full compilation with all template instantiations")
+        return()
+    endif()
+
+    string(REPLACE ";" ";" TYPES_LIST "${types_string}")
+    list(LENGTH TYPES_LIST type_count)
+
+    if(type_count GREATER 0)
+        math(EXPR est_2_combinations "${type_count} * ${type_count}")
+        math(EXPR est_3_combinations "${type_count} * ${type_count} * ${type_count}")
+        math(EXPR est_binary_size_mb "${est_3_combinations} * 10 / 27")  # Rough estimate
+
+        print_status_colored("INFO" "=== BUILD IMPACT ESTIMATION ===")
+        message(STATUS "Type count: ${type_count}")
+        message(STATUS "Estimated 2-type combinations: ${est_2_combinations}")
+        message(STATUS "Estimated 3-type combinations: ${est_3_combinations}")
+        message(STATUS "Estimated binary size: ~${est_binary_size_mb}MB")
+
+        if(build_type STREQUAL "Debug" AND est_3_combinations GREATER 125)
+            print_status_colored("WARNING" "HIGH COMBINATION COUNT DETECTED!")
+            print_status_colored("WARNING" "${est_3_combinations} 3-type combinations may cause:")
+            print_status_colored("WARNING" "- Binary size >2GB (x86-64 limit exceeded)")
+            print_status_colored("WARNING" "- Compilation failure due to PLT overflow")
+            print_status_colored("WARNING" "- Very long build times")
+            message(STATUS "")
+            print_status_colored("WARNING" "Consider using fewer types for debug builds:")
+            print_status_colored("WARNING" "-DSD_DEBUG_TYPE_PROFILE=MINIMAL_INDEXING")
+            print_status_colored("WARNING" "-DSD_TYPES_LIST=\"float32;double;int32;int64\"")
+        elseif(est_binary_size_mb GREATER 1000)
+            print_status_colored("WARNING" "Large binary size warning: ~${est_binary_size_mb}MB")
+        endif()
+    endif()
+endfunction()
+
+# Function to validate a list of types
+function(validate_type_list types_string validation_mode)
+    print_status_colored("INFO" "=== CMAKE TYPE VALIDATION ===")
+
+    # Handle empty or special cases
+    if(NOT types_string OR types_string STREQUAL "" OR types_string STREQUAL "all" OR types_string STREQUAL "ALL")
+        if(validation_mode STREQUAL "STRICT")
+            print_status_colored("ERROR" "No data types specified and strict mode enabled!")
+        else()
+            print_status_colored("WARNING" "No data types specified, using ALL types")
+            return()
+        endif()
+    endif()
+
+    # Parse semicolon-separated types
+    string(REPLACE ";" ";" TYPES_LIST "${types_string}")
+    set(invalid_types "")
+    set(valid_types "")
+    set(normalized_types "")
+
+    foreach(type IN LISTS TYPES_LIST)
+        # Trim whitespace
+        string(STRIP "${type}" type)
+
+        if(NOT type STREQUAL "")
+            is_type_supported("${type}" is_valid)
+
+            if(is_valid)
+                normalize_type("${type}" normalized_type)
+                list(APPEND valid_types "${type}")
+                list(APPEND normalized_types "${normalized_type}")
+
+                if(NOT type STREQUAL normalized_type)
+                    message(STATUS "  ✅ ${type} (normalized to: ${normalized_type})")
+                else()
+                    message(STATUS "  ✅ ${type}")
+                endif()
+            else()
+                list(APPEND invalid_types "${type}")
+                message(STATUS "  ❌ ${type} (INVALID)")
+            endif()
+        endif()
+    endforeach()
+
+    # Check for invalid types
+    list(LENGTH invalid_types invalid_count)
+    if(invalid_count GREATER 0)
+        string(REPLACE ";" ", " invalid_types_str "${invalid_types}")
+        print_status_colored("ERROR" "Found ${invalid_count} invalid type(s): ${invalid_types_str}")
+        show_available_types()
+        message(FATAL_ERROR "Type validation failed!")
+    endif()
+
+    # Check for no valid types
+    list(LENGTH valid_types valid_count)
+    if(valid_count EQUAL 0)
+        print_status_colored("ERROR" "No valid types found!")
+        show_available_types()
+        message(FATAL_ERROR "Type validation failed!")
+    endif()
+
+    # Check for minimum required types
+    set(missing_essential "")
+    foreach(req_type IN LISTS MINIMUM_REQUIRED_TYPES)
+        if(NOT req_type IN_LIST normalized_types)
+            list(APPEND missing_essential "${req_type}")
+        endif()
+    endforeach()
+
+    list(LENGTH missing_essential missing_count)
+    if(missing_count GREATER 0)
+        string(REPLACE ";" ", " missing_essential_str "${missing_essential}")
+        print_status_colored("WARNING" "Missing recommended essential types: ${missing_essential_str}")
+        print_status_colored("WARNING" "Array indexing and basic operations may fail at runtime!")
+
+        if(validation_mode STREQUAL "STRICT")
+            string(REPLACE ";" ", " required_types_str "${MINIMUM_REQUIRED_TYPES}")
+            print_status_colored("ERROR" "Strict mode requires essential types: ${required_types_str}")
+            message(FATAL_ERROR "Essential types missing in strict mode!")
+        endif()
+    endif()
+
+    # Check for excessive type combinations in debug builds
+    if(validation_mode STREQUAL "DEBUG" AND valid_count GREATER 6)
+        math(EXPR estimated_combinations "${valid_count} * ${valid_count} * ${valid_count}")
+        print_status_colored("WARNING" "Debug build with ${valid_count} types may generate ~${estimated_combinations} combinations")
+        print_status_colored("WARNING" "This could result in very large binaries and long compile times!")
+        print_status_colored("WARNING" "Consider using a debug type profile: -DSD_DEBUG_TYPE_PROFILE=MINIMAL_INDEXING")
+    endif()
+
+    string(REPLACE ";" ", " normalized_types_str "${normalized_types}")
+    print_status_colored("SUCCESS" "Type validation passed: ${valid_count} valid types")
+    message(STATUS "Selected types: ${normalized_types_str}")
+endfunction()
+
+# FAIL-FAST TYPE VALIDATION
+function(validate_generated_defines_failfast)
+    if(SD_TYPES_LIST_COUNT GREATER 0)
+        print_status_colored("INFO" "=== FAIL-FAST VALIDATION: Checking generated defines ===")
+
+        # Build list of expected defines
+        set(EXPECTED_DEFINES "")
+        foreach(SD_TYPE ${SD_TYPES_LIST})
+            normalize_type("${SD_TYPE}" normalized_type)
+            string(TOUPPER ${normalized_type} SD_TYPE_UPPERCASE)
+            list(APPEND EXPECTED_DEFINES "HAS_${SD_TYPE_UPPERCASE}")
+        endforeach()
+
+        # Check the generated file
+        set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+        if(NOT EXISTS "${INCLUDE_OPS_FILE}")
+            print_status_colored("WARNING" "Generated defines file will be created: ${INCLUDE_OPS_FILE}")
+            return()
+        endif()
+
+        file(READ "${INCLUDE_OPS_FILE}" GENERATED_CONTENT)
+
+        # Check each expected define exists
+        set(MISSING_DEFINES "")
+        foreach(EXPECTED_DEFINE ${EXPECTED_DEFINES})
+            string(FIND "${GENERATED_CONTENT}" "#define ${EXPECTED_DEFINE}" DEFINE_FOUND)
+            if(DEFINE_FOUND EQUAL -1)
+                list(APPEND MISSING_DEFINES "${EXPECTED_DEFINE}")
+            endif()
+        endforeach()
+
+        # FAIL FAST if any defines are missing
+        list(LENGTH MISSING_DEFINES missing_count)
+        if(missing_count GREATER 0)
+            string(REPLACE ";" ", " missing_str "${MISSING_DEFINES}")
+            string(REPLACE ";" ", " expected_str "${EXPECTED_DEFINES}")
+
+            message(STATUS "")
+            print_status_colored("ERROR" "❌ VALIDATION FAILURE: Type processing failed")
+            print_status_colored("ERROR" "")
+            print_status_colored("ERROR" "Requested types: ${SD_TYPES_LIST}")
+            print_status_colored("ERROR" "Expected defines: ${expected_str}")
+            print_status_colored("ERROR" "Missing defines: ${missing_str}")
+            print_status_colored("ERROR" "")
+            print_status_colored("ERROR" "Generated file content:")
+            message(STATUS "${GENERATED_CONTENT}")
+            print_status_colored("ERROR" "")
+            message(FATAL_ERROR "❌ BUILD TERMINATED: ${missing_count} type(s) failed to process correctly")
+        endif()
+
+        print_status_colored("SUCCESS" "✅ All ${SD_TYPES_LIST_COUNT} types validated successfully")
+    endif()
+endfunction()
+
+function(validate_and_process_types_failfast)
+    # Do the original processing
+    validate_and_process_types()
+
+    # Immediately validate the results
+    validate_generated_defines_failfast()
+endfunction()
+
+# Main validation function to be called from CMakeLists.txt
+function(validate_and_process_types)
+    # Determine validation mode
+    set(validation_mode "NORMAL")
+    if(SD_GCC_FUNCTRACE STREQUAL "ON")
+        set(validation_mode "DEBUG")
+    endif()
+    if(SD_STRICT_TYPE_VALIDATION)
+        set(validation_mode "STRICT")
+    endif()
+
+    # Handle debug builds with auto-reduction
+    if(SD_GCC_FUNCTRACE STREQUAL "ON" AND SD_DEBUG_AUTO_REDUCE)
+        print_status_colored("INFO" "=== DEBUG BUILD TYPE REDUCTION ACTIVE ===")
+
+        if(SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "")
+            resolve_debug_profile("${SD_DEBUG_TYPE_PROFILE}" "${SD_DEBUG_CUSTOM_TYPES}" resolved_types)
+            set(SD_TYPES_LIST "${resolved_types}" PARENT_SCOPE)
+            message(STATUS "Debug Profile: ${SD_DEBUG_TYPE_PROFILE}")
+            message(STATUS "Resolved Types: ${resolved_types}")
+        elseif(NOT SD_TYPES_LIST OR SD_TYPES_LIST STREQUAL "")
+            # No types specified and no profile - use minimal safe default
+            resolve_debug_profile("MINIMAL_INDEXING" "" resolved_types)
+            set(SD_TYPES_LIST "${resolved_types}" PARENT_SCOPE)
+            print_status_colored("WARNING" "Auto-selected MINIMAL_INDEXING profile for debug build")
+            message(STATUS "Types: ${resolved_types}")
+        endif()
+
+        message(STATUS "=============================================")
+    endif()
+
+    # Validate the final datatypes
+    if(SD_TYPES_LIST AND NOT SD_TYPES_LIST STREQUAL "")
+        validate_type_list("${SD_TYPES_LIST}" "${validation_mode}")
+        estimate_build_impact("${SD_TYPES_LIST}" "${CMAKE_BUILD_TYPE}")
+
+        # Show configuration summary
+        print_status_colored("INFO" "=== TYPE CONFIGURATION SUMMARY ===")
+
+        if(SD_DEBUG_TYPE_PROFILE AND NOT SD_DEBUG_TYPE_PROFILE STREQUAL "")
+            message(STATUS "Debug Type Profile: ${SD_DEBUG_TYPE_PROFILE}")
+        endif()
+
+        message(STATUS "Type Selection: SELECTIVE")
+        message(STATUS "Building with types: ${SD_TYPES_LIST}")
+        message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+        message(STATUS "")
+    else()
+        print_status_colored("INFO" "=== TYPE CONFIGURATION SUMMARY ===")
+        message(STATUS "Type Selection: ALL (default)")
+        message(STATUS "Building with all supported data types")
+        message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+        message(STATUS "")
+    endif()
+endfunction()
+
+macro(SETUP_LIBND4J_TYPE_VALIDATION)
+    # Set default validation mode
+    if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
+        if(SD_GCC_FUNCTRACE STREQUAL "ON")
+            set(SD_TYPES_VALIDATION_MODE "DEBUG")
+        elseif(SD_STRICT_TYPE_VALIDATION)
+            set(SD_TYPES_VALIDATION_MODE "STRICT")
+        else()
+            set(SD_TYPES_VALIDATION_MODE "NORMAL")
+        endif()
+    endif()
+
+    # Enable debug auto-reduction by default for debug builds
+    if(NOT DEFINED SD_DEBUG_AUTO_REDUCE AND SD_GCC_FUNCTRACE STREQUAL "ON")
+        set(SD_DEBUG_AUTO_REDUCE TRUE)
+    endif()
+
+    # Call the main validation function
+    validate_and_process_types()
+
+    # Update the count after validation
+    if(SD_TYPES_LIST)
+        list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
+    else()
+        set(SD_TYPES_LIST_COUNT 0)
+    endif()
+endmacro()
 
 # Add this section before the flatbuffers download section
 # Compile Definitions for Operations
+# Call the main validation and processing function FIRST
+validate_and_process_types_failfast()
+
+# Compile Definitions for Operations (unchanged)
 set(DEFINITIONS_CONTENT "")
 if(SD_ALL_OPS OR "${SD_OPS_LIST}" STREQUAL "")
     message("Adding all ops due to empty op list or SD_ALL_OPS definition: SD_ALL_OPS=${SD_ALL_OPS} SD_OPS_LIST=${SD_OPS_LIST}")
@@ -126,17 +588,77 @@ else()
     endforeach()
 endif()
 
-# Compile Definitions for Types
+# Enhanced Compile Definitions for Types
 list(LENGTH SD_TYPES_LIST SD_TYPES_LIST_COUNT)
 if(SD_TYPES_LIST_COUNT GREATER 0)
     add_compile_definitions(SD_SELECTIVE_TYPES)
     string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
+
+    # Display the types being built with
+    print_status_colored("SUCCESS" "=== BUILDING WITH SELECTED TYPES ===")
+    set(TYPE_DISPLAY_LIST "")
     foreach(SD_TYPE ${SD_TYPES_LIST})
-        string(TOUPPER ${SD_TYPE} SD_TYPE_UPPERCASE)
+        normalize_type("${SD_TYPE}" normalized_type)
+        string(TOUPPER ${normalized_type} SD_TYPE_UPPERCASE)
         add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
-        message(STATUS "TYPE: ${SD_TYPE_UPPERCASE}")
+        message(STATUS "✅ TYPE: ${normalized_type}")
         string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
+        list(APPEND TYPE_DISPLAY_LIST "${normalized_type}")
     endforeach()
+
+    # Create a summary of types being built
+    list(LENGTH TYPE_DISPLAY_LIST TYPE_COUNT)
+    string(REPLACE ";" ", " TYPE_DISPLAY_STRING "${TYPE_DISPLAY_LIST}")
+    print_status_colored("SUCCESS" "Building with ${TYPE_COUNT} data types: ${TYPE_DISPLAY_STRING}")
+
+else()
+    # Building with all types
+    print_status_colored("INFO" "=== BUILDING WITH ALL TYPES ===")
+    message(STATUS "No selective types specified - building with all supported data types")
+    message(STATUS "This will include all type instantiations and may result in larger binaries")
+endif()
+
+# Create the directory for generated files if it doesn't exist
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+# Write Definitions to include_ops.h file
+set(INCLUDE_OPS_FILE "${CMAKE_CURRENT_SOURCE_DIR}/include/generated/include_ops.h")
+message("Generating include_ops.h at: ${INCLUDE_OPS_FILE}")
+file(WRITE "${INCLUDE_OPS_FILE}" "#ifndef SD_DEFINITIONS_GEN_H_\n#define SD_DEFINITIONS_GEN_H_\n${DEFINITIONS_CONTENT}\n#endif\n")
+
+# Add the generated directory to include paths
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include/generated")
+
+# Enhanced type validation and processing
+if(SD_TYPES_LIST_COUNT GREATER 0)
+    add_compile_definitions(SD_SELECTIVE_TYPES)
+    string(APPEND DEFINITIONS_CONTENT "#define SD_SELECTIVE_TYPES\n")
+
+    # Display the types being built with
+    print_status_colored("SUCCESS" "=== BUILDING WITH SELECTED TYPES ===")
+    set(TYPE_DISPLAY_LIST "")
+    foreach(SD_TYPE ${SD_TYPES_LIST})
+        normalize_type("${SD_TYPE}" normalized_type)
+        string(TOUPPER ${normalized_type} SD_TYPE_UPPERCASE)
+        add_compile_definitions(HAS_${SD_TYPE_UPPERCASE})
+        message(STATUS "✅ TYPE: ${normalized_type}")
+        string(APPEND DEFINITIONS_CONTENT "#define HAS_${SD_TYPE_UPPERCASE}\n")
+        list(APPEND TYPE_DISPLAY_LIST "${normalized_type}")
+    endforeach()
+
+    # Create a summary of types being built
+    list(LENGTH TYPE_DISPLAY_LIST TYPE_COUNT)
+    string(REPLACE ";" ", " TYPE_DISPLAY_STRING "${TYPE_DISPLAY_LIST}")
+    print_status_colored("SUCCESS" "Building with ${TYPE_COUNT} data types: ${TYPE_DISPLAY_STRING}")
+
+    # Estimate and warn about potential compilation issues
+    estimate_build_impact("${TYPE_DISPLAY_STRING}" "${CMAKE_BUILD_TYPE}")
+
+else()
+    # Building with all types
+    print_status_colored("INFO" "=== BUILDING WITH ALL TYPES ===")
+    message(STATUS "No selective types specified - building with all supported data types")
+    message(STATUS "This will include all type instantiations and may result in larger binaries")
 endif()
 
 # Create the directory for generated files if it doesn't exist
@@ -295,44 +817,6 @@ if(SD_ARM_BUILD)
 endif()
 
 
-# Keep the Android-specific case as well
-if(SD_GCC_FUNCTRACE STREQUAL "ON")
-    message(STATUS "=== DEBUG BUILD TYPE ANALYSIS ===")
-
-    # Count combinations that would be generated
-    list(LENGTH SD_TYPES_LIST CURRENT_TYPE_COUNT)
-    if(CURRENT_TYPE_COUNT GREATER 0)
-        math(EXPR ESTIMATED_3_COMBINATIONS "${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT}")
-        math(EXPR ESTIMATED_2_COMBINATIONS "${CURRENT_TYPE_COUNT} * ${CURRENT_TYPE_COUNT}")
-
-        message(STATUS "Current types: ${SD_TYPES_LIST}")
-        message(STATUS "Type count: ${CURRENT_TYPE_COUNT}")
-        message(STATUS "Estimated 3-type combinations: ${ESTIMATED_3_COMBINATIONS}")
-        message(STATUS "Estimated 2-type combinations: ${ESTIMATED_2_COMBINATIONS}")
-
-        # Warn if combination count is dangerously high
-        if(ESTIMATED_3_COMBINATIONS GREATER 125)
-            message(WARNING "⚠️  HIGH COMBINATION COUNT DETECTED!")
-            message(WARNING "   ${ESTIMATED_3_COMBINATIONS} 3-type combinations may cause:")
-            message(WARNING "   - Binary size >2GB (x86-64 limit exceeded)")
-            message(WARNING "   - Compilation failure due to PLT overflow")
-            message(WARNING "   - Very long build times")
-            message(WARNING "")
-            message(WARNING "   Consider using fewer types for debug builds:")
-            message(WARNING "   -Dlibnd4j.datatypes=\"float32;double;int32;int64\"")
-        endif()
-
-        # Estimate binary size (rough calculation: ~10MB per 27 combinations)
-        math(EXPR SIZE_ESTIMATE_MB "${ESTIMATED_3_COMBINATIONS} * 10 / 27")
-        if(SIZE_ESTIMATE_MB GREATER 2000)
-            message(WARNING "   Estimated binary size: ~${SIZE_ESTIMATE_MB}MB (may exceed x86-64 limits)")
-        else()
-            message(STATUS "Estimated binary size: ~${SIZE_ESTIMATE_MB}MB")
-        endif()
-    endif()
-
-    message(STATUS "==================================")
-endif()
 
 # Apply type-based combination reduction for debug builds
 if(SD_GCC_FUNCTRACE STREQUAL "ON" AND ESTIMATED_3_COMBINATIONS GREATER 64)
@@ -372,25 +856,56 @@ if(SD_GCC_FUNCTRACE STREQUAL "ON" AND ESTIMATED_3_COMBINATIONS GREATER 64)
 endif()
 
 # Enhanced type validation
+# Enhanced type validation with CMake functions
 if(SD_TYPES_LIST_COUNT GREATER 0)
+    # Validate that all specified types are supported
+    set(INVALID_TYPES "")
+    set(VALID_TYPES "")
+    set(NORMALIZED_TYPES "")
+
+    foreach(SD_TYPE ${SD_TYPES_LIST})
+        is_type_supported("${SD_TYPE}" is_valid)
+
+        if(is_valid)
+            normalize_type("${SD_TYPE}" normalized_type)
+            list(APPEND VALID_TYPES "${SD_TYPE}")
+            list(APPEND NORMALIZED_TYPES "${normalized_type}")
+        else()
+            list(APPEND INVALID_TYPES "${SD_TYPE}")
+        endif()
+    endforeach()
+
+    # Report invalid types
+    list(LENGTH INVALID_TYPES invalid_count)
+    if(invalid_count GREATER 0)
+        string(REPLACE ";" ", " invalid_types_str "${INVALID_TYPES}")
+        message(FATAL_ERROR "❌ Invalid data types specified: ${invalid_types_str}")
+    endif()
+
+    # Check for missing critical types
     set(MISSING_INDEXING_TYPES "")
 
-    # Check for essential indexing types
-    if(NOT "int32" IN_LIST SD_TYPES_LIST AND NOT "int32_t" IN_LIST SD_TYPES_LIST)
+    if(NOT "int32" IN_LIST NORMALIZED_TYPES)
         list(APPEND MISSING_INDEXING_TYPES "int32")
     endif()
-    if(NOT "int64" IN_LIST SD_TYPES_LIST AND NOT "int64_t" IN_LIST SD_TYPES_LIST)
+    if(NOT "int64" IN_LIST NORMALIZED_TYPES)
         list(APPEND MISSING_INDEXING_TYPES "int64")
     endif()
-    if(NOT "float32" IN_LIST SD_TYPES_LIST AND NOT "float" IN_LIST SD_TYPES_LIST)
+    if(NOT "float32" IN_LIST NORMALIZED_TYPES)
         list(APPEND MISSING_INDEXING_TYPES "float32")
     endif()
 
-    if(MISSING_INDEXING_TYPES)
-        message(WARNING "⚠️  Missing critical indexing types: ${MISSING_INDEXING_TYPES}")
-        message(WARNING "   Array indexing operations may fail at runtime!")
-        message(WARNING "   Consider adding these to your type list.")
+    list(LENGTH MISSING_INDEXING_TYPES missing_count)
+    if(missing_count GREATER 0)
+        string(REPLACE ";" ", " missing_types_str "${MISSING_INDEXING_TYPES}")
+        print_status_colored("WARNING" "Missing critical indexing types: ${missing_types_str}")
+        print_status_colored("WARNING" "Array indexing operations may fail at runtime!")
+        print_status_colored("WARNING" "Consider adding these to your type list.")
     endif()
+
+    # Show final type selection
+    string(REPLACE ";" ", " normalized_types_str "${NORMALIZED_TYPES}")
+    print_status_colored("SUCCESS" "✅ Selected data types validated: ${normalized_types_str}")
 endif()
 
 
@@ -442,7 +957,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
     message(STATUS "Adding GCC memory optimization flag: --param ggc-min-expand=10")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++11 -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=10 ${ARCH_TUNE} ${INFORMATIVE_FLAGS} -std=c++17 -fPIC")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=10 -fPIC")
 
     # Add flags to handle large relocations for x86_64
@@ -480,7 +995,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT SD_CUDA)
             set(CMAKE_CXX_EXTENSIONS OFF)
         endif()
 
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ftemplate-backtrace-limit=0 -gno-record-gcc-switches -ftrack-macro-expansion=0 -fstack-protector -fstack-protector-all  -Wall  -Wextra -Werror -Wno-return-type -Wno-error=int-in-bool-context -Wno-unused-variable -Wno-error=implicit-fallthrough -Wno-return-type -Wno-unused-parameter -Wno-error=unknown-pragmas -ggdb3 -lpthread -pthread -MT -Bsymbolic -lbfd -rdynamic -lunwind -ldw -ldl -fno-omit-frame-pointer -fno-optimize-sibling-calls -rdynamic -finstrument-functions  -O0 -fPIC")
         add_compile_definitions(SD_GCC_FUNCTRACE)
     endif()
 endif()
@@ -510,6 +1025,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
     # Use large memory model (required for your template scale)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+
 
     # Memory optimization during compilation
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")

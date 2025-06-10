@@ -42,17 +42,33 @@
 
     <properties>
 
-        <!-- Enhanced type configuration for debug builds -->
+        <!-- Type validation modes -->
+        <libnd4j.types.validation.mode>normal</libnd4j.types.validation.mode>
+        <libnd4j.types.strict.validation>false</libnd4j.types.strict.validation>
+        <libnd4j.types.show.impact>true</libnd4j.types.show.impact>
+
+        <!-- Debug type configuration -->
         <libnd4j.debug.types.profile>MINIMAL_INDEXING</libnd4j.debug.types.profile>
         <libnd4j.debug.types.custom></libnd4j.debug.types.custom>
         <libnd4j.debug.auto.reduce>false</libnd4j.debug.auto.reduce>
 
-        <!-- Type profiles for easy selection -->
+        <!-- Predefined type profiles for easy selection -->
+        <libnd4j.datatypes.all></libnd4j.datatypes.all>
         <libnd4j.datatypes.minimal>float32;double;int32;int64</libnd4j.datatypes.minimal>
         <libnd4j.datatypes.essential>float32;double;int32;int64;int8;int16</libnd4j.datatypes.essential>
         <libnd4j.datatypes.floats>float32;double;float16</libnd4j.datatypes.floats>
         <libnd4j.datatypes.integers>int8;int16;int32;int64;uint8;uint16;uint32;uint64</libnd4j.datatypes.integers>
+        <libnd4j.datatypes.single.precision>float32;int32;int64</libnd4j.datatypes.single.precision>
+        <libnd4j.datatypes.double.precision>double;int32;int64</libnd4j.datatypes.double.precision>
+        <libnd4j.datatypes.debug.safe>float32;double;int32;int64</libnd4j.datatypes.debug.safe>
 
+        <!-- Production type configurations -->
+        <libnd4j.datatypes.production.minimal>bool;int8;int16;int32;int64;float32;double</libnd4j.datatypes.production.minimal>
+        <libnd4j.datatypes.production.complete>bool;int8;uint8;int16;uint16;int32;uint32;int64;uint64;float16;bfloat16;float32;double</libnd4j.datatypes.production.complete>
+
+        <!-- ML/AI focused type sets -->
+        <libnd4j.datatypes.ml.training>float32;float16;bfloat16;int32;int64</libnd4j.datatypes.ml.training>
+        <libnd4j.datatypes.ml.inference>float32;float16;int8;int32;int64</libnd4j.datatypes.ml.inference>
 
 
         <libnd4j.generate.flatc>false</libnd4j.generate.flatc>

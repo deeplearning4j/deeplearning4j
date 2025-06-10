@@ -27,10 +27,23 @@ import org.nd4j.linalg.jcublas.bindings.Nd4jCuda;
  */
 public class CudaEnvironment implements Environment {
 
+    // CUDA limit type definitions
+    public static final int
+        CUDA_LIMIT_STACK_SIZE = 0,
+        CUDA_LIMIT_MALLOC_HEAP_SIZE = 1,
+        CUDA_LIMIT_PRINTF_FIFO_SIZE = 2,
+        CUDA_LIMIT_DEV_RUNTIME_SYNC_DEPTH = 3,
+        CUDA_LIMIT_DEV_RUNTIME_PENDING_LAUNCH_COUNT = 4,
+        CUDA_LIMIT_MAX_L2_FETCH_GRANULARITY = 5,
+        CUDA_LIMIT_PERSISTING_L2_CACHE_SIZE = 6;
+
     private static final CudaEnvironment INSTANCE = new CudaEnvironment(Nd4jCuda.Environment.getInstance());
     protected boolean funcTracePrintJavaOnly = false;
     protected boolean workspaceTrackOpenClose = false;
     protected int numEventsToKeep = -1;
+    
+    // Variable origin tracing flag for debugging import issues
+    protected boolean variableTracingEnabled = false;
 
     private final Nd4jCuda.Environment e;
     public static CudaEnvironment getInstance(){
@@ -330,6 +343,16 @@ public class CudaEnvironment implements Environment {
     @Override
     public void setDeleteSpecial(boolean reallyDelete) {
         e.setDeleteSpecial(reallyDelete);
+    }
+
+    @Override
+    public boolean isVariableTracingEnabled() {
+        return variableTracingEnabled;
+    }
+
+    @Override
+    public void setVariableTracingEnabled(boolean enabled) {
+        this.variableTracingEnabled = enabled;
     }
 
     // CUDA specific methods

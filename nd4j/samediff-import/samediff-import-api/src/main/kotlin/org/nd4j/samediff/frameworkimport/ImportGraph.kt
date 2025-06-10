@@ -38,7 +38,9 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity
+import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.samediff.frameworkimport.context.MappingContext
+import org.nd4j.samediff.frameworkimport.debug.VariableOriginTracer
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.ir.IRNode
 import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
@@ -54,7 +56,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import kotlin.collections.HashMap
 
 /**
- * Core import class for running model import for any framework.
+ * Core import class for running model import for any framework with integrated variable origin tracing.
  * This should be paired with an [OpMappingRegistry]
  * and a set of classes implemented in protobuf that extend [GeneratedMessageV3]
  * and [ProtocolMessageEnum] respectively.
@@ -62,8 +64,10 @@ import kotlin.collections.HashMap
  * The end result with these abstractions is direct interop with a file format's schema
  * convertable to primitives like Nd4j's [INDArray] and [SameDiff]
  *
- * @author Adam Gibson
+ * Enhanced with comprehensive variable origin tracing to debug "unknown array" issues
+ * during ONNX and other framework imports.
  *
+ * @author Adam Gibson
  */
 open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         NODE_TYPE : GeneratedMessageV3,
@@ -78,7 +82,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
     val defaultRunner =
         DefaultImportRunner<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>()
 
-
+    // Variable tracking for enhanced debugging
+    private var isTracingEnabled = false
 
     fun <GRAPH_TYPE: GeneratedMessageV3,
             NODE_TYPE: GeneratedMessageV3,
@@ -147,8 +152,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         } else name
     }
 
-
-
     inner class FuncContextResult<GRAPH_TYPE: GeneratedMessageV3, NODE_TYPE: GeneratedMessageV3, OP_DEF_TYPE: GeneratedMessageV3,
             TENSOR_TYPE: GeneratedMessageV3, ATTR_DEF_TYPE: GeneratedMessageV3, ATTR_VALUE_TYPE: GeneratedMessageV3, DATA_TYPE: ProtocolMessageEnum>
         (dfInstance: DifferentialFunction,mappingContext: MappingContext<GRAPH_TYPE,NODE_TYPE,OP_DEF_TYPE,TENSOR_TYPE,ATTR_DEF_TYPE,ATTR_VALUE_TYPE,DATA_TYPE>,
@@ -158,14 +161,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val tensorInputMappings = tensorInputMappings
     }
 
-
     fun createFuncAndContext(opName: String,
                              irGraph: IRGraph<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>,
                              opMappingRegistry: OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>,
                              sameDiff: SameDiff,
                              nodeName: String,
                              dynamicVariables: MutableMap<String, TENSOR_TYPE>): FuncContextResult<GRAPH_TYPE,NODE_TYPE,OP_DEF_TYPE,TENSOR_TYPE,ATTR_DEF_TYPE,ATTR_VALUE_TYPE,DATA_TYPE> {
-
 
         val opMappingProcess =  opMappingRegistry.lookupOpMappingProcess(opName)
         val nd4jOpName = opMappingProcess.opName()
@@ -205,9 +206,175 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         return FuncContextResult(df, mappingContext, tensorInputMappings)
     }
 
+    /**
+     * Attempts to compute a variable's array eagerly
+     */
+    private fun tryComputeVariable(sd: SameDiff, variable: SDVariable): Boolean {
+        try {
+            val arr = variable.computeArrayEagerly()
+            return arr != null
+        } catch (e: Exception) {
+            if (isTracingEnabled) {
+                VariableOriginTracer.traceVariableResolution(
+                    variable.name(), "eager_computation", variable, null
+                )
+            }
+            return false
+        }
+    }
+
+    /**
+     * Ensures that the array for the specified variable is available, creating or computing it if necessary
+     */
+    private fun guaranteeArrayAvailability(irGraph: IRGraph<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE, DATA_TYPE>,
+                                           dynamicVariables: MutableMap<String, TENSOR_TYPE>,
+                                           sd: SameDiff, varName: String): Boolean {
+        val variable = sd.getVariable(varName) ?: return false
+        val varMeta = sd.variables[varName] ?: return false
+
+        // Already has array
+        if (varMeta.isArrayReady()) {
+            if (isTracingEnabled) {
+                VariableOriginTracer.traceVariableResolution(
+                    varName, "guarantee_availability", variable, variable.arr,
+                )
+            }
+            return true
+        }
+
+        when (variable.variableType) {
+            VariableType.CONSTANT -> {
+                if (irGraph.hasConstantInitializer(varName)) {
+                    val arr = irGraph.getConstantArrayForName(varName)
+                    sd.associateArrayWithVariable(arr, variable)
+                    if (isTracingEnabled) {
+                        VariableOriginTracer.traceVariableResolution(
+                            varName, "constant_initializer", variable, arr
+                        )
+                    }
+                    return true
+                } else if (isTracingEnabled) {
+                    VariableOriginTracer.traceMissingArray(
+                        varName, "constant_initializer",
+                        "CONSTANT variable missing initializer in graph"
+                    )
+                }
+            }
+            VariableType.PLACEHOLDER -> {
+                // Check if we have dynamic variable data
+                if (dynamicVariables.containsKey(varName)) {
+                    val arr = irGraph.convertToNDArray(dynamicVariables[varName]!!)
+                    sd.associateArrayWithVariable(arr, variable)
+                    if (isTracingEnabled) {
+                        VariableOriginTracer.traceVariableResolution(
+                            varName, "dynamic_variable", variable, arr
+                        )
+                    }
+                    return true
+                } else if (isTracingEnabled) {
+                    VariableOriginTracer.traceVariableResolution(
+                        varName, "placeholder_resolution", variable, null
+                    )
+                }
+            }
+            VariableType.ARRAY -> {
+                // Try to compute if all inputs ready
+                if (varMeta.canComputeArray() && sd.isEagerMode) {
+                    val computed = tryComputeVariable(sd, variable)
+                    if (!computed && isTracingEnabled) {
+                        VariableOriginTracer.traceMissingArray(
+                            varName, "array_computation",
+                            "ARRAY variable computation failed - likely missing dependencies"
+                        )
+                    }
+                    return computed
+                } else if (isTracingEnabled) {
+                    VariableOriginTracer.traceMissingArray(
+                        varName, "array_computation",
+                        "ARRAY variable cannot compute - dependencies not ready or not in eager mode"
+                    )
+                }
+            }
+            VariableType.VARIABLE -> {
+                // Should have been initialized during creation
+                if (isTracingEnabled) {
+                    VariableOriginTracer.traceMissingArray(
+                        varName, "variable_initialization",
+                        "VARIABLE type should have been initialized during creation"
+                    )
+                }
+                return false
+            }
+            VariableType.SEQUENCE -> {
+                // Handle sequence types if needed
+                val hasSequence = sd.sequences.containsKey(varName)
+                if (isTracingEnabled && !hasSequence) {
+                    VariableOriginTracer.traceMissingArray(
+                        varName, "sequence_lookup",
+                        "SEQUENCE variable not found in sequences map"
+                    )
+                }
+                return hasSequence
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * Trace variable resolution attempts for operation inputs
+     */
+    private fun traceVariableInputResolution(sd: SameDiff, opName: String, inputNames: List<String>) {
+        if (!isTracingEnabled) return
+
+        inputNames.forEach { inName ->
+            val variable = sd.getVariable(inName)
+            val array = variable?.arr
+
+            when {
+                variable == null -> {
+                    VariableOriginTracer.traceMissingArray(
+                        inName, opName,
+                        "Input variable not found in SameDiff graph"
+                    )
+                }
+                array == null && variable.isPlaceHolder -> {
+                    VariableOriginTracer.traceVariableResolution(
+                        inName, opName, variable, null
+                    )
+                }
+                array == null -> {
+                    VariableOriginTracer.traceMissingArray(
+                        inName, opName,
+                        "Input variable exists but has no array data"
+                    )
+                }
+                else -> {
+                    VariableOriginTracer.traceVariableResolution(
+                        inName, opName, variable, array
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Trace dependency chain issues when operations can't be processed
+     */
+    private fun traceDependencyIssues(currentOp: String, nextOp: String, missingInputs: List<String>) {
+        if (!isTracingEnabled) return
+
+        missingInputs.forEach { missingInput ->
+            VariableOriginTracer.traceMissingArray(
+                missingInput, nextOp,
+                "Operation $nextOp blocked waiting for $missingInput (triggered by processing $currentOp)"
+            )
+        }
+    }
 
     /**
      * Import a Graph based on a {@link IRGraph} model from a GraphDef, with optional import overrides
+     * Enhanced with comprehensive variable origin tracing for debugging import issues.
      *
      * @param irGraph       IRGraph reflecting the needed model import
      * @param importOverride Optional import override for specific ops, keyed by op name
@@ -223,9 +390,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE, DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>,
         trackVariableChanges: Boolean
     ): SameDiff {
+        SameDiff.setGraphBuildingMode(true)
 
-
-
+        // Initialize variable origin tracing
+        isTracingEnabled = Nd4j.getEnvironment().isVariableTracingEnabled
+        if (isTracingEnabled) {
+            VariableOriginTracer.clear()
+            logger.info("Variable origin tracing enabled for ${irGraph.frameworkName()} import")
+        }
 
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
@@ -251,7 +423,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             if (controlflowOps.contains(it.second.name) || it.first.irNode().isControlflowOp()) {
                 containsControlflow = true
                 break
-
             }
         }
         //First, add any constants, placeholders, and zero-input ops
@@ -268,10 +439,15 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     sd.`var`(name,converted)
                 sd.setEagerArrForVarName(name,converted)
                 convertedDynamic[name] = converted
+
+                // Trace dynamic variable creation
+                if (isTracingEnabled) {
+                    VariableOriginTracer.traceVariableResolution(
+                        name, "dynamic_variable_setup", sd.getVariable(name), converted
+                    )
+                }
             }
         }
-
-
 
         /**
          * Now the nodes in the graph may change after running an import process.
@@ -280,6 +456,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         val originalNodeList = irGraph.nodeList()
         val nodeNameToFuncContext = HashMap<String,FuncContextResult<GRAPH_TYPE,NODE_TYPE,OP_DEF_TYPE,TENSOR_TYPE,ATTR_DEF_TYPE,ATTR_VALUE_TYPE,DATA_TYPE>>()
         originalNodeList.forEach { node ->
+            logger.debug("Importing: " + node.internalValueString())
+
             if(!irGraph.isConstant(node.opName()) && !irGraph.nodeIsPlaceHolder(node.nodeName())) {
                 val funcAndContext = createFuncAndContext(node.opName(),
                     irGraph,opMappingRegistry,
@@ -296,7 +474,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             val nd = irGraph.nodeList()[i]
             val name = nd.nodeName()
             if(name.isEmpty()) {
-                println("Skipping node $i due to empty name.")
+                logger.debug("Skipping node $i due to empty name.")
                 continue
             }
             val op = nd.opName()
@@ -309,7 +487,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 logger.debug {"Added $name" }
             } else {
                 remainingNodes[name] = nd
-
 
                 for (inputIdx in 0 until numInputs) {
                     var inOpName = stripVarSuffix(stripControl(nd.inputAt(inputIdx)))
@@ -344,11 +521,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             }
         }
 
-
         val mergeOpsPostProcess: MutableMap<String, String> = HashMap()
         //Go through ops in order, and add to the graph
         val constControlDeps: MutableMap<String, List<String>> = HashMap() //Key: constant name. Value: control dependencies
-
 
         while (!availableToAdd.isEmpty()) {
             val nd = availableToAdd.remove()
@@ -381,11 +556,8 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
             var df = funcContextResult?.dfInstance ?: Identity()
 
-
             val mappingContext = funcContextResult?.mappingContext
             val nd4jOpName = df.opName()
-
-
 
             logger.debug {"Adding operation to graph: $opName (name=$name)"}
             opsAdded.add("$opName,$name")
@@ -394,7 +566,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             nd.attributeMap().forEach { (name, def) ->
                 rawAttrMap[name] = def.internalAttributeValue()
             }
-
 
             if (opFilter != null && opFilter.skipOp(
                     nd.internalValue(),
@@ -415,6 +586,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 sd.placeHolder(name, dt, *shape)
                             else
                                 sd.placeHolder(name, dt)
+
+                            // Trace placeholder creation
+                            if (isTracingEnabled) {
+                                VariableOriginTracer.traceVariableResolution(
+                                    name, "placeholder_creation", sd.getVariable(name), null
+                                )
+                            }
                         } else {
                             val sdVar = sd.getVariable(nd.nodeName())
                             sdVar.variableType = VariableType.PLACEHOLDER
@@ -428,11 +606,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 dynamicVariables[nd.nodeName()] = irGraph.convertToTensor(castedArr,nd.nodeName())
                                 sd.setEagerArrForVarName(nd.nodeName(),castedArr)
 
+                                // Trace placeholder data assignment
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceVariableResolution(
+                                        nd.nodeName(), "placeholder_data_assignment", sdVar, castedArr
+                                    )
+                                }
                             }
-
-
                         }
-
                     }
                     else if (irGraph.isConstant(opName)) {
                         if(!sd.hasVariable(nd.nodeName())) {
@@ -445,6 +626,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             else //onnx case
                                 sd.constant(nd.outputAt(0),arr)
                             logger.debug {"Added constant for node name ${nd.nodeName()} with shape ${arr.shapeInfoToString()}" }
+
+                            // Trace constant creation
+                            if (isTracingEnabled) {
+                                VariableOriginTracer.traceVariableResolution(
+                                    name, "constant_creation", sd.getVariable(name), arr
+                                )
+                            }
+
                             val inputCount = nd.numInputs()
                             if (inputCount > 0) {
                                 //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
@@ -465,8 +654,14 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 val arr = irGraph.getConstantArrayForName(name)
                                 varToGet.setArray(arr)
                                 varToGet.setShape(*arr.shape())
-                            }
 
+                                // Trace constant update
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceVariableResolution(
+                                        nd.nodeName(), "constant_update", varToGet, arr
+                                    )
+                                }
+                            }
                         }
                     }  else if(irGraph.isVariable(nd.nodeName()) && !sd.hasVariable(nd.nodeName())) {
                         var shape = irGraph.shapeOfInput(nd.nodeName())
@@ -475,6 +670,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             sd.`var`(name, dt, *shape)
                         else
                             sd.`var`(name, dt,-1)
+
+                        // Trace variable creation
+                        if (isTracingEnabled) {
+                            VariableOriginTracer.traceVariableResolution(
+                                name, "variable_creation", sd.getVariable(name), null
+                            )
+                        }
                     }
                     else if(nodeNameToFuncContext.containsKey(nd.nodeName())) {
 
@@ -507,6 +709,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             if(!sd.hasVariable(inName) && irGraph.frameworkName().contains("tensorflow") &&  inName.contains(':')) {
                                 val knownBaseName = stripVarSuffix(inName)
                                 if(!sd.hasVariable(knownBaseName)) {
+                                    if (isTracingEnabled) {
+                                        VariableOriginTracer.traceMissingArray(
+                                            knownBaseName, name,
+                                            "Base variable not found for tensorflow-style tensor reference $inName"
+                                        )
+                                    }
                                     throw IllegalArgumentException("No variable name found for $knownBaseName")
                                 }
                                 else {
@@ -521,6 +729,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                         )
                                     )
 
+                                    // Trace tensor reference creation
+                                    if (isTracingEnabled) {
+                                        VariableOriginTracer.traceVariableResolution(
+                                            inName, name, sd.getVariable(inName), null
+                                        )
+                                    }
                                 }
                             }
 
@@ -545,10 +759,30 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                         dataType
                                     )
                                 )
+
+                                // Trace auto-declared variable
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceVariableResolution(
+                                        inName, name, sd.getVariable(inName), null
+                                    )
+                                }
                             } else if(!isControlDep && !sd.hasVariable(inName) && irGraph.hasConstantInitializer(inName)) {
                                 val const = irGraph.getConstantArrayForName(inName)
                                 sd.constant(inName,const)
+
+                                // Trace constant pull from graph
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceVariableResolution(
+                                        inName, name, sd.getVariable(inName), const
+                                    )
+                                }
                             } else if(!isControlDep && !sd.hasVariable(inName)) {
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceMissingArray(
+                                        inName, name,
+                                        "Input variable at index $i not found and cannot be auto-created"
+                                    )
+                                }
                                 throw IllegalStateException("Input variable at index $i named $inName of node $name was not assigned to any variable")
                             }
 
@@ -557,6 +791,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 //Edge case for import - we allow merge ops to be added before both inputs are available
                                 //This is to break the cycles in loops, otherwise we can't process anything in order
                                 mergeOpsPostProcess[df.getOwnName()] = inName
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceMissingArray(
+                                        inName, name,
+                                        "Merge operation input deferred - will be processed later to break loop cycles"
+                                    )
+                                }
                                 continue
                             }
 
@@ -570,9 +810,10 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                     v.controlDepsForOp.add(name)
                                 }
                             }
-
-
                         }
+
+                        // Trace input resolution for this operation
+                        traceVariableInputResolution(sd, name, inNames)
 
                         //ensure every function has an op name set (mainly for debugging)
                         if(df is DynamicCustomOp) {
@@ -580,7 +821,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             opField.isAccessible = true
                             ReflectionUtils.setField(opField,df,nd4jOpName)
                         }
-
 
                         //Create SameDiffOp instance and add to graph
                         val op = SameDiffOp.builder()
@@ -657,7 +897,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         } else
                             op.inputsToOp = inNames
 
-
                         //cache attributes just in case we have any rules so we don't create the rules more than once
                         val attributes = mappingContext!!.nodeAttributesAsMap()
                         var proceedWithInit = true
@@ -681,7 +920,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                         if(proceedWithInit)
                             defaultRunner.initAttributes(df, sd, importInfo[name]!!)
-
 
                         //add nodes/other post processing in order for this node to work
                         mappingContext.relevantPosthookRules().forEach { rule ->
@@ -716,7 +954,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             //note we validate the op definition here to ensure that all ops have at least 1 output unless otherwise specified.
                             val outputDataTypes = df.calculateOutputDataTypes(newInDtypes)
                             val numOutputs = outputDataTypes.size
-                            if(numInputs < 1 &&  nd4jOpName != "noop") {
+                            if(numOutputs < 1 &&  nd4jOpName != "noop") {
                                 throw IllegalStateException("Op $nd4jOpName does not have any outputs!")
                             }
 
@@ -753,6 +991,13 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 }
                                 logger.debug {"Added variable to graph: $varName (output of op $name)" }
                                 variablesAdded.add("$varName,$name")
+
+                                // Trace output variable creation
+                                if (isTracingEnabled) {
+                                    VariableOriginTracer.traceVariableResolution(
+                                        varName, name, outSDVars[i], null
+                                    )
+                                }
                             }
 
                             sd.ops[name]!!.outputsOfOp = outNames
@@ -771,17 +1016,19 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             }
                             logger.debug {"Imported op: $opName (name=$name)" }
                             opsImported.add("$opName,$name")
-
                         }
-
-
                     }
                     else {
                         logger.debug {"Node ${nd.nodeName()} not found in import context, skipping!" }
+                        if (isTracingEnabled) {
+                            VariableOriginTracer.traceMissingArray(
+                                nd.nodeName(), "import_context",
+                                "Node not found in import context - operation skipped"
+                            )
+                        }
                     }
                 } else {
-
-
+                    // Import override case - existing logic preserved
                     val dfInstance = if( DifferentialFunctionClassHolder.getInstance()
                             .hasName(opName)) DifferentialFunctionClassHolder.getInstance(opName)
                     else DynamicCustomOp.builder(opName).build()
@@ -801,8 +1048,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     df.sameDiff = sd
                     df.ownName = name
 
-
-
                     //Import override case
                     val o = importOverride[name]
                     logger.debug {"Importing op $opName using override $importOverride" }
@@ -814,7 +1059,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     val opDescriptor = opMappingRegistry.lookupNd4jOpDef(nd4jOpName)
                     val opInputs = opDescriptor.argDescriptorList.filter { argDescriptor -> argDescriptor.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR }
                     val numInputs = opInputs.size
-
 
                     for (i in 0 until numInputs) {
                         val inName = nodeInputTo[nd.nodeName()]!![i]!!
@@ -831,7 +1075,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     }
                 }
             }
-
 
             //Now that we have just added an op (or variable) - check what this feeds into, and see what we can now process
             // as a result
@@ -853,6 +1096,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     val nInNext = nextOpDef.numInputs()
                     var allAlreadyInGraph = true
                     var nonControlSeenCount = 0
+                    val missingInputs = mutableListOf<String>()
 
                     for (i in 0 until nInNext) {
                         val s = nextOpDef.inputAt(i)
@@ -867,7 +1111,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         //op to be added, otherwise no further import can happen
                         if (!sd.hasVariable(inName) && !skipCase && !irGraph.hasConstantInitializer(inName) && !irGraph.hasConstantInitializer(inName)) {
                             allAlreadyInGraph = false
-                            break
+                            missingInputs.add(inName)
                         } else if (!isControlDep(s)) {
                             nonControlSeenCount++
                         }
@@ -886,6 +1130,9 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                             availableToAddSet.add(nextOp)
                             logger.debug {"Added to processing queue: ${nextOpDef.opName()} (name=$nextOp)" }
                         }
+                    } else {
+                        // Trace dependency issues
+                        traceDependencyIssues(name, nextOp, missingInputs)
                     }
                 }
             }
@@ -915,15 +1162,12 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                 if ( v!!.inputsForOp == null) v.inputsForOp = ArrayList()
                 v.inputsForOp.add(key)
             }
-
         }
-
 
         logger.debug {"Variables added $variablesAdded"}
         logger.debug {"Ops imported $opsImported"}
         logger.debug {"Ops added $opsAdded"}
         logger.debug {"Ops removed $opsRemoved"}
-
 
         Preconditions.checkState(
             remainingNodes.isEmpty(),
@@ -943,8 +1187,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
             list.add(op)
         }
 
-        println(sd.summary())
+        // Generate final tracing report
+        if (isTracingEnabled) {
+            val report = VariableOriginTracer.generateReport()
+            if (report.contains("dependency_missing") || report.contains("missing")) {
+                logger.warn("Import completed with variable resolution issues:\n$report")
+            } else {
+                logger.info("Import completed successfully. Variable tracing report:\n$report")
+            }
+        }
 
+        logger.debug(sd.summary())
+        SameDiff.setGraphBuildingMode(false)
 
         return sd
     }
@@ -982,4 +1236,3 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
         sd.ops.remove(secondOp.name)
     }
 }
-
