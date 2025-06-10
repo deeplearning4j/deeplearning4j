@@ -214,19 +214,21 @@ struct alignas(2) float16 {
   };
 
  public:
-  constexpr float16(const float16&) = default;
+  float16(const float16&) = default;
 
   ihalf data;
 
-  // Make default constructor constexpr
-  SD_INLINE SD_HOST_DEVICE constexpr float16() : data{} {
-    // Note: Cannot modify data in constexpr context, so we rely on ihalf's default initialization
+  // Default constructor - not constexpr due to ihalf limitations
+  SD_INLINE SD_HOST_DEVICE float16() : data{} {
+    // Initialize to zero
+#ifndef __CUDACC__
+    *data.getXP() = 0;
+#endif
   }
 
-  // Constexpr constructor from raw bits
-  SD_INLINE SD_HOST_DEVICE constexpr explicit float16(unsigned short raw_bits) : data{} {
-    // Note: This is a workaround since we can't directly set data.x in constexpr context
-    // The actual assignment will happen in non-constexpr context
+  // Constructor from raw bits - not constexpr due to ihalf limitations
+  SD_INLINE SD_HOST_DEVICE explicit float16(unsigned short raw_bits) : data{} {
+    *data.getXP() = raw_bits;
   }
 
   template <typename T,
@@ -586,27 +588,29 @@ struct alignas(2) float16 {
     return result;
   }
 
-  // Static utility methods for constexpr compatibility
-  SD_INLINE SD_HOST_DEVICE static constexpr float16 min() {
+  // Static utility methods - removed constexpr due to underlying type limitations
+  SD_INLINE SD_HOST_DEVICE static float16 min() {
     float16 result;
-    // Note: Can't directly set in constexpr context due to ihalf complexity
-    return result; // Will need runtime initialization
+    *result.data.getXP() = 0x0400; // Smallest positive normal
+    return result;
   }
 
-  SD_INLINE SD_HOST_DEVICE static constexpr float16 max() {
+  SD_INLINE SD_HOST_DEVICE static float16 max() {
     float16 result;
-    // Note: Can't directly set in constexpr context due to ihalf complexity
-    return result; // Will need runtime initialization
+    *result.data.getXP() = 0x7BFF; // Largest positive finite
+    return result;
   }
 
-  SD_INLINE SD_HOST_DEVICE static constexpr float16 infinity() {
+  SD_INLINE SD_HOST_DEVICE static float16 infinity() {
     float16 result;
-    return result; // Will need runtime initialization
+    *result.data.getXP() = 0x7C00; // Positive infinity
+    return result;
   }
 
-  SD_INLINE SD_HOST_DEVICE static constexpr float16 quiet_NaN() {
+  SD_INLINE SD_HOST_DEVICE static float16 quiet_NaN() {
     float16 result;
-    return result; // Will need runtime initialization
+    *result.data.getXP() = 0x7E00; // Quiet NaN
+    return result;
   }
 
   // Helper methods
@@ -656,34 +660,59 @@ struct numeric_limits<float16> {
   static constexpr int max_exponent = 16;
   static constexpr int max_exponent10 = 4;
 
-  // Note: These methods cannot be fully constexpr due to ihalf complexity
-  // They will return default-constructed values that need runtime initialization
-  static constexpr float16 min() noexcept {
-    return float16{};  // Runtime: 0x0400 (smallest positive normal)
+  // Non-constexpr methods that properly initialize the values at runtime
+  static float16 min() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x0400; // Smallest positive normal
+    return result;
   }
-  static constexpr float16 lowest() noexcept {
-    return float16{};  // Runtime: 0xFBFF (largest negative finite)
+
+  static float16 lowest() noexcept {
+    float16 result;
+    *result.data.getXP() = 0xFBFF; // Largest negative finite
+    return result;
   }
-  static constexpr float16 max() noexcept {
-    return float16{};  // Runtime: 0x7BFF (largest positive finite)
+
+  static float16 max() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x7BFF; // Largest positive finite
+    return result;
   }
-  static constexpr float16 epsilon() noexcept {
-    return float16{};  // Runtime: 0x1400 (machine epsilon)
+
+  static float16 epsilon() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x1400; // Machine epsilon
+    return result;
   }
-  static constexpr float16 round_error() noexcept {
-    return float16{};  // Runtime: 0x3800 (0.5)
+
+  static float16 round_error() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x3800; // 0.5
+    return result;
   }
-  static constexpr float16 infinity() noexcept {
-    return float16{};  // Runtime: 0x7C00 (positive infinity)
+
+  static float16 infinity() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x7C00; // Positive infinity
+    return result;
   }
-  static constexpr float16 quiet_NaN() noexcept {
-    return float16{};  // Runtime: 0x7E00 (quiet NaN)
+
+  static float16 quiet_NaN() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x7E00; // Quiet NaN
+    return result;
   }
-  static constexpr float16 signaling_NaN() noexcept {
-    return float16{};  // Runtime: 0x7D00 (signaling NaN)
+
+  static float16 signaling_NaN() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x7D00; // Signaling NaN
+    return result;
   }
-  static constexpr float16 denorm_min() noexcept {
-    return float16{};  // Runtime: 0x0001 (smallest positive subnormal)
+
+  static float16 denorm_min() noexcept {
+    float16 result;
+    *result.data.getXP() = 0x0001; // Smallest positive subnormal
+    return result;
   }
 };
 
