@@ -1395,6 +1395,7 @@ if(NOT SD_CUDA)
 endif()
 
 # ARM Compute configuration - FIXED: Only configure when explicitly enabled
+# ARM Compute configuration - FIXED: Better error handling and download robustness
 set(ARMCOMPUTE_LIBRARIES "")
 set(HAVE_ARMCOMPUTE 0)
 if(HELPERS_armcompute)
@@ -1415,6 +1416,11 @@ if(HELPERS_armcompute)
         set(ARMCOMPUTE_URL "https://github.com/ARM-software/ComputeLibrary/releases/download/${ARMCOMPUTE_VERSION}/${ARMCOMPUTE_PKG_NAME}.tar.gz")
         set(ARMCOMPUTE_LIB_SUBDIR "lib/armv8a-neon")
 
+        # Create directories upfront to avoid permission issues
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/armcompute_external/src")
+        file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/downloads")
+        file(MAKE_DIRECTORY "${ARMCOMPUTE_INSTALL_DIR}")
+
         ExternalProject_Add(armcompute_external
                 PREFIX            "${CMAKE_BINARY_DIR}/armcompute_external"
                 URL               "${ARMCOMPUTE_URL}"
@@ -1422,13 +1428,29 @@ if(HELPERS_armcompute)
                 SOURCE_DIR        "${ARMCOMPUTE_SOURCE_DIR}"
                 CONFIGURE_COMMAND ""
                 BUILD_COMMAND     ""
-                INSTALL_COMMAND   ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" &&
+                # FIXED: More robust install command with better error handling
+                INSTALL_COMMAND
+                ${CMAKE_COMMAND} -E echo "Starting ARM Compute installation..." &&
+                ${CMAKE_COMMAND} -E remove_directory "${ARMCOMPUTE_INSTALL_DIR}" &&
+                ${CMAKE_COMMAND} -E make_directory "${ARMCOMPUTE_INSTALL_DIR}" &&
+                ${CMAKE_COMMAND} -E make_directory "${ARMCOMPUTE_INSTALL_DIR}/include" &&
+                ${CMAKE_COMMAND} -E make_directory "${ARMCOMPUTE_INSTALL_DIR}/lib" &&
                 ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/include" "${ARMCOMPUTE_INSTALL_DIR}/include" &&
-                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib"
-                BUILD_BYPRODUCTS  "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
+                ${CMAKE_COMMAND} -E copy_directory "${ARMCOMPUTE_SOURCE_DIR}/${ARMCOMPUTE_PKG_NAME}/${ARMCOMPUTE_LIB_SUBDIR}" "${ARMCOMPUTE_INSTALL_DIR}/lib" &&
+                ${CMAKE_COMMAND} -E echo "ARM Compute installation completed successfully"
+                BUILD_BYPRODUCTS
+                "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h"
                 "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so"
                 "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute_graph.so"
                 BUILD_IN_SOURCE   1
+                # FIXED: Add timeout and retry options
+                TIMEOUT           300
+                DOWNLOAD_NO_PROGRESS 1
+                # FIXED: Use UPDATE_DISCONNECTED to avoid timestamp issues
+                UPDATE_DISCONNECTED 1
+                # FIXED: Add LOG options for better debugging
+                LOG_DOWNLOAD      ON
+                LOG_INSTALL       ON
         )
 
         add_library(armcompute_interface INTERFACE)
@@ -1441,6 +1463,17 @@ if(HELPERS_armcompute)
         set(ARMCOMPUTE_INCLUDE_DIRS "${ARMCOMPUTE_INSTALL_DIR}/include")
         set(ARMCOMPUTE_LIBRARIES armcompute_interface)
         set(HAVE_ARMCOMPUTE 1)
+
+        # FIXED: Add verification step
+        add_custom_command(TARGET armcompute_external POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E echo "Verifying ARM Compute installation..."
+                COMMAND test -f "${ARMCOMPUTE_INSTALL_DIR}/include/arm_compute/core/CL/CLKernelLibrary.h" ||
+        (echo "ERROR: ARM Compute headers not found!" && exit 1)
+                COMMAND test -f "${ARMCOMPUTE_INSTALL_DIR}/lib/libarm_compute.so" ||
+        (echo "ERROR: ARM Compute library not found!" && exit 1)
+                COMMAND ${CMAKE_COMMAND} -E echo "ARM Compute verification completed successfully"
+                COMMENT "Verifying ARM Compute Library installation"
+        )
 
     else()
         message(STATUS "Skipping ARM Compute setup via ExternalProject_Add (disabled or not AArch64)")
