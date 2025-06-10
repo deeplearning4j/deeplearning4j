@@ -230,7 +230,7 @@ struct alignas(2) float16 {
   }
 
   template <typename T,
-      typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
+            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
   SD_INLINE SD_HOST_DEVICE explicit float16(const T& rhs) : data{} {
     *this = rhs;
   }
@@ -338,7 +338,7 @@ struct alignas(2) float16 {
   }
 
   template <typename T,
-      typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
+            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
   SD_INLINE SD_HOST_DEVICE float16& operator=(const T& rhs) {
     *this = static_cast<float>(rhs);
     return *this;
@@ -685,14 +685,14 @@ struct numeric_limits<float16> {
   static constexpr float16 denorm_min() noexcept {
     return float16{};  // Runtime: 0x0001 (smallest positive subnormal)
   }
+};
+
+} // namespace std
 
 #ifdef __CUDACC__
-  SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
+SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
 
-  SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
-};
-
+SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
 #endif
-};
-}
+
 #endif
