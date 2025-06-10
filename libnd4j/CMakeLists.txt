@@ -1016,16 +1016,31 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
         message(STATUS "✓ Using mold linker (handles large PLT tables)")
     else()
-        # Use GNU LD with PLT-specific optimizations (more reliable than Gold for this)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
-        message(STATUS "✓ Using GNU LD with PLT overflow prevention")
+        # Test if linker supports --plt-align before using it
+        execute_process(
+                COMMAND ${CMAKE_LINKER} --help
+                OUTPUT_VARIABLE LD_HELP_OUTPUT
+                ERROR_QUIET
+        )
+
+        string(FIND "${LD_HELP_OUTPUT}" "--plt-align" PLT_ALIGN_SUPPORTED)
+
+        if(PLT_ALIGN_SUPPORTED GREATER -1)
+            # Use GNU LD with PLT-specific optimizations if supported
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--plt-align=32 -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+            message(STATUS "✓ Using GNU LD with PLT overflow prevention")
+        else()
+            # Fall back to basic optimizations for older linkers
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-style=both -Wl,-z,max-page-size=0x200000")
+            message(STATUS "✓ Using GNU LD with basic optimizations (--plt-align not supported)")
+        endif()
     endif()
 
     # Use large memory model (required for your template scale)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
-
 
     # Memory optimization during compilation
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
@@ -1037,7 +1052,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
 
     message(STATUS "Applied PLT overflow prevention for large template library")
 endif()
-
 
 
 # Ensure SD_CPU is TRUE if neither SD_CUDA nor SD_CPU is set
