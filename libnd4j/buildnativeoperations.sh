@@ -24,47 +24,79 @@ set -eu
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+
+# Check bash version and set compatibility mode
+BASH_MAJOR_VERSION=${BASH_VERSION%%.*}
+USE_ASSOCIATIVE_ARRAYS=false
+
+if [[ $BASH_MAJOR_VERSION -ge 4 ]]; then
+    USE_ASSOCIATIVE_ARRAYS=true
+    echo "✅ Using bash $BASH_VERSION with associative array support"
+else
+    echo "⚠️  Using bash $BASH_VERSION - falling back to compatibility mode"
+fi
+
+
 # =============================================================================
 # TYPE VALIDATION SYSTEM
 # =============================================================================
 
-# All supported data types in libnd4j
-declare -A ALL_SUPPORTED_TYPES=(
-    ["bool"]="Boolean type"
-    ["int8"]="8-bit signed integer"
-    ["uint8"]="8-bit unsigned integer"
-    ["int16"]="16-bit signed integer"
-    ["uint16"]="16-bit unsigned integer"
-    ["int32"]="32-bit signed integer"
-    ["uint32"]="32-bit unsigned integer"
-    ["int64"]="64-bit signed integer"
-    ["uint64"]="64-bit unsigned integer"
-    ["float16"]="16-bit floating point (half precision)"
-    ["bfloat16"]="16-bit brain floating point"
-    ["float32"]="32-bit floating point (single precision)"
-    ["double"]="64-bit floating point (double precision)"
-    ["float"]="Alias for float32"
-    ["half"]="Alias for float16"
-    ["long"]="Alias for int64"
-    ["unsignedlong"]="Alias for uint64"
-    ["int"]="Alias for int32"
-    ["bfloat"]="Alias for bfloat16"
-    ["float64"]="Alias for double"
-    ["utf8"]="UTF-8 string type"
-    ["utf16"]="UTF-16 string type"
-    ["utf32"]="UTF-32 string type"
-)
+# Initialize type data structures based on bash version
+if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+    # Modern bash with associative arrays
+    declare -A ALL_SUPPORTED_TYPES=(
+        ["bool"]="Boolean type"
+        ["int8"]="8-bit signed integer"
+        ["uint8"]="8-bit unsigned integer"
+        ["int16"]="16-bit signed integer"
+        ["uint16"]="16-bit unsigned integer"
+        ["int32"]="32-bit signed integer"
+        ["uint32"]="32-bit unsigned integer"
+        ["int64"]="64-bit signed integer"
+        ["uint64"]="64-bit unsigned integer"
+        ["float16"]="16-bit floating point (half precision)"
+        ["bfloat16"]="16-bit brain floating point"
+        ["float32"]="32-bit floating point (single precision)"
+        ["double"]="64-bit floating point (double precision)"
+        ["float"]="Alias for float32"
+        ["half"]="Alias for float16"
+        ["long"]="Alias for int64"
+        ["unsignedlong"]="Alias for uint64"
+        ["int"]="Alias for int32"
+        ["bfloat"]="Alias for bfloat16"
+        ["float64"]="Alias for double"
+        ["utf8"]="UTF-8 string type"
+        ["utf16"]="UTF-16 string type"
+        ["utf32"]="UTF-32 string type"
+    )
 
-# Type alias mappings for normalization
-declare -A TYPE_ALIASES=(
-    ["float"]="float32"
-    ["half"]="float16"
-    ["long"]="int64"
-    ["unsignedlong"]="uint64"
-    ["int"]="int32"
-    ["bfloat"]="bfloat16"
-    ["float64"]="double"
-)
+    declare -A TYPE_ALIASES=(
+        ["float"]="float32"
+        ["half"]="float16"
+        ["long"]="int64"
+        ["unsignedlong"]="uint64"
+        ["int"]="int32"
+        ["bfloat"]="bfloat16"
+        ["float64"]="double"
+    )
+
+    declare -A DEBUG_TYPE_PROFILES=(
+        ["MINIMAL_INDEXING"]="float32;double;int32;int64"
+        ["ESSENTIAL"]="float32;double;int32;int64;int8;int16"
+        ["FLOATS_ONLY"]="float32;double;float16"
+        ["INTEGERS_ONLY"]="int8;int16;int32;int64;uint8;uint16;uint32;uint64"
+        ["SINGLE_PRECISION"]="float32;int32;int64"
+        ["DOUBLE_PRECISION"]="double;int32;int64"
+    )
+else
+    # Fallback for older bash - use delimited strings
+    # Format: "key:value|key:value|..."
+    ALL_SUPPORTED_TYPES_STR="bool:Boolean type|int8:8-bit signed integer|uint8:8-bit unsigned integer|int16:16-bit signed integer|uint16:16-bit unsigned integer|int32:32-bit signed integer|uint32:32-bit unsigned integer|int64:64-bit signed integer|uint64:64-bit unsigned integer|float16:16-bit floating point (half precision)|bfloat16:16-bit brain floating point|float32:32-bit floating point (single precision)|double:64-bit floating point (double precision)|float:Alias for float32|half:Alias for float16|long:Alias for int64|unsignedlong:Alias for uint64|int:Alias for int32|bfloat:Alias for bfloat16|float64:Alias for double|utf8:UTF-8 string type|utf16:UTF-16 string type|utf32:UTF-32 string type"
+
+    TYPE_ALIASES_STR="float:float32|half:float16|long:int64|unsignedlong:uint64|int:int32|bfloat:bfloat16|float64:double"
+
+    DEBUG_TYPE_PROFILES_STR="MINIMAL_INDEXING:float32;double;int32;int64|ESSENTIAL:float32;double;int32;int64;int8;int16|FLOATS_ONLY:float32;double;float16|INTEGERS_ONLY:int8;int16;int32;int64;uint8;uint16;uint32;uint64|SINGLE_PRECISION:float32;int32;int64|DOUBLE_PRECISION:double;int32;int64"
+fi
 
 # Bare minimum types required for basic functionality
 MINIMUM_REQUIRED_TYPES=("int32" "int64" "float32")
@@ -72,15 +104,36 @@ MINIMUM_REQUIRED_TYPES=("int32" "int64" "float32")
 # Essential types for most operations (recommended minimum)
 ESSENTIAL_TYPES=("int32" "int64" "float32" "double")
 
-# Debug type profiles for reduced compilation time
-declare -A DEBUG_TYPE_PROFILES=(
-    ["MINIMAL_INDEXING"]="float32;double;int32;int64"
-    ["ESSENTIAL"]="float32;double;int32;int64;int8;int16"
-    ["FLOATS_ONLY"]="float32;double;float16"
-    ["INTEGERS_ONLY"]="int8;int16;int32;int64;uint8;uint16;uint32;uint64"
-    ["SINGLE_PRECISION"]="float32;int32;int64"
-    ["DOUBLE_PRECISION"]="double;int32;int64"
-)
+# =============================================================================
+# COMPATIBILITY HELPER FUNCTIONS
+# =============================================================================
+
+# Function to lookup value in delimited string (fallback for associative arrays)
+lookup_in_string() {
+    local key="$1"
+    local data_string="$2"
+    local default_value="${3:-}"
+
+    # Extract value using parameter expansion and grep
+    local result
+    result=$(echo "$data_string" | grep -o "${key}:[^|]*" | cut -d: -f2- || echo "$default_value")
+    echo "$result"
+}
+
+# Function to check if key exists in delimited string
+key_exists_in_string() {
+    local key="$1"
+    local data_string="$2"
+
+    echo "$data_string" | grep -q "${key}:" && return 0 || return 1
+}
+
+# Function to get all keys from delimited string
+get_keys_from_string() {
+    local data_string="$1"
+    echo "$data_string" | grep -o '[^|]*:' | sed 's/:$//'
+}
+
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -122,14 +175,23 @@ print_colored() {
     fi
 }
 
+
 # Function to normalize type names (handle aliases)
 normalize_type() {
     local type="$1"
-    if [[ -n "${TYPE_ALIASES[$type]:-}" ]]; then
-        echo "${TYPE_ALIASES[$type]}"
+    local normalized_type
+
+    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+        if [[ -n "${TYPE_ALIASES[$type]:-}" ]]; then
+            normalized_type="${TYPE_ALIASES[$type]}"
+        else
+            normalized_type="$type"
+        fi
     else
-        echo "$type"
+        normalized_type=$(lookup_in_string "$type" "$TYPE_ALIASES_STR" "$type")
     fi
+
+    echo "$normalized_type"
 }
 
 # Function to validate a single type
@@ -139,46 +201,81 @@ validate_single_type() {
 
     normalized_type=$(normalize_type "$type")
 
-    if [[ -n "${ALL_SUPPORTED_TYPES[$normalized_type]:-}" ]]; then
-        return 0  # Valid type
+    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+        [[ -n "${ALL_SUPPORTED_TYPES[$normalized_type]:-}" ]] && return 0 || return 1
     else
-        return 1  # Invalid type
+        key_exists_in_string "$normalized_type" "$ALL_SUPPORTED_TYPES_STR" && return 0 || return 1
     fi
 }
-
 # Function to display available types
 show_available_types() {
     print_colored "cyan" "\n=== AVAILABLE DATA TYPES ==="
     echo
     print_colored "yellow" "Core Types:"
     for type in bool int8 uint8 int16 uint16 int32 uint32 int64 uint64; do
-        printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        else
+            local desc
+            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
+            printf "  %-12s - %s\n" "$type" "$desc"
+        fi
     done
 
     echo
     print_colored "yellow" "Floating Point Types:"
     for type in float16 bfloat16 float32 double; do
-        printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        else
+            local desc
+            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
+            printf "  %-12s - %s\n" "$type" "$desc"
+        fi
     done
 
     echo
     print_colored "yellow" "String Types:"
     for type in utf8 utf16 utf32; do
-        printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
+        else
+            local desc
+            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
+            printf "  %-12s - %s\n" "$type" "$desc"
+        fi
     done
 
     echo
     print_colored "yellow" "Type Aliases:"
     for alias in float half long unsignedlong int bfloat float64; do
-        printf "  %-12s -> %s\n" "$alias" "${TYPE_ALIASES[$alias]}"
+        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+            printf "  %-12s -> %s\n" "$alias" "${TYPE_ALIASES[$alias]}"
+        else
+            local target
+            target=$(lookup_in_string "$alias" "$TYPE_ALIASES_STR" "$alias")
+            printf "  %-12s -> %s\n" "$alias" "$target"
+        fi
     done
 
     echo
     print_colored "yellow" "Debug Type Profiles:"
-    for profile in "${!DEBUG_TYPE_PROFILES[@]}"; do
-        printf "  %-16s: %s\n" "$profile" "${DEBUG_TYPE_PROFILES[$profile]}"
-    done
+    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+        for profile in "${!DEBUG_TYPE_PROFILES[@]}"; do
+            printf "  %-16s: %s\n" "$profile" "${DEBUG_TYPE_PROFILES[$profile]}"
+        done
+    else
+        # Extract profile names and their values from the string
+        local profiles
+        profiles=$(get_keys_from_string "$DEBUG_TYPE_PROFILES_STR")
+        for profile in $profiles; do
+            local types
+            types=$(lookup_in_string "$profile" "$DEBUG_TYPE_PROFILES_STR" "")
+            printf "  %-16s: %s\n" "$profile" "$types"
+        done
+    fi
 }
+
 
 # Function to validate types list with comprehensive checking
 validate_types() {
@@ -311,11 +408,23 @@ resolve_debug_types() {
             print_colored "red" "ERROR: CUSTOM profile specified but no custom types provided!"
             return 1
         fi
-    elif [[ -n "${DEBUG_TYPE_PROFILES[$profile]:-}" ]]; then
-        echo "${DEBUG_TYPE_PROFILES[$profile]}"
     else
-        print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
-        echo "${DEBUG_TYPE_PROFILES[MINIMAL_INDEXING]}"
+        local profile_types
+        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
+            if [[ -n "${DEBUG_TYPE_PROFILES[$profile]:-}" ]]; then
+                profile_types="${DEBUG_TYPE_PROFILES[$profile]}"
+            else
+                print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
+                profile_types="${DEBUG_TYPE_PROFILES[MINIMAL_INDEXING]}"
+            fi
+        else
+            profile_types=$(lookup_in_string "$profile" "$DEBUG_TYPE_PROFILES_STR" "")
+            if [[ -z "$profile_types" ]]; then
+                print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
+                profile_types=$(lookup_in_string "MINIMAL_INDEXING" "$DEBUG_TYPE_PROFILES_STR" "float32;double;int32;int64")
+            fi
+        fi
+        echo "$profile_types"
     fi
 }
 
