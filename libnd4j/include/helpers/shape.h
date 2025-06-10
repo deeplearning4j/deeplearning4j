@@ -76,36 +76,60 @@ struct SD_LIB_EXPORT ShapeInformation {
 };
 
 
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType &extra(sd::LongType *buffer) {
+  if(buffer == nullptr) {
+    THROW_EXCEPTION("extra:  shapebuffer is nullptr");
+  }
+  sd::LongType rank = buffer[0];
+  sd::LongType idx = 0;
+  // rank takes up 1 element + usual elements
+  if (rank == 0) {
+    idx = 3;
+  } else {
+    // FIXME magic numbers
+    idx = rank + rank + 1;
+  }
+  return buffer[idx];
+}
+
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType extra(const sd::LongType *buffer) {
+  if(buffer == nullptr) {
+    THROW_EXCEPTION("extra:  shapebuffer is nullptr");
+  }
+  sd::LongType rank = buffer[0];
+  sd::LongType idx = 0;
+  // rank takes up 1 element + usual elements
+  if (rank == 0)
+    idx = 3;
+  else
+    // FIXME magic numbers
+    idx = rank + rank + 1;
+  return buffer[idx];
+}
+
+
 
 /**
 * Returns whether the given shape
 * info has the flag view set.
-*/
+ */
 
-SD_HOST_DEVICE bool isViewConst(const sd::LongType *shapeInfo) ;
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isViewConst(const sd::LongType *shapeInfo) {
+  return ((shape::extra(shapeInfo) & ARRAY_IS_VIEW) == ARRAY_IS_VIEW);
+}
 
 
 /**
 * Returns whether the
 * given shape info has an empty flag set.
-*/
+ */
 
-SD_HOST_DEVICE bool isEmptyConst(const sd::LongType *shapeInfo);
+SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isEmptyConst(const sd::LongType *shapeInfo) {
+  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
+}
 
 
-/**
-* Returns whether the given shape
-* info has the flag view set.
-*/
 
-SD_HOST_DEVICE bool isView(sd::LongType *shapeInfo);
-
-/**
-* Returns whether the
-* given shape info has an empty flag set.
-*/
-
-SD_HOST_DEVICE bool isEmpty(sd::LongType *shapeInfo);
 
 SD_LIB_EXPORT SD_HOST_DEVICE bool shapeEquals(int shape1Rank, const sd::LongType *shape1, int shape2Rank,
                                               const sd::LongType *shape2);
@@ -1860,37 +1884,6 @@ SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE void setExtra(sd::LongType *buffer, sd::L
   buffer[sd::ArrayOptions::extraIndex(buffer)] = extra;
 }
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType &extra(sd::LongType *buffer) {
-  if(buffer == nullptr) {
-    THROW_EXCEPTION("extra:  shapebuffer is nullptr");
-  }
-  sd::LongType rank = buffer[0];
-  sd::LongType idx = 0;
-  // rank takes up 1 element + usual elements
-  if (rank == 0) {
-    idx = 3;
-  } else {
-    // FIXME magic numbers
-    idx = rank + rank + 1;
-  }
-  return buffer[idx];
-}
-
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE sd::LongType extra(const sd::LongType *buffer) {
-  if(buffer == nullptr) {
-    THROW_EXCEPTION("extra:  shapebuffer is nullptr");
-  }
-  sd::LongType rank = buffer[0];
-  sd::LongType idx = 0;
-  // rank takes up 1 element + usual elements
-  if (rank == 0)
-    idx = 3;
-  else
-    // FIXME magic numbers
-    idx = rank + rank + 1;
-  return buffer[idx];
-}
-
 
 
 
@@ -2417,23 +2410,8 @@ SD_LIB_EXPORT SD_INLINE SD_HOST void permute(ShapeInformation **info, sd::LongTy
 
 
 
-/**
-* Returns whether the given shape
-* info has the flag view set.
-*/
 
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isViewConst(const sd::LongType *shapeInfo) {
-  return ((shape::extra(shapeInfo) & ARRAY_IS_VIEW) == ARRAY_IS_VIEW);
-}
 
-/**
-* Returns whether the
-* given shape info has an empty flag set.
-*/
-
-SD_LIB_EXPORT SD_INLINE SD_HOST_DEVICE bool isEmptyConst(const sd::LongType *shapeInfo) {
-  return ((shape::extra(shapeInfo) & ARRAY_EMPTY) == ARRAY_EMPTY);
-}
 
 /**
 * Returns whether the given shape
