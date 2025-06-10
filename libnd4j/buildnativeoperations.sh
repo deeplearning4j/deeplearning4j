@@ -41,62 +41,14 @@ fi
 # TYPE VALIDATION SYSTEM
 # =============================================================================
 
-# Initialize type data structures based on bash version
-if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-    # Modern bash with associative arrays
-    declare -A ALL_SUPPORTED_TYPES=(
-        ["bool"]="Boolean type"
-        ["int8"]="8-bit signed integer"
-        ["uint8"]="8-bit unsigned integer"
-        ["int16"]="16-bit signed integer"
-        ["uint16"]="16-bit unsigned integer"
-        ["int32"]="32-bit signed integer"
-        ["uint32"]="32-bit unsigned integer"
-        ["int64"]="64-bit signed integer"
-        ["uint64"]="64-bit unsigned integer"
-        ["float16"]="16-bit floating point (half precision)"
-        ["bfloat16"]="16-bit brain floating point"
-        ["float32"]="32-bit floating point (single precision)"
-        ["double"]="64-bit floating point (double precision)"
-        ["float"]="Alias for float32"
-        ["half"]="Alias for float16"
-        ["long"]="Alias for int64"
-        ["unsignedlong"]="Alias for uint64"
-        ["int"]="Alias for int32"
-        ["bfloat"]="Alias for bfloat16"
-        ["float64"]="Alias for double"
-        ["utf8"]="UTF-8 string type"
-        ["utf16"]="UTF-16 string type"
-        ["utf32"]="UTF-32 string type"
-    )
 
-    declare -A TYPE_ALIASES=(
-        ["float"]="float32"
-        ["half"]="float16"
-        ["long"]="int64"
-        ["unsignedlong"]="uint64"
-        ["int"]="int32"
-        ["bfloat"]="bfloat16"
-        ["float64"]="double"
-    )
-
-    declare -A DEBUG_TYPE_PROFILES=(
-        ["MINIMAL_INDEXING"]="float32;double;int32;int64"
-        ["ESSENTIAL"]="float32;double;int32;int64;int8;int16"
-        ["FLOATS_ONLY"]="float32;double;float16"
-        ["INTEGERS_ONLY"]="int8;int16;int32;int64;uint8;uint16;uint32;uint64"
-        ["SINGLE_PRECISION"]="float32;int32;int64"
-        ["DOUBLE_PRECISION"]="double;int32;int64"
-    )
-else
     # Fallback for older bash - use delimited strings
-    # Format: "key:value|key:value|..."
-    ALL_SUPPORTED_TYPES_STR="bool:Boolean type|int8:8-bit signed integer|uint8:8-bit unsigned integer|int16:16-bit signed integer|uint16:16-bit unsigned integer|int32:32-bit signed integer|uint32:32-bit unsigned integer|int64:64-bit signed integer|uint64:64-bit unsigned integer|float16:16-bit floating point (half precision)|bfloat16:16-bit brain floating point|float32:32-bit floating point (single precision)|double:64-bit floating point (double precision)|float:Alias for float32|half:Alias for float16|long:Alias for int64|unsignedlong:Alias for uint64|int:Alias for int32|bfloat:Alias for bfloat16|float64:Alias for double|utf8:UTF-8 string type|utf16:UTF-16 string type|utf32:UTF-32 string type"
+# Format: "key:value|key:value|..."
+ALL_SUPPORTED_TYPES_STR="bool:Boolean type|int8:8-bit signed integer|uint8:8-bit unsigned integer|int16:16-bit signed integer|uint16:16-bit unsigned integer|int32:32-bit signed integer|uint32:32-bit unsigned integer|int64:64-bit signed integer|uint64:64-bit unsigned integer|float16:16-bit floating point (half precision)|bfloat16:16-bit brain floating point|float32:32-bit floating point (single precision)|double:64-bit floating point (double precision)|float:Alias for float32|half:Alias for float16|long:Alias for int64|unsignedlong:Alias for uint64|int:Alias for int32|bfloat:Alias for bfloat16|float64:Alias for double|utf8:UTF-8 string type|utf16:UTF-16 string type|utf32:UTF-32 string type"
 
-    TYPE_ALIASES_STR="float:float32|half:float16|long:int64|unsignedlong:uint64|int:int32|bfloat:bfloat16|float64:double"
+TYPE_ALIASES_STR="float:float32|half:float16|long:int64|unsignedlong:uint64|int:int32|bfloat:bfloat16|float64:double"
 
-    DEBUG_TYPE_PROFILES_STR="MINIMAL_INDEXING:float32;double;int32;int64|ESSENTIAL:float32;double;int32;int64;int8;int16|FLOATS_ONLY:float32;double;float16|INTEGERS_ONLY:int8;int16;int32;int64;uint8;uint16;uint32;uint64|SINGLE_PRECISION:float32;int32;int64|DOUBLE_PRECISION:double;int32;int64"
-fi
+DEBUG_TYPE_PROFILES_STR="MINIMAL_INDEXING:float32;double;int32;int64|ESSENTIAL:float32;double;int32;int64;int8;int16|FLOATS_ONLY:float32;double;float16|INTEGERS_ONLY:int8;int16;int32;int64;uint8;uint16;uint32;uint64|SINGLE_PRECISION:float32;int32;int64|DOUBLE_PRECISION:double;int32;int64"
 
 # Bare minimum types required for basic functionality
 MINIMUM_REQUIRED_TYPES=("int32" "int64" "float32")
@@ -134,6 +86,46 @@ get_keys_from_string() {
     echo "$data_string" | grep -o '[^|]*:' | sed 's/:$//'
 }
 
+
+get_type_description() {
+    case "$1" in
+        "bool") echo "Boolean type" ;;
+        "int8") echo "8-bit signed integer" ;;
+        "uint8") echo "8-bit unsigned integer" ;;
+        "int16") echo "16-bit signed integer" ;;
+        "uint16") echo "16-bit unsigned integer" ;;
+        "int32") echo "32-bit signed integer" ;;
+        "uint32") echo "32-bit unsigned integer" ;;
+        "int64") echo "64-bit signed integer" ;;
+        "uint64") echo "64-bit unsigned integer" ;;
+        "float16") echo "16-bit floating point (half precision)" ;;
+        "bfloat16") echo "16-bit brain floating point" ;;
+        "float32") echo "32-bit floating point (single precision)" ;;
+        "double") echo "64-bit floating point (double precision)" ;;
+        "float") echo "Alias for float32" ;;
+        "half") echo "Alias for float16" ;;
+        "long") echo "Alias for int64" ;;
+        "unsignedlong") echo "Alias for uint64" ;;
+        "int") echo "Alias for int32" ;;
+        "bfloat") echo "Alias for bfloat16" ;;
+        "float64") echo "Alias for double" ;;
+        "utf8") echo "UTF-8 string type" ;;
+        "utf16") echo "UTF-16 string type" ;;
+        "utf32") echo "UTF-32 string type" ;;
+        *) echo "Unknown type" ;;
+    esac
+}
+
+is_supported_type() {
+    local normalized_type
+    normalized_type=$(normalize_type "$1")
+    case "$normalized_type" in
+        bool|int8|uint8|int16|uint16|int32|uint32|int64|uint64|float16|bfloat16|float32|double|utf8|utf16|utf32)
+            return 0 ;;
+        *)
+            return 1 ;;
+    esac
+}
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -175,37 +167,37 @@ print_colored() {
     fi
 }
 
-
 # Function to normalize type names (handle aliases)
 normalize_type() {
-    local type="$1"
-    local normalized_type
-
-    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-        if [[ -n "${TYPE_ALIASES[$type]:-}" ]]; then
-            normalized_type="${TYPE_ALIASES[$type]}"
-        else
-            normalized_type="$type"
-        fi
-    else
-        normalized_type=$(lookup_in_string "$type" "$TYPE_ALIASES_STR" "$type")
-    fi
-
-    echo "$normalized_type"
+    case "$1" in
+        "float") echo "float32" ;;
+        "half") echo "float16" ;;
+        "long") echo "int64" ;;
+        "unsignedlong") echo "uint64" ;;
+        "int") echo "int32" ;;
+        "bfloat") echo "bfloat16" ;;
+        "float64") echo "double" ;;
+        *) echo "$1" ;;
+    esac
 }
+
+get_debug_type_profile() {
+    case "$1" in
+        "MINIMAL_INDEXING") echo "float32;double;int32;int64" ;;
+        "ESSENTIAL") echo "float32;double;int32;int64;int8;int16" ;;
+        "FLOATS_ONLY") echo "float32;double;float16" ;;
+        "INTEGERS_ONLY") echo "int8;int16;int32;int64;uint8;uint16;uint32;uint64" ;;
+        "SINGLE_PRECISION") echo "float32;int32;int64" ;;
+        "DOUBLE_PRECISION") echo "double;int32;int64" ;;
+        *) echo "float32;double;int32;int64" ;;  # default to MINIMAL_INDEXING
+    esac
+}
+
 
 # Function to validate a single type
 validate_single_type() {
     local type="$1"
-    local normalized_type
-
-    normalized_type=$(normalize_type "$type")
-
-    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-        [[ -n "${ALL_SUPPORTED_TYPES[$normalized_type]:-}" ]] && return 0 || return 1
-    else
-        key_exists_in_string "$normalized_type" "$ALL_SUPPORTED_TYPES_STR" && return 0 || return 1
-    fi
+    is_supported_type "$type"
 }
 # Function to display available types
 show_available_types() {
@@ -213,67 +205,32 @@ show_available_types() {
     echo
     print_colored "yellow" "Core Types:"
     for type in bool int8 uint8 int16 uint16 int32 uint32 int64 uint64; do
-        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
-        else
-            local desc
-            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
-            printf "  %-12s - %s\n" "$type" "$desc"
-        fi
+        printf "  %-12s - %s\n" "$type" "$(get_type_description "$type")"
     done
 
     echo
     print_colored "yellow" "Floating Point Types:"
     for type in float16 bfloat16 float32 double; do
-        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
-        else
-            local desc
-            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
-            printf "  %-12s - %s\n" "$type" "$desc"
-        fi
+        printf "  %-12s - %s\n" "$type" "$(get_type_description "$type")"
     done
 
     echo
     print_colored "yellow" "String Types:"
     for type in utf8 utf16 utf32; do
-        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-            printf "  %-12s - %s\n" "$type" "${ALL_SUPPORTED_TYPES[$type]}"
-        else
-            local desc
-            desc=$(lookup_in_string "$type" "$ALL_SUPPORTED_TYPES_STR" "Unknown type")
-            printf "  %-12s - %s\n" "$type" "$desc"
-        fi
+        printf "  %-12s - %s\n" "$type" "$(get_type_description "$type")"
     done
 
     echo
     print_colored "yellow" "Type Aliases:"
     for alias in float half long unsignedlong int bfloat float64; do
-        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-            printf "  %-12s -> %s\n" "$alias" "${TYPE_ALIASES[$alias]}"
-        else
-            local target
-            target=$(lookup_in_string "$alias" "$TYPE_ALIASES_STR" "$alias")
-            printf "  %-12s -> %s\n" "$alias" "$target"
-        fi
+        printf "  %-12s -> %s\n" "$alias" "$(normalize_type "$alias")"
     done
 
     echo
     print_colored "yellow" "Debug Type Profiles:"
-    if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-        for profile in "${!DEBUG_TYPE_PROFILES[@]}"; do
-            printf "  %-16s: %s\n" "$profile" "${DEBUG_TYPE_PROFILES[$profile]}"
-        done
-    else
-        # Extract profile names and their values from the string
-        local profiles
-        profiles=$(get_keys_from_string "$DEBUG_TYPE_PROFILES_STR")
-        for profile in $profiles; do
-            local types
-            types=$(lookup_in_string "$profile" "$DEBUG_TYPE_PROFILES_STR" "")
-            printf "  %-16s: %s\n" "$profile" "$types"
-        done
-    fi
+    for profile in MINIMAL_INDEXING ESSENTIAL FLOATS_ONLY INTEGERS_ONLY SINGLE_PRECISION DOUBLE_PRECISION; do
+        printf "  %-16s: %s\n" "$profile" "$(get_debug_type_profile "$profile")"
+    done
 }
 
 
@@ -385,6 +342,7 @@ validate_types() {
     return 0
 }
 
+
 # Function to resolve debug type profile
 resolve_debug_types() {
     local profile="$1"
@@ -409,25 +367,15 @@ resolve_debug_types() {
             return 1
         fi
     else
-        local profile_types
-        if [[ "$USE_ASSOCIATIVE_ARRAYS" == "true" ]]; then
-            if [[ -n "${DEBUG_TYPE_PROFILES[$profile]:-}" ]]; then
-                profile_types="${DEBUG_TYPE_PROFILES[$profile]}"
-            else
-                print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
-                profile_types="${DEBUG_TYPE_PROFILES[MINIMAL_INDEXING]}"
-            fi
-        else
-            profile_types=$(lookup_in_string "$profile" "$DEBUG_TYPE_PROFILES_STR" "")
-            if [[ -z "$profile_types" ]]; then
-                print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
-                profile_types=$(lookup_in_string "MINIMAL_INDEXING" "$DEBUG_TYPE_PROFILES_STR" "float32;double;int32;int64")
-            fi
+        local resolved_types
+        resolved_types=$(get_debug_type_profile "$profile")
+        if [[ -z "$resolved_types" ]]; then
+            print_colored "yellow" "Warning: Unknown debug profile '$profile', using MINIMAL_INDEXING"
+            resolved_types=$(get_debug_type_profile "MINIMAL_INDEXING")
         fi
-        echo "$profile_types"
+        echo "$resolved_types"
     fi
 }
-
 # Function to estimate build impact
 estimate_build_impact() {
     local types_string="$1"
@@ -480,7 +428,7 @@ show_type_summary() {
     if [[ -n "$profile" ]]; then
         print_colored "yellow" "Debug Type Profile: $profile"
         if [[ "$profile" != "CUSTOM" ]]; then
-            print_colored "cyan" "Profile Types: ${DEBUG_TYPE_PROFILES[$profile]}"
+            print_colored "cyan" "Profile Types: $(get_debug_type_profile "$profile")"
         fi
     fi
 
@@ -495,6 +443,7 @@ show_type_summary() {
     print_colored "yellow" "Build Type: $build_type"
     echo
 }
+
 
 # =============================================================================
 # PLATFORM HELPER FUNCTIONS
