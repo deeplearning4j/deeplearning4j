@@ -230,7 +230,7 @@ struct alignas(2) float16 {
   }
 
   template <typename T,
-            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
+      typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
   SD_INLINE SD_HOST_DEVICE explicit float16(const T& rhs) : data{} {
     *this = rhs;
   }
@@ -338,7 +338,7 @@ struct alignas(2) float16 {
   }
 
   template <typename T,
-            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
+      typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
   SD_INLINE SD_HOST_DEVICE float16& operator=(const T& rhs) {
     *this = static_cast<float>(rhs);
     return *this;
@@ -647,7 +647,7 @@ struct numeric_limits<float16> {
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo = false;
-  static constexpr int digits = 11; // IEEE 754 half precision
+  static constexpr int digits = 11;  // IEEE 754 half precision
   static constexpr int digits10 = 3;
   static constexpr int max_digits10 = 5;
   static constexpr int radix = 2;
@@ -659,37 +659,40 @@ struct numeric_limits<float16> {
   // Note: These methods cannot be fully constexpr due to ihalf complexity
   // They will return default-constructed values that need runtime initialization
   static constexpr float16 min() noexcept {
-    return float16{}; // Runtime: 0x0400 (smallest positive normal)
+    return float16{};  // Runtime: 0x0400 (smallest positive normal)
   }
   static constexpr float16 lowest() noexcept {
-    return float16{}; // Runtime: 0xFBFF (largest negative finite)
+    return float16{};  // Runtime: 0xFBFF (largest negative finite)
   }
   static constexpr float16 max() noexcept {
-    return float16{}; // Runtime: 0x7BFF (largest positive finite)
+    return float16{};  // Runtime: 0x7BFF (largest positive finite)
   }
   static constexpr float16 epsilon() noexcept {
-    return float16{}; // Runtime: 0x1400 (machine epsilon)
+    return float16{};  // Runtime: 0x1400 (machine epsilon)
   }
   static constexpr float16 round_error() noexcept {
-    return float16{}; // Runtime: 0x3800 (0.5)
+    return float16{};  // Runtime: 0x3800 (0.5)
   }
   static constexpr float16 infinity() noexcept {
-    return float16{}; // Runtime: 0x7C00 (positive infinity)
+    return float16{};  // Runtime: 0x7C00 (positive infinity)
   }
   static constexpr float16 quiet_NaN() noexcept {
-    return float16{}; // Runtime: 0x7E00 (quiet NaN)
+    return float16{};  // Runtime: 0x7E00 (quiet NaN)
   }
   static constexpr float16 signaling_NaN() noexcept {
-    return float16{}; // Runtime: 0x7D00 (signaling NaN)
+    return float16{};  // Runtime: 0x7D00 (signaling NaN)
   }
   static constexpr float16 denorm_min() noexcept {
-    return float16{}; // Runtime: 0x0001 (smallest positive subnormal)
+    return float16{};  // Runtime: 0x0001 (smallest positive subnormal)
   }
 
 #ifdef __CUDACC__
   SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
 
   SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
-#endif
+};
 
+#endif
+};
+}
 #endif

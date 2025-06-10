@@ -91,7 +91,7 @@ public:
  }
 
  // SIMD-safe float conversion
- SD_INLINE SD_HOST_DEVICE constexpr operator float() const {
+ SD_INLINE SD_HOST_DEVICE operator float() const {
    union {
      uint32_t i;
      float f;
