@@ -1086,13 +1086,14 @@ set(MSVC_RT_LIB "MultiThreadedDLL")
 message(STATUS "Build flags determined: SD_ANDROID_BUILD=${SD_ANDROID_BUILD}, SD_X86_BUILD=${SD_X86_BUILD}, SD_ARM_BUILD=${SD_ARM_BUILD}, SD_ARCH=${SD_ARCH}")
 
 # Platform specific compiler flags
-# Platform specific compiler flags
 if(SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
 
     # Base Android flags for all architectures
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-implicit-templates -ftemplate-depth=128")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-implicit-templates -ftemplate-depth=128")
 
     # === NDK x86_64 SPECIFIC PLT OVERFLOW FIXES ===
     if(ANDROID_ABI MATCHES "x86_64")
