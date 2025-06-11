@@ -150,14 +150,7 @@ jobs:
             swapon --show
           fi
           
-          # Tune swappiness for build workloads
-          # 1. Massive swap file (20GB) with high performance settings
-          echo "Creating 20GB high-performance swap..."
-          sudo dd if=/dev/zero of=/swapfile bs=1M count=20480 status=progress
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon -p 10 /swapfile
-          
+ 
           # 2. Configure kernel for aggressive memory management
           sudo sysctl vm.swappiness=80              # Use swap aggressively
           sudo sysctl vm.vfs_cache_pressure=200     # Reclaim cache aggressively  
