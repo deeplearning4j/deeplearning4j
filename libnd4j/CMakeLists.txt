@@ -1919,6 +1919,8 @@ if(SD_CUDA)
             string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}")
         endif()
 
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options '-fPIC'")
+        set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
