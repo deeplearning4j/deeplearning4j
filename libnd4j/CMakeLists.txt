@@ -1928,6 +1928,7 @@ if(SD_CUDA)
         add_compile_definitions(SD_CUDA=true)
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
 
+        enable_language(CUDA)
         file(GLOB_RECURSE PERF_SOURCES ./include/performance/*.cpp ./include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES ./include/exceptions/*.cpp ./include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES ./include/execution/impl/*.cpp ./include/execution/cuda/*.cu ./include/execution/cuda/*.h ./include/execution/*.cu ./include/execution/*.h)
