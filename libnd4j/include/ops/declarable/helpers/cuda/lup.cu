@@ -775,7 +775,7 @@ Status logAbsDeterminant_(LaunchContext *context, NDArray *input, NDArray *outpu
   if (dtype != DOUBLE) dtype = FLOAT32;
 
   auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, dtype, context);
-  auto det = NDArrayFactory::create<T>(1, context);
+  auto det = NDArrayFactory::create<T>(static_cast<T>(1), context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
