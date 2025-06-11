@@ -1186,8 +1186,8 @@ elseif(APPLE)
 elseif(WIN32)
     set(SD_X86_BUILD true)
     if(SD_CUDA)
-        set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
-        set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
+        set(CMAKE_CXX_FLAGS_RELEASE "-D_RELEASE=true /std:c++17")
+        set(CMAKE_CXX_FLAGS_DEBUG "/FS /EHsc /std:c++17")
     else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-O${SD_OPTIMIZATION_LEVEL} -fPIC -D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  " -g -O${SD_OPTIMIZATION_LEVEL} -fPIC")
@@ -1237,6 +1237,29 @@ if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
         endif()
     endfunction()
 endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # Ensure C++17 standard is set for MSVC
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+
+    # Enable conforming preprocessor for C++17 compliance
+    add_compile_options(/Zc:preprocessor)
+
+    # Set architecture flags with C++17 support
+    set(ARCH_TUNE "/std:c++17")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
+
+    # Add big object file support for large template instantiations
+    add_compile_options(/bigobj)
+
+    # Enable exception handling
+    add_compile_options(/EHsc)
+
+    message(STATUS "MSVC C++17 configuration applied")
+endif()
+
 
 if(SD_NATIVE)
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64*")
@@ -1732,7 +1755,9 @@ if(HELPERS_cudnn)
         # On Windows, cuDNN might be named differently
         SET(CUDNN_LIBNAME_WIN "cudnn64_8")  # Common naming for cuDNN 8.x
         SET(CUDNN_LIBNAME_WIN_ALT "cudnn")  # Fallback naming
-
+        if(MSVC)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17")
+        endif()
         # Try to find CUDA installation directory if not set
         if(NOT DEFINED ENV{CUDA_PATH} AND NOT DEFINED ENV{CUDA_TOOLKIT_ROOT_DIR})
             # Common CUDA installation paths on Windows
