@@ -2249,7 +2249,6 @@ if(SD_PREPROCESS STREQUAL "ON")
                 string(REGEX REPLACE "-O[0-9]" "" lang_flags "${lang_flags}")
                 string(REGEX REPLACE "-g" "" lang_flags "${lang_flags}")
                 string(REGEX REPLACE "-flto" "" lang_flags "${lang_flags}")
-                string(REGEX REPLACE "-fPIC" "" lang_flags "${lang_flags}")
 
                 message("COMMAND ${compiler} -E ${lang_flags} ${defs_flags} ${include_flags} ${src} -o ${preprocessed_file}")
                 execute_process(
