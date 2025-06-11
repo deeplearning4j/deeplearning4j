@@ -670,6 +670,13 @@ bool ShapeUtils::areShapesBroadcastable(const std::vector<LongType>& shape1, con
 // if evalMinMax == false the array with larger rank has to be passed as first argument
 
 
+bool ShapeUtils::evalBroadcastShapeInfo(NDArray& x, NDArray& y, const bool evalMinMax,
+                                        LongType*& resultShapeInfo, memory::Workspace* workspace) {
+ return evalBroadcastShapeInfo(x.shapeInfo(), y.shapeInfo(), evalMinMax, resultShapeInfo, workspace);
+}
+
+
+
 bool ShapeUtils::evalBroadcastShapeInfo( LongType* max,  LongType* min, const bool evalMinMax,
                                        LongType*& resultShapeInfo, memory::Workspace* workspace) {
  if (shape::shapeEquals(max, min)) {
