@@ -1086,10 +1086,94 @@ set(MSVC_RT_LIB "MultiThreadedDLL")
 message(STATUS "Build flags determined: SD_ANDROID_BUILD=${SD_ANDROID_BUILD}, SD_X86_BUILD=${SD_X86_BUILD}, SD_ARM_BUILD=${SD_ARM_BUILD}, SD_ARCH=${SD_ARCH}")
 
 # Platform specific compiler flags
+# Platform specific compiler flags
 if(SD_ANDROID_BUILD)
     set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
+
+    # Base Android flags for all architectures
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O${SD_OPTIMIZATION_LEVEL} -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O${SD_OPTIMIZATION_LEVEL} -g -fPIC -Wno-return-type -Wno-unknown-pragmas -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+
+    # === NDK x86_64 SPECIFIC PLT OVERFLOW FIXES ===
+    if(ANDROID_ABI MATCHES "x86_64")
+        message(STATUS "Applying NDK x86_64 PLT overflow prevention")
+
+        # Apply large memory model for Android x86_64 (original only applied to GNU)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mcmodel=large")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mcmodel=large")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mcmodel=large")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mcmodel=large")
+
+        # Aggressive symbol optimization for large template libraries
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvisibility=hidden -fvisibility-inlines-hidden")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fvisibility=hidden -fvisibility-inlines-hidden")
+
+        # Reduce template instantiation memory pressure
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftemplate-depth=256 -fconstexpr-depth=256")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ftemplate-depth=256 -fconstexpr-depth=256")
+
+        # Force inline functions to reduce PLT entries
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-functions -finline-limit=300")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions -finline-limit=200")
+
+        # Memory optimization during compilation
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-merge-all-constants")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-merge-all-constants")
+
+        # Reduce debug info size that contributes to PLT overflow
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g1")  # Reduced debug info instead of -g
+
+        # Template specific optimizations
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-implicit-templates")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-implicit-templates")
+
+        # Control template instantiation
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-gnu-unique")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-gnu-unique")
+
+        # Compilation optimizations to reduce symbol pressure
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-var-tracking -fno-var-tracking-assignments")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-var-tracking -fno-var-tracking-assignments")
+
+        # === LINKER FLAGS FOR PLT OVERFLOW ===
+        # Large page size for extensive symbol tables
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=0x200000")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=0x200000")
+
+        # Use GNU hash style for better large symbol table handling
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-style=gnu")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--hash-style=gnu")
+
+        # Disable problematic optimizations that increase PLT pressure
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
+
+        # Force immediate binding to reduce runtime PLT overhead
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+
+        # Allow text relocations for large template libraries (Android specific)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-warn-shared-textrel")
+
+        # Increase virtual memory limits for linking
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-mmap-output-file")
+
+        # Use static libgcc to reduce external symbol dependencies
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
+
+        # Reduce binary size and PLT entries
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all")
+
+        # Force use of llvm linker flags specifically for large binaries
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+
+        message(STATUS "NDK x86_64 PLT overflow prevention applied")
+        message(STATUS "CXX Release Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+        message(STATUS "CXX Debug Flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+        message(STATUS "Shared Linker Flags: ${CMAKE_SHARED_LINKER_FLAGS}")
+    endif()
+
 elseif(APPLE)
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64*" OR "${SD_ARCH}" MATCHES "armv8-a")
         set(SD_ARCH armv8-a)
@@ -1129,6 +1213,29 @@ else()
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  ${SANITIZE_FLAGS} -lpthread -ftls-model=local-dynamic --relocatable-device-code=true")
         endif()
     endif()
+endif()
+
+# Additional target-specific flags to be applied after library creation
+# Add this function to apply PLT-specific flags to your object and shared libraries
+if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
+    # This will be applied later in your CMakeLists.txt after add_library calls:
+    function(apply_android_x86_64_plt_fixes target_name)
+        target_compile_options(${target_name} PRIVATE
+                -ffunction-sections
+                -fdata-sections
+                -fvisibility=hidden
+                -fvisibility-inlines-hidden
+        )
+
+        if(TARGET ${target_name} AND NOT ${target_name} MATCHES ".*_object$")
+            target_link_options(${target_name} PRIVATE
+                    -Wl,--gc-sections
+                    -Wl,--icf=all
+                    -Wl,-z,max-page-size=0x200000
+                    -Wl,--hash-style=gnu
+            )
+        endif()
+    endfunction()
 endif()
 
 if(SD_NATIVE)
