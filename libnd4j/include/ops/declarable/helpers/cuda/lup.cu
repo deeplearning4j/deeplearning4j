@@ -717,7 +717,7 @@ static Status determinant_(LaunchContext *context, NDArray *input, NDArray *outp
   std::vector<LongType> dims2 = {input->rankOf() - 2, input->rankOf() - 1};
 
   auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context);
-  auto det = NDArrayFactory::create<T>(1, context);
+  auto det = NDArrayFactory::create<T>(static_cast<T>(1), context);
   auto stream = context->getCudaStream();
   NDArray::prepareSpecialUse({output}, {input});
   dim3 launchDims = getLaunchDims("logAbsDeterminant");
