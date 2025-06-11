@@ -60,7 +60,7 @@ static SD_KERNEL void lrnKernel(void* vx, LongType const* xTadShapeInfo, LongTyp
     const LongType last = depth + threadIdx.x + 1;
     const LongType end = sd::math::sd_min<int>(last, tadLength);
 
-    T prev = 0.;
+    T prev = static_cast<T>(0.);
     for (int s = begin; s < end; s++) prev = prev + shared[s] * shared[s];
 
     z[threadIdx.x * zEws] = shared[threadIdx.x] / math::sd_pow<T, T, T>(tbias + alpha * prev, tbeta);
@@ -98,7 +98,7 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
 
     // load everything into shared memory
     sharedX[threadIdx.x] = x[threadIdx.x * xEws];
-    sharedY[threadIdx.x] = 0.f;
+    sharedY[threadIdx.x] = static_cast<Z>(0.f);
     __syncthreads();
 
     // we're operating in shared memory
