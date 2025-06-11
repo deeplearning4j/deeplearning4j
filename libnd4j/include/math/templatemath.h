@@ -1565,10 +1565,7 @@ inline SD_DEVICE int16_t sd_atomicMin<int16_t>(int16_t* address, int16_t val) {
   *address = atomicMin(&temp, (int)val);
   return *address;
 }
-template <>
-inline SD_DEVICE bfloat16 sd_atomicMin<bfloat16>(bfloat16* address, bfloat16 val) {
-  return bfloat16(sd_atomicMin<uint16_t>(&address->_data, val._data));
-}
+
 template <>
 inline SD_DEVICE float16 sd_atomicMin<float16>(float16* address, float16 val) {
   return float16(sd_atomicMin<int16_t>(reinterpret_cast<int16_t*>(&address->data), (int16_t)val.data));
@@ -1653,6 +1650,11 @@ SD_DEVICE SD_INLINE uint16_t sd_atomicMin<uint16_t>(uint16_t* address, uint16_t 
   uint32_t temp = *address;
   *address = atomicMin(&temp, (uint32_t)val);
   return *address;
+}
+
+template <>
+inline SD_DEVICE bfloat16 sd_atomicMin<bfloat16>(bfloat16* address, bfloat16 val) {
+  return bfloat16(sd_atomicMin<uint16_t>(&address->_data, val._data));
 }
 
 // Custom max functions
