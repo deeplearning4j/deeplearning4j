@@ -294,7 +294,6 @@ jobs:
           # Increase file descriptor limits
           echo "* soft nofile 1048576" | sudo tee -a /etc/security/limits.conf
           echo "* hard nofile 1048576" | sudo tee -a /etc/security/limits.conf
-          ulimit -n 1048576
           
           # Set aggressive memory allocation
           export MALLOC_ARENA_MAX=1
