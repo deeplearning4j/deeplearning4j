@@ -314,7 +314,7 @@ SD_KERNEL static void spaceToBatchCuda(const void* vx, const LongType* xShapeInf
 
     z[zOffset] = x[xOffset];
   } else
-    z[zOffset] = 0.f;
+    z[zOffset] = static_cast<T>(0.f);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -438,7 +438,7 @@ SD_KERNEL static void spaceToBatchNDCuda(const void* vx, const LongType* xShapeI
     if (within)
       z[zOffset] = x[xOffset];
     else
-      z[zOffset] = 0.f;
+      z[zOffset] = static_cast<X>(0.f);
   }
 }
 

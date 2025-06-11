@@ -108,7 +108,7 @@ static SD_KERNEL void lrnBPKernel(void const* vx, LongType const* xTadShapeInfo,
     Z factor[1024];
     Z init = tbias + talpha * sharedY[threadIdx.x];
 
-    Z prev = 0.f;
+    Z prev = static_cast<Z>(0.f);
     for (LongType s = begin; s < end; ++s) {
       factor[s] = math::sd_pow<Z, Z, Z>(tbias + talpha * sharedY[s], -tbeta - 1);
       prev = prev + sharedX[s] * factor[s];

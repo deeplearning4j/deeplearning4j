@@ -208,7 +208,7 @@ static SD_KERNEL void pnormPooling2dCuda(const void *vx, const LongType *xShapeI
       wend -= f * dW;
     }
 
-    Z sum = 0.f;
+    Z sum = static_cast<Z>(0.f);
 
     const X *inSlice = x + (n * strideB + c * strideC);
 
