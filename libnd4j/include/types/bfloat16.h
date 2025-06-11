@@ -80,18 +80,21 @@ struct alignas(2) bfloat16 {
 
   uint16_t _data;
 
-  // Default constructor - can be constexpr since we use simple uint16_t
+  // Default constructor
   SD_INLINE SD_HOST_DEVICE constexpr bfloat16() : _data(0) {}
 
-  // Constexpr constructor from raw bits
+  // Constructor from raw bits
   SD_INLINE SD_HOST_DEVICE constexpr explicit bfloat16(uint16_t raw_bits) : _data(raw_bits) {}
+
+  // Constructor for atomic operations compatibility
+  SD_INLINE SD_HOST_DEVICE bfloat16(int16_t raw_bits) : _data(static_cast<uint16_t>(raw_bits)) {}
 
   template <typename T, typename = typename std::enable_if<isNumericType<T>::value>::type>
   SD_INLINE SD_HOST_DEVICE explicit bfloat16(const T& rhs) : _data(0) {
     *this = rhs;
   }
 
-  // SIMD-safe float conversion
+  // Float conversion
   SD_INLINE SD_HOST_DEVICE operator float() const {
     union {
       uint32_t i;
@@ -114,15 +117,14 @@ struct alignas(2) bfloat16 {
   }
 
   SD_INLINE SD_HOST_DEVICE bfloat16& operator=(const float& rhs) {
-    // Handle special cases first
 #if defined(__CUDA_ARCH__)
     if (isnan(rhs)) {
-      _data = 0x7FC0; // NaN pattern
+      _data = 0x7FC0;
       return *this;
     }
 #else
     if (std::isnan(rhs)) {
-      _data = 0x7FC0; // NaN pattern
+      _data = 0x7FC0;
       return *this;
     }
 #endif
@@ -133,7 +135,6 @@ struct alignas(2) bfloat16 {
     } u;
     u.f = rhs;
 
-    // Round to nearest even with proper bias
     uint32_t lsb = (u.i >> 16) & 1;
     uint32_t rounding_bias = 0x7fff + lsb;
     u.i += rounding_bias;
@@ -147,14 +148,10 @@ struct alignas(2) bfloat16 {
     return *this;
   }
 
-  // Comparison operators - SIMD compatible
-  // Handle both positive and negative zero correctly by converting to float for comparison
+  // Comparison operators
   SD_INLINE SD_HOST_DEVICE friend bool operator==(const bfloat16& a, const bfloat16& b) {
-    // Handle NaN cases first - NaN is never equal to anything, including itself
-    if ((a._data & 0x7F80) == 0x7F80 && (a._data & 0x007F) != 0) return false; // a is NaN
-    if ((b._data & 0x7F80) == 0x7F80 && (b._data & 0x007F) != 0) return false; // b is NaN
-
-    // For all other values, including positive/negative zero, use float comparison
+    if ((a._data & 0x7F80) == 0x7F80 && (a._data & 0x007F) != 0) return false;
+    if ((b._data & 0x7F80) == 0x7F80 && (b._data & 0x007F) != 0) return false;
     return static_cast<float>(a) == static_cast<float>(b);
   }
 
@@ -178,7 +175,7 @@ struct alignas(2) bfloat16 {
     return static_cast<float>(a) >= static_cast<float>(b);
   }
 
-  // Arithmetic operators - using float intermediates for compatibility
+  // Arithmetic operators
   SD_INLINE SD_HOST_DEVICE friend bfloat16 operator+(const bfloat16& a, const bfloat16& b) {
     return bfloat16(static_cast<float>(a) + static_cast<float>(b));
   }
@@ -367,48 +364,48 @@ struct alignas(2) bfloat16 {
 
   SD_INLINE SD_HOST_DEVICE bfloat16 operator-() const {
     bfloat16 result;
-    result._data = _data ^ 0x8000; // Flip sign bit
+    result._data = _data ^ 0x8000;
     return result;
   }
 
-  // Static utility methods - constexpr compatible
+  // Static utility methods
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 min() {
-    return bfloat16(static_cast<uint16_t>(0x0080)); // Smallest positive normal
+    return bfloat16(static_cast<uint16_t>(0x0080));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 lowest() {
-    return bfloat16(static_cast<uint16_t>(0xFF7F)); // Most negative finite
+    return bfloat16(static_cast<uint16_t>(0xFF7F));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 max() {
-    return bfloat16(static_cast<uint16_t>(0x7F7F)); // Largest positive finite
+    return bfloat16(static_cast<uint16_t>(0x7F7F));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 epsilon() {
-    return bfloat16(static_cast<uint16_t>(0x3C00)); // Machine epsilon
+    return bfloat16(static_cast<uint16_t>(0x3C00));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 round_error() {
-    return bfloat16(static_cast<uint16_t>(0x3F00)); // 0.5f
+    return bfloat16(static_cast<uint16_t>(0x3F00));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 infinity() {
-    return bfloat16(static_cast<uint16_t>(0x7F80)); // Positive infinity
+    return bfloat16(static_cast<uint16_t>(0x7F80));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 quiet_NaN() {
-    return bfloat16(static_cast<uint16_t>(0x7FC0)); // Quiet NaN
+    return bfloat16(static_cast<uint16_t>(0x7FC0));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 signaling_NaN() {
-    return bfloat16(static_cast<uint16_t>(0x7FA0)); // Signaling NaN
+    return bfloat16(static_cast<uint16_t>(0x7FA0));
   }
 
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 denorm_min() {
-    return bfloat16(static_cast<uint16_t>(0x0001)); // Smallest positive subnormal
+    return bfloat16(static_cast<uint16_t>(0x0001));
   }
 
-  // Legacy aliases for compatibility
+  // Legacy aliases
   SD_INLINE SD_HOST_DEVICE static constexpr bfloat16 eps() {
     return epsilon();
   }
@@ -425,7 +422,7 @@ struct alignas(2) bfloat16 {
     return denorm_min();
   }
 
-  // Helper methods for template operations
+  // Helper methods
   SD_INLINE SD_HOST_DEVICE static float as_float(const bfloat16& bf16) {
     return static_cast<float>(bf16);
   }
@@ -435,11 +432,10 @@ struct alignas(2) bfloat16 {
   }
 };
 
-// Ensure proper alignment for SIMD operations
+// Ensure proper alignment
 static_assert(sizeof(bfloat16) == 2, "bfloat16 must be 2 bytes");
 static_assert(alignof(bfloat16) >= 2, "bfloat16 must be at least 2-byte aligned");
 
-// Template specializations to ensure SIMD compatibility
 namespace std {
 template<>
 struct is_arithmetic<bfloat16> : std::true_type {};
@@ -447,7 +443,6 @@ struct is_arithmetic<bfloat16> : std::true_type {};
 template<>
 struct is_floating_point<bfloat16> : std::true_type {};
 
-// std::numeric_limits specialization
 template<>
 struct numeric_limits<bfloat16> {
   static constexpr bool is_specialized = true;
@@ -463,14 +458,14 @@ struct numeric_limits<bfloat16> {
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo = false;
-  static constexpr int digits = 8;     // 7 mantissa bits + 1 implicit
-  static constexpr int digits10 = 2;   // Decimal digits of precision
-  static constexpr int max_digits10 = 4; // Maximum decimal digits needed for round-trip
+  static constexpr int digits = 8;
+  static constexpr int digits10 = 2;
+  static constexpr int max_digits10 = 4;
   static constexpr int radix = 2;
-  static constexpr int min_exponent = -125;  // Minimum binary exponent
-  static constexpr int min_exponent10 = -37; // Minimum decimal exponent
-  static constexpr int max_exponent = 128;   // Maximum binary exponent
-  static constexpr int max_exponent10 = 38;  // Maximum decimal exponent
+  static constexpr int min_exponent = -125;
+  static constexpr int min_exponent10 = -37;
+  static constexpr int max_exponent = 128;
+  static constexpr int max_exponent10 = 38;
 
   static constexpr bfloat16 min() noexcept { return bfloat16::min(); }
   static constexpr bfloat16 lowest() noexcept { return bfloat16::lowest(); }
@@ -483,7 +478,6 @@ struct numeric_limits<bfloat16> {
   static constexpr bfloat16 denorm_min() noexcept { return bfloat16::denorm_min(); }
 };
 
-// Utility functions for CUDA compatibility
 #ifdef __CUDACC__
 SD_INLINE SD_HOST_DEVICE bool isnan(const bfloat16& bf) {
   return (bf._data & 0x7F80) == 0x7F80 && (bf._data & 0x007F) != 0;
@@ -498,6 +492,6 @@ SD_INLINE SD_HOST_DEVICE bool isfinite(const bfloat16& bf) {
 }
 #endif
 
-} // namespace std
+}
 
 #endif

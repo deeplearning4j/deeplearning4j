@@ -215,18 +215,18 @@ struct alignas(2) float16 {
 
  public:
   float16(const float16&) = default;
+  float16& operator=(const float16&) = default;
 
   ihalf data;
 
-  // Default constructor - not constexpr due to ihalf limitations
+  // Default constructor
   SD_INLINE SD_HOST_DEVICE float16() : data{} {
-    // Initialize to zero
 #ifndef __CUDACC__
     *data.getXP() = 0;
 #endif
   }
 
-  // Constructor from raw bits - not constexpr due to ihalf limitations
+  // Constructor from raw bits
   SD_INLINE SD_HOST_DEVICE explicit float16(unsigned short raw_bits) : data{} {
     *data.getXP() = raw_bits;
   }
@@ -257,14 +257,12 @@ struct alignas(2) float16 {
     return result;
   }
 
-  // Bitwise OR with float16
   SD_INLINE SD_HOST_DEVICE float16 operator|(const float16& rhs) const {
     float16 result;
     *result.data.getXP() = static_cast<unsigned short>(this->data.getX() | rhs.data.getX());
     return result;
   }
 
-  // Friend function for int | float16
   SD_INLINE SD_HOST_DEVICE friend float16 operator|(int lhs, const float16& rhs) {
     float16 result;
     *result.data.getXP() = static_cast<unsigned short>(static_cast<unsigned short>(lhs) | rhs.data.getX());
@@ -298,14 +296,12 @@ struct alignas(2) float16 {
     return *this;
   }
 
-  // Correct operator overload for bitwise AND
   SD_INLINE SD_HOST_DEVICE float16 operator&(const float16& rhs) const {
     float16 result;
     *result.data.getXP() = static_cast<unsigned short>(this->data.getX() & rhs.data.getX());
     return result;
   }
 
-  // Additional overload for int if needed
   SD_INLINE SD_HOST_DEVICE float16 operator&(int rhs) const {
     float16 result;
     *result.data.getXP() = static_cast<unsigned short>(this->data.getX() & static_cast<unsigned short>(rhs));
@@ -333,11 +329,6 @@ struct alignas(2) float16 {
     return *this;
   }
 #endif
-
-  SD_INLINE SD_HOST_DEVICE float16& operator=(const float16& rhs) {
-    data = rhs.data;
-    return *this;
-  }
 
   template <typename T,
             typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
@@ -386,7 +377,6 @@ struct alignas(2) float16 {
   SD_INLINE SD_HOST_DEVICE friend bool operator>=(const float16& a, const float16& b) { return static_cast<float>(a) >= static_cast<float>(b); }
 #endif
 
-// Arithmetic operators - optimized for native CUDA half support when available
 #ifdef SD_NATIVE_HALFS
   SD_INLINE SD_HOST_DEVICE friend float16 operator+(const float16& a, const float16& b) {
     return __hadd(a.data, b.data);
@@ -584,32 +574,32 @@ struct alignas(2) float16 {
 
   SD_INLINE SD_HOST_DEVICE float16 operator-() const {
     float16 result;
-    *result.data.getXP() = data.getX() ^ 0x8000U; // Flip sign bit
+    *result.data.getXP() = data.getX() ^ 0x8000U;
     return result;
   }
 
-  // Static utility methods - removed constexpr due to underlying type limitations
+  // Static utility methods
   SD_INLINE SD_HOST_DEVICE static float16 min() {
     float16 result;
-    *result.data.getXP() = 0x0400; // Smallest positive normal
+    *result.data.getXP() = 0x0400;
     return result;
   }
 
   SD_INLINE SD_HOST_DEVICE static float16 max() {
     float16 result;
-    *result.data.getXP() = 0x7BFF; // Largest positive finite
+    *result.data.getXP() = 0x7BFF;
     return result;
   }
 
   SD_INLINE SD_HOST_DEVICE static float16 infinity() {
     float16 result;
-    *result.data.getXP() = 0x7C00; // Positive infinity
+    *result.data.getXP() = 0x7C00;
     return result;
   }
 
   SD_INLINE SD_HOST_DEVICE static float16 quiet_NaN() {
     float16 result;
-    *result.data.getXP() = 0x7E00; // Quiet NaN
+    *result.data.getXP() = 0x7E00;
     return result;
   }
 
@@ -623,11 +613,9 @@ struct alignas(2) float16 {
   }
 };
 
-// Ensure proper alignment for SIMD operations
 static_assert(sizeof(float16) == 2, "float16 must be 2 bytes");
 static_assert(alignof(float16) >= 2, "float16 must be at least 2-byte aligned");
 
-// Template specializations to ensure SIMD compatibility
 namespace std {
 template<>
 struct is_arithmetic<float16> : std::true_type {};
@@ -635,7 +623,6 @@ struct is_arithmetic<float16> : std::true_type {};
 template<>
 struct is_floating_point<float16> : std::true_type {};
 
-// std::numeric_limits specialization
 template<>
 struct numeric_limits<float16> {
   static constexpr bool is_specialized = true;
@@ -651,7 +638,7 @@ struct numeric_limits<float16> {
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;
   static constexpr bool is_modulo = false;
-  static constexpr int digits = 11;  // IEEE 754 half precision
+  static constexpr int digits = 11;
   static constexpr int digits10 = 3;
   static constexpr int max_digits10 = 5;
   static constexpr int radix = 2;
@@ -660,68 +647,61 @@ struct numeric_limits<float16> {
   static constexpr int max_exponent = 16;
   static constexpr int max_exponent10 = 4;
 
-  // Non-constexpr methods that properly initialize the values at runtime
   static float16 min() noexcept {
     float16 result;
-    *result.data.getXP() = 0x0400; // Smallest positive normal
+    *result.data.getXP() = 0x0400;
     return result;
   }
 
   static float16 lowest() noexcept {
     float16 result;
-    *result.data.getXP() = 0xFBFF; // Largest negative finite
+    *result.data.getXP() = 0xFBFF;
     return result;
   }
 
   static float16 max() noexcept {
     float16 result;
-    *result.data.getXP() = 0x7BFF; // Largest positive finite
+    *result.data.getXP() = 0x7BFF;
     return result;
   }
 
   static float16 epsilon() noexcept {
     float16 result;
-    *result.data.getXP() = 0x1400; // Machine epsilon
+    *result.data.getXP() = 0x1400;
     return result;
   }
 
   static float16 round_error() noexcept {
     float16 result;
-    *result.data.getXP() = 0x3800; // 0.5
+    *result.data.getXP() = 0x3800;
     return result;
   }
 
   static float16 infinity() noexcept {
     float16 result;
-    *result.data.getXP() = 0x7C00; // Positive infinity
+    *result.data.getXP() = 0x7C00;
     return result;
   }
 
   static float16 quiet_NaN() noexcept {
     float16 result;
-    *result.data.getXP() = 0x7E00; // Quiet NaN
+    *result.data.getXP() = 0x7E00;
     return result;
   }
-
   static float16 signaling_NaN() noexcept {
     float16 result;
-    *result.data.getXP() = 0x7D00; // Signaling NaN
+    *result.data.getXP() = 0x7D00;
     return result;
   }
-
   static float16 denorm_min() noexcept {
     float16 result;
-    *result.data.getXP() = 0x0001; // Smallest positive subnormal
+    *result.data.getXP() = 0x0001;
     return result;
   }
 };
-
-} // namespace std
-
-#ifdef __CUDACC__
+}
+#ifdef CUDACC
 SD_INLINE SD_HOST_DEVICE int isnan(const float16& h) { return ishnan_(((ihalf)h.data).getX()); }
-
 SD_INLINE SD_HOST_DEVICE int isinf(const float16& h) { return ishinf_(((ihalf)h.data).getX()); }
 #endif
-
 #endif
