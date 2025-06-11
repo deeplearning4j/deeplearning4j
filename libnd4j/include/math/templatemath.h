@@ -1567,7 +1567,7 @@ inline SD_DEVICE int16_t sd_atomicMin<int16_t>(int16_t* address, int16_t val) {
 }
 template <>
 inline SD_DEVICE bfloat16 sd_atomicMin<bfloat16>(bfloat16* address, bfloat16 val) {
-  return bfloat16(sd_atomicMin<int16_t>(&address->_data, val._data));
+  return bfloat16(sd_atomicMin<uint16_t>(&address->_data, val._data));
 }
 template <>
 inline SD_DEVICE float16 sd_atomicMin<float16>(float16* address, float16 val) {
