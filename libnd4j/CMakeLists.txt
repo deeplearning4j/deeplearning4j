@@ -1725,7 +1725,7 @@ if(HELPERS_onednn)
     ExternalProject_Add(onednn_external
             PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
             GIT_REPOSITORY    "https://github.com/uxlfoundation/oneDNN.git"
-            GIT_TAG           "main"
+            GIT_TAG           "v3.8.1"
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
             BINARY_DIR        "${ONEDNN_BUILD_DIR}"
             CMAKE_ARGS
