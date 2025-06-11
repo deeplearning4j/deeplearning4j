@@ -151,10 +151,25 @@ jobs:
           fi
           
           # Tune swappiness for build workloads
-          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
-          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
-          sudo sysctl vm.swappiness=20
-          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
+          # 1. Massive swap file (20GB) with high performance settings
+          echo "Creating 20GB high-performance swap..."
+          sudo dd if=/dev/zero of=/swapfile bs=1M count=20480 status=progress
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon -p 10 /swapfile
+          
+          # 2. Configure kernel for aggressive memory management
+          sudo sysctl vm.swappiness=80              # Use swap aggressively
+          sudo sysctl vm.vfs_cache_pressure=200     # Reclaim cache aggressively  
+          sudo sysctl vm.dirty_ratio=5              # Write dirty pages early
+          sudo sysctl vm.dirty_background_ratio=2   # Background writes early
+          sudo sysctl vm.overcommit_memory=1        # Allow overcommit
+          sudo sysctl vm.min_free_kbytes=131072     # Keep 128MB free always
+          
+          # 3. Configure for large memory allocations
+          echo 'kernel.shmmax = 68719476736' | sudo tee -a /etc/sysctl.conf
+          echo 'kernel.shmall = 4294967296' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
           
           # Show final memory status
           echo "=== Final memory status ==="
