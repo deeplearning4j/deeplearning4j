@@ -1838,7 +1838,9 @@ if(SD_CUDA)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
     # THE LINE BELOW IS MOVED TO THE TOP OF THE FILE AND IS NOW INEFFECTIVE HERE
     # set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler" CACHE STRING "CUDA compile flags" FORCE)
-
+    # Disable response files for CUDA compilation on Windows
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
+    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
     enable_language(CUDA)
     add_definitions(-D__CUDABLAS__=true)
     find_package(CUDA REQUIRED)
