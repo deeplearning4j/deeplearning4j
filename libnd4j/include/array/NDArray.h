@@ -348,11 +348,11 @@ class SD_LIB_EXPORT NDArray {
 
 
   // Static helper methods
-  SD_LIB_EXPORT static LongType *reshapeShapeInfo( NDArray *array, char order, const std::vector<sd::LongType>& newShape);
-  SD_LIB_EXPORT static const LongType *modifyShapeForAssign( NDArray *thisArray,  NDArray *other);
-  SD_LIB_EXPORT static void copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism);
-  SD_LIB_EXPORT static void validateAssign( NDArray *thisArray,  NDArray *other);
-
+  // Static helper methods
+  static LongType *reshapeShapeInfo( NDArray *array, char order, const std::vector<sd::LongType>& newShape);
+  static const LongType *modifyShapeForAssign( NDArray *thisArray,  NDArray *other);
+  static void copyDataForAssign(NDArray *thisArray,  NDArray *other, const sd::LongType* otherShapeInfo, bool allowParallelism);
+  static void validateAssign( NDArray *thisArray,  NDArray *other);
 
 
   /**
