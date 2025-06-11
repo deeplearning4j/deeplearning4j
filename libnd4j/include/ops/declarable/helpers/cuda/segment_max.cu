@@ -266,7 +266,7 @@ static void segmentMaxFunctor_(LaunchContext* context, NDArray* input, NDArray* 
    segmentMaxTadKernel<T, I><<<launchDims.y, launchDims.x, launchDims.z, *stream>>>(
        input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
        reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-       output->specialShapeInfo(), outputTads, outputTadOffsets,0,
+       output->specialShapeInfo(), outputTads, outputTadOffsets,static_cast<T>(0),
        indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
    sd::DebugHelper::checkErrorCode(stream, "segmentMaxTadKernel failed");
 
