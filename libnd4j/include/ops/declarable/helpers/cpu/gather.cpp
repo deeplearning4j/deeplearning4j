@@ -93,7 +93,7 @@ void gather(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArra
               break;
             }
             case INT64: {
-              auto value = input->e<int64_t>(idx);
+              auto value = input->e<sd::LongType>(idx);
               output->p(0, value);
               break;
             }
