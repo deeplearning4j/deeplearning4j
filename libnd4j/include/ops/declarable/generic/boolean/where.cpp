@@ -42,7 +42,7 @@ inline bool evaluateCondition(NDArray* condition, int index) {
         case DataType::INT32:
             return condition->e<int32_t>(index) != 0;
         case DataType::INT64:
-            return condition->e<int64_t>(index) != 0;
+            return condition->e<sd::LongType>(index) != 0;
         case DataType::UINT8:
             return condition->e<uint8_t>(index) != 0;
         case DataType::UINT16:
