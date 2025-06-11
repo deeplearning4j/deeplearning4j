@@ -282,7 +282,26 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
           echo "swap size ${{ matrix.swap_size }}GB"
-
+          echo "vm.max_map_count=2147483647" | sudo tee -a /etc/sysctl.conf
+          echo "vm.overcommit_memory=1" | sudo tee -a /etc/sysctl.conf
+          echo "vm.overcommit_ratio=100" | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+          # Configure huge pages for large memory allocations
+          echo 'vm.nr_hugepages=1024' | sudo tee -a /etc/sysctl.conf
+          sudo sysctl -p
+          
+          # Increase file descriptor limits
+          echo "* soft nofile 1048576" | sudo tee -a /etc/security/limits.conf
+          echo "* hard nofile 1048576" | sudo tee -a /etc/security/limits.conf
+          ulimit -n 1048576
+          
+          # Set aggressive memory allocation
+          export MALLOC_ARENA_MAX=1
+          export MALLOC_MMAP_THRESHOLD_=131072
+          export MALLOC_TRIM_THRESHOLD_=131072
+          export MALLOC_TOP_PAD_=131072
+          export MALLOC_MMAP_MAX_=65536
           export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
           mvn --version
           cmake --version
