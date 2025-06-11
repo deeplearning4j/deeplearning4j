@@ -113,7 +113,6 @@ static void _extractPatches(LaunchContext* context, NDArray* images, NDArray* ou
   ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
   ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
   // 3D matrices - 2D matrices of vectors (if last dim is greater than 1)
-  // int e = 0;
 
   int batchCount = listOfMatricies.size();
   LongType lastDim = images->sizeAt(3);

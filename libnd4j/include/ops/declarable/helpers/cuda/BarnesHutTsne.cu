@@ -199,7 +199,7 @@ static SD_KERNEL void edgeForcesKernel(int const* pRows, int const* pCols, T con
     int shift = n * colCount;
     for (int i = start; i < end; i++) {
       T const* thisSlice = dataP + pCols[i] * colCount;
-      T res = 1;
+      T res = static_cast<T>(1);
 
       for (int k = 0; k < colCount; k++) {
         auto valTemp = dataP[shift + k] - thisSlice[k];  // thisSlice[k];

@@ -756,7 +756,6 @@ static SD_KERNEL void resizeAreaKernel(ImageResizerState const* pSt, CachedInter
       auto yScaleCache = cachePool + (batch * pSt->outHeight + y) * pSt->outWidth;
 
       float* output = outputPtr + (batch * pSt->outHeight + y) * pSt->channels * pSt->outWidth;
-      // int k = 0;
       for (LongType i = yStart, k = 0; i < yEnd; ++i, ++k) {
         float scaleY;
         if (i < inY) {

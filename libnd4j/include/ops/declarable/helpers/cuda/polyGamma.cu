@@ -79,7 +79,7 @@ SD_KERNEL static void polyGammaCuda(const void *vn, const LongType *nShapeInfo, 
     } else if (order == 0) {
       z[zOffset] = diGammaScalar<T>(x[xOffset]);
     } else {
-      T factorial = 1;
+      T factorial = static_cast<T>(1);
       for (int j = 2; j <= order; ++j) {
         factorial *= j;
       }
