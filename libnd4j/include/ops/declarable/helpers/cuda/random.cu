@@ -485,7 +485,7 @@ SD_HOST static void fillMultiNomialCudaLauncher(const int blocksPerGrid, const i
                                                 const LongType numOfSamples, const LongType numOfClassX,
                                                 const LongType dimA) {
   const X minVal = DataTypeUtils::min<X>();
-  const X maxVal = 1.0;
+  const X maxVal = static_cast<X>(1.0);
 
   fillMultiNomialCuda_<X, Z><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(
       devRng, vx, xShapeInfo, vz, zShapeInfo, batchValue, numOfSamples, numOfClassX, dimA, minVal, maxVal);
