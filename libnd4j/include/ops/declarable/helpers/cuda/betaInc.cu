@@ -183,7 +183,7 @@ SD_KERNEL void betaIncForArrayCuda(const void* va, const LongType* aShapeInfo, c
   __syncthreads();
 
   if (threadIdx.x == 0) {
-    const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
+    const T gammaPart = static_cast<T>(lgamma(a)) + static_cast<T>(lgamma(b)) - static_cast<T>(lgamma(a + b));
     const T front = math::sd_exp<T, T>(math::sd_log<T, T>(x) * a + math::sd_log<T, T>(T(1) - x) * b - gammaPart);
 
     sharedMem[0] = T(1) - (a + b) * x / (a + T(1));

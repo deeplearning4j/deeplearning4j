@@ -987,7 +987,7 @@ static SD_KERNEL void cropAndResizeKernel(T const* images, LongType const* image
           }
           int left_x_index = math::p_floor(in_x);
           int right_x_index = math::p_ceil(in_x);
-          T x_lerp = in_x - left_x_index;
+          T x_lerp = static_cast<T>(in_x) - static_cast<T>(left_x_index);
 
           auto start = blockIdx.z * blockDim.x + threadIdx.z;
           auto step = blockDim.z * gridDim.z;

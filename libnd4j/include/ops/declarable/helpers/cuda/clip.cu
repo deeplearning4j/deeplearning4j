@@ -81,9 +81,9 @@ SD_KERNEL static void clipByNormCuda(const void* vClipNorm, const void* vNorm, c
     COORDS2INDEX(normRank, normStride, normCoords, normOffset);
     COORDS2INDEX(zRank, zStride, zCoords, zOffset);
 
-    const T actualNorm = useAverage ? norm[normOffset] / tadLen : norm[normOffset];
+    const T actualNorm = useAverage ? static_cast<T>(norm[normOffset]) / static_cast<T>(tadLen) : static_cast<T>(norm[normOffset]);
 
-    if (actualNorm > clipNorm) z[zOffset] *= clipNorm / actualNorm;
+    if (actualNorm > clipNorm) z[zOffset] *= static_cast<T>(clipNorm) / static_cast<T>(actualNorm);
   }
 }
 //////////////////////////////////////////////////////////////////////////
