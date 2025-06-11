@@ -118,7 +118,20 @@ jobs:
           # Show initial disk space
           Write-Host "Initial disk space:"
           Get-PSDrive C | Select-Object Used,Free
+           # The system must be told to stop managing the pagefile size automatically.
+          wmic computersystem set AutomaticManagedPagefile=False
           
+          # Find and delete any existing pagefile configuration to ensure ours is the only one.
+          $currentPagefile = Get-WmiObject -Query "SELECT * FROM Win32_PageFileSetting WHERE Name='C:\\pagefile.sys'"
+          if ($currentPagefile) {
+            $currentPagefile.Delete()
+          }
+
+          # Create a new pagefile with a static size of 12 GB (12288 MB).
+          wmic pagefileset create name="C:\\pagefile.sys"
+          wmic pagefileset where "name='C:\\pagefile.sys'" set InitialSize=12288, MaximumSize=12288
+          
+          echo "Pagefile configured to 12 GB for the duration of this job."
           # Remove Windows Defender scan history
           Remove-Item -Path "$env:ProgramData\Microsoft\Windows Defender\Scans\History\*" -Recurse -Force -ErrorAction SilentlyContinue
           Write-Host "Removed Windows Defender scan history"
