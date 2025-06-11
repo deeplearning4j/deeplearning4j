@@ -37,6 +37,7 @@
 // Windows-specific backtrace implementation
 #else
 #include <execinfo.h>
+#include <unistd.h>
 // Unix-style backtrace implementation
 #endif
 #include <graph/GraphState.h>
@@ -52,7 +53,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <types/float16.h>
-#include <unistd.h>
+
 typedef sd::InteropDataBuffer  OpaqueDataBuffer;
 typedef sd::ops::OpExecTrace ExecTrace;
 typedef sd::ShapeList OpaqueShapeList;
