@@ -1120,7 +1120,6 @@ if(SD_ANDROID_BUILD)
 
         # Enhanced LLD flags for large binaries
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-keep-memory")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--reduce-memory-overheads")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--threads=1")
 
         # Use thin LTO instead of full LTO if enabled
