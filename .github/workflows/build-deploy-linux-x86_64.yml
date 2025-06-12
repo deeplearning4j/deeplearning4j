@@ -21,7 +21,6 @@ on:
         required: false
         default: 1.0.0-SNAPSHOT
 
-
       serverId:
         description: 'Server id to publish to'
         required: false
@@ -30,12 +29,12 @@ on:
       mvnFlags:
         description: "Extra maven flags (must escape input yourself if used)"
         required: false
-        default:
+        default: ""
 
       libnd4jUrl:
         description: 'Sets a libnd4j download url for this build. LIBND4J_HOME will automatically be set. Should be used when only needing to build other modules.'
         required: false
-        default:
+        default: ""
 
       runsOn:
         description: 'System to run on'
@@ -50,7 +49,7 @@ on:
       swapSize:
         description: 'Swap file size in GB (e.g., 4 for 4GB)'
         required: false
-        default: 8
+        default: 12
 
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
@@ -74,7 +73,7 @@ jobs:
 
           - libnd4j_file_download: ${{ github.event.inputs.libnd4jUrl }}
             experimental: true
-            name: OS to run on
+            name: libnd4j download URL
 
           - deploy_to_release_staging: ${{ github.event.inputs.deployToReleaseStaging }}
             experimental: true
@@ -106,12 +105,25 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     steps:
+      - uses: AutoModality/action-clean@v1
+
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
       - name: Configure swap space
         shell: bash
@@ -129,7 +141,7 @@ jobs:
           else
             echo "Configuring swap space..."
           
-            # Use input parameter for swap size, default to 4GB
+            # Use input parameter for swap size, default to 12GB like Android workflow
             SWAP_SIZE="${{ matrix.swap_size }}G"
             echo "Creating ${SWAP_SIZE} swap file..."
           
@@ -150,19 +162,13 @@ jobs:
             swapon --show
           fi
           
- 
-          # 2. Configure kernel for aggressive memory management
-          sudo sysctl vm.swappiness=80              # Use swap aggressively
-          sudo sysctl vm.vfs_cache_pressure=200     # Reclaim cache aggressively  
-          sudo sysctl vm.dirty_ratio=5              # Write dirty pages early
-          sudo sysctl vm.dirty_background_ratio=2   # Background writes early
+          # Tune swappiness for build workloads - using Android workflow settings
+          # Lower values (10-20) prefer RAM, higher values (60+) use swap more aggressively
+          echo "Current swappiness: $(cat /proc/sys/vm/swappiness)"
+          sudo sysctl vm.swappiness=80
+          echo "Adjusted swappiness: $(cat /proc/sys/vm/swappiness)"
           sudo sysctl vm.overcommit_memory=2        # Allow overcommit
-          sudo sysctl vm.min_free_kbytes=131072     # Keep 128MB free always
-          
-          # 3. Configure for large memory allocations
-          echo 'kernel.shmmax = 68719476736' | sudo tee -a /etc/sysctl.conf
-          echo 'kernel.shmall = 4294967296' | sudo tee -a /etc/sysctl.conf
-          sudo sysctl -p
+          sudo sysctl vm.overcommit_ratio=80
           
           # Show final memory status
           echo "=== Final memory status ==="
@@ -203,16 +209,18 @@ jobs:
         id: cache-cmake
         with:
           path: /opt/cmake
-          key: ${{ runner.os }}-cmake
-          restore-keys: ${{ runner.os }}-cmake
+          key: ${{ runner.os }}-cmake-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
 
       - name: Cache protobuf install
         uses: actions/cache@v4
         id: cache-protobuf
         with:
           path: /opt/protobuf
-          key: ${{ runner.os }}-protobuf
-          restore-keys: ${{ runner.os }}-protobuf
+          key: ${{ runner.os }}-protobuf-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-protobuf-
 
       - uses: ./.github/actions/install-protobuf-linux
         if: steps.cache-protobuf.outputs.cache-hit != 'true'
@@ -278,6 +286,8 @@ jobs:
           EXTENSION: ${{ matrix.extension }}
           MAVEN_OPTS: -Xmx2g
           LIBND4J_FILE_NAME: ${{ matrix.libnd4j_file_download }}
+          RLIMIT_AS: 6442450944  # 6GB virtual memory limit
+          RLIMIT_DATA: 4294967296  # 4GB data segment limit
         run: |
           echo "libnd4j build threads ${{ matrix.build_threads }}"
           echo "deploy to release staging repo or not ${{ matrix.deploy_to_release_staging }}"
@@ -290,40 +300,19 @@ jobs:
           echo "server id ${{ matrix.server_id }}"
           echo "release repo id ${{ matrix.release_repo_id }}"
           echo "swap size ${{ matrix.swap_size }}GB"
-          echo "vm.max_map_count=2147483647" | sudo tee -a /etc/sysctl.conf
-          echo "vm.overcommit_memory=1" | sudo tee -a /etc/sysctl.conf
-          echo "vm.overcommit_ratio=100" | sudo tee -a /etc/sysctl.conf
-          sudo sysctl -p
-          
-          # Configure huge pages for large memory allocations
-          echo 'vm.nr_hugepages=1024' | sudo tee -a /etc/sysctl.conf
-          sudo sysctl -p
-          
-          # Increase file descriptor limits
-          echo "* soft nofile 1048576" | sudo tee -a /etc/security/limits.conf
-          echo "* hard nofile 1048576" | sudo tee -a /etc/security/limits.conf
-          
-          # Set aggressive memory allocation
-          export MALLOC_ARENA_MAX=1
-          export MALLOC_MMAP_THRESHOLD_=131072
-          export MALLOC_TRIM_THRESHOLD_=131072
-          export MALLOC_TOP_PAD_=131072
-          export MALLOC_MMAP_MAX_=65536
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          mvn --version
-          cmake --version
-          protoc --version
-          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
-          sudo apt-get -y autoremove
-          sudo apt-get -y clean
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
           
           # Show memory status before build
           echo "=== Memory status before build ==="
           free -h
           
+          export PATH=/opt/protobuf/bin:/opt/cmake/bin:$PATH
+          mvn --version
+          cmake --version
+          protoc --version
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$OPENBLAS_PATH"
+          
           if [ "$PERFORM_RELEASE" == 1 ]; then
-                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${command}"
+                    bash ${GITHUB_WORKSPACE}/release-specified-component.sh "${RELEASE_VERSION}" "${SNAPSHOT_VERSION}" "${RELEASE_REPO_ID}" "${COMMAND}"
                    else
                        echo "Running build and deploying to snapshots"
                        eval "${COMMAND}"

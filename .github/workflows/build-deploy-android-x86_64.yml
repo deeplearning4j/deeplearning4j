@@ -123,13 +123,13 @@ jobs:
             echo "Configuring swap space..."
           
             # Use fixed 4GB swap size
-            SWAP_SIZE="4G"
+            SWAP_SIZE="12G"
             echo "Creating ${SWAP_SIZE} swap file..."
           
             # Create swap file
             sudo fallocate -l ${SWAP_SIZE} /swapfile || {
               echo "fallocate failed, trying dd..."
-              sudo dd if=/dev/zero of=/swapfile bs=1G count=4 status=progress
+              sudo dd if=/dev/zero of=/swapfile bs=1G count=12 status=progress
             }
           
             # Set up swap
