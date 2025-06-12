@@ -1515,33 +1515,6 @@ function(genSingleFunctionCuda TEMPLATE_FILE COMBINATION OUTPUT_DIR)
     file(MAKE_DIRECTORY "${OUTPUT_DIR}")
     file(WRITE "${GENERATED_FILE}" "${NEW_CONTENT}")
 
-    set_source_files_properties(
-            ${EXEC_SOURCES}
-            ${ARRAY_SOURCES}
-            ${MEMORY_SOURCES}
-            ${CUSTOMOPS_HELPERS_SOURCES}
-            ${HELPERS_SOURCES}
-            ${LOOPS_SOURCES_CUDA}
-            ${LEGACY_SOURCES}
-            PROPERTIES
-            COMPILE_FLAGS ""
-    )
-
-    # 2. Override CUDA compilation flags to exclude problematic MSVC flags
-    string(REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-    string(REPLACE "-FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-
-    # 3. Set explicit CUDA compiler flags that work with NVCC
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo,/EHsc,/bigobj\"")
-
-    # 4. Ensure no automatic PDB generation for CUDA files
-    set(CMAKE_CUDA_FLAGS_DEBUG "${CMAKE_CUDA_FLAGS_DEBUG} -g -G")
-    set(CMAKE_CUDA_FLAGS_RELEASE "${CMAKE_CUDA_FLAGS_RELEASE} -O3")
-
-    # 5. Force disable response files (the original issue might be related)
-    set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
-
-    message(STATUS "CUDA flags after fix: ${CMAKE_CUDA_FLAGS}")
     list(APPEND CUDA_GENERATED_SOURCES "${GENERATED_FILE}")
     set(CUDA_GENERATED_SOURCES ${CUDA_GENERATED_SOURCES} PARENT_SCOPE)
 
@@ -2049,12 +2022,26 @@ if(SD_CUDA)
             endif()
         endif()
 
+        # Windows-specific CUDA compiler flags
+        if(WIN32 AND MSVC)
+            # Clean any problematic MSVC flags from CUDA compilation
+            string(REGEX REPLACE "[ ]*[/-]FS[ ]*" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
+
+            # Add Windows MSVC flags properly for NVCC
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo -Xcompiler=/EHsc -Xcompiler=/bigobj")
+        endif()
+
         if(WIN32)
             if(MSVC)
-                # Enable conforming preprocessor to fix __VA_ARGS__ expansion issues
-                add_compile_options(/Zc:preprocessor)
+                # Enable conforming preprocessor for C++ files only, not CUDA
+                set_property(SOURCE ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} 
+                    ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES}
+                    ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES} ${HELPERS_SOURCES}
+                    ${INDEXING_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES}
+                    PROPERTY COMPILE_OPTIONS "/Zc:preprocessor")
             endif()
-            # This configuration is now handled by the specific library settings below
+            # Configure CUDA libraries for Windows
             message("Configuring CUDA libraries for Windows")
             if(NOT DEFINED CUDA_cublas_LIBRARY)
                 set(CUDA_cublas_LIBRARY "${CUDA_HOME}/lib/x64/cublas.lib")
@@ -2086,18 +2073,31 @@ if(SD_CUDA)
 
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
 
-        string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
+       string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
         if(COMPUTE_CMP STREQUAL "all")
             set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89 -gencode arch=compute_90,code=sm_90")
         elseif(COMPUTE_CMP STREQUAL "auto")
-            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
+            CUDA_SELECT_NVCC_ARCH_FLAGS(TMP_CUDA_ARCH_FLAGS "Auto")
+            string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}")
         else()
-            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
+            CUDA_SELECT_NVCC_ARCH_FLAGS(TMP_CUDA_ARCH_FLAGS "${COMPUTE}")
             string(REPLACE ";" " " CUDA_ARCH_FLAGS "${TMP_CUDA_ARCH_FLAGS}")
         endif()
 
         set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+
+        # Validate CUDA flags for malformed syntax
+        if(CMAKE_CUDA_FLAGS MATCHES "-Xcompiler=\"[^\"]*,[^\"]*\"")
+            message(FATAL_ERROR "MALFORMED: -Xcompiler uses invalid comma syntax in: ${CMAKE_CUDA_FLAGS}")
+        endif()
+        if(CMAKE_CUDA_FLAGS MATCHES "\\$\\{[^}]*\\}")
+            message(FATAL_ERROR "MALFORMED: Undefined variables in CUDA flags: ${CMAKE_CUDA_FLAGS}")
+        endif()
+        if(CMAKE_CUDA_FLAGS MATCHES "  +")
+            string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            message(STATUS "Normalized multiple spaces in CUDA flags")
+        endif()
 
         message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
