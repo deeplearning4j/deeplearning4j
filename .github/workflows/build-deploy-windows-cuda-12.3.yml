@@ -100,70 +100,6 @@ jobs:
           echo "NVCC_APPEND_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CMAKE_CUDA_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Patch MSVC STL Headers for CUDA 12.3 Compatibility
-        shell: powershell
-        run: |
-          Write-Host "Patching MSVC STL headers to work with CUDA 12.3..."
-          
-          # Find Visual Studio installation
-          $vsPaths = @(
-              "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise", 
-              "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
-              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise"
-          )
-          
-          $vsPath = $null
-          foreach ($path in $vsPaths) {
-              if (Test-Path $path) {
-                  $vsPath = $path
-                  Write-Host "Found Visual Studio at: $vsPath"
-                  break
-              }
-          }
-          
-          if ($vsPath) {
-              # Find yvals_core.h file
-              $yvalsCoreFiles = Get-ChildItem -Path "$vsPath" -Name "yvals_core.h" -Recurse -ErrorAction SilentlyContinue
-          
-              foreach ($file in $yvalsCoreFiles) {
-                  $fullPath = Join-Path $vsPath $file
-                  Write-Host "Processing: $fullPath"
-          
-                  try {
-                      $content = Get-Content $fullPath -Raw
-          
-                      # Check if the problematic line exists
-                      if ($content -match 'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);') {
-                          Write-Host "Found problematic static_assert, commenting out..."
-          
-                          # Create backup
-                          $backupPath = "$fullPath.backup"
-                          Copy-Item $fullPath $backupPath -Force
-                          Write-Host "Created backup: $backupPath"
-          
-                          # Comment out the problematic line
-                          $patchedContent = $content -replace 
-                              'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);',
-                              '// static_assert(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12.4 or newer.");'
-          
-                          # Write patched content
-                          Set-Content -Path $fullPath -Value $patchedContent -NoNewline
-                          Write-Host "Successfully patched: $fullPath"
-                      }
-                      else {
-                          Write-Host "No problematic static_assert found in: $fullPath"
-                      }
-                  }
-                  catch {
-                      Write-Host "Error processing $fullPath : $_"
-                  }
-              }
-          }
-          else {
-              Write-Host "Visual Studio installation not found, skipping STL patch"
-          }
-
       - name: Free Disk Space (Windows)
         shell: powershell
         run: |
@@ -308,6 +244,113 @@ jobs:
           } else {
             Write-Error "Failed to download CUDA install script!"
             exit 1
+          }
+
+      - name: Patch MSVC yvals_core.h for CUDA 12.3 compatibility
+        shell: powershell
+        run: |
+          Write-Host "Patching MSVC STL header for CUDA 12.3 compatibility..."
+          
+          $targetFile = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.43.34808\include\yvals_core.h"
+          
+          Write-Host "Target file: $targetFile"
+          
+          # Check if file exists
+          if (-not (Test-Path $targetFile)) {
+              Write-Host "Specific file not found, searching for yvals_core.h in VS installation..."
+          
+              # Find Visual Studio installation and locate yvals_core.h
+              $vsPaths = @(
+                  "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
+                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
+              )
+          
+              $foundFile = $null
+              foreach ($vsPath in $vsPaths) {
+                  if (Test-Path $vsPath) {
+                      $yvalsCoreFiles = Get-ChildItem -Path "$vsPath" -Name "yvals_core.h" -Recurse -ErrorAction SilentlyContinue
+                      if ($yvalsCoreFiles) {
+                          $foundFile = Join-Path $vsPath $yvalsCoreFiles[0]
+                          Write-Host "Found yvals_core.h at: $foundFile"
+                          break
+                      }
+                  }
+              }
+          
+              if ($foundFile) {
+                  $targetFile = $foundFile
+              } else {
+                  Write-Error "Could not find yvals_core.h file"
+                  exit 1
+              }
+          }
+          
+          try {
+              # Create backup
+              $backupFile = "$targetFile.backup"
+              if (-not (Test-Path $backupFile)) {
+                  Copy-Item $targetFile $backupFile -Force
+                  Write-Host "Created backup: $backupFile"
+              } else {
+                  Write-Host "Backup already exists: $backupFile"
+              }
+          
+              # Read file content
+              $content = Get-Content $targetFile -Raw
+          
+              # Check if the problematic line exists and patch it
+              if ($content -match 'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);') {
+                  Write-Host "Found problematic static_assert, commenting out..."
+          
+                  # Comment out the specific line
+                  $patchedContent = $content -replace 
+                      'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);',
+                      '// static_assert(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12.4 or newer.");'
+          
+                  # Write patched content back
+                  Set-Content -Path $targetFile -Value $patchedContent -NoNewline
+                  Write-Host "Successfully patched: $targetFile"
+                  Write-Host "The problematic static_assert has been commented out."
+          
+              } else {
+                  Write-Host "Could not find the exact problematic static_assert."
+                  Write-Host "Searching for any STL1002 errors..."
+          
+                  # Try broader pattern matching
+                  if ($content -match 'STL1002.*CUDA 12\.4') {
+                      Write-Host "Found STL1002 CUDA version check, attempting to patch..."
+          
+                      # More flexible regex to catch variations
+                      $patchedContent = $content -replace 
+                          'static_assert\([^;]*STL1002[^;]*CUDA 12\.4[^;]*\);',
+                          '//       - name: Install CUDA 12.3 (if not cached)
+        if: steps.cache-cuda-123.outputs.cache-hit != 'true'
+        shell: powershell
+        env:
+          CUDA_VERSION: "12.3"
+        run: |
+          $scriptUrl = "https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1"
+          $scriptPath = ".\install_cuda_windows.ps1"
+          Write-Host "Downloading CUDA install script from $scriptUrl..."
+          Invoke-WebRequest $scriptUrl -OutFile $scriptPath -UseBasicParsing
+          if (Test-Path $scriptPath) {
+            Write-Host "Download complete. Executing script with CUDA_VERSION=$($env:CUDA_VERSION)..."
+            & $scriptPath
+          } else {
+            Write-Error "Failed to download CUDA install script!"
+            exit 1
+          }'
+          
+                      Set-Content -Path $targetFile -Value $patchedContent -NoNewline
+                      Write-Host "Applied broader patch to STL1002 CUDA version checks."
+                  } else {
+                      Write-Host "No STL1002 CUDA version check found. File may already be patched or different version."
+                  }
+              }
+          
+          } catch {
+              Write-Error "Failed to patch file: $_"
+              exit 1
           }
 
       - name: Set up Java for publishing to GitHub Packages
