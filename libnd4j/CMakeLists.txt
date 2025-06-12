@@ -2029,11 +2029,15 @@ if(SD_CUDA)
             string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
             string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-            # FIXED: Pass each MSVC flag separately using multiple -Xcompiler options
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo\" -Xcompiler=\"/EHsc\" -Xcompiler=\"/bigobj\" -Xcompiler=\"/std:c++17\"")
+            # Pass MSVC flags to NVCC without quotes to avoid parsing issues
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo -Xcompiler=/EHsc -Xcompiler=/std:c++17")
 
-            # Ensure proper runtime library linking
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/MD\"")
+            # Set runtime library to match global MSVC_RT_LIB setting
+            if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
+            endif()
         endif()
 
         if(WIN32)
@@ -2119,19 +2123,25 @@ if(SD_CUDA)
         set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lcuda -lcudart -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
 
-        # Validate CUDA flags for malformed syntax
-        if(CMAKE_CUDA_FLAGS MATCHES "-Xcompiler=\"[^\"]*,[^\"]*\"")
-            message(FATAL_ERROR "MALFORMED: -Xcompiler uses invalid comma syntax in: ${CMAKE_CUDA_FLAGS}")
-        endif()
+        # Clean up and validate CUDA flags
         if(CMAKE_CUDA_FLAGS MATCHES "\\$\\{[^}]*\\}")
             message(FATAL_ERROR "MALFORMED: Undefined variables in CUDA flags: ${CMAKE_CUDA_FLAGS}")
         endif()
-        if(CMAKE_CUDA_FLAGS MATCHES "  +")
-            string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-            message(STATUS "Normalized multiple spaces in CUDA flags")
-        endif()
 
-        message("Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
+        # Normalize whitespace in CUDA flags
+        string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
+
+        message(STATUS "Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
+
+        # Verify NVCC is accessible
+        if(WIN32)
+            find_program(NVCC_EXECUTABLE nvcc PATHS "${CUDA_TOOLKIT_ROOT_DIR}/bin" NO_DEFAULT_PATH)
+            if(NOT NVCC_EXECUTABLE)
+                message(FATAL_ERROR "nvcc.exe not found in ${CUDA_TOOLKIT_ROOT_DIR}/bin")
+            endif()
+            message(STATUS "✓ Found NVCC: ${NVCC_EXECUTABLE}")
+        endif()
 
         add_compile_definitions(SD_CUDA=true)
         set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
@@ -2185,23 +2195,6 @@ if(SD_CUDA)
 
         target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
         set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-
-# Windows-specific CUDA compiler flags
-        if(WIN32 AND MSVC)
-            # Ensure CUDA uses MSVC as host compiler
-            set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-
-            # Remove conflicting flags that cause NVCC issues
-            string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-            string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-
-            # FIXED: Pass each MSVC flag separately using multiple -Xcompiler options
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo\" -Xcompiler=\"/EHsc\" -Xcompiler=\"/bigobj\" -Xcompiler=\"/std:c++17\"")
-
-            # Ensure proper runtime library linking
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/MD\"")
-        endif()
-
         add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
         set_target_properties(${SD_LIBRARY_NAME} PROPERTIES OUTPUT_NAME ${SD_LIBRARY_NAME})
         set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
