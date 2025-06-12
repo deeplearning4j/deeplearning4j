@@ -323,23 +323,7 @@ jobs:
                       # More flexible regex to catch variations
                       $patchedContent = $content -replace 
                           'static_assert\([^;]*STL1002[^;]*CUDA 12\.4[^;]*\);',
-                          '//       - name: Install CUDA 12.3 (if not cached)
-        if: steps.cache-cuda-123.outputs.cache-hit != 'true'
-        shell: powershell
-        env:
-          CUDA_VERSION: "12.3"
-        run: |
-          $scriptUrl = "https://raw.githubusercontent.com/KonduitAI/cuda-install/master/.github/actions/install-cuda-windows/install_cuda_windows.ps1"
-          $scriptPath = ".\install_cuda_windows.ps1"
-          Write-Host "Downloading CUDA install script from $scriptUrl..."
-          Invoke-WebRequest $scriptUrl -OutFile $scriptPath -UseBasicParsing
-          if (Test-Path $scriptPath) {
-            Write-Host "Download complete. Executing script with CUDA_VERSION=$($env:CUDA_VERSION)..."
-            & $scriptPath
-          } else {
-            Write-Error "Failed to download CUDA install script!"
-            exit 1
-          }'
+                          '// $&'
           
                       Set-Content -Path $targetFile -Value $patchedContent -NoNewline
                       Write-Host "Applied broader patch to STL1002 CUDA version checks."
