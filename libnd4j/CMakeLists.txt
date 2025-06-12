@@ -2186,19 +2186,20 @@ if(SD_CUDA)
         target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
         set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
+# Windows-specific CUDA compiler flags
         if(WIN32 AND MSVC)
-            message("Configuring MSVC options for CUDA build on Windows")
+            # Ensure CUDA uses MSVC as host compiler
+            set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-            # Apply C++ specific flags only to C++ source files
-            set_property(SOURCE ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES}
-                    ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES}
-                    ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES}
-                    ${HELPERS_SOURCES} ${INDEXING_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES}
-                    PROPERTY COMPILE_OPTIONS "/EHsc;/bigobj;/std:c++17"
-            )
+            # Remove conflicting flags that cause NVCC issues
+            string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-            # CUDA files get their flags through CMAKE_CUDA_FLAGS
-            # No additional target_compile_options needed for .cu files
+            # FIXED: Pass each MSVC flag separately using multiple -Xcompiler options
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo\" -Xcompiler=\"/EHsc\" -Xcompiler=\"/bigobj\" -Xcompiler=\"/std:c++17\"")
+
+            # Ensure proper runtime library linking
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/MD\"")
         endif()
 
         add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
