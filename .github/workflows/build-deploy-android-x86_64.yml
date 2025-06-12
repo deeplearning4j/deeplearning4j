@@ -352,6 +352,8 @@ jobs:
           PUBLISH_TO: central
           DEPLOY_TO: central
           MAVEN_OPTS: -Xmx2g
+          RLIMIT_AS: 6442450944  # 6GB virtual memory limit
+          RLIMIT_DATA: 4294967296  # 4GB data segment limit
         run: |
           echo "--- Environment for Build Step ---"
           echo "NDK Path used: ${ANDROID_NDK}"
