@@ -323,7 +323,7 @@ static void unsortedSegmentMaxFunctor_(LaunchContext* context, NDArray* input, N
    segmentMaxTadKernel<T, I><<<dims.x, dims.y, dims.z, *stream>>>(
        input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets,
        reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(),
-       output->specialShapeInfo(), outputTads, outputTadOffsets,0,indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
+       output->specialShapeInfo(), outputTads, outputTadOffsets,static_cast<T>(0),indices->lengthOf(),packX->numberOfTads(),packZ->numberOfTads());
 
    delete dimensions;
  }
