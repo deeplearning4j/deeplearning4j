@@ -1928,11 +1928,11 @@ if(SD_CUDA)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
     # Disable response files for CUDA compilation on Windows
     if(WIN32)
-        # Enable response files to handle long command lines
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
+        # DISABLE response files for CUDA compilation on Windows
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF)
     endif()
     add_definitions(-D__CUDABLAS__=true)
     find_package(CUDA REQUIRED)
@@ -1964,16 +1964,20 @@ if(SD_CUDA)
         endif()
 
         # Windows-specific CUDA compiler flags
+        # Windows-specific CUDA compiler flags
         if(WIN32 AND MSVC)
             # Ensure CUDA uses MSVC as host compiler
             set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-            # Remove conflicting flags that cause NVCC issues
-            string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-            string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            # Start with clean CUDA flags
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-            # Pass MSVC flags to NVCC without quotes to avoid parsing issues
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo -Xcompiler=/EHsc -Xcompiler=/std:c++17")
+            # Remove problematic MSVC flags from CUDA compilation
+            string(REGEX REPLACE "/FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            string(REGEX REPLACE "/Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
+            # Add MSVC flags properly for NVCC
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
 
             # Set runtime library to match global MSVC_RT_LIB setting
             if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
@@ -1981,6 +1985,10 @@ if(SD_CUDA)
             else()
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
             endif()
+
+            # Disable response files for CUDA
+            set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
+            set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
         endif()
 
         if(WIN32)
