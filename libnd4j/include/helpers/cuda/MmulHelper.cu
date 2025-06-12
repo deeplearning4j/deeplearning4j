@@ -251,7 +251,7 @@ static SD_KERNEL void usualCudaDot(const LongType length, const double alpha, co
  __syncthreads();
 
  if (tid == 0) {
-   T3 sum = 0;
+   T3 sum = static_cast<T>(0);
    for (LongType i = 0; i < length; ++i) {
      sum = sum + pairwiseMul[i];
    }
