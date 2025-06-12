@@ -2664,23 +2664,32 @@ SD_INLINE TT* internal_alloc_host(WW workSpace, sd::LongType len) {
   TT* var;
   if (workSpace == nullptr) {
 #if defined(SD_ALIGNED_ALLOC)
+    // Allocate aligned memory, ensuring the size is a multiple of the alignment
     var = static_cast<TT*>(
         aligned_alloc(SD_DESIRED_ALIGNMENT,
                       (len * sizeof(TT) + SD_DESIRED_ALIGNMENT - 1) & (-SD_DESIRED_ALIGNMENT)));
 #else
+    // Fallback to standard array allocation
     var = new TT[len];
 #endif
 #if !defined(_RELEASE)
+    // Track memory allocation in non-release builds
     sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, var, len * sizeof(TT));
 #endif
   } else {
+    // Allocate memory from a provided workspace
     var = reinterpret_cast<TT*>(workSpace->allocateBytes(len * sizeof(TT)));
   }
-  if constexpr (std::is_trivially_copyable<TT>::value) {
+
+  // This new condition correctly identifies float16 as a class type.
+  if constexpr (!std::is_class<TT>::value) {
+    // Use memset for fundamental types like float, double, int, etc.
     memset(var, 0, len * sizeof(TT));
   } else {
+    // Use proper value-initialization for class types like float16.
     std::fill_n(var, len, TT());
   }
+
   return var;
 }
 

@@ -119,7 +119,7 @@ static SD_KERNEL void broadcastBoolInverseSimple(
 }
 
 namespace functions {
-namespace broadcast {
+amespace broadcast {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
