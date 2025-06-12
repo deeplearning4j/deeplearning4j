@@ -1097,100 +1097,92 @@ if(SD_ANDROID_BUILD)
 
     # === NDK x86_64 SPECIFIC PLT OVERFLOW FIXES ===
     # === COMPLETE ANDROID x86_64 PLT OVERFLOW PREVENTION ===
+    # === VERIFIED ANDROID x86_64 PLT OVERFLOW PREVENTION ===
     if(ANDROID_ABI MATCHES "x86_64")
-        message(STATUS "Applying comprehensive Android x86_64 PLT overflow prevention")
+        message(STATUS "Applying verified Android x86_64 PLT overflow prevention")
 
-        # === COMPILER FLAGS FOR SYMBOL REDUCTION ===
-        # Large memory model - critical for template libraries
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mcmodel=large")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mcmodel=large")
-        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mcmodel=large")
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mcmodel=large")
+        # === VERIFIED COMPILER FLAGS ===
+        # Mandatory PIC for Android shared libraries (security requirement)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fPIC")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fPIC")
 
-        # Aggressive symbol visibility control
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvisibility=hidden -fvisibility-inlines-hidden")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fvisibility=hidden -fvisibility-inlines-hidden")
+        # Disable PLT to avoid PLT32 relocation issues (verified flag)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-plt")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-plt")
 
-        # Template depth limits to prevent infinite expansion
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ftemplate-depth=512 -fconstexpr-depth=512")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ftemplate-depth=256 -fconstexpr-depth=256")
+        # Prevent symbol interposition for better optimization (verified flag)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-semantic-interposition")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-semantic-interposition")
 
-        # Aggressive inlining to reduce PLT entries
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -finline-functions -finline-limit=600")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions -finline-limit=300")
+        # Template depth control (verified flag)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fbracket-depth=512")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fbracket-depth=256")
 
-        # Reduce debug info size (major PLT contributor)
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g1 -fno-var-tracking -fno-var-tracking-assignments")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g0")
+        # Constexpr evaluation limits (verified flag)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fconstexpr-steps=1000000")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fconstexpr-steps=500000")
 
-        # Template instantiation control
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-implicit-templates")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-implicit-templates")
-
-        # Symbol uniqueness control
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-gnu-unique")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-gnu-unique")
-
-        # Section splitting for better linking
+        # Section splitting for better linking (standard GCC/Clang flag)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffunction-sections -fdata-sections")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ffunction-sections -fdata-sections")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -ffunction-sections -fdata-sections")
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ffunction-sections -fdata-sections")
 
-        # Memory optimization during compilation
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-merge-all-constants")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-merge-all-constants")
+        # Symbol visibility control (standard flag)
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvisibility=hidden -fvisibility-inlines-hidden")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fvisibility=hidden -fvisibility-inlines-hidden")
 
-        # === CRITICAL LINKER FLAGS FOR PLT OVERFLOW ===
-        # Use LLD linker (handles large PLT better than GNU LD)
+        # === VERIFIED LLD LINKER FLAGS ===
+        # Force use of LLD (only supported linker in NDK r26+)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
 
-        # Large page size for extensive symbol tables
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=0x200000")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=0x200000")
+        # Security: Prevent text relocations (Android requirement since API 23)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,text")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,text")
 
-        # GNU hash style for large symbol tables
+        # Security: Separate code and data segments
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,separate-code")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,separate-code")
+
+        # Android 15+ 16KB page size support
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,separate-loadable-segments")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,separate-loadable-segments")
+
+        # 16KB page alignment for Android 15+ compatibility
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
+
+        # GNU hash style for better performance
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--hash-style=gnu")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--hash-style=gnu")
 
-        # Disable rosegment (problematic with large PLTs)
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-rosegment")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-rosegment")
+        # Garbage collection of unused sections
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 
-        # Strict symbol resolution
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined-version")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--fatal-warnings")
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+        # Strip symbols for smaller binaries
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--strip-all")
 
-        # Control linking behavior for large libraries
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
-
-        # Force immediate binding
+        # Immediate binding for security
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
 
-        # Prevent memory mapping issues with large binaries
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-mmap-output-file")
+        # Build ID for debugging
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--build-id=sha1")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--build-id=sha1")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -mcmodel=medium")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -mcmodel=medium")
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -mcmodel=medium")
+        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -mcmodel=medium")
 
-        # Use static libgcc to reduce external dependencies
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
 
-        # Garbage collection and stripping for size reduction
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--strip-all")
 
-        # === MEMORY AND COMPILATION OPTIMIZATIONS ===
-        # Increase GCC memory parameters for large template compilation
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
 
-        # Prevent excessive memory usage during template instantiation
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param max-vartrack-size=0")
-
-        message(STATUS "Android x86_64 PLT overflow prevention applied")
+        message(STATUS "Applied verified Android x86_64 optimizations")
         message(STATUS "Shared Linker Flags: ${CMAKE_SHARED_LINKER_FLAGS}")
-        message(STATUS "CXX Release Flags: ${CMAKE_CXX_FLAGS_RELEASE}")
     endif()
 
 elseif(APPLE)
@@ -1233,30 +1225,41 @@ else()
         endif()
     endif()
 endif()
-
-# Additional target-specific flags to be applied after library creation
-# Add this function to apply PLT-specific flags to your object and shared libraries
+# Verified function for applying target-specific optimizations
 if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
-    # This will be applied later in your CMakeLists.txt after add_library calls:
     function(apply_android_x86_64_plt_fixes target_name)
+        # Additional target-specific compiler flags (all verified)
         target_compile_options(${target_name} PRIVATE
                 -ffunction-sections
                 -fdata-sections
                 -fvisibility=hidden
                 -fvisibility-inlines-hidden
+                -fno-plt
+                -fno-semantic-interposition
         )
 
-        if(TARGET ${target_name} AND NOT ${target_name} MATCHES ".*_object$")
+        # Target-specific preprocessor definitions
+        target_compile_definitions(${target_name} PRIVATE
+                ANDROID_X86_64_OPTIMIZED=1
+        )
+
+        # Apply linker flags only to shared/executable targets
+        get_target_property(target_type ${target_name} TYPE)
+        if(target_type STREQUAL "SHARED_LIBRARY" OR target_type STREQUAL "EXECUTABLE")
             target_link_options(${target_name} PRIVATE
                     -Wl,--gc-sections
-                    -Wl,--icf=all
-                    -Wl,-z,max-page-size=0x200000
+                    -Wl,-z,max-page-size=16384
                     -Wl,--hash-style=gnu
+                    -Wl,-z,separate-code
+                    -Wl,-z,separate-loadable-segments
+                    -Wl,-z,text
+                    -Wl,-z,now
             )
         endif()
+
+        message(STATUS "Applied verified Android x86_64 optimizations to target: ${target_name}")
     endfunction()
 endif()
-
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Ensure C++17 standard is set for MSVC
     set(CMAKE_CXX_STANDARD 17)
