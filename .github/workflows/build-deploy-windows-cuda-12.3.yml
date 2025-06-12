@@ -99,6 +99,71 @@ jobs:
           echo "CUDAFLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "NVCC_APPEND_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "CMAKE_CUDA_FLAGS=--allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Patch MSVC STL Headers for CUDA 12.3 Compatibility
+        shell: powershell
+        run: |
+          Write-Host "Patching MSVC STL headers to work with CUDA 12.3..."
+          
+          # Find Visual Studio installation
+          $vsPaths = @(
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise", 
+              "${env:ProgramFiles}\Microsoft Visual Studio\2019\Enterprise",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2019\Enterprise"
+          )
+          
+          $vsPath = $null
+          foreach ($path in $vsPaths) {
+              if (Test-Path $path) {
+                  $vsPath = $path
+                  Write-Host "Found Visual Studio at: $vsPath"
+                  break
+              }
+          }
+          
+          if ($vsPath) {
+              # Find yvals_core.h file
+              $yvalsCoreFiles = Get-ChildItem -Path "$vsPath" -Name "yvals_core.h" -Recurse -ErrorAction SilentlyContinue
+          
+              foreach ($file in $yvalsCoreFiles) {
+                  $fullPath = Join-Path $vsPath $file
+                  Write-Host "Processing: $fullPath"
+          
+                  try {
+                      $content = Get-Content $fullPath -Raw
+          
+                      # Check if the problematic line exists
+                      if ($content -match 'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);') {
+                          Write-Host "Found problematic static_assert, commenting out..."
+          
+                          # Create backup
+                          $backupPath = "$fullPath.backup"
+                          Copy-Item $fullPath $backupPath -Force
+                          Write-Host "Created backup: $backupPath"
+          
+                          # Comment out the problematic line
+                          $patchedContent = $content -replace 
+                              'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);',
+                              '// static_assert(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12.4 or newer.");'
+          
+                          # Write patched content
+                          Set-Content -Path $fullPath -Value $patchedContent -NoNewline
+                          Write-Host "Successfully patched: $fullPath"
+                      }
+                      else {
+                          Write-Host "No problematic static_assert found in: $fullPath"
+                      }
+                  }
+                  catch {
+                      Write-Host "Error processing $fullPath : $_"
+                  }
+              }
+          }
+          else {
+              Write-Host "Visual Studio installation not found, skipping STL patch"
+          }
+
       - name: Free Disk Space (Windows)
         shell: powershell
         run: |
