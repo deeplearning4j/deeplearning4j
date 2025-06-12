@@ -156,7 +156,7 @@ jobs:
           sudo sysctl vm.vfs_cache_pressure=200     # Reclaim cache aggressively  
           sudo sysctl vm.dirty_ratio=5              # Write dirty pages early
           sudo sysctl vm.dirty_background_ratio=2   # Background writes early
-          sudo sysctl vm.overcommit_memory=1        # Allow overcommit
+          sudo sysctl vm.overcommit_memory=2        # Allow overcommit
           sudo sysctl vm.min_free_kbytes=131072     # Keep 128MB free always
           
           # 3. Configure for large memory allocations
