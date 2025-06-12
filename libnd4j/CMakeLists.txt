@@ -2029,8 +2029,8 @@ if(SD_CUDA)
             string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
             string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
 
-            # Add proper MSVC host compiler flags for NVCC
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo,/EHsc,/bigobj,/std:c++17\"")
+            # FIXED: Pass each MSVC flag separately using multiple -Xcompiler options
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo\" -Xcompiler=\"/EHsc\" -Xcompiler=\"/bigobj\" -Xcompiler=\"/std:c++17\"")
 
             # Ensure proper runtime library linking
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/MD\"")
