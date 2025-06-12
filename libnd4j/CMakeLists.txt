@@ -1261,22 +1261,16 @@ if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
     endfunction()
 endif()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # Ensure C++17 standard is set for MSVC
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     set(CMAKE_CXX_EXTENSIONS OFF)
 
-    # Enable conforming preprocessor for C++17 compliance
-    add_compile_options(/Zc:preprocessor)
+    # Only apply conforming preprocessor to C++ files, not CUDA
+    if(NOT SD_CUDA)
+        add_compile_options(/Zc:preprocessor)
+    endif()
 
-    # Set architecture flags with C++17 support
-    set(ARCH_TUNE "/std:c++17")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
-
-    # Add big object file support for large template instantiations
     add_compile_options(/bigobj)
-
-    # Enable exception handling
     add_compile_options(/EHsc)
 
     message(STATUS "MSVC C++17 configuration applied")
@@ -1991,10 +1985,11 @@ if(SD_CUDA)
     set(CMAKE_CUDA_COMPILER_LAUNCHER "" CACHE STRING "CUDA compiler launcher")
     # Disable response files for CUDA compilation on Windows
     if(WIN32)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF)
+        # Enable response files to handle long command lines
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
     endif()
     add_definitions(-D__CUDABLAS__=true)
     find_package(CUDA REQUIRED)
@@ -2027,31 +2022,65 @@ if(SD_CUDA)
 
         # Windows-specific CUDA compiler flags
         if(WIN32 AND MSVC)
-            # Clean any problematic MSVC flags from CUDA compilation
-            string(REGEX REPLACE "[ ]*[/-]FS[ ]*" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-            string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
+            # Ensure CUDA uses MSVC as host compiler
+            set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-            # Add Windows MSVC flags properly for NVCC
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo -Xcompiler=/EHsc -Xcompiler=/bigobj")
+            # Remove conflicting flags that cause NVCC issues
+            string(REGEX REPLACE "[/-]FS" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+            string(REGEX REPLACE "[/-]Zc:preprocessor" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
+            # Add proper MSVC host compiler flags for NVCC
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/nologo,/EHsc,/bigobj,/std:c++17\"")
+
+            # Ensure proper runtime library linking
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=\"/MD\"")
         endif()
 
         if(WIN32)
-            if(MSVC)
-                # Enable conforming preprocessor for C++ files only, not CUDA
-                set_property(SOURCE ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES} 
-                    ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES}
-                    ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES} ${HELPERS_SOURCES}
-                    ${INDEXING_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES}
-                    PROPERTY COMPILE_OPTIONS "/Zc:preprocessor")
+            # Use CUDA_TOOLKIT_ROOT_DIR or detect automatically
+            if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)
+                if(DEFINED ENV{CUDA_PATH})
+                    set(CUDA_TOOLKIT_ROOT_DIR $ENV{CUDA_PATH})
+                else()
+                    # Try common installation paths
+                    set(CUDA_SEARCH_PATHS
+                            "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6"
+                            "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0"
+                            "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8"
+                    )
+                    foreach(path ${CUDA_SEARCH_PATHS})
+                        if(EXISTS "${path}")
+                            set(CUDA_TOOLKIT_ROOT_DIR "${path}")
+                            break()
+                        endif()
+                    endforeach()
+                endif()
             endif()
-            # Configure CUDA libraries for Windows
-            message("Configuring CUDA libraries for Windows")
-            if(NOT DEFINED CUDA_cublas_LIBRARY)
-                set(CUDA_cublas_LIBRARY "${CUDA_HOME}/lib/x64/cublas.lib")
+
+            # Find libraries with proper architecture suffix
+            find_library(CUDA_cublas_LIBRARY
+                    NAMES cublas
+                    PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
+                    NO_DEFAULT_PATH
+            )
+
+            find_library(CUDA_cusolver_LIBRARY
+                    NAMES cusolver
+                    PATHS "${CUDA_TOOLKIT_ROOT_DIR}/lib/x64" "${CUDA_TOOLKIT_ROOT_DIR}/lib"
+                    NO_DEFAULT_PATH
+            )
+
+            # Verify libraries were found
+            if(NOT CUDA_cublas_LIBRARY)
+                message(FATAL_ERROR "CUDA cuBLAS library not found. Check CUDA installation.")
             endif()
-            if(NOT DEFINED CUDA_cusolver_LIBRARY)
-                set(CUDA_cusolver_LIBRARY "${CUDA_HOME}/lib/x64/cusolver.lib")
+
+            if(NOT CUDA_cusolver_LIBRARY)
+                message(FATAL_ERROR "CUDA cuSOLVER library not found. Check CUDA installation.")
             endif()
+
+            message(STATUS "Found CUDA cuBLAS: ${CUDA_cublas_LIBRARY}")
+            message(STATUS "Found CUDA cuSOLVER: ${CUDA_cusolver_LIBRARY}")
         endif()
         if("${SD_ARCH}" MATCHES "armv8-a" AND UNIX)
             message("Adding Jetson Nano specific settings")
@@ -2157,10 +2186,19 @@ if(SD_CUDA)
         target_include_directories(${OBJECT_LIB_NAME} PUBLIC ${EXTERNAL_INCLUDE_DIRS})
         set_property(TARGET ${OBJECT_LIB_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-        if(WIN32)
-            message("Enabling /EHsc for CUDA on Windows")
-            target_compile_options(${OBJECT_LIB_NAME} INTERFACE "/EHsc" "/bigobj")
-            target_compile_options(${OBJECT_LIB_NAME} PRIVATE "/EHsc" "/bigobj")
+        if(WIN32 AND MSVC)
+            message("Configuring MSVC options for CUDA build on Windows")
+
+            # Apply C++ specific flags only to C++ source files
+            set_property(SOURCE ${PERF_SOURCES} ${EXCEPTIONS_SOURCES} ${EXEC_SOURCES}
+                    ${TYPES_SOURCES} ${ARRAY_SOURCES} ${MEMORY_SOURCES} ${GRAPH_SOURCES}
+                    ${CUSTOMOPS_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES}
+                    ${HELPERS_SOURCES} ${INDEXING_SOURCES} ${LOOPS_SOURCES} ${LEGACY_SOURCES}
+                    PROPERTY COMPILE_OPTIONS "/EHsc;/bigobj;/std:c++17"
+            )
+
+            # CUDA files get their flags through CMAKE_CUDA_FLAGS
+            # No additional target_compile_options needed for .cu files
         endif()
 
         add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:${OBJECT_LIB_NAME}>)
