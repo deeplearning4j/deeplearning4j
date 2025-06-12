@@ -23,7 +23,7 @@ cmake_minimum_required(VERSION 3.15)
 # during CMake's initial CUDA compiler identification step.
 #   --allow-unsupported-compiler: The flag for nvcc itself.
 #   -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__: The macro that the CUDA headers check for.
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
 # Also add it as a compile definition to ensure it gets to the preprocessor
 add_compile_definitions(__NVCC_ALLOW_UNSUPPORTED_COMPILER__)
 project(libnd4j)
