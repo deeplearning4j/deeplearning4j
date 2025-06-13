@@ -36,7 +36,7 @@
 __constant__ char deviceConstantMemory[CONSTANT_LIMIT];
 
 namespace sd {
-static void *getConstantSpace() {
+void * ConstantHelper::getConstantSpace() {
   Pointer dConstAddr;
   auto dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
 

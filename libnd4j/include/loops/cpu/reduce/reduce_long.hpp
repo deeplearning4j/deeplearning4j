@@ -172,10 +172,10 @@ template <typename X, typename Z>
 template <typename OpType>
 void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, const void *vx,
                                             const sd::LongType *xShapeInfo, void *vextraParams, void *vz,
-                                            const sd::LongType *zShapeInfo, const long long int *dims) {
+                                            const sd::LongType *zShapeInfo, const sd::LongType *dims) {
   const X *x = reinterpret_cast<const X *>(vx);
   Z *z = reinterpret_cast<Z *>(vz);
-  X *extraParams = reinterpret_cast<X *>(vextraParams);
+  sd::LongType *extraParams = reinterpret_cast<sd::LongType *>(vextraParams);
 
   const int xRank = shape::rank(xShapeInfo);
   const int zRank = shape::rank(zShapeInfo);
@@ -189,7 +189,16 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
   }
 
   if (shape::length(zShapeInfo) == 1) {
-    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+    // Convert sd::LongType* to X* for the scalar operation
+    X convertedExtraParams[3];  // Most ops need at most 3 extra params
+    if (extraParams != nullptr) {
+      // Convert the first few long parameters to X type
+      // This handles common cases where we need type conversion
+      for (int i = 0; i < 3; i++) {
+        convertedExtraParams[i] = static_cast<X>(extraParams[i]);
+      }
+    }
+    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams != nullptr ? convertedExtraParams : nullptr);
     return;
   }
 
@@ -199,11 +208,23 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     return;
   }
 
+  // Convert sd::LongType* to X* for ReductionLongLoops which expects X* extraParams
+  X convertedExtraParams[3];  // Most ops need at most 3 extra params
+  X* convertedExtraParamsPtr = nullptr;
+  if (extraParams != nullptr) {
+    // Convert the first few long parameters to X type
+    for (int i = 0; i < 3; i++) {
+      convertedExtraParams[i] = static_cast<X>(extraParams[i]);
+    }
+    convertedExtraParamsPtr = convertedExtraParams;
+  }
+
 #ifdef SD_LOOPS_INLINED
-  sd::ReductionLoops<X, Z, X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+  // Use ReductionLongLoops with properly converted extraParams
+  sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, convertedExtraParamsPtr);
 #else
   sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims,
-                                                                 extraParams);
+                                                                 convertedExtraParamsPtr);
 #endif
 }
 

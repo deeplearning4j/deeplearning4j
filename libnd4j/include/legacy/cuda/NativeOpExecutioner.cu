@@ -964,10 +964,12 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext *lc, int opNum, con
   }
   dim3 launchDims = getLaunchDims("transformScan");
   if (sd::DataTypeUtils::isS(xType)) {
+#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                           ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
                                                    dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr),
                           SD_STRING_TYPES, SD_STRING_TYPES);
+#endif
   } else {
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny,
                           ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ,
@@ -1345,11 +1347,13 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext* lc, int opNum, void cons
   }
 
   if (sd::DataTypeUtils::isS(xType)) {
-    BUILD_SINGLE_SELECTOR_THRICE(
+#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
+     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,
         ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams,
                                     dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ),
         SD_STRING_TYPES);
+#endif
   } else {
     BUILD_SINGLE_SELECTOR_THRICE(
         xType, functions::scalar::ScalarTransform,

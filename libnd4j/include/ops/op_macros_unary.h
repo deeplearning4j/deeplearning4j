@@ -36,12 +36,12 @@ namespace simdOps {
   template <typename X>                                                                         \
   class OP_NAME {                                                                               \
    private:                                                                                     \
-    static SD_INLINE X op_logic(X d1, X* params) { return sd::math::MATH_FUNC<X COMMA X>(d1); }                               \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                         \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { return sd::math::MATH_FUNC<X COMMA X>(d1); }                               \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                         \
                                                                                                 \
    public:                                                                                      \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                       \
-    static X op(X d1, X* params) {                                                             \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                             \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                         \
         return op_logic(d1, params);                                                           \
       else                                                                                      \
@@ -56,12 +56,12 @@ namespace simdOps {
   template <typename X, typename Z>                                                            \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE Z op_logic(X d1, Z* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1); }             \
-    static Z op_simd(X d1, Z* params) { return op_logic(d1, params); }                         \
+    SD_HOST_DEVICE SD_INLINE static  Z op_logic(X d1, Z* params) { return sd::math::MATH_FUNC<X COMMA Z>(d1); }             \
+    static SD_HOST_DEVICE Z op_simd(X d1, Z* params) { return op_logic(d1, params); }                         \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special no_op_exec_special_cuda;                                                \
-    static Z op(X d1, Z* params) {                                                            \
+    static SD_HOST_DEVICE Z op(X d1, Z* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                        \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -80,18 +80,18 @@ namespace simdOps {
   template <typename X>                                                                        \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE X op_logic(X d1, X* params) {                                            \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) {                                            \
       if constexpr (std::is_same_v<X COMMA bool>) {                                                \
         return d1; /* Safe default for bool to avoid multiplication warnings */              \
       } else {                                                                                 \
         return OPERATION;                                                                      \
       }                                                                                        \
     }                                                                                          \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                      \
-    static X op(X d1, X* params) {                                                            \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value || std::is_same_v<X COMMA bool>) \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -110,12 +110,12 @@ namespace simdOps {
   template <typename X>                                                                        \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE X op_logic(X d1, X* params) { return (CONDITION) ? (TRUE_VAL) : (FALSE_VAL); }                \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { return (CONDITION) ? (TRUE_VAL) : (FALSE_VAL); }                \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                      \
-    static X op(X d1, X* params) {                                                            \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                        \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -137,7 +137,7 @@ namespace simdOps {
   template <typename X>                                                                        \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE X op_logic(X d1, X* params) {                                            \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) {                                            \
       if (IF_CONDITION1)                                                                      \
         return RETURN1;                                                                        \
       else if (ELIF_CONDITION2)                                                               \
@@ -145,12 +145,12 @@ namespace simdOps {
       else                                                                                     \
         return ELSE_RETURN;                                                                    \
     }                                                                                          \
-    SD_OP_DEF static X op_simd(X d1, X* params) { return op_logic(d1, params); }              \
+    SD_OP_DEF static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }              \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special_same;                                                                   \
     no_op_exec_special_same_cuda;                                                              \
-    static X op(X d1, X* params) {                                                            \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value ||                      \
                     simdOps::is_simd_unsupported_argument_type<X>::value)                      \
         return op_logic(d1, params);                                                          \
@@ -170,12 +170,12 @@ namespace simdOps {
   template <typename X>                                                                        \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE X op_logic(X d1, X* params) { return MATH_EXPRESSION; }                  \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { return MATH_EXPRESSION; }                  \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                      \
-    static X op(X d1, X* params) {                                                            \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                        \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -190,12 +190,12 @@ namespace simdOps {
   template <typename X, typename Z>                                                            \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE Z op_logic(X d1, Z* params) { return MATH_EXPRESSION; }                  \
-    static Z op_simd(X d1, Z* params) { return op_logic(d1, params); }                        \
+    SD_HOST_DEVICE SD_INLINE static  Z op_logic(X d1, Z* params) { return MATH_EXPRESSION; }                  \
+    static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Z* params) { return op_logic(d1, params); }                        \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special no_op_exec_special_cuda;                                                \
-    static Z op(X d1, Z* params) {                                                            \
+    static SD_HOST_DEVICE Z op(X d1, Z* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                        \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -214,12 +214,12 @@ namespace simdOps {
   template <typename X>                                                                        \
   class OP_NAME {                                                                              \
    private:                                                                                    \
-    static SD_INLINE X op_logic(X d1, X* params) { return d1; }                               \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { return d1; }                               \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                        \
                                                                                                \
    public:                                                                                     \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                      \
-    static X op(X d1, X* params) {                                                            \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                            \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                        \
         return op_logic(d1, params);                                                          \
       else                                                                                     \
@@ -235,12 +235,12 @@ namespace simdOps {
   template <typename X>                                                                          \
   class OP_NAME {                                                                               \
    private:                                                                                     \
-    static SD_INLINE X op_logic(X d1, X* params) { OPERATION }                                 \
-    static X op_simd(X d1, X* params) { return op_logic(d1, params); }                         \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { OPERATION }                                 \
+    static SD_HOST_DEVICE X op_simd(X d1, X* params) { return op_logic(d1, params); }                         \
                                                                                                 \
    public:                                                                                      \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                       \
-    static X op(X d1, X* params) {                                                             \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                             \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                         \
         return op_logic(d1, params);                                                           \
       else                                                                                      \
@@ -255,21 +255,21 @@ namespace simdOps {
   template <typename X>                                                                         \
   class OP_NAME {                                                                               \
    private:                                                                                     \
-    static SD_INLINE X op_logic(X d1, X* params) { OPERATION }                                 \
+    SD_HOST_DEVICE SD_INLINE static  X op_logic(X d1, X* params) { OPERATION }                                 \
                                                                                                 \
     template<typename TX = X>                                                                  \
-    static SD_INLINE enable_if_simd_safe<TX COMMA TX> op_simd(TX d1, TX* params) {             \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TX COMMA TX> op_simd(TX d1, TX* params) {             \
       return op_logic(d1, params);                                                             \
     }                                                                                           \
                                                                                                 \
     template<typename TX = X>                                                                  \
-    static SD_INLINE enable_if_simd_unsafe<TX COMMA TX> op_simd(TX d1, TX* params) {           \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TX COMMA TX> op_simd(TX d1, TX* params) {           \
       return op_logic(d1, params);                                                             \
     }                                                                                           \
                                                                                                 \
    public:                                                                                      \
     no_op_exec_special_same no_op_exec_special_same_cuda;                                       \
-    static X op(X d1, X* params) {                                                             \
+    static SD_HOST_DEVICE X op(X d1, X* params) {                                                             \
       if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                         \
         return op_logic(d1, params);                                                           \
       else                                                                                      \

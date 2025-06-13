@@ -126,6 +126,10 @@ ConstantDataBuffer *ConstantHelper::constantBuffer(const ConstantDescriptor &des
   return result;
 }
 
+void * ConstantHelper::getConstantSpace() {
+  THROW_EXCEPTION("NO CONSTANT SPACE FOUND FOR CPU;");
+}
+
 sd::LongType ConstantHelper::getCachedAmount(int deviceId) {
   int numDevices = getNumberOfDevices();
   if (deviceId > numDevices || deviceId < 0)

@@ -23,6 +23,15 @@
 
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
+
+// Forward declare types that might be conditionally compiled
+#if defined(HAS_FLOAT16)
+struct float16;
+#endif
+#if defined(HAS_BFLOAT16)
+struct bfloat16;
+#endif
+
 #include <types/types.h>
 
 /*
@@ -39,8 +48,12 @@ Macros like INSTANTIATE_PROMOTE and CALLBACK_INSTANTIATE_PROMOTE help in instant
 PROMOTE_ARGS macro handles function arguments correctly.
  */
 
-// Type ranking system
-template<typename T> struct type_rank;
+// Type ranking system with fallback
+template<typename T>
+struct type_rank {
+  // Default fallback - gives a very low rank to unknown types
+  static constexpr int value = -1;
+};
 
 #if defined(HAS_BOOL)
 template<> struct type_rank<bool>        : std::integral_constant<int, 0> {};
@@ -81,6 +94,7 @@ template<> struct type_rank<uint64_t>    : std::integral_constant<int, 4> {};
 template<> struct type_rank<unsigned long> : std::integral_constant<int, 4> {};
 #endif
 
+// FIXED: Only specialize for float16/bfloat16 if they are actually enabled
 #if defined(HAS_FLOAT16)
 template<> struct type_rank<float16>     : std::integral_constant<int, 5> {};
 #endif
@@ -97,25 +111,57 @@ template<> struct type_rank<float>       : std::integral_constant<int, 6> {};
 template<> struct type_rank<double>      : std::integral_constant<int, 7> {};
 #endif
 
+// SFINAE helper to check if a type has a valid type_rank
+template<typename T, typename = void>
+struct has_type_rank : std::false_type {};
 
-// promote_type trait
-template<typename T1, typename T2>
+template<typename T>
+struct has_type_rank<T, typename std::enable_if<(type_rank<T>::value >= 0)>::type> : std::true_type {};
+
+// Safe promote_type trait that only works with enabled types
+template<typename T1, typename T2, typename Enable = void>
 struct promote_type {
+  // Fallback - if either type doesn't have a rank, default to T1
+  using type = T1;
+};
+
+template<typename T1, typename T2>
+struct promote_type<T1, T2, typename std::enable_if<
+                                has_type_rank<T1>::value && has_type_rank<T2>::value
+                                >::type> {
   using type = typename std::conditional<(type_rank<T1>::value >= type_rank<T2>::value), T1, T2>::type;
 };
 
-// promote function template
+// promote function template with SFINAE guard
 template <typename Type1, typename Type2, typename ValueType>
-typename promote_type<Type1, Type2>::type promote(ValueType value) {
+typename std::enable_if<
+    has_type_rank<Type1>::value && has_type_rank<Type2>::value,
+    typename promote_type<Type1, Type2>::type
+    >::type promote(ValueType value) {
   return static_cast<typename promote_type<Type1, Type2>::type>(value);
 }
 
-// promote_type3 trait for three types
-template<typename T1, typename T2, typename T3>
+// Fallback promote function for disabled types
+template <typename Type1, typename Type2, typename ValueType>
+typename std::enable_if<
+    !has_type_rank<Type1>::value || !has_type_rank<Type2>::value,
+    Type1
+    >::type promote(ValueType value) {
+  return static_cast<Type1>(value);
+}
+
+// promote_type3 trait for three types with safety checks
+template<typename T1, typename T2, typename T3, typename Enable = void>
 struct promote_type3 {
-  using type = typename promote_type<typename promote_type<T1, T2>::type, T3>::type;
+  using type = T1; // Fallback
 };
 
+template<typename T1, typename T2, typename T3>
+struct promote_type3<T1, T2, T3, typename std::enable_if<
+                                     has_type_rank<T1>::value && has_type_rank<T2>::value && has_type_rank<T3>::value
+                                     >::type> {
+  using type = typename promote_type<typename promote_type<T1, T2>::type, T3>::type;
+};
 
 // Primary template for type_name - undefined to trigger a compile-time error for unsupported types
 template<typename T>
@@ -165,6 +211,7 @@ template<> struct type_name<uint64_t>    { static const char* get() { return "ui
 template<> struct type_name<unsigned long> { static const char* get() { return "unsigned long"; } };
 #endif
 
+// FIXED: Only specialize type_name for enabled types
 #if defined(HAS_FLOAT16)
 template<> struct type_name<float16>     { static const char* get() { return "float16"; } };
 #endif
@@ -181,13 +228,11 @@ template<> struct type_name<float>       { static const char* get() { return "fl
 template<> struct type_name<double>      { static const char* get() { return "double"; } };
 #endif
 
-// Helper function to get type name
+// Helper function to get type name with fallback
 template<typename T>
 const char* get_type_name() {
   return type_name<T>::get();
 }
-
-
 
 // Macro to instantiate the promote function
 #define INSTANTIATE_PROMOTE(a1, b1, FUNC_NAME, ARGS) \

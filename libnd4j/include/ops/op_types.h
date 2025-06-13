@@ -28,7 +28,7 @@
 #include <system/Environment.h>
 #include <system/common.h>
 #include <system/op_boilerplate.h>
-
+#include <math/templatemath.h>
 #include <codecvt>
 #include <vector>
 #include <type_traits>
@@ -44,6 +44,12 @@
 #define SELU_ALPHA 1.6732632423543772848170429916717
 #define SELU_LAMBDA 1.0507009873554804934193349852946
 #define SD_STRING_ASSIGN_TEMP_BUFFER_BYTES 256
+
+#ifdef __CUDACC__
+#define __CUDACC_ONLY__
+#else
+#define __CUDACC_ONLY__ template<bool = false, typename = typename std::enable_if<!false>::type>
+#endif
 
 // =============================================================================
 // FORWARD DECLARATIONS
@@ -214,27 +220,8 @@ struct AggregateType<bfloat16> {
   using type = float;
 };
 
-
-#define no_op_exec_special_any DECLARE_NO_SPECIAL_EXECUTION(X, Z)
-#define no_op_exec_special_bool DECLARE_NO_SPECIAL_EXECUTION(X, Z)
-#define no_op_exec_special_same DECLARE_NO_SPECIAL_EXECUTION(X, X)
-#define no_op_exec_special DECLARE_NO_SPECIAL_EXECUTION(X, Z)
-
-#define no_op_exec_special_accumulation DECLARE_NO_SPECIAL_ACCUMULATION(X, Z)
-#define no_op_exec_special_accumulation_long DECLARE_NO_SPECIAL_ACCUMULATION(X, Z)
-#define no_op_exec_special_accumulation_same DECLARE_NO_SPECIAL_ACCUMULATION(X, X)
-
-#define no_op_exec_special_any_cuda DECLARE_NO_SPECIAL_CUDA(X, Z)
-#define no_op_exec_special_bool_cuda DECLARE_NO_SPECIAL_CUDA(X, Z)
-#define no_op_exec_special_same_cuda DECLARE_NO_SPECIAL_CUDA(X, X)
-#define no_op_exec_special_cuda DECLARE_NO_SPECIAL_CUDA(X, Z)
-
-#define no_op_exec_special_accumulation_same_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, X)
-#define no_op_exec_special_accumulation_long_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, Z)
-#define no_op_exec_special_accumulation_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, Z)
-
 // =============================================================================
-// NO-OP SPECIAL EXECUTION MACROS (Add these to op_types.h)
+// NO-OP SPECIAL EXECUTION MACROS
 // =============================================================================
 
 #define DECLARE_NO_SPECIAL_EXECUTION(X_TYPE, Z_TYPE) \
@@ -286,7 +273,7 @@ struct AggregateType<bfloat16> {
      const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
      const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
 
-// Convenience macros for common type combinations
+// Simplified macro definitions using the DECLARE_* macros above
 #define no_op_exec_special_any DECLARE_NO_SPECIAL_EXECUTION(X, Z)
 #define no_op_exec_special_bool DECLARE_NO_SPECIAL_EXECUTION(X, Z)
 #define no_op_exec_special_same DECLARE_NO_SPECIAL_EXECUTION(X, X)
@@ -304,6 +291,7 @@ struct AggregateType<bfloat16> {
 #define no_op_exec_special_accumulation_same_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, X)
 #define no_op_exec_special_accumulation_long_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, Z)
 #define no_op_exec_special_accumulation_cuda DECLARE_NO_SPECIAL_ACCUMULATION_CUDA(X, Z)
+
 } // namespace simdOps
 
 #endif // OP_TYPES_H_

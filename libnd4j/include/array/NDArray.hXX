@@ -3105,12 +3105,15 @@ NDArray NDArray::asT(DataType dtype)  {
 
   if (!isS() && DataTypeUtils::isS(dtype))
     THROW_EXCEPTION("NDArray::asT: you can't use this method on not String array with string DataType!");
-
+#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
   if (isS()) {
     BUILD_SINGLE_SELECTOR(dtype, return asS, (), SD_STRING_TYPES);
   } else {
     BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES);
   }
+#else
+  BUILD_SINGLE_SELECTOR(dtype, return asT, (), SD_COMMON_TYPES);
+#endif
 
 }
 
@@ -5266,10 +5269,10 @@ NDArray::p(const sd::LongType i, const T value) {  // Note: value not NDArray re
   // Direct value assignment, no need for scalar.isS() check
   templatedSetString<T,T>(buffer(), xOffset, (void*)&value);
 }
-
+#if defined(HAS_UTF8) || defined(HAS_UTF16) || defined(HAS_UTF32)
 #define INSTANTIATE_P_SINGLE_STRING(T) template SD_LIB_EXPORT void NDArray::p(const sd::LongType i,const GET_SECOND(T) value);
 ITERATE_LIST((SD_STRING_TYPES),INSTANTIATE_P_SINGLE_STRING);
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::p(const sd::LongType i, const sd::LongType j, const sd::LongType k, const sd::LongType l, NDArray *scalar) {

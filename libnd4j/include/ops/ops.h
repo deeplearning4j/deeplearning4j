@@ -116,20 +116,20 @@ DECLARE_BINARY_COPY_OP(MinPairwise,
 
 DECLARE_REDUCE3_OP_WITH_BOOL_SUPPORT(CosineSimilarity,
 // Bool logic (for boolean input types)
-                                     extraParams[0] += static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d1)); \
-                                     extraParams[1] += static_cast<Y>(static_cast<int>(d2) * static_cast<int>(d2)); \
+                                     extraParamsRef[0] += static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d1)); \
+                                     extraParamsRef[1] += static_cast<Y>(static_cast<int>(d2) * static_cast<int>(d2)); \
                                      return static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d2));,
 
 // Normal logic (for non-boolean types)
-                                     extraParams[0] += static_cast<Y>(d1 * d1); \
-                                     extraParams[1] += static_cast<Y>(d2 * d2); \
+                                     extraParamsRef[0] += static_cast<Y>(d1 * d1); \
+                                     extraParamsRef[1] += static_cast<Y>(d2 * d2); \
                                      return static_cast<Y>(d1 * d2);,
 
                                      2,  // extraParamsLen
                                      0.0f,  // starting value
 
 // Post process - calculate cosine similarity from dot product and norms
-                                     reduction / (sd::math::sd_sqrt<Y COMMA Y>(extraParams[0]) * sd::math::sd_sqrt<Y COMMA Y>(extraParams[1]))
+                                     reduction / (sd::math::sd_sqrt<Y COMMA Y>(extraParamsRef[0]) * sd::math::sd_sqrt<Y COMMA Y>(extraParamsRef[1]))
 )
 
 
@@ -160,44 +160,6 @@ DECLARE_UNARY_COMPLEX_MATH_OP(ACoshDerivative,
                               static_cast<X>(1.f) / (sd::math::sd_sqrt<X, X>(d1 - static_cast<X>(1.f)) * sd::math::sd_sqrt<X, X>(d1 + static_cast<X>(1.f))))
 
 // Power operations
-#define DECLARE_POWER_OP(OP_NAME, POWER_FUNC)                                                                       \
-  template <typename X, typename Y, typename Z>                                                                   \
-  class OP_NAME {                                                                                                 \
-   private:                                                                                                       \
-    static SD_INLINE Z op_logic(X d1, Z* params) { return sd::math::POWER_FUNC<X, X, Z>(d1, params[0]); }          \
-    static SD_INLINE Z op_logic(X d1, Y d2) { return sd::math::POWER_FUNC<X, Y, Z>(d1, d2); }                       \
-    static SD_INLINE Z op_logic(X d1, Y d2, Z* params) { return sd::math::POWER_FUNC<X, Y, Z>(d1, d2); }            \
-    static SD_INLINE Z op_logic(X d1) { return d1; }                                                               \
-    static Z op_simd(X d1, Z* params) { return op_logic(d1, params); }                                             \
-    static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }                                                      \
-    static Z op_simd(X d1, Y d2, Z* params) { return op_logic(d1, d2, params); }                                   \
-    static Z op_simd(X d1) { return op_logic(d1); }                                                                \
-                                                                                                                  \
-   public:                                                                                                        \
-    no_op_exec_special no_op_exec_special_cuda;                                                                   \
-    static Z op(X d1, Z* params) {                                                                                \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                                          \
-                    simdOps::is_simd_unsupported_argument_type<X>::value) return op_logic(d1, params);              \
-      else return op_simd(d1, params);                                                                            \
-    }                                                                                                             \
-    static Z op(X d1, Y d2) {                                                                                     \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                                          \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                                        \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value) return op_logic(d1, d2);                  \
-      else return op_simd(d1, d2);                                                                                \
-    }                                                                                                             \
-    static Z op(X d1, Y d2, Z* params) {                                                                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                                          \
-                    simdOps::is_simd_unsupported_argument_type<X>::value ||                                        \
-                    simdOps::is_simd_unsupported_argument_type<Y>::value) return op_logic(d1, d2, params);          \
-      else return op_simd(d1, d2, params);                                                                        \
-    }                                                                                                             \
-    static Z op(X d1) {                                                                                           \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                                          \
-                    simdOps::is_simd_unsupported_argument_type<X>::value) return op_logic(d1);                      \
-      else return op_simd(d1);                                                                                    \
-    }                                                                                                             \
-  };
 
 
 DECLARE_POWER_OP(Pow, sd_pow)
@@ -297,54 +259,54 @@ DECLARE_UNARY_IDENTITY_OP(Copy)
 template <typename X, typename Y, typename Z>
 class FloorMod {
  private:
-  static SD_INLINE Z op_logic(X d1, Y d2) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2) {
     Z m = sd::math::sd_fmod<X,Y,Z>(d1, d2);
     return (d1 < static_cast<X>(0)) == (d2 < static_cast<Y>(0))
            ? m
            : sd::math::sd_fmod<Z,Y,Z>(m + static_cast<Z>(d2), d2);
   }
-  static SD_INLINE Z op_logic(X d1, Y d2, Z *params) { return op_logic(d1, d2); }
-  static SD_INLINE Z op_logic(X d1) { return static_cast<Z>(d1); }
-  static SD_INLINE Z op_logic(X d1, Y *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) { return op_logic(d1, d2); }
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1) { return static_cast<Z>(d1); }
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y *params) {
     Z m = sd::math::sd_fmod<X,Y,Z>(d1, params[0]);
     return (d1 < static_cast<X>(0)) == (params[0] < static_cast<Y>(0))
            ? m
            : sd::math::sd_fmod<Z,Y,Z>(m + static_cast<Z>(params[0]), params[0]);
   }
-  static Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }
-  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  static Z op_simd(X d1) { return op_logic(d1); }
-  static Z op_simd(X d1, Y *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y d2) { return op_logic(d1, d2); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1) { return op_logic(d1); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y *params) { return op_logic(d1, params); }
 
  public:
-  static Z op(X d1, Y d2) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2);
     else return op_simd(d1, d2);
   }
-  static Z op(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
     else return op_simd(d1, d2, params);
   }
-  static Z op(X d1) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1);
     else return op_simd(d1);
   }
-  static Z op(X d1, Y *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, params);
     else return op_simd(d1, params);
   }
-  SD_OP_DEF static X startingValue() { return static_cast<X>(0); }
+  SD_HOST_DEVICE SD_INLINE static X startingValue() { return static_cast<X>(0); }
 };
 
 DECLARE_BINARY_COPY_OP(CopyPws,
@@ -455,7 +417,7 @@ template <typename X>
 class LGamma {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
-  SD_OP_DEF static X op(X d1, X *params) {
+      SD_HOST_DEVICE SD_INLINE static X op(X d1, X *params) {
     return sd::math::sd_lgamma<X, X>(d1);
   }
 };
@@ -465,7 +427,7 @@ class LGamma {
 template <typename X>
 class SetRange {
  private:
-  static SD_INLINE X op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X *params) {
     auto min = params[0];
     auto max = params[1];
     if (static_cast<X>(d1) >= min && static_cast<X>(d1) <= max) return d1;
@@ -475,11 +437,11 @@ class SetRange {
     }
     return (sd::math::sd_floor<X, X>(d1 * (max - min)) + min);
   }
-  static X op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
-  static X op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)
       return op_logic(d1, params);
     else
@@ -496,7 +458,7 @@ DECLARE_UNARY_SIMPLE_OP(Affine, params[0] * d1 + params[1])
 template <typename X>
 class Stabilize {
  private:
-  static SD_INLINE X op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X *params) {
     X k = params[0];
     if (d1 * k > static_cast<X>(SD_MAX_CUTFOFF))
       return static_cast<X>(SD_MAX_CUTFOFF) / k;
@@ -508,7 +470,7 @@ class Stabilize {
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
-  static X op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)
       return op_logic(d1, params);
     else
@@ -523,39 +485,19 @@ DECLARE_UNARY_SIMPLE_OP(Ones, static_cast<X>(1.0f))
 DECLARE_REDUCE3_OP_WITH_BOOL_SUPPORT(JaccardDistance,
                                      Y num_val = static_cast<Y>(static_cast<int>(d1) & static_cast<int>(d2)); \
                                      Y denom_val = static_cast<Y>(static_cast<int>(d1) | static_cast<int>(d2)); \
-                                     extraParams[0] += num_val; \
-                                     extraParams[1] += denom_val; \
+                                     extraParamsRef[0] += num_val; \
+                                     extraParamsRef[1] += denom_val; \
                                      return static_cast<Y>(0.0f);,
                                      Y num_val = static_cast<Y>(sd::math::sd_min<X>(d1 COMMA d2)); \
                                      Y denom_val = static_cast<Y>(sd::math::sd_max<X>(d1 COMMA d2)); \
-                                     extraParams[0] += num_val; \
-                                     extraParams[1] += denom_val; \
+                                     extraParamsRef[0] += num_val; \
+                                     extraParamsRef[1] += denom_val; \
                                      return static_cast<Y>(0.0f);,
                                      2,
                                      0.0f,
-                                     (static_cast<Y>(1.0f)) - (extraParams[0] / extraParams[1])
+                                     (static_cast<Y>(1.0f)) - (extraParamsRef[0] / extraParamsRef[1])
 )
 
-#define DECLARE_HAMMING_DISTANCE_OP_WITH_BOOL_SUPPORT(OP_NAME, BOOL_LOGIC, NORMAL_LOGIC, STARTING_VAL) \
-template <typename X, typename Y> \
-class OP_NAME { \
- public: \
-  static const int extraParamsLen = 0; \
-  static X *generateExtraParams() { return nullptr; } \
-  static void finalizeExtraParams(X *extraParams) {} \
-  static Y startingValue(const X *input) { return static_cast<Y>(STARTING_VAL); } \
-  static Y postProcess(Y reduction, sd::LongType n, Y *extraParams) { return static_cast<Y>(reduction / n); } \
-  static Y op(X d1, X d2, Y *extraParams) { \
-    if constexpr (std::is_same_v<X COMMA bool>) { \
-      return static_cast<Y>(BOOL_LOGIC); \
-    } else { \
-      return (d1 == d2) ? static_cast<Y>(0.0f) : static_cast<Y>(1.0f); \
-    } \
-  } \
-  static void aggregateExtraParams(Y *extraParamsTotal, Y *extraParamsLocal) {} \
-  static Y update(Y old, Y opOutput, Y *extraParams) { return old + opOutput; } \
-  static Y merge(Y old, Y opOutput, Y *extraParams) { return update(old, opOutput, extraParams); } \
-};
 
 DECLARE_HAMMING_DISTANCE_OP_WITH_BOOL_SUPPORT(SimpleHammingDistance,
                                               (static_cast<int>(d1) == static_cast<int>(d2)) ? 0.0f : 1.0f,
@@ -565,15 +507,15 @@ DECLARE_HAMMING_DISTANCE_OP_WITH_BOOL_SUPPORT(SimpleHammingDistance,
 
 
 DECLARE_REDUCE3_OP_WITH_BOOL_SUPPORT(CosineDistance,
-                                     extraParams[0] += static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d1)); \
-                                     extraParams[1] += static_cast<Y>(static_cast<int>(d2) * static_cast<int>(d2)); \
+                                     extraParamsRef[0] += static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d1)); \
+                                     extraParamsRef[1] += static_cast<Y>(static_cast<int>(d2) * static_cast<int>(d2)); \
                                      return static_cast<Y>(static_cast<int>(d1) * static_cast<int>(d2));,
-                                     extraParams[0] += static_cast<Y>(sd::math::sd_abs<X COMMA X>(d1) * sd::math::sd_abs<X COMMA X>(d1)); \
-                                     extraParams[1] += static_cast<Y>(sd::math::sd_abs<X COMMA X>(d2) * sd::math::sd_abs<X COMMA X>(d2)); \
+                                     extraParamsRef[0] += static_cast<Y>(sd::math::sd_abs<X COMMA X>(d1) * sd::math::sd_abs<X COMMA X>(d1)); \
+                                     extraParamsRef[1] += static_cast<Y>(sd::math::sd_abs<X COMMA X>(d2) * sd::math::sd_abs<X COMMA X>(d2)); \
                                      return static_cast<Y>(d1 * d2);,
                                      2,
                                      0.0f,
-                                     (static_cast<Y>(1.0f)) - (reduction / (sd::math::sd_sqrt<Y COMMA Y>(extraParams[0]) * sd::math::sd_sqrt<Y COMMA Y>(extraParams[1])))
+                                     (static_cast<Y>(1.0f)) - (reduction / (sd::math::sd_sqrt<Y COMMA Y>(extraParamsRef[0]) * sd::math::sd_sqrt<Y COMMA Y>(extraParamsRef[1])))
 )
 
 DECLARE_DISTANCE_OP_WITH_BOOL_SUPPORT(Dot,
@@ -602,12 +544,12 @@ template <typename X>
 class DropOut {
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda
-  inline SD_DEVICE static X op(X d1, X *params) {
+      SD_HOST_DEVICE SD_INLINE static X op(X d1, X *params) {
     X prob = params[0];
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -623,12 +565,12 @@ class DropOutInverted {
 #ifdef __CUDACC__
   SD_DEVICE
 #endif
-  inline static Z op(X d1, Y d2, Z *params) {
+          SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2, Z *params) {
     Y prob = d2;
 #ifdef __CUDACC__
     X length = params[1];
    X tid = blockIdx.x * blockDim.x + threadIdx.x;
-   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>(static_cast<X>(clock64()) * static_cast<X>(tid) +
+   X rnd = sd::math::sd_abs<X,X>(sd::math::sd_cos<X>( static_cast<X>(tid) +
                                                       static_cast<X>(length) * static_cast<X>(tid)));
 #else
     X rnd = static_cast<X>(rand() / RAND_MAX);
@@ -648,7 +590,7 @@ DECLARE_BINARY_COPY_OP(ReplaceNans,
 template <typename X, typename Y, typename Z>
 class CompareAndReplace {
  private:
-  static SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
     auto zd1 = static_cast<Z>(d1);
     auto zd2 = static_cast<Z>(d2);
     auto compare = params[0];
@@ -736,10 +678,10 @@ class CompareAndReplace {
       sd_printf("Undefined boolean operation: [%i]\n", mode);
     return zd1;
   }
-  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
 
  public:
-  static Z op(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
@@ -752,7 +694,7 @@ class CompareAndReplace {
 template <typename X, typename Y, typename Z>
 class CompareAndSet {
  private:
-  static SD_INLINE Z op_logic(X dX, Y dY, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X dX, Y dY, Z *params) {
     auto d1 = static_cast<Z>(dX);
     auto d2 = static_cast<Z>(dY);
     auto compare = params[0];
@@ -839,10 +781,10 @@ class CompareAndSet {
       sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
-  static Z op_simd(X dX, Y dY, Z *params) { return op_logic(dX, dY, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X dX, Y dY, Z *params) { return op_logic(dX, dY, params); }
 
  public:
-  static Z op(X dX, Y dY, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X dX, Y dY, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
@@ -855,7 +797,7 @@ class CompareAndSet {
 template <typename X>
 class CompareAndSetTransform {
  private:
-  static SD_INLINE X op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op_logic(X d1, X *params) {
     auto compare = params[0];
     auto set = params[1];
     auto eps = params[2];
@@ -941,11 +883,11 @@ class CompareAndSetTransform {
       sd_printf("Undefined boolean operation: [%i]\n", mode);
     return d1;
   }
-  static X op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE X op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
   no_op_exec_special_same no_op_exec_special_same_cuda;
-  static X op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE X op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)
       return op_logic(d1, params);
     else
@@ -954,135 +896,7 @@ class CompareAndSetTransform {
 };
 
 
-#define DECLARE_BENCHMARK_REDUCE_OP(OP_NAME, OPERATION)                                           \
-  template <typename X>                                                                           \
-  class OP_NAME {                                                                                 \
-   private:                                                                                       \
-    static SD_INLINE X op_logic(X d1, X* extraParams) { OPERATION }                              \
-    static SD_INLINE X merge_logic(X old, X opOutput, X* extraParams) { return opOutput + old; } \
-    static SD_INLINE X update_logic(X old, X opOutput, X* extraParams) { return opOutput + old; } \
-    static SD_INLINE X postProcess_logic(X reduction, sd::LongType n, X* extraParams) { return reduction; } \
-    SD_OP_DEF static X op_simd(X d1, X* extraParams) { return op_logic(d1, extraParams); }       \
-    SD_OP_DEF static X merge_simd(X old, X opOutput, X* extraParams) { return merge_logic(old, opOutput, extraParams); } \
-    SD_OP_DEF static X update_simd(X old, X opOutput, X* extraParams) { return update_logic(old, opOutput, extraParams); } \
-    SD_OP_DEF static X postProcess_simd(X reduction, sd::LongType n, X* extraParams) { return postProcess_logic(reduction, n, extraParams); } \
-                                                                                                  \
-   public:                                                                                        \
-    no_op_exec_special_accumulation_same no_op_exec_special_accumulation_same_cuda               \
-    const static functions::ReduceType reduceType = functions::ReduceType::SUM;                  \
-    static X startingValue(const X* input) { return static_cast<X>(0.0f); }                      \
-    static X op(X d1, X* extraParams) {                                                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                           \
-        return op_logic(d1, extraParams);                                                        \
-      else                                                                                        \
-        return op_simd(d1, extraParams);                                                         \
-    }                                                                                             \
-    static X merge(X old, X opOutput, X* extraParams) {                                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                           \
-        return merge_logic(old, opOutput, extraParams);                                          \
-      else                                                                                        \
-        return merge_simd(old, opOutput, extraParams);                                           \
-    }                                                                                             \
-    static X update(X old, X opOutput, X* extraParams) {                                         \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                           \
-        return update_logic(old, opOutput, extraParams);                                         \
-      else                                                                                        \
-        return update_simd(old, opOutput, extraParams);                                          \
-    }                                                                                             \
-    static X postProcess(X reduction, sd::LongType n, X* extraParams) {                          \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                           \
-        return postProcess_logic(reduction, n, extraParams);                                     \
-      else                                                                                        \
-        return postProcess_simd(reduction, n, extraParams);                                      \
-    }                                                                                             \
-  };
 
-#define DECLARE_BENCHMARK_REDUCE_FLOAT_OP(OP_NAME, OPERATION, POST_PROCESS)                       \
-  template <typename X, typename Z>                                                               \
-  class OP_NAME {                                                                                 \
-   public:                                                                                        \
-    using InterType = typename AggregateType<Z>::type;                                           \
-                                                                                                  \
-   private:                                                                                       \
-    static SD_INLINE InterType op_logic(X d1, Z* extraParams) { OPERATION }                      \
-    static SD_INLINE InterType merge_logic(InterType old, InterType opOutput, Z* extraParams) { return opOutput + old; } \
-    static SD_INLINE InterType update_logic(InterType old, InterType opOutput, Z* extraParams) { return opOutput + old; } \
-    static SD_INLINE Z postProcess_logic(InterType reduction, sd::LongType n, Z* extraParams) {  \
-      return POST_PROCESS;                                                                        \
-    }                                                                                             \
-    SD_OP_DEF static InterType op_simd(X d1, Z* extraParams) { return op_logic(d1, extraParams); } \
-    SD_OP_DEF static InterType merge_simd(InterType old, InterType opOutput, Z* extraParams) {   \
-      return merge_logic(old, opOutput, extraParams);                                            \
-    }                                                                                             \
-    SD_OP_DEF static InterType update_simd(InterType old, InterType opOutput, Z* extraParams) { \
-      return update_logic(old, opOutput, extraParams);                                           \
-    }                                                                                             \
-    SD_OP_DEF static Z postProcess_simd(InterType reduction, sd::LongType n, Z* extraParams) {   \
-      return postProcess_logic(reduction, n, extraParams);                                       \
-    }                                                                                             \
-                                                                                                  \
-   public:                                                                                        \
-    no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda;                        \
-    const static functions::ReduceType reduceType = functions::ReduceType::SUM;                  \
-    static X startingValue(const X* input) { return static_cast<X>(0); }                         \
-    static InterType merge(InterType old, InterType opOutput, Z* extraParams) {                  \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                   \
-        return merge_logic(old, opOutput, extraParams);                                          \
-      else                                                                                        \
-        return merge_simd(old, opOutput, extraParams);                                           \
-    }                                                                                             \
-    static InterType update(InterType old, InterType opOutput, Z* extraParams) {                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                   \
-        return update_logic(old, opOutput, extraParams);                                         \
-      else                                                                                        \
-        return update_simd(old, opOutput, extraParams);                                          \
-    }                                                                                             \
-    template<typename T>                                                                         \
-    static typename std::enable_if<!std::is_same_v<T, InterType>, InterType>::type update(T old, InterType opOutput, Z* extraParams) { \
-      return update(static_cast<InterType>(old), opOutput, extraParams);                        \
-    }                                                                                            \
-    template<typename T>                                                                         \
-    static typename std::enable_if<!std::is_same_v<T, InterType>, InterType>::type update(InterType old, T opOutput, Z* extraParams) { \
-      return update(old, static_cast<InterType>(opOutput), extraParams);                        \
-    }                                                                                            \
-    template<typename T, typename U>                                                            \
-    static typename std::enable_if<!std::is_same_v<T, InterType> && !std::is_same_v<U, InterType>, InterType>::type update(T old, U opOutput, Z* extraParams) { \
-      return update(static_cast<InterType>(old), static_cast<InterType>(opOutput), extraParams); \
-    }                                                                                            \
-    template<typename U = X, typename V = Z>                                                    \
-    static typename std::enable_if<!std::is_same_v<U, V>, InterType>::type update(InterType old, InterType opOutput, X* extraParams) { \
-      return update(old, opOutput, reinterpret_cast<Z*>(extraParams));                         \
-    }                                                                                            \
-    static InterType op(X d1, Z* extraParams) {                                                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value ||               \
-                    simdOps::is_simd_unsupported_argument_type<X>::value)                       \
-        return op_logic(d1, extraParams);                                                       \
-      else                                                                                       \
-        return op_simd(d1, extraParams);                                                        \
-    }                                                                                            \
-    template<typename U = X, typename V = Z>                                                    \
-    static typename std::enable_if<!std::is_same_v<U, V>, InterType>::type op(X d1, X* extraParams) { \
-      return op(d1, reinterpret_cast<Z*>(extraParams));                                         \
-    }                                                                                            \
-    static Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) {                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                          \
-        return postProcess_logic(reduction, n, extraParams);                                    \
-      else                                                                                       \
-        return postProcess_simd(reduction, n, extraParams);                                     \
-    }                                                                                            \
-    template<typename T>                                                                         \
-    static typename std::enable_if<!std::is_same_v<T, InterType>, Z>::type postProcess(T reduction, sd::LongType n, Z* extraParams) { \
-      return postProcess(static_cast<InterType>(reduction), n, extraParams);                   \
-    }                                                                                            \
-    template<typename U = X, typename V = Z>                                                    \
-    static typename std::enable_if<!std::is_same_v<U, V>, Z>::type postProcess(InterType reduction, sd::LongType n, X* extraParams) { \
-      return postProcess(reduction, n, reinterpret_cast<Z*>(extraParams));                     \
-    }                                                                                            \
-    template<typename T, typename U = X, typename V = Z>                                        \
-    static typename std::enable_if<!std::is_same_v<T, InterType> && !std::is_same_v<U, V>, Z>::type postProcess(T reduction, sd::LongType n, X* extraParams) { \
-      return postProcess(static_cast<InterType>(reduction), n, reinterpret_cast<Z*>(extraParams)); \
-    }                                                                                            \
-  };
 
 
 DECLARE_BENCHMARK_REDUCE_OP(ReduceSameBenchmarkOp,
@@ -1304,21 +1118,12 @@ DECLARE_REDUCE_SIMD_SAFE_OP(IsInf,
 )
 
 // IsInfOrNan operation
-DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP(IsInfOrNan,
-                                        return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);,
-                                        SUM, static_cast<X>(0),
-                                        opOutput == static_cast<Z>(0) && old == static_cast<Z>(0) ? static_cast<Z>(0) : static_cast<Z>(1),
-                                        opOutput == static_cast<Z>(0) && old == static_cast<Z>(0) ? static_cast<Z>(0) : static_cast<Z>(1),
-                                        reduction != static_cast<Z>(0)
+DECLARE_REDUCE_SIMD_SAFE_OP(IsFinite,
+                            return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);
 )
 
-// IsFinite operation
-DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP(IsFinite,
-                                        return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(1) : static_cast<Z>(0);,
-                                        SUM, static_cast<X>(1),
-                                        opOutput == static_cast<Z>(0) || old == static_cast<Z>(0) ? static_cast<Z>(0) : static_cast<Z>(1),
-                                        opOutput == static_cast<Z>(0) || old == static_cast<Z>(0) ? static_cast<Z>(0) : static_cast<Z>(1),
-                                        reduction != static_cast<Z>(0)
+DECLARE_REDUCE_SIMD_SAFE_OP(IsInfOrNan,
+                            return sd::math::sd_isfin<X>(d1) ? static_cast<Z>(0) : static_cast<Z>(1);
 )
 
 
@@ -1456,7 +1261,7 @@ DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP(NormMax,
 template <typename X, typename Z>
 class Assign {
  private:
-  static SD_INLINE Z op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X *params) {
     if constexpr (std::is_same_v<X, Z>) {
       return d1; // No conversion needed
     } else if constexpr (std::is_convertible_v<X, Z>) {
@@ -1468,10 +1273,10 @@ class Assign {
     }
   }
 
-  static Z op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE Z op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
-  static Z op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)
       return op_logic(d1, params);
     else
@@ -1724,22 +1529,6 @@ class Celu {
 };
 
 
-#define DECLARE_UNARY_CLIPPING_OP(OP_NAME, CLIPPING_LOGIC)                                         \
-  template <typename X>                                                                            \
-  class OP_NAME {                                                                                  \
-   private:                                                                                        \
-    static SD_INLINE X op_logic(X d1, X *params) { CLIPPING_LOGIC }                               \
-    static X op_simd(X d1, X *params) { return op_logic(d1, params); }                            \
-                                                                                                   \
-   public:                                                                                         \
-    no_op_exec_special_same no_op_exec_special_same_cuda;                                          \
-    static X op(X d1, X *params) {                                                                \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                            \
-        return op_logic(d1, params);                                                              \
-      else                                                                                         \
-        return op_simd(d1, params);                                                                \
-    }                                                                                              \
-  };
 
 
 // ELUAlpha - simple conditional with parameter
@@ -1761,27 +1550,7 @@ DECLARE_UNARY_CLIPPING_OP(ThresholdedReLU,
 )
 
 
-#define DECLARE_SIMPLE_BINARY_OP(OP_NAME, OPERATION)                                           \
-  template <typename X>                                                                        \
-  class OP_NAME {                                                                             \
-   private:                                                                                   \
-    static SD_INLINE X op_logic(X d1, X d2) { return OPERATION; }                            \
-    static SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }          \
-    static X op_simd(X d1, X d2) { return op_logic(d1, d2); }                                \
-    static X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); }             \
-                                                                                              \
-   public:                                                                                    \
-    static X op(X d1, X d2) {                                                                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2);                                                             \
-      else return op_simd(d1, d2);                                                           \
-    }                                                                                         \
-    static X op(X d1, X d2, X *params) {                                                      \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2, params);                                                     \
-      else return op_simd(d1, d2, params);                                                   \
-    }                                                                                         \
-  };
+
 
 // Use the new macro for bitwise operations
 DECLARE_SIMPLE_BINARY_OP(IntOr, d2 | d1)
@@ -1790,27 +1559,6 @@ DECLARE_SIMPLE_BINARY_OP(IntXor, d2 ^ d1)
 DECLARE_SIMPLE_BINARY_OP(ShiftLeft, d1 << d2)
 DECLARE_SIMPLE_BINARY_OP(ShiftRight, d1 >> d2)
 
-#define DECLARE_SIMPLE_BINARY_TEMPLATE_OP(OP_NAME, OPERATION)                                  \
-  template <typename X>                                                                        \
-  class OP_NAME {                                                                             \
-   private:                                                                                   \
-    static SD_INLINE X op_logic(X d1, X d2) { return OPERATION; }                            \
-    static SD_INLINE X op_logic(X d1, X d2, X *params) { return op_logic(d1, d2); }          \
-    static X op_simd(X d1, X d2) { return op_logic(d1, d2); }                                \
-    static X op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); }             \
-                                                                                              \
-   public:                                                                                    \
-    static X op(X d1, X d2) {                                                                 \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2);                                                             \
-      else return op_simd(d1, d2);                                                           \
-    }                                                                                         \
-    static X op(X d1, X d2, X *params) {                                                      \
-      if constexpr (simdOps::is_simd_unsupported_return_type<X>::value)                       \
-        return op_logic(d1, d2, params);                                                     \
-      else return op_simd(d1, d2, params);                                                   \
-    }                                                                                         \
-  };
 
 DECLARE_SIMPLE_BINARY_TEMPLATE_OP(CyclicShiftLeft, sd::math::sd_rotl<X>(d1 COMMA d2))
 DECLARE_SIMPLE_BINARY_TEMPLATE_OP(CyclicShiftRight, sd::math::sd_rotr<X>(d1 COMMA d2))
@@ -1867,13 +1615,13 @@ DECLARE_BINARY_COPY_OP(ReverseMod,
 template <typename X, typename Z>
 class Epsilon {
  private:
-  static SD_INLINE Z op_logic(X d1, X d2) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X d2) {
     X diff = d1 - d2;
     X absDiff = sd::math::sd_abs<X,X>(diff);
     if (absDiff <= static_cast<X>(SD_MIN_V)) return static_cast<Z>(1);
     return static_cast<Z>(0);
   }
-  static SD_INLINE Z op_logic(X d1, X d2, X *params) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X d2, X *params) {
     X diff = d1 - d2;
     X absDiff = sd::math::sd_abs<X,X>(diff);
     if(params != nullptr && absDiff <= static_cast<X>(params[0])) {
@@ -1883,25 +1631,25 @@ class Epsilon {
     }
     return static_cast<Z>(0);
   }
-  static SD_INLINE Z op_logic(X d1, X *params) { return static_cast<Z>(d1); }
-  static Z op_simd(X d1, X d2) { return op_logic(d1, d2); }
-  static Z op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); }
-  static Z op_simd(X d1, X *params) { return op_logic(d1, params); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X *params) { return static_cast<Z>(d1); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_simd(X d1, X d2) { return op_logic(d1, d2); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_simd(X d1, X d2, X *params) { return op_logic(d1, d2, params); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_simd(X d1, X *params) { return op_logic(d1, params); }
 
  public:
-  static Z op(X d1, X d2) {
+  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, X d2) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, d2);
     else return op_simd(d1, d2);
   }
-  static Z op(X d1, X d2, X *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, X d2, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, d2, params);
     else return op_simd(d1, d2, params);
   }
-  static Z op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, params);
@@ -1913,7 +1661,7 @@ class Epsilon {
 template <typename X, typename Z>
 class MatchConditionBool {
  private:
-  static SD_INLINE Z op_logic(X d1, X *extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X *extraParams) {
     X compare = extraParams[0];
     X eps = extraParams[1];
     auto mode = static_cast<int>(extraParams[2]);
@@ -1966,7 +1714,7 @@ class MatchConditionBool {
  public:
   no_op_exec_special_bool no_op_exec_special_bool_cuda;
 
-  static Z op(X d1, X *extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X *extraParams) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, extraParams);
@@ -1990,41 +1738,6 @@ DECLARE_MULTI_OP_SIMD_SAFE(Or,
                            return static_cast<Z>(119);
 )
 
-#define DECLARE_XOR_SIMD_SAFE(OP_NAME, BINARY_OP, BINARY_PARAMS_OP, UNARY_OP)                       \
-  template <typename X, typename Z>                                                                 \
-  class OP_NAME {                                                                                   \
-   private:                                                                                         \
-    static SD_INLINE Z binary_op_logic(X d1, X d2) { BINARY_OP }                                   \
-    static SD_INLINE Z binary_params_op_logic(X d1, X d2, X* params) { BINARY_PARAMS_OP }          \
-    static SD_INLINE Z unary_op_logic(X d1) { UNARY_OP }                                           \
-    static Z binary_op_simd(X d1, X d2) { return binary_op_logic(d1, d2); }                        \
-    static Z binary_params_op_simd(X d1, X d2, X* params) { return binary_params_op_logic(d1, d2, params); } \
-    static Z unary_op_simd(X d1) { return unary_op_logic(d1); }                                    \
-                                                                                                   \
-   public:                                                                                         \
-    no_op_exec_special_bool no_op_exec_special_bool_cuda;                                          \
-    static Z op(X d1, X d2) {                                                                      \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value)                           \
-        return binary_op_logic(d1, d2);                                                           \
-      else                                                                                         \
-        return binary_op_simd(d1, d2);                                                             \
-    }                                                                                              \
-    static Z op(X d1, X d2, X* params) {                                                           \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value)                           \
-        return binary_params_op_logic(d1, d2, params);                                            \
-      else                                                                                         \
-        return binary_params_op_simd(d1, d2, params);                                              \
-    }                                                                                              \
-    static Z op(X d1) {                                                                            \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                           \
-                    simdOps::is_simd_unsupported_argument_type<X>::value)                           \
-        return unary_op_logic(d1);                                                                \
-      else                                                                                         \
-        return unary_op_simd(d1);                                                                  \
-    }                                                                                              \
-  };
 
 DECLARE_XOR_SIMD_SAFE(Xor,
                       return d2 + d1;,
@@ -2040,38 +1753,7 @@ DECLARE_XOR_SIMD_SAFE(Xor,
 )
 
 
-#define DECLARE_NOT_SIMD_SAFE(OP_NAME, BINARY_OP, BINARY_PARAMS_OP, UNARY_PARAMS_OP) \
-  template <typename X, typename Z>                                         \
-  class OP_NAME {                                                           \
-   private:                                                                 \
-    static SD_INLINE Z binary_op_logic(X d1, X d2) { BINARY_OP }           \
-    static SD_INLINE Z binary_params_op_logic(X d1, X d2, X* params) { BINARY_PARAMS_OP } \
-    static SD_INLINE Z unary_params_op_logic(X d1, X* params) { UNARY_PARAMS_OP } \
-    static Z binary_op_simd(X d1, X d2) { return binary_op_logic(d1, d2); } \
-    static Z binary_params_op_simd(X d1, X d2, X* params) { return binary_params_op_logic(d1, d2, params); } \
-    static Z unary_params_op_simd(X d1, X* params) { return unary_params_op_logic(d1, params); } \
-                                                                            \
-   public:                                                                  \
-    no_op_exec_special_bool no_op_exec_special_bool_cuda                    \
-    static Z op(X d1, X d2) {                                              \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)     \
-        return binary_op_logic(d1, d2);                                    \
-      else                                                                  \
-        return binary_op_simd(d1, d2);                                      \
-    }                                                                       \
-    static Z op(X d1, X d2, X* params) {                                   \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)     \
-        return binary_params_op_logic(d1, d2, params);                     \
-      else                                                                  \
-        return binary_params_op_simd(d1, d2, params);                       \
-    }                                                                       \
-    static Z op(X d1, X* params) {                                         \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)     \
-        return unary_params_op_logic(d1, params);                          \
-      else                                                                  \
-        return unary_params_op_simd(d1, params);                            \
-    }                                                                       \
-  };
+
 
 DECLARE_NOT_SIMD_SAFE(Not,
                       return static_cast<Z>(0);,
@@ -2125,11 +1807,11 @@ DECLARE_ACCUMULATION_SIMD_SAFE_OP(LogEntropy,
 template <typename X, typename Z>
 class IndexAbsoluteMax {
  public:
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
                                                                         X *extraParams) {
     return sd::math::sd_abs<X,X>(val);
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> update(
+  static SD_HOST_DEVICE SD_INLINE   functions::indexreduce::IndexValue<X> update(
       functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
     opOutput.value = sd::math::sd_abs<X,X>(opOutput.value);
     old.value = sd::math::sd_abs<X,X>(old.value);
@@ -2140,24 +1822,24 @@ class IndexAbsoluteMax {
 #endif
     return old;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
                                                                            functions::indexreduce::IndexValue<X> f2,
                                                                            X *extraParams) {
     if (sd::math::sd_abs<X,X>(f1.value) > sd::math::sd_abs<X,X>(f2.value)) return f2;
     return f1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> postProcess(
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> postProcess(
       functions::indexreduce::IndexValue<X> reduction, int n, int xOffset, X *dx, int incx, X *extraParams, X *result) {
     return reduction;
   }
-  static SD_HOST_DEVICE inline X startingValue(const X *input) { return static_cast<X>(0); }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
+  static SD_HOST_DEVICE SD_INLINE  X startingValue(const X *input) { return static_cast<X>(0); }
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
     functions::indexreduce::IndexValue<X> local;
     local.value = startingValue(input);
     local.index = 0;
     return local;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                         functions::indexreduce::IndexValue<X> d2,
                                                                         X *extraParams) {
     return d1;
@@ -2167,18 +1849,18 @@ class IndexAbsoluteMax {
 template <typename X, typename Z>
 class IndexAbsoluteMin {
  public:
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
                                                                         X *extraParams) {
     return val;
   }
-  static SD_HOST_DEVICE inline X startingValue(const X *input) { return sd::DataTypeUtils::infOrMax<X>(); }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
+  static SD_HOST_DEVICE SD_INLINE  X startingValue(const X *input) { return sd::DataTypeUtils::infOrMax<X>(); }
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
     functions::indexreduce::IndexValue<X> local;
     local.value = startingValue(input);
     local.index = 0;
     return local;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> update(
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> update(
       functions::indexreduce::IndexValue<X> &old, functions::indexreduce::IndexValue<X> &opOutput, X *extraParams) {
     opOutput.value = sd::math::sd_abs<X,X>(opOutput.value);
     old.value = sd::math::sd_abs<X,X>(old.value);
@@ -2189,17 +1871,17 @@ class IndexAbsoluteMin {
 #endif
     return old;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
                                                                            functions::indexreduce::IndexValue<X> f2,
                                                                            X *extraParams) {
     if (sd::math::sd_abs<X,X>(f1.value) < sd::math::sd_abs<X,X>(f2.value)) return f2;
     return f1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> postProcess(
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> postProcess(
       functions::indexreduce::IndexValue<X> reduction, int n, int xOffset, X *dx, int incx, X *extraParams, X *result) {
     return reduction;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+  static  SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                         functions::indexreduce::IndexValue<X> d2,
                                                                         X *extraParams) {
     return d1;
@@ -2209,11 +1891,11 @@ class IndexAbsoluteMin {
 template <typename X, typename Z>
 class FirstIndex {
  public:
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
                                                                         X *extraParams) {
     return val;
   }
-  static SD_HOST_DEVICE functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old,
                                                                      functions::indexreduce::IndexValue<X> &opOutput,
                                                                      X *extraParams) {
 #ifdef __CUDACC__
@@ -2225,25 +1907,25 @@ class FirstIndex {
     if (old.index > opOutput.index) return opOutput;
     return old;
   }
-  static SD_HOST_DEVICE inline X startingValue(const X *input) { return -sd::DataTypeUtils::infOrMax<X>(); }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
+  static SD_HOST_DEVICE SD_INLINE  X startingValue(const X *input) { return -sd::DataTypeUtils::infOrMax<X>(); }
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
     functions::indexreduce::IndexValue<X> local;
     local.value = startingValue(input);
     local.index = -1;
     return local;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                         functions::indexreduce::IndexValue<X> d2,
                                                                         X *extraParams) {
     return d1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
                                                                            functions::indexreduce::IndexValue<X> f2,
                                                                            X *extraParams) {
     if (f1.index > f2.index) return f2;
     return f1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> postProcess(
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> postProcess(
       functions::indexreduce::IndexValue<X> reduction, int n, int xOffset, X *dx, int incx, X *extraParams, X *result) {
     return reduction;
   }
@@ -2253,11 +1935,11 @@ class FirstIndex {
 template <typename X, typename Z>
 class LastIndex {
  public:
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val,
                                                                         X *extraParams) {
     return val;
   }
-  static SD_HOST_DEVICE functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old,
+  static SD_HOST_DEVICE SD_INLINE  functions::indexreduce::IndexValue<X> update(functions::indexreduce::IndexValue<X> &old,
                                                                      functions::indexreduce::IndexValue<X> &opOutput,
                                                                      X *extraParams) {
 #ifdef __CUDACC__
@@ -2269,25 +1951,25 @@ class LastIndex {
     if (old.index < opOutput.index) return opOutput;
     return old;
   }
-  static SD_HOST_DEVICE inline X startingValue(const X *input) { return -sd::DataTypeUtils::infOrMax<X>(); }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
+  static SD_HOST_DEVICE SD_INLINE X startingValue(const X *input) { return -sd::DataTypeUtils::infOrMax<X>(); }
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
     functions::indexreduce::IndexValue<X> local;
     local.value = startingValue(input);
     local.index = -1;
     return local;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> d1,
                                                                         functions::indexreduce::IndexValue<X> d2,
                                                                         X *extraParams) {
     return d1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> merge(functions::indexreduce::IndexValue<X> f1,
                                                                            functions::indexreduce::IndexValue<X> f2,
                                                                            X *extraParams) {
     if (f1.index < f2.index) return f2;
     return f1;
   }
-  static SD_HOST_DEVICE inline functions::indexreduce::IndexValue<X> postProcess(
+  static SD_HOST_DEVICE SD_INLINE functions::indexreduce::IndexValue<X> postProcess(
       functions::indexreduce::IndexValue<X> reduction, int n, int xOffset, X *dx, int incx, X *extraParams, X *result) {
     return reduction;
   }
@@ -2305,7 +1987,7 @@ DECLARE_ACCUMULATION_SIMD_SAFE_OP(Entropy,
 template <typename X, typename Z>
 class SummaryStatsVariance {
  public:
-  static SD_HOST_DEVICE inline Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
+  static SD_HOST_DEVICE SD_INLINE Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
     if (biasCorrected) {
       Z ret = static_cast<Z>(val.varianceBiasCorrected());
       if (ret < static_cast<Z>(0.0f)) return static_cast<Z>(val.variance());
@@ -2313,7 +1995,7 @@ class SummaryStatsVariance {
     }
     return static_cast<Z>(val.variance());
   }
-  static SD_HOST_DEVICE inline functions::summarystats::SummaryStatsData<X> op(
+  static SD_HOST_DEVICE SD_INLINE functions::summarystats::SummaryStatsData<X> op(
       functions::summarystats::SummaryStatsData<X> d1, Z *extraParams) {
     return d1;
   }
@@ -2322,7 +2004,7 @@ class SummaryStatsVariance {
 template <typename X, typename Z>
 class SummaryStatsStandardDeviation {
  public:
-  static SD_HOST_DEVICE inline Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
+  static SD_HOST_DEVICE SD_INLINE Z getValue(const bool biasCorrected, functions::summarystats::SummaryStatsData<X> val) {
     if (biasCorrected) {
       auto ret = static_cast<Z>(val.varianceBiasCorrected());
       if (ret < static_cast<Z>(0.0f))
@@ -2332,7 +2014,7 @@ class SummaryStatsStandardDeviation {
     }
     return sd::math::sd_sqrt<double, Z>(val.variance());
   }
-  static SD_HOST_DEVICE inline functions::summarystats::SummaryStatsData<X> op(
+  static SD_HOST_DEVICE SD_INLINE functions::summarystats::SummaryStatsData<X> op(
       functions::summarystats::SummaryStatsData<X> d1, Z *extraParams) {
     return d1;
   }
@@ -2365,13 +2047,13 @@ DECLARE_BINARY_COPY_OP(RelativeError,
 template <typename X, typename Y, typename Z>
 class BinaryRelativeError {
  private:
-  static SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, Y d2, Z *params) {
     X threshold = static_cast<X>(params[0]);
     return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > threshold ? static_cast<Z>(1) : static_cast<Z>(0);
   }
-  static SD_INLINE Z op_logic(X d1) { return static_cast<Z>(0); }
-  SD_OP_DEF static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  SD_OP_DEF static Z op_simd(X d1) { return op_logic(d1); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1) { return static_cast<Z>(0); }
+  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1) { return op_logic(d1); }
 
  public:
   no_op_exec_special no_op_exec_special_cuda
@@ -2393,7 +2075,7 @@ class BinaryRelativeError {
 template <typename X, typename Y, typename Z>
 class BinaryMinimumAbsoluteRelativeError {
  private:
-  static SD_INLINE Z op_logic(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X *params) {
     X d2 = params[0];
     X thresholdRelative = params[1];
     X thresholdAbsolute = params[2];
@@ -2402,7 +2084,7 @@ class BinaryMinimumAbsoluteRelativeError {
                                                                                  : static_cast<Z>(1))
            : static_cast<Z>(0);
   }
-  static SD_INLINE Z op_logic(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, Y d2, Z *params) {
     X thresholdRelative = static_cast<X>(params[0]);
     X thresholdAbsolute = static_cast<X>(params[1]);
     return sd::math::sd_re<X>(d1, static_cast<X>(d2)) > thresholdRelative
@@ -2410,27 +2092,27 @@ class BinaryMinimumAbsoluteRelativeError {
                                                                                  : static_cast<Z>(1))
            : static_cast<Z>(0);
   }
-  static SD_INLINE Z op_logic(X d1) { return static_cast<Z>(0); }
-  SD_OP_DEF static Z op_simd(X d1, X *params) { return op_logic(d1, params); }
-  SD_OP_DEF static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
-  SD_OP_DEF static Z op_simd(X d1) { return op_logic(d1); }
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1) { return static_cast<Z>(0); }
+  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, X *params) { return op_logic(d1, params); }
+  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1, Y d2, Z *params) { return op_logic(d1, d2, params); }
+  SD_HOST_DEVICE SD_INLINE  static Z op_simd(X d1) { return op_logic(d1); }
 
  public:
   no_op_exec_special no_op_exec_special_cuda
-  static Z op(X d1, X *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, X *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1, params);
     else return op_simd(d1, params);
   }
-  static Z op(X d1, Y d2, Z *params) {
+  static SD_HOST_DEVICE SD_INLINE  Z op(X d1, Y d2, Z *params) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value ||
                   simdOps::is_simd_unsupported_argument_type<Y>::value)
       return op_logic(d1, d2, params);
     else return op_simd(d1, d2, params);
   }
-  static Z op(X d1) {
+  static  SD_HOST_DEVICE SD_INLINE  Z op(X d1) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
                   simdOps::is_simd_unsupported_argument_type<X>::value)
       return op_logic(d1);
@@ -2510,7 +2192,7 @@ DECLARE_BINARY_COPY_OP(LogicalOr,
 template <typename X, typename Z>
 class MatchCondition {
  private:
-  static SD_INLINE Z op_logic(X d1, X compare, X eps, int mode) {
+  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X compare, X eps, int mode) {
     switch (mode) {
       case 0: return static_cast<Z>(sd::math::sd_abs<X,X>(d1 - compare) <= eps ? 1 : 0);
       case 1: return static_cast<Z>(sd::math::sd_abs<X,X>(d1 - compare) > eps ? 1 : 0);
@@ -2534,14 +2216,14 @@ class MatchCondition {
   }
 
   // Remove SD_OP_DEF from these helper functions
-  static Z op_simd_dispatch(X d1, X* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op_simd_dispatch(X d1, X* extraParams) {
     X compare = extraParams[0];
     X eps = extraParams[1];
     auto mode = static_cast<int>(extraParams[2]);
     return op_logic(d1, compare, eps, mode);
   }
 
-  static Z op_simd_dispatch_3param(X d1, X compare, X* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op_simd_dispatch_3param(X d1, X compare, X* extraParams) {
     X eps = extraParams[0];
     auto mode = static_cast<int>(extraParams[1]);
     return op_logic(d1, compare, eps, mode);
@@ -2551,16 +2233,16 @@ class MatchCondition {
   no_op_exec_special no_op_exec_special_cuda;
   no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda;
 
-  SD_OP_DEF static Z startingValue(const X* input) { return static_cast<Z>(0); }
-  SD_OP_DEF static Z merge(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
+  SD_HOST_DEVICE SD_INLINE static Z startingValue(const X* input) { return static_cast<Z>(0); }
+  SD_HOST_DEVICE SD_INLINE static Z merge(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
   SD_OP_DEF static Z update(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
-  SD_OP_DEF static Z postProcess(Z reduction, sd::LongType n, X* extraParams) { return static_cast<Z>(reduction); }
+  SD_HOST_DEVICE SD_INLINE static Z postProcess(Z reduction, sd::LongType n, X* extraParams) { return static_cast<Z>(reduction); }
 
-  static SD_INLINE Z op(X d1, X compare, X eps, int mode) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X compare, X eps, int mode) {
     return op_logic(d1, compare, eps, mode);
   }
 
-  static Z op(X d1, X* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X* extraParams) {
     if constexpr (is_simd_unsupported_return_type<Z>::value ||
                   is_simd_unsupported_argument_type<X>::value) {
       X compare = extraParams[0];
@@ -2572,7 +2254,7 @@ class MatchCondition {
     }
   }
 
-  static Z op(X d1, X compare, X* extraParams) {
+  static  SD_HOST_DEVICE SD_INLINE Z op(X d1, X compare, X* extraParams) {
     if constexpr (is_simd_unsupported_return_type<Z>::value ||
                   is_simd_unsupported_argument_type<X>::value) {
       X eps = extraParams[0];
@@ -2590,7 +2272,7 @@ template <>
 class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {
  public:
   static const bool requiresSpecial = false;
-  static void execSpecial(const std::basic_string<char32_t> *dx, const sd::LongType *xShapeBuffer,
+  static SD_HOST_DEVICE void execSpecial(const std::basic_string<char32_t> *dx, const sd::LongType *xShapeBuffer,
                           std::basic_string<char16_t> *result, const sd::LongType *resultShapeBuffer,
                           std::basic_string<char32_t> *extraParams, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffsets) {}
@@ -2603,7 +2285,7 @@ class Assign<std::basic_string<char32_t>, std::basic_string<char16_t>> {
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
-  SD_HOST_DEVICE static std::basic_string<char16_t>
+  SD_HOST_DEVICE SD_INLINE  static std::basic_string<char16_t>
   op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> * /*params*/) {
     char16_t temp_output_buffer[SD_STRING_ASSIGN_TEMP_BUFFER_BYTES / sizeof(char16_t) + 1];
     const char32_t* input_data = d1.data();
@@ -2627,7 +2309,7 @@ template <>
 class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
  public:
   static const bool requiresSpecial = false;
-  static void execSpecial(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
+  static SD_HOST_DEVICE SD_INLINE  void execSpecial(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
                           std::basic_string<char32_t> *result, const sd::LongType *resultShapeBuffer,
                           std::basic_string<char16_t> *extraParams, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffsets) {}
@@ -2640,7 +2322,7 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char32_t>> {
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
 
-  SD_HOST_DEVICE static std::basic_string<char32_t>
+  SD_HOST_DEVICE SD_INLINE  static std::basic_string<char32_t>
   op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> * /*params*/) {
     char32_t temp_output_buffer[SD_STRING_ASSIGN_TEMP_BUFFER_BYTES / sizeof(char32_t) + 1];
     const char16_t* input_data = d1.data();
@@ -2665,7 +2347,7 @@ template <>
 class Assign<std::basic_string<char16_t>, std::basic_string<char16_t>> {
  public:
   static const bool requiresSpecial = false;
-  static void execSpecial(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
+  static SD_HOST_DEVICE SD_INLINE  void execSpecial(const std::basic_string<char16_t> *dx, const sd::LongType *xShapeBuffer,
                           std::basic_string<char16_t> *result, const sd::LongType *resultShapeBuffer,
                           std::basic_string<char16_t> *extraParams, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffsets) {}
@@ -2677,7 +2359,7 @@ class Assign<std::basic_string<char16_t>, std::basic_string<char16_t>> {
                                         std::basic_string<char16_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
-  SD_HOST_DEVICE static std::basic_string<char16_t>
+  SD_HOST_DEVICE SD_INLINE   static std::basic_string<char16_t>
   op(const std::basic_string<char16_t>& d1, std::basic_string<char16_t> * /*params*/) {
     return d1;
   }
@@ -2687,7 +2369,7 @@ template <>
 class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
  public:
   static const bool requiresSpecial = false;
-  static void execSpecial(const std::basic_string<char32_t> *dx, const sd::LongType *xShapeBuffer,
+  static  SD_HOST_DEVICE SD_INLINE  void execSpecial(const std::basic_string<char32_t> *dx, const sd::LongType *xShapeBuffer,
                           std::basic_string<char32_t> *result, const sd::LongType *resultShapeBuffer,
                           std::basic_string<char32_t> *extraParams, const sd::LongType *tadShapeInfo,
                           const sd::LongType *tadOffsets) {}
@@ -2699,7 +2381,7 @@ class Assign<std::basic_string<char32_t>, std::basic_string<char32_t>> {
                                         std::basic_string<char32_t> *reductionPointer,
                                         const sd::LongType *tadShapeInfo, const sd::LongType *tadOffsets) {}
 #endif
-  SD_HOST_DEVICE static std::basic_string<char32_t>
+  SD_HOST_DEVICE SD_INLINE  static std::basic_string<char32_t>
   op(const std::basic_string<char32_t>& d1, std::basic_string<char32_t> * /*params*/) {
     return d1;
   }

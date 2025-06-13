@@ -104,7 +104,14 @@ SD_DEVICE void TransformBool<X, Z>::transformCuda(
 
  // Check for special operations
  if (OpType::requiresSpecial) {
-   OpType::execSpecialCuda(x, xShapeInfo, z, zShapeInfo, params, allocationPointer, reductionPointer, tadShapeInfo,
+   OpType::execSpecialCuda(x,
+                           xShapeInfo,
+                           z,
+                           zShapeInfo,
+                           params,
+                           allocationPointer,
+                           reductionPointer,
+                           tadShapeInfo,
                            tadOffsets);
    return;
  }
