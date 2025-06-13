@@ -47,6 +47,27 @@ option(SD_SHOW_TYPE_IMPACT "Show estimated build impact" ON)
 set(SD_DEBUG_TYPE_PROFILE "" CACHE STRING "Debug type profile (MINIMAL_INDEXING, ESSENTIAL, FLOATS_ONLY, etc.)")
 set(SD_DEBUG_CUSTOM_TYPES "" CACHE STRING "Custom types for debug profile")
 
+# ===== DISABLE PLT COMPLETELY =====
+# Disable Procedure Linkage Table to prevent memory issues
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-plt")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-plt")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,now")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,now")
+endif()
+
+# For CUDA builds, disable PLT in host compiler flags
+if(SD_CUDA AND CMAKE_CUDA_COMPILER)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fno-plt")
+endif()
+
 # Set default validation mode based on build configuration
 if(NOT DEFINED SD_TYPES_VALIDATION_MODE)
     if(SD_GCC_FUNCTRACE STREQUAL "ON")
