@@ -2108,6 +2108,7 @@ if(SD_CUDA)
     endif()
 
     # Debug CUDA architecture issue
+    # Debug CUDA architecture issue
     if(NOT DEFINED COMPUTE)
         set(COMPUTE "auto")
     endif()
@@ -2148,6 +2149,22 @@ if(SD_CUDA)
         endif()
     endif()
 
+    # Windows-specific CUDA compiler flags
+    if(WIN32 AND MSVC)
+        # Ensure CUDA uses MSVC as host compiler
+        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+
+        # Add MSVC flags properly for NVCC
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
+
+        # Set runtime library to match global MSVC_RT_LIB setting
+        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
+        else()
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
+        endif()
+    endif()
+
     # Windows-specific flags
     if(WIN32 AND MSVC)
         set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
@@ -2160,6 +2177,7 @@ if(SD_CUDA)
     endif()
 
     # Now add our manual architecture flags
+    # Now add our manual architecture flags - FIXED VERSION
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all")
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89")
@@ -2168,7 +2186,7 @@ if(SD_CUDA)
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
         message(STATUS "Auto-detecting CUDA architectures")
     else()
-        # Fixed CUDA architecture parsing
+        # FIXED CUDA architecture parsing
         string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
         set(CUDA_ARCH_FLAGS "")
         foreach(ARCH ${ARCH_LIST})
@@ -2176,6 +2194,7 @@ if(SD_CUDA)
             string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
             # Ensure we have a valid 2-digit architecture number
             if(ARCH_CLEAN MATCHES "^[0-9][0-9]$")
+                # FIXED: Ensure proper gencode format with both arch and code
                 set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
             else()
                 message(WARNING "Invalid CUDA architecture: ${ARCH} (cleaned: ${ARCH_CLEAN}). Skipping.")
@@ -2186,10 +2205,15 @@ if(SD_CUDA)
         message(STATUS "Using user-specified CUDA architectures: ${COMPUTE}")
     endif()
 
-    # Validate CUDA_ARCH_FLAGS is not empty
+    # Validate CUDA_ARCH_FLAGS is not empty and properly formatted
     if(NOT CUDA_ARCH_FLAGS OR CUDA_ARCH_FLAGS STREQUAL "")
         message(WARNING "No valid CUDA architecture flags generated. Using default compute_86.")
         set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
+    endif()
+
+    # Validate the flags contain proper gencode format
+    if(NOT CUDA_ARCH_FLAGS MATCHES "gencode.*arch=compute_[0-9]+,code=sm_[0-9]+")
+        message(FATAL_ERROR "Generated CUDA architecture flags are malformed: ${CUDA_ARCH_FLAGS}")
     endif()
 
     # Add architecture flags
@@ -2220,23 +2244,6 @@ if(SD_CUDA)
     message(STATUS "CUDA_ARCH_FLAGS: '${CUDA_ARCH_FLAGS}'")
     message(STATUS "=========================")
 
-    # Set CUDA compilation options
-    set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-
-    # Build final CUDA flags (without manual architecture flags - CMake handles those)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -w --cudart=shared --expt-extended-lambda -Xfatbin -compress-all")
-
-    # Add CUDA version if available
-    if(CMAKE_CUDA_COMPILER_VERSION)
-        string(REGEX MATCH "^([0-9]+)" CUDA_VERSION_MAJOR "${CMAKE_CUDA_COMPILER_VERSION}")
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR}")
-    endif()
-
-    # Clean up and validate CUDA flags
-    string(REGEX REPLACE "  +" " " CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-    string(STRIP "${CMAKE_CUDA_FLAGS}" CMAKE_CUDA_FLAGS)
-
-    message(STATUS "Final CUDA flags: ${CMAKE_CUDA_FLAGS}")
 
     # Verify NVCC is accessible on Windows
     if(WIN32 AND CUDA_TOOLKIT_ROOT_DIR)
