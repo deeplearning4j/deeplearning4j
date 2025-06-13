@@ -1657,7 +1657,6 @@ class Epsilon {
   }
 };
 
-
 template <typename X, typename Z>
 class MatchConditionBool {
  private:
@@ -1712,7 +1711,38 @@ class MatchConditionBool {
   static Z op_simd(X d1, X *extraParams) { return op_logic(d1, extraParams); }
 
  public:
-  no_op_exec_special_bool no_op_exec_special_bool_cuda;
+  // Fix: Use explicit declarations instead of problematic macros
+  no_op_exec_special no_op_exec_special_cuda;
+
+  // Special handling for bool operations with type compatibility
+  static const bool requiresSpecialAccumulation = false;
+
+  // Primary execSpecial function with Z_TYPE* extraParams (for boolean case)
+  static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
+                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
+
+  // Template overload to handle type conversions (for cases where extraParams is sd::LongType*)
+  template<typename ExtraParamsType>
+  static void execSpecial(const X *x, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result,
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
+                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
+    // Handle type conversion if needed - this handles the sd::LongType* to Z* conversion
+    // For most cases, this will be empty since we don't actually implement special accumulation
+  }
+
+#ifdef __CUDACC__
+  static SD_INLINE SD_DEVICE void execSpecialCuda(
+      const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,
+      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
+      Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
+
+  template<typename ExtraParamsType>
+  static SD_INLINE SD_DEVICE void execSpecialCuda(
+      const X *dx, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result,
+      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
+      Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
+#endif
 
   static SD_HOST_DEVICE SD_INLINE Z op(X d1, X *extraParams) {
     if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||
@@ -2188,11 +2218,10 @@ DECLARE_BINARY_COPY_OP(LogicalOr,
 )
 
 
-
 template <typename X, typename Z>
 class MatchCondition {
  private:
-  static SD_HOST_DEVICE SD_INLINE  Z op_logic(X d1, X compare, X eps, int mode) {
+  static SD_HOST_DEVICE SD_INLINE Z op_logic(X d1, X compare, X eps, int mode) {
     switch (mode) {
       case 0: return static_cast<Z>(sd::math::sd_abs<X,X>(d1 - compare) <= eps ? 1 : 0);
       case 1: return static_cast<Z>(sd::math::sd_abs<X,X>(d1 - compare) > eps ? 1 : 0);
@@ -2230,8 +2259,38 @@ class MatchCondition {
   }
 
  public:
+  // Fix: Use the correct macro declarations with proper type handling
   no_op_exec_special no_op_exec_special_cuda;
-  no_op_exec_special_accumulation_long no_op_exec_special_accumulation_cuda;
+
+  // Special handling for accumulation operations with type compatibility
+  static const bool requiresSpecialAccumulation = false;
+
+  // Primary execSpecial function with Z_TYPE* extraParams (for unsigned long long case)
+  static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
+                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}
+
+  // Template overload to handle type conversions (for cases where extraParams is sd::LongType*)
+  template<typename ExtraParamsType>
+  static void execSpecial(const X *x, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result,
+                          const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength,
+                          const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {
+    // Handle type conversion if needed - this handles the sd::LongType* to Z* conversion
+    // For most cases, this will be empty since we don't actually implement special accumulation
+  }
+
+#ifdef __CUDACC__
+  static SD_INLINE SD_DEVICE void execSpecialCuda(
+      const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,
+      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
+      Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
+
+  template<typename ExtraParamsType>
+  static SD_INLINE SD_DEVICE void execSpecialCuda(
+      const X *dx, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result,
+      const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength,
+      Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {}
+#endif
 
   SD_HOST_DEVICE SD_INLINE static Z startingValue(const X* input) { return static_cast<Z>(0); }
   SD_HOST_DEVICE SD_INLINE static Z merge(Z old, Z opOutput, X* extraParams) { return static_cast<Z>(old + opOutput); }
@@ -2254,7 +2313,7 @@ class MatchCondition {
     }
   }
 
-  static  SD_HOST_DEVICE SD_INLINE Z op(X d1, X compare, X* extraParams) {
+  static SD_HOST_DEVICE SD_INLINE Z op(X d1, X compare, X* extraParams) {
     if constexpr (is_simd_unsupported_return_type<Z>::value ||
                   is_simd_unsupported_argument_type<X>::value) {
       X eps = extraParams[0];
@@ -2265,7 +2324,6 @@ class MatchCondition {
     }
   }
 };
-
 
 // --- Specialization: std::basic_string<char32_t> (UTF-32) -> std::basic_string<char16_t> (UTF-16) ---
 template <>
