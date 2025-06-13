@@ -662,6 +662,13 @@ namespace simdOps {
  * This macro creates accumulation operations with proper SIMD handling and InterType support
  * Fixed to handle type mismatches in execSpecial function signatures
  */
+/**
+ * @brief Fixed DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
+ * Add this to op_macros_reduce.h (replacement for the existing macro)
+ *
+ * This macro creates accumulation operations with proper SIMD handling and InterType support
+ * Fixed to handle CUDA compilation and template parameter conflicts
+ */
 #define DECLARE_ACCUMULATION_SIMD_SAFE_OP(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
   template <typename X, typename Z>                                                             \
   class OP_NAME {                                                                               \
@@ -669,7 +676,7 @@ namespace simdOps {
     using InterType = typename AggregateType<Z>::type;                                         \
                                                                                                 \
    private:                                                                                     \
-    SD_HOST_DEVICE SD_INLINE static  InterType op_logic(X d1, Z* params) {                                     \
+    SD_HOST_DEVICE SD_INLINE static  InterType op_logic(X d1, Z* params) {                     \
       OPERATION                                                                                 \
     }                                                                                           \
                                                                                                 \
@@ -743,32 +750,30 @@ namespace simdOps {
       /* For most cases, this will be empty since we don't actually implement special accumulation */ \
     }                                                                                           \
                                                                                                 \
-    /* CUDA version if needed */                                                               \
-    __CUDACC_ONLY__                                                                            \
-    static SD_INLINE SD_DEVICE void execSpecialCuda(                                          \
+    /* CUDA version - avoid using __CUDACC_ONLY__ macro to prevent template conflicts */      \
+    SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
         const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,               \
         const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
         Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
                                                                                                 \
-    __CUDACC_ONLY__                                                                            \
     template<typename ExtraParamsType>                                                         \
-    static SD_INLINE SD_DEVICE void execSpecialCuda(                                          \
+    SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
         const X *dx, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result, \
         const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
         Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
                                                                                                 \
     const static  functions::ReduceType reduceType = functions::ReduceType::REDUCE_TYPE_VAL;    \
                                                                                                 \
-    static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }                            \
+    static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }             \
                                                                                                 \
-    static SD_HOST_DEVICE InterType merge(InterType old, InterType opOutput, Z* extraParams) {                \
+    static SD_HOST_DEVICE InterType merge(InterType old, InterType opOutput, Z* extraParams) { \
       if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                 \
         return merge_logic(old, opOutput, extraParams);                                        \
       else                                                                                      \
         return merge_simd(old, opOutput, extraParams);                                         \
     }                                                                                           \
                                                                                                 \
-    static SD_HOST_DEVICE InterType update(InterType old, InterType opOutput, Z* extraParams) {               \
+    static SD_HOST_DEVICE InterType update(InterType old, InterType opOutput, Z* extraParams) { \
       if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                 \
         return update_logic(old, opOutput, extraParams);                                       \
       else                                                                                      \
@@ -795,7 +800,7 @@ namespace simdOps {
       return update(old, opOutput, reinterpret_cast<Z*>(extraParams));                       \
     }                                                                                          \
                                                                                                 \
-    static SD_HOST_DEVICE InterType op(X d1, Z* extraParams) {                                               \
+    static SD_HOST_DEVICE InterType op(X d1, Z* extraParams) {                                \
       if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value ||             \
                     simdOps::is_simd_unsupported_argument_type<X>::value)                     \
         return op_logic(d1, extraParams);                                                     \
@@ -808,7 +813,7 @@ namespace simdOps {
       return op(d1, reinterpret_cast<Z*>(extraParams));                                       \
     }                                                                                          \
                                                                                                 \
-    static SD_HOST_DEVICE Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) {               \
+    static SD_HOST_DEVICE Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) { \
       if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                       \
         return postProcess_logic(reduction, n, extraParams);                                  \
       else                                                                                     \
@@ -830,7 +835,6 @@ namespace simdOps {
       return postProcess(static_cast<InterType>(reduction), n, reinterpret_cast<Z*>(extraParams)); \
     }                                                                                          \
   };
-
 } // namespace simdOps
 
 #endif // OP_MACROS_REDUCE_H_
