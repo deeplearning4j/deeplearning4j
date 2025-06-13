@@ -2113,67 +2113,55 @@ if(SD_CUDA)
         set(COMPUTE "auto")
     endif()
 
-    # Add debugging right after enable_language(CUDA)
-    message(STATUS "=== CUDA DEBUG INFO ===")
-    message(STATUS "CMAKE_CUDA_ARCHITECTURES after enable_language: '${CMAKE_CUDA_ARCHITECTURES}'")
-    get_property(CUDA_ARCHS GLOBAL PROPERTY CUDA_ARCHITECTURES)
-    message(STATUS "Global CUDA_ARCHITECTURES property: '${CUDA_ARCHS}'")
-    message(STATUS "CMAKE_CUDA_COMPILER_VERSION: '${CMAKE_CUDA_COMPILER_VERSION}'")
-    message(STATUS "CMAKE_CUDA_FLAGS before our changes: '${CMAKE_CUDA_FLAGS}'")
-
-    # Try the nuclear approach - clear everything
+    # Clear any problematic CMAKE_CUDA_ARCHITECTURES settings
     unset(CMAKE_CUDA_ARCHITECTURES)
     unset(CMAKE_CUDA_ARCHITECTURES CACHE)
-    set(CMAKE_CUDA_ARCHITECTURES "" CACHE STRING "Cleared" FORCE)
-    set_property(GLOBAL PROPERTY CUDA_ARCHITECTURES "")
+    set(CMAKE_CUDA_ARCHITECTURES OFF)
 
-    # Clear the flags completely and rebuild from scratch
+    # Build CUDA flags from scratch
     set(CMAKE_CUDA_FLAGS "")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
+    
+    # Windows-specific CUDA configuration
+    if(WIN32 AND MSVC)
+        message(STATUS "Configuring CUDA for Windows MSVC...")
+        
+        # Set host compiler explicitly
+        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+        
+        # Build Windows-compatible flags
+        set(CMAKE_CUDA_FLAGS "-maxrregcount=128")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/EHsc")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/std:c++17")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+        
+        # Runtime library
+        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
+        else()
+            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
+        endif()
+    else()
+        # Linux/Unix flags
+        set(CMAKE_CUDA_FLAGS "--allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -maxrregcount=128")
+        
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            if(SD_GCC_FUNCTRACE STREQUAL "ON")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
+            endif()
+        endif()
+    endif()
 
-    # Add the basic flags that were already set
+    # Optional flags
     if("${SD_PTXAS}" STREQUAL "ON")
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --ptxas-options=-v")
     endif()
 
     if(SD_KEEP_NVCC_OUTPUT)
         set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --keep")
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        if(SD_GCC_FUNCTRACE STREQUAL "ON")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC --device-debug -lineinfo -G")
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
-        endif()
-    endif()
-
-    # Windows-specific CUDA compiler flags
-    if(WIN32 AND MSVC)
-        # Ensure CUDA uses MSVC as host compiler
-        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-
-        # Add MSVC flags properly for NVCC
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
-
-        # Set runtime library to match global MSVC_RT_LIB setting
-        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
-        endif()
-    endif()
-
-    # Windows-specific flags
-    if(WIN32 AND MSVC)
-        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/nologo,/EHsc,/std:c++17")
-        if(MSVC_RT_LIB STREQUAL "MultiThreadedDLL")
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MD")
-        else()
-            set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/MT")
-        endif()
     endif()
 
     # Now add our manual architecture flags
