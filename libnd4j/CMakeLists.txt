@@ -1989,19 +1989,23 @@ if(SD_CUDA)
 
     # CRITICAL Windows CUDA fix - must be immediately after enable_language(CUDA)
     if(WIN32)
-        # Remove the problematic forward-unknown-to-host-compiler flag
-        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
-        string(REPLACE "-forward-unknown-to-host-compiler" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        message(STATUS "Applying Windows CUDA nuclear fix...")
 
-        # Disable response files completely on Windows for CUDA
+        # The nuclear option: Override CMake's CUDA compilation rule completely
+        set(CMAKE_CUDA_COMPILE_OBJECT
+                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT>"
+        )
+
+        # Disable all response file usage for CUDA
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
         set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF)
 
-        # Force CMake to not use response files for CUDA compilation
+        # Clear any CMake internal CUDA flags that cause problems
         set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "")
 
-        message(STATUS "Windows CUDA: Disabled response files and forward-unknown-to-host-compiler")
+        message(STATUS "Windows CUDA: Applied nuclear fix - overrode compilation rule")
     endif()
     # Verify CUDA was enabled successfully
     if(NOT CMAKE_CUDA_COMPILER)
