@@ -150,7 +150,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   __shared__ volatile int resultLength;
 
   SummaryStatsData<X> reduction;
-  reduction.initWithValue(0.0);
+  reduction.initWithValue(static_cast<X>(0.0));
   reduction.n = 0;
 
   if (threadIdx.x == 0) {
