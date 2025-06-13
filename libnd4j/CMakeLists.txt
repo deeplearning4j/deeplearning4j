@@ -1069,12 +1069,24 @@ else()
     endif()
 endif()
 # Memory optimization during compilation
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+# Memory optimization during compilation - FIXED: Only apply to GCC
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
+endif()
+# Section splitting for better linker handling - FIXED: Only apply to GCC/Clang
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+endif()
 
-# Section splitting for better linker handling
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections")
+# MSVC-specific optimizations
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # MSVC equivalent optimizations
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")  # Function-level linking
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Gy")      # Function-level linking
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:REF /OPT:ICF")  # Remove unreferenced code
+endif()
 
 message(STATUS "Applied PLT overflow prevention for large template library")
 
@@ -1119,8 +1131,8 @@ if(SD_ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-implicit-templates -ftemplate-depth=128")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-implicit-templates -ftemplate-depth=128")
 
-    # Enhanced Android x86_64 memory optimization
-    if(ANDROID_ABI MATCHES "x86_64")
+    # Enhanced Android x86_64 memory optimization - FIXED: Only for GCC/Clang
+    if(ANDROID_ABI MATCHES "x86_64" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         message(STATUS "Applying enhanced Android x86_64 memory optimizations")
 
         # Aggressive memory model
@@ -1196,15 +1208,22 @@ endif()
 # Verified function for applying target-specific optimizations
 if(SD_ANDROID_BUILD AND ANDROID_ABI MATCHES "x86_64")
     function(apply_android_x86_64_plt_fixes target_name)
-        # Additional target-specific compiler flags (all verified)
-        target_compile_options(${target_name} PRIVATE
-                -ffunction-sections
-                -fdata-sections
-                -fvisibility=hidden
-                -fvisibility-inlines-hidden
-                -fno-plt
-                -fno-semantic-interposition
-        )
+        # Additional target-specific compiler flags (all verified) - FIXED: Only for GCC/Clang
+        if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            target_compile_options(${target_name} PRIVATE
+                    -ffunction-sections
+                    -fdata-sections
+                    -fvisibility=hidden
+                    -fvisibility-inlines-hidden
+                    -fno-plt
+                    -fno-semantic-interposition
+            )
+        else()
+            # MSVC equivalent flags
+            target_compile_options(${target_name} PRIVATE
+                    /Gy  # Function-level linking
+            )
+        endif()
 
         # Target-specific preprocessor definitions
         target_compile_definitions(${target_name} PRIVATE
