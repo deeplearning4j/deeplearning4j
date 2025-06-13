@@ -53,6 +53,8 @@ namespace sd {
 namespace math {
 
 #include <type_traits>
+#include <types/float16.h>
+#include <types/bfloat16.h>wa
 #include <types/type_promote.h>
 
 /*
