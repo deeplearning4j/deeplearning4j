@@ -24,14 +24,6 @@
 #ifndef LIBND4J_TYPE_PROMOTE_H
 #define LIBND4J_TYPE_PROMOTE_H
 
-// Forward declare types that might be conditionally compiled
-#if defined(HAS_FLOAT16)
-struct float16;
-#endif
-#if defined(HAS_BFLOAT16)
-struct bfloat16;
-#endif
-
 #include <types/types.h>
 
 /*
