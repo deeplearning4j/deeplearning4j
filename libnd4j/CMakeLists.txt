@@ -23,7 +23,11 @@ cmake_minimum_required(VERSION 3.15)
 # during CMake's initial CUDA compiler identification step.
 #   --allow-unsupported-compiler: The flag for nvcc itself.
 #   -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__: The macro that the CUDA headers check for.
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+if(WIN32)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+else()
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler -Xcompiler -D__NVCC_ALLOW_UNSUPPORTED_COMPILER__")
+endif()
 # Also add it as a compile definition to ensure it gets to the preprocessor
 add_compile_definitions(__NVCC_ALLOW_UNSUPPORTED_COMPILER__)
 project(libnd4j)
@@ -1983,6 +1987,22 @@ if(SD_CUDA)
     add_definitions(-D__CUDABLAS__=true)
     enable_language(CUDA)
 
+    # CRITICAL Windows CUDA fix - must be immediately after enable_language(CUDA)
+    if(WIN32)
+        # Remove the problematic forward-unknown-to-host-compiler flag
+        set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+        string(REPLACE "-forward-unknown-to-host-compiler" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
+        # Disable response files completely on Windows for CUDA
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
+
+        # Force CMake to not use response files for CUDA compilation
+        set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "")
+
+        message(STATUS "Windows CUDA: Disabled response files and forward-unknown-to-host-compiler")
+    endif()
     # Verify CUDA was enabled successfully
     if(NOT CMAKE_CUDA_COMPILER)
         message(FATAL_ERROR "CUDA compiler not found after enabling CUDA language")
