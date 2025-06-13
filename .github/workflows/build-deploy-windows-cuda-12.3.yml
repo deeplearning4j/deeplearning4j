@@ -251,89 +251,99 @@ jobs:
         run: |
           Write-Host "Patching MSVC STL header for CUDA 12.3 compatibility..."
           
-          $targetFile = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.43.34808\include\yvals_core.h"
+          # Find Visual Studio installation and locate yvals_core.h
+          $vsPaths = @(
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise",
+              "${env:ProgramFiles}\Microsoft Visual Studio\2022\Professional",
+              "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Professional"
+          )
           
-          Write-Host "Target file: $targetFile"
-          
-          # Check if file exists
-          if (-not (Test-Path $targetFile)) {
-              Write-Host "Specific file not found, searching for yvals_core.h in VS installation..."
-          
-              # Find Visual Studio installation and locate yvals_core.h
-              $vsPaths = @(
-                  "${env:ProgramFiles}\Microsoft Visual Studio\2022\Enterprise",
-                  "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise"
-              )
-          
-              $foundFile = $null
-              foreach ($vsPath in $vsPaths) {
-                  if (Test-Path $vsPath) {
-                      $yvalsCoreFiles = Get-ChildItem -Path "$vsPath" -Name "yvals_core.h" -Recurse -ErrorAction SilentlyContinue
-                      if ($yvalsCoreFiles) {
-                          $foundFile = Join-Path $vsPath $yvalsCoreFiles[0]
-                          Write-Host "Found yvals_core.h at: $foundFile"
-                          break
-                      }
+          $foundFile = $null
+          foreach ($vsPath in $vsPaths) {
+              if (Test-Path $vsPath) {
+                  Write-Host "Searching in: $vsPath"
+                  $yvalsCoreFiles = Get-ChildItem -Path "$vsPath" -Filter "yvals_core.h" -Recurse -ErrorAction SilentlyContinue
+                  if ($yvalsCoreFiles) {
+                      $foundFile = $yvalsCoreFiles[0].FullName
+                      Write-Host "Found yvals_core.h at: $foundFile"
+                      break
                   }
               }
+          }
           
-              if ($foundFile) {
-                  $targetFile = $foundFile
-              } else {
-                  Write-Error "Could not find yvals_core.h file"
-                  exit 1
-              }
+          if (-not $foundFile) {
+              Write-Error "Could not find yvals_core.h file in any Visual Studio installation"
+              exit 1
           }
           
           try {
               # Create backup
-              $backupFile = "$targetFile.backup"
+              $backupFile = "$foundFile.backup"
               if (-not (Test-Path $backupFile)) {
-                  Copy-Item $targetFile $backupFile -Force
+                  Copy-Item $foundFile $backupFile -Force
                   Write-Host "Created backup: $backupFile"
               } else {
                   Write-Host "Backup already exists: $backupFile"
               }
           
               # Read file content
-              $content = Get-Content $targetFile -Raw
+              $content = Get-Content $foundFile -Raw
+              Write-Host "File size: $($content.Length) characters"
           
-              # Check if the problematic line exists and patch it
-              if ($content -match 'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);') {
-                  Write-Host "Found problematic static_assert, commenting out..."
+              # Look for the specific problematic line and comment it out
+              $originalPattern = 'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);'
+              $replacement = '// static_assert(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12.4 or newer.");'
           
-                  # Comment out the specific line
-                  $patchedContent = $content -replace 
-                      'static_assert\(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12\.4 or newer\."\);',
-                      '// static_assert(false, "error " "STL1002" ": " "Unexpected compiler version, expected CUDA 12.4 or newer.");'
-          
-                  # Write patched content back
-                  Set-Content -Path $targetFile -Value $patchedContent -NoNewline
-                  Write-Host "Successfully patched: $targetFile"
-                  Write-Host "The problematic static_assert has been commented out."
-          
+              if ($content -match $originalPattern) {
+                  Write-Host "Found exact pattern match, applying targeted fix..."
+                  $patchedContent = $content -replace $originalPattern, $replacement
+                  Set-Content -Path $foundFile -Value $patchedContent -NoNewline
+                  Write-Host "Successfully patched the specific static_assert line"
               } else {
-                  Write-Host "Could not find the exact problematic static_assert."
-                  Write-Host "Searching for any STL1002 errors..."
+                  Write-Host "Exact pattern not found, searching for STL1002 CUDA version checks..."
           
-                  # Try broader pattern matching
+                  # More flexible pattern to catch variations
                   if ($content -match 'STL1002.*CUDA 12\.4') {
-                      Write-Host "Found STL1002 CUDA version check, attempting to patch..."
+                      Write-Host "Found STL1002 CUDA version check, applying broader fix..."
           
-                      # More flexible regex to catch variations
-                      $patchedContent = $content -replace 
-                          'static_assert\([^;]*STL1002[^;]*CUDA 12\.4[^;]*\);',
-                          '// $&'
+                      # Split content by lines for more precise matching
+                      $lines = $content -split "`r`n|`r|`n"
+                      $modifiedLines = @()
+                      $patchApplied = $false
           
-                      Set-Content -Path $targetFile -Value $patchedContent -NoNewline
-                      Write-Host "Applied broader patch to STL1002 CUDA version checks."
+                      foreach ($line in $lines) {
+                          if ($line -match 'static_assert.*STL1002.*CUDA 12\.4') {
+                              Write-Host "Commenting out line: $line"
+                              $modifiedLines += "// $line"
+                              $patchApplied = $true
+                          } else {
+                              $modifiedLines += $line
+                          }
+                      }
+          
+                      if ($patchApplied) {
+                          $patchedContent = $modifiedLines -join "`r`n"
+                          Set-Content -Path $foundFile -Value $patchedContent -NoNewline
+                          Write-Host "Successfully patched STL1002 CUDA version check(s)"
+                      } else {
+                          Write-Host "No STL1002 CUDA version checks found to patch"
+                      }
                   } else {
-                      Write-Host "No STL1002 CUDA version check found. File may already be patched or different version."
+                      Write-Host "No STL1002 CUDA version checks found in the file"
+                      Write-Host "File may already be patched or this is a different version"
                   }
               }
           
+              Write-Host "Patch operation completed successfully"
+          
           } catch {
               Write-Error "Failed to patch file: $_"
+              # Restore backup if patch failed
+              if (Test-Path $backupFile) {
+                  Copy-Item $backupFile $foundFile -Force
+                  Write-Host "Restored backup due to patch failure"
+              }
               exit 1
           }
 
