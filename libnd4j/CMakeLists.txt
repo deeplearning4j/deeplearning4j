@@ -2162,21 +2162,34 @@ if(SD_CUDA)
     # Now add our manual architecture flags
     string(TOLOWER "${COMPUTE}" COMPUTE_CMP)
     if(COMPUTE_CMP STREQUAL "all")
-        set(CUDA_ARCH_FLAGS "-gencode arch=-gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86")
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_89,code=sm_89")
         message(STATUS "Building for all CUDA architectures")
     elseif(COMPUTE_CMP STREQUAL "auto")
-        set(CUDA_ARCH_FLAGS "-gencode arch=-gencode arch=compute_86,code=sm_86")
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
         message(STATUS "Auto-detecting CUDA architectures")
     else()
         # Fixed CUDA architecture parsing
         string(REPLACE "," ";" ARCH_LIST "${COMPUTE}")
         set(CUDA_ARCH_FLAGS "")
         foreach(ARCH ${ARCH_LIST})
-            # Remove dots from architecture numbers (8.0 -> 80)
+            # Remove dots from architecture numbers (8.6 -> 86)
             string(REPLACE "." "" ARCH_CLEAN "${ARCH}")
-            set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
+            # Ensure we have a valid 2-digit architecture number
+            if(ARCH_CLEAN MATCHES "^[0-9][0-9]$")
+                set(CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS} -gencode arch=compute_${ARCH_CLEAN},code=sm_${ARCH_CLEAN}")
+            else()
+                message(WARNING "Invalid CUDA architecture: ${ARCH} (cleaned: ${ARCH_CLEAN}). Skipping.")
+            endif()
         endforeach()
+        # Remove leading space
+        string(STRIP "${CUDA_ARCH_FLAGS}" CUDA_ARCH_FLAGS)
         message(STATUS "Using user-specified CUDA architectures: ${COMPUTE}")
+    endif()
+
+    # Validate CUDA_ARCH_FLAGS is not empty
+    if(NOT CUDA_ARCH_FLAGS OR CUDA_ARCH_FLAGS STREQUAL "")
+        message(WARNING "No valid CUDA architecture flags generated. Using default compute_86.")
+        set(CUDA_ARCH_FLAGS "-gencode arch=compute_86,code=sm_86")
     endif()
 
     # Add architecture flags
