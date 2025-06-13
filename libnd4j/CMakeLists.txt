@@ -1056,9 +1056,18 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND SD_X86_BUILD)
 endif()
 
 # Use large memory model (required for your template scale)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
-
+# Use large memory model (required for your template scale) - FIXED: Only for x86-64, not ARM
+if(SD_X86_BUILD AND NOT WIN32)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcmodel=large")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mcmodel=large")
+    message(STATUS "Applied large memory model for x86-64 architecture")
+else()
+    if(SD_ARM_BUILD OR SD_ANDROID_BUILD)
+        message(STATUS "Skipping large memory model for ARM/Android architecture (not supported)")
+    elseif(WIN32)
+        message(STATUS "Skipping large memory model for Windows (using alternative approach)")
+    endif()
+endif()
 # Memory optimization during compilation
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ggc-min-expand=100 --param ggc-min-heapsize=131072")
 
