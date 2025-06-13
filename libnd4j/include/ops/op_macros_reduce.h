@@ -655,6 +655,13 @@ namespace simdOps {
  *
  * This macro creates accumulation operations with proper SIMD handling and InterType support
  */
+/**
+ * @brief Fixed DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
+ * Add this to op_macros_reduce.h (replacement for the existing macro)
+ *
+ * This macro creates accumulation operations with proper SIMD handling and InterType support
+ * Fixed to handle type mismatches in execSpecial function signatures
+ */
 #define DECLARE_ACCUMULATION_SIMD_SAFE_OP(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
   template <typename X, typename Z>                                                             \
   class OP_NAME {                                                                               \
@@ -719,7 +726,37 @@ namespace simdOps {
     }                                                                                           \
                                                                                                 \
    public:                                                                                      \
-    no_op_exec_special_accumulation no_op_exec_special_accumulation_cuda                       \
+    /* Fix: Replace problematic macro with explicit declarations */                            \
+    static const bool requiresSpecialAccumulation = false;                                     \
+                                                                                                \
+    /* Primary execSpecial function with Z_TYPE* extraParams */                               \
+    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result, \
+                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
+                                                                                                \
+    /* Template overload to handle type conversions (for cases where extraParams is sd::LongType*) */ \
+    template<typename ExtraParamsType>                                                         \
+    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result, \
+                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {      \
+      /* Handle type conversion if needed - this handles the sd::LongType* to Z* conversion */ \
+      /* For most cases, this will be empty since we don't actually implement special accumulation */ \
+    }                                                                                           \
+                                                                                                \
+    /* CUDA version if needed */                                                               \
+    __CUDACC_ONLY__                                                                            \
+    static SD_INLINE SD_DEVICE void execSpecialCuda(                                          \
+        const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,               \
+        const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
+        Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
+                                                                                                \
+    __CUDACC_ONLY__                                                                            \
+    template<typename ExtraParamsType>                                                         \
+    static SD_INLINE SD_DEVICE void execSpecialCuda(                                          \
+        const X *dx, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result, \
+        const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
+        Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
+                                                                                                \
     const static  functions::ReduceType reduceType = functions::ReduceType::REDUCE_TYPE_VAL;    \
                                                                                                 \
     static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }                            \
