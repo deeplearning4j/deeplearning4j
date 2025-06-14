@@ -2188,34 +2188,22 @@ if(SD_CUDA)
 
     # Disable response files for CUDA compilation on Windows
     if(WIN32)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF)
-    endif()
+        message(STATUS "Configuring Windows CUDA build with proper response files...")
 
-    add_definitions(-D__CUDABLAS__=true)
-    enable_language(CUDA)
+        # DO NOT override CMAKE_CUDA_COMPILE_OBJECT - this was causing the nvcc fatal error
+        # Instead, enable response files to handle long command lines properly
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES ON)
+        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS ON)
 
-    # CRITICAL Windows CUDA fix - must be immediately after enable_language(CUDA)
-    if(WIN32)
-        message(STATUS "Applying Windows CUDA nuclear fix...")
+        # Set proper response file flag for CUDA on Windows
+        set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "@")
 
-        # The nuclear option: Override CMake's CUDA compilation rule completely
-        set(CMAKE_CUDA_COMPILE_OBJECT
-                "<CMAKE_CUDA_COMPILER> <DEFINES> <INCLUDES> <FLAGS> -x cu -rdc=true -c <SOURCE> -o <OBJECT>"
-        )
+        # Enable response file for compilation to handle long include/define lists
+        set(CMAKE_CUDA_COMPILE_OPTIONS_USE_RESPONSE_FILE ON)
 
-        # Disable all response file usage for CUDA
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_INCLUDES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LIBRARIES OFF)
-        set(CMAKE_CUDA_USE_RESPONSE_FILE_FOR_LINK_OBJECTS OFF)
-
-        # Clear any CMake internal CUDA flags that cause problems
-        set(CMAKE_CUDA_RESPONSE_FILE_LINK_FLAG "")
-
-        message(STATUS "Windows CUDA: Applied nuclear fix - overrode compilation rule")
+        message(STATUS "Windows CUDA: Enabled response file support for long command lines")
     endif()
     # Verify CUDA was enabled successfully
     if(NOT CMAKE_CUDA_COMPILER)
