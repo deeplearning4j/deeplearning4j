@@ -141,7 +141,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
   Z startingVal = startingValue(dx);
 
   SummaryStatsData<X> val;
-  val.initWithValue(startingVal);
+  val.initWithValue(static <X>(startingVal));
   val.n = 0;
   sPartials[threadIdx.x] = val;
 
@@ -264,7 +264,7 @@ SD_DEVICE void SummaryStatsReduce<X, Z>::transform(void * vx, sd::LongType * xSh
         Z startingVal = startingValue(dx);
 
         SummaryStatsData<X> val;
-        val.initWithValue(startingVal);
+        val.initWithValue(static_cast<X>(startingVal));
         val.n = 0;
         sPartials[threadIdx.x] = val;
 
