@@ -669,6 +669,8 @@ namespace simdOps {
  * This macro creates accumulation operations with proper SIMD handling and InterType support
  * Fixed to handle CUDA compilation and template parameter conflicts
  */
+// Replace the existing DECLARE_ACCUMULATION_SIMD_SAFE_OP macro in op_macros_reduce.h with this version:
+
 #define DECLARE_ACCUMULATION_SIMD_SAFE_OP(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
   template <typename X, typename Z>                                                             \
   class OP_NAME {                                                                               \
@@ -679,6 +681,21 @@ namespace simdOps {
     SD_HOST_DEVICE SD_INLINE static  InterType op_logic(X d1, Z* params) {                     \
       OPERATION                                                                                 \
     }                                                                                           \
+                                                                                                \
+    /* NEW: Handle sd::LongType* extraParams conversion */                                     \
+    SD_HOST_DEVICE SD_INLINE static  InterType op_logic_converted(X d1, sd::LongType* params) { \
+      if (params == nullptr) return op_logic(d1, static_cast<Z*>(nullptr));                   \
+      /* Convert sd::LongType* to Z* for operations that need it */                           \
+      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
+        return op_logic(d1, params);                                                          \
+      } else {                                                                                 \
+        Z convertedParams[3] = {0, 0, 0};                                                     \
+        for (int i = 0; i < 3; i++) {                                                         \
+          convertedParams[i] = static_cast<Z>(params[i]);                                     \
+        }                                                                                      \
+        return op_logic(d1, convertedParams);                                                 \
+      }                                                                                        \
+    }                                                                                          \
                                                                                                 \
     SD_HOST_DEVICE SD_INLINE static  InterType merge_logic(InterType old, InterType opOutput, Z* extraParams) { \
       return MERGE_OP;                                                                          \
@@ -700,6 +717,17 @@ namespace simdOps {
     template<typename TX = X, typename TZ = Z>                                                 \
     SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<typename AggregateType<TZ>::type COMMA TX> op_simd(TX d1, TZ* params) { \
       return op_logic(d1, params);                                                             \
+    }                                                                                           \
+                                                                                                \
+    /* NEW: SIMD versions for sd::LongType* conversion */                                     \
+    template<typename TX = X>                                                                  \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<typename AggregateType<Z>::type COMMA TX> op_simd_converted(TX d1, sd::LongType* params) { \
+      return op_logic_converted(d1, params);                                                   \
+    }                                                                                           \
+                                                                                                \
+    template<typename TX = X>                                                                  \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<typename AggregateType<Z>::type COMMA TX> op_simd_converted(TX d1, sd::LongType* params) { \
+      return op_logic_converted(d1, params);                                                   \
     }                                                                                           \
                                                                                                 \
     template<typename TInterType = InterType>                                                  \
@@ -733,36 +761,31 @@ namespace simdOps {
     }                                                                                           \
                                                                                                 \
    public:                                                                                      \
-    /* Fix: Replace problematic macro with explicit declarations */                            \
+    /* Standard special execution declarations */                                              \
     static const bool requiresSpecialAccumulation = false;                                     \
                                                                                                 \
-    /* Primary execSpecial function with Z_TYPE* extraParams */                               \
+    /* Primary execSpecial function with Z* extraParams */                                    \
     static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result, \
                            const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
                                                                                                 \
-    /* Template overload to handle type conversions (for cases where extraParams is sd::LongType*) */ \
-    template<typename ExtraParamsType>                                                         \
-    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result, \
+    /* NEW: Template overload for sd::LongType* extraParams */                                \
+    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result, \
                            const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {      \
-      /* Handle type conversion if needed - this handles the sd::LongType* to Z* conversion */ \
-      /* For most cases, this will be empty since we don't actually implement special accumulation */ \
-    }                                                                                           \
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
                                                                                                 \
-    /* CUDA version - avoid using __CUDACC_ONLY__ macro to prevent template conflicts */      \
+    /* CUDA versions */                                                                        \
     SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
         const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,               \
         const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
         Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
                                                                                                 \
-    template<typename ExtraParamsType>                                                         \
     SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
-        const X *dx, const sd::LongType *xShapeInfo, ExtraParamsType *extraParams, Z *result, \
+        const X *dx, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result,    \
         const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
         Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
                                                                                                 \
-    const static  functions::ReduceType reduceType = functions::ReduceType::REDUCE_TYPE_VAL;    \
+    const static  functions::ReduceType reduceType = functions::ReduceType::REDUCE_TYPE_VAL;   \
                                                                                                 \
     static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }             \
                                                                                                 \
@@ -800,6 +823,22 @@ namespace simdOps {
       return update(old, opOutput, reinterpret_cast<Z*>(extraParams));                       \
     }                                                                                          \
                                                                                                 \
+    /* NEW: Template overload for sd::LongType* extraParams */                                \
+    template<typename U = X, typename V = Z>                                                  \
+    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U COMMA V>, InterType>::type update(InterType old, InterType opOutput, sd::LongType* extraParams) { \
+      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
+        return update(old, opOutput, extraParams);                                            \
+      } else {                                                                                 \
+        Z convertedParams[3] = {0, 0, 0};                                                     \
+        if (extraParams != nullptr) {                                                         \
+          for (int i = 0; i < 3; i++) {                                                       \
+            convertedParams[i] = static_cast<Z>(extraParams[i]);                             \
+          }                                                                                    \
+        }                                                                                      \
+        return update(old, opOutput, extraParams != nullptr ? convertedParams : nullptr);    \
+      }                                                                                        \
+    }                                                                                          \
+                                                                                                \
     static SD_HOST_DEVICE InterType op(X d1, Z* extraParams) {                                \
       if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value ||             \
                     simdOps::is_simd_unsupported_argument_type<X>::value)                     \
@@ -811,6 +850,15 @@ namespace simdOps {
     template<typename U = X, typename V = Z>                                                  \
     static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U COMMA V>, InterType>::type op(X d1, X* extraParams) { \
       return op(d1, reinterpret_cast<Z*>(extraParams));                                       \
+    }                                                                                          \
+                                                                                                \
+    /* NEW: Overload for sd::LongType* extraParams */                                         \
+    static SD_HOST_DEVICE InterType op(X d1, sd::LongType* extraParams) {                     \
+      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value ||             \
+                    simdOps::is_simd_unsupported_argument_type<X>::value)                     \
+        return op_logic_converted(d1, extraParams);                                           \
+      else                                                                                     \
+        return op_simd_converted(d1, extraParams);                                            \
     }                                                                                          \
                                                                                                 \
     static SD_HOST_DEVICE Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) { \
@@ -833,6 +881,22 @@ namespace simdOps {
     template<typename T, typename U = X, typename V = Z>                                      \
     static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<T COMMA InterType> && !std::is_same_v<U COMMA V>, Z>::type postProcess(T reduction, sd::LongType n, X* extraParams) { \
       return postProcess(static_cast<InterType>(reduction), n, reinterpret_cast<Z*>(extraParams)); \
+    }                                                                                          \
+                                                                                                \
+    /* NEW: Template overload for sd::LongType* extraParams */                                \
+    template<typename U = X, typename V = Z>                                                  \
+    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U COMMA V>, Z>::type postProcess(InterType reduction, sd::LongType n, sd::LongType* extraParams) { \
+      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
+        return postProcess(reduction, n, extraParams);                                        \
+      } else {                                                                                 \
+        Z convertedParams[3] = {0, 0, 0};                                                     \
+        if (extraParams != nullptr) {                                                         \
+          for (int i = 0; i < 3; i++) {                                                       \
+            convertedParams[i] = static_cast<Z>(extraParams[i]);                             \
+          }                                                                                    \
+        }                                                                                      \
+        return postProcess(reduction, n, extraParams != nullptr ? convertedParams : nullptr); \
+      }                                                                                        \
     }                                                                                          \
   };
 
