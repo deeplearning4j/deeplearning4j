@@ -1142,20 +1142,14 @@ DECLARE_COMPLEX_ACCUMULATION_SIMD_SAFE_OP(ASum,
                                           sd::math::sd_abs<X COMMA X>(reduction)
 )
 
-DECLARE_ACCUMULATION_SIMD_SAFE_OP(CountNonZero,
-                                  return d1 == static_cast<X>(0.0f) ? static_cast<InterType>(0.0f) : static_cast<InterType>(1.0f);,
-                                  ASUM, static_cast<X>(0),
-                                  opOutput + old,
-                                  opOutput + old,
-                                  static_cast<Z>(reduction)
+DECLARE_COUNT_REDUCE_OP(CountNonZero,
+                        d1 != static_cast<X>(0),
+                        static_cast<X>(0)
 )
 
-DECLARE_ACCUMULATION_SIMD_SAFE_OP(CountZero,
-                                  return d1 == static_cast<X>(0) ? static_cast<InterType>(1) : static_cast<InterType>(0);,
-                                  SUM, static_cast<X>(0),
-                                  opOutput + old,
-                                  opOutput + old,
-                                  static_cast<Z>(reduction)
+DECLARE_COUNT_REDUCE_OP(CountZero,
+                        d1 == static_cast<X>(0),
+                        static_cast<X>(0)
 )
 
 DECLARE_MIXED_ACCUMULATION_SIMD_SAFE_OP(Any,

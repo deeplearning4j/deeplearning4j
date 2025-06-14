@@ -835,6 +835,151 @@ namespace simdOps {
       return postProcess(static_cast<InterType>(reduction), n, reinterpret_cast<Z*>(extraParams)); \
     }                                                                                          \
   };
+
+#define DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
+  template <typename X, typename Z>                                                             \
+  class OP_NAME {                                                                               \
+   private:                                                                                     \
+    SD_HOST_DEVICE SD_INLINE static  Z op_logic(X d1, X* params) {                             \
+      OPERATION                                                                                 \
+    }                                                                                           \
+                                                                                                \
+    /* Template overload for sd::LongType* extraParams */                                     \
+    SD_HOST_DEVICE SD_INLINE static  Z op_logic_converted(X d1, sd::LongType* params) {        \
+      if (params == nullptr) return op_logic(d1, static_cast<X*>(nullptr));                   \
+      X convertedParams[3] = {0, 0, 0};                                                        \
+      for (int i = 0; i < 3; i++) {                                                            \
+        convertedParams[i] = static_cast<X>(params[i]);                                        \
+      }                                                                                         \
+      return op_logic(d1, convertedParams);                                                    \
+    }                                                                                           \
+                                                                                                \
+    SD_HOST_DEVICE SD_INLINE static  Z merge_logic(Z old, Z opOutput, X* extraParams) {        \
+      return MERGE_OP;                                                                          \
+    }                                                                                           \
+                                                                                                \
+    SD_HOST_DEVICE SD_INLINE static  Z update_logic(Z old, Z opOutput, X* extraParams) {       \
+      return UPDATE_OP;                                                                         \
+    }                                                                                           \
+                                                                                                \
+    SD_HOST_DEVICE SD_INLINE static  Z postProcess_logic(Z reduction, sd::LongType n, X* extraParams) { \
+      return POST_PROCESS;                                                                      \
+    }                                                                                           \
+                                                                                                \
+    template<typename TX = X, typename TZ = Z>                                                 \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TZ COMMA TX> op_simd(TX d1, TX* params) { \
+      return op_logic(d1, params);                                                             \
+    }                                                                                           \
+                                                                                                \
+    template<typename TX = X, typename TZ = Z>                                                 \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TZ COMMA TX> op_simd(TX d1, TX* params) { \
+      return op_logic(d1, params);                                                             \
+    }                                                                                           \
+                                                                                                \
+    template<typename TX = X, typename TZ = Z>                                                 \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TZ COMMA TX> op_simd_converted(TX d1, sd::LongType* params) { \
+      return op_logic_converted(d1, params);                                                   \
+    }                                                                                           \
+                                                                                                \
+    template<typename TX = X, typename TZ = Z>                                                 \
+    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TZ COMMA TX> op_simd_converted(TX d1, sd::LongType* params) { \
+      return op_logic_converted(d1, params);                                                   \
+    }                                                                                           \
+                                                                                                \
+   public:                                                                                      \
+    /* Standard special execution declarations */                                              \
+    static const bool requiresSpecialAccumulation = false;                                     \
+                                                                                                \
+    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result, \
+                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
+                                                                                                \
+    /* Template overload for sd::LongType* extraParams */                                     \
+    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result, \
+                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
+                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
+                                                                                                \
+    /* CUDA versions */                                                                        \
+    SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
+        const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,               \
+        const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
+        Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
+                                                                                                \
+    SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
+        const X *dx, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result,    \
+        const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
+        Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
+                                                                                                \
+    const static  functions::ReduceType reduceType = functions::ReduceType::REDUCE_TYPE_VAL;   \
+                                                                                                \
+    static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }             \
+                                                                                                \
+    /* Primary op function with X* extraParams */                                             \
+    static SD_HOST_DEVICE Z op(X d1, X* extraParams) {                                         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                      \
+                    simdOps::is_simd_unsupported_argument_type<X>::value)                      \
+        return op_logic(d1, extraParams);                                                      \
+      else                                                                                      \
+        return op_simd(d1, extraParams);                                                       \
+    }                                                                                           \
+                                                                                                \
+    /* Overload for sd::LongType* extraParams */                                              \
+    static SD_HOST_DEVICE Z op(X d1, sd::LongType* extraParams) {                              \
+      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value ||                      \
+                    simdOps::is_simd_unsupported_argument_type<X>::value)                      \
+        return op_logic_converted(d1, extraParams);                                            \
+      else                                                                                      \
+        return op_simd_converted(d1, extraParams);                                             \
+    }                                                                                           \
+                                                                                                \
+    static SD_HOST_DEVICE Z merge(Z old, Z opOutput, X* extraParams) {                         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                        \
+        return merge_logic(old, opOutput, extraParams);                                        \
+      else                                                                                      \
+        return merge_logic(old, opOutput, extraParams);                                        \
+    }                                                                                           \
+                                                                                                \
+    static SD_HOST_DEVICE Z update(Z old, Z opOutput, X* extraParams) {                        \
+      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                        \
+        return update_logic(old, opOutput, extraParams);                                       \
+      else                                                                                      \
+        return update_logic(old, opOutput, extraParams);                                       \
+    }                                                                                           \
+                                                                                                \
+    static SD_HOST_DEVICE Z postProcess(Z reduction, sd::LongType n, X* extraParams) {         \
+      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                        \
+        return postProcess_logic(reduction, n, extraParams);                                   \
+      else                                                                                      \
+        return postProcess_logic(reduction, n, extraParams);                                   \
+    }                                                                                           \
+  };
+
+#define DECLARE_COUNT_REDUCE_OP(OP_NAME, CONDITION, STARTING_VAL) \
+  DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME,             \
+    return (CONDITION) ? static_cast<Z>(1) : static_cast<Z>(0);,   \
+    SUM, STARTING_VAL,                                             \
+    old + opOutput,                                                \
+    old + opOutput,                                                \
+    reduction                                                      \
+  )
+
+#define DECLARE_MATCH_CONDITION_REDUCE_OP(OP_NAME, MATCH_LOGIC) \
+  DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME,          \
+    MATCH_LOGIC,                                               \
+    SUM, static_cast<X>(0),                                    \
+    old + opOutput,                                            \
+    old + opOutput,                                            \
+    reduction                                                  \
+  )
+
+#define DECLARE_MATCH_CONDITION_REDUCE_OP(OP_NAME, MATCH_LOGIC) \
+  DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME,          \
+    MATCH_LOGIC,                                               \
+    SUM, static_cast<X>(0),                                    \
+    old + opOutput,                                            \
+    old + opOutput,                                            \
+    reduction                                                  \
+  )
 } // namespace simdOps
 
 #endif // OP_MACROS_REDUCE_H_
