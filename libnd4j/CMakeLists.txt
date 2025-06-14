@@ -1690,22 +1690,175 @@ endif()
 if(NOT DEFINED ONEDNN_PROCESSING_DONE)
     set(ONEDNN_PROCESSING_DONE FALSE CACHE INTERNAL "Flag to indicate OneDNN processing status")
 endif()
+# OneDNN configuration with robust download and retry logic
 if(HELPERS_onednn)
     message(STATUS "OneDNN helper is enabled")
     include(ExternalProject)
-    message(STATUS "Configuring OneDNN dependency using ExternalProject_Add")
+    message(STATUS "Configuring OneDNN dependency using ExternalProject_Add with retry logic")
     set(HAVE_ONEDNN TRUE)
 
     set(ONEDNN_INSTALL_DIR "${CMAKE_BINARY_DIR}/onednn_install")
     set(ONEDNN_SOURCE_DIR "${CMAKE_BINARY_DIR}/onednn_external/src")
     set(ONEDNN_BUILD_DIR "${CMAKE_BINARY_DIR}/onednn_external/build")
 
+    # Create a custom script for robust downloading
+    set(ONEDNN_DOWNLOAD_SCRIPT "${CMAKE_BINARY_DIR}/download_onednn.cmake")
+    file(WRITE ${ONEDNN_DOWNLOAD_SCRIPT} "
+# Robust OneDNN download script with retry logic
+set(ONEDNN_URL \"https://github.com/uxlfoundation/oneDNN.git\")
+set(ONEDNN_TAG \"v3.8.1\")
+set(SOURCE_DIR \"${ONEDNN_SOURCE_DIR}\")
+
+# Function to attempt git clone with retries
+function(git_clone_with_retry url tag source_dir max_attempts)
+    set(attempt 1)
+    while(attempt LESS_EQUAL max_attempts)
+        message(STATUS \"OneDNN download attempt \${attempt}/\${max_attempts}\")
+
+        # Clean up any partial downloads
+        if(EXISTS \"\${source_dir}\")
+            file(REMOVE_RECURSE \"\${source_dir}\")
+        endif()
+
+        # Try shallow clone first (faster)
+        execute_process(
+            COMMAND git clone --depth 1 --branch \${tag} \${url} \"\${source_dir}\"
+            RESULT_VARIABLE clone_result
+            OUTPUT_VARIABLE clone_output
+            ERROR_VARIABLE clone_error
+            TIMEOUT 300
+        )
+
+        if(clone_result EQUAL 0 AND EXISTS \"\${source_dir}/CMakeLists.txt\")
+            message(STATUS \"OneDNN download successful on attempt \${attempt}\")
+            return()
+        endif()
+
+        message(WARNING \"Attempt \${attempt} failed: \${clone_error}\")
+
+        # If shallow clone failed, try full clone
+        execute_process(
+            COMMAND git clone \${url} \"\${source_dir}\"
+            WORKING_DIRECTORY \${CMAKE_BINARY_DIR}
+            RESULT_VARIABLE full_clone_result
+            OUTPUT_VARIABLE full_clone_output
+            ERROR_VARIABLE full_clone_error
+            TIMEOUT 600
+        )
+
+        if(full_clone_result EQUAL 0 AND EXISTS \"\${source_dir}/CMakeLists.txt\")
+            # Checkout the specific tag
+            execute_process(
+                COMMAND git checkout \${tag}
+                WORKING_DIRECTORY \"\${source_dir}\"
+                RESULT_VARIABLE checkout_result
+            )
+
+            if(checkout_result EQUAL 0)
+                message(STATUS \"OneDNN full clone and checkout successful on attempt \${attempt}\")
+                return()
+            endif()
+        endif()
+
+        math(EXPR attempt \"\${attempt} + 1\")
+
+        if(attempt LESS_EQUAL max_attempts)
+            message(STATUS \"Waiting 10 seconds before retry...\")
+            execute_process(COMMAND \${CMAKE_COMMAND} -E sleep 10)
+        endif()
+    endwhile()
+
+    message(FATAL_ERROR \"Failed to download OneDNN after \${max_attempts} attempts\")
+endfunction()
+
+# Attempt download with retries
+git_clone_with_retry(\${ONEDNN_URL} \${ONEDNN_TAG} \${SOURCE_DIR} 3)
+")
+
+    # Alternative: Try release tarball if git fails
+    set(ONEDNN_FALLBACK_SCRIPT "${CMAKE_BINARY_DIR}/download_onednn_fallback.cmake")
+    file(WRITE ${ONEDNN_FALLBACK_SCRIPT} "
+# Fallback to release tarball download
+set(TARBALL_URL \"https://github.com/uxlfoundation/oneDNN/archive/refs/tags/v3.8.1.tar.gz\")
+set(SOURCE_DIR \"${ONEDNN_SOURCE_DIR}\")
+set(DOWNLOAD_DIR \"${CMAKE_BINARY_DIR}/downloads\")
+
+file(MAKE_DIRECTORY \"\${DOWNLOAD_DIR}\")
+
+message(STATUS \"Attempting OneDNN tarball download as fallback\")
+
+file(DOWNLOAD
+    \${TARBALL_URL}
+    \"\${DOWNLOAD_DIR}/onednn-v3.8.1.tar.gz\"
+    SHOW_PROGRESS
+    TIMEOUT 300
+    STATUS download_status
+)
+
+list(GET download_status 0 status_code)
+if(NOT status_code EQUAL 0)
+    message(FATAL_ERROR \"Failed to download OneDNN tarball\")
+endif()
+
+# Extract tarball
+execute_process(
+    COMMAND \${CMAKE_COMMAND} -E tar xzf \"\${DOWNLOAD_DIR}/onednn-v3.8.1.tar.gz\"
+    WORKING_DIRECTORY \"\${CMAKE_BINARY_DIR}\"
+    RESULT_VARIABLE extract_result
+)
+
+if(NOT extract_result EQUAL 0)
+    message(FATAL_ERROR \"Failed to extract OneDNN tarball\")
+endif()
+
+# Move extracted directory to expected location
+file(RENAME \"\${CMAKE_BINARY_DIR}/oneDNN-3.8.1\" \"\${SOURCE_DIR}\")
+
+if(NOT EXISTS \"\${SOURCE_DIR}/CMakeLists.txt\")
+    message(FATAL_ERROR \"OneDNN source not found after extraction\")
+endif()
+
+message(STATUS \"OneDNN tarball download and extraction successful\")
+")
+
+    # Check if OneDNN is already downloaded and valid
+    set(ONEDNN_READY FALSE)
+    if(EXISTS "${ONEDNN_SOURCE_DIR}/CMakeLists.txt")
+        message(STATUS "OneDNN source already exists, checking validity...")
+        file(READ "${ONEDNN_SOURCE_DIR}/CMakeLists.txt" ONEDNN_CMAKE_CONTENT)
+        if(ONEDNN_CMAKE_CONTENT MATCHES "oneDNN")
+            set(ONEDNN_READY TRUE)
+            message(STATUS "✓ Existing OneDNN source is valid")
+        else()
+            message(STATUS "✗ Existing OneDNN source is invalid, will re-download")
+            file(REMOVE_RECURSE "${ONEDNN_SOURCE_DIR}")
+        endif()
+    endif()
+
+    if(NOT ONEDNN_READY)
+        # Custom download step
+        add_custom_target(onednn_download
+                COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
+                COMMENT "Downloading OneDNN with retry logic"
+        )
+
+        # Fallback download target
+        add_custom_target(onednn_download_fallback
+                COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
+                COMMENT "Downloading OneDNN via tarball (fallback)"
+        )
+    endif()
+
+    # Configure ExternalProject with DOWNLOAD_COMMAND override
     ExternalProject_Add(onednn_external
             PREFIX            "${CMAKE_BINARY_DIR}/onednn_external"
-            GIT_REPOSITORY    "https://github.com/uxlfoundation/oneDNN.git"
-            GIT_TAG           "v3.8.1"
             SOURCE_DIR        "${ONEDNN_SOURCE_DIR}"
             BINARY_DIR        "${ONEDNN_BUILD_DIR}"
+            # Override download command to use our robust script
+            DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
+            # Fallback: use tarball if git fails completely
+            # DOWNLOAD_COMMAND  ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
+            UPDATE_COMMAND    ""  # Skip updates to avoid network issues
             CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX=${ONEDNN_INSTALL_DIR}
             -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -1713,27 +1866,84 @@ if(HELPERS_onednn)
             -DDNNL_BUILD_TESTS=OFF
             -DDNNL_BUILD_EXAMPLES=OFF
             -DDNNL_VERBOSE=OFF
-            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            BUILD_COMMAND     ${CMAKE_COMMAND} --build <BINARY_DIR> --config ${CMAKE_BUILD_TYPE} --parallel
             INSTALL_COMMAND   ${CMAKE_COMMAND} --build <BINARY_DIR> --target install --config ${CMAKE_BUILD_TYPE}
             BUILD_BYPRODUCTS  "${ONEDNN_INSTALL_DIR}/include/dnnl.h"
             "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
+            "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"  # Windows static lib
+            # Timeout settings
+            TIMEOUT           600
+            DOWNLOAD_NO_PROGRESS 0
+            # Retry settings
+            DOWNLOAD_NO_EXTRACT FALSE
+            # Logging
             LOG_DOWNLOAD      ON
             LOG_CONFIGURE     ON
             LOG_BUILD         ON
             LOG_INSTALL       ON
     )
 
+    # Add verification step
+    ExternalProject_Add_Step(onednn_external verify_download
+            COMMAND ${CMAKE_COMMAND} -E echo "Verifying OneDNN download..."
+            COMMAND test -f "${ONEDNN_SOURCE_DIR}/CMakeLists.txt" ||
+    (echo "ERROR: OneDNN CMakeLists.txt not found!" && exit 1)
+            DEPENDEES download
+            DEPENDERS configure
+            COMMENT "Verifying OneDNN source integrity"
+            ALWAYS 1
+    )
+
+    # Add cleanup step for failed downloads
+    ExternalProject_Add_Step(onednn_external cleanup_on_failure
+            COMMAND ${CMAKE_COMMAND} -E echo "Cleaning up failed OneDNN download..."
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
+            DEPENDEES download
+            DEPENDERS configure
+            COMMENT "Cleaning up on download failure"
+            ALWAYS 0  # Only run on failure
+    )
+
     add_library(onednn_interface INTERFACE)
     target_include_directories(onednn_interface INTERFACE
             "${ONEDNN_INSTALL_DIR}/include"
     )
-    target_link_libraries(onednn_interface INTERFACE
-            "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
-    )
+
+    # Handle both Unix and Windows library names
+    if(WIN32)
+        target_link_libraries(onednn_interface INTERFACE
+                "${ONEDNN_INSTALL_DIR}/lib/dnnl.lib"
+        )
+    else()
+        target_link_libraries(onednn_interface INTERFACE
+                "${ONEDNN_INSTALL_DIR}/lib/libdnnl.a"
+        )
+    endif()
+
     add_dependencies(onednn_interface onednn_external)
     set(ONEDNN onednn_interface)
 
-    message(STATUS "OneDNN configured via ExternalProject_Add. Build artifacts will be in ${ONEDNN_INSTALL_DIR}")
+    # Add manual retry option for CI/CD
+    add_custom_target(onednn_retry_download
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_BUILD_DIR}"
+            COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_DOWNLOAD_SCRIPT}
+            COMMENT "Manual OneDNN download retry"
+    )
+
+    # Add manual fallback option
+    add_custom_target(onednn_fallback_download
+            COMMAND ${CMAKE_COMMAND} -E remove_directory "${ONEDNN_SOURCE_DIR}"
+            COMMAND ${CMAKE_COMMAND} -P ${ONEDNN_FALLBACK_SCRIPT}
+            COMMENT "Manual OneDNN fallback download"
+    )
+
+    message(STATUS "OneDNN configured with robust download. Manual retry targets available:")
+    message(STATUS "  - onednn_retry_download: Retry git download")
+    message(STATUS "  - onednn_fallback_download: Use tarball fallback")
+
 else()
     message(STATUS "OneDNN helper is disabled (HELPERS_onednn=OFF)")
     set(HAVE_ONEDNN FALSE)
