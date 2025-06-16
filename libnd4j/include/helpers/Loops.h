@@ -163,7 +163,7 @@ static void reduceExec21(const X* x, const LongType* xShapeInfo, Z* z, const Lon
       auto x0 = x + i0 * xStrd0;
       auto z0 = z + i0 * zStrd0;
 
-      auto s = OpType::startingValue(x0);
+      auto s = static_cast<Z>(OpType::startingValue(x0));
 
       if (xStrd1 == 1)
         for (LongType i1 = 0; i1 < xAxis1; ++i1) {

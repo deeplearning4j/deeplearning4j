@@ -279,14 +279,14 @@ SD_HOST_DEVICE inline Z sd_floor(X val) {
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log(X val) {
   Z result = static_cast<Z>(p_log<X>(val));
-  SD_PRINT_MATH_FUNC("sd_log", val, result,Z);
+  SD_PRINT_MATH_FUNC("sd_log", static_cast<Z>(val), static_cast<Z>(result),Z);
   return result;
 }
 
 template <typename X, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_log2(X val) {
   Z result = static_cast<Z>(p_log2<X>(val));
-  SD_PRINT_MATH_FUNC("sd_log2", val, result,Z);
+  SD_PRINT_MATH_FUNC("sd_log2", static_cast<Z>(val), static_cast<Z>(result),Z);
   return result;
 }
 
@@ -803,7 +803,7 @@ SD_HOST_DEVICE SD_INLINE bfloat16 sd_pow<bfloat16, bfloat16, bfloat16>(bfloat16 
 template <typename X, typename Y, typename Z>
 SD_HOST_DEVICE SD_INLINE Z sd_pow(X val, Y val2) {
   Z result = p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
-  SD_PRINT_MATH_FUNC2("sd_pow", val, val2, result,Z);
+  SD_PRINT_MATH_FUNC2("sd_pow", static_cast<Z>(val), static_cast<Z>(val2), result,Z);
   return result;
 }
 

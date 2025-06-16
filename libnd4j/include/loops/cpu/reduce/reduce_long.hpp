@@ -218,7 +218,7 @@ void SD_HOST ReduceLongFunction<X, Z>::exec(sd::memory::Workspace *workspace, co
     sd::ReductionLongLoops<X, Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
   } else {
     // For other types, we need to convert sd::LongType* to X*
-    X convertedExtraParams[3] = {0, 0, 0};  // Initialize with zeros
+    X convertedExtraParams[3] = {static_cast<X>(0), static_cast<X>(0), static_cast<X>(0)};  // Initialize with zeros
     X* convertedExtraParamsPtr = nullptr;
 
     if (extraParams != nullptr) {

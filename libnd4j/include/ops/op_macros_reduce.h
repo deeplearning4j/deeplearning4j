@@ -648,29 +648,9 @@ namespace simdOps {
   };
 
 // =============================================================================
-
-/**
- * @brief DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
- * Add this to op_macros_reduce.h
- *
- * This macro creates accumulation operations with proper SIMD handling and InterType support
- */
-/**
- * @brief Fixed DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
- * Add this to op_macros_reduce.h (replacement for the existing macro)
- *
- * This macro creates accumulation operations with proper SIMD handling and InterType support
- * Fixed to handle type mismatches in execSpecial function signatures
- */
-/**
- * @brief Fixed DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
- * Add this to op_macros_reduce.h (replacement for the existing macro)
- *
- * This macro creates accumulation operations with proper SIMD handling and InterType support
- * Fixed to handle CUDA compilation and template parameter conflicts
- */
-// Replace the existing DECLARE_ACCUMULATION_SIMD_SAFE_OP macro in op_macros_reduce.h with this version:
-
+// Fix for DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
+// =============================================================================
+// Fix for DECLARE_ACCUMULATION_SIMD_SAFE_OP macro
 #define DECLARE_ACCUMULATION_SIMD_SAFE_OP(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
   template <typename X, typename Z>                                                             \
   class OP_NAME {                                                                               \
@@ -679,6 +659,10 @@ namespace simdOps {
                                                                                                 \
    private:                                                                                     \
     SD_HOST_DEVICE SD_INLINE static  InterType op_logic(X d1, Z* params) {                     \
+      OPERATION                                                                                 \
+    }                                                                                           \
+                                                                                                \
+    SD_HOST_DEVICE SD_INLINE static  InterType op_longtype_logic(X d1, sd::LongType* params) { \
       OPERATION                                                                                 \
     }                                                                                           \
                                                                                                 \
@@ -694,62 +678,13 @@ namespace simdOps {
       return static_cast<Z>(POST_PROCESS);                                                      \
     }                                                                                           \
                                                                                                 \
-    template<typename TX = X, typename TZ = Z>                                                 \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<typename AggregateType<TZ>::type COMMA TX> op_simd(TX d1, TZ* params) { \
-      return op_logic(d1, params);                                                             \
-    }                                                                                           \
-                                                                                                \
-    template<typename TX = X, typename TZ = Z>                                                 \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<typename AggregateType<TZ>::type COMMA TX> op_simd(TX d1, TZ* params) { \
-      return op_logic(d1, params);                                                             \
-    }                                                                                           \
-                                                                                                \
-    template<typename TInterType = InterType>                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TInterType COMMA TInterType> merge_simd(TInterType old, TInterType opOutput, Z* extraParams) { \
-      return merge_logic(old, opOutput, extraParams);                                          \
-    }                                                                                           \
-                                                                                                \
-    template<typename TInterType = InterType>                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TInterType COMMA TInterType> merge_simd(TInterType old, TInterType opOutput, Z* extraParams) { \
-      return merge_logic(old, opOutput, extraParams);                                          \
-    }                                                                                           \
-                                                                                                \
-    template<typename TInterType = InterType>                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TInterType COMMA TInterType> update_simd(TInterType old, TInterType opOutput, Z* extraParams) { \
-      return update_logic(old, opOutput, extraParams);                                         \
-    }                                                                                           \
-                                                                                                \
-    template<typename TInterType = InterType>                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TInterType COMMA TInterType> update_simd(TInterType old, TInterType opOutput, Z* extraParams) { \
-      return update_logic(old, opOutput, extraParams);                                         \
-    }                                                                                           \
-                                                                                                \
-    template<typename TZ = Z>                                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_safe<TZ COMMA TZ> postProcess_simd(InterType reduction, sd::LongType n, TZ* extraParams) { \
-      return postProcess_logic(reduction, n, extraParams);                                     \
-    }                                                                                           \
-                                                                                                \
-    template<typename TZ = Z>                                                                  \
-    SD_HOST_DEVICE SD_INLINE static  enable_if_simd_unsafe<TZ COMMA TZ> postProcess_simd(InterType reduction, sd::LongType n, TZ* extraParams) { \
-      return postProcess_logic(reduction, n, extraParams);                                     \
-    }                                                                                           \
-                                                                                                \
    public:                                                                                      \
     static const bool requiresSpecialAccumulation = false;                                     \
                                                                                                 \
-    static void execSpecial(const X *x, const sd::LongType *xShapeInfo, Z *extraParams, Z *result, \
-                           const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
-                           const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
-                                                                                                \
-    /* FIXED: Separate overload for sd::LongType* extraParams using explicit specialization */ \
+    /* Primary execSpecial signature - matches what reduce_long.hpp expects */                \
     static void execSpecial(const X *x, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result, \
                            const sd::LongType *resultShapeInfoBuffer, sd::LongType *dimension, sd::LongType dimensionLength, \
                            const sd::LongType *tadShapeInfo, const sd::LongType *tadOffset) {}     \
-                                                                                                \
-    SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
-        const X *dx, const sd::LongType *xShapeInfo, Z *extraParams, Z *result,               \
-        const sd::LongType *resultShapeInfo, sd::LongType *dimension, sd::LongType dimensionLength, \
-        Z *reductionBuffer, const sd::LongType *tadOnlyShapeInfo, const sd::LongType *tadOffsets) {} \
                                                                                                 \
     SD_INLINE SD_DEVICE static void execSpecialCuda(                                          \
         const X *dx, const sd::LongType *xShapeInfo, sd::LongType *extraParams, Z *result,    \
@@ -761,117 +696,89 @@ namespace simdOps {
     static SD_HOST_DEVICE X startingValue(const X* input) { return STARTING_VAL; }             \
                                                                                                 \
     static SD_HOST_DEVICE InterType merge(InterType old, InterType opOutput, Z* extraParams) { \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                 \
-        return merge_logic(old, opOutput, extraParams);                                        \
-      else                                                                                      \
-        return merge_simd(old, opOutput, extraParams);                                         \
+      return merge_logic(old, opOutput, extraParams);                                          \
     }                                                                                           \
                                                                                                 \
     static SD_HOST_DEVICE InterType update(InterType old, InterType opOutput, Z* extraParams) { \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value)                 \
-        return update_logic(old, opOutput, extraParams);                                       \
-      else                                                                                      \
-        return update_simd(old, opOutput, extraParams);                                        \
+      return update_logic(old, opOutput, extraParams);                                         \
     }                                                                                           \
                                                                                                 \
-    /* FIXED: Separate update overloads to prevent ambiguity */                               \
-    template<typename T>                                                                       \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<T, InterType> && !std::is_same_v<T, sd::LongType> && std::is_arithmetic_v<T>, InterType>::type \
-    update(T old, InterType opOutput, Z* extraParams) {                                       \
-      return update(static_cast<InterType>(old), opOutput, extraParams);                      \
-    }                                                                                          \
-                                                                                                \
-    template<typename T>                                                                       \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<T, InterType> && !std::is_same_v<T, sd::LongType> && std::is_arithmetic_v<T>, InterType>::type \
-    update(InterType old, T opOutput, Z* extraParams) {                                       \
-      return update(old, static_cast<InterType>(opOutput), extraParams);                      \
-    }                                                                                          \
-                                                                                                \
-    /* FIXED: Handle pointer type conversions separately */                                    \
-    template<typename U = X, typename V = Z>                                                  \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U, V> && !std::is_same_v<U, sd::LongType>, InterType>::type \
-    update(InterType old, InterType opOutput, X* extraParams) {                               \
-      return update(old, opOutput, reinterpret_cast<Z*>(extraParams));                       \
-    }                                                                                          \
-                                                                                                \
-    /* FIXED: Explicit specialization for sd::LongType* parameters */                         \
-    static SD_HOST_DEVICE InterType updateLongType(InterType old, InterType opOutput, sd::LongType* extraParams) { \
-      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
-        return update(old, opOutput, extraParams);                                            \
-      } else {                                                                                 \
-        Z convertedParams[3] = {0, 0, 0};                                                     \
-        if (extraParams != nullptr) {                                                         \
-          for (int i = 0; i < 3; i++) {                                                       \
-            convertedParams[i] = static_cast<Z>(extraParams[i]);                             \
-          }                                                                                    \
-        }                                                                                      \
-        return update(old, opOutput, extraParams != nullptr ? convertedParams : nullptr);    \
-      }                                                                                        \
-    }                                                                                          \
-                                                                                                \
     static SD_HOST_DEVICE InterType op(X d1, Z* extraParams) {                                \
-      if constexpr (simdOps::is_simd_unsupported_return_type<InterType>::value ||             \
-                    simdOps::is_simd_unsupported_argument_type<X>::value)                     \
-        return op_logic(d1, extraParams);                                                     \
-      else                                                                                     \
-        return op_simd(d1, extraParams);                                                      \
+      return op_logic(d1, extraParams);                                                        \
     }                                                                                          \
                                                                                                 \
-    template<typename U = X, typename V = Z>                                                  \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U, V> && !std::is_same_v<U, sd::LongType>, InterType>::type \
-    op(X d1, X* extraParams) {                                                                \
-      return op(d1, reinterpret_cast<Z*>(extraParams));                                       \
+    template<typename ZType = Z>                                                               \
+    static SD_HOST_DEVICE                                                                      \
+    typename std::enable_if_t<!std::is_same_v<ZType, sd::LongType>, InterType>                \
+    op(X d1, sd::LongType* extraParams) {                                                      \
+      return op_longtype_logic(d1, extraParams);                                              \
     }                                                                                          \
                                                                                                 \
-    /* FIXED: Explicit function for sd::LongType* parameters */                               \
-    static SD_HOST_DEVICE InterType opLongType(X d1, sd::LongType* extraParams) {             \
-      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
-        return op(d1, extraParams);                                                           \
-      } else {                                                                                 \
-        Z convertedParams[3] = {0, 0, 0};                                                     \
-        if (extraParams != nullptr) {                                                         \
-          for (int i = 0; i < 3; i++) {                                                       \
-            convertedParams[i] = static_cast<Z>(extraParams[i]);                             \
-          }                                                                                    \
-        }                                                                                      \
-        return op(d1, extraParams != nullptr ? convertedParams : nullptr);                   \
-      }                                                                                        \
+    template<typename ZType = Z>                                                               \
+    static SD_HOST_DEVICE                                                                      \
+    typename std::enable_if_t<!std::is_same_v<ZType, sd::LongType>, InterType>                \
+    merge(InterType old, InterType opOutput, sd::LongType* extraParams) {                     \
+      return merge_logic(old, opOutput, static_cast<Z*>(nullptr));                           \
+    }                                                                                          \
+                                                                                                \
+    template<typename ZType = Z>                                                               \
+    static SD_HOST_DEVICE                                                                      \
+    typename std::enable_if_t<!std::is_same_v<ZType, sd::LongType>, InterType>                \
+    update(InterType old, InterType opOutput, sd::LongType* extraParams) {                    \
+      return update_logic(old, opOutput, static_cast<Z*>(nullptr));                          \
     }                                                                                          \
                                                                                                 \
     static SD_HOST_DEVICE Z postProcess(InterType reduction, sd::LongType n, Z* extraParams) { \
-      if constexpr (simdOps::is_simd_unsupported_return_type<Z>::value)                       \
-        return postProcess_logic(reduction, n, extraParams);                                  \
-      else                                                                                     \
-        return postProcess_simd(reduction, n, extraParams);                                   \
+      return postProcess_logic(reduction, n, extraParams);                                     \
+    }                                                                                          \
+                                                                                                \
+    template<typename T = void>                                                                \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<Z, sd::LongType>, Z> postProcess(InterType reduction, sd::LongType n, sd::LongType* extraParams) { \
+      return postProcess_logic(reduction, n, static_cast<Z*>(nullptr));                       \
     }                                                                                          \
                                                                                                 \
     template<typename T>                                                                       \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<T, InterType> && !std::is_same_v<T, sd::LongType> && std::is_arithmetic_v<T>, Z>::type \
-    postProcess(T reduction, sd::LongType n, Z* extraParams) {                                \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<T, InterType>, Z> postProcess(T reduction, sd::LongType n, Z* extraParams) { \
       return postProcess(static_cast<InterType>(reduction), n, extraParams);                 \
     }                                                                                          \
                                                                                                 \
     template<typename U = X, typename V = Z>                                                  \
-    static SD_HOST_DEVICE typename std::enable_if<!std::is_same_v<U, V> && !std::is_same_v<U, sd::LongType>, Z>::type \
-    postProcess(InterType reduction, sd::LongType n, X* extraParams) {                       \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<U, V>, Z> postProcess(InterType reduction, sd::LongType n, X* extraParams) { \
       return postProcess(reduction, n, reinterpret_cast<Z*>(extraParams));                   \
     }                                                                                          \
                                                                                                 \
-    /* FIXED: Explicit function for sd::LongType* parameters */                               \
-    static SD_HOST_DEVICE Z postProcessLongType(InterType reduction, sd::LongType n, sd::LongType* extraParams) { \
-      if constexpr (std::is_same_v<Z, sd::LongType>) {                                        \
-        return postProcess(reduction, n, extraParams);                                        \
-      } else {                                                                                 \
-        Z convertedParams[3] = {0, 0, 0};                                                     \
-        if (extraParams != nullptr) {                                                         \
-          for (int i = 0; i < 3; i++) {                                                       \
-            convertedParams[i] = static_cast<Z>(extraParams[i]);                             \
-          }                                                                                    \
-        }                                                                                      \
-        return postProcess(reduction, n, extraParams != nullptr ? convertedParams : nullptr); \
-      }                                                                                        \
+    template<typename T, typename U = X, typename V = Z>                                      \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<T, InterType> && !std::is_same_v<U, V>, Z> postProcess(T reduction, sd::LongType n, X* extraParams) { \
+      return postProcess(static_cast<InterType>(reduction), n, reinterpret_cast<Z*>(extraParams)); \
+    }                                                                                          \
+                                                                                                \
+    template<typename U = X, typename V = Z>                                                  \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<U, V>, InterType> op(X d1, X* extraParams) { \
+      return op(d1, reinterpret_cast<Z*>(extraParams));                                       \
+    }                                                                                          \
+                                                                                                \
+    template<typename T>                                                                       \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<T, InterType>, InterType> update(T old, InterType opOutput, Z* extraParams) { \
+      return update(static_cast<InterType>(old), opOutput, extraParams);                      \
+    }                                                                                          \
+                                                                                                \
+    template<typename T>                                                                       \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<T, InterType>, InterType> update(InterType old, T opOutput, Z* extraParams) { \
+      return update(old, static_cast<InterType>(opOutput), extraParams);                      \
+    }                                                                                          \
+                                                                                                \
+    template<typename T, typename U>                                                          \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<T, InterType> && !std::is_same_v<U, InterType>, InterType> update(T old, U opOutput, Z* extraParams) { \
+      return update(static_cast<InterType>(old), static_cast<InterType>(opOutput), extraParams); \
+    }                                                                                          \
+                                                                                                \
+    template<typename U = X, typename V = Z>                                                  \
+    static SD_HOST_DEVICE typename std::enable_if_t<!std::is_same_v<U, V>, InterType> update(InterType old, InterType opOutput, X* extraParams) { \
+      return update(old, opOutput, reinterpret_cast<Z*>(extraParams));                       \
     }                                                                                          \
   };
+
+
 
 #define DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME, OPERATION, REDUCE_TYPE_VAL, STARTING_VAL, MERGE_OP, UPDATE_OP, POST_PROCESS) \
   template <typename X, typename Z>                                                             \
@@ -1009,14 +916,7 @@ namespace simdOps {
     reduction                                                  \
   )
 
-#define DECLARE_MATCH_CONDITION_REDUCE_OP(OP_NAME, MATCH_LOGIC) \
-  DECLARE_REDUCE_LONG_OP_WITH_TYPE_CONVERSION(OP_NAME,          \
-    MATCH_LOGIC,                                               \
-    SUM, static_cast<X>(0),                                    \
-    old + opOutput,                                            \
-    old + opOutput,                                            \
-    reduction                                                  \
-  )
+
 } // namespace simdOps
 
 #endif // OP_MACROS_REDUCE_H_

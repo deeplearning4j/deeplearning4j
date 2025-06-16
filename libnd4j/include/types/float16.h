@@ -231,10 +231,65 @@ struct alignas(2) float16 {
     *data.getXP() = raw_bits;
   }
 
-  template <typename T,
-            typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
-  SD_INLINE SD_HOST_DEVICE explicit float16(const T& rhs) : data{} {
-    *this = rhs;
+  // Comprehensive constructors for all numeric types
+
+  // Double constructor
+  SD_INLINE SD_HOST_DEVICE float16(double value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  // Float constructor
+  SD_INLINE SD_HOST_DEVICE float16(float value) : data{} {
+    *this = value;
+  }
+
+  // Integer constructors
+  SD_INLINE SD_HOST_DEVICE float16(int value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(unsigned int value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(long long value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(unsigned long long value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(long int value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(long unsigned int value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  // Fixed-width integer constructors
+  SD_INLINE SD_HOST_DEVICE float16(int8_t value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(uint8_t value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+  SD_INLINE SD_HOST_DEVICE float16(int16_t value) : data{} {
+    *this = static_cast<float>(value);
+  }
+
+
+  // Boolean constructor
+  SD_INLINE SD_HOST_DEVICE float16(bool value) : data{} {
+    *this = value ? 1.0f : 0.0f;
+  }
+
+  // bfloat16 constructor
+  SD_INLINE SD_HOST_DEVICE float16(const bfloat16& value) : data{} {
+    *this =  value;
   }
 
   SD_INLINE SD_HOST_DEVICE float16(const half& rhs) : data{} {
@@ -333,7 +388,7 @@ struct alignas(2) float16 {
   template <typename T,
             typename = typename std::enable_if<isNumericType<T>::value || std::is_same<bfloat16, T>::value>::type>
   SD_INLINE SD_HOST_DEVICE float16& operator=(const T& rhs) {
-    *this = static_cast<float>(rhs);
+    *this = rhs;
     return *this;
   }
 
